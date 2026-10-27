@@ -1780,6 +1780,44 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       (2) Learn's *Content layout and spacing* (updated 2026-10-14) publishes the gaps
       §2.20 marks "(none)".
 
+The gap map's cross-check (pass 2, 2026-10-28) found more; `platform-facts.md` lines are at
+caeddd6b, each platform file's *Cross-check* section has the detail.
+
+- [ ] [v0.7.x] **Menu items are rounded on four platforms.** `platform-facts.md:1265`
+      (§2.6 `border.corner_radius`) calls the items rectangular. WinUI draws the menu in
+      `OverlayCornerRadius` and each item in `ControlCornerRadius`
+      (`MenuFlyout_themeresources.xaml:285`, `:309` at microsoft-ui-xaml 8463f45), Breeze's
+      highlighted item is rounded, macOS 11+ rounds its hover highlight (gap map
+      MAC-MN01), and libadwaita's is `$menu_radius` (the GNOME entry above).
+- [ ] [v0.7.x] **macOS.** (1) `platform-facts.md:1622` says the 12–15 pop-up button casts
+      no shadow, and `:1644` the same of the selected segment; the gap map (MAC-X01,
+      MAC-SG02) finds both, and the cells were likely read from the non-key render, which
+      cannot show them; settle them on the macOS 14 key-window render. (2) `:1236`, no
+      checkbox shadow on 12–15, was never measured on a 12–15 render. (3) The reader does
+      not read `NSColor.shadowColor` for `defaults.shadow_color`
+      (`native-theme/src/macos.rs:157` at caeddd6b), and the sidebar's width is readable
+      at run time (MAC-SB09†).
+- [ ] [v0.7.x] **Windows.** (1) The reader never sets `scrollbar.overlay_mode`, which
+      `platform-facts.md:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2) The
+      layout cells `:1503-1506` say "(none)" while Learn publishes Fluent's spacing (W1-146).
+      (3) WinUI's TextBox template has no read-only and no invalid state
+      (`TextBox_themeresources.xaml:255-291`): settles W1-033.
+- [ ] [v0.7.x] **GNOME, more "(none)" cells libadwaita states.** `platform-facts.md:1600`
+      spinner `min_diameter` (16), `:1601` spinner `stroke_width` (radius ÷ 8, AdwSpinner),
+      `:1639` segmented `separator_width` (1 px, `_misc.scss:20-23`), `:1641` segmented
+      `border.corner_radius` (9); `:1061` gives a reason (":backdrop handles this") for a
+      rule libadwaita does not have.
+- [ ] [v0.7.x] **Material has a scrollbar.** Compose Material 3 draws one
+      (`Scrollbar.kt`, `NonInteractiveScrollbarDefaults` at `:119-148`, androidx
+      1e677685), against `platform-facts.md:1304-1311` and the gap map's "M3 has no
+      scrollbar component" (MAT-SC3†).
+- [ ] [v0.7.x] **ios-13 states values for things iOS does not draw**: hover colours,
+      `tab.active_background` (13–18 mark the selected tab by colour and symbol only; to
+      confirm on a render), `dialog.icon_size_px` (alerts draw no icon) and
+      `scrollbar.groove_width_px` (the indicator has no groove); the 17 lines are in the
+      iOS gap map's *Cross-check*, table C. Its 62 other unsourced values each point to a
+      row there, values to measure.
+
 ---
 
 ## Toolkit Connectors

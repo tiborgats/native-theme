@@ -49,6 +49,8 @@ Method notes:
 | W1-015 | Title bar | **System menu** (Alt+Space / icon click): a shell-drawn menu with Windows 11 styling distinct from WinUI `MenuFlyout` | measure: os-probe opens the system menu and captures it; read: uxtheme `OpenThemeData(L"MENU")` parts (to verify which theme class draws it) | `menu.*` (WinUI values; partial) |
 | W1-016 | Window | **Resize border** (invisible hit area outside the visible frame) — affects the drawn shadow's extent and cursor zones | read: `SM_CXFRAME`, `SM_CXPADDEDBORDER` (both probed), `DWMWA_EXTENDED_FRAME_BOUNDS` (new query) | none |
 | W1-017 | Window | Window **open / close / minimize / maximize / restore** DWM animations (scale, fade; duration; curve) and what *Animation effects* off changes | read: `SPI_GETCLIENTAREAANIMATION` (probed) for on/off; measure: screen recording at refresh rate | `dialog.entrance` (dialogs only) |
+| W1-148† | Caption buttons | **Button set per window kind**: a dialog's close-only caption, the greyed maximize of a window that cannot be resized, the context-help "?" button (`WS_EX_CONTEXTHELP`, Win32 only), the **tool window**'s small caption and small buttons, and the mirrored order under a right-to-left UI language (W3-54†). Cross-check: GNOME GN-1.20 and KDE K1.5 state which buttons a window shows, macOS MAC-N16 the utility panel's small buttons; the §4.2 "help button" and "inspector/utility panel" controls | read: `SM_CYSMCAPTION`, `SM_CXSMSIZE`, `SM_CYSMSIZE` (all probed; Learn *GetSystemMetrics*); published: Learn *Extended Window Styles* (`WS_EX_CONTEXTHELP`, `WS_EX_TOOLWINDOW`); WinUI's own XAML caption-button style `WindowCaptionButton` (dxaml/xcp/dxaml/themes/generic.xaml:15697) with `WindowCaptionButtonBackgroundPointerOver`, `WindowCaptionButtonBackgroundPressed`, `WindowCaptionButtonStroke`, `WindowCaptionButtonStrokeWidth` (dxaml/xcp/dxaml/themes/generic.xaml:1952-1962) — whether a WinUI 3 desktop window draws it or leaves its buttons to DWM: to verify; measure: os-probe renders a dialog, a fixed-size window, a context-help window and a tool window, each active and inactive | none (W1-007, W1-008 cover the standard three buttons) |
+| W1-149† | Window frame | **Attention flash** (`FlashWindowEx`): the caption and the taskbar button flash until the window is activated; the flash colours, the rate (with a zero timeout the default cursor blink rate) and the count | published: Learn *FlashWindowEx*, *FLASHWINFO*; read: `SPI_GETFOREGROUNDFLASHCOUNT` (new), `GetCaretBlinkTime` (new, W3-24); measure: os-probe flashes its window and captures the caption | none |
 
 ### Button (`[button]`)
 
@@ -78,6 +80,8 @@ Method notes:
 | W1-034 | Text box | **Caret width and blink** (see W3-24) and **touch selection grippers** (handles: size, colour) | read: `SPI_GETCARETWIDTH` (probed), `GetCaretBlinkTime` (new), `UISettings.CaretWidth/CaretBlinkRate` (new); grippers: measure (touch injection on the probe) | `input.caret_color` |
 | W1-035 | Text box | **Focus motion**: the bottom accent bar's appearance (instant or animated) | published: `CommonStyles/TextBox_themeresources.xaml` storyboards (22 keyframe/duration lines); measure | none |
 | W1-036 | Text area | Inherits every text-box gap above; also the **vertical scrollbar inside** a multi-line box and its inset | published: TextBox template `ScrollViewer` part | `text_area.border` |
+| W1-150† | Text box | **Description** text under the field (ComboBox, NumberBox, AutoSuggestBox, PasswordBox also take a `Description` — their templates to verify): foreground, font, gap to the field. Settles W1-031's "description text style to verify" for the text box. Cross-check: Material's supporting text (MAT-I5) | published: `DescriptionPresenter` (CommonStyles/TextBox_themeresources.xaml:340) in `SystemControlDescriptionTextForegroundBrush` (dxaml/xcp/dxaml/themes/generic.xaml:327); font and gap: the template's row layout (to verify) | none |
+| W1-151† | Text box | **Proofing and composition marks**: the spell-check wavy underline under a misspelled word (colour, wave geometry; `TextBox.IsSpellCheckEnabled`), and the IME composition underlines (line style, weight and colour per clause, with the clause's text and background colours) | published: Learn `TextBox.IsSpellCheckEnabled` (its default to verify); Learn `TF_DISPLAYATTRIBUTE` (the IME supplies line style, bold line, line colour, text and background colours per attribute); measure: os-probe types a misspelling and an IME composition and captures them | none. Cross-check: iOS I-4, I-5; KDE Q1.13; macOS MAC-X28 |
 
 ### Checkbox and radio button (`[checkbox]`)
 
@@ -128,6 +132,7 @@ Method notes:
 | W1-064 | Scrollbar | **Expand / contract motion**: durations, begin times, contract delay (= the auto-hide timing a user sees), opacity and colour change durations | published: `ScrollBarExpandDuration` (CommonStyles/ScrollBar_themeresources.xaml:173), `ScrollBarExpandBeginTime` (CommonStyles/ScrollBar_themeresources.xaml:188), `ScrollBarContractDuration` (CommonStyles/ScrollBar_themeresources.xaml:176), `ScrollBarContractBeginTime` (CommonStyles/ScrollBar_themeresources.xaml:189), `ScrollBarContractDelay` (CommonStyles/ScrollBar_themeresources.xaml:178), `ScrollBarOpacityChangeDuration` (CommonStyles/ScrollBar_themeresources.xaml:174), `ScrollBarColorChangeDuration` (CommonStyles/ScrollBar_themeresources.xaml:175) | none |
 | W1-065 | Scroll viewer | **Scrollbar corner separator** (the square where both bars meet) fill and its expand/contract timing; **scrollbar margin** from the content edge | published: `ScrollViewerScrollBarSeparatorBackground` (CommonStyles/ScrollViewer_themeresources.xaml:5), `ScrollViewerSeparatorExpandDuration` (CommonStyles/ScrollViewer_themeresources.xaml:16), `ScrollViewerScrollBarMargin` (CommonStyles/ScrollViewer_themeresources.xaml:14); `ScrollView/ScrollView_themeresources.xaml` (`ScrollViewScrollBarsSeparator*`, `ScrollViewScrollBarsMargin`) | none. Seed: `connectors/native-theme-iced/src/styles.rs:1518` |
 | W1-066 | Scrollbar | Win32 sizes that apps read at run time: `UISettings.ScrollBarSize/ScrollBarArrowSize/ScrollBarThumbBoxSize` | read: those `UISettings` properties (new probe queries) | `scrollbar.groove_width` (from `SM_CXVSCROLL`) |
+| W1-152† | Scrollbar | **Reader coverage of the auto-hide setting**: platform-facts maps `overlay_mode` to `UISettings.AutoHideScrollBars` and the probe reads it, but the Windows reader sets no `overlay_mode` (`native-theme/src/windows.rs` has no reference to either); which scroll bars follow the setting is ❓ in platform-facts; ScrollView has an auto-hide switch of its own | read: `UISettings.AutoHideScrollBars` (platform-facts.md:1310; probed); published: `GetAutoHideScrollControllers` / `SetAutoHideScrollControllers` (ScrollView/ScrollViewTestHooks.idl:9-10); measure: os-probe with *Automatically hide scroll bars* off and on, rendering a WinUI ScrollViewer, a ScrollView and a Win32 scroll bar | `scrollbar.overlay_mode` (exists; not read on Windows) |
 
 ### Slider (`[slider]`)
 
@@ -141,6 +146,7 @@ Method notes:
 | W1-072 | Slider | **Header** (font weight, colour, disabled colour, margin), control height, pre/post content margins | published: `SliderHeaderForeground` (CommonStyles/Slider_themeresources.xaml:28), `SliderHeaderThemeFontWeight` (CommonStyles/Slider_themeresources.xaml:9), `SliderTopHeaderMargin` (CommonStyles/Slider_themeresources.xaml:161), `SliderHorizontalHeight` (CommonStyles/Slider_themeresources.xaml:167), `SliderPreContentMargin` (CommonStyles/Slider_themeresources.xaml:164), `SliderPostContentMargin` (CommonStyles/Slider_themeresources.xaml:165) | none |
 | W1-073 | Slider | **Value tooltip** while dragging (a tooltip showing the value) | published: Slider template `ThumbToolTip` (to verify) | `tooltip.*` (style reused; placement missing) |
 | W1-074 | Slider | **Container background** per state (transparent by default; stated) | published: `SliderContainerBackground` (CommonStyles/Slider_themeresources.xaml:57), `SliderContainerBackgroundPointerOver` (CommonStyles/Slider_themeresources.xaml:10) | none |
+| W1-153† | Slider | **Range (two-thumb) variant**: the Windows Community Toolkit's `RangeSelector` draws two thumbs with the Slider's thumb and track resources and a value fill between them; thumb overlap, minimum gap, which thumb is on top | published: CTK `RangeSelector/src/RangeSelector.xaml:13` (`DefaultRangeSelectorStyle`), :17 (`SliderTrackValueFill` as its foreground), :28-46 (its thumb style: `SliderThumbCornerRadius`, `SliderOuterThumbBackground`), :172-234 (value fill per state), :262 (`ActiveRectangle`), :279, :286 (`MinThumb`, `MaxThumb`) | `slider.*` (one thumb). Cross-check: KDE Q1.45, Material MAT-S12 |
 
 ### Progress bar (`[progress_bar]`)
 
@@ -211,6 +217,9 @@ Method notes:
 | W1-117 | Popover | **Max/min width, max height** of FlyoutPresenter | published: FlyoutPresenter template / generic.xaml (`FlyoutThemeMaxWidth` etc. — to verify names) | none |
 | W1-118 | Splitter | WinUI has no draggable splitter; the Community Toolkit `GridSplitter`/`ContentSizer` draws a **gripper glyph** and hover/pressed fills | published: CommunityToolkit.WinUI.Controls.Sizers templates (to verify version and lines) | `splitter.*` (partial) |
 | W1-119 | Separator | **Orientation-specific inset/margin** (menu, command bar, nav pane separators all inset differently) | published: W1-052, W1-101, W1-093 | `separator.line_*` |
+| W1-157† | Splitter (Toolkit `GridSplitter`, `ContentSizer`, `PropertySizer`) | **Gripper and states**: fill × rest/pointer-over/pressed/disabled, foreground, thumb width, height and radius, padding. Settles W1-118's "to verify" | published: CTK `Sizers/src/SizerBase.xaml:8-14` (`SizerBaseBackground`, `SizerBaseBackgroundPointerOver`, `SizerBaseBackgroundPressed`, `SizerBaseBackgroundDisabled`), :16 (`SizerBaseForeground`), :45-48 (`SizerBaseThumbHeight`, `SizerBaseThumbWidth`, `SizerBaseThumbRadius`, `SizerBasePadding`), :59, :138, :142, :146 (the base style and the three derived ones) | `splitter.hover_color` ((none) on Windows, platform-facts.md:1470), `splitter.*` |
+| W1-158† | Status bar (Win32) | **Border widths and part gap**: the horizontal and vertical border widths and the width between parts, as the control reports them | read: `SB_GETBORDERS` on a probe status bar (new; Learn *SB_GETBORDERS*); platform-facts.md:1414-1415 name the message and give no default | `status_bar.border.padding_*` ((none) on Windows) |
+| W1-159† | List (Win32 list view) | **Marquee (rubber-band) selection**: the alpha-blended selection rectangle a Win32 list view draws (File Explorer): fill, border, opacity. WinUI's ListView and GridView draw none (to verify). Cross-check: KDE K2.12, GNOME GN-1.175 | published: Learn *Extended List-View Styles* (`LVS_EX_DOUBLEBUFFER`, which also enables the alpha-blended marquee selection); measure: os-probe drags a marquee in a comctl32 list view and captures it | none |
 
 ### Switch, dialog, spinner, combo box, segmented, card, expander, link, layout
 
@@ -244,6 +253,9 @@ Method notes:
 | W1-145 | Link | **Focus rectangle** of an inline hyperlink (text-run focus) | measure | `defaults.focus_ring_*` |
 | W1-146 | Layout | Fluent's published gaps: between buttons, button–flyout, control–header, **control–label**, content areas, surface–edge text — the model's four layout fields lack header and label gaps, and platform-facts marks all four "(none)" although Learn publishes values | published: Learn *Content layout and spacing* (updated 2026-10-14) | `layout.*` (partial) |
 | W1-147 | Text scale | Fluent's type ramp has nine styles (Caption, Body, BodyStrong, BodyLarge, BodyLargeStrong, Subtitle, Title, TitleLarge, Display); the model maps four roles | published: `CaptionTextBlockStyle` (CommonStyles/TextBlock_themeresources.xaml:19), `BodyStrongTextBlockStyle` (CommonStyles/TextBlock_themeresources_v2.5.xaml:6), `BodyLargeTextBlockStyle` (CommonStyles/TextBlock_themeresources.xaml:27), `BodyLargeStrongTextBlockStyle` (CommonStyles/TextBlock_themeresources.xaml:32), `TitleLargeTextBlockStyle` (CommonStyles/TextBlock_themeresources_v2.5.xaml:9) (platform-facts §1.2.1 has the ramp) | `text_scale.*` (four roles; partial) |
+| W1-154† | Segmented (Toolkit `Segmented`) | **Style variants**: `DefaultSegmentedStyle`, `PivotSegmentedStyle` and `ButtonSegmentedStyle`, each with its own item style, fills, borders and pill per state; the item **layouts** icon-left, icon-only, content-only. Cross-check: GNOME GN-1.245 to GN-1.247, macOS MAC-SG04, and the §4.2 "button group/toggle group" control | published: CTK `Segmented/src/Segmented/Segmented.xaml:41`, :82, :102; `Segmented/src/SegmentedItem/SegmentedItem.xaml:377`, :682, :915 (the three item styles), :409-417 (layout states), :426-603 (the default item's Normal, PointerOver, Pressed, Selected, PointerOverSelected, PressedSelected, Disabled) | `segmented_control.*` (one look) |
+| W1-155† | Dialog | **Full-size variant**: `ContentDialog.FullSizeDesired` stretches the dialog to the window's height (visual state `FullDialogSizing`). Cross-check: Material MAT-N26 (full-screen dialog) | published: `DialogSizingStates` / `FullDialogSizing` (CommonStyles/ContentDialog_themeresources.xaml:136-142); Learn `ContentDialog.FullSizeDesired` | none |
+| W1-156† | Dialog (Win32) | **Message box and task dialog**: the standard icon (error, warning, information, shield) and its size, the main-instruction text style and colour, the footer band, command-link buttons | read: `SM_CXICON` (probed; whether a message box draws its icon at it: to verify); uxtheme `OpenThemeData(L"TEXTSTYLE")` with part `TEXT_MAININSTRUCTION`, and the `TASKDIALOG` class (part ids to verify); measure: os-probe shows a MessageBox and a TaskDialog and captures them | `dialog.icon_size` ((none) on Windows, platform-facts.md:1568: ContentDialog has no icon) |
 
 ---
 
@@ -293,6 +305,10 @@ Unless noted, every control also needs the focus visual (W3-19) and the high-con
 | W2-37 | **KeyTip (access keys)** | Badges shown when Alt is pressed: fill, foreground, border, font family/size, padding, placement offset | published: `KeyTipBackground` (dxaml/xcp/dxaml/themes/generic.xaml:1011), `KeyTipForeground` (dxaml/xcp/dxaml/themes/generic.xaml:1010), `KeyTipBorderBrush` (dxaml/xcp/dxaml/themes/generic.xaml:1012), `KeyTipBorderThemeThickness` (dxaml/xcp/dxaml/themes/generic.xaml:182), `KeyTipFontFamily` (dxaml/xcp/dxaml/themes/generic.xaml:21), `KeyTipContentThemeFontSize` (dxaml/xcp/dxaml/themes/generic.xaml:111), `KeyTipThemePadding` (dxaml/xcp/dxaml/themes/generic.xaml:183) | `tooltip.*` |
 | W2-38 | **Toolkit `SettingsCard` / `SettingsExpander`** (Windows 11 settings pattern, WinUI Gallery / Community Toolkit) | Card row with header icon, description, action content, clickable hover/pressed fills, chevron | published: CommunityToolkit.WinUI.Controls.SettingsControls (version and lines to verify) | `card.*`, `expander.*` |
 | W2-39 | **Toolkit `TokenizingTextBox`, `RangeSelector`, `ColorPickerButton`, `RadialGauge`** (Windows Community Toolkit) | Each a control Windows apps use; tokens (chip fill/close), dual-thumb slider, colour button | published: CommunityToolkit.WinUI.Controls.* (to verify) | `slider.*`, `button.*` |
+| W2-40† | **Toolkit `SettingsCard` / `SettingsExpander`** (settles W2-38's "to verify") | Card: fill, foreground and border × rest/pointer-over/pressed/disabled; border thickness, padding, min width and height, description font size, header-icon max size and margin, action-icon size and margin, header–content spacing, the wrap thresholds and the **content layouts** (right, right-wrapped, right-wrapped-no-icon, left, vertical); a disabled **bitmap** header icon dimmed by opacity. Expander: header and item padding, the items' top border, chevron button size, clickable-item padding | published: CTK `SettingsControls/src/SettingsCard/SettingsCard.xaml:11-35` (`SettingsCardBackground` … `SettingsCardBorderBrushDisabled`), :98-112 (`SettingsCardBorderThickness` … `SettingsCardBitmapIconDisabledOpacity`), :208-268 (common states), :300-303 (bitmap icon states), :310-361 (layout states); `SettingsControls/src/SettingsExpander/SettingsExpander.xaml:15-21` (`SettingsExpanderHeaderPadding` … `SettingsExpanderChevronButtonHeight`), :25, :36 (item styles) | `card.*`, `expander.*` |
+| W2-41† | **Toolkit `RadialGauge`** (gauge; a dial when it takes input) | Parts: scale arc, trail (value) arc, ticks, scale ticks, needle and its border, value and unit text; their brushes in Light, Dark and HighContrast; the disabled look (the whole control's opacity); arc width, needle size, tick spacing and start/end angles (dependency-property defaults in the control's code, to verify); pointer input (`IsInteractive`, to verify) | published: CTK `RadialGauge/src/RadialGauge.xaml:8-22`, :26-41, :45-60 (`RadialGaugeTrailBackground`, `RadialGaugeScaleBackground`, `RadialGaugeTickBackground`, `RadialGaugeScaleTickBackground`, `RadialGaugeNeedleBackground`, `RadialGaugeNeedleBorderBrush`, `RadialGaugeValueForeground`, `RadialGaugeUnitForeground`), :83-85 (Disabled), :100-115 (scale and trail paths, round caps), :119-124 (value and unit text) | `progress_bar.*`, `slider.*` (nearest) |
+| W2-42† | **Toolkit `ColorPickerButton`** (colour button) | A drop-down button whose content is a **swatch** over a **checkerboard** (for alpha): its corner radius, min size and padding; the chevron's secondary foreground × rest/pointer-over/pressed; states; opens the Toolkit's `ColorPicker` in a flyout | published: CTK `ColorPicker/src/ColorPickerButton.xaml:10-14` (`DropDownButtonForegroundSecondary`, `…PointerOver`, `…Pressed`), :37-40 (`ColorPickerButtonPreviewCornerRadius`, `ColorPickerButtonPadding`, `ColorPickerButtonPreviewMinHeight`, `ColorPickerButtonPreviewMinWidth`), :85-143 (states), :176-182 (checkered background and preview borders); `ColorPicker/src/ColorPicker.xaml` (the picker) | `button.*` |
+| W2-43† | **Toolkit `TokenizingTextBox` tokens** (chips) | Token: fill, border and foreground × rest/pointer-over/pressed/selected/selected-pointer-over/selected-pressed; border thickness, padding, corner radius; the **remove** button (glyph, glyph size, round shape, its style changing with selection); token spacing and the box's padding | published: CTK `TokenizingTextBox/src/TokenizingTextBoxItem.Token.xaml:10-46` (`TokenItemBackground` … `TokenItemBorderThickness`), :129 (`TokenItemPadding`), :145 (corner radius), :190-216 (states), :242-256 (`PART_RemoveButton`); `TokenizingTextBox/src/TokenizingTextBox.xaml:12-14` (`TokenizingTextBoxPadding`, `TokenizingTextBoxPresenterMargin`, `TokenizingTextBoxTokenSpacing`) | none |
 
 Controls checked and found to have **no theme visuals of their own** (layout or content only — no row): Grid,
 StackPanel, Canvas, RelativePanel, Border, Viewbox, ItemsRepeater, TwoPaneView, ParallaxView (motion only, see
@@ -336,6 +352,8 @@ not the app's (toasts / app notifications, Start, taskbar, file pickers) are out
 | W3-16 | **Fill tiers** | Control fill default/secondary/tertiary/quarternary/disabled/transparent/input-active; strong fill; solid fill; subtle fills; control-alt fills; on-image fills; solid background tiers (base, secondary … senary, base-alt) | published: `CommonStyles/Common_themeresources_any.xaml` (Light dictionary `:208-414`, e.g. `ControlFillColorInputActive` (CommonStyles/Common_themeresources_any.xaml:21), `SolidBackgroundFillColorBaseAlt` (CommonStyles/Common_themeresources_any.xaml:75), `ControlOnImageFillColorDefault` (CommonStyles/Common_themeresources_any.xaml:34)) | per-widget fields (preset-stated); no shared roles |
 | W3-17 | **Status backgrounds** | `SystemFillColor{Attention,Success,Caution,Critical,Neutral}Background` and the solid variants (InfoBar, validation) | published: `SystemFillColorCriticalBackground` (CommonStyles/Common_themeresources_any.xaml:84), `SystemFillColorSuccessBackground` (CommonStyles/Common_themeresources_any.xaml:82), `SystemFillColorCautionBackground` (CommonStyles/Common_themeresources_any.xaml:83), `SystemFillColorAttentionBackground` (CommonStyles/Common_themeresources_any.xaml:81), `SystemFillColorNeutralBackground` (CommonStyles/Common_themeresources_any.xaml:85) | none (only the foreground status colours) |
 | W3-18 | **Neutral status** | `SystemFillColorNeutral` / `SystemFillColorSolidNeutral` | published: `SystemFillColorNeutral` (CommonStyles/Common_themeresources_any.xaml:79) | none |
+| W3-45† | **Translucent fills flattened** | A hover or pressed fill that replaces a control's rest fill (button, combo box, switch off-track) is an alpha brush (`ControlFillColorSecondary`, `ControlFillColorTertiary`) that WinUI draws over whatever lies behind the control — Mica, a layer, a card — but the preset stores it flattened over `background_color`, right on that one surface only; the model cannot say "this colour is a layer over the surface below". Cross-check: GNOME GN-3.08, KDE Q3.16 | published: `native-theme/src/presets/windows-11.toml:10-14` (the preset's rule), :124-137 (the flattened button fills, citing platform-facts.md:1192, :1196); `ControlFillColorSecondary` (CommonStyles/Common_themeresources_any.xaml:16), `ControlFillColorTertiary` (CommonStyles/Common_themeresources_any.xaml:17) | every `hover_background` / `active_background` the preset flattens |
+| W3-46† | **Inverse text** | `TextFillColorInverse`, the glyph colour on InfoBar's severity icon backplates (the inverse surface stroke is W3-15). Cross-check: Material MAT-X1 (inverse roles) | published: `TextFillColorInverse` (CommonStyles/Common_themeresources_any.xaml:9); `InfoBarErrorSeverityIconForeground` and its three siblings (InfoBar/InfoBar_themeresources.xaml:13-16) | none |
 
 ### Focus, caret, selection, text, icons, pointer
 
@@ -352,6 +370,11 @@ not the app's (toasts / app notifications, Start, taskbar, file pickers) are out
 | W3-27 | **Glyph sizes per control** | Segoe Fluent Icons glyphs and sizes each control draws (check 12, chevrons 12, close glyphs, scroll arrows, tab close, info bar icon, caption buttons): the model has a few (`arrow_icon_size`, `icon_size`) | published: per-control `*GlyphSize`/`*FontSize` keys (e.g. `CheckBoxGlyphSize` (CommonStyles/CheckBox_themeresources.xaml:271), `ExpanderChevronGlyphSize` (Expander/Expander_themeresources.xaml:85), `TabViewItemHeaderCloseFontSize` (TabView/TabView_themeresources.xaml:251), `InfoBarIconFontSize` (InfoBar/InfoBar_themeresources.xaml:77), `ScrollBarButtonArrowIconFontSize` (CommonStyles/ScrollBar_themeresources.xaml:186)) | `combo_box.arrow_icon_size_px`, `expander.arrow_icon_size_px` (partial) |
 | W3-28 | **Animated icons** | WinUI's `AnimatedIcon` states for chevrons (combo, expander, dropdown), back arrow, checkbox accept, settings gear, hamburger: per-state frames and durations | published: `AnimatedIcon/` (AnimatedVisuals sources, location to verify); template references (Button 8, CheckBox 16, Expander 26, NavigationView 73, TitleBar 14 lines) | `AnimatedIcon` type exists (`model/animated.rs`) but no per-control animated glyphs |
 | W3-29 | **Pointer cursor per element** | Hand over hyperlinks, I-beam over text, resize cursors on splitters/window edges, size of the cursor (accessibility setting) | read: `UISettings.CursorSize` (to verify), `SM_CXCURSOR` (probed); published: per-control `ProtectedCursor` use (to verify) | none |
+| W3-47† | **Monospace font** | WinUI states no monospace role (no XAML file of the MUX tree names Consolas, Cascadia or Courier), but Windows draws monospace text in the console host and in Windows Terminal; platform-facts §2.1.2 has the preset's Cascadia Mono 14 as "(none)" | read: the console's font, `HKCU\Console` `FaceName`, `FontSize`, `FontWeight` (to verify which host reads it on Windows 11, where Windows Terminal is the default); published: Learn Windows Terminal *Appearance* profile settings (`fontFace` and its default — to verify) | `defaults.mono_font` (preset value, no source) |
+| W3-48† | **Access-key underlines** | Win32 menus and dialogs underline access keys only while Alt is held, unless *Underline access keys* is on; WinUI shows KeyTip badges instead (W2-37). Cross-check: KDE K3.44, GNOME GN-3.50 | read: `SPI_GETKEYBOARDCUES` (probed; Learn *SystemParametersInfo*: whether menu access keys are always underlined; W3-21 uses it for focus cues); measure: a Win32 menu render with the setting off and on | none |
+| W3-49† | **Drag and drop visuals** | What the system draws during a drag: the drag image and its translucency, the **caption** and **glyph** (copy, move, link) of `DragUIOverride`, the shell's drop-description label (`DROPDESCRIPTION`), the drop target's highlight (lists: W1-110). Cross-check: iOS C-24, macOS MAC-X21 | published: Learn `DragUIOverride` (`Caption`, `IsCaptionVisible`, `IsGlyphVisible`, `IsContentVisible`), Learn `DROPDESCRIPTION`, `IDragSourceHelper2`; measure: os-probe drags between a WinUI element and File Explorer and captures frames | none |
+| W3-50† | **Pointer appearance settings** | The pointer's colour and style (white, black, inverted, custom colour), its shadow, the Ctrl locator rings, pointer trails, and the touch and pen **contact and gesture visualisation** (the mark drawn under a finger). Cross-check: GNOME GN-3.46, KDE K3.64, macOS MAC-X20 | read: `SPI_GETCURSORSHADOW`, `SPI_GETMOUSESONAR`, `SPI_GETMOUSETRAILS`, `SPI_GETCONTACTVISUALIZATION`, `SPI_GETGESTUREVISUALIZATION` (all new; Learn *SystemParametersInfo*); colour and style: registry under `HKCU\Software\Microsoft\Accessibility` (value names to verify); measure: captures that include the pointer, each setting on | none (W3-29 covers the cursor per element and its size) |
+| W3-51† | **Icon state treatment** | WinUI's glyph icons (Segoe Fluent Icons) take the control's foreground in each state, so a disabled glyph is recoloured; a bitmap or image icon cannot be, and the Toolkit dims it by opacity instead; the model has no per-state icon effect. Cross-check: KDE K3.60, GNOME GN-3.60, Material MAT-B7 | published: CTK `SettingsControls/src/SettingsCard/SettingsCard.xaml:112` (`SettingsCardBitmapIconDisabledOpacity`), :300-303 (`BitmapHeaderIconDisabled`); WinUI `BitmapIcon` / `ImageIcon` disabled look: to verify (no resource for it in the MUX tree's XAML); measure | none |
 
 ### Motion
 
@@ -362,6 +385,8 @@ not the app's (toasts / app notifications, Start, taskbar, file pickers) are out
 | W3-32 | **Theme transitions/animations** | Built-in transitions apps get: Entrance, Content, AddDelete, Reorder, Reposition, Popup, Pane, EdgeUI, DrillIn, Slide/Suppress navigation, PointerDown/PointerUp (press tilt), FadeIn/FadeOut, SplitOpen/Close, DragItem/DragOver/DropTargetItem — each's distance, duration, curve | published: names in the templates (counted above); their parameters live in native code (dxaml; to verify) → measure: recording of each in a probe app | `dialog.entrance` only |
 | W3-33 | **Connected animation and parallax** | `ConnectedAnimationService` default duration/curve; ParallaxView | published: Learn *Connected animation* (to verify values); measure | none |
 | W3-34 | **Per-control motion inventory** | Collected from 4.1/4.2: button brush transition (W1-023), checkbox glyph (W1-039), radio dot (W1-041), slider thumb (W1-068), switch knob (W1-123), progress indeterminate (W1-075), spinner (W1-130), scrollbar expand (W1-064), menu open (W1-054), tooltip fade (W1-058), dialog show/hide (W1-128), expander (W1-142), nav indicator (W1-090), combo pill and open (W1-135, W1-136), tab add/reorder (W1-087), list reorder (W1-113), TeachingTip (W2-09), SelectorBar pill (W2-27), caption buttons (W1-009), window (W1-017), Mica (W3-10), acrylic (W3-07) | as cited per row | none |
+| W3-52† | **Scroll motion** | Animated mouse-wheel scrolling, touch and touchpad **inertia**, the **overpan** (elastic edge) when a pan reaches the end, the settle on snap points; durations and curves; what *Animation effects* off changes. Cross-check: GNOME GN-3.24, iOS X-MO-8, Material MAT-SC2 | read: `SPI_GETWHEELSCROLLLINES` (probed), `SPI_GETWHEELSCROLLCHARS` (new); published: Learn *ScrollViewer* / *ScrollView* (which parameters are stated: to verify); measure: recordings of wheel, touchpad and touch scrolling in a probe app | none |
+| W3-53† | **Win32 visual-effect switches** | The *Performance Options › Visual Effects* settings that change what Win32 controls draw: menu fade or slide, tooltip fade or slide, selection fade, combo box slide-open, list box smooth scrolling, hot tracking (hover highlight), shadows under windows and menus, the master UI-effects switch — the probe reads most, the reader none | read: `SPI_GETMENUFADE`, `SPI_GETTOOLTIPFADE` (new), `SPI_GETSELECTIONFADE`, `SPI_GETCOMBOBOXANIMATION`, `SPI_GETLISTBOXSMOOTHSCROLLING`, `SPI_GETHOTTRACKING`, `SPI_GETDROPSHADOW`, `SPI_GETUIEFFECTS` (probed, `tools/os-probe/src/windows.rs`); measure: Win32 renders with each off | `AccessibilityPreferences.reduce_motion` (one flag) |
 
 ### Size variants, accessibility, timings
 
@@ -377,6 +402,9 @@ not the app's (toasts / app notifications, Start, taskbar, file pickers) are out
 | W3-42 | **Accent on title bars / borders** | The user switch that recolours title bars and window borders (W1-013) | read: registry `ColorPrevalence` (probed) | none |
 | W3-43 | **Win32 visual-style look** | Windows 11 also draws Win32 common controls through uxtheme (aero.msstyles, `DarkMode_Explorer`): progress bar, trackbar, tabs, list view, header control — a second Windows look the model cannot hold beside the WinUI one; also the **column header** (the WinUI tree has none, platform-facts §2.15) | read: uxtheme `OpenThemeData` + `GetThemeColor/GetThemeMetric/GetThemePartSize/GetThemeMargins` per class (new probe queries; class/part ids to verify); measure: os-probe renders comctl32 v6 controls | none |
 | W3-44 | **Dark-mode Win32 chrome** | `DWMWA_USE_IMMERSIVE_DARK_MODE` title bar and border in dark | read: the attribute (set) and a render; measure | `window.*` (per variant; values only) |
+| W3-54† | **Right-to-left layout** | Under a right-to-left UI language or `FlowDirection.RightToLeft`, WinUI mirrors each template, chevrons and arrows flip where the icon asks for it, and the caption buttons move to the left (W1-148†). Cross-check: iOS X-SV-3 | published: `MirroredWhenRightToLeft` (IconSource/IconSource.idl:23); Learn *FlowDirection* (to verify); measure: a probe render with an RTL language | none |
+| W3-55† | **Menu drop alignment (handedness)** | The *Handedness* setting opens pop-up menus to the left or the right of their anchor; Win32 menus follow it; whether WinUI flyout placement does: to verify | read: `SPI_GETMENUDROPALIGNMENT` (new; Learn *SystemParametersInfo*); measure: probe menus with the setting on and off | none |
+| W3-56† | **Colour filters** | *Accessibility › Color filters* (greyscale, inverted, colour-blindness filters) recolour the whole screen after composition; an app's colours do not change, but the flag and the filter kind are readable; whether the model carries them is the rationale's question. Cross-check: KDE K3.93, macOS MAC-X26 | read: registry `HKCU\Software\Microsoft\ColorFiltering` (`Active`, `FilterType`; to verify) | none |
 
 ---
 
@@ -393,3 +421,172 @@ Renders (new capability: a probe window and, for WinUI, a Windows App SDK host):
 (border, shadow, corners, caption buttons at rest/hover/pressed, close hover), Snap layouts flyout, system menu, a
 `ThemeShadow` ladder at the seven elevations in light and dark, controls at 1.0/1.5/2.25 text scale, compact density,
 a high-contrast run (each contrast theme), and screen recordings of the animations marked *measure*.
+
+---
+
+## Cross-check (pass 2, 2026-10-28)
+
+This pass checked the Windows map against the other five surveys: the controls they list as missing (A), their
+rows per capability (B), and the "(none)" cells of the Windows column of `platform-facts.md` at caeddd6b (C). Rows
+added in this pass carry a "†" after their ID; they sit at the end of the table they belong to.
+
+**Citation base added.** "CTK" = the Windows Community Toolkit, `CommunityToolkit/Windows` at
+`a6b4dc451c0e54dd29f58743894a956100e7f713` (tag v8.2.251219, the commit platform-facts pins for `Segmented`), paths
+relative to `components/`. "MUX tree" = the `controls/dev` directory and `dxaml/xcp/dxaml/themes/generic.xaml` at
+8463f45, the controls WinUI 3 ships.
+
+### A. Controls other surveys list and this map did not
+
+Decision: 1 = Windows draws it as a standalone control (§4.2 row); 2 = Windows draws it inside an element the map
+already has (rows checked, rows added where they missed something); 3 = Windows has no such control.
+
+| Control | Decision | Rows added, or reason and source |
+|---|---|---|
+| bottom tab bar | 3 | NavigationView, WinUI's only navigation bar, has the display modes Auto, Left, Top, LeftCompact and LeftMinimal and no bottom placement (`NavigationViewPaneDisplayMode`, NavigationView/NavigationView.idl:24-31); the MUX tree has no other tab bar but TabView (`[tab]`) |
+| level indicator/gauge | 1 | W2-41† (Toolkit `RadialGauge`); a linear level bar is a `ProgressBar` (`[progress_bar]`) |
+| sheet/bottom sheet | 3 | the MUX tree has no sheet; WinUI's modal surface is `ContentDialog` (`[dialog]`, W1-125–W1-129, W1-155†) |
+| toast/snackbar | 3 | the MUX tree has no in-app toast; app notifications are drawn by the shell, outside the model's scope (§4.2, the paragraph after the table); the in-app message is `InfoBar` (W2-07) |
+| button group/toggle group | 2 | the Toolkit `Segmented` in its `ButtonSegmentedStyle` is a joined button group: W1-154†; a radio group is W2-25 |
+| chip | 1 | W2-43† (Toolkit `TokenizingTextBox` tokens); the MUX tree has no chip |
+| colour button | 1 | W2-42† (Toolkit `ColorPickerButton`) |
+| group box/frame | 3 | the MUX tree has no group box; a Win32 group box (`BS_GROUPBOX`) is drawn through uxtheme like the other Win32 controls of W3-43 |
+| help button | 2 | the Win32 context-help caption button (`WS_EX_CONTEXTHELP`): W1-148†; WinUI has no help button |
+| image frame | 3 | the MUX tree has no framed image view; `Image` has no theme visuals (§4.2, the paragraph after the table) |
+| status page/placeholder | 3 | the MUX tree has no empty-state control |
+| about dialog | 3 | the MUX tree has no about dialog; an app builds one from `ContentDialog` |
+| dial/circular slider | 1 | W2-41† (`RadialGauge`, interactive when `IsInteractive` is set — to verify); the MUX tree has no dial |
+| fab | 3 | the MUX tree has no floating action button |
+| find bar | 3 | the MUX tree has no find bar |
+| navigation rail | 2 | NavigationView's `LeftCompact` mode is the rail: W1-092 (item, icon box), W1-094 (compact pane length, display modes) cover it |
+| action sheet | 3 | the MUX tree has no action sheet; `MenuFlyout` (`[menu]`) and `ContentDialog` take its place |
+| autocomplete | 1 | already W2-15 (`AutoSuggestBox`) |
+| back button | 2 | W1-011 (TitleBar back button), W1-095 (NavigationView back button, `NavigationBackButton_themeresources.xaml`) |
+| background extension | 3 | no WinUI counterpart (iOS 26 / macOS 26 only) |
+| bottom accessory | 3 | no WinUI counterpart |
+| collection view | 1 | already W2-13 (`GridView` items), W2-14 (`ItemsView` / `ItemContainer`) |
+| column browser | 3 | the MUX tree has no column browser |
+| context menu preview | 3 | `MenuFlyout` shows no preview of its target |
+| dock/panel title bar | 3 | the MUX tree has no docking panels |
+| drag and drop | 2 | W3-49† (system drag visuals); list drag and drop target: W1-110 |
+| edit menu | 1 | already W2-23 (`CommandBarFlyout`, incl. the text controls' selection flyout) |
+| file chooser | 3 | the file pickers are drawn by the shell, outside the model's scope (§4.2, the paragraph after the table) |
+| font chooser | 3 | the MUX tree has none; the Win32 `ChooseFont` dialog is built from the Win32 controls of W3-43 |
+| full-screen dialog | 2 | `ContentDialog.FullSizeDesired`: W1-155† |
+| glass container | 3 | no WinUI counterpart (Liquid Glass) |
+| inspector/utility panel | 2 | Windows' utility window is the tool window (`WS_EX_TOOLWINDOW`) with its small caption: W1-148† |
+| keyboard | 3 | the touch keyboard is drawn by the shell, outside the model's scope |
+| large content viewer hud | 3 | no Windows counterpart |
+| loading indicator | 2 | `ProgressRing` (`[spinner]`, W1-130) |
+| paste control | 3 | no Windows counterpart |
+| picker wheel | 1 | already W2-04 (the date and time pickers' looping selectors) |
+| rubber band | 2 | the Win32 list view's marquee: W1-159†; WinUI lists draw none (to verify) |
+| rule editor | 3 | no Windows counterpart |
+| scrim | 2 | W1-125 (dialog smoke), W1-055 (menu light-dismiss overlay), W3-11 (`SmokeFillColorDefault`) |
+| scroll edge effect | 3 | WinUI draws no edge effect; the overpan motion at an edge is W3-52† |
+| text ruler | 3 | `RichEditBox` has no ruler |
+| tool box | 3 | the MUX tree has no tool box; `Expander` (`[expander]`) is the nearest |
+| tool button | 2 | `AppBarButton` (W1-099) and `AppBarToggleButton` (W1-100) |
+| touch bar | 3 | no Windows counterpart |
+| writing tools | 3 | no WinUI counterpart |
+
+### B. Capabilities
+
+| Capability | Rows added, or why none |
+|---|---|
+| C01 Shadow geometry | W3-53† (the shadows-under-windows switch); no further row: window, popup, tooltip, dialog, overlay pane and per-elevation shadows already have rows (W1-003, W1-053, W1-057, W1-115, W1-129, W1-096, W3-01–W3-05) |
+| C02 Elevation | no further row: Windows' elevation ladder, per-state elevation and per-element assignment are W3-01–W3-03; the other platforms' C02 rows are Material's tonal-elevation mechanism |
+| C03 Materials | no further row: Mica, Mica Alt, in-app, background and accent acrylic, the layer fills over them and their fallbacks are W1-005, W3-06–W3-10, W3-38 |
+| C04 Colour composition | W3-45†, W1-159† |
+| C05 Colour roles | W3-46† |
+| C06 Variant axes | no further row: among WinUI's templates only `TitleBar`'s react to window deactivation (a search of every XAML file of the MUX tree for `Deactivated` and `WindowActivat` finds only the TitleBar files; the C++ side was not searched — to verify), so the inactive window is W1-001, W1-012, W1-005, W3-10; contrast is the contrast themes (W3-35); Windows has no increased-contrast level short of a contrast theme and no elevated level |
+| C07 States | W1-148†, W1-149†, W1-153†, W1-154†, W1-157†, W2-40†, W2-42†, W2-43†, W3-51†, W3-53† |
+| C08 State layers | no further row: WinUI states a brush for each state instead of an overlay opacity; the subtle fills that act like overlays on transparent controls are W3-16, and their compositing is W3-45† |
+| C09 Variants | W1-153†, W1-154†, W1-155† |
+| C10 Size variants | W1-148† (the tool window's small caption) |
+| C11 Shape | W1-157†, W2-42†, W2-43† |
+| C12 Borders | no further row: every gradient and per-side border in the MUX tree has a row — `ControlElevationBorderBrush`, `CircleElevationBorderBrush`, `AccentControlElevationBorderBrush` (W1-018, W1-020, W3-04), `TextControlElevationBorderBrush`, `TextControlElevationBorderFocusedBrush` (W1-026, W1-027), `TabViewSelectedItemBorderBrush` (W1-086) |
+| C13 Parts | W1-148†, W1-150†, W1-151†, W1-153†, W1-154†, W1-156†, W1-157†, W1-159†, W2-40†–W2-43†, W3-48†, W3-49† |
+| C14 Motion | W3-49†, W3-52†, W3-53† |
+| C15 Focus | no further row: the two-ring focus visual, per-control margins, the keyboard-only rule and the list focus borders are W1-025, W1-111, W1-145, W3-19–W3-21; WinUI's focus visual has no animation and no per-variant placement; the Win32 focus rectangle belongs to W3-43 |
+| C16 Caret | no further row: width, blink, timeout and the text cursor indicator are W1-034, W3-24; WinUI's text boxes have no overwrite (block) caret |
+| C17 Selection | W1-151†, W1-159†, W3-49†; no inactive-window selection row: no WinUI template but TitleBar's reacts to window deactivation (C06); Windows states no find-highlight colour (`GetSysColor` and `UISettings` have none) |
+| C18 Typography | W1-150†, W1-156†, W3-47† |
+| C19 Icons | W2-40†, W3-51†, W3-54† |
+| C20 Window chrome | W1-148†, W1-149† |
+| C21 Timings | W1-149†, W1-152†, W3-52† |
+| C22 Pointer | W3-50† |
+| C23 Accessibility | W1-152†, W3-48†, W3-50†, W3-56†; Windows has no Bold Text, Button Shapes or Differentiate Without Colour setting |
+| C24 Whole controls | W2-40†–W2-43† |
+| C25 Reader coverage | W1-148†, W1-149†, W1-152†, W1-156†, W1-158†, W3-47†, W3-48†, W3-50†, W3-53†, W3-55†, W3-56† |
+| C26 Layout | W1-155†, W1-158†, W2-40†, W3-54†, W3-55† |
+| C27 Gradients | no further row: the MUX tree's six gradient brushes all have rows (C12); `ColorPicker`'s spectrum and slider gradients are W2-05 |
+| C28 Colour space | no further row: the Fluent colours are 8-bit sRGB ARGB values in the theme dictionaries; HDR and Auto Color Management map SDR content system-wide, a display setting rather than theme data |
+
+### C. The "(none)" cells of the Windows column
+
+a = Windows does not draw it, the cell is right; b = Windows draws it and no document states its value, a row
+measures or reads it. "a (inherits)" = drawn, with the value of the section the registry inherits from, stated in
+MUX; nothing to measure. "WinUI" / "Win32" splits a cell where the two draw differently.
+
+| platform-facts line | Class | Row or reason |
+|---|---|---|
+| :1040 `mono_font.family` | b | W3-47† |
+| :1041 `mono_font.size` | b | W3-47† |
+| :1042 `mono_font.weight` | b | W3-47† |
+| :1043 `mono_font.style` | b | W3-47† |
+| :1061 `selection_inactive_background` | b | W1-032, W3-25 (`SelectionHighlightColorWhenNotFocused`; its default to verify); `ComboBoxItemBackgroundSelectedUnfocused` W1-134; Win32 list views W3-43 |
+| :1120 `border.opacity` | a | no multiplier: each stroke brush carries its own alpha |
+| :1139 `icon_sizes.dialog` | b | W1-156† (Win32 message box and task dialog icons); ContentDialog has none |
+| :1140 `icon_sizes.panel` | a | the app side of Windows has no panel; the taskbar is the shell's, outside the model's scope |
+| :1147 `icon_theme` | a | no icon theme to choose: the symbol font is fixed (`SymbolThemeFontFamily`) |
+| :1170 `window.border.padding_horizontal` | a | the client area starts at the frame |
+| :1171 `window.border.padding_vertical` | a | as :1170 |
+| :1182 `button.min_width` | a | `Button_themeresources.xaml` sets no `MinWidth` or `MinHeight`; ContentDialog's buttons have their own (W1-127) |
+| :1216 `input.border.shadow_enabled` | a | no shadow; the elevation is the gradient border (W1-026) |
+| :1236 `checkbox.border.shadow_enabled` | a | no shadow |
+| :1237 `checkbox.border.padding_horizontal` | a | the glyph is centred in the box at its own size (W1-039) |
+| :1238 `checkbox.border.padding_vertical` | a | as :1237 |
+| :1242 `check_mark_stroke_width` | a | no stroke: the mark is a font glyph, whose glyph and size are W1-039 |
+| :1263 `menu.border.color` | a (inherits) | `MenuFlyoutPresenterBorderBrush` = `SurfaceStrokeColorFlyoutBrush` (CommonStyles/MenuFlyout_themeresources.xaml:41), the brush `FlyoutBorderThemeBrush` uses (CommonStyles/FlyoutPresenter_themeresources.xaml:6) |
+| :1264 `menu.border.line_width` | a (inherits) | `MenuFlyoutPresenterBorderThemeThickness` (CommonStyles/MenuFlyout_themeresources.xaml:42) as `FlyoutBorderThemeThickness` (CommonStyles/FlyoutPresenter_themeresources.xaml:7) |
+| :1265 `menu.border.corner_radius` | a (inherits) | the presenter is rounded with `OverlayCornerRadius` (CommonStyles/MenuFlyout_themeresources.xaml:285), as the flyout (CommonStyles/FlyoutPresenter_themeresources.xaml:39); the cell's reason "items are rectangular" is wrong: each item takes `ControlCornerRadius` (CommonStyles/MenuFlyout_themeresources.xaml:309) — W1-045 |
+| :1266 `menu.border.shadow_enabled` | a (inherits) | the popup's shadow (W1-053) |
+| :1336 `progress_bar.min_width` | a | the ProgressBar files set no `MinWidth` |
+| :1338 `progress_bar.border.shadow_enabled` | a | no shadow |
+| :1339 `progress_bar.border.color` | a | no border in Light and Dark; under high contrast one is drawn: W1-079 |
+| :1361 `tab.active_indicator_color` | a | TabView draws no indicator line; the pill-shaped indicators of other WinUI controls are W2-11, W2-27 |
+| :1362 `tab.active_indicator_width` | a | as :1361 |
+| :1363 `tab.active_indicator_side` | a | as :1361 |
+| :1377 `sidebar.border.corner_radius` | a | the docked pane is rectangular; the overlay pane's radius is W1-096, the content area's corner W1-097 |
+| :1378 `sidebar.border.shadow_enabled` | a | the docked pane casts none; the overlay pane's shadow is W1-096 |
+| :1396 `toolbar.border.color` | a | none while closed; the open state's frame is W1-103 |
+| :1399 `toolbar.border.shadow_enabled` | a | none on the bar; the overflow menu's shadow is W1-102 |
+| :1412 `status_bar.border.corner_radius` | a | WinUI has no status bar; the Win32 one is a rectangular bar |
+| :1413 `status_bar.border.shadow_enabled` | a | no shadow |
+| :1414 `status_bar.border.padding_horizontal` | b | W1-158† (`SB_GETBORDERS`) |
+| :1415 `status_bar.border.padding_vertical` | b | W1-158† |
+| :1430 `list.grid_color` | a | WinUI lists draw no grid lines; a Win32 list view's grid lines (`LVS_EX_GRIDLINES`) belong to W3-43 |
+| :1432 `list.header_height` | a | WinUI has no column header; the Win32 header control is W3-43 |
+| :1438 `list.border.color` | a | the ListView style sets no border |
+| :1439 `list.border.corner_radius` | a | as :1438 |
+| :1441 `list.border.shadow_enabled` | a | no shadow |
+| :1470 `splitter.hover_color` | b | WinUI has no splitter; the Toolkit's sizers have hover fills: W1-157† |
+| :1503 `layout.widget_gap` | b | W1-146: Learn *Content layout and spacing* publishes Fluent's gaps, so the cell may be wrong; to settle when values are collected |
+| :1504 `layout.container_margin` | b | W1-146 |
+| :1505 `layout.window_margin` | b | W1-146 |
+| :1506 `layout.section_gap` | b | W1-146 |
+| :1535 `switch.checked_track_border_color` | a | drawn at thickness 0 in Light and Dark; 1 under high contrast (W3-35) |
+| :1536 `switch.disabled_checked_track_border_color` | a | as :1535 |
+| :1538 `switch.thumb_border_color` | a | the off knob has no stroke; the on knob's border brush has thickness 0 |
+| :1539 `switch.hover_thumb_border_color` | a | as :1538 |
+| :1540 `switch.disabled_thumb_border_color` | a | as :1538 |
+| :1568 `dialog.icon_size` | a | WinUI: ContentDialog has no icon. Win32 message boxes draw one: W1-156† |
+| :1622 `combo_box.border.shadow_enabled` | a | no shadow on the closed box; the drop-down's is W1-133 |
+| :1661 `card.border.shadow_enabled` | a | border only in the templates; Learn's layering page gives Card elevation 8, so whether a visible shadow is drawn is measured in W1-139 |
+| :1682 `expander.border.shadow_enabled` | a | no shadow |
+| :1695 `link.visited_text_color` | a | WinUI hyperlinks have no visited state |
+| :1701 `link.disabled_text_color` | a | the inline `Hyperlink` has three foreground states and no disabled one; `HyperlinkButton`'s disabled colour is stated in the cell |
+
+Tallies: A — 46 controls: 8 decision 1 (4 with new rows), 11 decision 2 (6 with new rows), 27 decision 3. B — 28
+capabilities: 19 with rows added, 9 with no further row. C — 56 cells: 13 b, 43 a (4 of them inherited). Rows added:
+§4.1 12, §4.2 4, §4.3 12 (28 in all).

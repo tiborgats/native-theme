@@ -102,6 +102,8 @@ entry and the connectors' "the model states no …" notes.
 | W-7 | window | Safe-area insets (status bar, home indicator, Dynamic Island): where content may draw | same | R: `UIView.safeAreaInsets` | `layout.window_margin_px` (partial) |
 | W-8 | window | Home indicator: system-drawn and adaptive; the app controls only auto-hide. Listed for completeness: nothing themable beyond whether it hides. | same | R: `prefersHomeIndicatorAutoHidden` | none (note only) |
 | W-9 | window (iPad title bar) | Scene title and subtitle shown by the system (`UIScene.title` / `subtitle`); whether iPadOS 26 draws a title bar is *to verify* | 26 to verify | R: `UIScene.subtitle`; M-r | `window.title_bar_font` (partial) |
+| W-10† | window (iPadOS Slide Over and Split View) | The app's scene as a Slide Over panel: its corner radius, shadow and the grabber at its top; the divider between two apps in Split View. The scene's content is clipped by these corners. Which iPadOS versions keep Slide Over is to verify (the SwiftUI `Table` page, read 2026-10-28, names Slide Over among the modes that change the size class). | 13–18; 26 to verify | M-r (captures of a scene in Slide Over and in Split View); P: `swiftui/table` (names the mode) | none |
+| W-11† | window (Stage Manager 16+, iPadOS 26 windows) | Window states and the motion between them. HIG windows (iPadOS, read 2026-10-28): windows present either full screen or windowed (the person's Multitasking & Gestures choice), and windowed apps get window controls "at the leading edge of the toolbar". Per state (full screen, windowed, tiled/arranged, minimized): corner radius, shadow, whether the controls show; the open, close, minimize and arrange transitions. W-2 lists the windowed look only. | 16+; 26 differs | P: HIG windows (iPadOS section); M-r, M-v | `window.border` (partial) |
 
 ### button (UIButton / UIButton.Configuration / SwiftUI Button)
 
@@ -124,6 +126,7 @@ entry and the connectors' "the model states no …" notes.
 | B-15 | button | Button Shapes accessibility variant (X-A11-5) | same | M-r | none |
 | B-16 | button | Symbol content transition when the image changes (`symbolContentTransition`) | 26 only | R: `configuration-swift.struct/symbolcontenttransition` (iOS 26.0); M-v | none |
 | B-17 | button | Pointer hover (iPad): highlight or lift effect, not a colour (X-PH) | same | M-v | `hover_background` (partial) |
+| B-18† | button (pull-down button: a button with a `menu` and `showsMenuAsPrimaryAction`) | HIG lists pull-down buttons as an iOS component of their own, apart from pop-up buttons (`combo_box`). Beyond B-1's styles: whether a pull-down shows an indicator (`UIButton.Configuration.indicator`: automatic / none / popup) and which glyph; the menu anchored to the button (MN-*, its motion MN-14); the touch-and-hold variant (HIG: Safari's Tabs button). | same; 26 to verify | P: HIG pull-down-buttons ("iOS, iPadOS", read 2026-10-28); R: `uikit/uicontrol/showsmenuasprimaryaction`, `uikit/uibutton/configuration-swift.struct/indicator-swift.enum`; M-r | `combo_box.arrow_icon_size_px` (pop-up only: partial) |
 
 ### input (UITextField)
 
@@ -137,6 +140,8 @@ entry and the connectors' "the model states no …" notes.
 | I-6 | input | Inline predictions (iOS 17): ghost text colour | 17+ | M-r | `placeholder_color` (partial?) |
 | I-7 | input | `sizingRule` / `adjustsFontSizeToFitWidth` minimum font (visible shrink) | to verify | R: `UITextField.sizingRule`, `minimumFontSize` | none |
 | I-8 | input | Caret, selection highlight, selection handles (X-CA, X-SE) | 17 changed | see X-CA, X-SE | `input.caret_color`, `selection_*` (partial) |
+| I-9† | input (secure entry) | Masking glyph (bullet) and its size; the last typed character shown briefly before it is masked, and for how long; the strong-password AutoFill look of a new-password field (field fill and the suggestion label: to verify by M-r) | same; 26 to verify | R: `uikit/uitextinputtraits/issecuretextentry`, `uikit/uitextcontenttype/newpassword` (iOS 12.0), `uikit/uitextinputtraits/passwordrules`; M-r, M-v | none |
+| I-10† | input | Disabled field (`isEnabled = false`): text, placeholder and fill; whether a `roundedRect` field changes its frame while editing (to verify); the field's intrinsic height per Dynamic Type size. ios-13 states `input.disabled_*`, `focus_border_color` and a 44 pt `min_height_px` from the hit-target rule, none from iOS's drawing (Cross-check, table C). | same | M-r (disabled, editing), M-q (`intrinsicContentSize` per content-size category) | `input.disabled_*`, `focus_border_color`, `min_height_px` (values unsourced) |
 
 ### text_area (UITextView)
 
@@ -152,7 +157,8 @@ entry and the connectors' "the model states no …" notes.
 
 | ID | Element | What is missing | 13–18 / 26 | Source | Nearest |
 |---|---|---|---|---|---|
-| CB-1 | checkbox | iOS has no UIKit checkbox: `UISwitch.Style.checkbox` is Mac Catalyst only (`uikit/uiswitch`, "Displaying a checkbox in your Mac app built with Mac Catalyst"). Its checkbox roles are the **circular** list multiselect indicator (empty circle / filled tint circle with checkmark) and the list checkmark accessory. The model has no indicator shape (square vs circle) and no "checkmark in filled circle" glyph. | same; 26 to verify | R: `UICellAccessory.multiselect`, `.checkmark` (`uikit/uicellaccessory-swift.struct`); M-r | `checkbox.indicator_width_px`, `radio_*` (partial) |
+| CK-1 | checkbox | iOS has no UIKit checkbox: `UISwitch.Style.checkbox` is Mac Catalyst only (`uikit/uiswitch`, "Displaying a checkbox in your Mac app built with Mac Catalyst"). Its checkbox roles are the **circular** list multiselect indicator (empty circle / filled tint circle with checkmark) and the list checkmark accessory. The model has no indicator shape (square vs circle) and no "checkmark in filled circle" glyph. | same; 26 to verify | R: `UICellAccessory.multiselect`, `.checkmark` (`uikit/uicellaccessory-swift.struct`); M-r | `checkbox.indicator_width_px`, `radio_*` (partial) |
+| CK-2† | checkbox (the list multiselect circle of CK-1) | Parts and states of the circle: ring colour and width when empty, fill and checkmark when selected, the disabled row, its size per Dynamic Type; the fill transition when selected; the column sliding in when edit mode starts (L-14). ios-13's `checkbox.*` values (22 px indicator, ring and fill colours) have no iOS source (table C). ID note: CB-1 of this table clashes with the combo_box series CB-1…CB-4, so this row starts a free series. | same; 26 to verify | R: `UICellAccessory.multiselect` (as CB-1); M-r, M-v | `checkbox.*` (square-box model) |
 
 ### menu (UIMenu, context menu, pull-down)
 
@@ -174,6 +180,8 @@ entry and the connectors' "the model states no …" notes.
 | MN-14 | menu | Open and close motion: spring scale from the source in 13–18; in 26 the menu morphs out of the button (glass morph) | 26 differs | M-v | none |
 | MN-15 | menu | Row height scaling with Dynamic Type | same | M-q at several categories | `menu.row_height_px` (fixed: partial) |
 | MN-16 | menu | Context-menu appearance rich vs compact (`UIContextMenuInteraction.appearance`) | same (14+) | R: `menuAppearance` | none |
+| MN-17† | menu | Item highlight shape and placement (full-width fill vs an inset rounded fill: 26 to verify), the menu's inner padding above the first and below the last item, item padding, the icon-to-text gap (ios-13's `menu.icon_text_gap_px` has no source) | 26 to verify | M-q, M-r | `menu.icon_text_gap_px` (value unsourced) |
+| MN-18† | menu | Disabled item (`UIMenuElement.Attributes.disabled`): title, subtitle and icon colour | same | R: `uikit/uimenuelement/attributes`; M-r | `menu.disabled_text_color` (value unsourced; no icon colour) |
 
 ### tooltip (UIToolTipInteraction, iPad pointer / Catalyst)
 
@@ -181,6 +189,7 @@ entry and the connectors' "the model states no …" notes.
 |---|---|---|---|---|---|
 | TT-1 | tooltip | Material or fill, corner radius and shadow of the tip | 15+; 26 to verify | M-r (pointer hover in the simulator, *to verify* it works) | `tooltip.background_color`, `border` (partial) |
 | TT-2 | tooltip | Hide delay, and the fade-in / fade-out motion | same | M-v | `tooltip.show_delay_ms` only (and its value is unstated, preset comment) |
+| TT-3† | tooltip | Placement relative to the pointer or the view, its gap, and the behaviour when the pointer moves to a neighbouring view (re-show at once or after the delay). Whether iPadOS shows UIKit tooltips for a pointer at all is to verify: HIG offering-help (read 2026-10-28) says tooltips appear "In apps that run on a Mac — including iPhone and iPad apps". | 15+; 26 to verify | M-v, M-r; P: HIG offering-help | `tooltip.*` (no placement field) |
 
 ### scrollbar (scroll indicators)
 
@@ -192,6 +201,7 @@ entry and the connectors' "the model states no …" notes.
 | SB-4 | scrollbar | Grabbed state: the indicator grows wider when long-pressed and dragged (fast scrolling) | same (13+) | M-v, M-r | `thumb_active_color` (colour only, no width) |
 | SB-5 | scrollbar | Thumb corner (capsule) and any outline | same | M-r | none (scrollbar has no border) |
 | SB-6 | scrollbar | Indicators with an edge effect under bars | 26 differs (X-MT-7) | M-r | none |
+| SB-7† | scrollbar | Minimum indicator length and the indicator's compression while the content rubber-bands past an end; whether the indicator reacts to an iPad pointer hover (to verify) | same | M-v | `min_thumb_length_px` (value unsourced; no compression) |
 
 ### slider (UISlider)
 
@@ -214,6 +224,7 @@ entry and the connectors' "the model states no …" notes.
 | PB-1 | progress_bar | Style variants `default` / `bar` (the toolbar style, with a different track) | same | R: `UIProgressView.progressViewStyle`; M-r | none |
 | PB-2 | progress_bar | Rounding of the fill's ends, separate from the track's | 26 differs (preset header: 26 changed the progress bar) | M-r | `progress_bar.border.corner_radius_px` (partial) |
 | PB-3 | progress_bar | Animated progress change: duration and curve | same | M-v | none. Seed: gpui widgets/progress.rs:139 ("the model states no motion") |
+| PB-4† | progress_bar (SwiftUI `ProgressView` with labels) | The label above the bar and the current-value label (`currentValueLabel`): fonts, colours, gaps | 14+ | R: `swiftui/progressview` (iOS 14.0; the `label` and `currentValueLabel` initialisers); M-q, M-r | none |
 
 ### tab (UITabBar; iPadOS top tab bar)
 
@@ -235,6 +246,7 @@ entry and the connectors' "the model states no …" notes.
 | T-14 | tab | Height per orientation and size class (compact landscape vs portrait) | same | M-q | `tab.min_height_px` (one) |
 | T-15 | tab | Selection change and hide/show (`setTabBarHidden(_:animated:)`) motion | 26 differs | M-v | none |
 | T-16 | tab | Prominent tab (`prominentTabIdentifier`): its distinct look | 26 (to verify) | R: `UITabBarController.prominentTabIdentifier`; M-r | none |
+| T-17† | tab (iPadOS 18 tab customization) | Editing tabs between the sidebar and the tab bar: hidden tabs (`UITab.allowsHiding`, `isHiddenByDefault`), placement (`UITab.preferredPlacement`), the edit-mode look, dragging an item into the tab bar with its drop indicator (to verify), the motion; persisted by `customizationIdentifier` | 18+; 26 to verify | R: `uikit/uitab` (iOS 18.0), `uikit/uitab/allowshiding`, `uikit/uitab/preferredplacement`, `uikit/uitabbarcontroller/customizationidentifier`; M-r, M-v | none |
 
 ### sidebar (UISplitViewController primary column, `.sidebar` list appearance)
 
@@ -248,6 +260,8 @@ entry and the connectors' "the model states no …" notes.
 | SD-6 | sidebar | Floating inset glass sidebar: inset from the window edges, corner radius, shadow; content extending beneath (`UIBackgroundExtensionView`) | 26 only | R: `uikit/uibackgroundextensionview` (iOS 26.0); M-r | `sidebar.border` (partial) |
 | SD-7 | sidebar | Show/hide and tab-bar↔sidebar morph motion | 18+ / 26 differs | M-v | none |
 | SD-8 | sidebar | Row height | same | M-q | none (sidebar has no row height) |
+| SD-9† | sidebar (overlay and displace split behaviours) | `SplitBehavior.overlay`: "The sidebars are layered on top of the secondary view controller"; `.displace`: they "displace the secondary view controller … moving it partially offscreen" (API pages). What iOS draws then: the overlaying column's shadow, any dim of the covered column, the slide motion. | same (14+); 26 differs (floating sidebar) | R: `uikit/uisplitviewcontroller/splitbehavior-swift.enum`, `uikit/uisplitviewcontroller/displaymode-swift.enum`; M-r, M-v | none |
+| SD-10† | sidebar | Column width: the primary column's default width, minimum, maximum and fraction rule | same; 26 to verify (user-resizable columns, SP-2) | R: `uikit/uisplitviewcontroller/primarycolumnwidth`, `preferredprimarycolumnwidth` (iOS 14.0), `minimumprimarycolumnwidth`, `maximumprimarycolumnwidth` (defaults read on the device) | none (the sidebar has no width) |
 
 ### toolbar (UIToolbar; UINavigationBar items in 4.2)
 
@@ -292,6 +306,9 @@ entry and the connectors' "the model states no …" notes.
 | L-18 | list | No alternating rows. iOS draws none, but `list.alternate_row_background` is a required leaf (ios-13 states a colour iOS does not draw). The model cannot say "no alternation". | same | P: absence (no UIKit API for alternation) | `alternate_row_background` (required). Seed: docs/todo.md *ios-26* lists it among the 38 unsourced leaves |
 | L-19 | list | Accessibility-size layout switch: value cells stack text above secondary text | same | R: `prefersSideBySideTextAndSecondaryText`, `isAccessibilityCategory`; P: HIG typography ("consider using a stacked layout") | none |
 | L-20 | list | Expanded/collapsed outline rows (as EX-*) | same | — | `expander.*` |
+| L-21† | list (outline / tree rows) | Indentation per level: the step width (`indentationWidth`) and the level (`indentationLevel`) on list cells, and whether separators follow the indent. HIG outline-views: "Not supported in iOS, iPadOS"; iOS draws trees as lists with disclosure controls (HIG disclosure-controls). | same (14+ list cells) | R: `uikit/uicollectionviewlistcell/indentationwidth`, `uikit/uicollectionviewlistcell/indentationlevel`, `uikit/uitableviewcell/indentationwidth`; P: HIG outline-views, disclosure-controls (read 2026-10-28); M-q | none |
+| L-22† | list (SwiftUI `Table`, 16+) | Multi-column table: header row (font, colour, the sort indicator of a sortable column), column dividers, row selection. The `Table` page: in a regular size class iPadOS shows "headers and all of the columns"; in a compact width "the table automatically hides headers and all columns after the first". | 16+ | P: `swiftui/table` (iOS 16.0, read 2026-10-28); M-r | `list.header_*` (partial) |
+| L-23† | list (grouped form rows: SwiftUI `Form`, `LabeledContent`, picker styles) | The settings-style row: a label with its value in secondary text (`LabeledContent`, iOS 16), and a control inside a row: menu-style picker (current value and its indicator), navigation-link picker (value and chevron), inline picker (checkmark rows), switch row, stepper row. Each sets the value text's font and colour and the control's alignment in the row. (The other surveys' "preference rows".) | same; 26 to verify | R: `swiftui/labeledcontent` (iOS 16.0), `swiftui/pickerstyle` (iOS 13.0); M-r | `list.*`, `combo_box.*` (partial) |
 
 ### popover (UIPopoverPresentationController)
 
@@ -303,6 +320,7 @@ entry and the connectors' "the model states no …" notes.
 | PO-4 | popover | Screen-edge margin (`popoverLayoutMargins` default) | same | R: `popoverLayoutMargins` | none |
 | PO-5 | popover | Present/dismiss motion (fade, or morph from source in 26) | 26 differs | M-v | none |
 | PO-6 | popover | Elevated background colours inside (D-14) | same | R (D-14) | none |
+| PO-7† | popover | Default content size when the app sets none (`preferredContentSize` zero), and the gap between the arrow tip and the source | same; 26 to verify | R: `uikit/uiviewcontroller/preferredcontentsize`; M-q | none |
 
 ### splitter (UISplitViewController columns)
 
@@ -347,6 +365,7 @@ entry and the connectors' "the model states no …" notes.
 | DL-10 | dialog | Entrance motion. 13–18: the alert starts larger and shrinks to size while fading in. The model's `ScaleFade` scales *up* and states no factor, duration or curve. | 26 differs (to verify) | M-v | `dialog.entrance` (enum, partial) |
 | DL-11 | dialog | Exit motion (fade) | same | M-v | none |
 | DL-12 | dialog | Elevated colours in the platter (D-14) | same | R | none |
+| DL-13† | dialog | Alert width (per idiom: to verify), the height after which the message scrolls, and the width at accessibility text sizes. ios-13's `dialog.min_width_px`, `max_width_px`, `min_height_px`, `max_height_px` have no source (table C). | 26 differs (to verify) | M-q (alerts with long messages, at several content-size categories) | `dialog.min/max_width_px`, `min/max_height_px` (values unsourced) |
 
 ### spinner (UIActivityIndicatorView)
 
@@ -378,6 +397,8 @@ entry and the connectors' "the model states no …" notes.
 | SG-5 | segmented_control | Thumb slide motion, and dragging the thumb across segments | 26 differs | M-v | none |
 | SG-6 | segmented_control | Segment image size | same | M-q | none |
 | SG-7 | segmented_control | Selected text colour. iOS draws `label` on a light thumb, not white on accent: the field exists but its meaning differs per platform. | same | M-r | `active_text_color` (values only) |
+| SG-8† | segmented_control | Momentary mode (`isMomentary`): no lasting selection; the tapped segment's highlight and its fade | same | R: `uikit/uisegmentedcontrol/ismomentary`; M-v | none |
+| SG-9† | segmented_control | Segment widths (equal vs content-apportioned, `apportionsSegmentWidthsByContent`), the control's height per Dynamic Type size, and one disabled segment (`setEnabled(_:forSegmentAt:)`) | same | R: `uikit/uisegmentedcontrol/apportionssegmentwidthsbycontent`, `uikit/uisegmentedcontrol/setenabled(_:forsegmentat:)`; M-q, M-r | `segment_height_px` (value unsourced) |
 
 ### card
 
@@ -451,6 +472,20 @@ entry and the connectors' "the model states no …" notes.
 | C-33 | Writing Tools panel / glow | The in-text glow animation on app text (TA-4); the panel itself is system-drawn (*to verify* whether it is in-process) | 18.1+ | M-v | none |
 | C-34 | Share sheet (UIActivityViewController) | System-drawn, presented as a sheet. The sheet's chrome follows C-12; its content is not themable. Listed so it is not mistaken for a gap. | — | R: `uikit/uiactivityviewcontroller` | n/a |
 | C-35 | Toggle as button (SwiftUI `.button` toggle style; HIG toggles "use a button that behaves like a toggle") | Highlight background when on | same | P: HIG toggles; M-r | `button.checked_background` (exists; listed for mapping only) |
+| C-36† | Tip (TipKit, 17+): inline `TipView` / `TipUIView`, popover tip (`popoverTip`, `TipUIPopoverViewController`) | HIG offering-help: popover tips and inline tips (annotation-style and hint-style). The inline tip's background (`backgroundColor`; 26 `backgroundStyle`), corner radius, image size and style, title and message fonts and colours, its buttons (parts as drawn: M-r); the popover tip's arrow and material. iOS's counterpart of the other surveys' teaching tip and inline message. | 17+; 26 adds `backgroundStyle` | R: `tipkit/tipuiview` (backgroundColor, cornerRadius, imageSize, imageStyle, viewStyle), `tipkit/tipuiview/backgroundstyle` (iOS 26.0), `tipkit/minitipviewstyle` ("The default style for a TipView"); P: HIG offering-help "Creating tips" (read 2026-10-28); M-r | none |
+| C-37† | Menu bar (iPadOS) | HIG the-menu-bar, iPadOS: hidden until revealed (pointer at the top edge, or a swipe down), centred, in the status bar's space; window controls in the bar when the app is full screen; iPad menu rows "use more space than on Mac". Bar fill or material, title font, the open menus (MN-*), the reveal motion; whether submenus open on pointer hover and after what delay (to verify) | 26 only (HIG change log: "Added guidance for the menu bar in iPadOS", June 9, 2025) | P: HIG the-menu-bar (read 2026-10-28); R: `uikit/uimainmenusystem` (iOS 26.0); M-r, M-v | `menu.*` (items only) |
+| C-38† | Search suggestions (UISearchController, 16+) | Suggestion items (`UISearchSuggestionItem`) "appear in a menu below the search field" with inline bar placement, or "in a list that overlays" the results with stacked placement (`searchSuggestions` page): row font, icon, highlight, the menu's look | 16+; 26 to verify | R: `uikit/uisearchcontroller/searchsuggestions`, `uikit/uisearchsuggestionitem`; M-r | `menu.*`, `list.*` (partial) |
+| C-39† | System view controllers shown in the app: UIDocumentPickerViewController, UIFontPickerViewController, PHPickerViewController, SFSafariViewController (and C-8's colour picker sheet) | System-drawn: PHPicker is "a view controller that the system renders on top of your app" and "Its view hierarchy belongs to the system" (its page). What the app sets: SFSafariViewController's `preferredBarTintColor`, `preferredControlTintColor`, `dismissButtonStyle`; whether the others follow the app's tint is to verify. A toolkit drawing its own picker needs their look (chrome as C-12, rows as L-*). Listed so it is not mistaken for a gap, like C-34. | same | R: `photosui/phpickerviewcontroller`, `uikit/uifontpickerviewcontroller` (iOS 13.0), `uikit/uidocumentpickerviewcontroller`, `safariservices/sfsafariviewcontroller/preferredbartintcolor`, `…/preferredcontroltintcolor`, `…/dismissbuttonstyle-swift.property`; M-r | n/a (system-drawn) |
+| C-40† | PencilKit tool picker (PKToolPicker, 13+) | "A tool palette that displays a selection of drawing tools and colors" (its page), drawn by the system; the app sets its light/dark style (`colorUserInterfaceStyle`), which must match the theme. Palette fill, radius, shadow, the selected tool: M-r | 13+; 26 to verify | R: `pencilkit/pktoolpicker`, `pencilkit/pktoolpicker/coloruserinterfacestyle`; M-r | none |
+| C-41† | Inspector (UISplitViewController `.inspector` column, 26; SwiftUI `inspector(isPresented:content:)`, 17+) | Trailing column: background (material or colour), divider, width, the floating glass look in 26 (C-19 mentions content extending under it), show/hide motion; its compact-width presentation (to verify) | 17+ (SwiftUI); 26 (UIKit column) | R: `uikit/uisplitviewcontroller/column/inspector` (iOS 26.0), `swiftui/view/inspector(ispresented:content:)` (iOS 17.0); M-r, M-v | `sidebar.*` (partial) |
+| C-42† | Media playback controls (AVPlayerViewController) and the AirPlay route button (AVRoutePickerView) | AVKit draws "a native user interface to control playback" over the video (`showsPlaybackControls`): bar material, scrubber, buttons, their fade. AVRoutePickerView is a glyph button with `tintColor` and `activeTintColor` ("The view’s tint color when AirPlay is active"). | same; 26 to verify | R: `avkit/avplayerviewcontroller`, `avkit/avplayerviewcontroller/showsplaybackcontrols`, `avkit/avroutepickerview`, `avkit/avroutepickerview/activetintcolor` (iOS 11.0); M-r, M-v | none |
+| C-43† | Navigation bar item styles (`UINavigationItem.ItemStyle`, 16+) | `navigator` / `browser` / `editor`: "how the content of the navigation item lays out in the navigation bar" (its page): title position, centre item groups (`centerItemGroups`), the overflow. C-1 describes the navigator layout only. | 16+; 26 to verify | R: `uikit/uinavigationitem/itemstyle` (iOS 16.0), `uikit/uinavigationitem/centeritemgroups`; M-r | none |
+| C-44† | Document launch view (`UIDocumentViewController.LaunchOptions`, 18+) | The launch screen of a document-based app: background, title, subtitle, primary and secondary actions, foreground and background accessory views, the browser it opens. The default look of each part | 18+; 26 to verify | R: `uikit/uidocumentviewcontroller/launchoptions-swift.class` (iOS 18.0); M-r | none |
+| C-45† | Charts (Swift Charts, 16+) | HIG lists charts as a component. Default chart styling: axis grid lines, ticks and value labels (`AxisGridLine`, `AxisTick`, `AxisValueLabel` in `AxisMarks`), their colours, widths and fonts; the default series colour order; legend font; plot-area insets | 16+ | R: `charts/axismarks`, `charts/axisgridline`, `charts/axistick`, `charts/axisvaluelabel` (iOS 16.0); P: HIG charts (read 2026-10-28); M-r | none |
+| C-46† | Activity rings (HealthKitUI `HKActivityRingView`) | HIG activity-rings, iOS: all three rings with an Apple Watch paired, the Move ring only without one. Ring colours (gradient or flat: M-r), track, ring width and gap | same (9.3+) | R: `healthkitui/hkactivityringview` (iOS 9.3); P: HIG activity-rings (read 2026-10-28); M-r | none |
+| C-47† | Band selection (UIBandSelectionInteraction, 15+) | The pointer drag-select rectangle: the interaction "displays a visible selection rectangle over the view when someone clicks and drags on it" (its page). Fill, border, corner, fade | 15+ | R: `uikit/uibandselectioninteraction` (iOS 15.0); M-r | none |
+| C-48† | Page view controller (UIPageViewController) | Page-curl transition (`TransitionStyle.pageCurl`): curl geometry, the page's back and its shading, the spine (`SpineLocation`), the drag-driven motion; the scroll style's space between pages (`interPageSpacing`) | same | R: `uikit/uipageviewcontroller/transitionstyle-swift.enum`, `uikit/uipageviewcontroller/spinelocation-swift.enum`, `uikit/uipageviewcontroller/optionskey/interpagespacing`; M-v | none |
+| C-49† | Editing-gesture HUD (13+) | The small banner naming the action (undo, redo, copy, paste) shown at the top of the screen after a three-finger editing gesture: fill or material, font, motion. Whether `UIResponder.editingInteractionConfiguration` (`.default` / `.none`, iOS 13.0) switches it off is to verify: its page has no text. | 13+; 26 to verify | V: `uikit/uiresponder/editinginteractionconfiguration`; M-r, M-v | none |
 
 ---
 
@@ -505,6 +540,7 @@ entry and the connectors' "the model states no …" notes.
 | X-MO-8 | Scroll physics: deceleration rate (normal / fast), rubber-band and bounce, paging snap | same | R: `uikit/uiscrollview/decelerationrate-swift.struct` (`normal`, `fast` raw values); bounce M-v | none |
 | X-MO-9 | SF Symbol effects: bounce, pulse, variable colour, scale, appear/disappear, replace, wiggle, rotate, breathe; draw on/off in 26 (to verify). Each has timing. | 17+ / 18+ / 26 | R: `symbols/symboleffect`; M-v | none |
 | X-MO-10 | Reduce Motion alternatives: cross-fade instead of slide/zoom, no parallax, reduced glass motion; the separate Prefer Cross-Fade Transitions flag | same / 26 | R: `isReduceMotionEnabled`, `uikit/uiaccessibility/preferscrossfadetransitions`; M-v with settings on | `AccessibilityPreferences.reduce_motion` (flag only; no cross-fade flag) |
+| X-MO-11† | Light ↔ dark appearance change: whether UIKit animates the switch (cross-fade, duration) or swaps at once | same; 26 to verify | M-v (toggle the appearance in the simulator while recording) | none |
 
 ### Dynamic Type and typography
 
@@ -550,6 +586,7 @@ entry and the connectors' "the model states no …" notes.
 | X-FO-2 | Focus "highlight" effect on cells (tint fill) and focus movement animation | same | M-r, M-v | none |
 | X-PH-1 | Pointer effects (iPadOS): highlight (platter behind, pointer morphs into it), lift (scale, shadow, specular), hover (tint overlay/underlay, shadow, scale); UIHoverStyle (17+) shapes | same | R: `uikit/uipointereffect-swift.enum`, `uikit/uihoverstyle`; M-v | `*.hover_background` (colour only) |
 | X-PH-2 | The pointer itself: shape, size, colour adaptation, morphing; drawn by the system over app content | same | M-r | none (note: system-drawn) |
+| X-FO-3† | Full Keyboard Access: the system's own focus indicator around the focused element, its colour and contrast options (user settings: to verify), and the keyboard-only rule for which elements show focus. HIG keyboards: Full Keyboard Access is "Available in iOS, iPadOS, macOS, and visionOS"; HIG focus-and-selection: in iPadOS, keyboard focus serves content elements (text and search fields, list items), Full Keyboard Access serves controls; "use a focus ring for a text or search field, but use a highlight in a list or collection". | same | P: HIG keyboards, HIG focus-and-selection (read 2026-10-28); R: a run-time flag is to verify (the HIG links `isFullKeyboardAccessEnabled`; `uikit/uiaccessibility/isfullkeyboardaccessenabled` did not resolve); M-r with the setting on | `focus_ring_*` (one style) |
 
 ### Hairlines, scrims, timings
 
@@ -558,6 +595,7 @@ entry and the connectors' "the model states no …" notes.
 | X-HL-1 | One-device-pixel lines everywhere (bars, lists, alerts, menus): SE-1 | same | R: `displayScale` | `line_width_px` (logical) |
 | X-SC-1 | Scrims and dims: alert dim, sheet dim per detent, context-menu blur + dim, action-sheet dim, the 13–18 card-sheet background, clear-glass dimming (X-MT-10). Colour, opacity and blur. | 26 differs | M-r | none |
 | X-BT-1 | Visible timings: long-press duration (context menus, drag lift), touch-highlight delay in scroll views (`delaysContentTouches`), caret blink, scroll-indicator fade, tooltip show/hide, stepper autorepeat, swipe and refresh thresholds | same | R: `uikit/uilongpressgesturerecognizer/minimumpressduration` (default), `UIScrollView.delaysContentTouches` (bool; the delay itself M-v); the rest M-v | `tooltip.show_delay_ms` only |
+| X-BT-2† | Double-tap interval, and the touch slop: how far a touch moves before it becomes a pan or a scroll and cancels a cell's or button's highlight. No public value found (to verify). | same | M-v | none |
 
 ### Size variants and environment
 
@@ -616,3 +654,215 @@ entry and the connectors' "the model states no …" notes.
   popover arrow, menu icon side, the close button and the switch; a Liquid Glass preference API; a non-blinking
   caret preference; UIKit control sizes; SwiftUI `extraLarge`; `UIColor.Prominence`; what the iOS 27.x bar APIs
   draw.
+
+## Cross-check (pass 2, 2026-10-28)
+
+The rows this pass added carry a "†" after their ID. Apple pages were fetched on 2026-10-28 through their
+JSON form, as at the top of this file; a path for another framework follows the same rule as `uikit/x/y`
+(`tipkit/x` means `https://developer.apple.com/documentation/tipkit/x`, likewise `swiftui/`, `avkit/`,
+`pencilkit/`, `photosui/`, `safariservices/`, `healthkitui/`, `charts/`). **HIG catalogue** below means the 64
+component pages the HIG's `components` page lists, each read for its "Platform considerations" ("Not
+supported in …" / "No additional considerations for …").
+
+Rows added: §4.1 21 (W-10†, W-11†, B-18†, I-9†, I-10†, CK-2†, MN-17†, MN-18†, TT-3†, SB-7†, PB-4†, T-17†,
+SD-9†, SD-10†, L-21†, L-22†, L-23†, PO-7†, DL-13†, SG-8†, SG-9†), §4.2 14 (C-36†…C-49†), §4.3 3 (X-MO-11†,
+X-FO-3†, X-BT-2†).
+
+### A. Controls other surveys list
+
+Decision: 1 = iOS draws it as a standalone control (a §4.2 row); 2 = iOS draws it inside an element the
+model has (the §4.1 rows that cover it); 3 = iOS has no such control.
+
+| Control | Decision | Rows, or reason and source |
+|---|---|---|
+| banner/inline message | 1 | C-36† (TipKit's inline tip, iOS's in-app inline message) |
+| menu bar | 1 | C-37†, iPadOS 26 only (HIG the-menu-bar: "Not supported in iOS"; an iPadOS section since June 9, 2025) |
+| preference rows/boxed list | 2 | The inset-grouped list: L-1, L-2, L-7, L-12, L-19; added L-23† (form rows: labeled values, pickers, switches and steppers in rows) |
+| toast/snackbar | 3 | No toast in UIKit, SwiftUI or the HIG catalogue. The one toast-like surface, the system's editing-gesture HUD, got C-49† |
+| avatar | 3 | No avatar control in UIKit, SwiftUI or the HIG catalogue |
+| breadcrumb/path control | 3 | HIG path-controls: "Not supported in iOS, iPadOS"; the nearest, the navigation title menu and document header, is C-28 |
+| button group/toggle group | 2 | Segmented control (SG-*), the 26 shared-background bar item groups (TB-5), menu palettes (MN-12). SwiftUI `ControlGroup` (iOS 15; styles listed on `swiftui/controlgroupstyle`: automatic, compactMenu, menu, navigation, palette) renders as one of these; which one per style and context is to verify. No new row |
+| chip | 3 | No chip in the HIG catalogue; HIG token-fields: "Not supported in iOS, iPadOS". The chip-like search tokens are part of C-3 |
+| colour button | 1 | Row exists: C-8 (UIColorWell; the §4.2 cross table files it under "colour picker"). No new row |
+| help button | 3 | None in the HIG catalogue; the info and detail-disclosure buttons are B-12 and L-12 (HIG lists-and-tables: an info button "shows details about a list item") |
+| image frame | 3 | HIG image-wells: "Not supported in iOS, iPadOS"; HIG image-views states no iOS consideration; whether UIImageView draws any frame is to verify (M-r) |
+| split button | 3 | None in UIKit, SwiftUI or the HIG catalogue. A bar button with a primary action and a touch-and-hold menu (HIG pull-down-buttons) draws as one button: B-18† |
+| about dialog | 3 | None; the iPadOS menu bar's app menu has no About item (HIG the-menu-bar: "About, Services, and app visibility-related items not available") |
+| carousel | 1 | C-48† (UIPageViewController: page curl, page spacing); its dots are C-9 |
+| dial/circular slider | 3 | None in UIKit, SwiftUI or the HIG catalogue; SwiftUI's circular `Gauge` only displays a value (C-30) |
+| fab | 3 | None in the HIG catalogue |
+| menu button | 2 | The pull-down button: B-18† |
+| navigation drawer/pane | 2 | The sidebar (SD-*); added SD-9† (overlay and displace behaviours) and SD-10† (column width) |
+| navigation rail | 3 | None; the nearest is the iPadOS 18 tab bar ↔ sidebar (C-22, T-13) |
+| password field | 2 | Secure entry in the field: I-9† |
+| rating | 3 | HIG rating-indicators: "Not supported in iOS, iPadOS" |
+| time picker | 2 | UIDatePicker's time mode: C-5 (compact pill), C-7 (wheels). No new row |
+| token field | 2 | HIG token-fields: "Not supported in iOS, iPadOS"; the token-like search tokens are C-3 (`UISearchToken`, `tokenBackgroundColor`). No new row |
+| view switcher | 2 | Segmented control (SG-*) and the tab bar (T-*). No new row |
+| access key badge | 3 | None; keyboard shortcuts show in menus (MN-13) and in the iPadOS menu bar (C-37†) |
+| autocomplete | 1 | C-38† (search suggestions); inline predictions are I-6 |
+| collection view | 2 | UICollectionView lists are the list section (L-1, L-10); drag C-24; pointer band selection added as C-47†. No other row |
+| column browser | 3 | HIG column-views: "Not supported in iOS, iPadOS"; the three-column split view is SP-*, SD-* |
+| dock/panel title bar | 3 | None; HIG panels: "Not supported in iOS, iPadOS" |
+| file chooser | 1 | C-39† (system-drawn view controllers: document, photo and font pickers, Safari view; n/a like C-34) |
+| font chooser | 1 | C-39† (UIFontPickerViewController) |
+| full-screen dialog | 2 | Full-screen modal presentation: sheet C-12, modal transitions X-MO-4. No new row |
+| ink toolbar | 1 | C-40† (PencilKit tool picker) |
+| inspector/utility panel | 1 | C-41† (inspector column); floating panels: HIG panels "Not supported in iOS, iPadOS" |
+| list box | 2 | The list section (L-*). No new row |
+| loading indicator | 2 | The spinner section (SP-1a…SP-5a). No new row |
+| media transport controls | 1 | C-42† (AVKit playback controls, AirPlay route button) |
+| rubber band | 1 | C-47† (pointer band selection); scroll rubber-banding is X-MO-8 |
+| rule editor | 3 | None in the HIG catalogue |
+| scrim | 2 | X-SC-1, DL-2. No new row |
+| scrollbar annotation | 3 | None; the nearest is the section index (L-15) |
+| swipe actions | 2 | L-13. No new row |
+| teaching tip | 1 | C-36† (TipKit popover and inline tips) |
+| text ruler | 3 | None in the HIG catalogue |
+| tool box | 3 | None in the HIG catalogue |
+| tool button | 2 | Bar button items: TB-4…TB-8. No new row |
+| toolbar flyout | 2 | A bar item's menu (MN-*), the navigation bar's overflow (C-1). No new row |
+| touch bar | 3 | None on iOS (a Mac part; no iOS API) |
+| tree view | 2 | HIG outline-views: "Not supported in iOS, iPadOS"; iOS draws trees as outline lists (EX-*, L-20; HIG disclosure-controls); added L-21† (indentation) |
+| zoom button | 2 | The iPadOS 26 window controls: W-1. No new row |
+
+Tally: 1 = 12 (one of them, colour button, already had C-8), 2 = 18, 3 = 20.
+
+### B. Capabilities
+
+| Capability | Rows added, or "no further row" and why |
+|---|---|
+| C01 Shadow geometry | W-10†, W-11†, SD-9†, C-40† |
+| C02 Elevation | No further row: iOS has no elevation ramp; its base vs elevated level is a colour axis (D-14, X-CO-1, tagged C06) |
+| C03 Materials | C-36†, C-37†, C-40†, C-41†, C-42†, C-49† |
+| C04 Colour composition | SD-9† (dim of the covered column). iOS's translucent colours (systemFill ×4, `separator`, vibrancy) are already rows D-10, D-12, X-MT-4 |
+| C05 Colour roles | C-45† (the charts' default series colours). iOS has no status background/foreground or container roles beyond D-9…D-13 |
+| C06 Variant axes | No further row: iOS's axes, elevated (D-14), increased contrast (D-15) and the inactive scene (W-4), all have rows; it has no other |
+| C07 States | I-9†, I-10†, CK-2†, MN-18†, T-17†, SG-8†, SG-9†, C-42† |
+| C08 State layers | No further row: iOS has no overlay state model; pressed is an alpha dim or a grey highlight (B-5, L-10, MN-8) |
+| C09 Variants | B-18†, L-23†, SG-8†, C-43† |
+| C10 Sizes | I-10†, SB-7†, SD-10†, L-22†, PO-7†, DL-13†, SG-9† |
+| C11 Shape | W-10†, W-11†, CK-2†, MN-17†, C-36† |
+| C12 Border model | C-47† |
+| C13 Parts | W-10†, B-18†, I-9†, CK-2†, MN-17†, PB-4†, T-17†, L-21†, L-22†, L-23†, C-36†, C-37†, C-38†, C-42†, C-44†, C-45†, C-46† |
+| C14 Motion | W-11†, CK-2†, SB-7†, T-17†, SD-9†, SG-8†, C-37†, C-41†, C-42†, C-48†, C-49†, X-MO-11† |
+| C15 Focus | X-FO-3† (Full Keyboard Access, the keyboard-only rule) |
+| C16 Caret | No further row: X-CA-1…3 cover width, blink and the caret's accessories; its colour is the tint (`input.caret_color` exists). The other surveys' extra caret rows (block caret, bidi split caret, caps-lock indicator) are desktop toolkit features with no iOS counterpart found |
+| C17 Selection | T-17† (drop indicator), C-47† (band selection) |
+| C18 Typography | PB-4†, C-36†, C-45†. Text rendering settings (antialiasing, hinting), rows on GNOME, KDE and Windows, have no iOS setting |
+| C19 Icons | No further row: X-IC-1…7 cover rendering modes, weight, scale, state variants, effects and the loader; disabled symbols follow the tint dimming (D-16, D-20). The Home Screen icon appearances are drawn outside the app |
+| C20 Window chrome | W-10†, W-11†, C-37† |
+| C21 Timings | I-9† (last-character reveal), TT-3†, C-37† (hover-open delay), X-BT-2† (double-tap, touch slop) |
+| C22 Pointer | SB-7† (indicator hover); the pointer itself and its effects are X-PH-1, X-PH-2 |
+| C23 Accessibility | X-FO-3† |
+| C24 Whole controls | C-36†…C-49† (14) |
+| C25 Reader coverage | SD-10†, X-FO-3†. Every R row waits for the iOS reader (X-RD-1) |
+| C26 Layout | MN-17†, TT-3†, PB-4†, SD-9†, SD-10†, L-21†, L-22†, L-23†, PO-7†, DL-13†, SG-9†, C-41†, C-43† |
+| C27 Gradient paint | C-46† (ring colours), C-48† (page-curl shading). 13–18 controls are flat; the 26 glass highlights are X-MT-7 |
+| C28 Colour space | No further row: D-17 covers Display P3; HDR is app content, not theme |
+
+Tally: 22 capabilities gained rows, 6 have no further row (C02, C06, C08, C16, C19, C28).
+
+### C. The `ios-13` preset's unsourced values
+
+`platform-facts.md` has no iOS column, so `xc-ios-none.txt` is empty and task C ran on
+`native-theme/src/presets/ios-13.toml` instead: every value with no iOS source in its comment. "No comment"
+means no source comment above the key; light and dark are both unsourced unless the line says otherwise. a = iOS
+draws no such thing (the value stands for nothing iOS draws); b = iOS draws it and the value is to be measured
+or read, in the row named.
+
+| Preset key | Source status | a/b | Row |
+|---|---|---|---|
+| `defaults.shadow_color` | no comment | b | X-SH-1 |
+| `defaults.danger_text_color`, `warning_text_color`, `success_text_color`, `info_text_color` | no comment | b | text on a status fill: L-13 (swipe-action titles), C-15 (badge text) |
+| `defaults.accent_text_color` | no comment | b | B-1 (the filled style's foreground) |
+| `defaults.selection_background`, `selection_text_color` | no comment | b | L-10, X-SE-3 (a grey or tint fill per context, not one colour) |
+| `defaults.link_color` | no comment | b | TA-5, X-CO-2 (R: `UIColor.link`, `linkTextAttributes`) |
+| `defaults.disabled_opacity` | no comment | b | D-20 |
+| `defaults.focus_ring_width_px`, `focus_ring_offset_px` | no comment | b | D-18, X-FO-1 |
+| `defaults.border.corner_radius_px`, `corner_radius_lg_px` | no comment | b | X-CR-1, B-4, L-2 (radii per element) |
+| `defaults.border.line_width_px` | no comment | b | SE-1, X-HL-1 (one device pixel, not a logical width) |
+| `defaults.border.shadow_enabled` | no comment | b | X-SH-1 |
+| `defaults.border.color`, `separator.line_color` (dark only; light cites `separator`) | no comment | b | D-12, SE-2 |
+| `defaults.mono_font.family`, `size_pt`, `weight` | no comment | b | D-3 (the system font's monospaced design) |
+| `defaults.icon_sizes.*` (five) | no comment | b | D-19, X-IC-2, X-IC-3 |
+| `layout.widget_gap_px`, `window_margin_px`, `section_gap_px` | no comment (`container_margin_px` is sourced) | b | LY-3, LY-1, W-7, L-6 |
+| `button.min_height_px`, `input.min_height_px`, `combo_box.min_height_px` | comment: the HIG's 44 pt hit target "used as the drawn min_height", a touch target, not a drawn size | b | B-3, I-10†, CB-2 (combo_box) |
+| `button.min_width_px` | no comment | b | B-3 (whether UIKit sets a minimum width is to verify) |
+| `button.icon_text_gap_px` | no comment | b | B-9 (R: `UIButton.Configuration.imagePadding`) |
+| `button.hover_background` | no comment | a | iPhone draws no hover; the iPad pointer effect is B-17, X-PH-1 |
+| `button.disabled_background` | no comment | b | B-14 |
+| `input.hover_border_color` | no comment | a | no hover border; pointer: X-PH-1 |
+| `input.focus_border_color` | no comment | b | I-10† (editing frame, to verify), D-18 |
+| `input.disabled_background`, `disabled_text_color` | no comment | b | I-10† |
+| `checkbox.indicator_width_px`, `unchecked_background`, `unchecked_border_color`, `disabled_background`, `disabled_text_color` | no comment | b | CK-2† |
+| `checkbox.label_gap_px` | no comment | b | L-7 (the circle is a cell accessory; its gap to the content) |
+| `checkbox.hover_background` | no comment | a | no hover; pointer: X-PH-1 |
+| `tooltip.background_color`, `tooltip.font.color`, `max_width_px` | no comment | b | TT-1, TT-3† |
+| `scrollbar.groove_width_px` | no comment | a | the indicator has no groove (SB-1, SB-5) |
+| `scrollbar.thumb_width_px`, `thumb_active_color` | no comment | b | SB-4 |
+| `scrollbar.min_thumb_length_px` | no comment | b | SB-7† |
+| `scrollbar.thumb_hover_color` | no comment | a | iPhone: none; iPad pointer: SB-7† (to verify) |
+| `scrollbar.thumb_color` | not stated, inherits (header: the HIG says "translucent", no colour) | b | SB-1 |
+| `slider.thumb_diameter_px` | comment: "no UIKit source" | b | SL-2 |
+| `slider.tick_mark_length_px` | comment: "no UIKit source" | b | SL-6 |
+| `slider.thumb_hover_color` | no comment | a | no hover; pointer: X-PH-1 |
+| `slider.disabled_fill_color`, `disabled_track_color`, `disabled_thumb_color` | no comment | b | D-20 |
+| `progress_bar.min_width_px` | no comment | b | PB-1 (M-q; whether UIProgressView has a minimum is to verify) |
+| `tab.min_width_px` | no comment | b | T-3 (stacked item width) |
+| `tab.min_height_px` | no comment | b | T-14 |
+| `tab.hover_background`, `hover_text_color` | no comment | a | no hover; pointer: X-PH-1 |
+| `tab.active_background` | no comment | a | 13–18 marks the selected item by colour and symbol (T-4, T-5), with no fill (to confirm by M-r); 26's pill is T-8 |
+| `tab.active_text_color` | no comment | b | T-5 |
+| `menu.icon_text_gap_px` | no comment | b | MN-17† |
+| `menu.hover_background`, `hover_text_color` | no comment (an accent fill and white text) | b | MN-8 |
+| `menu.disabled_text_color` | no comment | b | MN-18† |
+| `menu.background_color`, `menu.font.color` | not stated, inherits (header) | b | MN-1 |
+| `list.alternate_row_background` | no comment | a | L-18 (iOS draws no alternation) |
+| `list.hover_background`, `hover_text_color` | no comment | b | L-10 (the touch highlight); pointer: X-PH-1 |
+| `list.disabled_text_color` | no comment | b | L-10 (disabled cell state) |
+| `list.header_background`, `header_font.color`, `item_font.color` | not stated, inherit (header) | b | L-4, L-7 |
+| `sidebar.background_color` | no comment | b | SD-1 |
+| `sidebar.hover_background` | no comment | b | SD-2, L-10 (touch highlight); pointer: X-PH-1 |
+| `popover.background_color` | no comment | b | PO-2, PO-6 |
+| `splitter.divider_width_px` | no comment | b | SP-1 |
+| `splitter.hover_color` | no comment | a | 13–18 draws no hover on the divider; 26's resizing: SP-2 |
+| `switch.hover_checked_background`, `hover_unchecked_background` | no comment | a | no hover; pressed is SW-2, pointer X-PH-1 |
+| `switch.track_radius_px` | no comment | b | SW-3 |
+| `dialog.min_width_px`, `max_width_px`, `min_height_px`, `max_height_px` | no comment | b | DL-13† |
+| `dialog.button_gap_px` | no comment | b | DL-5 |
+| `dialog.icon_size_px` | no comment | a | UIAlertController draws no icon (26: to verify) |
+| `link.underline_enabled` | no comment | b | TA-5 (R: the `linkTextAttributes` default) |
+| `link.background_color`, `active_text_color` | no comment | b | LK-1 |
+| `link.hover_background`, `hover_text_color` | no comment | a | no hover; pointer: X-PH-1 |
+| `link.disabled_text_color` | no comment | b | LK-1 (whether iOS draws a disabled link is to verify) |
+| `spinner.diameter_px`, `min_diameter_px` | no comment | b | SP-3a |
+| `spinner.stroke_width_px` | no comment | b | SP-1a (spokes, not a ring stroke) |
+| `combo_box.min_width_px` | no comment | b | CB-2 (combo_box: the trigger is a button) |
+| `combo_box.arrow_icon_size_px` | no comment | b | CB-1 (combo_box) |
+| `combo_box.hover_background` | no comment | a | no hover; pointer: X-PH-1 |
+| `combo_box.disabled_background` | no comment | b | B-14, D-20 |
+| `segmented_control.segment_height_px` | no comment | b | SG-9† |
+| `segmented_control.separator_width_px` | no comment | b | SG-3 |
+| `segmented_control.hover_background` | no comment | a | no hover; pointer: X-PH-1 |
+| `segmented_control.active_background`, `active_text_color` | no comment (an accent fill and white text) | b | SG-1, SG-7 (iOS draws `label` on a light thumb) |
+| `expander.header_height_px` | no comment | b | L-9 |
+| `expander.arrow_icon_size_px` | no comment | b | EX-1 |
+| `expander.hover_background` | no comment | a | no hover; pointer: X-PH-1 |
+| `expander.arrow_color` | no comment | b | EX-4 |
+| `window.inactive_title_bar_background`, `inactive_title_bar_text_color` | no comment | a | 13–18 draws no title bar; iPadOS 26: W-4, W-9 |
+| `window.title_bar_background` | not stated, inherits (header) | b | W-9 (iPadOS 26, to verify) |
+
+Tally: 79 lines; a = 17, b = 62. Every b line has a row; the ones pass 1 lacked were added above (I-10†, CK-2†,
+MN-17†, MN-18†, SB-7†, DL-13†, SG-9†).
+
+### Notes
+
+- **Drawn outside the app's window**, so no row: widgets, Live Activities, notifications, Home Screen quick
+  actions, App Shortcuts and snippets, Control Center controls (HIG catalogue: each has an iOS section or
+  "No additional considerations for iOS"). Whether any of them belongs in the model is the rationale's question.
+- **Found against pass 1**: the checkbox row CB-1 shared its ID with the combo_box row CB-1 (that series
+  runs to CB-4); the checkbox rows are now CK-1 (pass 1) and CK-2† (this pass). The SwiftUI `ProgressView` page answers part of C-31:
+  "On platforms other than macOS, the circular style may appear as an indeterminate indicator instead." HIG
+  offering-help places tooltips "In apps that run on a Mac — including iPhone and iPad apps", which puts TT-1's
+  premise (pointer tooltips in the simulator) in doubt.

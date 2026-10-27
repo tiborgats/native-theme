@@ -33,6 +33,8 @@ field today · seed.
 | MAT-W1 | window (Android) | System-bar appearance the app window shows: status/navigation bar icon tone (light/dark) and the contrast scrim behind the navigation bar in edge-to-edge | *read*: `WindowInsetsController.getSystemBarsAppearance()`, `Window.isNavigationBarContrastEnforced()` (to verify per API level); *measure-compose* | none | — |
 | MAT-W2 | window | Predictive-back and activity/window transition motion (what moves, duration, easing) | *published*: m3.io motion / predictive back pages (to verify); *measure-compose* (screen recording) | none (`dialog.entrance` is dialog-only) | — |
 | MAT-W3 | window ↔ top app bar | The app bar takes the title-bar role; its scrolled state (see MAT-TA1) is the only "window chrome" state Material has; no inactive-window state exists (no gap there) | — (cross-reference) | `window.title_bar_*` | platform-facts.md §2.2 |
+| MAT-W4† | window (Android desktop windowing) | The caption bar and frame the system draws round a freeform app window in Android desktop windowing (tablets, external displays): caption height, its fill (taken from the app, or transparent when the app opts in to draw under it), the app chip, the caption buttons (minimise, maximise, close) and their states, the focused vs unfocused look, the window outline and shadow | *read*: `WindowInsets.Type.captionBar()`, `WindowInsetsController.APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND` (API levels to verify); *published*: developer.android.com desktop-windowing pages (to verify); *measure-compose* on a desktop-windowing emulator image | `window.title_bar_*`, `inactive_title_bar_*`, `border.*` | platform-facts.md §2.2 cells (lines 1158-1169, "(none)") |
+| MAT-W5† | window / display corners | The rounded corners the app's content is clipped to: the display's corner radius per corner on phones and tablets, and a freeform window's corner radius in desktop windowing | *read*: `WindowInsets.getRoundedCorner(int)`, `Display.getRoundedCorner(int)` → `android.view.RoundedCorner` (API 31; to verify); window radius *measure-compose* | `window.border.corner_radius_px` | platform-facts.md §2.2 cell (line 1168) |
 
 ### Button (§2.3)
 
@@ -74,6 +76,9 @@ field today · seed.
 | MAT-I14 | input: label float motion | Label float/shrink animation, outline-notch opening, placeholder fade: durations and easing | *published*: `mw/field/internal/field.ts:300-301` (150, `EASING.STANDARD`); `mw/field/internal/_content.scss:16-21, :78-79`; `mw/field/internal/_outlined-field.scss:92-93, :158-159, :187-188` (`duration-short3`, `easing-emphasized`) | none | — |
 | MAT-I15 | input: label typography | Input-text tracking and line height (body-large) | *published*: `v0_192/_md-comp-outlined-text-field.scss:95, :104` | `input.font` (no tracking / line height) | — |
 | MAT-I16 | text area | Multi-line field's minimum rows / height and resize behaviour | *measure-web* (`md-outlined-text-field type="textarea"`) — no token (to verify) | `text_area.border` (padding only) | — |
+| MAT-I17† | input: text magnifier | The magnifier shown while the caret or a selection handle is dragged: its size, corner radius, elevation (shadow), zoom and offset above the touch point | *published*: androidx `compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/Magnifier.android.kt:87-111` (`zoom`, `size`, `cornerRadius`, `elevation`, left to the platform `android.widget.Magnifier` when unspecified); `Magnifier.Builder` defaults (to verify); *measure-compose* | none | — |
+| MAT-I18† | input: composition and spell-check marks | The underline drawn under the IME's composing text; spell-check / suggestion underlines and their colours (whether Compose draws any: to verify); material-web leaves both to the browser | *published*: androidx `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/TextFieldDelegate.kt:425-447` (composition range → `TextDecoration.Underline`); suggestion underlines *measure-compose* (to verify) | none | — |
+| MAT-I19† | input: password (secure) field | The obfuscation glyph; whether the last typed character shows briefly, and for how long; the default mode that follows the system's show-passwords setting (a reveal toggle, when shown, is an app-supplied trailing icon: MAT-I7) | *published*: `compose/SecureTextField.kt:128-144` (`textObfuscationMode = TextObfuscationMode.System`, `textObfuscationCharacter`), `:296-312` (outlined), `:390` (`DefaultObfuscationCharacter`); reveal timing in foundation's `BasicSecureTextField` (file to verify); *read*: `Settings.System.TEXT_SHOW_PASSWORD` (to verify); material-web `type="password"` masks with the browser's glyph | none | — |
 
 ### Checkbox / radio (§2.5)
 
@@ -123,6 +128,8 @@ field today · seed.
 |---|---|---|---|---|---|
 | MAT-SC1 | scroll indicator (Android) | Fade-out delay and fade duration of the scroll indicator | *read*: `ViewConfiguration.getScrollDefaultDelay()`, `ViewConfiguration.getScrollBarFadeDuration()`; *measure-compose* | `scrollbar.overlay_mode` (bool only) | — |
 | MAT-SC2 | overscroll | Android 12+ stretch overscroll (what deforms, how far, its spring back) | *measure-compose* (screen recording); Compose foundation overscroll effect (file to verify) | none | — |
+| MAT-SC3† | scrollbar (Compose M3 `nonInteractiveScrollbar`) | Compose Material 3 draws a visual-only scrollbar: thumb colour stated as a colour role at an opacity, thickness, minimum thumb length, maximum thumb length as a fraction of the viewport, a track colour (transparent by default), track insets along and across the axis, fade-in while scrolling and fade-out after a delay (duration and delay), an always-visible option, and its edge (end edge for vertical, bottom for horizontal). No hover or pressed state (visual only). The model has the colours, width, minimum length and overlay flag; it lacks the fade timings, the two insets, the maximum fraction and the colour-at-opacity form | *published*: `compose/Scrollbar.kt:46-117` (the modifier and its parameters), `:119-148` (`NonInteractiveScrollbarDefaults`) | `scrollbar.thumb_color`, `track_color`, `thumb_width_px`, `min_thumb_length_px`, `overlay_mode` (partial) | platform-facts.md §2.8 cells (lines 1304-1311, "M3 has no scrollbar component") |
+| MAT-SC4† | overscroll (Android 11 and older) | The glow edge effect drawn before Android 12's stretch (MAT-SC2): its colour, shape, growth with the pull and fade | *read*: theme attribute `android:colorEdgeEffect`, `EdgeEffect.getColor()`, `EdgeEffect.getType()` (API levels to verify); Compose foundation's pre-API-31 overscroll (file to verify); *measure-compose* on an API 30 emulator | none | — |
 
 (M3 has no scrollbar component; the preset's scrollbar values have no Material source, platform-facts.md §2.8 — a value question, not a model gap.)
 
@@ -193,6 +200,7 @@ field today · seed.
 | MAT-TA5 | app bar: avatar | Avatar size and shape | *published*: `latest/_md-comp-app-bar.scss` (`avatar.size`); `latest/_md-comp-top-app-bar-small-centered.scss` (`avatar.shape/size`) | none | — |
 | MAT-TA6 | app bar: embedded search | Search field in the app bar: container colour/height/shape, label colour, spaces, on-scroll colour | *published*: `latest/_md-comp-app-bar.scss` (`search.*`), `latest/_md-comp-app-bar-small.scss` (`search.container.*`) | none | — |
 | MAT-TA7 | app bar: headline typography | Tracking and line height (title-large) | *published*: `v0_192/_md-comp-top-app-bar-small.scss:40, :43` | `toolbar.font` | — |
+| MAT-TA8† | app bar: overflow | Items that do not fit in an app bar row (or column) collapse into an overflow indicator, an icon button that opens a menu: the indicator's icon, its size and the menu it opens | *published*: `compose/AppBarRow.kt:29-54` (`overflowIndicator`); `compose/AppBarColumn.kt` (lines to verify) | none | — |
 
 ### Status bar (§2.14)
 
@@ -281,6 +289,7 @@ No Material gap: M3 has no status bar (platform-facts.md §2.14). Android's syst
 | MAT-DG7 | dialog: subhead | Subhead font and colour | *published*: `latest/_md-comp-dialog.scss:82-102` | none | — |
 | MAT-DG8 | dialog: window margin | The margin kept to the window edges when the dialog is at its maximum size | *published*: `mw/dialog/internal/_dialog.scss:39-40` (`calc(100% - 48px)`) | `dialog.max_width_px`, `max_height_px` | — |
 | MAT-DG9 | dialog: headline typography | Tracking and line height (headline-small, body-medium) | *published*: `v0_192/_md-comp-dialog.scss:78, :81, :101, :105` | `dialog.title_font`, `body_font` | — |
+| MAT-DG10† | dialog: action layout | Actions aligned to the end edge; when they do not fit in a row they wrap into a column, and the confirm action, last in the row, comes first in the column; the row gap and the column gap | *published*: `mw/dialog/internal/_dialog.scss:213-219` (`display: flex`, `gap`, `justify-content: flex-end`); `compose/AlertDialog.kt:263-268` (`AlertDialogFlowRow` call), `:378-405` (order flipped between row and column), `:414-417` (`ButtonsMainAxisSpacing`, `ButtonsCrossAxisSpacing`) | `dialog.button_gap_px`, `button_order` (one gap, row order only) | — |
 
 ### Spinner / progress ring (§2.23)
 
@@ -366,6 +375,8 @@ set carries, every one of which the model lacks.
 | MAT-N27 | Autocomplete (filled, outlined) | text field + attached menu (all text-field and menu parts in one token set) | *published*: `latest/_md-comp-filled-autocomplete.scss:24-272`, `_md-comp-outlined-autocomplete.scss:24-268` | `input.*` + `menu.*` (partial) | — |
 | MAT-N28 | Pull-to-refresh indicator | indicator container colour, size, elevation, its spinner/loading shape; pull threshold and motion | *published*: Compose `compose/pulltorefresh/PullToRefresh.kt` (to verify); *measure-compose* | none | — |
 | MAT-N29 | Scrim (standalone) | colour and opacity of the modal backdrop (also MAT-X23) | *published*: `latest/_md-comp-scrim.scss:20-22` | none | — |
+| MAT-N30† | Floating text toolbar (text selection actions) | The floating toolbar Android shows over a text selection (cut, copy, paste, select all, and the actions the system adds): container fill, shape, elevation, item font and colours, overflow, its placement against the selection. Compose hands it to the framework's floating `ActionMode`, so the system theme draws it, not M3 tokens | *published*: androidx `compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidTextToolbar.android.kt:20-46` (`ActionMode`, `FloatingTextActionModeCallback`); *measure-compose* | none (`menu.*`, `popover.*` nearest) | — |
+| MAT-N31† | Scroll field (Expressive wheel picker) | A vertical wheel of values with three items visible: container colour (enabled, disabled) and shape, height, unselected / selected / disabled value colours, the value's text style interpolated between two typescale roles as an item snaps to the centre, the colour and size animation, focus indication through the ripple's focus-ring shape | *published*: `compose/ScrollField.kt:161-282` (the component), `:351-420` (`ScrollFieldDefaults`: height, shape, colours), `:426-460` (`Item`: interpolated text style, motion-scheme animation) | none | — |
 
 ---
 
@@ -404,6 +415,13 @@ set carries, every one of which the model lacks.
 | MAT-X29 | dragged state | Dragged state layer and elevation (cards, chips, list items, drag handle) | *published*: `v0_192/_md-comp-filled-card.scss:43-45`; `v0_192/_md-comp-list.scss:59-69`; `latest/_md-comp-filter-chip.scss` (dragged.*) | none | — |
 | MAT-X30 | error state | Error colours across text field, select, checkbox (beyond `defaults.danger_color`) | see MAT-I9, CB1, C5 | `defaults.danger_color` | — |
 | MAT-X31 | pointer precision | Compose adjusts for precise pointers (mouse) vs touch | *published*: `compose-android/PrecisionPointer.android.kt` (what it changes: to verify) | none | — |
+| MAT-X32† | touch and wheel thresholds | The distance a touch moves before it becomes a scroll or drag (touch slop, paging slop), the double-tap slop, the scroll distance of one mouse-wheel step | *read*: `ViewConfiguration.getScaledTouchSlop()`, `getScaledPagingTouchSlop()`, `getScaledDoubleTapSlop()`, `getScaledVerticalScrollFactor()`; Compose `androidx.compose.ui.platform.ViewConfiguration` (`touchSlop`; to verify) | none | — |
+| MAT-X33† | pointer | The cursor each component shows (pointer over interactive controls, text cursor over a field, default when disabled), and Android's pointer appearance settings (size, colour; per API level, to verify) | *published*: `mw/button/internal/_shared.scss:21, :75`; `mw/textfield/internal/_shared.scss:34, :38`; `mw/checkbox/internal/_checkbox.scss:54, :58`; `mw/list/internal/listitem/_list-item.scss:51, :91`; Compose `Modifier.pointerHoverIcon` use in M3 and foundation text fields (to verify); *read*: Android pointer settings (keys to verify) | none | — |
+| MAT-X34† | focus indication: when and which style | material-web shows the focus ring only for keyboard focus (`:focus-visible`); Compose has two focus styles, a state-layer opacity (the default) and an inset ring drawn as two strokes (an outer and an inner stroke, each with an inset and a width), the ring taking a shape each component supplies | *published*: `mw/focus/internal/focus-ring.ts:83`, tests `mw/focus/internal/focus-ring_test.ts:163-176`; `compose/Ripple.kt:85-90` (`focusRingShape`), `:342-361` (`OpacityFocusThemeConfiguration`, `InsetFocusRingThemeConfiguration`), `:398-421` (`RippleThemeConfiguration.Focus`) | `defaults.focus_ring_*` (one ring, no visibility rule, no second style) | — |
+| MAT-X35† | accessibility: Android display settings | What Android's display accessibility settings change in an M3 app: high-contrast text (an outline or plate drawn round every text run), colour inversion, colour correction, and force dark applied to a light app | *read*: the high-contrast-text, inversion and correction settings (keys to verify); `android:forceDarkAllowed`, `View.setForceDarkAllowed()` (to verify); *measure-compose* | `AccessibilityPreferences` (none of these) | — |
+| MAT-X36† | system typefaces | The faces Android supplies where M3 names none or the app keeps the defaults: the platform sans (Compose `FontFamily.Default`) and monospace (`FontFamily.Monospace`); a device can ship faces other than Roboto. material-web falls back to the browser's generic families | *read*: `Typeface.DEFAULT`, `Typeface.MONOSPACE` (family and metrics, by the Android reader; to verify what is exposed); *published*: AOSP `frameworks/base/data/fonts/fonts.xml` (to verify) | `defaults.font.family`, `defaults.mono_font` | platform-facts.md §2.1.2 cell (line 1040) |
+| MAT-X37† | optical centring | Content inside an asymmetric shape (a split-button half with different inner and outer corners) is moved off the geometric centre by a coefficient of the corner-size difference, within a maximum offset | *published*: `compose/HorizontalCenterOptically.kt:29-46`, `:62`, `:93` (`CenterOpticallyCoefficient`); used in `compose/SplitButton.kt:807, :816, :933, :942` | none | — |
+| MAT-X38† | screen-level placement | Where the scaffold puts the FAB (end or centre; its spacing from the edge and above the bottom bar) and the snackbar (above the FAB and the bottom bar) | *published*: `compose/Scaffold.kt:169-242` (placement), `:317` (`FabPosition`), `:368-370` (`FabSpacing`) | none | — |
 
 ### Not a gap, recorded for the value phase
 
@@ -422,3 +440,199 @@ set carries, every one of which the model lacks.
   segmented 4, card 3, expander 1; status bar and link: no gap).
 - 4.2: 29 components.
 - 4.3: 31 cross-widget properties.
+
+## Cross-check (pass 2, 2026-10-28)
+
+This pass checked the map against the five other surveys (every row of `all-tags.tsv`), against
+the Material column's "(none)" cells of `platform-facts.md` (at caeddd6b), and against two
+catalogues of what Material 3 has: the component token files of `latest/` (one file per
+component, `tokens/versions/latest/sass/`) and the file list of `compose/` at androidx
+`1e6776853023ebe4266aca2b308305723e3a2d57` (read 2026-10-28 through the GitHub contents API).
+"cat." below means both catalogues. Rows added in this pass carry a † after their ID. The
+androidx foundation and ui files the new rows cite are at the same commit, their paths written
+out in full.
+
+### A. Controls other surveys list as missing
+
+Decision: 1 = Material draws it as a standalone control (a §4.2 row); 2 = drawn inside an element
+the map already has (rows checked); 3 = Material has no such control.
+
+| Control | Decision | Rows added, or reason and source |
+|---|---|---|
+| stepper/spin box | 3 | no token file in `latest/`, no Compose component (cat.); the nearest are the scroll field (MAT-N31†) and the time input (MAT-N17) |
+| calendar | 2 | drawn only inside the date picker: month grid, today, selection, range band are MAT-N16; no standalone calendar in cat. |
+| level indicator/gauge | 3 | none in cat.; the progress indicators (MAT-P*, MAT-SN*) are the nearest |
+| menu bar | 3 | none in cat.: Compose's `Menu.kt` is the dropdown menu, material-web has `md-menu` only |
+| page control/pager | 3 | no page indicator in cat.; Compose's pager is foundation layout with no M3 indicator, and the carousel (MAT-N18) draws none |
+| preference rows/boxed list | 2 | settings rows are list items with trailing controls: MAT-L1–L3; the Expressive segmented list (rounded items with gaps, MAT-L8) is the boxed-list look |
+| avatar | 2 | no standalone avatar in cat.; avatars are parts of list items (MAT-L2), the app bar (MAT-TA5), input chips (MAT-N9) and the search bar (MAT-N14), each with its size, shape and colour there |
+| breadcrumb/path control | 3 | none in cat. |
+| colour button | 3 | none in cat. |
+| group box/frame | 3 | none in cat.; cards (MAT-CA1) group content |
+| help button | 3 | none in cat. |
+| image frame | 3 | none in cat.; carousel items mask images (MAT-N18) |
+| status page/placeholder | 3 | none in cat. |
+| about dialog | 3 | none in cat. |
+| colour picker | 3 | none in cat. (material-web's `catalog/src/components/hct-slider.ts` belongs to its documentation site, not to the components) |
+| dial/circular slider | 3 | none in cat.; the time picker's clock dial is part of MAT-N17 |
+| find bar | 3 | none in cat.; the search bar and view (MAT-N14, N15) are the nearest |
+| navigation drawer/pane | 2 | the navigation drawer is the model's `[sidebar]`: MAT-SB1–SB9; the rail is MAT-N13, the side sheet MAT-N20 |
+| password field | 2 | Compose's `SecureTextField` / `OutlinedSecureTextField` are text fields (MAT-I1–I16 apply); what they add: **MAT-I19†** |
+| rating | 3 | none in cat. |
+| token field | 2 | the token is the input chip (MAT-N9); a field holding chips is app layout, with no token in cat. |
+| view switcher | 2 | navigation bar (MAT-N12), tabs (MAT-TB1–TB8), segmented buttons (MAT-SG1–SG4) |
+| access key badge | 3 | neither Android nor material-web draws access-key hints; no token in cat. |
+| action sheet | 2 | a modal bottom sheet (MAT-N19) holding list items (MAT-L*) |
+| back button | 2 | the app bar's navigation icon button: MAT-TA2 (icon colours), MAT-N4 (icon button); predictive-back motion MAT-W2 |
+| background extension | 3 | a Liquid Glass feature; M3 has no translucent surface (B, C03) |
+| bottom accessory | 3 | an iOS 26 tab-bar accessory; none in cat. |
+| collection view | 3 | no grid-item component in cat. (Compose's lazy grids are foundation layout with no M3 styling) |
+| column browser | 3 | none in cat. |
+| context menu preview | 3 | none in cat.; Compose's `DropdownMenu` shows no lifted preview |
+| dock/panel title bar | 3 | none in cat. |
+| drag and drop | 2 | M3 draws the dragged state (MAT-X29: state layer and elevation of cards, chips, list items) and the list reorder drop zone (MAT-L10); the drag shadow Android draws across windows is the dragged view's own rendering (to verify, *measure-compose*) |
+| edit menu | 1 | **MAT-N30†** (the framework's floating text toolbar) |
+| file chooser | 3 | Android's document and photo pickers are system activities another app draws; none in cat. |
+| font chooser | 3 | none in cat. |
+| glass container | 3 | no translucent material in M3 (B, C03) |
+| ink toolbar | 3 | none in cat. |
+| inspector/utility panel | 2 | the side sheet (MAT-N20) is M3's supplementary-content panel |
+| keyboard | 3 | the soft keyboard is drawn by the input-method app, not the M3 app; an app-side appearance setting is not known (to verify) |
+| large content viewer hud | 3 | none in cat. |
+| list box | 2 | a list with selectable items: MAT-L4, MAT-L5 |
+| media transport controls | 3 | none in cat. |
+| paste control | 3 | none in cat.; Android has no in-app paste button |
+| picker wheel | 1 | **MAT-N31†** (Compose `ScrollField.kt`; no token file in `latest/`) |
+| rubber band | 3 | none in cat.; neither material-web nor Compose M3 has marquee selection |
+| rule editor | 3 | none in cat. |
+| scroll edge effect | 2 | the scrolled app bar (MAT-TA1) and overscroll (MAT-SC2, **MAT-SC4†**); M3 has no edge blur |
+| scrollbar annotation | 3 | none in cat. |
+| swipe actions | 2 | the Expressive list reveal (MAT-L11); Compose's `SwipeToDismissBox` (in cat.) draws app-supplied background content — whether it adds M3 colours of its own: to verify |
+| teaching tip | 2 | the rich tooltip (MAT-T1) with its optional caret (MAT-T4) |
+| text ruler | 3 | none in cat. |
+| tool box | 3 | none in cat. |
+| tool button | 2 | icon buttons (MAT-N4, N5) in app bars (MAT-TA2) and toolbars (MAT-N25) |
+| toolbar flyout | 2 | toolbar overflow: MAT-N25, **MAT-TA8†** |
+| touch bar | 3 | none in cat. (Mac hardware) |
+| tree view | 3 | none in cat.; the expandable list item (MAT-L9) has one level |
+| writing tools | 3 | none in cat. |
+| zoom button | 3 | none in cat. |
+
+Tally: 58 controls — decision 1: 2, decision 2: 17, decision 3: 39.
+
+### B. Capabilities
+
+| Capability | Rows added, or why none |
+|---|---|
+| C01 | MAT-W4†, MAT-I17†, MAT-N30† |
+| C02 | no further row — levels, per-state elevation and tint are MAT-X2–X7, X29 and the component rows |
+| C03 | no further row — neither token set has a blur, translucency or backdrop token (no match for "blur" or "translucen" in `v0_192/` or `latest/`) and material-web sets no `backdrop-filter`; M3 surfaces are opaque tonal colours, the scrim (MAT-X23) the only see-through layer. Whether any Compose M3 component uses Android's window blur: to verify (none in the files read) |
+| C04 | MAT-SC3† (thumb colour as a role at an opacity) |
+| C05 | no further row — MAT-X1 lists every `md.sys.color` role; there are no status roles (C, lines 1086–1091) |
+| C06 | MAT-X35† (force dark); contrast levels are MAT-X18, and M3 has no inactive-window or elevated colour axis (MAT-W3; tonal surfaces MAT-X6) |
+| C07 | MAT-W4†, MAT-N31†, MAT-X33† |
+| C08 | MAT-X34† (Compose's focus is a state-layer opacity unless the inset ring is chosen) |
+| C09 | MAT-X34† (two focus styles); the variant families are otherwise in MAT-B1, I11, CA1, M10, TB1, N4, N9 |
+| C10 | no further row — MAT-X22, X31 and each Expressive size row; X22's Compose file "to verify" is `compose/InteractiveComponentSize.kt:47-71` (`minimumInteractiveComponentSize`) |
+| C11 | MAT-W5†, MAT-I17†, MAT-N30†, MAT-N31†, MAT-X37† |
+| C12 | MAT-X34† (the two-stroke inset ring) |
+| C13 | MAT-W4†, I17†, I18†, I19†, SC3†, SC4†, TA8†, N30†, N31† |
+| C14 | MAT-SC3†, SC4†, N31† |
+| C15 | MAT-X34† |
+| C16 | no further row — caret width and blink are MAT-I12 (the blink can be switched off: `LocalCursorBlinkEnabled`, androidx `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/TextFieldCursor.kt:49`), the error caret MAT-I9, the handles MAT-I13 |
+| C17 | MAT-I17†, MAT-I18†; the text-selection fill is stated (C, line 1062) |
+| C18 | MAT-N31†, MAT-X36† |
+| C19 | no further row — symbol axes and filled-when-active icons are MAT-X27, per-state icon colours the component rows (MAT-B7, M3, TB4, L3, SB3, SW3, CA3, I7); M3 has no icon theme and no icon state effect beyond the disabled opacity (MAT-X24) |
+| C20 | MAT-W4†, MAT-W5† |
+| C21 | MAT-I19†, SC3†, X32† |
+| C22 | MAT-X33† |
+| C23 | MAT-X35† |
+| C24 | MAT-N30†, MAT-N31† |
+| C25 | MAT-W4†, W5†, I19†, SC4†, X32†, X33†, X35†, X36† |
+| C26 | MAT-SC3†, TA8†, DG10†, X37†, X38† |
+| C27 | no further row — no gradient token in either set; material-web paints gradients as devices only: the slider's tick dots (`mw/slider/internal/_slider.scss:480-487`, `mw/tokens/_md-comp-slider.scss:69-70`) and the ripple's soft edge, a radial gradient (`mw/ripple/internal/_ripple.scss:70-77`). The second is visible and is MAT-X9's "soft edge"; X9's tag lacks C27 (tags are not rewritten) |
+| C28 | no further row — M3's colour roles are sRGB hex values (`latest/_md-sys-color.scss`), dynamic colour yields ARGB integers (MAT-X17); no wide-gamut or HDR role |
+
+### C. "(none)" cells of the Material column
+
+a = Material does not draw it, the cell is right; b = Material draws it — the row says where its
+value comes from, or "value correction" where a source states it after all. Lines are
+`platform-facts.md` at caeddd6b.
+
+| Line(s) | a/b | Row, or reason |
+|---|---|---|
+| 1040 | b | MAT-X36† — M3 names no monospace face, but Android supplies one (`FontFamily.Monospace`) |
+| 1041–1043 | a | no monospace role; a monospace run takes the size, weight and style of the role it is set in |
+| 1058 | a | no link role; Compose styles a link only when the app passes styles (androidx `compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextLinkStyles.kt:28-30`: a null style leaves the link styled as the text around it); MDC's View `TextView` colours links with `android:textColorLink` — what Theme.Material3 sets there is a value to verify (`link.font.color` exists) |
+| 1061 | a | no unfocused-selection state in M3; whether an unfocused Compose field keeps its selection highlight: to verify (*measure-compose*) |
+| 1062 | b | value correction, no row: Compose states it, `primary` at `TextSelectionBackgroundOpacity` (`compose/MaterialTheme.kt:276-287`; this file's "Not a gap" note) |
+| 1063 | a | `TextSelectionColors` holds only `handleColor` and `backgroundColor` (`compose/MaterialTheme.kt:279-281`): selected text keeps its colour |
+| 1086–1091 | a | no warning, success or info roles (`latest/_md-sys-color.scss:20-206`), and no component draws such a state |
+| 1116, 1117 | a | no global radius: each component names a shape step (MAT-X11) |
+| 1120 | a | the outline roles are opaque |
+| 1127 | b | MAT-X19 (*read*: `Configuration.fontScale`) |
+| 1128 | b | MAT-X20 (*read*: the animator duration scale) |
+| 1129 | b | MAT-X18 (*read*: `UiModeManager.getContrast()`) |
+| 1130 | a | M3 has no translucent surface to make opaque (B, C03) |
+| 1137, 1138 | a | no small or large icon context; icon sizes are per component (MAT-B7, M3, TB4, L2, N1, N5) |
+| 1147 | a | no icon theme; the icon set and its axes are MAT-X27 |
+| 1158, 1159 | b | MAT-W4† (a desktop-windowing frame; whether it has an outline: to verify); a full-screen app window has no frame |
+| 1160–1167 | b | MAT-W4† (the desktop-windowing caption bar: fill, title, focused and unfocused); a phone app draws its top app bar instead (MAT-W3) |
+| 1168 | b | MAT-W5† |
+| 1169 | b | MAT-W4† |
+| 1170, 1171 | a | no window padding; the system-bar insets are layout read per device, their look is MAT-W1 |
+| 1180 | a | tonal and filled buttons have no outline; the outlined button's is MAT-B3 |
+| 1210 | b | value correction, no row: as line 1062 |
+| 1211 | a | as line 1063 |
+| 1220 | a | the outlined field has no container; the filled field's disabled container is MAT-I11 |
+| 1228 | a | the label is body text (mdc `textAppearanceBodyMedium`, the cell), no checkbox-specific value |
+| 1237, 1238 | a | the mark fills the box; the halo and touch target are MAT-C2, MAT-C9 |
+| 1247 | a | transparent, as the cell states |
+| 1263 | a | menus have no outline (shadow and tonal fill: MAT-PO1) |
+| 1287 | a | no outline |
+| 1304, 1305, 1307–1310 | b | the cells are wrong for Compose: `compose/Scrollbar.kt:119-148` states the thumb colour, thickness, minimum length and the fading (overlay) behaviour — a value correction for the fields that exist, and **MAT-SC3†** for what the model lacks; material-web draws no scrollbar of its own |
+| 1306, 1311 | a | the Compose scrollbar is visual only (`compose/Scrollbar.kt:47-50`): no hover or active state |
+| 1339 | a | no outline |
+| 1347 | a | the active tab is not filled; its indicator is MAT-TB2 |
+| 1350 | a | fixed tabs share the width; the scrollable minimum is stated in the cell (Compose) |
+| 1354 | a | no outline; the row divider is MAT-TB5 |
+| 1360 | a | the tabs abut |
+| 1366 | a | stated `corner-none` |
+| 1375, 1376 | a | no drawer edge line in v0_192; `latest`'s nested `divider-color` is deprecated for the divider component (`latest/_md-comp-navigation-drawer.scss:80-83`) |
+| 1391, 1392 | a | stated in `latest` (the cell); v0_192 has none — a token-set choice, not a gap |
+| 1393 | a | a fixed height with content centred: no vertical padding exists |
+| 1396 | a | no outline or divider; the scrolled state is MAT-TA1 |
+| 1404–1415 | a | M3 has no status bar; Android's system status bar is MAT-W1 |
+| 1424 | a | no row striping |
+| 1438 | a | `comp.list` has no outline token; the data table's outline is MAT-L13 |
+| 1457 | a | no outline |
+| 1468, 1470 | a | stated in `latest` (the drag handle): MAT-SP1, MAT-SP2 |
+| 1503 | a | no layout-manager gap in either token set or in Compose |
+| 1504, 1505 | b | MAT-LA1 (margins per window-size class: m3.io to verify, *measure-compose*) |
+| 1506 | b | MAT-LA1, MAT-SP3 (the pane spacer per size class) |
+| 1535, 1536 | a | the selected track has no outline (`mw/switch/internal/_track.scss:55-84`) |
+| 1538–1540 | a | the handle has no outline |
+| 1566 | a | no outline |
+| 1600 | a | no minimum: one size per variant (MAT-SN3) |
+| 1620 | a | no arrow area; the icon and its trailing space are stated |
+| 1625 | a | the outlined select's hover recolours the outline (the cell); the filled select's hover state layer is MAT-I11 / MAT-CB1 |
+| 1626 | a | no container; the filled select's disabled container is MAT-I11 / MAT-CB1 |
+| 1658 | a | filled and elevated cards have no outline; the outlined card's is stated |
+| 1673–1688 | a | no expander: `latest/_md-comp-list-expand.scss:21-36` is a token set that no implementation at the pinned commits draws (material-web has no such component; Compose's `ListItem.kt` and `ListItemDefaults.kt` do not use `ExpandedListTokens`); its colours and shapes are MAT-L9 / MAT-EX1 |
+| 1693–1701 | a | no link component; links inside text: line 1058 |
+
+Tally: 125 cells (the 124 of the input list and line 1625) — a: 98, b: 27. Eight of the b cells are value
+corrections, a source states the value after all: lines 1062 and 1210 need no row, the
+scrollbar's six (1304, 1305, 1307–1310) come with MAT-SC3† for what the model lacks.
+
+### Found wrong in pass 1
+
+- **Scrollbar.** Compose Material 3 has a scrollbar at the pinned commit
+  (`compose/Scrollbar.kt`, `Modifier.nonInteractiveScrollbar`, `NonInteractiveScrollbarDefaults`),
+  against this file's note under §2.8 ("M3 has no scrollbar component") and platform-facts.md
+  §2.8's Material cells; MAT-SC3† records the gaps, the stated values belong to the value phase.
+- **Missed components** in Compose's file list: the scroll field (MAT-N31†) and the secure text
+  field (MAT-I19†); Compose's inset focus-ring style (MAT-X34†) is missing from MAT-X10.
+- **Tag:** MAT-X9's ripple soft edge is a radial gradient (C27).
+- **A "to verify" settled:** MAT-X22's Compose minimum interactive size is
+  `compose/InteractiveComponentSize.kt:47-71`.

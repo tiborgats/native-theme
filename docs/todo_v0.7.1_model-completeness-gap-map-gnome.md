@@ -51,6 +51,8 @@ Two mechanisms recur and are written once here:
 | GN-1.21 | Window control button | Geometry: button min-width 24, padding 5, gap between controls 3; `.default-decoration` 22×22, padding 4, image padding 3; app icon margin 9 / 7 | published `A/w/_header-bar.scss:60-75`, `:175-207` | none |
 | GN-1.22 | Window control button | Shape and fill: a circle behind the glyph (`image { border-radius: 100%; padding: 4px; background: $button_color }`), hover `$button_hover_color`, pressed `$button_active_color`, 200 ms transition, HC inset ring | published `A/w/_header-bar.scss:189-201`; `A/w/_buttons.scss:1-3` | none (icons themselves exist: `IconRole::WindowClose` etc., `model/icons.rs:57-65`) |
 | GN-1.23 | Server-side frame drawn by mutter (X11 apps that request SSD) | The frame mutter draws (its own title bar, buttons, `titlebar-font`) | measure (GNOME X11 session, screenshot of a non-CSD X11 window) — to verify which theme mutter-x11-frames uses | `window.title_bar_*` |
+| GN-1.278† | Back button (AdwBackButton) in a header bar inside AdwNavigationView | `go-previous-symbolic` image button with the `.back` class, flat like every header-bar button; tooltip = the previous page's title ("Back" without one); long press or right click opens a navigation menu (popover menu, no arrow, start-aligned) listing the pages to pop to | published `A/c/adw-back-button.c:323-326`, `:345-376`, `:399-416`, `:527-529`; `A/c/adw-header-bar.c:136-138`, `:349-360` | none |
+| GN-1.282† | CSD resize zone | The band outside the visible frame where the pointer resizes the window: the window's CSS border plus its shadow extent, at least `RESIZE_HANDLE_SIZE` 12 px per side; along each edge the corner zone reaches `RESIZE_HANDLE_CORNER_SIZE` 24 px, or the corner radius if larger; none when maximised, fullscreen, or tiled without edge constraints; resize cursors per edge (GN-3.67†) | published `G/gtkwindow.c:191-192`, `:1548-1596`, `:4196-4201` | none |
 
 ### Button (`[button]`)
 
@@ -92,6 +94,7 @@ Two mechanisms recur and are written once here:
 | GN-1.52 | Text view gutters | `textview > border` (gutter windows) fill `mix(window-bg, view-bg 50 %)` | published `A/w/_views.scss:38-40` | none |
 | GN-1.53 | Text view, drop target | Caret turns accent | published `A/w/_views.scss:42-44` | none |
 | GN-1.54 | Inline text view (`textview.inline`) | Transparent, inherited colour | published `A/w/_views.scss:31-36` | none |
+| GN-1.281† | IME pre-edit text (GtkText, GtkTextView) | The uncommitted composition: without compositor style hints, one single underline under the whole pre-edit; with `text-input-v3` hints GTK styles a `preedit` CSS node per hint with the classes `.whole`, `.selection`, `.prediction`, `.prefix`, `.suffix`, `.spelling-error`, `.compose-error` — libadwaita 1.10.0 has no `preedit` rule (grep of `src/stylesheet`), so what each hint looks like: measure (probe with an input method); GtkIMContextSimple (compose sequences) underlines its pre-edit | published `G/gtkimcontextwayland.c:764-781`, `:884-896`; `G/gtkimcontextsimple.c:1362` | none |
 
 ### Checkbox / radio (`[checkbox]`)
 
@@ -128,6 +131,7 @@ Two mechanisms recur and are written once here:
 | GN-1.78 | Inline icon-button row / circular-button row in menus | 32×32 flat icon buttons; circular 11-padded buttons with 1px ring, selected / pressed fills | published `A/w/_menus.scss:10-56` | none |
 | GN-1.79 | List rows inside a popover menu | Padding 9 12 / 0 12, radius 9, hover/selected/pressed fills | published `A/w/_menus.scss:185-246` | none |
 | GN-1.80 | Menu HC | Inset 1px ring on hover / selected / pressed items | published `A/w/_menus.scss:150-156` | none |
+| GN-1.285† | Menu item icons | A popover-menu item shows its icon only in an iconic (button-row) section or when it has no label: a labelled item never shows an icon, so a GTK menu has no icon column | published `G/gtkmodelbutton.c:646-667` | `menu.icon_size_px`, `icon_text_gap_px` (assume an icon beside the label) |
 
 ### Tooltip (`[tooltip]`)
 
@@ -136,6 +140,7 @@ Two mechanisms recur and are written once here:
 | GN-1.81 | Tooltip content | Icon–text spacing 6 | published `A/w/_tooltip.scss:17-18` | none |
 | GN-1.82 | Tooltip browse mode | `BROWSE_TIMEOUT` 60 ms (next tooltip while one is up), `BROWSE_DISABLE_TIMEOUT` 500 ms | published `G/gtktooltip.c:71-73` | `tooltip.show_delay` (first delay only) |
 | GN-1.83 | Tooltip placement | Offset from the pointer / widget | measure (probe; or read `G/gtktooltip.c` positioning code — to verify) | none |
+| GN-1.283† | Tooltip width limit | The label wraps at `max-width-chars` 50: a width in characters of the tooltip font, not pixels (platform-facts §2.7 `max_width` is "(none)" for GNOME, the preset carries 360) | published `G/ui/gtktooltipwindow.ui:17-18` | `tooltip.max_width` (pixels) |
 
 ### Scrollbar (`[scrollbar]`)
 
@@ -271,6 +276,8 @@ Two mechanisms recur and are written once here:
 | GN-1.176 | `.view` disabled | Text at disabled opacity, fill `mix(window-bg 60 %, view-bg)` | published `A/w/_views.scss:6-9` | `list.disabled_text_color` (no disabled fill) |
 | GN-1.177 | View selected cell radius | `.view:selected` radius 9 | published `A/w/_views.scss:11-17` | none |
 | GN-1.178 | List undershoot | Column view top undershoot (shade line + 4px gradient) | published `A/w/_column-view.scss:113`; `A/s/_drawing.scss:30-71` | none |
+| GN-1.279† | GtkTreeView (deprecated since 4.10, still drawn by older apps and inside GtkEntryCompletion) | Styled as a column view, plus: tree lines (`enable-tree-lines`, off by default) in `border-left-color` and grid lines (`enable-grid-lines`, none by default) in `border-top-color`, both currentColor 20 % over the view bg (HC 40 %), 1 px, dotted (a 2-px texture with one pixel coloured, repeated); per-depth indent = expander size (16 + 2: the larger of the expander's min-width / min-height plus half the 4-px horizontal separator) + `level-indentation` (default 0); expander `pan-end` / `pan-down` 16 px at 70 %, 100 % on hover and pressed; selected rows square; drop indicator a 1 px accent line before or after a row (a box when dropping into it); header buttons 4 px side padding and a 1 px bottom border; cell progress bars (accent fill, 10 % trough), cell editing entries and spin buttons (square, view bg, accent border when focused); interactive-search popover hides after 5 s; drag-hover expand 500 ms | published `A/w/_deprecated.scss:206-337`; `G/deprecated/gtktreeview.c:274-275`, `:284-290`, `:1652-1657`, `:2655-2681`, `:2834-2845`, `:4150-4298` | `list.*`, `list.grid_color` (one solid colour, no tree lines) |
+| GN-1.280† | GtkIconView (deprecated since 4.10) | View fill, default inset focus ring, HC 1 px inset ring on selected items, drop target as a 1 px accent box; item padding 6, margin 6, row and column spacing 6, item text spacing 0 (C defaults); `rubberband` node as GN-1.175 | published `A/w/_deprecated.scss:112-144`; `G/deprecated/gtkiconview.c:442-527`, `:920-925` | `list.*` (no grid-item spacing) |
 
 ### Popover (`[popover]`)
 
@@ -283,6 +290,7 @@ Two mechanisms recur and are written once here:
 | GN-1.183 | Popover without compositing | Square, 1px `--border-color`, no shadow | published `A/w/_popovers.scss:48-60` | none |
 | GN-1.184 | OSD / touch-selection / magnifier popovers | OSD fill, `0 0 1px` white 10 % edge | published `A/w/_popovers.scss:62-79` | none |
 | GN-1.185 | Popover width | No model width (popover sizes to content; menu min 120) | published `A/w/_menus.scss:1-4` | none (seed: gpui `demo.rs:8012` "the model states no popover width") |
+| GN-1.286† | Touch selection bubble (GtkText's edit menu on touch) | An OSD popover below the selection, pointing at its rectangle grown by 5 px on each side; content box margin 10, spacing 5; a `.linked` row of image buttons with the menu's touch icons (`edit-cut-symbolic`, `edit-copy-symbolic`, `edit-paste-symbolic`, …); fill and edge as GN-1.184 | published `G/gtktext.c:6384-6392`, `:6503-6507`, `:6540-6596`; `A/w/_popovers.scss:62-79` | `popover.*` (no button-row content) |
 
 ### Splitter, separator (`[splitter]`, `[separator]`)
 
@@ -348,6 +356,7 @@ Two mechanisms recur and are written once here:
 | GN-1.223 | Alert body scrolling | Scrolled body: scrollbar top padding 6, top radius 18 on the viewport | published `A/w/_message-dialog.scss:81-91` | none |
 | GN-1.224 | Legacy GtkMessageDialog | Title bar min-height 32, response area padding 24/21, spacing 12, buttons 10 20 radius 12 | published `A/w/_message-dialog.scss:7-47` | none |
 | GN-1.225 | Dialog title font colour vs window | Dialog bg/fg (`--dialog-bg-color`, `--dialog-fg-color`) | published `A/s/_colors.scss:66-67`, `:128-129` | `dialog.background_color`, `body_font.color` (fg not separate from defaults) |
+| GN-1.284† | Alert response order and arrangement | Side by side: equal widths, spacing 12, in the order the app added the responses, mirrored in RTL; stacked (`.compact`): the first response at the bottom and each next one above it, spacing 12 | published `A/c/adw-alert-dialog.c:179`, `:617-682` | `dialog.button_order` (one enum; the stacked order is the reverse of the side-by-side one) |
 
 ### Spinner (`[spinner]`)
 
@@ -495,6 +504,13 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-2.49 | Drag icon (`dnd`) | Window fg colour; dragged tab look (GN-1.133) | published `A/s/_common.scss:30-32` | none |
 | GN-2.50 | `.app-notification` (legacy in-app notification) | OSD, padding 10, spacing 10, bottom radii 15, top gradient | published `A/w/_deprecated.scss:466-476` | none |
 | GN-2.51 | GtkAssistant sidebar (deprecated) | Sidebar colours, step labels padding 6 12 radius 9, highlighted step 10 % | published `A/w/_deprecated.scss:50-94` | `sidebar.*` |
+| GN-2.52† | GtkPathBar (the breadcrumb of GTK's own file chooser) | A horizontally scrolling `.linked` row of toggle buttons, one per folder, the current folder checked; root, home, desktop and recent buttons carry symbolic icons (`.image-button`, or icon + label); flat inside the file chooser; text buttons 9 px side padding, icon–label spacing 4, label padding 2 | published `G/gtkpathbar.c:195-204`, `:420-506`, `:536-562`, `:617`; `A/w/_file-chooser.scss:85-106` | `button.*`, GN-1.42 (linked) |
+| GN-2.53† | GtkColorChooserWidget editor (the custom-colour page of the colour chooser) | Grid spacing 12; circular eyedropper button (`color-select-symbolic`); 300 × 300 saturation / value plane with a crosshair (focused: white 60 % 3-px bands under black 80 % 1-px lines; unfocused: RGB 0.8 at 80 % 1-px lines), plane focus ring outer offset 2, `crosshair` pointer; vertical hue scale (rainbow texture trough) and horizontal alpha scale (checkerboard under a linear gradient to the colour), both GtkScales with the slider rules of GN-1.94–1.108; sample swatch radius 9; hex entry; OSD popups for the numeric entries, radius `$popover_radius` 15 | published `G/ui/gtkcoloreditor.ui:36-146`; `G/gtkcolorplane.c:95-122`, `:193`; `G/gtkcolorscale.c:74-156`; `A/w/_color-chooser.scss:97-109`; `A/s/_common.scss:13`; checkerboard cell size: to verify (`_gtk_color_chooser_snapshot_checkered_pattern`, its definition is not in pass 1's clone) | none |
+| GN-2.54† | GtkMediaControls in GtkVideo; GtkScaleButton / GtkVolumeButton | Controls bar `.osd.bottom` at the bottom of the video, revealed by a crossfade and hidden with the pointer after 3 s without motion; box spacing 6: flat play button (`media-playback-start-symbolic`), time label, seek GtkScale, duration label (tabular figures, `tnum=1`), volume button; the overlay play image is GN-2.44; the scale button is a flat button opening a `.scale-popup` popover: flat `list-add-symbolic` button, vertical scale 100 high, flat `list-remove-symbolic` button | published `G/ui/gtkmediacontrols.ui:18-64`; `G/ui/gtkvideo.ui:14-46`; `G/gtkvideo.c:117-153`; `G/ui/gtkscalebutton.ui:8-51` | none |
+| GN-2.55† | AdwCarousel indicators (the geometry GN-2.38 left to verify) | Dots: radius 3, selected 4, opacity 30 % → 90 %, both interpolated with the scroll position, spacing 7, margin 6, in the widget's `color`; lines: 3 thick, 35 long, spacing 5, opacity 30 %, the active line 90 %, margin 2 | published `A/c/adw-carousel-indicator-dots.c:17-22`, `:86-145`; `A/c/adw-carousel-indicator-lines.c:16-21`, `:83-141` | none |
+| GN-2.56† | GtkEntryCompletion popup (deprecated since 4.10, still drawn) | Popover `.entry-completion` below the entry, no arrow, no autohide, as wide as the entry, holding a header-less GtkTreeView (GN-1.279†) of at most 10 rows with hover selection; libadwaita has no rule for `.entry-completion` (grep); refilter delay 100 ms | published `G/deprecated/gtkentrycompletion.c:94`, `:480-515`, `:1164-1180`, `:2023` | `popover.*`, `list.*` |
+| GN-2.57† | GTK's own composite dialogs: print, page setup, app chooser, legacy GtkDialog | Print dialog: page preview `paper` white with text `RGB(0 0 6 / 80%)` and a 1 px `$border_color` border, flat title bar, action box in view colours; page setup: flat title bar; app chooser: flat shrunk title bar (top padding 3), flat search bar, content margins 6; GtkDialog action area: margin 6, spacing 6 | published `A/w/_dialogs.scss:1-42`; `A/w/_deprecated.scss:11-44` | `dialog.*` |
+| GN-2.58† | Password mask glyph (GtkPasswordEntry, any GtkText with `visibility` off) | The invisible character is the first of U+25CF ●, U+2022 •, U+2731 ✱, U+273A ✺ that the font covers, else `*` | published `G/gtktext.c:3688-3729` | none |
 
 ---
 
@@ -550,6 +566,7 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-3.24 | Kinetic and animated scrolling | Deceleration friction 4, overshoot friction 20, max overshoot 100; keyboard/page scroll animation 200 ms | published `G/gtkscrolledwindow.c:181-189`, `:2319`, `:2388` | none |
 | GN-3.25 | Reduced motion: what changes | `enable-animations` false → AdwAnimation jumps to the end (read ✓); `reduced-motion` → floating sheet fade only, navigation crossfade, tab overview crossfade, GtkSpinner sand-watch | read (exists: `reduce_motion`); published `A/c/adw-animation-util.c:41-66`; `A/c/adw-floating-sheet.c:482`; `A/c/adw-navigation-view.c:899`; `A/c/adw-tab-overview.c:2217`; `G/gtkspinner.c:158-161` | `AccessibilityPreferences.reduce_motion` (flag; the per-widget replacement motions are not in the model) |
 | GN-3.26 | Reduced-motion key | `org.gnome.desktop.a11y.interface reduced-motion` (enum) besides the portal key | read `S/org.gnome.desktop.a11y.interface:18-24` | reader (portal + `enable-animations` today) |
+| GN-3.71† | Window open, close, minimise, maximise (GNOME Shell) | Normal window opens from scale 0.01 × 0.05 about its bottom centre and opacity 0, 150 ms ease-out-expo; dialog opens from scale-y 0 about its centre, 100 ms ease-out-quad; close: 150 ms ease-out-quad to scale 0.8 about the centre and opacity 0 (dialog: 100 ms to scale-y 0); minimise / unminimise 400 ms ease-out-expo; maximise, unmaximise and tiling size changes 250 ms ease-out-quad; under reduced motion a normal window only fades in and out, a dialog appears at once and fades out on close, and minimise / unminimise fade (size changes under reduced motion: to verify); popups, menus and tooltips map without motion (only normal and dialog windows animate) | published `GS/windowManager.js:28-34`, `:1156-1290`, `:1299-1388`, `:1475-1554`, `:1571-1640` | `dialog.entrance` (in-window only) |
 
 ### Focus
 
@@ -573,6 +590,7 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-3.37 | Secondary (split) caret | `-gtk-secondary-caret-color` and `gtk-split-cursor` for bidi text | published `G/gtkcssstylepropertyimpl.c:1454`; `G/gtksettings.c:388` | none |
 | GN-3.38 | Caret in labels (keyboard navigation) | `always-show-text-caret` | read `S/org.gnome.desktop.a11y:12-…` (key at :12); `GDK/wayland/gdksettings-wayland.c:305` | none |
 | GN-3.39 | Caret colour per widget | `caret-color: currentColor` on entries, labels, text views; accent on drop target | published `A/w/_entries.scss:11`; `A/w/_labels.scss:2`; `A/w/_views.scss:21`, `:42-44`; `A/s/_common.scss:73-78` | `input.caret_color` (input only) |
+| GN-3.73† | Caret visibility rules | The caret is drawn only in the focused widget and only while no text is selected (a selection hides it), and not at all when nothing is displayed; while a drag hovers an entry a second caret marks the drop position | published `G/gtktext.c:2739-2756` (GtkText; GtkTextView: to verify) | `input.caret_color` only |
 
 ### Selection
 
@@ -582,6 +600,7 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-3.41 | Text selection keeps text colour | `color: transparent` → selected text keeps its own colour | published `A/s/_common.scss:66` | `defaults.text_selection_color` (expects a colour) |
 | GN-3.42 | Selected + hover / pressed (lists, grids, cards) | Accent 32 % / 39 % | published `A/s/_colors.scss:276-278` | none |
 | GN-3.43 | Neutral selection (sidebars, menus, tab bars, flat toggles) | `$selected_color` 10 % / 13 % / 19 % of currentColor, not accent | published `A/s/_colors.scss:270-272` | `sidebar.selection_background` (one colour) |
+| GN-3.66† | Drop-target highlight | A catch-all rule draws every non-window widget under a drop with `border-color`, a 1 px inset ring and the caret in `$drop_target_color` (= `--accent-bg-color`); lists, column views, tab views, icon views, the places sidebar, stack switchers and expanders switch it off and draw their own: button 2 px ring + accent text (GN-1.25), entry 1 px (GN-1.46), text view accent caret (GN-1.53), tree view 1 px line before / after a row (GN-1.279†), icon view 1 px box (GN-1.280†), places-sidebar insertion row (2 px high accent bar, padding 0 8), colour swatch 2 px ring, tab overview ring and fill (GN-2.35); a drop-down hands it to its button | published `A/s/_common.scss:73-87`; `A/w/_lists.scss:34-37`; `A/w/_column-view.scss:8-10`; `A/w/_file-chooser.scss:34-46`; `A/w/_color-chooser.scss:73-81`; `A/w/_dropdowns.scss:20-24`; `A/w/_tab-view.scss:300-304`; `A/s/_colors.scss:301` | none |
 
 ### Window chrome and the unfocused window
 
@@ -590,6 +609,8 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-3.44 | Backdrop state per widget | Which elements change when the window loses focus: header bar, search bar, action bar, tab bar, toolbar-view raised bars, banners, sidebars (fills); their contents (opacity 0.5); window shadow — all with 200 ms ease-out | published `A/w/_header-bar.scss:41-51`; `A/w/_toolbars.scss:133-141`, `:215-223`, `:260-268`, `:302-311`; `A/w/_tab-view.scss:13-23`; `A/w/_sidebars.scss:5-8`; `A/w/_window.scss:19-27` | `window.inactive_title_bar_*`, `defaults.selection_inactive_background` |
 | GN-3.45 | Window chrome geometry | Title-bar height, padding, control buttons — GN-1.11…1.22 | published | none |
 | GN-3.46 | Pointer cursor theme and size | `cursor-theme`, `cursor-size` (default 24; larger for a11y) | read `S/org.gnome.desktop.interface:180-189`; `GDK/wayland/gdksettings-wayland.c:272-273` | none |
+| GN-3.67† | Pointer shape per element | GTK sets the cursor per widget: `text` over entries, text views and selectable labels, `pointer` over links and link buttons, `col-resize` / `row-resize` over paned handles, `crosshair` on the colour plane, `nw-resize` … `se-resize` on the resize zone (GN-1.282†); the pointer is hidden (`none`) while typing in an entry or text view until it moves | published `G/gtktext.c:3382`, `:7291`; `G/gtktextview.c:2001`, `:5300-5312`; `G/gtklabel.c:804-806`; `G/gtklinkbutton.c:382`; `G/gtkpaned.c:390-397`, `:1528`; `G/gtkcolorplane.c:193`; `G/gtkwindow.c:1743-1761` | none |
+| GN-3.72† | Parent window under an attached modal dialog (GNOME Shell) | The parent is dimmed: brightness −0.3 (`DIM_BRIGHTNESS`), dim 500 ms / undim 250 ms ease-out-quad, only while mutter attaches modal dialogs (`Meta.prefs_get_attach_modal_dialogs`; the key's default: to verify) | published `GS/windowManager.js:36-38`, `:126-160` | none |
 
 ### Visible timings (behaviour that shows)
 
@@ -604,6 +625,8 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-3.53 | Tooltip browse timings | GN-1.82 | published `G/gtktooltip.c:71-73` | `tooltip.show_delay` |
 | GN-3.54 | Scrollbar auto-hide | GN-1.91 | published `G/gtkscrolledwindow.c:191-196` | `scrollbar.overlay_mode` |
 | GN-3.55 | Toast timeout | 5 s default | published `A/c/adw-toast.c:475` | none |
+| GN-3.68† | Key repeat | `repeat` (true), `delay` 500 ms, `repeat-interval` 30 ms: how fast a held key repeats characters and caret moves; GTK receives it as the compositor's `wl_keyboard.repeat_info` | read `S/org.gnome.desktop.peripherals:144-159`; `GDK/wayland/gdkseat-wayland.c:1581-1599` | none |
+| GN-3.69† | Widget auto-repeat | Spin-button arrows: first repeat after 500 ms, then every 50 ms, the step growing by `climb-rate` after 5 repeats; slider and scrollbar trough paging: 500 ms, then every 250 ms. GTK 4 uses these constants: the gsettings keys `gtk-timeout-initial` / `gtk-timeout-repeat` still exist, but `G/gtksettings.c` has no such property (grep) | published `G/gtkspinbutton.c:63-67`, `:1374-1400`; `G/gtkrange.c:73-74`, `:2923-2938`; `S/org.gnome.desktop.interface:190-199` | none |
 
 ### Text rendering and icons
 
@@ -624,6 +647,7 @@ Each row names the widget and every visible property it has; "nearest" is the mo
 | GN-3.63 | Text scaling and `sp` | `text-scaling-factor` read ✓; libadwaita sizes some widths in `sp` (alert dialog widths, clamps with sp unit) that scale with it | read ✓; published `A/c/adw-alert-dialog.c:175-177`; `A/c/adw-clamp-layout.c:166-169` | `AccessibilityPreferences.text_scaling_factor` (exists; which geometry scales is not marked in the model) |
 | GN-3.64 | Large pointer | `cursor-size` (GN-3.46) | read | none |
 | GN-3.65 | Always-visible caret | GN-3.38 | read | none |
+| GN-3.70† | Visual bell | `visual-bell` (false) and `visual-bell-type` (`'fullscreen-flash'` default, or `'frame-flash'`): an alert flashes the screen or the window's frame, besides or instead of the sound (`audible-bell`); GNOME Shell draws it — the flash's colour and timing: measure in a GNOME session (screen recording) | read `S/org.gnome.desktop.wm.preferences:207-247`; measure | none |
 
 ---
 
@@ -643,3 +667,194 @@ Each is what libadwaita 1.10.0 / GTK 4.24.1 says against what `docs/platform-fac
 10. §2.1.3 `selection_inactive_background` "(none) — `:backdrop`" — unfocused text selection is a distinct colour (view fg 10 %, `A/s/_common.scss:64-66`).
 11. Reader: `window.title_bar_font` from `titlebar-font` — libadwaita's title is the UI font in bold (`A/w/_header-bar.scss:213-218`), and `titlebar-uses-system-font` defaults to true (`S/org.gnome.desktop.wm.preferences:179-185`).
 12. Reader: the portal accent is used as given; libadwaita snaps it to the nearest of its 9 accents (`A/c/adw-settings-impl-portal.c:140`, `A/c/adw-accent-color.c:160`) and sets `accent_fg_color` white (`A/c/adw-style-manager.c:160-161`).
+
+---
+
+## Cross-check (pass 2, 2026-10-28)
+
+The GNOME rows checked against the other five surveys: every control they list that this file did not (A), every capability C01–C28 (B), every "(none)" cell of the GNOME column of `docs/platform-facts.md` (C). Rows added in this pass carry a trailing "†" and sit at the end of their section's table.
+
+Sources new in this pass, besides those at the top:
+
+| Short | Source |
+|---|---|
+| `G/deprecated/F:L` | GTK 4.24.1, `gtk/deprecated/F` (fetched from gitlab.gnome.org at the tag) |
+| `GS/F:L` | gnome-shell tag **51.0** (commit `2177bdf9624b2d285de7c1d34274073d3769d6b8`), `js/ui/F` |
+| GTKgal | GTK 4.24.1, `docs/reference/gtk/visual_index.md` (the widget gallery: every widget GTK ships) |
+| ADWgal | libadwaita 1.10.0, `doc/widget-gallery.md` (every widget libadwaita ships) |
+
+### A. Controls other surveys list
+
+Decision: **1** = GNOME draws it as a control of its own (a §4.2 row); **2** = GNOME draws it inside an element the model has (the §4.1 rows that cover it); **3** = GNOME has no such control.
+
+| Control | Decision | Rows, or reason and source |
+|---|---|---|
+| bottom tab bar | 1 | AdwViewSwitcherBar: GN-2.15 (buttons, bar padding 7, reveal 250 ms) in a GtkActionBar, GN-2.20 |
+| date picker | 3 | No date picker or date entry: GTKgal and ADWgal list only GtkCalendar (GN-2.25), which apps place in a menu-button popover |
+| pull-to-refresh | 3 | No such widget in GTKgal or ADWgal; GTK draws only the overshoot at a scroll edge (GN-3.06) |
+| breadcrumb/path control | 1 | GN-2.52† (GtkPathBar of GTK's file chooser; it is private to the file chooser, GTKgal lists no public path bar) |
+| carousel | 1 | AdwCarousel: GN-2.38 (filed under "page control/pager" in pass 1); its indicator geometry GN-2.55† |
+| colour picker | 1 | GN-2.27 (swatches; filed under "colour button"); the editor page GN-2.53† |
+| dial/circular slider | 3 | No dial in GTKgal or ADWgal; the nearest, GtkScaleButton, pops up a straight vertical scale (GN-2.54†) |
+| fab | 3 | No floating action button in ADWgal or libadwaita's style classes (`doc/style-classes.md`); an app overlays a `.circular` / `.pill` `.suggested-action` button (GN-1.28, GN-1.30) |
+| find bar | 1 | GtkSearchBar GN-2.21 with GtkSearchEntry GN-2.22; GtkTreeView's type-ahead search popover is in GN-1.279† |
+| menu button | 2 | `[button]`: GN-1.26 (`.has-open-popup`), GN-1.27 (arrow-button padding), GN-1.28 (circular / pill menu buttons), GN-1.40 (arrow glyphs) |
+| navigation rail | 3 | No rail in ADWgal; narrow layouts collapse the sidebar (AdwNavigationSplitView / AdwOverlaySplitView, GN-2.19) or use AdwViewSwitcherBar (GN-2.15) |
+| rating | 3 | No rating widget in GTKgal or ADWgal |
+| time picker | 3 | No time picker in GTKgal or ADWgal |
+| token field | 3 | No token / tag entry in GTKgal or ADWgal |
+| access key badge | 3 | GTK marks access keys by underlining the mnemonic after 300 ms of Alt (GN-3.50), no badge |
+| action sheet | 2 | `[dialog]`: AdwAlertDialog presented as a bottom sheet on narrow windows (GN-1.222, GN-2.17), stacked responses (GN-1.284†) |
+| autocomplete | 1 | GN-2.56† (GtkEntryCompletion); emoji completion is in GN-2.43 |
+| back button | 2 | `[window]` title bar: GN-1.278† (AdwBackButton) |
+| background extension | 3 | No content-under-sidebar extension in ADWgal; split views place the content beside the sidebar (GN-2.19) |
+| bottom accessory | 1 | AdwBottomSheet's bottom bar, the always-visible bar that opens the sheet: GN-2.17 |
+| collection view | 2 | `[list]`: GtkGridView / GtkFlowBox items GN-1.174; deprecated GtkIconView GN-1.280† |
+| column browser | 3 | No column browser in GTKgal or ADWgal |
+| context menu preview | 3 | A GTK context menu is a GtkPopoverMenu pointing at the click (GTKgal "PopoverMenu"); there is no lifted preview |
+| dock/panel title bar | 3 | No dock or MDI widgets in GTKgal or ADWgal; panes are GtkPaned (`[splitter]`) |
+| drag and drop | 2 | Drag icon GN-2.49, dragged tab GN-1.133, drag threshold GN-3.48, drop-target highlight GN-3.66† |
+| edit menu | 2 | `[menu]`: the right-click menu of a text widget is a popover menu; on touch, GN-1.286† (selection bubble) with the handles GN-2.42 |
+| full-screen dialog | 3 | AdwDialog's presentation modes are auto, floating and bottom sheet (`A/c/adw-dialog.h:25-27`); none fills the window |
+| glass container | 3 | No glass material: libadwaita sets no `backdrop-filter` (grep of `src/stylesheet`); the nearest is the OSD fill (GN-3.09) |
+| ink toolbar | 3 | No ink or pen widgets in GTKgal or ADWgal |
+| inspector/utility panel | 3 | No utility-panel window or inspector widget in GTKgal's "Windows" group or ADWgal; side inspectors are AdwOverlaySplitView panes (GN-2.19) |
+| keyboard | 3 | The on-screen keyboard is GNOME Shell's, drawn outside the app's window in the shell's theme; GTK only passes `input-purpose` / `input-hints` to the compositor, which choose a layout, not a look |
+| large content viewer hud | 3 | No such HUD in GTKgal or ADWgal |
+| list box | 2 | `[list]`: GtkListBox is the `list` node, GN-1.158–1.166 |
+| loading indicator | 2 | `[spinner]`: AdwSpinner GN-1.226–1.232 (the only indeterminate indicator besides the progress bar's pulse, GN-1.113) |
+| media transport controls | 1 | GN-2.54† (GtkMediaControls, GtkScaleButton); the overlay play image GN-2.44 (filed under "icon button" in pass 1) |
+| paste control | 3 | No paste-permission control: GTK reads the clipboard without a confirmation UI (GTKgal has none) |
+| picker wheel | 3 | No wheel picker in GTKgal or ADWgal |
+| rubber band | 2 | `[list]`: GN-1.175 (list and grid views); GtkTreeView and GtkIconView use the same `rubberband` node (GN-1.279†, GN-1.280†) |
+| rule editor | 3 | No rule editor in GTKgal or ADWgal |
+| scrim | 2 | `[dialog]`: GN-1.210; bottom sheet and split-view dimming GN-3.04 |
+| scroll edge effect | 2 | Undershoot and overshoot GN-3.06; under toolbar-view bars GN-1.156; column-view top GN-1.178 |
+| scrollbar annotation | 3 | GtkScrollbar draws no marks or labels (GN-1.84–1.93; GTKgal "Scrollbar") |
+| swipe actions | 3 | No swipe-to-reveal row actions in ADWgal; AdwSwipeTracker drives only navigation, carousels, sheets and split views (GN-2.18, GN-2.38, GN-2.17, GN-2.19) |
+| teaching tip | 3 | No teaching tip in GTKgal or ADWgal; an app points a plain GtkPopover at a widget (`[popover]`) |
+| text ruler | 3 | GtkTextView has no ruler (GTKgal) |
+| tool box | 3 | No QToolBox-like accordion; the nearest is a column of expander rows (GN-2.09) or GtkExpanders (`[expander]`) |
+| toolbar flyout | 3 | Header bars and toolbars have no overflow menu; apps add a primary menu button (`open-menu-symbolic`, GN-1.40) themselves |
+| touch bar | 3 | No hardware touch bar on the platform |
+| tree view | 2 | `[list]`: GtkTreeExpander in list / column views GN-1.173; the deprecated GtkTreeView GN-1.279† |
+| writing tools | 3 | No writing-assistant UI in GTKgal or ADWgal |
+| zoom button | 3 | No semantic-zoom control in GTKgal or ADWgal; AdwTabOverview (GN-2.35) is the only zoomed-out view and has no zoom button |
+
+Pass 1 filed eight §4.2 rows under a control category GNOME does not have (column 4 of `tags-gnome.tsv`, from which §4.2's table of the main map is built), so the main map shows GNOME as having controls it lacks: GN-2.40 (keycap shortcut label) as "help button", GN-2.41 (shortcuts dialog) as "about dialog", GN-2.42 (text selection handles) as "tool button", GN-2.43 (emoji chooser) as "chip", GN-2.44 (video play overlay) as "icon button", GN-2.45 (editable label) as "search field", GN-2.46 (wrap box) as "button group/toggle group", GN-2.49 (drag icon) as "image frame". The controls behind those names, decided here:
+
+| Control | Decision | Rows, or reason and source |
+|---|---|---|
+| help button | 3 | No help or "What's This" button in GTKgal or ADWgal |
+| tool button | 2 | GTK 4 has no tool-button class (GTKgal); toolbar and header-bar buttons are flat buttons: GN-1.29, GN-1.151 |
+| chip | 3 | No chip or tag widget in GTKgal or ADWgal |
+| icon button | 2 | `[button]`: image-only buttons GN-1.27, `.circular` GN-1.28, `.flat` GN-1.29 |
+| image frame | 3 | GtkImage and GtkPicture draw no frame (GTKgal); a frame is GtkFrame, GN-2.32 |
+| button group/toggle group | 1 | AdwToggleGroup is `[segmented_control]` (GN-1.239–1.251); linked buttons GN-1.42 |
+| search field | 1 | GN-2.21, GN-2.22 (unchanged; GN-2.45 belongs to `[input]`) |
+| about dialog | 1 | GN-2.39 (unchanged; GN-2.41 is the shortcuts dialog) |
+
+### B. Capabilities
+
+| Capability | Rows added, or why no further row |
+|---|---|
+| C01 Shadow geometry | No further row: every surface's shadow already has its row (GN-3.01 lists them) |
+| C02 Elevation | No further row: libadwaita has no elevation levels and no surface tint; each surface states its own shadow layers (GN-3.01) |
+| C03 Materials | No further row: libadwaita 1.10.0 sets no `backdrop-filter` (grep of `src/stylesheet`), although GTK 4.24.1 parses the property (`G/gtkcssstylepropertyimpl.c:1435`); translucency is alpha fills (GN-3.08) and the OSD fill (GN-3.09); there is no reduce-transparency setting (GN-3.10) |
+| C04 Colour composition | No further row of its own; A's rows carry it (GN-1.279†, GN-2.55†) |
+| C05 Colour roles | No further row: GN-1.268–1.277 hold the roles libadwaita defines |
+| C06 Colour variant axes | GN-3.72† (the parent window dimmed under an attached modal dialog) |
+| C07 States | No further row of its own; A's rows carry it (GN-1.279†, GN-1.280†, GN-2.52†, GN-3.66†) |
+| C08 State-layer model | No further row: hover and pressed are fixed currentColor fills (GN-3.08, GN-1.29), not overlay layers with opacities; no ripple |
+| C09 Variants | No further row of its own; GN-2.57† adds the composite dialogs' flat title bars |
+| C10 Size variants and density | No further row: libadwaita has no density or control-size setting; adaptivity is breakpoints (GN-1.197) and the `.compact` / `.short` variants already tagged |
+| C11 Shape | No further row |
+| C12 Border model | No further row of its own; A's rows carry it (GN-1.279† dotted lines, GN-3.66† rings) |
+| C13 Parts | No further row of its own; A's rows carry it (GN-1.278†, GN-1.286†, GN-2.52†–2.55†, GN-2.58†) |
+| C14 Motion | GN-3.71† (window motion drawn by GNOME Shell). Popovers, menus and tooltips open with no motion: `G/gtkpopover.c`, `G/gtktooltip.c` and `G/gtktooltipwindow.c` contain no animation (grep), and the shell animates only normal and dialog windows (`GS/windowManager.js:1512-1554`) |
+| C15 Focus indication | No further row of its own; GN-2.53† adds the colour plane's outer ring |
+| C16 Text caret | GN-3.73† (caret hidden while text is selected; the drop-position caret) |
+| C17 Selection and highlights | GN-1.281† (IME pre-edit, including the `.spelling-error` hint), GN-3.66† (drop-target highlight). GTK's text widgets have no find highlight of their own |
+| C18 Typography | No further row: libadwaita sets no `letter-spacing` or `font-variation-settings` (grep); line heights GN-1.190, features GN-1.192 / 1.193; C's GN-1.283† adds a width stated in characters |
+| C19 Icons | GN-1.285† (a labelled menu item never shows its icon). The rest is in GN-3.57–3.60; GTK 4.24.1 has `-gtk-icon-filter` and `-gtk-icon-style` (`G/gtkcssstylepropertyimpl.c:1297`, `:1309`) but libadwaita sets neither (grep), so disabled icons fade with their widget's opacity |
+| C20 Window chrome | GN-1.282† (resize zone), GN-3.71†, GN-3.72† |
+| C21 Visible timings | GN-3.68† (key repeat), GN-3.69† (spin-button and trough auto-repeat); A's rows add the video controls' 3 s (GN-2.54†), completion's 100 ms (GN-2.56†) and the tree view's 5 s search popover (GN-1.279†) |
+| C22 Pointer | GN-3.67† (pointer shape per element, hidden while typing) |
+| C23 Accessibility variants | GN-3.70† (visual bell) |
+| C24 Whole controls | GN-2.52†–GN-2.58† (from A) |
+| C25 Reader coverage | GN-3.68† (`org.gnome.desktop.peripherals.keyboard`), GN-3.70† (`visual-bell`, `visual-bell-type`) |
+| C26 Layout and placement | GN-1.284† (alert response order, reversed when stacked) |
+| C27 Gradient paint | No further row beyond A's GN-2.53† (hue and alpha gradients); libadwaita's other gradients already have rows (GN-1.10, GN-2.14, GN-3.05, GN-3.06) |
+| C28 Colour space | No further row: libadwaita states its colours in sRGB, or derives them in Oklab from sRGB inputs (`A/s/_colors.scss:25-29`, `:145-170`); GTK 4.24.1's colour states (`GDK/gdkcolorstate.c`) serve content, not the stylesheet |
+
+### C. The "(none)" cells of the GNOME column
+
+**a** = GNOME does not draw it, the cell is right; **b** = GNOME draws it: the row that covers it.
+
+| platform-facts line | a / b | Row, or reason |
+|---|---|---|
+| 1061 `selection_inactive_background` | b | GN-3.40: text selection in an unfocused widget is view fg 10 %. List selection has no `:backdrop` rule (grep of `A/w`), so in an unfocused window it stays as it is; the cell's reason ("`:backdrop` handles this") names a rule that does not exist (Appendix item 10) |
+| 1130 `reduce_transparency` | a | No such GNOME setting (GN-3.10) |
+| 1139 icon size `dialog` | a | AdwAlertDialog and GTK 4's GtkMessageDialog draw no icon (no image in `A/c/adw-alert-dialog.ui` or `G/gtkmessagedialog.c`); the large icons are the status page's and the about dialog's (GN-3.59) |
+| 1140 icon size `panel` | a | The toolkit has no panel; GNOME Shell's top bar is not drawn by the app |
+| 1167 `inactive_title_bar_text_color` | b | GN-1.16: the bar's contents fade to opacity 0.5, not to a colour |
+| 1170 window `border.padding_horizontal` | a | The window draws no padding; content margins are the widgets' own |
+| 1171 window `border.padding_vertical` | a | As 1170 |
+| 1180 button `border.color` | a | No border at rest; the high-contrast ring is GN-1.38 |
+| 1206 input `border.color` | a | No border at rest; the high-contrast ring is GN-1.51 |
+| 1216 input `border.shadow_enabled` | a | No shadow |
+| 1218 input `hover_border_color` | a | No border, so no hover border; the high-contrast ring does not change on hover (GN-1.51) |
+| 1236 checkbox `border.shadow_enabled` | a | No drop shadow; the ring is an inset shadow (GN-1.59) |
+| 1247 checkbox `unchecked_background` | a | Transparent at rest; the pressed fill is GN-1.55 |
+| 1263 menu `border.color` | b | GN-1.179: the popover's outline is its first shadow layer, `0 0 0 1px` (GN-3.02) |
+| 1264 menu `border.line_width` | b | GN-1.179 (1 px, as a shadow spread) |
+| 1265 menu `border.corner_radius` | b | GN-1.68: items are rounded, 9; the cell ("items are rectangular") is wrong (Appendix item 2) |
+| 1266 menu `border.shadow_enabled` | b | GN-1.179 |
+| 1285 tooltip `max_width` | b | GN-1.283†: the label wraps at 50 characters |
+| 1322 slider `tick_mark_length` | b | GN-1.100: marks are 6 px; the cell ("no ticks") is wrong (Appendix item 7) |
+| 1338 progress bar `border.shadow_enabled` | a | No shadow |
+| 1339 progress bar `border.color` | a | No border at rest; the high-contrast inset border is GN-1.115 |
+| 1366 tab `active_outward_corner_radius` | a | Notebook tabs are square; AdwTabBar tabs are rounded on all four corners (GN-1.124), with no outward curve |
+| 1377 sidebar `border.corner_radius` | a | A docked sidebar pane is square; its rows are rounded (GN-1.140) |
+| 1378 sidebar `border.shadow_enabled` | a | No shadow when docked; the overlaid pane's transition shadow and dimming are GN-2.19 |
+| 1390 toolbar `bar_height` | a | No fixed height: the bar is its padding plus its tallest child; the 47 is the header bar's (GN-1.11) |
+| 1396 toolbar `border.color` | a | `.toolbar` draws no border; AdwToolbarView's `.border` line is GN-1.154 |
+| 1397 toolbar `border.corner_radius` | a | Square; the `.osd` toolbar's 15 is GN-1.149 |
+| 1399 toolbar `border.shadow_enabled` | b | GN-1.153: AdwToolbarView's raised bars cast a two-layer shadow |
+| 1412 status bar `border.corner_radius` | a | Square |
+| 1413 status bar `border.shadow_enabled` | a | No shadow |
+| 1430 list `grid_color` | b | GN-1.169 (column separators), GN-1.162 (row separators), GN-1.279† (GtkTreeView's dotted grid and tree lines) |
+| 1439 list `border.corner_radius` | a | A plain list is square; the boxed list's 12 is GN-1.165 |
+| 1441 list `border.shadow_enabled` | a | A plain list has none; the boxed list's is GN-1.165 |
+| 1532 switch `unchecked_track_border_color` | a | No border in any state |
+| 1533 switch `hover_unchecked_track_border_color` | a | As 1532 |
+| 1534 switch `disabled_unchecked_track_border_color` | a | As 1532 |
+| 1535 switch `checked_track_border_color` | a | As 1532 |
+| 1536 switch `disabled_checked_track_border_color` | a | As 1532 |
+| 1538 switch `thumb_border_color` | a | No border; the thumb's edge is its shadow (GN-1.201) |
+| 1539 switch `hover_thumb_border_color` | a | As 1538 |
+| 1540 switch `disabled_thumb_border_color` | a | As 1538 |
+| 1554 dialog `min_height` | a | Sizes to its content |
+| 1555 dialog `max_height` | b | GN-1.218: bounded by the window less the floating sheet's vertical margins |
+| 1568 dialog `icon_size` | a | No icon (as 1139) |
+| 1600 spinner `min_diameter` | b | GN-1.228: AdwSpinner's minimum is 16; the cell is wrong |
+| 1601 spinner `stroke_width` | b | GN-1.227: AdwSpinner's stroke is radius / 8; the cell ("icon-based") describes GtkSpinner only |
+| 1614 combo box `border.color` | a | No border at rest; the high-contrast ring is GN-1.38 |
+| 1617 combo box `min_width` | a | Sizes to its content |
+| 1620 combo box `arrow_area_width` | a | No separate arrow area: the arrow is a 16 px inline icon (GN-1.40) after a 6 px gap (GN-1.233) |
+| 1622 combo box `border.shadow_enabled` | a | No shadow |
+| 1635 segmented `font.color` | a | No colour of its own: an unchecked toggle inherits its parent's foreground; the checked one uses `--active-toggle-fg-color` (`A/w/_toggle-group.scss:80-81`, GN-1.277) |
+| 1639 segmented `separator_width` | b | 1 px: `separator { min-width: 1px; min-height: 1px }` (`A/w/_misc.scss:20-23`) applies to the toggle group's separators, whose margins and fade are GN-1.243; the cell is wrong, the value is published |
+| 1641 segmented `border.corner_radius` | b | GN-1.239: the group's radius is 9 (`$button_radius`); the cell is wrong |
+| 1642 segmented `border.color` | a | No border at rest; the high-contrast ring is GN-1.251 |
+| 1643 segmented `border.line_width` | a | As 1642 |
+| 1644 segmented `border.shadow_enabled` | b | GN-1.240: the checked toggle's two-layer shadow |
+| 1646 segmented `disabled_opacity` | b | GN-1.242 |
+| 1658 card `border.color` | b | GN-1.252: the outline is the first shadow layer |
+| 1659 card `border.line_width` | b | GN-1.252 (1 px, as a shadow spread) |
+| 1662 card `border.padding_horizontal` | a | Set by the app |
+| 1663 card `border.padding_vertical` | a | As 1662 |
+| 1697 link `background_color` | a | Inline text, no fill; `button.link` is transparent (GN-1.266) |
+| 1698 link `hover_background` | a | Hover changes the colour (`A/w/_links.scss:11-13`), not a fill |
+
+Tallies: A — 51 listed controls: 8 decided 1, 12 decided 2, 31 decided 3 (plus the 8 categories pass 1 misfiled). B — 12 capabilities gained rows, 16 need no further row. C — 63 cells: 44 a, 19 b; seven b cells state a wrong value or reason (1061, 1265, 1322, 1600, 1601, 1639, 1641).

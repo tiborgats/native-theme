@@ -60,6 +60,7 @@ Recurring Breeze facts the rows lean on (so they need not be repeated): `focusCo
 | K1.16 | window · states | **Maximized / tiled / shaded** states change corners, borders, outline, shadow | pub `deco:440-497`, `deco:633-690` | none |
 | K1.17 | window · activation motion | Active↔inactive **shadow** transition: duration `AnimationDurationFactor` × 100 ms, `OutCubic` on activation, `InCubic` on deactivation; title colour cross-fade exists with duration 0 | pub `deco:185-200`, `deco:275-297`, `deco:383-389` | none |
 | K1.18 | window · inactive shadow | The inactive window's shadow is the active one at half strength | pub `deco:783-809` (`createShadowObject(0.5)`) | none (see K3.1) |
+| K1.19† | window · quick-tile outline | The **quick-tile / snap preview** KWin shows while a window is dragged to a screen edge: a frame from the Plasma desktop theme's SVG `widgets/translucentbackground` (not from the colour scheme), its borders dropped on the edges that touch the maximize area, moving from the window's geometry to the tile's with x, y, width and height animated Kirigami `longDuration`, `InOutCubic` | read kwinrc `[Outline] QmlPath` (`kwin src/outline.cpp:150-152`); pub `kwin src/qml/outline/plasma/outline.qml:16`, `:65-108`, `:110-125`; the SVG is libplasma's Breeze desktop theme (not read, to verify) | none |
 
 ### Button (QPushButton; QQC2 Button paints through Breeze)
 
@@ -87,6 +88,10 @@ Recurring Breeze facts the rows lean on (so they need not be repeated): `focusCo
 | K1.43 | input · trailing actions | Built-in **action icons** inside the field: clear button (`setClearButtonEnabled`), KPasswordLineEdit reveal toggle; icon, size, colour per state | pub qtbase `qlineedit_p.cpp` (side widgets; to verify lines), `kwa kpasswordlineedit.cpp` (to verify lines); measure: probe app | none |
 | K1.44 | input · hover↔focus motion | Outline cross-fade hover→focus (input-widget engine) | pub `st:4073-4079`, `hp:142-169` | none (K3.31) |
 | K1.45 | input · inactive-window selection | Selected text in an inactive window uses the Inactive palette (see K3.40) | pub `kcs:303-321` | partial: `defaults.selection_inactive_background` only |
+| K1.46† | input · clear button | Qt's built-in **clear button** and other side icons (K1.43 is the part): icon size `PM_LineEditIconSize` = `PM_SmallIconSize` (Breeze does not override it), button box icon + 6 by icon + 2, icon drawn in the Disabled, Normal or Active (pressed) icon mode; a **160 ms opacity fade** (Qt's default easing) as the text appears or is cleared; icon `SP_LineEditClearButton` (theme icon name to verify) | pub qtbase v6.10.1 `qlineedit_p.cpp:353-366`, `:418-441`, `:494-510`; `qcommonstyle.cpp:4797-4799` | none |
+| K1.47† | input · block caret | With an **input mask** and no selection, the line edit's caret is a **blinking block**: the character under the cursor drawn in `Window` on `Text`; QTextEdit/QPlainTextEdit in **overwrite mode** widen the caret by the next character's advance (a space's at the line end) | pub qtbase v6.10.1 `qwidgetlinecontrol.cpp:619-625`; `qwidgettextcontrol.cpp:1425-1445` | partial: `input.caret_color` (one thin caret) |
+| K1.48† | input · password masking | Masked text: **mask character** U+25CF and **mask delay** 0 ms (the last typed character is never shown), Qt's defaults, since neither Breeze nor the KDE platform theme sets the hints; `KPasswordLineEdit`'s trailing **reveal action** (theme icon `visibility`, a bundled SVG as fallback) shows only while the field has text (Quick: Q1.19) | pub qtbase v6.10.1 `qcommonstyle.cpp:5152-5160`, `qplatformtheme.cpp:617-620`; no `PasswordMask*` hint in `khint:86-133`; `kwa kpasswordlineedit.cpp:40-58` | none |
+| K1.49† | input · misspelling underline | Spell-checked text (`KTextEdit` through Sonnet's highlighter): misspelled words get `QTextCharFormat::SpellCheckUnderline`, whose style is the platform hint `SpellCheckUnderlineStyle` (Qt's default `WaveUnderline`; neither Breeze nor the KDE platform theme sets it), coloured **`Qt::red`** unless the app sets a colour: a hard-coded colour, not a scheme role (Quick: Q1.13 uses `negativeTextColor`) | pub KDE/sonnet @ `5442e3b4` `src/ui/highlighter.cpp:89`, `:401-402`; qtbase v6.10.1 `qplatformtheme.cpp:658-659` | none (`defaults.danger_color` is not this colour) |
 
 Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shadow overlay (`kstyle/breezeframeshadow.cpp`; `st:3964-3970`) in the line edit's colours, so `text_area` adds nothing beyond K1.40–K1.45.
 
@@ -102,6 +107,7 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 | K1.55 | checkbox · motion | **Check animation**: the mark is drawn on along its path (dash pattern × progress); partial dots appear in thirds; the radio dot grows from the centre; the tint fades in; duration `AnimationsDuration` | pub `hp:869-871`, `hp:955-972`, `hp:1069-1075`; `st:4926-4935` | none |
 | K1.56 | checkbox · neutral variant | Neutral highlight: pen and tint `NeutralText` | pub `hp:846-856`, `hp:995-1006` | none |
 | K1.57 | checkbox · focus | Keyboard **focus frame** around the indicator (square or circular, see K3.20) | pub `st:6655-6698` | partial: `defaults.focus_ring_*` |
+| K1.58† | checkbox · mark geometry | The **check mark** does not fill the box: a two-segment path from (box left + 4, centre), down to (centre x − 1, box bottom − 5), up to (centre x + 4.5, box top + 5.5), stroked `Text` at 2 × `PenWidth::Frame` (2.002) with a mitre join; the partial state's three 2 × 2 dots sit 4 px apart about the centre — insets the facts' "(none) — checkmark fills indicator" padding cells leave out | pub `hp:894-895`, `hp:913-933`, `hp:938-940`; `mt:25` (`PenWidth::Frame`) | none (`checkbox.border.padding_*` facts: none) |
 
 ### Menu (QMenu; QQC2 Menu/MenuItem paint through Breeze)
 
@@ -130,6 +136,8 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 | K1.80 | tooltip · timings | **Fall-asleep delay** (re-show without delay when moving between items) and **display duration** | pub qtbase `qcommonstyle.cpp` `SH_ToolTip_FallAsleepDelay`, `qtooltip.cpp` hide timer (to verify lines; Breeze does not override them, `st:885-981`) | partial: `show_delay_ms` only |
 | K1.81 | tooltip · shadow / fade | Breeze registers tooltip windows with its shadow helper; KWin fades them | pub `st:4734-4749`; see K3.2, K3.34 | partial: `border.shadow_enabled` |
 | K1.82 | tooltip · square variant | Without compositing the frame is square (`renderMenuFrame(hasAlpha=false)`) | pub `st:4744-4748`, `hp:592-608` | none |
+| K1.83† | tooltip · Qt timings and wrapping | The values K1.80 left to verify: wake-up delay 700 ms, fall-asleep delay 2000 ms (Breeze overrides neither); **display time** 10 000 ms + 40 ms per character beyond 100; hidden 300 ms after the pointer leaves; plain text **wraps only when wider than the screen**, rich text word-wraps, no other maximum width (Quick: gridUnit × 14, Q3.29) | pub qtbase v6.10.1 `qcommonstyle.cpp:5367-5372`; `qtooltip.cpp:175-178`, `:206-210`, `:258` | partial: `tooltip.show_delay_ms`; `max_width` (facts: none) |
+| K1.84† | tooltip · rich tooltip widget | `KToolTipWidget` (Dolphin's file tooltips): any widget as content in a `PE_PanelTipLabel` frame on a translucent window, placed centred below the item (else above, else beside it) with a `PM_ToolTipLabelFrameWidth` gap, **hide delay 500 ms** | pub `kwa ktooltipwidget.cpp:48-54`, `:106-150`, `:231-241`; `st:734` | none |
 
 ### Scrollbar
 
@@ -164,6 +172,7 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 | K1.112 | progress · selected | Inside a **selected** item the fill is `HighlightedText` | pub `st:6294-6296` | none |
 | K1.113 | progress · label | **Text label** (percentage): colour `Text`/`HighlightedText`, `ProgressBar_ItemSpacing`, alignment | pub `st:6313-6343`, `st:2386-2417`; `mt:117` | none |
 | K1.114 | progress · minimum fill | A non-zero value always shows at least `ProgressBar_Thickness` of fill | pub `st:6249-6266` | none |
+| K1.115† | progress · capacity bar | `KCapacityBar` (free-space bars in Dolphin and file dialogs): Breeze's progress bar at a fixed **bar height 12**, its text **below** the bar (`DrawTextOutline`, the default) or inside it (`DrawTextInline`, round margin 6); the Places panel draws its own capacity bars (K1.142†) | pub `kwa kcapacitybar.cpp:19-20`, `:34`, `:42`, `:155-198`, `:202-205` | partial: `progress_bar.*` (no thickness variant, no text-below layout) |
 
 ### Tab bar (QTabBar / QTabWidget)
 
@@ -182,6 +191,7 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 | K1.130 | tab · icon & spacing | Tab **icon size** and icon-text gap `TabBar_TabItemSpacing` | pub `st:7021-7100`; `mt:134` | none |
 | K1.131 | tab · alignment | **Centered tabs** option | read breezerc `[Style] TabBarDrawCenteredTabs` (`kcfg:118-120`); pub `st:951-952` | none |
 | K1.132 | tab · disabled / motion | Disabled tab text; hover fade (tab-bar engine) | pub `hp:1494-1503`; `st:7180-7200` | none |
+| K1.133† | tab · move and drag-hover | **Movable tabs** slide to their new place in 250 ms `InOutQuad` (less for short moves), hard-coded in Qt; dragging something over a tab bar **switches to the tab after 500 ms** (`SH_TabBar_ChangeCurrentDelay`; Breeze does not override it) | pub qtbase v6.10.1 `qtabbar_p.h:30`, `:145`; `qtabbar.cpp:2122`, `:2339-2340`; `qcommonstyle.cpp:5345-5346` | none |
 
 ### Sidebar (Qt Widgets side panels; Kirigami GlobalDrawer in the Quick survey)
 
@@ -189,6 +199,7 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 |---|---|---|---|---|
 | K1.140 | sidebar · edge line | **Side-panel frame** (`_kde_side_panel_view`): only the inner edge, `Inactive Highlight`, `Active Highlight` when the view has focus; `SidePanelDrawFrame` option draws the full frame | read breezerc `[Style] SidePanelDrawFrame` (`kcfg:126-128`); pub `st:3958-3963`, `hp:184-198`, `hp:504-544` | partial: `sidebar.border` (all sides, no focus colour) |
 | K1.141 | sidebar · item margin | `SidePanel_ItemMarginWidth` around side-panel items | pub `mt:166` (use site to verify) | none |
+| K1.142† | sidebar · places panel | KIO's **Places panel** (file dialogs, Dolphin): **section headers** in mix(WindowText, Base, 60) of the active/inactive group; the delegate's icon size (initially 48, the view sets it, to verify); a per-device **capacity bar** under the name, height iconSize ÷ 8, fully rounded, track `WindowText` α 0.2, fill `Highlight` (`HighlightedText` on a selected row of the active window), `[Colors:View] ForegroundNegative` above 95 % used; a trailing **eject** action icon; hidden places at opacity 0.6; sections appearing and disappearing by an opacity animation | pub KDE/kio @ `eec01328` `src/filewidgets/kfileplacesview.cpp:64`, `:70-74`, `:118-138`, `:164-210`, `:239-285`, `:395-441`, `:690-709`, `:728-736` | partial: `sidebar.*` (no section header, capacity bar or action icon) |
 
 ### Toolbar (QToolBar, tool buttons, the tools area)
 
@@ -228,6 +239,8 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 | K1.181 | list · item icon size | Item **icon size** in lists/trees | measure: probe app (`PM_SmallIconSize`/`PM_ListViewIconSize`, Breeze defers to Qt `st:653-656`) | none |
 | K1.182 | list · drop indicator | **Drag-and-drop** drop indicator (not overridden by Breeze, so Qt's) | measure: probe app; pub qtbase `qcommonstyle.cpp` `PE_IndicatorItemViewItemDrop` (to verify) | none |
 | K1.183 | list · sort column shade | `shadeSortColumn` colour-scheme flag | read kdeglobals `[General] shadeSortColumn` (`colors` BreezeLight `:197`); its reader is not in these repos (to verify) | none |
+| K1.184† | list · column view | `QColumnView` (Miller columns, a column browser): every column a list; an item with children ends in a **triangle** (`PE_IndicatorColumnViewArrow`) that Breeze leaves to QCommonStyle: filled `Mid` with a `Dark` edge, `HighlightedText` (or `WindowText`) when selected — shade roles (K3.53); Kirigami's column layout is Q1.93–Q1.94 | pub qtbase v6.10.1 `qcommonstyle.cpp:610-659`; Breeze has no `PE_IndicatorColumnViewArrow` case (`st`, by search) | none |
+| K1.185† | list · tree expand animation | QTreeView's **animated expand/collapse** (when the app turns it on) is enabled whenever the style's `SH_Widget_Animation_Duration` is above 0, which Breeze sets to `AnimationsDuration` (0 with animations off); the slide eases `InOutQuad`, its duration is QVariantAnimation's default (Qt sets none; to verify) | pub qtbase v6.10.1 `qtreeview.cpp:3131`, `qtreeview_p.h:81-87`; `st:942-943` | none |
 
 ### Popover / dropdown
 
@@ -258,6 +271,7 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 | K1.221 | dialog · button icons | Dialog buttons show **icons** (setting) | read kdeglobals `[KDE] ShowIconsOnPushButtons` (`khint:116`); pub `st:944-945` | none |
 | K1.222 | dialog · header line | A dialog with a menu/tool bar gets a Header-filled tools area; others a **top separator line** | pub `st:1359-1398` | none |
 | K1.223 | dialog · window entrance | A Qt dialog is a window: its entrance is KWin's scale/fade (K3.33), which `entrance` cannot describe (no duration, scale, curve) | pub `kwin src/plugins/scale/package/contents/code/main.js:35-39`, `:105-155` | partial: `dialog.entrance` |
+| K1.224† | dialog · message box | `KMessageBox` / `KMessageDialog`, and `QMessageBox` routed through the KDE platform theme's message-dialog helper: a **standard icon** (`SP_MessageBoxQuestion` / `Warning` / `Information` / `Critical`, from the icon theme) at `PM_MessageBoxIconSize`, Qt's default 32 DPI-scaled (Breeze does not override it); text, optional details and a "don't ask again" check box | pub `kwa kmessagebox.cpp:138-147`, `:208`; `kwa kmessagedialog.cpp:247-258`, `:276`; qtbase v6.10.1 `qcommonstyle.cpp:4818-4826`; plasma-integration @ `46eddde9` `qt6/src/platformtheme/kdeplatformtheme.cpp:273-276`, `:335-336` | partial: `dialog.icon_size` (facts: none) |
 
 ### Spinner (busy indicator)
 
@@ -288,6 +302,10 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 ### Link
 
 Checked, no gap: QLabel rich-text links use the palette's `Link`/`LinkVisited` with no hover change (measure to confirm); the Quick `LinkButton`/`UrlButton` gaps are Q1.154–Q1.156.
+
+| ID | Element | What is missing | Source | Model today |
+|---|---|---|---|---|
+| K1.260† | link · KUrlLabel | `KUrlLabel` (clickable URL labels in KF dialogs): text in `Link`, underlined; on hover ("glow", on by default) the text turns **`BrightText`**, a hover colour no other link uses; an optional "float" mode underlines only on hover; an optional alternate pixmap on hover; pointing-hand cursor | pub `kwa kurllabel.cpp:21-29`, `:78`, `:255-290` | partial: `link.hover_text_color` (one value) |
 
 ### Text scale
 
@@ -468,6 +486,16 @@ Rows from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@305eb2c4`, 
 | K2.20 | **Colour button** (KColorButton) | Swatch inside a push button frame | pub `kwa kcolorbutton.cpp` (to verify); measure | none |
 | K2.21 | **Framed panel / scroll area** (QFrame StyledPanel, QAbstractScrollArea) | `Base` fill + rounded outline with hover/focus outline (input-widget engine, frame-shadow overlay); Box/Panel/WinPanel shapes use Qt's shade roles (K3.53) | pub `st:3924-3980`, `st:6573-6617`; `kstyle/breezeframeshadow.cpp` | partial: `list.border`, `card` |
 | K2.22 | **Wizard** (QWizard) | Qt's wizard style on Linux (classic): title/subtitle area, banner, button row | measure: probe app; pub qtbase `qwizard.cpp` (to verify; Breeze does not override `SH_WizardStyle`) | none |
+| K2.23† | **Date field and picker** (KDateComboBox, KDatePickerPopup, QDateEdit with a calendar popup) | `KDateComboBox` is a combo whose popup is a **menu** holding the `KDatePicker` (K2.4) and word items (Next Week, Today, Yesterday, No Date) between separators; `QDateTimeEdit` with `calendarPopup` paints as a **combo box** (`CC_ComboBox`), without it as a spin box (K2.3). The month grid (`KDateTable`): weekday header **bold** on `Window`, non-working days' header text **`Qt::darkRed`** and Sunday numbers `Qt::darkRed` (both hard-coded, dropped under a high-contrast preference), **today bold in `LinkVisited`**, selected `Highlight`/`HighlightedText`, other-month days Disabled `Text`, out-of-range days on the Disabled background, hover and selection through Breeze's item-view selection (`PE_PanelItemViewItem`, K1.170), a 1 px line under the header in the foreground colour | pub `kwa kdatecombobox.cpp:64`, `:114-125`; `kwa kdatepickerpopup.cpp:86-122`; `kwa kdatetable.cpp:279-292`, `:309-315`, `:343-374`, `:376-380`, `:382-413`; qtbase v6.10.1 `qdatetimeedit.cpp:2449-2470` | none |
+| K2.24† | **Time field** (KTimeComboBox, QTimeEdit, KDateTimeEdit) | `KTimeComboBox` is an **editable** combo (K1.240) listing times, sized to its contents, that answers an invalid entry with an error message box (K1.224†) when `WarnOnInvalid` is set; `QTimeEdit` is a spin box (K2.3); `KDateTimeEdit` pairs the date and time fields | pub `kwa ktimecombobox.cpp:236-261`, `:265-270`; `kwa kdatetimeedit.cpp` (layout; to verify lines) | none |
+| K2.25† | **Colour dialog** (QColorDialog through the KDE platform theme; KColorCombo) | The KDE platform theme claims the colour dialog but shows Qt's own widget dialog: a hue–saturation field with a black 20 × 2 / 2 × 20 cross-hair, a value strip framed by `qDrawShadePanel`, basic and custom colour **wells** (cells framed with `PE_Frame`, focus by `PE_FrameFocusRect`), per-channel spin boxes, a hex field, screen colour picking; `KColorCombo` lists colours in a combo; `KColorButton` is K2.20 | pub plasma-integration @ `46eddde9` `qt6/src/platformtheme/kdeplatformtheme.cpp:273-276`, `:337-348`; `qt6/src/platformtheme/kdeplatformcolordialoghelper.cpp:12`, `:38`; qtbase v6.10.1 `qcolordialog.cpp:322-358`, `:819-841`, `:943-955`; `kwa kcolorcombo.cpp` (to verify lines) | none |
+| K2.26† | **File dialog** (KFileWidget) | `QFileDialog` under Plasma is KIO's `KFileWidget` (or the portal's dialog when the portal is used): the Places panel (K1.142†), the URL navigator (K2.27†), the file view in icon, compact or details mode (item-view rows K1.170–K1.185†), a preview pane, an **icon-size slider**, location and filter combos, the button box | pub plasma-integration @ `46eddde9` `qt6/src/platformtheme/kdeplatformtheme.cpp:330-334`; `qt6/src/platformtheme/kdeplatformfiledialoghelper.cpp:42`, `:66-72`; KDE/kio @ `eec01328` `src/filewidgets/kfilewidget.cpp:259-261`, `:298` (layout lines to verify); the portal's dialog: xdg-desktop-portal-kde (not read, to verify) | none |
+| K2.27† | **URL navigator / breadcrumb** (KUrlNavigator, Qt Widgets) | One flat button per folder, padding 5; text in `Text` at alpha 255 for the current location, 128 for the others, 96 when not hovered; the current (last) crumb **bold**; hover, drag-over or an open popup draw a **flat button panel** (`PE_PanelButtonCommand`); **separator arrows** (`PE_IndicatorArrowRight`/`Left`, hover tracked per arrow) open a sub-folder menu; clipped names **fade out through a linear gradient** (text colour to background over the last 20 %); an editable-path mode and a places selector at the start (Quick breadcrumb: Q2.44) | pub KDE/kio @ `eec01328` `src/filewidgets/kurlnavigatorbuttonbase.cpp:89-117`; `src/filewidgets/kurlnavigatorbutton.cpp:44`, `:124-141`, `:171-257`; `src/filewidgets/kurlnavigator.cpp` (editable mode, places selector; lines to verify) | none |
+| K2.28† | **Font chooser** (KFontRequester, KFontChooser) | `KFontRequester`: a **sunken styled-panel label** showing the font's name in that font, its frame forced on Breeze (`_breeze_force_frame`), beside a push button with the `document-edit` icon; `KFontChooser` / `KFontChooserDialog`: family, style and size lists, a size spin box, optional per-attribute check boxes, a preview text field at least one line high with `PM_LayoutVerticalSpacing` above it; Qt's `QFontDialog` is not replaced (the KDE platform theme returns no font-dialog helper), so it stays Qt's widget dialog | pub `kwa kfontrequester.cpp:55-63`; `kwa kfontchooser.cpp:156-168`, `:176-261`; plasma-integration @ `46eddde9` `qt6/src/platformtheme/kdeplatformtheme.cpp:349-351` | none |
+| K2.29† | **Completion popup** (KCompletionBox for KLineEdit / KComboBox) | The default completion mode is a popup: a frameless list window under the field with a **1 px plain box frame**, as wide as the field, at most **15 rows** tall, vertical scroll bar as needed (a tooltip-type window on Wayland); the "auto" modes instead append the completion as selected text in the field (Quick: Q1.16) | pub KDE/kcompletion @ `2bc74a5b` `src/kcompletionbox.cpp:42-53`, `:350-365`; `src/klineedit.cpp:104-106`, `:964` | none |
+| K2.30† | **Find bar** (KTextEditor search bar: Kate, KWrite, KDevelop) | The pattern field's background turns `PositiveBackground` on a match (also after wrapping), `NegativeBackground` on none, `NeutralBackground` for a neutral result (KColorScheme roles, K3.52); the status label `NegativeText` ("Not found"); matches and replacements in the text are highlighted in the editor theme's **search** and **replace** highlight colours (the KSyntaxHighlighting theme, not the colour scheme) | pub KDE/ktexteditor @ `df8e3ad8` `src/search/katesearchbar.cpp:336-390`, `:1658-1660` | none |
+| K2.31† | **What's This popup** (QWhatsThis: Shift+F1, the title-bar help button) | A popup filled `ToolTipBase` with a 1 px `ToolTipText` frame and a second 1 px frame in the shade role `Dark` (K3.53) inside it, rich text inset 12 px left and right and 8 px top and bottom, placed by the pointer; Qt's hand-drawn hatched 6 px shadow in `Shadow` is drawn only when the platform's `DropShadow` hint is true, which the KDE platform theme does not set (whether Breeze's popup shadow, K3.2, applies: to verify) | pub qtbase v6.10.1 `qwhatsthis.cpp:127-136`, `:185-186`, `:246-282`, `:559-578`; `qplatformtheme.cpp:650-651` | none |
+| K2.32† | **Ruler** (KRuler) | A ruler 20 px thick, marks from its end inwards: end mark 14 px, big ¾ of it, medium ½, little ½ of medium, base ½ of little; labels at 8 pt; an optional pointer triangle filled with the background colour; marks in the painter's default pen (the widget's foreground role, to verify) | pub `kwa kruler.cpp:17-54`, `:106-121`, `:314`, `:531-653` | none |
 
 Checked, no gap: Breeze draws no size grip (`CE_SizeGrip` is `emptyControl`, `st:1511-1512`).
 
@@ -529,6 +557,12 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | Q2.50 | PassiveNotification | padding largeSpacing, content spacing mediumSpacing, stack spacing smallSpacing, bottom margin largeSpacing; width ≤ min(gridUnit×25, window/1.5); stack height ≤ gridUnit×10 | `kirigami@81ada72b src/controls/private/PassiveNotificationsManager.qml:26-31`, `:85`, `:101-109`, `:214-225` | none |
 | Q2.51 | PassiveNotification | timeouts: short 4000 ms, default 7000 ms, long 12000 ms | `kirigami@81ada72b src/controls/private/PassiveNotificationsManager.qml:41-48` | none |
 | Q2.52 | PassiveNotification | add: opacity + rise gridUnit×3, longDuration OutCubic; remove: opacity + drop gridUnit×3 + scale to 0, longDuration InCubic; displaced longDuration InOutCubic | `kirigami@81ada72b src/controls/private/PassiveNotificationsManager.qml:117-178` | none |
+| Q2.53† | Touch text actions (qqc2 private MobileTextActionsToolBar) | in touch use (no hover) a text field or area shows a floating **Cut / Copy / Paste** bar: a qqc2 Popup of icon-only ToolButtons `edit-cut-symbolic`, `edit-copy-symbolic`, `edit-paste-symbolic`, centred on the selection start, above it, or gridUnit×1.5 below the selection end when there is no room; Cut and Copy hidden in password fields; the desktop right-click menu is a normal Menu (`TextFieldContextMenu.qml`, [menu] rows) | `qqc2-desktop-style@305eb2c4 org.kde.desktop/private/MobileTextActionsToolBarImpl.qml:15-87`; `TextArea.qml:43-56` | none |
+| Q2.54† | Pull-to-refresh (Kirigami ScrollablePage `supportsRefreshing`, PullDownIndicator) | a strip gridUnit×4 high above the content; while pulling, the arc of Q1.121 sweeps 360° × pull progress, inset smallSpacing in the BusyIndicator's box; a full pull triggers after `refreshDelay` 500 ms; while refreshing the qqc2 BusyIndicator (Q1.119) spins and the content moves down by the strip height, longDuration InOutQuad | `kirigami@81ada72b src/controls/private/PullDownIndicator.qml:52`, `:67`, `:75-113`, `:116-121`, `:125-166`; `src/controls/ScrollablePage.qml:88-95`, `:314-319` | none |
+| Q2.55† | Kirigami Forms, cards style (`org.kde.kirigami.forms`: FormGroup, FormEntry) | the boxed-list form: a **group** = optional title (Heading level 5, DemiBold, left inset cornerRadius, + largeSpacing when the card bleeds to the window edge) over an AbstractCard (Q1.126–Q1.130) holding the entries with no gap, min width gridUnit×30, extending largeSpacing past both sides in narrow windows; an **entry** = padding largeSpacing + smallSpacing (largeSpacing between two entries), a label column inside the card before the field (an inline label above it when the form is collapsed), leading and trailing items, a subtitle in disabledTextColor, min width gridUnit×20 + 2 × largeSpacing; a clickable entry's **hover** fill textColor at opacity 0.05, **pressed** 0.1, only the first and last entries' outer corners rounded cornerRadius, fading longDuration InOutQuad | `kirigami@81ada72b src/forms/cards/FormGroup.qml:21-58`; `src/forms/cards/FormEntry.qml:19`, `:29-37`, `:82-90`, `:120-195`, `:198-213` | none |
+| Q2.56† | Kirigami Forms: separators, actions, flat style | cards: an entry **separator** = Kirigami Separator at opacity 0.5 inset largeSpacing each side, hidden (longDuration InOutQuad) while a clickable neighbour is hovered; an **action** entry = leading icon smallMedium + label + trailing `go-next-symbolic` at iconSizes.small. Flat style: no card; groups split by a Separator with largeSpacing margins and the form spacing (largeSpacing + smallSpacing) above and below, group title Heading level 3 Primary centred, entries smallSpacing apart, separators empty largeSpacing gaps, actions push buttons. Both: the form collapses (labels above fields) when its wide width does not fit, then capped at gridUnit×30 | `kirigami@81ada72b src/forms/cards/FormSeparator.qml:21-46`; `src/forms/cards/FormAction.qml:17-31`; `src/forms/templates/FormAction.qml:64-77`; `src/forms/flat/FormGroup.qml:30-72`; `src/forms/flat/FormSeparator.qml:15-18`; `src/forms/flat/FormAction.qml:16-29`; `src/forms/templates/Form.qml:71-128` | none |
+| Q2.57† | About page (Kirigami AboutItem / AboutPage) | built from the cards forms: a header entry with the application icon at iconSizes.huge (largeSpacing after it, at most a third of the width), the name and version as a Heading, the short description as Heading level 3 Secondary; sections as form groups split by FormSeparators; author entries with an Avatar (Q2.28–Q2.29) at iconSizes.medium | `kirigami@81ada72b src/controls/AboutItem.qml:127-135`, `:185-213`, `:255-290` | none |
+| Q2.58† | Dialog layer (Kirigami `PageRow.pushDialogLayer`) | on mobile, a window wider than gridUnit×40 gets a modal in-window dialog inset gridUnit×2.5 on every side, header gridUnit×1.6 high with an elided Heading (largeSpacing left margin) and a close icon at smallMedium (`window-close-symbolic`, `window-close` on hover); a narrower window pushes the page as a full-window layer (Q2.15); on the desktop a separate window, default gridUnit×50 by gridUnit×30 | `kirigami@81ada72b src/controls/PageRow.qml:264-280`, `:315-320`, `:341-346`; `src/controls/private/MobileDialogLayer.qml:12-75` | none |
 
 ---
 
@@ -553,6 +587,8 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.12 | Inactive-window dimming | Dim-inactive effect (off by default): strength, which windows | read kwinrc `[Effect-diminactive] Strength`, … (`kwin src/plugins/diminactive/diminactive.kcfg:7-24`); default-off `metadata.json:56` | none |
 | K3.13 | Window translucency effect | KWin translucency effect (inactive/moving/menu opacity) | read kwinrc `[Effect-translucency]` (to verify; plugin not read) | none |
 | K3.14 | Effect enablement | Whether blur, scale, fading popups, squash, maximize, sliding popups run (all default-on at this commit; fade, glide, magic lamp, dim-inactive default-off) | read kwinrc `[Plugins] <id>Enabled` (key pattern to verify); pub `kwin src/plugins/*/metadata.json` `EnabledByDefault` | none |
+| K3.15† | **Modal dialog's parent** | KWin's dialog-parent effect (on by default): while a modal dialog is open, its parent window is drawn at **saturation 0.4, brightness 0.6**, animated over `animationTime(300)` (so scaled by the animation factor) and back | read kwinrc `[Plugins]` enablement (K3.14); pub `kwin src/plugins/dialogparent/package/contents/code/main.js:13`, `:38-60`; default-on `kwin src/plugins/dialogparent/package/metadata.json:113` | none |
+| K3.16† | **Not-responding window** | KWin's frozen-app effect (on by default): a window that stops responding is drawn at **saturation 0.1, brightness 1.5**, fading in over `animationTime(1500)` and back over `animationTime(250)` when it answers | read kwinrc `[Plugins]` enablement (K3.14); pub `kwin src/plugins/frozenapp/package/contents/code/main.js:13-17`, `:41-53`, `:73-81`; default-on `kwin src/plugins/frozenapp/package/metadata.json:113` | none |
 
 ### Motion
 
@@ -566,6 +602,8 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.35 | Minimize / maximize / Plasma popups | Squash (250 ms, `InCubic`/`OutCubic`), maximize (250 ms `OutCubic`), sliding popups (200 ms, configurable) | read kwinrc `[Effect-slidingpopups] SlideInTime`, `SlideOutTime` (`slidingpopups.kcfg:8-13`); pub `squash/…/main.js:12-14`, `:51`, `:122`; `maximize/…/main.js:25`, `:57`; `slidingpopups.cpp:96-107` | none |
 | K3.36 | **Kirigami/Plasma units** | `veryShortDuration` / `shortDuration` / `longDuration` / `veryLongDuration` = longDuration ÷ 4, ÷ 2, × 1, × 2, longDuration from plasmarc × factor; `humanMoment`, `toolTipDelay` | read plasmarc `[Units] longDuration` (`qqc2 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:38-55`); pub `kirigami src/platform/units.cpp:36-47` | none |
 | K3.37 | KF widget timelines | KMessageWidget and KCollapsibleGroupBox 500 ms `QTimeLine` (Qt's default curve; to verify which) | pub `kmw:60`, `kwa kcollapsiblegroupbox.cpp:48` | none |
+| K3.38† | **Qt's style-timed animations** | Qt Widgets animations timed by the style hint `SH_Widget_Animation_Duration`, which Breeze sets to `AnimationsDuration` (0 with animations off): the **dock-widget and toolbar re-layout** of a QMainWindow (`QWidgetAnimator`, geometry slide `InOutQuad`) and the tree-view expand (K1.185†); Qt's fixed timings Breeze does not touch: the line-edit side-icon fade 160 ms (K1.46†), the tab move 250 ms (K1.133†) | pub `st:942-943`; qtbase v6.10.1 `qwidgetanimator.cpp:54-62` | none |
+| K3.39† | **Fullscreen transition** | KWin's fullscreen effect (on by default): entering or leaving fullscreen morphs the window's size and position with a cross-fade from the previous frame, `animationTime(250)`, `OutCubic` | pub `kwin src/plugins/fullscreen/package/contents/code/main.js:25`, `:66-110`; default-on `kwin src/plugins/fullscreen/package/metadata.json:102` | none |
 
 ### Focus
 
@@ -589,6 +627,7 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.45 | **Font rendering** | Antialiasing, hinting style, sub-pixel order | read kdeglobals `[General] XftAntialias`, `XftHintStyle`, `XftSubPixel` (keys to verify in plasma-workspace `kcms/fonts`) | none |
 | K3.46 | Font string extras | QFont string fields beyond family/size/weight/style: capitalization, letter/word spacing, stretch, style name, features, variable axes | read kdeglobals font strings (`docs/platform-facts.md` §1.3.1) | partial: `Font` (family, size, weight, style, colour) |
 | K3.47 | Extra font roles | `taskbarFont` (panel) | read kdeglobals `[General] taskbarFont` (`kfont:52`) | none |
+| K3.48† | **Input-method pre-edit** | Text being composed by an input method is drawn inline with the text formats the input method's attributes carry, with its own caret position; what those formats are on Plasma (Wayland text-input-v3 carries no styling) is to verify in qtwayland's input context; measure: probe app with fcitx5 / IBus | pub qtbase v6.10.1 `qwidgetlinecontrol.cpp:633-638` (pre-edit caret); qtwayland `qwaylandinputcontext.cpp` (not read, to verify); measure | none |
 
 ### Colour scheme roles and effects
 
@@ -610,6 +649,8 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.62 | Selected/pressed icon mode | Icons in selected rows and pressed menu items use `QIcon::Selected` (`HighlightedText` recolour) | pub `st:5893-5905`, `st:6111-6120` | none |
 | K3.63 | Icon size groups | `MainToolbar` vs `Toolbar`; list, icon-view, tab, button icon sizes | read icon theme `index.theme` `*Default` (`kit:465-473`) | partial: `IconSizes` (5 contexts) |
 | K3.64 | **Mouse cursor** | Cursor theme and size | read kcminputrc `[Mouse] cursorTheme`, `cursorSize` (`khint:495-504`) | none |
+| K3.65† | **Cursor per element** | The cursor shape the toolkits set per element (drawn from the theme of K3.64): pointing hand over links (KUrlLabel, Kirigami LinkButton, links in labels and form subtitles), I-beam over selectable labels, split cursor on Kirigami column separators, open/closed hand on list drag handles, What's-This cursor on the contextual help button, resize cursors on drawer edges; `KLineEdit` **auto-hides the pointer** (KCursor, delay 5000 ms) | pub `kwa kurllabel.cpp:78`; `kwa kcursor.cpp:147`, `:174`; KDE/kcompletion @ `2bc74a5b` `src/klineedit.cpp:101`; `kirigami@81ada72b src/templates/LinkButton.qml:135`, `src/controls/SelectableLabel.qml:266`, `src/layouts/ColumnViewSeparator.qml:81`, `src/controls/ListItemDragHandle.qml:144`, `src/controls/ContextualHelpButton.qml:101`, `src/templates/OverlayDrawer.qml:501`, `src/forms/cards/FormEntry.qml:193`; `qqc2-desktop-style@305eb2c4 org.kde.desktop/Label.qml:23` | none |
+| K3.66† | **Launch feedback** | KWin's startup feedback (on by default) while an application starts: its icon **bouncing** by the cursor (500 ms per bounce, the default), or blinking through black, dark grey, light grey and white (5 frames × 100 ms), or a passive busy cursor; for at most `Timeout` 5 s | read klaunchrc `[FeedbackStyle] BusyCursor`, `[BusyCursorSettings] Timeout`, `Bouncing`, `Blinking` (`kwin src/plugins/startupfeedback/startupfeedback.cpp:116-135`); pub `…/startupfeedback.cpp:45-57`, `:152-166`; default-on `…/startupfeedback/metadata.json:56` | none |
 
 ### Visible timings and behaviour
 
@@ -621,6 +662,7 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.73 | Single-click activation | `SingleClick` (item views open on one click; hover feedback in file views) | read kdeglobals `[KDE] SingleClick` (`khint:90`) | none |
 | K3.74 | Submenu delay | K1.73 | pub `st:931-932` | none |
 | K3.75 | Tooltip timings | K1.80; Kirigami `toolTipDelay`, `humanMoment` (K3.36) | — | partial |
+| K3.76† | Auto-repeat and press-and-hold | Spin-box arrows **auto-repeat**: first repeat after 500 ms, then every 150 ms (mouse) or 75 ms (key), Qt's values (Breeze sets none of these hints); press-and-hold 800 ms (Qt's default; touch tooltips, Q1.36); drag-hover tab switch 500 ms (K1.133†); Quick scroll-bar repeat is Q1.42 | pub qtbase v6.10.1 `qcommonstyle.cpp:5173-5182`; `qplatformtheme.cpp:667-668`; no such case in `st:885-981` | none |
 
 ### Size variants
 
@@ -630,6 +672,7 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.81 | Shadow size | K3.1/K3.2 size enum | read breezerc `[Common] ShadowSize` | none |
 | K3.82 | Toolbar variants | Tool button style and main/other icon sizes (K1.153, K1.158) | read kdeglobals | partial |
 | K3.83 | Touch / tablet mode | Kirigami `Settings.tabletMode` / `isMobile` size changes | Q3.31; read the `org.kde.KWin.TabletModeManager` D-Bus property (to verify) | none |
+| K3.84† | Display scale (Wayland) | On Wayland the **scale** is per output and may be fractional, stored by KWin in `kwinoutputconfig.json` (`scale`) and sent to clients by the compositor; no kdeglobals key holds it, so `platform-facts.md` §1.3.7 has "(none)" for Wayland | read `~/.config/kwinoutputconfig.json` `scale` (`kwin src/outputconfigurationstore.cpp:1158`, `:1248`, `:1598`) | none |
 
 ### Accessibility variants
 
@@ -640,6 +683,8 @@ Whole controls from the Quick survey (`kirigami@81ada72b`, `qqc2-desktop-style@3
 | K3.92 | Reduced transparency | No toggle; MenuOpacity and the blur effect are the transparency (K3.10, K3.11) | read breezerc, kwinrc | partial: `reduce_transparency` = none |
 | K3.93 | Colour filters | KWin colour-blindness correction / invert / zoom effects change every pixel | read kwinrc `[Plugins]` (to verify names) | none |
 | K3.94 | Cursor size | K3.64 | read kcminputrc | none |
+| K3.95† | **Visual bell** | KWin's system-bell effect (on by default; the visible bell itself is off by default): on a bell the window flashes in `VisibleBellColor` (default red) or inverted (`VisibleBellInvert`), for `VisibleBellPause` 500 ms, at most once per 700 ms | read kaccessrc `[Bell] VisibleBell`, `VisibleBellColor`, `VisibleBellInvert`, `VisibleBellPause` (`kwin src/plugins/systembell/systembell.cpp:126-135`); pub `…/systembell.cpp:110-111`, `:143-159`, `…/systembell/shaders/color.frag:3-9`; default-on `…/systembell/metadata.json:52` | none |
+| K3.96† | **Shake cursor** | KWin's shake-cursor effect (on by default): shaking the pointer magnifies the cursor ×3 (`Magnification`, + `OverMagnification` 1 per further shake), 200 ms `InOutCubic`, deliberately not scaled by the animation factor | read kwinrc `[Effect-shakecursor] TimeInterval`, `Sensitivity`, `Magnification`, `OverMagnification` (`kwin src/plugins/shakecursor/shakecursorconfig.kcfg:7-21`); pub `…/shakecursor.cpp:82-106`; default-on `…/shakecursor/metadata.json:53` | none |
 
 ### Qt Quick: Kirigami and qqc2-desktop-style
 
@@ -701,3 +746,178 @@ These are fields the model has whose KDE source in `platform-facts.md` or the re
 | D7 | `defaults.disabled_text_color` | Reader: `[Colors:View] ForegroundInactive`; facts: Disabled Window `ForegroundNormal` via `[ColorEffects:Disabled]` | `native-theme/src/kde/colors.rs:493`; `kcs:21-56` |
 | D8 | `input.caret_color` | Facts: `DecorationFocus`. Qt draws the line-edit caret in the palette's text colour (to verify in qtbase `qwidgetlinecontrol.cpp`) | measure: probe app |
 | D9 | `defaults.focus_ring_*` | Facts: 1.001 px stroke, 2 px margin. Breeze's focus frame is a 2 px *filled* ring at `Highlight` α 0.3 (K3.20) | `st:6779-6786` |
+
+---
+
+## Cross-check (pass 2, 2026-10-28)
+
+Pass 2 checked this map against the other five surveys (`docs/todo_v0.7.1_model-completeness-gap-map.md` §6.1–§6.3): the controls they list that this file did not (A), every capability C01–C28 (B), and every "(none)" cell of the KDE column of `platform-facts.md` (C). New rows carry a "†" after their ID: 15 in §4.1, 16 in §4.2, 11 in §4.3.
+
+Sources read in this pass beyond the table at the top. The KDE clones are the same commits; KWin's sparse clone gained `src/outline.cpp`, `src/outputconfigurationstore.cpp`, `src/inputmethod.cpp`, `src/qml/outline/` and the plugins `dialogparent`, `frozenapp`, `fullscreen`, `systembell`, `shakecursor`, `startupfeedback` (and, read for enablement only, `sheet`, `invert`, `colorblindnesscorrection`, `translucency`, `slidingnotifications`, `blendchanges`, `screenedge`, `highlightwindow`, `zoom`, `slideback`), all at `625e3132`. Fetched files, read 2026-10-28: qtbase at tag `v6.10.1` (`src/widgets/…`, `src/gui/kernel/qplatformtheme.cpp`, `qplatformintegration.cpp`), cited as "qtbase v6.10.1 `<file>:<line>`"; KDE/kio @ `eec0132888fe2a6ede4b88c8b9689564a88d19fb`, KDE/kcompletion @ `2bc74a5bf8a04faa8f44815fb65dc17f0eb1208d`, KDE/ktexteditor @ `df8e3ad8b6fcbdb5278696640e9cdfe7507cb65a`, KDE/sonnet @ `5442e3b4cac09675133f345ff8ccecdfba9d58d9`, KDE/xdg-desktop-portal-kde @ `936476a53424f11b08c3ee0e290de0154220b531` (the `master` heads that day). They are re-pinned with the rest (§6.4).
+
+### A. Controls other surveys list
+
+Decision: 1 = KDE draws it as a standalone control (row in §4.2); 2 = KDE draws it inside an element this map already covers (rows named; rows added where they missed something); 3 = KDE has no such control.
+
+| Control | Decision | Rows added, or reason and source |
+|---|---|---|
+| search field | 2 | Quick: Q1.15–Q1.17 (qqc2 and Kirigami SearchField, its popup); Qt Widgets has no search-field class (a QLineEdit with a clear button: K1.43, K1.46†) — `kwa src/` widget list, qtbase |
+| date picker | 1 | K2.4 (the calendar) and K2.23† (KDateComboBox, KDatePickerPopup, QDateEdit's calendar popup, KDateTable cell colours) |
+| pull-to-refresh | 1 | Q2.54† (Kirigami ScrollablePage's PullDownIndicator); its arc is Q1.121 |
+| split button | 2 | K1.155 (QToolButton `MenuButtonPopup`: split sub-control with a separator line); Qt and KF have no split push button |
+| carousel | 3 | No carousel in KF6: none in the `kwa src/` widget list, Kirigami's `src/controls/`, or qqc2-desktop-style's control list (`qqc2-desktop-style@305eb2c4 CMakeLists.txt:110-168`); the nearest part, PageIndicator, is Q2.11 |
+| colour picker | 1 | K2.25† (QColorDialog shown through the KDE platform theme; KColorCombo); K2.20 is the colour button |
+| find bar | 1 | K2.30† (KTextEditor's search bar: match / no-match field backgrounds, search and replace highlights) |
+| menu button | 2 | K1.27 (QPushButton with a menu), Q1.8 (qqc2 `menu` arrow flag), K1.155 (tool-button menu arrows) |
+| navigation drawer/pane | 2 | Q1.53–Q1.66 (Kirigami OverlayDrawer, GlobalDrawer incl. collapsed rail, ContextDrawer), Q1.67 (qqc2 Drawer) |
+| password field | 2 | K1.43, Q1.19; added K1.48† (mask character and delay, KPasswordLineEdit's reveal action) |
+| time picker | 1 | K2.24† (KTimeComboBox, QTimeEdit, KDateTimeEdit) |
+| token field | 3 | No token field in KF6 (`kwa src/` widget list, Kirigami `src/controls/`); tags are drawn as Kirigami Chips (Q2.22–Q2.24) |
+| view switcher | 2 | Q2.33–Q2.36 (Kirigami NavigationTabBar), K2.14 (KPageView's Tabbed and List faces) |
+| access key badge | 3 | KDE marks access keys by underlined mnemonics, not badges: K3.44 (Breeze `MnemonicsMode`), Q1.10 (Kirigami mnemonics, shown while Alt is held) |
+| action sheet | 2 | Q1.117 (Kirigami MenuDialog: a list of actions in a dialog) |
+| autocomplete | 1 | K2.29† (KCompletionBox, inline completion); Quick: Q1.16 (SearchField popup) |
+| back button | 2 | Q1.73 (Kirigami global toolbar's back / forward buttons) |
+| background extension | 3 | Liquid Glass content mirroring under a floating sidebar; Breeze and Kirigami sidebars are opaque panels (K1.140, Q1.53–Q1.54) |
+| bottom accessory | 3 | iOS 26 tab-bar accessory; Kirigami's bottom bar (NavigationTabBar, Q2.33) has no accessory slot (`kirigami@81ada72b src/templates/NavigationTabBar.qml`) |
+| collection view | 2 | K1.180 (QListView icon mode), Q1.133 (Kirigami CardsLayout / CardsListView) |
+| column browser | 2 | Q1.93–Q1.94 (Kirigami ColumnView); added K1.184† (QColumnView's arrows) |
+| context menu preview | 3 | iOS's lifted preview; KDE context menus are plain menus ([menu] rows; `qqc2-desktop-style@305eb2c4 org.kde.desktop/private/TextFieldContextMenu.qml`) |
+| drag and drop | 2 | K1.182 (drop indicator), K1.126 (tab tear line), Q2.43 (drag handle, drop animation), K3.71 (drag threshold), K1.133† (drag-hover tab switch), K3.65† (hand cursors) |
+| edit menu | 1 | Q2.53† (the touch Cut / Copy / Paste bar); the desktop text context menu is a menu |
+| file chooser | 1 | K2.26† (KFileWidget), with K1.142† (Places panel) and K2.27† (URL navigator) |
+| font chooser | 1 | K2.28† (KFontRequester, KFontChooser; QFontDialog stays Qt's) |
+| full-screen dialog | 1 | Q2.58† (Kirigami `pushDialogLayer`: full-window layer on narrow mobile windows, inset dialog on wide ones, a window on the desktop); Q2.15 (layer transitions) |
+| glass container | 3 | Liquid Glass; KDE has no glass material — its translucency is MenuOpacity and KWin blur (K3.10–K3.11) |
+| ink toolbar | 3 | No inking control in Qt Widgets, KF6 or Kirigami (`kwa src/`, Kirigami `src/controls/` lists) |
+| inspector/utility panel | 2 | K2.10 (dock widgets, Qt Widgets' tool panels), Q1.66 (Kirigami ContextDrawer) |
+| keyboard | 3 | The on-screen keyboard is a separate input-method client KWin starts (`kwin src/inputmethod.cpp:867-900`); applications do not draw it |
+| large content viewer hud | 3 | iOS accessibility HUD; Plasma has no counterpart (zoom / magnifier are KWin effects, K3.93) |
+| list box | 2 | [list] rows K1.170–K1.185†, Q1.77–Q1.83 |
+| loading indicator | 2 | K1.230, Q1.119–Q1.120 (icon spinners), Q2.32 (LoadingPlaceholder), K1.110 (busy progress bar) |
+| media transport controls | 3 | No media-transport control in Qt Widgets, KF6 or Kirigami (same lists); Plasma's media controller is a shell applet |
+| paste control | 3 | iOS's privacy paste button; Qt pastes without a permission control |
+| picker wheel | 3 | qqc2-desktop-style ships no Tumbler (`CMakeLists.txt:110-168`), so a QtQuick Tumbler falls back to Qt's own style; Qt Widgets and KF6 have no wheel picker |
+| rule editor | 3 | No predicate/rule editor in KF6 (`kwa src/` list) |
+| scrim | 2 | Q3.22 (dim per surface), Q1.57, Q1.104, Q1.112, Q2.38 |
+| scroll edge effect | 3 | No edge blur or fade in Breeze or Kirigami; the nearest is the separator that appears when content scrolls under a dialog header or footer (Q1.109, Q1.114) |
+| scrollbar annotation | 3 | Breeze's `CC_ScrollBar` draws no marks (K1.90–K1.97); KTextEditor's own scroll-bar markers are editor-internal, outside the toolkit |
+| swipe actions | 2 | Q1.84 (qqc2 SwipeDelegate), Q1.88–Q1.89 (Kirigami SwipeListItem) |
+| teaching tip | 1 | K2.31† (QWhatsThis popup) and K1.84† (KToolTipWidget rich tooltip); Q2.48 (Kirigami ContextualHelpButton) |
+| text ruler | 1 | K2.32† (KRuler) |
+| tool button | 2 | K2.2 (whole control, pointing to K1.152–K1.157). The cross-check list names GN-2.42, which is GTK's text selection handles and magnifier; KDE's are Q1.14 (qqc2 MobileCursor) |
+| toolbar flyout | 2 | K1.157, Q1.75 (toolbar overflow menus), Q2.53† (touch text actions bar) |
+| touch bar | 3 | Mac hardware; no counterpart |
+| tree view | 2 | K1.176 (branches, arrows, indentation), Q1.85; added K1.185† (expand animation) |
+| writing tools | 3 | Apple Intelligence; no counterpart in KF6 |
+| zoom button | 3 | WinUI SemanticZoom; no semantic-zoom control in Qt Widgets, KF6 or Kirigami (same lists) |
+
+Tally: 1 — 12 controls (rows K2.23†–K2.32†, Q2.53†, Q2.54†, Q2.58†); 2 — 19; 3 — 19. Q2.55†–Q2.57† (Kirigami Forms, About page) were found on the way, under controls KDE already had rows for (preference rows / boxed list, about dialog).
+
+### B. Capabilities
+
+| Capability | Rows added, or "no further row" and why |
+|---|---|
+| C01 shadow geometry | K2.31† (QWhatsThis's hand-drawn shadow, off under KDE). Every other KDE surface with a shadow has its row (K3.1–K3.5, Q3.20–Q3.21) |
+| C02 elevation | No further row: Breeze and Kirigami have no elevation scale; each surface states its own shadow (K3.1–K3.5, Q3.21) |
+| C03 materials | No further row beyond K1.19† (the quick-tile outline uses the Plasma theme's translucent SVG): KDE's translucency is MenuOpacity and KWin blur (K1.65, K3.10–K3.14); the decoration fills the frame and title bar with the scheme's colours as given, with no material or blur of its own (`deco:584-606`) |
+| C04 colour composition | K1.142†, K1.184†, K2.27†, K2.31†, Q2.55†, Q2.56† |
+| C05 colour roles | K1.49† (hard-coded misspelling red), K2.23† (hard-coded `darkRed`, `LinkVisited` as today), K2.30† (status backgrounds in use), K1.260† (`BrightText` as hover) |
+| C06 variant axes | K3.15† (modal dialog's parent dimmed), K3.16† (not-responding window); K2.23† (high-contrast branch) |
+| C07 states | K1.46†, K1.133†, K1.142†, K1.260†, K2.23†, K2.27†, K2.30†, Q2.55†, Q2.56† |
+| C08 state layers | No further row: KDE's hover / pressed fills are fixed alpha tints, already Q3.16 and the per-widget rows; Q2.55†'s hover / pressed opacities are tagged C04, C07 |
+| C09 variants | K1.115† (capacity bar), Q2.56† (cards vs flat forms) |
+| C10 size variants | K3.84† (per-output display scale); Q2.58† (dialog layer by window width) |
+| C11 shape | Q2.55† (first and last entries' outer corners only), K1.58† |
+| C12 borders | K2.29† (1 px plain box frame), K2.31† (double frame) |
+| C13 parts | K1.46†, K1.48†, K1.58†, K1.115†, K1.142†, K1.184†, K1.224†, all new §4.2 rows |
+| C14 motion | K1.19†, K1.46†, K1.133†, K1.185†, K3.15†, K3.16†, K3.38†, K3.39†, K3.96†, Q2.54†, Q2.55†, Q2.56† |
+| C15 focus | No further row: K3.20–K3.24, Q3.30 and the per-widget focus rows cover every focus indication found; the new controls draw focus through those |
+| C16 caret | K1.47† (block caret, overwrite caret), K3.48† (pre-edit caret). K3.42's and K3.43's "to verify" now have their source: caret width = the platform hint `TextCursorWidth`, Qt's default 1 (the KDE platform theme does not set it), `qcommonstyle.cpp:4828-4830`, `qplatformtheme.cpp:648-649`; blink while text is selected = 1 off macOS, `qcommonstyle.cpp:5138-5143` |
+| C17 selection, highlights | K1.49† (misspelling underline), K2.30† (find highlight), K3.48† (pre-edit) |
+| C18 typography | No further row beyond the fonts inside new rows (K2.23† bold header and today, K2.32† 8 pt labels, K2.27† bold crumb): every kdeglobals font role is read (`native-theme/src/kde/fonts.rs:157-204`) or in K3.47 |
+| C19 icons | K1.46† (icon modes of side icons), K1.48†, K1.224† (message-box standard icons), Q2.53† |
+| C20 window chrome | K1.19† (quick-tile outline), K3.15†, K3.16†, K3.39† |
+| C21 timings | K1.83† (tooltip wake-up, fall-asleep, display time), K1.84† (500 ms hide delay), K1.133†, K3.76† (auto-repeat, press-and-hold), K3.66†, Q2.54† (refresh delay) |
+| C22 pointer | K3.65† (cursor per element, auto-hide), K3.66† (launch feedback), K3.96† (shake cursor) |
+| C23 accessibility | K3.95† (visual bell), K3.96† (shake cursor). Plasma has no contrast preference to read: the KDE portal's appearance keys are `color-scheme`, `accent-color` and `reduced-motion` only (KDE/xdg-desktop-portal-kde @ `936476a5` `src/settings.cpp:211-213`), so the high-contrast branches in KF widgets (`kwa highcontrasthelper.cpp:15-29`) do not run on Plasma — K3.91 stands |
+| C24 whole controls | The 16 new §4.2 rows (A) |
+| C25 reader coverage | K1.19†, K3.15†, K3.16†, K3.66†, K3.84†, K3.95†, K3.96† |
+| C26 layout | K1.83†, K1.84†, K2.27†, K2.29†, Q2.53†, Q2.55†, Q2.56†, Q2.58† |
+| C27 gradients | K2.27† (clipped crumb names fade out through a gradient) |
+| C28 colour precision | No further row: KDE colour schemes store 8-bit `R,G,B` integers (`colors` BreezeLight `:31`) and KColorScheme reads them as such; no wide-gamut or HDR colour role exists to carry |
+
+### C. "(none)" cells of the KDE column
+
+(a) KDE does not draw it, the cell is right; (b) KDE draws it and no document states it, the row named holds it (or "†" marks a row added here).
+
+| platform-facts line | a/b | Row, or reason |
+|---|---|---|
+| 718 Scale factor (Wayland) | b | K3.84† (per-output scale in `kwinoutputconfig.json`) |
+| 1057 `shadow_color` | b | K3.1, K3.2 (breezerc `ShadowColor`, read) |
+| 1061 `selection_inactive_background` | b | K3.40, K1.173 (D3: the cell is wrong for Breeze's default `ChangeSelectionColor`) |
+| 1117 `border.corner_radius_lg` | a | One radius step: Breeze `Frame_FrameRadius` (`mt:42`), Kirigami `cornerRadius` (`kirigami@81ada72b src/platform/units.cpp:46`); the window's larger corner is K1.10 |
+| 1127 `text_scaling_factor` (Wayland) | a | No text-only scale on Wayland; the font sizes are the text size (read) |
+| 1129 `high_contrast` | a | No contrast setting (B, C23; K3.91) |
+| 1130 `reduce_transparency` | a | No setting; transparency is MenuOpacity and the blur effect (K3.92) |
+| 1170 window `border.padding_horizontal` | a | The window has no padding; content margins are layout rows (K1.210, Q1.98) |
+| 1171 window `border.padding_vertical` | a | As 1170 |
+| 1183 button `min_height` | a | No minimum; height = content + `Button_MarginWidth` and frame metrics |
+| 1212 input `min_height` | a | No minimum on Qt Widgets; the Quick TextArea background's implicit size is Q1.12 |
+| 1216 input `border.shadow_enabled` | a | `renderFrame` draws no shadow; Breeze's only control shadows are the button frame and slider / dial handles (`hp:728-732`, `hp:1178-1180`) |
+| 1236 checkbox `border.shadow_enabled` | a | As 1216 (`renderCheckBox*`, `hp:831-981`) |
+| 1237 checkbox `border.padding_horizontal` | b | K1.58† (mark inset in the box), K1.53 (box inset in the cell) |
+| 1238 checkbox `border.padding_vertical` | b | K1.58†, K1.53 |
+| 1260 menu `row_height` | a | Content-sized; the derivation is K1.71 (`st:3607-3718`); Quick item padding Q1.28 |
+| 1263 menu `border.color` | b | K1.64, K1.65 (the menu frame's outline, translucent variant) |
+| 1264 menu `border.line_width` | b | K1.64, K1.65 |
+| 1265 menu `border.corner_radius` | b | K1.60, Q1.26: Breeze's highlighted item **is** rounded (`frameRadius`), so the cell's "items are rectangular" is wrong for KDE |
+| 1266 menu `border.shadow_enabled` | b | K3.2, K1.74, Q1.23 |
+| 1285 tooltip `max_width` | b | K1.83† (Qt: wraps only at the screen width), Q3.29 (Quick: gridUnit × 14) |
+| 1310 scrollbar `overlay_mode` | b | Desktop: persistent (the cell is right); touch: Q1.41 (overlay thumb) |
+| 1336 progress `min_width` | a | No minimum |
+| 1338 progress `border.shadow_enabled` | a | `renderProgressBarGroove` draws no shadow (`hp:1204-1218`) |
+| 1366 tab `active_outward_corner_radius` | a | One rounded rectangle, no outward corners (the cell's own source) |
+| 1377 sidebar `border.corner_radius` | a | Side panels are rectangular (`hp:504-544`); Kirigami drawers too |
+| 1378 sidebar `border.shadow_enabled` | b | Modal Kirigami drawers cast an edge shadow: Q1.56; inline panels none |
+| 1390 toolbar `bar_height` | b | Qt Widgets content-sized; Quick implicit 40 (Q1.69) and the global toolbar (Q1.72) |
+| 1397 toolbar `border.corner_radius` | a | `CE_ToolBar` paints nothing |
+| 1399 toolbar `border.shadow_enabled` | a | As 1397 |
+| 1412 status bar `border.corner_radius` | a | Rectangular bar, only a top line (K1.160) |
+| 1413 status bar `border.shadow_enabled` | a | As 1412 |
+| 1430 list `grid_color` | b | Qt's grid pen is the shade role `Mid` (`SH_Table_GridLineColor`, qtbase v6.10.1 `qcommonstyle.cpp:5145-5150`), computed from `[KDE] contrast`: K3.53 |
+| 1431 list `row_height` | a | Content-sized (item margins K1.170); Quick padding Q1.79 |
+| 1432 list `header_height` | a | Content-sized from metrics the cell cites; K1.179 |
+| 1441 list `border.shadow_enabled` | a | The cell's own source |
+| 1488 text `display` | a | Kirigami's largest heading is level 1 (Q1.3); no display style |
+| 1506 layout `section_gap` | b | Q2.47 (FormLayout: largeSpacing × 2 above section titles), Q2.56† (Kirigami Forms: largeSpacing + smallSpacing between groups) |
+| 1552 dialog `min_width` | a | Content-sized (Kirigami desktop dialog windows have a minimum width, Q2.58†) |
+| 1553 dialog `max_width` | b | Q1.113 (Kirigami Dialog: window − largeSpacing × 2) |
+| 1554 dialog `min_height` | a | Content-sized |
+| 1555 dialog `max_height` | b | Q1.113 |
+| 1568 dialog `icon_size` | b | K1.224† (message box: `PM_MessageBoxIconSize`), Q1.116 (PromptDialog: iconSizes.huge) |
+| 1600 spinner `min_diameter` | a | No minimum; the spinner is an icon (K1.230, Q1.119–Q1.120) |
+| 1601 spinner `stroke_width` | a | Icon-based, no stroke; the only stroked arc is the pull-to-refresh indicator (Q1.121, Q2.54†) |
+| 1616 combo `min_height` | a | Content-sized |
+| 1617 combo `min_width` | b | Quick: content min width 75 (Q1.124); Qt Widgets content-sized |
+| 1622 combo `border.shadow_enabled` | b | K1.244 (D5): a non-editable combo draws the button's shadow, so the cell is wrong |
+| 1644 segmented `border.shadow_enabled` | a | KDE has no segmented control |
+| 1675 expander `header_height` | a | Content-sized |
+| 1677 expander `border.padding_horizontal` | a | KCollapsibleGroupBox has no header padding; its content is indented by `PM_IndicatorWidth` and set below the header (`kwa kcollapsiblegroupbox.cpp:314`) |
+| 1678 expander `border.padding_vertical` | a | As 1677 |
+| 1680 expander `border.color` | a | No frame (`kwa kcollapsiblegroupbox.cpp:153-182`) |
+| 1681 expander `border.line_width` | a | As 1680 |
+| 1682 expander `border.shadow_enabled` | a | As 1680 |
+| 1687 expander `hover_background` | a | The cell's own source |
+| 1697 link `background_color` | a | Inline text; KUrlLabel too changes only the text colour (K1.260†) |
+| 1698 link `hover_background` | a | As 1697 |
+
+Tally: a — 38; b — 20 (2 rows added for them: K1.58†, K3.84†; K1.83† and K1.224†, added for A/B, also answer cells).
+
+### Found wrong in pass 1 (not rewritten here)
+
+- `platform-facts.md:1265` (menu items rectangular) and `:1622` (combo, no shadow) disagree with Breeze's source (K1.60, K1.244 / D5) — for `docs/todo.md`'s list of values against their sources.
+- The Link note above cites "Q1.154–Q1.156" for the Quick link rows; they are Q1.134–Q1.136.
+- In `tags-kde.tsv`, several §4.2 rows sit under a control name that is not theirs, which hid them from the cross-check: K2.7 (command link) under "button group/toggle group", K2.15 (KTitleWidget) under "status page/placeholder", K2.16 (KMultiTabBar) under "navigation rail", K2.17 (splitter collapser) under "button group/toggle group", K2.22 (wizard) under "about dialog", Q2.43 (drag handle) under "icon button"; K2.2 (tool button) has no tag line at all, so "tool button" came out as missing for KDE.
+- The cross-check list's "tool button" entry for GNOME is GN-2.42, which is GTK's text selection handles and magnifier.
+- The Kirigami Forms module (`src/forms/`, cards and flat styles: KDE's boxed list) and the KIO file widgets were not surveyed in pass 1 (Q2.55†–Q2.57†, K1.142†, K2.26†–K2.27†). kirigami-addons (FormCard, date and time pickers), which many KDE applications use, is outside this map's scope as written; whether it belongs is a question for the rationale.

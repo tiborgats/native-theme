@@ -100,6 +100,11 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-W08 | Window background | One colour cannot carry a material: `windowBackgroundColor` is drawn tinted by the wallpaper and differs with Reduce Transparency (platform-facts §2.1.3: the drawn value with RT on); RT-off and tinting values missing. | differs | M: probe:passes `reduce-transparency-off`, `tinting-off` already exist; samples `windowBackground` (`probe.toml:3610`) | `window.background_color`, `defaults.background_color` |
 | MAC-W09 | Window tab bar (native tabbing, "Prefer tabs") | The whole part: bar height, fill, selected / unselected tab fill, tab separators, tab title font and colour, close button on hover, "+" (new tab) button, inactive-window look, drag look. | differs (26 to verify) | M: new key-window element — two windows joined with `addTabbedWindow(_:ordered:)`, capture, hover capture | none (`tab.*` is a tab view's) |
 | MAC-W10 | Title-bar accessory / unified toolbar background | The toolbar area's fill per toolbar style and its material (`.titlebar`); on 26 the title bar is transparent over content with glass item groups (MAC-TL03). | differs | P: `NSVisualEffectView.Material.titlebar`; M: material capture | `window.title_bar_background`, `toolbar.background_color` |
+| MAC-W11† | Document title menu | A document window (`representedURL`, `isDocumentEdited`): the chevron shown beside the title on hover, the popover it opens (rename and location — contents to verify), the "Edited" mark in the title. | both (26 to verify) | P: `NSWindow.representedURL` docs; M: key-window capture of a document window, hover capture over the title, the popover captured as MAC-PO01 | `window.title_bar_font` |
+| MAC-W12† | Full-screen window | The full-screen state: the window's corners and edge in it, the title bar and toolbar hidden and revealed when the pointer reaches the top edge (the reveal's background — `.fullScreenUI` material), the menu bar coming in with it, the divider between two windows in a full-screen Split View. | both (26 to verify) | P: HIG Going full screen; `NSVisualEffectView.Material.fullScreenUI`; M: key-window capture after `toggleFullScreen(_:)`, hover capture at the top edge, recording (MAC-X32) | none |
+| MAC-W13† | Window tiling | The zoom button's hover menu (full screen and tile left / right on 12–14; tiling layouts on 15+ — item names to verify), the 15+ drag-to-edge tiling preview, the gaps between tiled windows (the "Tiled windows have margins" setting), the tiled window's corners. | differs (15+ layouts and drag tiling; 12–14 menu only; 26 to verify) | P: Apple Support, Mac User Guide "Tile windows" (page to verify); R: the margins setting (`com.apple.WindowManager` key to verify); M: hover capture over the zoom button, recording of a drag to the screen edge | none |
+| MAC-W14† | Title-bar variants | `titlebarAppearsTransparent` (10.10: the title bar draws no background; content under it with `fullSizeContentView`), `titleVisibility` hidden (traffic lights only), a titled window without a toolbar vs with one: each changes the fill, separator and title placement the rows above assume. | both | P: `NSWindow.titlebarAppearsTransparent`, `titleVisibility` docs (read 2026-10-28); M: key-window capture per variant | `window.title_bar_background` |
+| MAC-W15† | Inactive title text colour | `inactive_title_bar_text_color` is (none) on 12–15 and ❓ on 26 (platform-facts.md:1167), yet a non-key window draws its title differently from a key one; the reader reads only `windowFrameTextColor` (`native-theme/src/macos.rs:196`). | both | M: the `not-key` pass of the key-window capture (exists), samples on the title | `window.inactive_title_bar_text_color` |
 
 ### Button (`[button]`)
 
@@ -115,6 +120,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-B08 | Border shape (26) | `NSControl.BorderShape` (automatic, capsule, rounded rectangle, circle — cases to verify): a capsule button at larger sizes; the automatic shape per control size. | 26 only | P: `NSControl.BorderShape` (page to verify); M: new render per size and shape | `button.border.corner_radius` |
 | MAC-B09 | Button image | Icon size inside the button per control size, icon colour per state (template tint: rest, pressed, disabled, on accent), image positions (`imagePosition`), image-only button padding. | both | M: new render with an SF Symbol image, each state | `button.icon_text_gap` only |
 | MAC-B10 | Checked toggle button (`pushOnPushOff`) | Checked + pressed, checked + disabled, checked in a non-key window. | both | M: new render (state on, highlighted, disabled), key-window element | `button.checked_*` |
+| MAC-B11† | Minimum width | `min_width` is (none), "sizes to content" (platform-facts.md:1182), yet a push button with a short title has a drawn minimum (bezel ends and padding) per control size; whether AppKit imposes a wider one: to verify. | differs (to verify) | R: `intrinsicContentSize` of a push button with an empty and a one-character title, per control size; M: existing renders | `button.min_width` |
 
 ### Text input (`[input]`) and text area (`[text_area]`)
 
@@ -128,6 +134,8 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-I06 | Completion / suggestion UI | The completions list (`NSTextView.complete(_:)`) and the macOS 14 inline prediction ghost text (its colour). | both (inline predictions 14+) | P: `NSTextInputTraits` inline prediction property (to verify name); M: recording in a text view | none |
 | MAC-I07 | Text area extras | Ruler (`NSRulerView`) and the find bar are not the field's (MAC-N17, MAC-N18); the text area's default font is `userFont(ofSize:)` (probe `[macos.fonts.named.userFontOfSize]`, `probe.toml:139`), not the system font — no field. | both | R: `NSFont.userFont(ofSize: 0)`, `userFixedPitchFont(ofSize: 0)` | `input.font`, `defaults.mono_font` |
 | MAC-I08 | Text area frame | The enclosing `NSScrollView.borderType` frame (none / line / bezel / groove) and its colour. | both | P: `NSScrollView.borderType` docs; M: new render per border type | `text_area.border` (inherits input) |
+| MAC-I09† | AutoFill look | A field with a `contentType` (`NSTextContentType`) can show the AutoFill / Passwords button inside the field and a tinted fill once filled or for a suggested strong password: glyph, fill and text colours (behaviour per version to verify). | to verify | P: `NSTextField.contentType`, `NSTextContentType` docs; M: key-window capture of a password field with a new-password content type (feasibility on a runner to verify) | none |
+| MAC-I10† | Text area insets | `text_area.border.padding_*` are (none) (platform-facts.md:1714-1715): the drawn inset is `lineFragmentPadding` (its default is published there) plus `textContainerInset`, whose default no document states. | both | R: `NSTextView.scrollableTextView()` (10.14): the text view's `textContainerInset` and `textContainer.lineFragmentPadding` | `text_area.border.padding_*` |
 
 ### Checkbox / radio (`[checkbox]`)
 
@@ -161,6 +169,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-MN14 | Menu edge and shadow | Container edge line / rim and every shadow layer (MAC-X01); the menu material (MAC-X02). | differs | M: shadow capture of a menu window | `menu.border.*` ("from §2.16") |
 | MAC-MN15 | Pop-up menu geometry | A pop-up button's menu opens with the selected item over the button (offset), its font follows the control size. | both | M: capture with a pop-up button's menu open | none |
 | MAC-MN16 | Minimum width | The menu's minimum width (`NSMenu.minimumWidth` default). | both | R: `NSMenu().minimumWidth` (to verify default meaning); M | none |
+| MAC-MN17† | Destructive item | SwiftUI `Button(role: .destructive)` in a `Menu` or context menu: whether macOS draws the item differently (text colour) — to verify. | to verify | M: SwiftUI host (as MAC-N21) with a destructive menu item, menu capture | `defaults.danger_color` |
 
 ### Tooltip (`[tooltip]`)
 
@@ -171,6 +180,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-T03 | Tooltip position | Offset from the pointer / below the element. | both | M: hover capture | none |
 | MAC-T04 | Tooltip timings | Re-show delay when moving between items (instant after one is shown — to verify), auto-hide, fade-in/out (MAC-X11). | both | M: recording with timed hovers | `tooltip.show_delay_ms` |
 | MAC-T05 | Show delay source | Field exists but its source: R the `NSInitialToolTipDelay` user default when set (undocumented), M the default. | both | R / M | `tooltip.show_delay_ms` |
+| MAC-T06† | Expansion tooltip | A second tooltip kind: the full text of a truncated cell or field drawn in a frame over it on hover (`NSControl.allowsExpansionToolTips`, 10.8; `tableView(_:shouldShowCellExpansionFor:row:)`, 10.5): fill, border, shadow, text colour, delay. | both | P: the two docs (read 2026-10-28); M: hover capture over a truncated cell in the key window | `tooltip.*` |
 
 ### Scrollbar (`[scrollbar]`)
 
@@ -206,6 +216,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-P02 | Radii | Track radius vs fill end radius (border.corner_radius inherits the control radius). | differs | M: existing renders | `progress_bar.border.corner_radius` |
 | MAC-P03 | Non-key fill | Fill draws grey in a non-key window (probe README, run 40348854007) — MAC-X16. | both | M: key-window element | `progress_bar.fill_color` |
 | MAC-P04 | Value change motion | Whether the fill animates to a new value. | both (to verify) | M: CA introspection | none |
+| MAC-P05† | Track edge | `progress_bar.border.color` / `line_width` are (none), "not read" (platform-facts.md:1339-1340): whether the track draws an edge line, its colour and width. | differs (to verify) | M: existing `progress_bar-regular@2x.png` renders, edge profile | `progress_bar.border.*` |
 
 ### Tab view (`[tab]`)
 
@@ -216,6 +227,8 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-TB03 | Tab variants | `tabPosition` (top / bottom / left / right / none), `tabViewBorderType` (none / line / bezel), `tabViewType`. | both | P: `NSTabView` docs; M: new render per variant | `tab.active_indicator_side` (Top / Bottom only) |
 | MAC-TB04 | Tab states | Pressed tab, selected tab in a non-key window. | both | M: pressed render, not-key pass | none |
 | MAC-TB05 | Tab metrics per control size | `NSTabView.controlSize`, `font` per size. | both | M: new render per size | MAC-X17 |
+| MAC-TB06† | Tab strip paint | `tab.border.*` are (none), a CoreUI composite (platform-facts.md:1354-1356); the strip is drawn like a segmented control (MAC-TB02), so its outer edge, the separators between unselected tabs, the selected tab's fill and label colour per generation are values to measure, not absent. | differs | M: new `NSTabView` render, aqua / darkAqua; key-window element for the selected tab | `tab.*` |
+| MAC-TB07† | Tab overflow | What the strip draws when the tabs do not fit: truncated labels (`NSTabViewItem.sizeOfLabel(_:)`, to verify), hidden tabs or an overflow control (to verify). | both (to verify) | M: new render of a narrow tab view with many tabs | none |
 
 ### Sidebar (`[sidebar]`)
 
@@ -229,6 +242,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-SB06 | Floating glass sidebar (26) | The inset sidebar panel: margins from the window edges, corner radius (concentric with the window), glass material, shadow, content extending under it (`NSBackgroundExtensionView`). | 26 only | P: `NSBackgroundExtensionView`, `NSView.cornerConfiguration` docs; R: `effectiveCornerRadii`; M: key-window capture with an `NSSplitViewController` sidebar item | `sidebar.background_color`, `sidebar.border.*` |
 | MAC-SB07 | Sidebar active / inactive | `NSVisualEffectView.State` followsWindowActiveState: the material changes in a non-key window. | both | M: not-key pass sample `sidebar` (exists: `probe.toml:3595`) | `sidebar.background_color` |
 | MAC-SB08 | Nested rows | Disclosure triangles and indentation in a source list (MAC-L10). | both | R: `indentationPerLevel` | none |
+| MAC-SB09† | Sidebar width | The sidebar's default, minimum and maximum width and its collapse rule; `[sidebar]` has no width. | differs (26 floating sidebar to verify) | R: `minimumThickness` / `maximumThickness` (10.11) and the frame of a new `NSSplitViewItem(sidebarWithViewController:)` in the key window | none |
 
 ### Toolbar (`[toolbar]`)
 
@@ -243,6 +257,8 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-TL07 | Search toolbar item | `NSSearchToolbarItem` collapsed (button) vs expanded field, and its expand motion. | both | M: capture + recording | none |
 | MAC-TL08 | Tracking separator | `NSTrackingSeparatorToolbarItem` line aligned with the split view divider. | 12–15 (26 to verify) | M | none |
 | MAC-TL09 | Toolbar background | 12–15: title-bar material; 26: transparent over content with the scroll edge effect (MAC-X05). | differs | M: material capture | `toolbar.background_color` |
+| MAC-TL10† | Space items | Width of the fixed space item (`NSToolbarItem.Identifier.space`) and the flexible space's minimum. | differs (26 glass groups to verify) | M: key-window toolbar with space items, item frames | `toolbar.item_gap` |
+| MAC-TL11† | Selectable items | A toolbar with selectable items (`NSToolbar.selectedItemIdentifier`; the Settings-window pattern: `NSTabViewController.TabStyle.toolbar`, toolbar style `.preference`): the selected item's background, icon tint and label colour, its non-key look. | differs | P: `selectedItemIdentifier`, `NSTabViewController.TabStyle` docs (read 2026-10-28); M: key-window toolbar with a selected item, not-key pass | none |
 
 ### Status bar (`[status_bar]`)
 
@@ -270,6 +286,9 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-L14 | Table focus | Whether a first-responder table shows a focus ring (`focusRingType`) — MAC-X13. | both | M | `defaults.focus_ring_*` |
 | MAC-L15 | Column drag | Dragged column's translucent image. | both | M: recording | none |
 | MAC-L16 | Table frame | `NSScrollView.borderType` around the table (platform-facts §2.15 ❓). | both | P/M as MAC-I08 | `list.border.*` |
+| MAC-L17† | Selection in special contexts | Controls inside an emphasized selected row (checkbox, button, pop-up, progress — `NSTableCellView.backgroundStyle`) and the selected row of a disabled table: what changes — to verify. | both (to verify) | M: key-window table with controls in a selected row; the same table disabled | `list.selection_*` |
+| MAC-L18† | Header extras | The highlighted column's header (`highlightedTableColumn`) and the corner view right of the header above the vertical scroller (`cornerView`): fill and separators; whether 12+ draws the highlight: to verify. | both | P: the two docs (read 2026-10-28); M: key-window table with a highlighted column and a legacy scroller | `list.header_*` |
+| MAC-L19† | Context-menu target | The row (also a sidebar row or collection item) whose context menu is open is drawn with an outline, not a fill (`clickedRow`): colour, width, radius, inset. | both (26 to verify) | M: secondary click in the key window (`CGEvent`), capture while the menu is open | `list.selection_background` |
 
 ### Popover (`[popover]`)
 
@@ -319,6 +338,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-SN02 | Rotation | Stepped rotation period (MAC-X11). | both | M: CA introspection / recording | none |
 | MAC-SN03 | Small size | Regular and mini map to `diameter` / `min_diameter`; the small size has no field. | both | R: `sizeToFit` per size (probed) | `spinner.diameter` |
 | MAC-SN04 | Determinate spinning | The determinate circular (pie / ring) indicator. | both | M: new render `style spinning`, `isIndeterminate = false` | none |
+| MAC-SN05† | Start / stop | Whether the spinner fades in on start and out on stop (`isDisplayedWhenStopped`). | both (to verify) | M: recording / CA introspection | none |
 
 ### Combo box / pop-up (`[combo_box]`)
 
@@ -344,6 +364,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-SG07 | Menu indicator | `showsMenuIndicator(forSegment:)` glyph. | both | M: new render | none |
 | MAC-SG08 | Per-corner radii | Only the outer corners of the end segments are round; the selected indicator's own inset radius (MAC-X07). | both | M: existing renders | `border.corner_radius` |
 | MAC-SG09 | Selection motion (26) | Sliding selection indicator (MAC-X11). | 26 (to verify) | M: CA introspection | none |
+| MAC-SG10† | Segment images | Image size per control size, `imageScaling`, the image tint at rest, selected (on the 26 accent fill: to verify), pressed and disabled. | differs | P: `NSSegmentedControl.setImage(_:forSegment:)`, `setImageScaling(_:forSegment:)` docs; M: new render with SF Symbol segments | none |
 
 ### Card / box (`[card]`)
 
@@ -360,6 +381,7 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-EX02 | Glyph shape | Triangle vs chevron; the model states no shape (seed: `docs/todo.md:729`). | differs (to verify on 26) | M: new render | `arrow_icon_size`, `arrow_side` |
 | MAC-EX03 | Pressed glyph | Highlighted triangle colour. | both | M: pressed render | `arrow_color` |
 | MAC-EX04 | Rotation motion | MAC-X11. | both | M | none |
+| MAC-EX05† | Disclosure geometry | The triangle button's size per control size, its gap to the label (`arrow_gap`, (none) at platform-facts.md:1684), the indent of the disclosed content (`content_indent`, :1685; SwiftUI `DisclosureGroup`), the header height (`header_height`, :1675). | both | R: `intrinsicContentSize` of a `.disclosure` button per control size; M: SwiftUI `DisclosureGroup` capture (host as MAC-N21) | `expander.arrow_gap`, `content_indent`, `header_height` |
 
 ### Link (`[link]`)
 
@@ -383,6 +405,11 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-IC01 | Icon contexts | Button icon, list-row icon, tab icon, toolbar icon per toolbar size mode, status-item icon, sidebar icon per sidebar size — `icon_sizes` has 5 contexts. | both | P: platform-facts §1.1.6; M | `defaults.icon_sizes` |
 | MAC-IC02 | SF Symbol configuration | Weight and scale (small / medium / large) per context so a symbol matches adjacent text; rendering mode (monochrome / hierarchical / palette / multicolor). | both | P: HIG SF Symbols; R: `NSImage.SymbolConfiguration` | none |
 | MAC-IC03 | Icon appearance (26) | Icon & widget style (Default / Dark / Clear / Tinted) changes the app and folder icons an app shows. | 26 only | R: user default (key to verify) | none |
+| MAC-DF05† | Unread UI element colours | AppKit UI element colours neither the reader (24 `NSColor` class properties, `native-theme/src/macos.rs`) nor a row reads: `textColor`, `textBackgroundColor`, `controlColor`, `controlTextColor`, `selectedControlTextColor`, `selectedMenuItemTextColor`, `highlightColor`, and the `currentControlTint` setting (`shadowColor` is left out on purpose, macos.rs:157). Which model field each belongs to is the rationale's question. | both | R: NSColor (AppKit "UI Element Colors", read 2026-10-28) | `input.*`, `menu.*`, `defaults.*` |
+| MAC-TS03† | Leading variants | Tight and loose leading (`NSFontDescriptor.SymbolicTraits.tightLeading` / `.looseLeading`; SwiftUI `Font.leading(_:)`): the line height a style takes in each. | both | R: a font descriptor with the trait, its font's line height; P: docs (read 2026-10-28) | `[text_scale]` (one line height) |
+| MAC-LY02† | Form label alignment | Labels trailing-aligned in a column beside leading-aligned controls (SwiftUI `ColumnsFormStyle`, 13.0: "a trailing aligned column of labels next to a leading aligned column of values"), label-to-control baseline alignment, the label gap per control size (MAC-LY01). | both | P: `ColumnsFormStyle` docs (read 2026-10-28); M: SwiftUI host (as MAC-N21) | `[layout]` |
+| MAC-IC04† | Alert icon size | `dialog` icon size is (none) (platform-facts.md:1139), yet `NSAlert` draws the app icon (and the caution badge, MAC-D02) at a size no document states. | both (26 to verify) | R: the icon view's frame after `NSAlert.layout()` | `defaults.icon_sizes.dialog_px` |
+| MAC-IC05† | Symbol effects and transitions | SF Symbol effects and content transitions that controls and apps play (`NSImageView.addSymbolEffect(_:options:animated:)`, `setSymbolImage(_:contentTransition:options:)`, 14.0); the symbol variant (fill / outline) a control picks per state (to verify). | 14+ and 26 | P: `NSImageView` docs (read 2026-10-28); M: recording | none |
 
 ---
 
@@ -416,6 +443,17 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-N24 | Pull-to-refresh (27) | `NSScrollView.refreshController` (27.0): refresh indicator at the scroll top. | 27 only | P: docs; M | `spinner.*` |
 | MAC-N25 | System-drawn surfaces | Notification banners and Notification Center, Dock tile badge (`NSDockTile.badgeLabel`), share picker, the standard panels (open / save, colour, font, print). Drawn by the OS or AppKit, not by the app's toolkit; counted here because they are visible platform UI, and the rationale decides whether the model covers them. | differs | M: capture | none |
 | MAC-N26 | Touch Bar | `NSTouchBar` items, `NSScrubber`: hardware-specific (Touch Bar Macs). | 12–15; 26 on supported Intel Macs | M: Touch Bar simulator (to verify) | none |
+| MAC-N27† | Text input system UI | Drawn by the OS in or beside any text field: the press-and-hold accent popup, the Character Viewer / emoji picker, the input-method candidate window, the Look Up popover with its highlighted word, the dictation and caps-lock indicators (MAC-X14). Counted as MAC-N25 is: visible platform UI the app's toolkit does not draw. | differs (to verify per generation) | M: key-window text field, key events (`CGEvent`; feasibility of each on a runner to verify), capture | none |
+| MAC-N28† | Split button | `NSComboButton` (13.0) style `.split` ("separates the button's title and image from the menu indicator"): the two parts, the divider, the chevron, each part's states; SwiftUI `Menu(content:label:primaryAction:)` (12.0), drawn as a split button (to verify). | 13+ (SwiftUI 12+); differs | P: `NSComboButton`, `NSComboButton.Style` docs (read 2026-10-28); M: new render per style and size | `button.*` |
+| MAC-N29† | Menu button | `NSComboButton` `.unified` ("unifies the button's title and image with the menu indicator"), `NSMenuToolbarItem` (10.15) with its indicator, the pull-down `NSPopUpButton` (MAC-CB01): indicator glyph, its gap to the title, the pressed and open states. | 13+ (toolbar item 10.15+); differs | P: docs (read 2026-10-28); M: new render, key-window toolbar | `combo_box.*` |
+| MAC-N30† | `AVPlayerView` controls | AVKit's transport controls, `AVPlayerViewControlsStyle` inline ("a bar along the view's bottom edge"), floating ("a floating window over the video content"), minimal, default: bar material, play / pause, scrubber, time labels, volume, the full-screen, sharing and frame-stepping buttons, auto-hide timing. | differs (26 to verify) | P: `AVPlayerView`, `AVPlayerViewControlsStyle` docs (read 2026-10-28); M: capture of an `AVPlayerView` playing a local file, recording for auto-hide | none |
+| MAC-N31† | Rubber-band selection | The marquee drawn while drag-selecting in an icon or collection view: fill, border, radius (Finder draws one; whether `NSCollectionView` does by default: to verify). | both (to verify) | M: drag in a key-window `NSCollectionView` (`CGEvent`), capture | none |
+| MAC-N32† | Standard About panel | `orderFrontStandardAboutPanel(options:)`: app icon size, application-name font, version line, credits text view, copyright line, their gaps, the panel width. | both (26 to verify) | P: `NSApplication.AboutPanelOptionKey` docs (read 2026-10-28); R: the panel's subview frames and fonts once open; M: capture | `dialog.*` |
+| MAC-N33† | Help-menu search | The search field the OS adds to the Help menu, its results (menu items, help topics) and the pointer it draws at a found menu item (`registerUserInterfaceItemSearchHandler(_:)`, 10.6). | both (to verify) | P: docs (read 2026-10-28); M: capture of the Help menu with typed text (the regular-app setup of MAC-N20) | `menu.*` |
+| MAC-N34† | Menu-bar extra window | SwiftUI `MenuBarExtra` (13.0) with `WindowMenuBarExtraStyle` ("renders its contents in a popover-like window"): material, radius, shadow, gap to the menu bar; 27's `NSStatusItemExpandedInterfaceSession` (what it draws: to verify). | differs (13+; 27 expanded interface) | P: `MenuBarExtra`, `WindowMenuBarExtraStyle`, `NSStatusItemExpandedInterfaceSession` docs (read 2026-10-28); M: capture | `popover.*` |
+| MAC-N35† | `ContentUnavailableView` | SwiftUI (14.0) empty-content view: image size and colour, title font, description font and colour, actions, spacing; its search variant. | 14+ and 26 | P: docs (read 2026-10-28); M: SwiftUI host (as MAC-N21) | none |
+| MAC-N36† | TipKit tips | `TipView` (inline) and popover tips (14.0): container fill, radius, image, title and message fonts, close button, action buttons, the popover arrow. | 14+ and 26 | P: TipKit, `TipView` docs (read 2026-10-28); M: SwiftUI host | `popover.*` |
+| MAC-N37† | Swift Charts defaults | Swift Charts (13.0) draws with system defaults: axis and grid-line colours and widths, axis-label font, default series colours, legend font and symbols, selection marks. A HIG component (Charts); the rationale decides whether the model covers it. | 13+ | P: Swift Charts docs (read 2026-10-28), HIG Charts; M: SwiftUI host | none |
 
 ---
 
@@ -452,6 +490,15 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 | MAC-X27 | Appearance-level variants | Wallpaper tinting (`tinting-off` pass exists; user default `AppleReduceDesktopTinting` to verify), multicolour (app) accent, highlight colour (already read via `selectedTextBackgroundColor`). | both | R / M | light / dark only |
 | MAC-X28 | Text marks | Spelling (red dotted) and grammar (green dotted) underlines, marked-text (IME) underline, inline predictions (14+), Writing Tools glow (15.1+), text highlight styles (15+, to verify). | differs | M: key-window text view with misspelt text; P: docs (to verify names) | none |
 | MAC-X29 | State combinations | Checked + hover / pressed / disabled / non-key, selected + unfocused / disabled, default + non-key / pressed, focused + hover: most have no field (rows above); the model's state set is per-widget and flat. | both | M: as per row | per-widget `*_background` |
+| MAC-X30† | System effects | `NSColor.withSystemEffect(_:)` (10.14) derives any colour's `rollover`, `pressed`, `deepPressed` and `disabled` forms (`NSColor.SystemEffect`) — AppKit's own hover / pressed / disabled derivation, readable for each read colour; the reader reads none and the model has no rule for it. | both | R: `withSystemEffect` per effect (docs read 2026-10-28) | per-widget `hover_*`, `active_*`, `disabled_opacity` |
+| MAC-X31† | Accessibility display options not in MAC-X22–X26 | The Full Keyboard Access focus indicator of the Accessibility settings (a highlight the OS draws around the focused element, with contrast and colour options — names to verify), distinct from AppKit's focus ring (MAC-X13); "Show window title icons" (proxy icons always shown, MAC-W03 — name to verify). | both (to verify per version) | R: user defaults (keys to verify); M: a pass with each setting on | `AccessibilityPreferences` |
+| MAC-X32† | Motions MAC-X11 does not list | Traffic-light glyphs appearing on hover, the full-screen title-bar reveal (MAC-W12), window tiling (MAC-W13), the light / dark appearance switch, scroll momentum and its deceleration, SwiftUI `NavigationStack` push / pop, window-tab open / close / reorder (MAC-W09), symbol effects (MAC-IC05): whether each animates, then duration and curve. | differs | M: recording; CA introspection where layer-backed (in the Reduce Motion off pass) | none |
+| MAC-X33† | Screen safe area | On displays with a camera housing (12.0+): `NSScreen.safeAreaInsets`, `auxiliaryTopLeftArea` / `auxiliaryTopRightArea`, the menu bar beside the housing (its height there: to verify), full-screen content kept below it, the `NSPrefersDisplaySafeAreaCompatibilityMode` Info.plist key. | 12+ (hardware-dependent) | R: the `NSScreen` properties (docs read 2026-10-28); the runners have no such display (values from a maintainer's machine — to verify) | none |
+| MAC-X34† | Right-to-left layout | `NSApplication.userInterfaceLayoutDirection` / `NSView.userInterfaceLayoutDirection`: which parts mirror in a right-to-left language (control parts, sidebar side, disclosure triangles, toolbar, title bar, traffic lights) — to verify per part. | both | R: the two properties (docs read 2026-10-28); M: a probe pass in a right-to-left language (`-AppleLanguages`, to verify) | none |
+| MAC-X35† | Design compatibility mode | `UIDesignRequiresCompatibility` (Info.plist, macOS 26.0: the app is displayed "as it looks when built against previous versions of the SDKs"; ignored when built for macOS 27 or later): on 26 an app may draw the pre-26 look while the reader assumes the running OS's. Related: `prefersCompactControlSizeMetrics` (MAC-X17). | 26 only | P: docs (read 2026-10-28); R: the app's own Info.plist key | none |
+| MAC-X36† | Toolkit layers | What an app draws depends on its toolkit: AppKit; SwiftUI (mostly AppKit controls, some its own: MAC-N21–N23, N35–N37); Mac Catalyst in the iPad or the Mac idiom (what each scales and redraws: to verify). The model has one macOS look. | both | P: Mac Catalyst docs (to verify); M: a Catalyst probe (feasibility to verify) | none |
+| MAC-X37† | Versions inside a generation | The 12–15 preset is one look while rows differ by version (13: colour-well styles MAC-N05, `NSComboButton` MAC-N28; 14: menu section headers and badges MAC-MN07–MN08, quinary colours MAC-DF01, `NSTextInsertionIndicator` MAC-X14; 15: tiling layouts MAC-W13; 15.1: Writing Tools MAC-X28), and 26 and 27 differ (27: menu item images MAC-MN10, `NSRefreshController` MAC-N24, MAC-N34). | differs | R: the OS version (the reader's `os_version()`) | one preset per generation |
+| MAC-X38† | Hairlines | Whether separators, grid lines and outlines are one point or one device pixel on a 2x display (to verify). | both (to verify) | M: the probe's `-regular.png` and `-regular@2x.png` renders of the same control, compared | `Border.line_width` |
 
 ---
 
@@ -470,3 +517,163 @@ Row format: **ID** · element · what is missing · Gen (12–15 / 26 difference
 - 4.1: 173 rows, 171 gaps (MAC-SE01 records no gap; MAC-SL08 points to MAC-N15).
 - 4.2: 26 rows.
 - 4.3: 29 rows.
+
+## Cross-check (pass 2, 2026-10-28)
+
+Pass 2 checked this file against the other five surveys (`all-tags.tsv`) and the macOS "(none)"
+cells of `platform-facts.md`. Its rows carry a "†" and sit at the end of their tables: §4.1
+27 rows, §4.2 11 rows, §4.3 9 rows, 47 in all. APIs it cites were confirmed on 2026-10-28 from
+Apple's documentation JSON (as at the top of this file). The control catalogue it uses for
+decision 3 is AppKit's "Views and Controls" topic page
+(`https://developer.apple.com/tutorials/data/documentation/appkit/views-and-controls.json`, read
+2026-10-28) together with the HIG component pages it names.
+
+### A. Controls other surveys list
+
+Decision: 1 = macOS draws it as a standalone control (a §4.2 row); 2 = macOS draws it inside
+an element that has rows; 3 = macOS has no such control.
+
+| Control | Decision | Rows, or reason and source |
+|---|---|---|
+| icon button | 2 | Image-only buttons are bezel styles and borderless buttons (MAC-B01, MAC-B09); toolbar items (MAC-TL02); repeat timing (MAC-X12, `getPeriodicDelay`). |
+| navigation/app bar | 2 | Title bar and toolbar: MAC-W01–W04, MAC-W10, MAC-TL01–TL09; added MAC-W11†, MAC-W14†; navigation push motion in MAC-X32†. |
+| banner/inline message | 3 | No inline message control in the AppKit catalogue; notifications are OS-drawn (MAC-N25). |
+| calendar | 2 | `NSDatePicker` graphical style (MAC-N04; HIG Pickers, macOS: "two styles … textual and graphical"). |
+| page control/pager | 3 | HIG Page controls: "Not supported in macOS." `NSPageController` drives swipe navigation and draws no indicator. |
+| sheet/bottom sheet | 2 | Window sheets: MAC-D03; macOS has no bottom sheet. |
+| avatar | 3 | No avatar control in the AppKit catalogue or SwiftUI. |
+| button group/toggle group | 2 | `NSSegmentedControl` select-any (MAC-SG05); SwiftUI `ControlGroup` (12.0) in toolbars groups items like MAC-TL03 (its drawing: to verify). |
+| chip | 2 | Input chips are `NSTokenField` tokens (MAC-N03); filter and action chips have no AppKit control (catalogue). |
+| group box/frame | 2 | `NSBox` (MAC-BX01, MAC-BX02); SwiftUI `GroupBox` draws a box (to verify against `NSBox`). |
+| split button | 1 | MAC-N28† (`NSComboButton.Style.split`, 13.0). |
+| status page/placeholder | 1 | MAC-N35† (`ContentUnavailableView`, 14.0). |
+| about dialog | 1 | MAC-N32† (standard About panel). |
+| carousel | 3 | No carousel in the AppKit catalogue; `NSPageController` draws no chrome. |
+| colour picker | 2 | The colour panel is an OS standard panel (MAC-N25); the colour well and its 13+ expanded popover (MAC-N05). |
+| fab | 3 | No floating action button in the AppKit catalogue or the HIG Buttons page. |
+| menu button | 1 | MAC-N29† (`NSComboButton` unified, `NSMenuToolbarItem`); the pull-down pop-up is MAC-CB01. |
+| navigation drawer/pane | 2 | The sidebar: MAC-SB01–SB08; added MAC-SB09† (width). |
+| navigation rail | 3 | No rail control; the nearest are the sidebar and the Settings-style toolbar (MAC-TL11†). |
+| password field | 2 | `NSSecureTextField` (MAC-I03); added MAC-I09† (AutoFill look). |
+| rating | 2 | `NSLevelIndicator` rating style (MAC-N06; HIG Rating indicators: "No additional considerations for macOS"). |
+| time picker | 2 | `NSDatePicker` time elements, text field with stepper and clock face (MAC-N04). |
+| view switcher | 2 | A segmented control in the toolbar (MAC-SG01–SG10), the Settings-style toolbar (MAC-TL11†), window tabs (MAC-W09). |
+| access key badge | 3 | macOS draws no access-key or mnemonic marks; keyboard navigation shows focus (MAC-X13, MAC-X31†). Source: AppKit catalogue (no such element); HIG Keyboards page to verify. |
+| action sheet | 2 | SwiftUI `confirmationDialog` (13.0; HIG Action sheets: "No additional considerations for macOS") presents as an alert or sheet (to verify): MAC-D01, MAC-D03. |
+| autocomplete | 2 | `NSComboBox` inline completion (MAC-CB01), text completions (MAC-I06), search suggestions (MAC-N02). |
+| back button | 2 | A toolbar navigation item (MAC-TL02; SwiftUI `NavigationStack` back item: to verify). |
+| background extension | 2 | MAC-X06. |
+| bottom accessory | 3 | iOS tab-bar accessory; macOS has no bottom tab bar (availability of the SwiftUI API on macOS: to verify). |
+| context menu preview | 3 | HIG Context menus: the macOS section adds no preview; macOS context menus are menus (MAC-MN01–MN17†); the target outline is MAC-L19†. |
+| dock/panel title bar | 3 | No dockable panes in the AppKit catalogue; floating panels have utility title bars (MAC-N16). |
+| drag and drop | 2 | MAC-X21, MAC-L11. |
+| edit menu | 2 | HIG Edit menus, macOS: editing commands are in a context menu and the menu bar's Edit menu — menu rows (MAC-MN01–MN17†, MAC-N20). |
+| file chooser | 2 | Open and save panels are OS standard panels (MAC-N25). |
+| font chooser | 2 | The font panel is an OS standard panel (MAC-N25). |
+| full-screen dialog | 3 | No full-screen dialog; a window in full screen is MAC-W12†. |
+| glass container | 2 | MAC-X04 (`NSGlassEffectView`, `NSGlassEffectContainerView`). |
+| ink toolbar | 3 | No ink toolbar in the AppKit catalogue (a PencilKit tool picker on macOS: to verify). |
+| keyboard | 3 | HIG Virtual keyboards: "Not supported in macOS." The OS's text input UI is MAC-N27†. |
+| large content viewer hud | 3 | No such app-level element; the OS's Zoom "Hover Text" overlay is an accessibility feature of the OS (to verify). |
+| list box | 2 | `NSTableView` (MAC-L01–L19†). |
+| loading indicator | 2 | `NSProgressIndicator` spinning style (MAC-SN01–SN05†). |
+| media transport controls | 1 | MAC-N30† (`AVPlayerView`). |
+| paste control | 2 | SwiftUI `PasteButton` (macOS 10.15+) — a push button (MAC-B01; its drawing: to verify). |
+| picker wheel | 3 | HIG Pickers, macOS: date pickers are textual and graphical only. |
+| rubber band | 1 | MAC-N31†. |
+| scrim | 3 | No modal scrim on macOS (whether a sheet dims its parent is open in MAC-D03). |
+| scroll edge effect | 2 | MAC-X05. |
+| scrollbar annotation | 3 | No such element in the AppKit catalogue. |
+| swipe actions | 2 | MAC-L12. |
+| teaching tip | 1 | MAC-N36† (TipKit, 14.0). |
+| tool box | 3 | No tool box in the AppKit catalogue (tab view and disclosure instead). |
+| tool button | 3 | GNOME's row is touch selection handles and a magnifier: macOS has no touch text selection. |
+| toolbar flyout | 3 | No command-bar flyout in the AppKit catalogue; overflow is MAC-TL06. |
+| tree view | 2 | `NSOutlineView` (MAC-L10, MAC-SB08); grids are collection views (MAC-N13). |
+| writing tools | 2 | The Writing Tools glow (MAC-X28); its panel is OS-drawn (MAC-N25). |
+| zoom button | 3 | No semantic-zoom control in the AppKit catalogue. |
+
+Tally over the 57 controls: 1 — 7 (rows MAC-N28†–N32†, N35†, N36†); 2 — 29; 3 — 21.
+
+### B. Capabilities
+
+| Capability | Rows added, or "no further row" |
+|---|---|
+| C01 Shadow geometry | No further row: MAC-X01 lists every surface; the new surfaces name theirs (MAC-T06†, MAC-N34†). |
+| C02 Elevation | No further row: macOS has no named elevation ramp; shadows are per surface (MAC-X01). |
+| C03 Materials | MAC-N30† (player bar), MAC-N34†; the rest is MAC-X02–X06. |
+| C04 Colour composition | No further row: the reader keeps `NSColor` alpha (`native-theme/src/macos.rs:48`); blending over materials is MAC-X03. |
+| C05 Colour roles | MAC-DF05†. |
+| C06 Variant axes | No further row: non-key, increased contrast and vibrant appearances are MAC-X16, X22, X03; iOS's elevated level and dimmed tint have no AppKit counterpart found. |
+| C07 States | MAC-L17†, MAC-L19†, MAC-X30†. |
+| C08 State layer | MAC-X30† (AppKit's own hover / pressed / disabled derivation). |
+| C09 Variants | MAC-W14†, MAC-N28†, MAC-N29†, MAC-X35†, MAC-X36†. |
+| C10 Size variants | MAC-B11†, MAC-SB09†; control sizes and compact metrics are MAC-X17; macOS has no touch sizing. |
+| C11 Shape | MAC-L19†; the rest is MAC-X07. |
+| C12 Borders | MAC-TB06†, MAC-P05†, MAC-X38†. |
+| C13 Parts | MAC-W11†, MAC-T06†, MAC-TB06†, MAC-TB07†, MAC-L18†, MAC-SG10†, MAC-EX05†, MAC-IC04†. |
+| C14 Motion | MAC-X32†, MAC-SN05†, MAC-IC05†. |
+| C15 Focus | MAC-X31†. |
+| C16 Caret | No further row: MAC-X14 and MAC-X12 hold width, shape and blink; macOS has no overwrite caret. |
+| C17 Selection | MAC-L19†, MAC-N31†. |
+| C18 Typography | MAC-TS03†. |
+| C19 Icons | MAC-IC04†, MAC-IC05†, MAC-SG10†. |
+| C20 Window chrome | MAC-W11†–W15†. |
+| C21 Timings | MAC-T06†; the rest is MAC-X12. |
+| C22 Pointer | No further row: MAC-X20 holds cursors and the pointer size and colours; macOS has no pointer hover effects like iPadOS. |
+| C23 Accessibility | MAC-X31†; colour filters, display contrast and reduce white point are applied by the OS to the whole screen (like invert, MAC-X26) and get no row. |
+| C24 Controls | MAC-N27†–N37†. |
+| C25 Reader coverage | MAC-DF05†, MAC-X30†, MAC-X33†, MAC-X35†, MAC-X37†. |
+| C26 Layout | MAC-LY02†, MAC-TL10†, MAC-SB09†, MAC-X33†, MAC-X34†. |
+| C27 Gradient paint | No further row: MAC-X09 and the 12–15 bezel rows (MAC-B05, MAC-C05). |
+| C28 Colour precision | No further row: MAC-X10 (P3, HDR) and the HDR colour well (MAC-N05). |
+
+### C. The macOS "(none)" cells of `platform-facts.md`
+
+a = macOS does not draw it, the cell is right; b = macOS draws it and no document states it.
+
+| platform-facts line | Property | a/b | Row, or reason |
+|---|---|---|---|
+| 1138 | icon `large` | a | No AppKit "large icon" context; the contexts macOS draws are MAC-IC01. |
+| 1139 | icon `dialog` | b | MAC-IC04†. |
+| 1140 | icon `panel` | a | No panel in an app; the Dock is OS-drawn (MAC-N25), status-item icons are MAC-N20. |
+| 1147 | `icon_theme` | a | SF Symbols, no theme to choose (the cell's own source). |
+| 1167 | `inactive_title_bar_text_color` | b | MAC-W15†. |
+| 1170, 1171 | window `border.padding_*` | a | The window draws no padding; content margins are layout (MAC-LY01). |
+| 1182 | button `min_width` | b | MAC-B11†. |
+| 1194, 1195 | button `checked_background`, `checked_text_color` | b | MAC-B10 (its new render, state on). |
+| 1216 | input `border.shadow_enabled` | a | No drop shadow; the 26 outer ring is MAC-I04. |
+| 1236 | checkbox `border.shadow_enabled` | a | The 26 render draws nothing outside the frame (the cell); the 12–15 claim is checked on the existing render's alpha (MAC-X01's method). |
+| 1237, 1238 | checkbox `border.padding_*` | b | MAC-C06 (mark inset in the box). |
+| 1242 | `check_mark_stroke_width` | b | MAC-C06. |
+| 1263, 1264 | menu `border.color`, `line_width` | b | MAC-MN14. |
+| 1265 | menu `border.corner_radius` | b | MAC-MN01 (the cell's "items are rectangular" is what MAC-MN01 doubts). |
+| 1266 | menu `border.shadow_enabled` | b | MAC-MN14, MAC-X01. |
+| 1336 | progress `min_width` | a | AppKit imposes none. |
+| 1338 | progress `border.shadow_enabled` | a | Measured none on 26 (the cell); none on 12–15. |
+| 1339, 1340 | progress `border.color`, `line_width` | b | MAC-P05†. |
+| 1350 | tab `min_width` | a | Sizes to its label; truncation is MAC-TB07†. |
+| 1354–1356 | tab `border.*` | b | MAC-TB06†. |
+| 1360 | tab `item_gap` | a | Tabs are joined in one strip; their separators are MAC-TB06†. |
+| 1361–1363 | tab `active_indicator_*` | a | No indicator line; the selected tab is filled (MAC-TB06†). |
+| 1377, 1378 | sidebar `border.corner_radius`, `shadow_enabled` | a (12–15) / b (26) | 12–15: a rectangular pane; 26: the floating sidebar, MAC-SB06. |
+| 1412–1415 | status bar `border.*` | a | No in-window status bar (the cell's sources); the bottom bar is MAC-ST01. |
+| 1461, 1462 | popover `border.padding_*` | a | Content-defined; content under the arrow is MAC-PO01. |
+| 1504 | `container_margin` | b | MAC-LY01. |
+| 1552–1555 | dialog `min_*` / `max_*` | b | MAC-D01 (alert width and frame from `NSAlert.layout()`). |
+| 1601 | spinner `stroke_width` | a | Fins, not a stroke (MAC-SN01). |
+| 1617 | combo `min_width` | a | Sizes to its widest item. |
+| 1622 | combo `border.shadow_enabled` | b (to verify) | MAC-X01 lists a 12–15 pop-up shadow while the cell says none for 12–15: settled on the existing 14 render. |
+| 1644 | segmented `border.shadow_enabled` | b | MAC-SG02: the selected segment's 12–15 shadow shows in the key window, which the not-key render cannot show. |
+| 1675 | expander `header_height` | b | MAC-EX05†. |
+| 1677, 1678 | expander `border.padding_*` | a | App-defined. |
+| 1679–1682 | expander `border.*` | a | The disclosure control draws no frame (26: to verify). |
+| 1684 | `arrow_gap` | b | MAC-EX05†. |
+| 1685 | `content_indent` | b | MAC-EX05†. |
+| 1686 | `frame_enabled` | a | No frame (as 1679–1682). |
+| 1695 | `visited_text_color` | a | macOS draws no visited link (§2.28, "Checked and not counted"). |
+| 1697 | link `background_color` | a | Inline text, no fill. |
+| 1698 | link `hover_background` | a | No hover fill; the pointer changes (MAC-LK02). |
+| 1714, 1715 | text area `border.padding_*` | b | MAC-I10†. |
+
+Tally over the 63 lines: a 32, b 29, and 2 split by generation (1377, 1378: a on 12–15, b on 26).
