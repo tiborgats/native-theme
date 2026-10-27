@@ -2884,7 +2884,8 @@ mod tests {
     /// Over every preset in both modes: the row is the model's `toolbar`, with
     /// the bar height as a floor rather than a fixed height, and only where it
     /// is stated (KDE's toolbar sizes to its content, platform-facts §2.13),
-    /// the minimum reset to `auto` where it is not, and its bottom edge the model's `toolbar.border`, on no other side.
+    /// the minimum reset to `auto` where it is not, and its bottom edge the
+    /// model's `toolbar.border`, on no other side.
     #[test]
     fn toolbar_carries_the_models_toolbar() {
         let mut stated = 0usize;

@@ -354,7 +354,7 @@ pub struct AccessibilityPreferences {
     /// `:145-146`; gpui-pre-linux 0.3.10 `src/linux/x11/client.rs:2674-2681`).
     /// They do so only while `WINIT_X11_SCALE_FACTOR` and
     /// `GPUI_X11_SCALE_FACTOR` are unset (`randr.rs:112-154`,
-    /// `client.rs:2620-2666`); with an override the application owns the
+    /// `client.rs:2623-2669`); with an override the application owns the
     /// scale, and the factor is applied nowhere.
     pub text_scaling_factor: f32,
     /// Whether the user has requested reduced motion.

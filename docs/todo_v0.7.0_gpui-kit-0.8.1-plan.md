@@ -483,7 +483,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - **Task 3b, the second version grep.** It finds 11 lines, none present-tense of this
   task's: `CN/README.md:29`, `:57`, `:95`, `:144`, `:832`, `:835`, `:847` (Task 8's) and
   `:366` (Task 5's); history at `CN/src/widgets/scene_read.rs:9` ("since 0.1.10"),
-  `SC/tests.rs:7583` (the Folder TabBar 0.8.0 added) and `docs/showcase-exceptions.toml:22`
+  `SC/tests.rs:7644` since 26186e33 (the Folder TabBar 0.8.0 added) and `docs/showcase-exceptions.toml:22`
   (the re-read dates).
 - **Task 7, line numbers read again.** Spec §8's repo lines are of `8086a20e`: the mono-font
   line is now `CN/src/config.rs:62` (§8 wrote `:65`) and `DialogTheme`'s attributes and
@@ -545,7 +545,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - **Task 4, no `allow-invalid`.** Every entry drew its error at its planted line on gpui-pre,
   GPUI Fast and without default features; none is in a crate that a Linux configuration
   lacks.
-- **Task 4, citations of the moved lines.** The allows add lines to `SC/demo.rs` (7, before
+- **Task 4, citations of the moved lines.** The allows add lines to `SC/demo.rs` (8 since 9c325090, before
   `segmented_width`'s closure), `SC/inspector.rs` (5, in `DrawnFamilies::of`) and
   `SC/main.rs` (2 after the module doc, 1 before `mod tests`). The egui and iced
   showcases' citations of the lines after them are renumbered (34 numbers in 18
@@ -650,3 +650,12 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   tag; the six crates' semver-checks, the approved 0.7.0 breaks, the gpui crate's none from
   G4; `cargo outdated` failing on zbus, as recorded since M8), 1 failure (the visual assets,
   regenerated at the release). The packaging check with `--features gpui-fast` passed.
+- **Task 8, the final review's citation fixes.** Task 3b re-cited `native-theme/src`'s two
+  gpui-pre-linux citations at 0.3.10 (spec §4.3), but `src/lib.rs`'s `text_scaling_factor`
+  doc kept 0.3.9's `client.rs:2620-2666` for the `GPUI_X11_SCALE_FACTOR` block under the
+  0.3.10 citation; it now cites 0.3.10's `:2623-2669` (from `let env_dpi` to the match's
+  `DpiMode::NotSet` arm), as `src/gnome/mod.rs` already did. The text-metrics reason (five
+  copies in `docs/showcase-exceptions.toml`) cited gpui-pre `src/elements/text.rs:765` for
+  the width rounded up; the `.ceil()` is at 0.3.10 `:772`, which `SC/demo.rs` cites. Every
+  copy took the same text, and the parity check's merged groups (84 over 582 keys) and their
+  reasons' order are unchanged.

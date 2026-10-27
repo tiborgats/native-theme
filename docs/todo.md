@@ -3921,6 +3921,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       gpui connector's `src/lib.rs` (in its `src/atlas.rs`, `src/plugin.rs`
       and `src/ext.rs`) have the same gap, and at b847149a several named
       other lines.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* the `[1.0]` entry *gpui: a citation
+      gate for the connector's doc comments* asks for the same mechanism, a
+      `file.rs:N` citation resolved against the file it names (there the
+      pinned upstream sources, here the repo's own files), so the two gates
+      can be built together.
 
 ### gpui: the panic gate's sweep reads function bodies too
 
@@ -3942,6 +3947,12 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `assert!`, indexing and slicing by an argument-derived value), and
       lists what it finds, each entry shown to flag a planted call, as G4's
       plan's Task 4 did.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* the bodies read include gpui-kit's
+      and those of the gpui-pre-* and gpui-fast-* sub-crates: the run-slicing
+      panic was found in one of them (gpui-pre-wgpu 0.3.10
+      `src/cosmic_text_system.rs:1074`), and
+      `connectors/native-theme-gpui/clippy.toml`'s header, which asks for the
+      body read, sets it no narrower scope than its comment sweep's.
 
 ---
 
