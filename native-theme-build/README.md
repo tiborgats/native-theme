@@ -27,10 +27,10 @@ Add the build dependency, and native-theme, which the generated code names:
 
 ```toml
 [build-dependencies]
-native-theme-build = "0.6"
+native-theme-build = "0.7"
 
 [dependencies]
-native-theme = "0.6"
+native-theme = "0.7"
 ```
 
 Describe your icons in TOML:

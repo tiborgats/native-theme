@@ -73,7 +73,7 @@ Add the crate to your `Cargo.toml` beside iced, with the OS readers
 
 ```toml
 [dependencies]
-native-theme-iced = { version = "0.6", features = ["native"] }
+native-theme-iced = { version = "0.7", features = ["native"] }
 iced = "0.14"
 ```
 
@@ -269,7 +269,7 @@ application's own:
 
 ```toml
 [dependencies]
-native-theme-iced = { version = "0.6", features = ["iced_aw"] }
+native-theme-iced = { version = "0.7", features = ["iced_aw"] }
 iced_aw = "0.14"
 ```
 
@@ -637,7 +637,7 @@ dependency:
 
 ```toml
 [dependencies]
-native-theme-iced = { version = "0.6", features = ["native", "watch"] }
+native-theme-iced = { version = "0.7", features = ["native", "watch"] }
 ```
 
 ```rust,no_run
