@@ -574,16 +574,26 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   difference between the cores, the labelled Separator's label, was seen in its captures, not
   in its dumps, which record the Separator's wrapper (rationale P11 (c)); the Separator test
   shows it gone.
-- **Task 6, taffy 0.15.1 not measured** (rationale P11's (a)). With `gpui-fast = []` in the
-  working tree, `cargo tree --workspace --all-features --target all -e normal,build,dev -i
-  gpui-fast` printed nothing, but Cargo.lock kept gpui-fast and gpui-fast-platform, the two an
-  enabled feature names weakly (gpui-kit 0.8.1's `test-support`, which the connector's
-  dev-dependency turns on, names `gpui-fast?/test-support` and
-  `gpui-fast-platform?/test-support`); gpui-fast-web, which no enabled feature names, left the
-  lock. `cargo update -p taffy` then locked nothing, and with `--precise 0.15.1` it failed on
-  gpui-fast 0.1.12's `taffy = "=0.15.0"`. So the suite and the four dumps were not run on
-  0.15.1. The manifest and the lock were restored; the todo entry on gpui-fast's pin records
-  it.
+- **Task 6, taffy 0.15.1, measured once (fix round 1).** The first attempt, spec §7's
+  step 1 (`gpui-fast = []` in `CN/Cargo.toml`), left gpui-fast in Cargo.lock: `cargo
+  tree -i gpui-fast` printed nothing, but the lock keeps an optional dependency that
+  an enabled feature names weakly, and `gpui-fast?/test-support` sits in the
+  `test-support` features of gpui-kit 0.8.1 (`Cargo.toml:81-82`, beside
+  `gpui-fast-platform?/test-support`), gpui-base 0.8.1 (`:48`) and gpui-component
+  0.8.1 (`:75`), all turned on through the connector's dev-dependency; `cargo update
+  -p taffy` locked nothing and `--precise 0.15.1` failed on gpui-fast 0.1.12's `taffy
+  = "=0.15.0"`. By the controller's ruling the measurement then deviated from spec
+  §7's steps 1 and 4: it left `CN/Cargo.toml` alone and patched the root Cargo.toml
+  instead, with `[patch.crates-io] gpui-fast` pointing at a copy of gpui-fast 0.1.12
+  in the session's scratchpad whose taffy requirement read `"0.15.0"`, and it restored
+  the root Cargo.toml and Cargo.lock afterwards (`git checkout --`) and deleted the
+  copy. `cargo update -p taffy --precise 0.15.1` then took 0.15.1, and `cargo tree -p
+  native-theme-gpui -i taffy` showed gpui-pre 0.3.10 on it. The gpui-pre suite passed
+  with nothing skipped (387; 331 with one ignored; 18; three ignored),
+  `the_fallback_stack_copy_is_gpuis` included, since the metadata still holds
+  gpui-fast 0.1.12. The eight gpui-pre dumps (kde-breeze and adwaita, light and dark,
+  Basic and Layout) from the 0.15.1 build are byte-identical to the 0.15.0 build's: no
+  difference.
 - **Task 6, parity.** The Linux parity run (the three screenshot scripts with a dump
   directory, then `check_showcase_parity.py`): 887 differences, 887 excepted, 0 not. Six keys
   matched no difference, and the three kinds' dumps agree there, so they were dropped in their
@@ -618,3 +628,9 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   `:423-425` (`:412-414`, where Task 3b found it), the glyph quantising
   `src/window.rs:4853-4858` (`:4661-4666`); `src/util.rs:128-132` and
   `src/text_system.rs:52` did not move.
+- **Task 6 fix round 1, two more parity-file corrections.** `check_showcase_parity.py`'s
+  R-glyph note cited `glyph_dilation_for_color` at gpui-pre 0.3.7 `src/window.rs:4665`; it is
+  0.3.10 `:4865`, the same line, and no other gpui citation in the script names an older
+  version. The flat-button group's reason in `docs/showcase-exceptions.toml` named material-3
+  beside catppuccin-mocha after the group lost its material-3 keys; it names catppuccin-mocha
+  alone now. The text occurs in that group only, so no merge group splits.

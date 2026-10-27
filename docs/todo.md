@@ -3865,18 +3865,25 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       get. G4 measures it once, in its plan's Task 6. For the maintainer to
       raise upstream (an agent files nothing); re-check it at the next GPUI Kit
       upgrade.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* not measured: the gap stands (rationale P11's
-      (a)). With the connector's `gpui-fast` feature emptied in the working tree,
-      `cargo tree --workspace --all-features --target all -e normal,build,dev -i
-      gpui-fast` prints nothing, but Cargo.lock keeps gpui-fast and
-      gpui-fast-platform, the two that an enabled feature names weakly: gpui-kit
-      0.8.1's `test-support`, which the connector's dev-dependency turns on
-      (`connectors/native-theme-gpui/Cargo.toml:104`), names `gpui-fast?/test-support`
-      and `gpui-fast-platform?/test-support` (gpui-kit `Cargo.toml:76-83`);
-      gpui-fast-web, which no enabled feature names, left the lock. So `cargo update
-      -p taffy` locked nothing, and `cargo update -p taffy --precise 0.15.1` failed to
-      select a version for the requirement `taffy = "=0.15.0"` of gpui-fast 0.1.12,
-      which gpui-kit 0.8.1 requires. The manifest and the lock were restored.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* measured once: gpui-pre on taffy 0.15.1 lays
+      the showcase out as on 0.15.0. Emptying the connector's `gpui-fast` feature does
+      not drop gpui-fast from Cargo.lock, which keeps an optional dependency that an
+      enabled feature names weakly: `gpui-fast?/test-support` in the `test-support`
+      features of gpui-kit 0.8.1 (`Cargo.toml:81-82`, with `gpui-fast-platform?`),
+      gpui-base 0.8.1 (`:48`) and gpui-component 0.8.1 (`:75`), which the connector's
+      dev-dependency turns on (`connectors/native-theme-gpui/Cargo.toml:104`). So the
+      measurement patched gpui-fast instead, in the working tree only: a copy of
+      gpui-fast 0.1.12 outside the repository with its taffy requirement relaxed to
+      `"0.15.0"`, a `[patch.crates-io]` entry for it in the root Cargo.toml, and
+      `cargo update -p taffy --precise 0.15.1`, after which `cargo tree -i taffy`
+      shows gpui-pre 0.3.10 on taffy 0.15.1. The gpui-pre suite passed (`cargo test -p
+      native-theme-gpui --features native,watch --all-targets`: 387, 331 with one
+      ignored, 18, and three ignored), `the_fallback_stack_copy_is_gpuis` and
+      `the_labelled_separator_centres_its_label` among them, and the `--dump-layout`
+      runs for kde-breeze and adwaita, light and dark, on the Basic and Layout pages,
+      are byte-identical to the 0.15.0 build's. The root Cargo.toml and Cargo.lock
+      were restored and the copy deleted. The pin stays a gap at the next upgrade: our
+      lock cannot carry 0.15.1 while gpui-fast pins 0.15.0.
 
 ### Showcases: a gate for one showcase's citations of another's lines
 
