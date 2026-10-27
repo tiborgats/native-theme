@@ -14,12 +14,12 @@
 //! the rule then passes [`clamp_length`]; a finite value merely clamped into range is not a
 //! substitution and records nothing.
 //!
-//! This matters because native-theme range-checks a per-widget border's padding sides only
-//! (`native-theme-derive/src/gen_ranges.rs:127-141`, `check_padding` at
-//! `native-theme/src/resolve/validate_helpers.rs:458-485`), never its `corner_radius` or
-//! `line_width`, and [`crate::ResolvedTheme`] derives `Deserialize` with public fields
-//! (`native-theme/src/model/resolved.rs:157-158`), which bypasses validation altogether — so a
-//! hostile or buggy input really can put a non-finite number in
+//! This matters although native-theme's validation range-checks a widget border's
+//! `corner_radius`, `line_width` and every padding side it states (`check_widget_border`,
+//! `native-theme/src/resolve/validate_helpers.rs:517`, which the derived range checks call for
+//! each widget border): [`crate::ResolvedTheme`] derives `Deserialize` and has public fields
+//! (`native-theme/src/model/resolved.rs:161-163`), so a value can reach this crate without
+//! passing that validation — a hostile or buggy input really can put a non-finite number in
 //! `theme.button.border.corner_radius`, or in a padding side.
 
 /// Re-exported **here and not at the crate root**, because `egui::Rgba`
@@ -199,7 +199,7 @@ pub fn to_corner_radius(base: egui::CornerRadius, radius_px: f32) -> egui::Corne
 /// `Spacing::window_margin`'s `Margin::same(6)` (`egui/src/style.rs:1456`), a panel frame's
 /// `Margin::symmetric(8, 2)` (`egui/src/containers/frame.rs:187`) — never an invented `0`.
 /// `base` is a parameter because only the call site knows the sink, as in iced's
-/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:492-502`). The call site reports a
+/// `padding_or` (`connectors/native-theme-iced/src/lib.rs:709-719`). The call site reports a
 /// non-finite side, and a saturated one.
 #[inline]
 #[must_use]
@@ -361,7 +361,7 @@ pub fn to_stroke(base: egui::Stroke, color: Rgba, line_width_px: f32) -> egui::S
 /// `epaint::Shadow` from a native shadow colour, keeping `base`'s geometry. See spec §6.14.
 ///
 /// native-theme carries **no** shadow geometry — only `shadow_enabled: bool`
-/// (`native-theme/src/model/border.rs:234`, `:251`) — while `epaint::Shadow` needs
+/// (`native-theme/src/model/border.rs:235`, `:251`) — while `epaint::Shadow` needs
 /// `offset: [i8; 2]` (`epaint/src/shadow.rs:15`), `blur: u8` (`:20`) and `spread: u8` (`:23`).
 /// Only the colour is replaced; `enabled == false` yields `Shadow::NONE`
 /// (`epaint/src/shadow.rs:40-45`).

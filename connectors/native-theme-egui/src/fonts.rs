@@ -90,9 +90,9 @@ impl FontPlan {
     }
 
     /// Register one face at its own `weight` (a CSS weight in `100..=900`,
-    /// `native-theme/src/model/font.rs:267-268`; values outside that range are clamped into
+    /// `native-theme/src/model/font.rs:280-281`; values outside that range are clamped into
     /// it, never rejected) and `style`. `family` is matched against `ResolvedFontSpec::family`
-    /// (`native-theme/src/model/font.rs:244`) by the rule on [`FontPlan`].
+    /// (`native-theme/src/model/font.rs:257`) by the rule on [`FontPlan`].
     pub fn face(self, family: &str, weight: u16, style: FontStyle, bytes: FontBytes) -> Self {
         // `100..=900`: values outside the range are clamped into it, never rejected (§4.9).
         self.face_at(family, Some(weight.clamp(100, 900)), style, bytes, 0)

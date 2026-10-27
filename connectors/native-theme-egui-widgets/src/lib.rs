@@ -3,18 +3,37 @@
 //!
 //! Target: **egui 0.36.2**.
 //!
-//! A companion widget crate for the connector. It draws what the connector
-//! cannot give egui's own widgets: a switch, a slider whose knob is not its
-//! rail, a spinner at the theme's stroke, and a segmented control, which egui
-//! does not have. It also wraps egui's links in their state and visited
-//! colours, the per-call route the connector names for them, written once,
-//! egui's drop-down at the height the theme states, which egui's square
-//! arrow box can exceed, with the open chevron the platforms draw, egui's
-//! radio button with the dot the theme states, which egui sizes from the
-//! check mark's box, egui's progress bar with the outline the theme
-//! states, which egui does not draw, and an expander whose arrow side, gap,
-//! body indent and frame are the theme's, which egui's `CollapsingHeader`
-//! ties to one indent and one side.
+//! A companion widget crate for the connector. The connector themes egui's own
+//! widgets through egui's `Style`; this crate draws what no `Style` can produce,
+//! because egui draws it from a hardcoded value or not at all:
+//!
+//! * [`switch::Switch`]: a switch; egui has no switch or toggle widget.
+//! * [`slider::Slider`]: a slider whose knob has its own colour; egui paints the
+//!   resting knob in the rail's.
+//! * [`spinner::Spinner`]: the icon set's animated indicator where it has one, else
+//!   an arc at the theme's stroke width, which `egui::Spinner` hardcodes.
+//! * [`segmented_control::SegmentedControl`]: a segmented control; egui has none.
+//! * [`links::link`] and [`links::hyperlink`]: egui's links in their hover,
+//!   pressed, disabled and visited colours, the per-call colours the connector's
+//!   mapping names for them, written once.
+//! * [`combo_box::ComboBox`]: egui's drop-down at the height the theme states,
+//!   which egui's square arrow box can exceed, with the open chevron the
+//!   platforms draw where egui draws a filled triangle.
+//! * [`radio_button::RadioButton`]: egui's radio button with the dot the theme
+//!   states; egui sizes it from the check mark's box.
+//! * [`progress_bar::ProgressBar`]: egui's progress bar with the outline the
+//!   theme states; egui draws none.
+//! * [`expander::Expander`]: an expander whose arrow side, arrow gap, body indent
+//!   and frame are the theme's; egui's `CollapsingHeader` ties the arrow, the
+//!   title and the body to one indent, leads with its arrow and frames the header
+//!   alone.
+//!
+//! Add it beside the connector and install the connector's atlas as its crate
+//! documentation shows ([`from_system`](native_theme_egui::from_system) or
+//! [`from_preset`](native_theme_egui::from_preset), then
+//! [`ThemeAtlas::install`](native_theme_egui::ThemeAtlas::install)); the
+//! connector is re-exported as [`connector`], so its `egui` is
+//! `native_theme_egui_widgets::connector::egui`.
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
@@ -38,14 +57,15 @@
 //! }
 //! ```
 //!
-//! Every widget is an [`egui::Widget`](native_theme_egui::egui::Widget) added
-//! with `ui.add(..)`, so `ui.add_sized` and `ui.add_enabled` take them too —
-//! but the drop-down and the expander, whose contents are a closure: as
-//! egui's own, they are shown with [`combo_box::ComboBox::show_ui`] and
-//! [`expander::Expander::show`]. No
-//! extension trait on `egui::Ui` is provided: `Ui::button` and its siblings
-//! are inherent methods, which Rust resolves before a trait's, so a trait
-//! method of the same name would be silently ignored at every call site.
+//! Every widget but the drop-down and the expander is an
+//! [`egui::Widget`](native_theme_egui::egui::Widget) added with `ui.add(..)`, so
+//! `ui.add_sized` and `ui.add_enabled` take them too. The drop-down and the
+//! expander take their contents as a closure and, as egui's own, are shown with
+//! [`combo_box::ComboBox::show_ui`] and [`expander::Expander::show`]; the links
+//! are functions returning an `egui::Widget`. No extension trait on `egui::Ui`
+//! is provided: `Ui::button` and its siblings are inherent methods, which Rust
+//! resolves before a trait's, so a trait method of the same name would be
+//! silently ignored at every call site.
 //!
 //! # Spec citations
 //!

@@ -2,11 +2,19 @@
 //!
 //! Target: **egui 0.36.2**.
 //!
-//! `native-theme-egui` gives an egui application an excellent global theme out
-//! of the box and opt-in per-widget geometry: egui 0.36.2's `Style` has an
-//! interaction-state axis and provably no widget-type axis, so what one global
-//! `Style` can hold reaches every widget automatically, and the per-widget
-//! values reach the screen only where the application asks for them.
+//! `native-theme-egui` themes an egui application from a [`native_theme`] theme: the OS's
+//! own, read at run time, or one of native-theme's bundled presets. One call,
+//! [`ThemeAtlas::install`], gives every widget the theme's colours, strokes, radii, spacing
+//! and text sizes with no further code. The values that belong to one kind of widget — an
+//! input's border, a checkbox's checked fill, a menu's items — reach the widgets the
+//! application puts in that widget's role scope ([`NativeThemeUiExt::native_scope`]):
+//! egui's `Style` holds one set of widget visuals per interaction state (inactive, hovered,
+//! active, …), shared by every kind of widget, so one global `Style` cannot hold them all.
+//!
+//! The companion crate `native-theme-egui-widgets` draws, from the same installed atlas,
+//! the widgets no `Style` can make look native: a switch, a segmented control, and a
+//! slider, spinner, links, drop-down, radio button, progress bar and expander drawn as the
+//! theme states them.
 //!
 //! # Spec citations
 //!
@@ -31,8 +39,9 @@
 //! # }
 //! ```
 //!
-//! Or from a bundled preset. A preset pins the scheme: set the one `is_dark` named.
-//! [`from_system`] instead follows the OS, with `ThemePreference::System`:
+//! Or from a bundled preset. The atlas holds both of the preset's variants; this recipe pins
+//! the scheme `is_dark` named. With `ThemePreference::System` instead, the preset follows the
+//! OS light/dark preference, as [`from_system`]'s atlas does ([`from_preset`] says how):
 //!
 //! ```rust,no_run
 //! use native_theme_egui::egui::{self, ThemePreference};
@@ -75,6 +84,17 @@
 //! `Style` also holds, are the free accessors of this crate root, for the application's own
 //! use; fonts are [`fonts`]' and icons [`icons`]'.
 //!
+//! The base style alone carries, among others: the panel background (`visuals.panel_fill`)
+//! and the menu background (`visuals.window_fill`); the text colours; the button's fills,
+//! borders, corner radius, padding and minimum height, which every interactive widget
+//! shares, since egui's `widgets` states belong to no one kind of widget; the selection,
+//! link, warning and error colours; the window stroke, the window and menu corners and the
+//! window and popup shadows; a text field's fill and caret colour; the scroll bar; the widget
+//! gap (`spacing.item_spacing`); the slider rail's height; the check box's size; the combo
+//! box's width; the tooltip's delay and width; and the body, monospace, small and heading
+//! text sizes. The mapping document below lists every native leaf with the egui field it
+//! reaches, or why it reaches none.
+//!
 //! An accessor that returns one `ResolvedTheme` leaf, converted to egui's type
 //! or scaled by the text-scaling factor, is named after the leaf's path,
 //! without the leading `defaults.` and a unit suffix:
@@ -94,6 +114,22 @@
 //! | `reduce_motion` | `Style::animation_time = 0.0` and `ScrollAnimation::none()` in every style | animations of its own |
 //! | `reduce_transparency` | nothing: egui's `Modal` backdrop is a per-call `Modal::backdrop_color`, not a `Style` field; [`is_reduced_transparency`] reads it | the backdrop colour and its own translucent surfaces |
 //! | `high_contrast` | nothing, by design: high contrast belongs in the theme data, which a reader fills with what the platform draws under it (the Windows reader writes the high-contrast system colours, the GNOME reader libadwaita's high-contrast focus ring, and the macOS reader's system colours follow Increase Contrast, `docs/evidence/os-probe/2026-10-26-run-40320895749/os-probe-macos-14/increase-contrast-on/probe.toml`), so the theme carries it already; [`is_high_contrast`] reads the flag | its own colours, if they should change |
+//!
+//! # Feature flags
+//!
+//! Each forwards to the `native-theme` feature of the same name.
+//!
+//! | Feature | Default | Effect |
+//! |---------|---------|--------|
+//! | `material-icons` | on | the bundled Material icon set |
+//! | `lucide-icons` | on | the bundled Lucide icon set |
+//! | `system-icons` | on | the system icon lookup: freedesktop icon themes, SF Symbols and Windows' Segoe Fluent glyphs (native-theme's feature also turns `material-icons` on) |
+//! | `system-fonts` | on | `fonts::FontPlan::from_system`, and the OS typefaces in [`from_preset`], [`from_system`] and [`SystemThemeExt::to_egui_atlas`] |
+//! | `svg-rasterize` | off | native-theme's in-process SVG rasteriser (`native_theme::rasterize::rasterize_svg`), whose `IconData::Rgba` output [`icons::to_color_image`] converts |
+//! | `native` | off | the OS readers; without one, [`from_system`] is the platform preset on Linux and an error on macOS and Windows |
+//! | `watch` | off | `ThemeWatcher`, which follows OS theme changes; it needs a reader feature (`native`) too |
+//!
+//! The minimum supported Rust version is 1.95, egui 0.36.2's own.
 //!
 //! # Semver
 //!

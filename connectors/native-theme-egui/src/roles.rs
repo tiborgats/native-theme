@@ -4,7 +4,7 @@
 /// A widget role: the *content* style for one kind of widget.
 ///
 /// **Exactly one variant per widget field of [`ResolvedTheme`](crate::ResolvedTheme)**
-/// (`native-theme/src/model/resolved.rs:164-216`), in declaration order. That is the whole
+/// (`native-theme/src/model/resolved.rs:171-221`), in declaration order. That is the whole
 /// rule. When native-theme grows a widget, this enum grows one variant and `mapping.toml`
 /// grows one section; nothing else in this crate's API changes.
 ///
@@ -200,7 +200,7 @@ pub enum PanelSide {
     Bottom,
 }
 
-/// One of native-theme's four text-scale roles (`native-theme/src/model/resolved.rs:54-63`).
+/// One of native-theme's four text-scale roles (`native-theme/src/model/resolved.rs:57-66`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum TextRole {

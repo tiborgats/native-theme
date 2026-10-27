@@ -27,7 +27,7 @@ use crate::{AccessibilityPreferences, Role, TextRole};
 /// they keep the theme's size in that one place, where this atlas needs the product itself to
 /// see the degenerate size and report it.
 ///
-/// For a size no accessor above returns — a widget font read from the `ResolvedTheme`
+/// For a size no other accessor returns — a widget font read from the `ResolvedTheme`
 /// directly (`t.button.font.size`, …) and drawn at a call site. Takes the preferences, not a
 /// `&SystemTheme`, so the preset path can pass [`ThemeAtlas::accessibility`](crate::ThemeAtlas::accessibility).
 ///
@@ -107,8 +107,9 @@ pub fn focus_ring_color(t: &ResolvedTheme) -> egui::Color32 {
 pub fn focus_ring_width(t: &ResolvedTheme) -> f32 {
     t.defaults.focus_ring_width
 }
-/// **May legitimately be negative** (an inset ring: adwaita −2.0, macOS −1.0). Never clamp it
-/// to zero (`native-theme/src/resolve/validate_helpers.rs:708-709`).
+/// `defaults.focus_ring_offset`, the gap between a widget's edge and its focus ring, in logical
+/// pixels. **May legitimately be negative** (an inset ring: adwaita −2.0, macOS −1.0). Never clamp it
+/// to zero (`native-theme/src/resolve/validate_helpers.rs:810-811`).
 #[must_use]
 pub fn focus_ring_offset(t: &ResolvedTheme) -> f32 {
     t.defaults.focus_ring_offset
@@ -164,7 +165,7 @@ pub fn text_role_font(
 }
 
 /// The absolute line height in logical pixels for a text-scale role
-/// (`ResolvedTextScaleEntry::line_height`, `native-theme/src/model/resolved.rs:47`), scaled by
+/// (`ResolvedTextScaleEntry::line_height`, `native-theme/src/model/resolved.rs:49`), scaled by
 /// the same factor as [`text_role_font`]'s size, so the line box keeps its ratio to the text.
 /// Feed to `RichText::line_height(Some(..))` (`egui/src/widget_text.rs:174`) — the only exact
 /// per-role mechanism egui has.
@@ -178,7 +179,7 @@ pub fn text_role_line_height(
 }
 
 /// `defaults.line_height`, the dimensionless **multiplier**
-/// (`native-theme/src/model/resolved.rs:76-77`). Not the same unit as
+/// (`native-theme/src/model/resolved.rs:80-81`). Not the same unit as
 /// [`text_role_line_height`].
 #[must_use]
 pub fn line_height(t: &ResolvedTheme) -> f32 {
@@ -500,7 +501,7 @@ pub fn expander_icon(t: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
     }
 }
 
-/// `list.header_font` (`native-theme/src/model/widgets/mod.rs:644`) as an `egui::FontId`:
+/// `list.header_font` (`native-theme/src/model/widgets/mod.rs:646`) as an `egui::FontId`:
 /// `FontFamily::Proportional` (the never-`Name` invariant, spec §4.9) at [`scaled_text_size`] of
 /// its size, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (spec §8.5). Feed to `RichText::font(..)`
@@ -574,7 +575,7 @@ pub fn font_family(t: &ResolvedTheme) -> &str {
 /// [`scaled_text_size`] of `defaults.font.size` — the `TextStyle::Body` size the atlas
 /// installs, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (spec §8.5). Same signature as `native_theme_iced::font_size`
-/// (`connectors/native-theme-iced/src/lib.rs:1148-1153`).
+/// (`connectors/native-theme-iced/src/lib.rs:1799-1804`).
 #[must_use]
 pub fn font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32 {
     text_size_or_stock(
@@ -601,10 +602,11 @@ pub fn mono_font_size(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f3
 }
 
 // --- accessibility: `&SystemTheme`, never `&ResolvedTheme` ---------------------
-// `AccessibilityPreferences` lives on `SystemTheme` (`native-theme/src/lib.rs:499`) and is
+// `AccessibilityPreferences` lives on `SystemTheme` (`native-theme/src/lib.rs:716`) and is
 // deliberately absent from `ResolutionContext` (`native-theme/src/resolve/context.rs:20-23`).
 // The bare `&SystemTheme` in these four signatures is resolved by a crate-private
 // `use native_theme::SystemTheme;`, NOT by a root re-export — §4.1 removes that one on purpose.
+/// `accessibility.reduce_motion` of the `SystemTheme`: whether the OS asks for reduced motion.
 /// The atlas already forwards it to egui's own animations ([`Builder::accessibility`](crate::Builder::accessibility)); this
 /// is for the application's, e.g. the `reduced_motion` argument of
 /// [`icons::animated_frame_index`](crate::icons::animated_frame_index) and [`icons::spin_angle`](crate::icons::spin_angle).
@@ -637,7 +639,7 @@ pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
 /// (`egui/src/context.rs:2337`) is not one — it sets
 /// `pixels_per_point = zoom_factor * native_pixels_per_point` (`:455`) and so scales every
 /// length, strokes and icons included, where the preference asks for larger text
-/// (`native-theme/src/lib.rs:251-253`). Do **not** pre-multiply any `Style` value by
+/// (`native-theme/src/lib.rs:416-418`). Do **not** pre-multiply any `Style` value by
 /// `pixels_per_point` or `zoom_factor` (spec §2, *Lengths*).
 #[must_use]
 pub fn text_scaling_factor(sys: &SystemTheme) -> f32 {

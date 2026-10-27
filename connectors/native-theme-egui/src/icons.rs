@@ -18,7 +18,7 @@ use native_theme::theme::IconSet;
 use crate::{ResolvedTheme, ThemeAtlas};
 
 /// Which of native-theme's five per-context icon sizes to use
-/// (`ResolvedIconSizes`, `native-theme/src/model/resolved.rs:15-26`). egui has no icon-size
+/// (`ResolvedIconSizes`, `native-theme/src/model/resolved.rs:16-27`). egui has no icon-size
 /// vocabulary of its own (spec §9.4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -342,7 +342,7 @@ fn remember_uri(ctx: &egui::Context, uri: &str) {
 /// Convert a decoded RGBA icon into an `egui::ColorImage`; `None`, never a panic, for a zero
 /// side, an overflowing `width * height * 4` or a buffer of another length (spec §9.3), and for
 /// an `IconData` variant this crate does not know (`IconData` is `#[non_exhaustive]`,
-/// `native-theme/src/model/icons.rs:292`), and for an `IconData::Svg`, which this crate never
+/// `native-theme/src/model/icons.rs:295`), and for an `IconData::Svg`, which this crate never
 /// decodes (spec §9.1). The
 /// oversize test needs a `Context` and lives in [`to_image_source`] and [`to_image`].
 #[must_use]
@@ -464,7 +464,7 @@ pub fn to_image(
     Some(egui::Image::new(source).alt_text(key.alt_text()))
 }
 
-/// Same, for an [`IconProvider`]: an application-supplied one, or an [`IconRole`], which is
+/// [`to_image_source`] for an [`IconProvider`]: an application-supplied one, or an [`IconRole`], which is
 /// one (`native-theme/src/model/icons.rs:547`), so a role's icon from the installed theme's
 /// set and icon theme at its size is one call ([`custom_icon_to_image`] gives it as an
 /// `egui::Image` with its alt text). Loads the key's set through
@@ -848,8 +848,8 @@ mod tests {
     fn the_uri_follows_the_bytes() {
         let ctx = egui::Context::default();
 
-        // Two frames of the Material indicator, `material_spinner` (`native-theme/src/spinners.rs:159-162`),
-        // an `AnimatedIcon::Frames` (`material_spinner_is_frames`, `:212-221`), under one key.
+        // Two frames of the Material indicator, `material_spinner` (`native-theme/src/spinners.rs:145-148`),
+        // an `AnimatedIcon::Frames` (`material_spinner_is_frames`, `:198-208`), under one key.
         let indicator = native_theme::icons::load_icon_indicator(IconSet::Material, None).unwrap();
         let frames = indicator
             .frame_list()

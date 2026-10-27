@@ -4,7 +4,7 @@ egui widgets drawn from a native theme, for applications themed with
 [`native-theme-egui`](../native-theme-egui/README.md).
 
 The connector maps a `native_theme` theme onto egui's own `Style` and its role
-scopes. A few native pixels no `Style` can produce, because egui draws them
+scopes. Some native details no `Style` can produce, because egui draws them
 from a hardcoded value or does not draw them at all. This crate draws those:
 
 | widget | what egui cannot give its own widgets |
@@ -42,7 +42,10 @@ native-theme-egui = { version = "0.7", features = ["native"] }
 native-theme-egui-widgets = "0.7"
 ```
 
-Install the connector's atlas (its README's Quick start), then add a widget:
+Install the connector's atlas once, as the connector's
+[Quick start](../native-theme-egui/README.md#quick-start) shows, then add a
+widget. This crate re-exports the connector as `connector`, so its `egui` is
+`native_theme_egui_widgets::connector::egui`:
 
 ```rust,no_run
 use native_theme_egui_widgets::connector::egui;
@@ -78,6 +81,12 @@ off by default as there. This crate adds none of its own.
 * A segmented control's dividers are its border's colour: the theme states
   their width and no colour of their own.
 * No slider tick marks.
+
+## Links
+
+- [API reference on docs.rs](https://docs.rs/native-theme-egui-widgets)
+- [The connector, `native-theme-egui`](../native-theme-egui/README.md)
+- [CHANGELOG](../../CHANGELOG.md)
 
 ## License
 

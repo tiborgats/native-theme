@@ -1,14 +1,21 @@
 # native-theme-egui
 
-`native-theme-egui` gives an egui application an excellent global theme out
-of the box and opt-in per-widget geometry: egui 0.36.2's `Style` has an
-interaction-state axis and provably no widget-type axis, so what one global
-`Style` can hold reaches every widget automatically, and the per-widget
-values reach the screen only where the application asks for them.
+`native-theme-egui` themes an [egui](https://github.com/emilk/egui)
+application from a [`native-theme`](https://crates.io/crates/native-theme)
+theme: the OS's own, read at run time, or one of native-theme's bundled
+presets. One call gives every widget the theme's colours, strokes, radii,
+spacing and text sizes with no further code. The values that belong to one
+kind of widget — an input's border, a checkbox's checked fill, a menu's
+items — reach the widgets the application puts in that widget's role scope:
+egui's `Style` holds one set of widget visuals per interaction state
+(inactive, hovered, active, …), shared by every kind of widget, so one global
+`Style` cannot hold them all.
 
-[egui](https://github.com/emilk/egui) connector for
-[`native-theme`](https://crates.io/crates/native-theme). The versions it
-requires are in [Compatibility](#compatibility).
+The companion crate
+[`native-theme-egui-widgets`](../native-theme-egui-widgets/README.md) draws
+the widgets no `Style` can make look native. The versions this crate
+requires are in [Compatibility](#compatibility); to start, see
+[Quick start](#quick-start).
 
 ## What it does
 
@@ -23,19 +30,41 @@ egui's own types, and hands them to egui through egui's own seams:
    where the application asks for it: `ui.native_scope(role, variant, ..)` or
    `ui.native_set_style(role, variant)` from the `NativeThemeUiExt` trait, and
    `ThemeAtlas::role_modifier`, or `role_modifier(ui, role, variant)` from a
-   `Ui`, for a popup or a menu. A button in a `Role::Button` scope takes the
-   button's own padding, radius and fills.
+   `Ui`, for a popup or a menu. A `TextEdit` in a `Role::Input` scope takes the
+   input's borders, corner radius and text colours, a checked box in
+   `Role::Checkbox` with `RoleVariant::Selected` the checked fill, and a button
+   in `Role::Button` its own font size.
 3. **Surface frames.** One `egui::Frame` per `Surface` — window, title bar,
    dialog, popover, tooltip, card, side and central panels — from
    `ui.native_frame(surface)` or `ThemeAtlas::surface_frame`.
+
+What the base style carries, among others:
+
+| From the theme | Into egui's `Style` |
+|---|---|
+| the window background, `defaults.background_color` | `visuals.panel_fill` |
+| the menu background | `visuals.window_fill` |
+| the text and muted text colours | `visuals.widgets.*.fg_stroke`, `visuals.weak_text_color` |
+| the button's fills, border, corner radius, padding and minimum height | `visuals.widgets.{inactive,hovered,active,open}`, `spacing.button_padding`, `spacing.interact_size.y` — shared by every interactive widget |
+| the selection, link, warning and error colours | `visuals.selection`, `hyperlink_color`, `warn_fg_color`, `error_fg_color` |
+| the window border, the window and menu corners, the shadows | `visuals.window_stroke`, `window_corner_radius`, `menu_corner_radius`, `window_shadow`, `popup_shadow` |
+| a text field's fill and caret | `visuals.text_edit_bg_color`, `visuals.text_cursor` |
+| the scroll bar | `spacing.scroll`, the thumb fills in `visuals.widgets` |
+| the widget gap, the slider rail, the check box, the combo box width | `spacing.item_spacing`, `slider_rail_height`, `icon_width`, `icon_spacing`, `combo_width` |
+| the tooltip's delay and width | `interaction.tooltip_delay`, `spacing.tooltip_width` |
+| the body, monospace, caption and section-heading sizes | `text_styles` `Body`, `Monospace`, `Small`, `Heading` |
+| reduced motion | `animation_time`, `scroll_animation` |
+
+The complete list, one row per native leaf, is the mapping document in the
+API reference, rendered from [`mapping.toml`](mapping.toml).
 
 The install also registers a plugin that paints the platform's focus ring
 around the widget with keyboard focus and, where the platform integration
 reports no colour scheme (Linux), tells egui the OS one when the atlas carries
 it (`from_system`, `to_egui_atlas`, `from_preset`, `Builder::os_mode`). The
-values no `Style` field carries — the info and warning colours, the text-scale
-roles, a `TextEdit`'s margin and frame, the dialog button order, icon sizes —
-are free functions of the crate root and of `icons`.
+values no `Style` field carries — the info colours, the warning text colour,
+the text-scale roles, a `TextEdit`'s margin and frame, the dialog button
+order, icon sizes — are free functions of the crate root and of `icons`.
 
 ## How it fits
 
@@ -49,6 +78,12 @@ no fork of any egui type. System-font lookup is native-theme's
 image loaders the application installs with `egui_extras`. Every native leaf
 and where it goes in egui — or why it goes nowhere — is one row of
 [`mapping.toml`](mapping.toml), which the crate's API documentation renders.
+
+The widgets egui lacks, or draws from values no `Style` holds, are in
+[`native-theme-egui-widgets`](../native-theme-egui-widgets/README.md): a
+switch, a segmented control, and a slider, spinner, links, drop-down, radio
+button, progress bar and expander drawn as the theme states them. They read
+the atlas this crate installs; add that crate beside this one.
 
 ## Compatibility
 
@@ -86,38 +121,6 @@ writes the line; a hand-edited one fails a test:
 Verified against ecolor 0.36.2, eframe 0.36.2, egui 0.36.2, egui-wgpu 0.36.2, egui-winit 0.36.2, egui_extras 0.36.2, egui_kittest 0.36.2, emath 0.36.2, epaint 0.36.2, epaint_default_fonts 0.36.2 and kittest 0.4.0 on 2026-10-27.
 <!-- compat:end -->
 
-### Semver
-
-1. The crate version equals the workspace version.
-2. One egui minor per release line of this crate; an egui minor bump is a
-   **breaking change** for this crate.
-3. **The numeric contents of a produced `egui::Style` are not covered.** A
-   mapping fix — electing a different base owner, correcting a sink, closing a
-   `Note` — is never a breaking change.
-4. Every public enum is `#[non_exhaustive]` except `PanelSide`, so a new `Role`,
-   `Surface`, `RoleVariant`, `Note`, `TextRole`, `IconContext` or `FontBytes`
-   variant is additive; each of `Note`'s struct variants carries its own
-   `#[non_exhaustive]`, so enriching one stays additive too.
-5. Adding a free accessor is additive.
-6. `ThemeAtlas`, `Builder`, `FontPlan`, `IconKey` and — behind feature `watch` —
-   `ThemeWatcher` are opaque, and `NativeThemeUiExt` and `SystemThemeExt` are
-   sealed, so adding a method to any of them is additive.
-
-`Surface::Panel` and both `FontBytes` tuple variants are deliberately
-exhaustive: on a tuple variant the attribute would make the variant impossible
-to construct outside this crate, and constructing them is the documented call
-shape. For `NativeThemeUiExt`, clause 6 holds only for a method name that
-exists on neither `egui::Ui` nor `egui::Context`, which is the rule every
-method added to it follows.
-
-### When egui bumps
-
-The compile-time tripwires catch a `Style` field added or removed, and the
-assignment site catches a field whose type changes. Nothing catches a field
-whose meaning changes with no change of signature, so moving to a new egui
-release means reading the doc-comment diff of every field this crate writes,
-not only the field list.
-
 ## Quick start
 
 Add the crate to your `Cargo.toml`, with the OS readers (`native`):
@@ -129,9 +132,9 @@ native-theme-egui = { version = "0.7", features = ["native"] }
 ```
 
 The examples name egui through the connector's re-export,
-`native_theme_egui::egui`, which the Quick start's dependencies resolve. eframe's
-`eframe::egui` is the same crate; the examples name the connector's, the egui
-its `Style`s and frames are built for, as [How it fits](#how-it-fits) says.
+`native_theme_egui::egui`: the egui its `Style`s and frames are built for, as
+[How it fits](#how-it-fits) says. With these two dependencies cargo resolves
+one egui, so `eframe::egui` is the same crate.
 
 Install the OS theme once, where eframe hands you the `Context`, and let egui
 follow the OS light/dark preference:
@@ -329,18 +332,19 @@ else: it sets no fonts, forgets no icon and requests no repaint.
 |---|---|---|
 | `material-icons` | on | the bundled Material icon set |
 | `lucide-icons` | on | the bundled Lucide icon set |
-| `system-icons` | on | freedesktop, SF Symbols and Windows system icon lookup |
+| `system-icons` | on | the system icon lookup: freedesktop icon themes, SF Symbols and Windows' Segoe Fluent glyphs (native-theme's feature also turns `material-icons` on) |
 | `system-fonts` | on | `FontPlan::from_system`, and the system typeface in `from_preset`, `from_system` and `to_egui_atlas` |
 | `svg-rasterize` | off | native-theme's in-process SVG rasteriser, whose output `icons::to_color_image` converts |
 | `native` | off | the OS readers, so `from_system`, `native_theme_egui::native_theme::SystemTheme::from_system` and `ThemeWatcher::system_rebuild` read the OS theme |
-| `watch` | off | `ThemeWatcher` |
+| `watch` | off | `ThemeWatcher`, which follows the OS theme's changes |
 
-Each forwards to the `native-theme` feature of the same name.
-`default-features = false` and the list you keep gives a smaller build.
-The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
-`macos` and `windows`, one platform each), off by default as in native-theme;
-without one, `from_system()` is the platform preset on Linux and an error on
-macOS and Windows. `watch` watches with a reader feature only.
+Each forwards to the `native-theme` feature of the same name. With
+`default-features = false` and only the features you use, the build is
+smaller. The OS readers are the `native` feature, off by default as in
+native-theme (a `native-theme` dependency of your own can name its finer
+`kde`, `portal`, `macos` and `windows` instead, one platform each); without
+one, `from_system()` is the platform preset on Linux and an error on macOS
+and Windows. `watch` needs a reader feature too.
 
 ## Accessibility
 
@@ -349,8 +353,9 @@ macOS and Windows. `watch` watches with a reader feature only.
 and reduced motion into the atlas. Every text size the atlas installs is
 multiplied by the factor; geometry is not: paddings, radii, widths and icon
 sizes keep the theme's values. Reduced motion sets egui's animation time to
-zero and turns scroll animation off. The accessors that return a text size take the same preferences, and
-`scaled_text_size` scales a size read from the `ResolvedTheme` directly.
+zero and turns scroll animation off. The accessors that return a text size
+take the same preferences, and `scaled_text_size` scales a size read from the
+`ResolvedTheme` directly.
 `Context::set_zoom_factor` is the user's zoom, and this crate never touches it.
 
 ## Common recipes
@@ -577,6 +582,38 @@ opacity, so its track stays in the slot even when the theme states it
 transparent, as `windows-11` does: there a canvas frame and a progress bar
 outside its role have no fill.
 
+## Semver
+
+1. The crate version equals the workspace version.
+2. One egui minor per release line of this crate; an egui minor bump is a
+   **breaking change** for this crate.
+3. **The numeric contents of a produced `egui::Style` are not covered.** A
+   mapping fix — electing a different base owner, correcting a sink, closing a
+   `Note` — is never a breaking change.
+4. Every public enum is `#[non_exhaustive]` except `PanelSide`, so a new `Role`,
+   `Surface`, `RoleVariant`, `Note`, `TextRole`, `IconContext` or `FontBytes`
+   variant is additive; each of `Note`'s struct variants carries its own
+   `#[non_exhaustive]`, so enriching one stays additive too.
+5. Adding a free accessor is additive.
+6. `ThemeAtlas`, `Builder`, `FontPlan`, `IconKey` and — behind feature `watch` —
+   `ThemeWatcher` are opaque, and `NativeThemeUiExt` and `SystemThemeExt` are
+   sealed, so adding a method to any of them is additive.
+
+`Surface::Panel` and both `FontBytes` tuple variants are deliberately
+exhaustive: on a tuple variant the attribute would make the variant impossible
+to construct outside this crate, and constructing them is the documented call
+shape. For `NativeThemeUiExt`, clause 6 holds only for a method name that
+exists on neither `egui::Ui` nor `egui::Context`, which is the rule every
+method added to it follows.
+
+### When egui bumps
+
+The compile-time tripwires catch a `Style` field added or removed, and the
+assignment site catches a field whose type changes. Nothing catches a field
+whose meaning changes with no change of signature, so moving to a new egui
+release means reading the doc-comment diff of every field this crate writes,
+not only the field list.
+
 ## Showcase
 
 ```sh
@@ -683,6 +720,7 @@ The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Ser
 ## Links
 
 - [API reference on docs.rs](https://docs.rs/native-theme-egui)
+- [The companion widget crate, `native-theme-egui-widgets`](../native-theme-egui-widgets/README.md)
 - [Showcase source](examples/showcase-egui/)
 - [The mapping manifest](mapping.toml)
 - [CHANGELOG](../../CHANGELOG.md)

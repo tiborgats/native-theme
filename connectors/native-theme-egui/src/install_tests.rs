@@ -15,7 +15,7 @@ use crate::{
 use native_theme::theme::Theme;
 
 /// A bundled preset resolved for one mode, by the route the iced connector's `from_preset`
-/// takes (`connectors/native-theme-iced/src/lib.rs:371-390`).
+/// takes (`connectors/native-theme-iced/src/lib.rs:566-585`).
 pub(crate) fn resolved(name: &str, mode: ColorMode) -> ResolvedTheme {
     Theme::preset(name)
         .unwrap()
@@ -2934,7 +2934,7 @@ mod t13_accessibility {
     }
 
     /// T13 (d): the three connectors' `scaled_text_size` agree on a degenerate factor (§4.7);
-    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:2781-2787`).
+    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:3197-3209`).
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
         for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {

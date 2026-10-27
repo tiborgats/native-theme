@@ -223,7 +223,7 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// [`ThemeAtlas::text_size_cap`] the install plugin derives from it (an `AtomicU32`, shared by
 /// every clone); and a `ResolvedTheme` is plain
 /// owned data with no interior mutability and no `Rc`
-/// (`native-theme/src/model/resolved.rs:158-217`).
+/// (`native-theme/src/model/resolved.rs:161-222`).
 ///
 /// It carries, per `egui::Theme` (Light and Dark):
 /// * one base [`egui::Style`],
@@ -297,7 +297,7 @@ impl ThemeAtlas {
 
     /// The accessibility preferences the atlas was built with, applied as
     /// [`Builder::accessibility`] describes, or `AccessibilityPreferences::default()`
-    /// (`native-theme/src/lib.rs:265-274`). Hand it to the text-size accessors of spec §4.7, so a
+    /// (`native-theme/src/lib.rs:448-453`). Hand it to the text-size accessors of spec §4.7, so a
     /// size read at a call site matches the size the atlas installed.
     #[must_use]
     pub fn accessibility(&self) -> &AccessibilityPreferences {
@@ -305,7 +305,7 @@ impl ThemeAtlas {
     }
 
     /// The layout spacing the atlas was built with, as [`Builder::layout`] took it, or
-    /// `LayoutTheme::default()` (`native-theme/src/model/widgets/mod.rs:1094-1111`, all four
+    /// `LayoutTheme::default()` (`native-theme/src/model/widgets/mod.rs:1091-1113`, all four
     /// fields `None`). Read `container_margin` and `section_gap` here, the two per-call values
     /// no `Style` field carries (spec §5.1), so an atlas from [`from_system`](crate::from_system) needs no second
     /// detection of the OS.
@@ -326,15 +326,15 @@ impl ThemeAtlas {
     }
 
     /// The theme's icon set, so icon code — a spinner drawing the set's animated indicator
-    /// (`native_theme::icons::load_icon_indicator(set, None)` for a bundled set; for
-    /// `IconSet::Freedesktop`, `FreedesktopLoader::load_indicator(atlas.icon_theme(ctx.theme()))`,
-    /// because `load_icon_indicator` with no theme asks for the system's there,
-    /// `native-theme/src/icons.rs:734`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
+    /// (`native_theme::icons::load_icon_indicator(atlas.icon_set(), atlas.icon_theme(ctx.theme()))`,
+    /// which hands a freedesktop set's icon theme to `FreedesktopLoader::load_indicator` and asks
+    /// for the system's where it is `None`, `native-theme/src/icons.rs:734`), an
+    /// [`icons::IconKey`](crate::icons::IconKey) — follows the theme
     /// with no second input. On the [`from_preset`](crate::from_preset) path it is `Resolved::icon_set`
-    /// (`native-theme/src/model/resolved.rs:263`), which native-theme already falls back to
+    /// (`native-theme/src/model/resolved.rs:277`), which native-theme already falls back to
     /// `system_icon_set()` when the preset states none; on the [`from_system`](crate::from_system) /
     /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path it is `SystemTheme::icon_set`
-    /// (`native-theme/src/lib.rs:471`); a [`Builder`] atlas takes [`Builder::icon_set`], else
+    /// (`native-theme/src/lib.rs:688`); a [`Builder`] atlas takes [`Builder::icon_set`], else
     /// `native_theme::detect::system_icon_set()` (`native-theme/src/detect/icon_theme.rs:23`) — the
     /// same fallback native-theme applies.
     #[must_use]
@@ -348,7 +348,7 @@ impl ThemeAtlas {
     /// `breeze-dark` for dark (`native-theme/src/presets/kde-breeze.toml:16`, `:410`) — and
     /// egui draws either style whenever the scheme changes, so one name would be wrong for the
     /// other. On the [`from_preset`](crate::from_preset) path it is each variant's `Resolved::icon_theme`
-    /// (`native-theme/src/model/resolved.rs:268`, from `Theme::resolve` of that mode); on the
+    /// (`native-theme/src/model/resolved.rs:283`, from `Theme::resolve` of that mode); on the
     /// [`from_system`](crate::from_system) / [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path it is
     /// `SystemTheme::icon_theme_for` of that mode (spec §9.2); a [`Builder`] atlas takes
     /// [`Builder::icon_theme`] per scheme. `None` where the theme states none for that scheme
@@ -680,21 +680,21 @@ impl<'a> Builder<'a> {
     ///
     /// A separate input because [`LayoutTheme`] lives on `native_theme::theme::Theme`
     /// (`native-theme/src/model/mod.rs:282`) and on `SystemTheme`
-    /// (`native-theme/src/lib.rs:628`), and **not** on [`ResolvedTheme`]
-    /// (`native-theme/src/model/resolved.rs:158-217`). All four fields are `Option<f32>`
-    /// (`native-theme/src/model/widgets/mod.rs:1094-1111`).
+    /// (`native-theme/src/lib.rs:714`), and **not** on [`ResolvedTheme`]
+    /// (`native-theme/src/model/resolved.rs:161-222`). All four fields are `Option<f32>`
+    /// (`native-theme/src/model/widgets/mod.rs:1091-1113`).
     pub fn layout(mut self, layout: &'a LayoutTheme) -> Self {
         self.layout = Some(layout);
         self
     }
 
     /// Accessibility preferences, from `SystemTheme::accessibility`
-    /// (`native-theme/src/lib.rs:499`) or, on the preset path,
-    /// `AccessibilityPreferences::from_system()` (`native-theme/src/lib.rs:290`, `:303`).
+    /// (`native-theme/src/lib.rs:716`) or, on the preset path,
+    /// `AccessibilityPreferences::from_system()` (`native-theme/src/lib.rs:468`).
     /// Applied wherever egui has a sink, as the sibling connectors apply them: gpui scales its
-    /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:217`, `:219`)
-    /// and forwards reduced motion to gpui (`:854`); iced scales through `font_size` and
-    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1148-1153`, `:1194-1199`).
+    /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:345`, `:347`)
+    /// and forwards reduced motion to gpui (`forward_reduce_motion`, `:1190-1202`); iced scales through `font_size` and
+    /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1799-1804`, `:1915-1920`).
     ///
     /// * **Text scaling.** Every text size the atlas writes — each `Style::text_styles` entry
     ///   and each `Style::override_font_id` size, in the base styles and in every role style —
@@ -718,7 +718,7 @@ impl<'a> Builder<'a> {
     ///
     /// `high_contrast` and `reduce_transparency` are not applied; they are exposed through
     /// [`is_high_contrast`](crate::is_high_contrast) and [`is_reduced_transparency`](crate::is_reduced_transparency). gpui drops its modal scrim under
-    /// `reduce_transparency` (`connectors/native-theme-gpui/src/colors.rs:509-518`); egui's
+    /// `reduce_transparency` (`connectors/native-theme-gpui/src/colors.rs:546-555`); egui's
     /// counterpart, the `Modal` backdrop, is no `Style` field but a per-call
     /// `Modal::backdrop_color` (`egui/src/containers/modal.rs:62`, default
     /// `Color32::from_black_alpha(100)` at `:29`), so that choice is the application's at the
@@ -751,7 +751,7 @@ impl<'a> Builder<'a> {
     /// [`ThemeAtlas::builder`] has none unless given one here. The OS's current mode is
     /// `if native_theme::detect::system_is_dark() { ColorMode::Dark } else { ColorMode::Light }`
     /// (`native-theme/src/detect.rs:211`), which reads `Light` wherever detection fails
-    /// (`detect_is_dark_inner`, `:812` on Linux). Without this call a builder atlas leaves the
+    /// (`detect_is_dark_inner`, `:765` on Linux). Without this call a builder atlas leaves the
     /// choice to egui's `Options::fallback_theme` on Linux.
     pub fn os_mode(mut self, mode: ColorMode) -> Self {
         self.os_mode = Some(mode);

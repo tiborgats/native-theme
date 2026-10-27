@@ -204,8 +204,8 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// `fonts::FontPlan::from_system(&light)` (`light` the resolved `ColorMode::Light`
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
 /// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:270`), as
-/// in both siblings (`connectors/native-theme-iced/src/lib.rs:388`,
-/// `connectors/native-theme-gpui/src/lib.rs:295`).
+/// in both siblings (`connectors/native-theme-iced/src/lib.rs:583`,
+/// `connectors/native-theme-gpui/src/lib.rs:459`).
 /// An application with fonts of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
 /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
 /// egui's default base. A family the OS lacks costs one ask of the platform per process, not
@@ -318,7 +318,7 @@ pub fn from_preset(
 /// `.fonts(FontPlan::from_system(&sys.light).with_base(its_defs))`; this constructor uses
 /// egui's default base.
 ///
-/// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:628`), the platform reader's
+/// The layout is `SystemTheme::layout` (`native-theme/src/lib.rs:714`), the platform reader's
 /// values merged field-wise over the preset's, fed to [`Builder::layout`](crate::Builder::layout); so this path
 /// reaches the same spacing fields [`from_preset`] does. The accessibility preferences, the
 /// icon set and the icon themes also travel inside the atlas
@@ -404,12 +404,12 @@ pub trait SystemThemeExt: sealed::Sealed {
     fn to_egui_builder(&self) -> Builder<'_>;
 
     /// Compile an atlas carrying both OS variants, the OS colour mode, the OS accessibility
-    /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:628`):
+    /// preferences and the OS layout (`SystemTheme::layout`, `native-theme/src/lib.rs:714`):
     /// `self.to_egui_builder().build()` ([`to_egui_builder`](Self::to_egui_builder)).
     ///
     /// Deviation from `SystemThemeExt::to_iced_theme`
-    /// (`connectors/native-theme-iced/src/lib.rs:459`) and `to_gpui_theme`
-    /// (`connectors/native-theme-gpui/src/lib.rs:418`), which return a `Loaded` holding one
+    /// (`connectors/native-theme-iced/src/lib.rs:663`) and `to_gpui_theme`
+    /// (`connectors/native-theme-gpui/src/lib.rs:578`), which return a `Loaded` holding one
     /// toolkit theme, of the OS colour mode's variant: egui stores one `Style` per
     /// `egui::Theme` and, under `ThemePreference::System`, picks one every pass from
     /// `RawInput::system_theme` (`egui/src/memory/mod.rs:358-359`), so returning one variant

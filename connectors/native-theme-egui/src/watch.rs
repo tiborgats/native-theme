@@ -83,13 +83,13 @@ impl ThemeWatcher {
     /// (`native-theme/src/detect.rs:230`) when it reads the OS (spec §10.2).
     ///
     /// Bind the result: dropping it stops the watch and joins the thread
-    /// (`native-theme/src/watch/mod.rs:174-189`). `Send` but not `Sync`, like native-theme's
-    /// subscription (`native-theme/src/watch/mod.rs:107-109`).
+    /// (`native-theme/src/watch/mod.rs:201-222`). `Send` but not `Sync`, like native-theme's
+    /// subscription (`native-theme/src/watch/mod.rs:109-111`).
     ///
     /// # Errors
-    /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:224`),
+    /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:391`),
     /// which reports `Error::WatchUnavailable` on desktops and feature sets it cannot watch
-    /// (`:241-273`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error
+    /// (`:391-448`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error
     /// is not returned here; it is kept for [`ThemeWatcher::last_error`], and egui is woken with
     /// `ctx.request_repaint()` either way, so the next pass reads the new atlas or the error.
     pub fn start(
@@ -136,7 +136,7 @@ impl ThemeWatcher {
     }
 
     /// The most recent `rebuild`'s error, as text — a `String`, not an [`Error`](crate::Error), because
-    /// `native_theme::error::Error` is not `Clone` (`native-theme/src/error.rs:58-60`); `None`
+    /// `native_theme::error::Error` is not `Clone` (`native-theme/src/error.rs:60-62`); `None`
     /// again once a later `rebuild` succeeds. A failed `rebuild` requests a repaint, as a
     /// successful one does, so an idle application reads it on the next pass.
     #[must_use]
@@ -230,7 +230,7 @@ mod tests {
         assert!(handoff.last_error().is_none());
     }
 
-    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:318-332`):
+    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:391-448`):
     /// `Ok` or any error passes, and only a panic fails.
     #[test]
     fn start_never_panics_without_a_desktop() {
