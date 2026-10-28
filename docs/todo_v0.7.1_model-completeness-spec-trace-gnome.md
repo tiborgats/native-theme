@@ -233,6 +233,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.85 | `scrollbar.thumb.{min_width,min_height} @ cond overlay_scrollbars not_context scrollbar.body {hover}` | rule |
 | GN-1.85 | `scrollbar.body.padding @ cond overlay_scrollbars !{hover}` | rule |
 | GN-1.85 | `cond overlay_scrollbars` | condition |
+| GN-1.85 | `reader:gnome:org.gnome.desktop.interface overlay-scrolling -> cond overlay_scrollbars` (read today into scrollbar.overlay_mode, gap-map-gnome's W1-152† note) | reader |
 | GN-1.86 | `scrollbar.thumb.stroke (outside) @ cond overlay_scrollbars` | rule |
 | GN-1.86 | `scrollbar.thumb.stroke @ cond overlay_scrollbars not_context scrollbar.body {hover}` | rule |
 | GN-1.86 | `scrollbar.thumb.stroke @ cond overlay_scrollbars cond contrast_high / cond overlay_scrollbars cond contrast_high not_context scrollbar.body {hover}` | rule |
@@ -319,7 +320,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.128 | `tab.attention_indicator.min_width @ variant @pinned` | rule |
 | GN-1.129 | `tab.values.base_width; tab.tab.max_width` | field |
 | GN-1.129 | `tab.values.pinned_width @ variant @pinned` | rule |
-| GN-1.129 | `tab.label.text.elision` (Fade, at both edges; `under: FadeUnder::Element { widget: button, variant: close }`, the close button, ADD-A89; the row gives two fade lengths, and `Elision::Fade` holds one with no edge: a needed core change) | field |
+| GN-1.129 | `tab.label.text.elision` (`Elision::Fade` at both edges: `start` and `end` each a `FadeLength`, the row's two fade lengths; `under: FadeUnder::Element { widget: button, variant: close }`, the close button, ADD-A89) | field |
 | GN-1.130 | `button.body.{fill,min_width,min_height,corners,padding} @ variant close context tab.tab variant document` | rule |
 | GN-1.130 | `tab.values.close_button_shown @ variant document` | rule |
 | GN-1.130 | `button.values.presentations @ variant close context tab.tab variant document (Appear, Disappear: fade)` | rule |
@@ -349,7 +350,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.145 | `sidebar.values.drag_hover_delay` | field |
 | GN-1.146 | `banner.body.{fill,stroke} @ context sidebar.pane / context sidebar.pane variant end / dir rtl context sidebar.pane / dir rtl context sidebar.pane variant end` | rule |
 | GN-1.146 | `banner.body.fill @ cond window_inactive context sidebar.pane; banner.{title,message}.text.fill @ context sidebar.pane` | rule |
-| GN-1.147 | `sidebar.values.width, sidebar.pane.min_width, sidebar.pane.max_width, sidebar.values.width_fraction (the lengths in libadwaita's sp: each = mul(<length>, text_scale), ADD-A55)` | field |
+| GN-1.147 | `sidebar.pane.min_width, sidebar.pane.max_width, sidebar.values.preferred_width_fraction (the lengths in libadwaita's sp: each = mul(<length>, text_scale), ADD-A55; sidebar.values.width Absent, the natural width being the fraction's)` | field |
 | GN-1.148 | `list.row_background.stroke @ {selected} / {hover} / {pressed} cond contrast_high variant sidebar` | rule |
 | GN-1.149 | `toolbar.bar.padding, toolbar.bar.corners, toolbar.bar.bindings (surface Osd) @ variant @osd` | rule |
 | GN-1.150 | `toolbar.bar.padding @ variant @collapse_spacing` | rule |
@@ -464,7 +465,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.195 | `layout.values.max_content_width, layout.values.tightening_threshold @ variant clamp` | rule |
 | GN-1.196 | `layout.values.container_margin, layout.values.section_gap @ variant @preferences_page` | rule |
 | GN-1.197 | `window.values.breakpoints` (the header bar's mobile threshold: measured Window, height Below it, setting `@mobile`; libadwaita 1.10 defines `MOBILE_WINDOW_HEIGHT` without reading it, so the value phase confirms the use first, else the list is empty) | field |
-| GN-1.197 | `dialog.values.breakpoints @ variant paged` (the preferences dialog's thresholds, measured on its content bin, width AtMost, setting `@bar_layout`; the first over `element.item_count`, the page count) | field |
+| GN-1.197 | `dialog.values.breakpoints @ variant paged` (the preferences dialog's thresholds, measured `Measured::Part(dialog.content)`, its breakpoint bin, width AtMost, setting `@bar_layout`; the first over `element.item_count`, the page count) | field |
 | GN-1.198 | `switch.track.fill @ {pressed} !{checked}` | rule |
 | GN-1.199 | `switch.track.fill @ {checked,pressed} (appended layer)` | rule |
 | GN-1.200 | `switch.thumb.fill @ {hover} / {pressed}` | rule |
@@ -647,8 +648,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.09 | `form.row.{min_height,padding} @ variant expander` | rule |
 | GN-2.09 | `list.row.{padding,min_height}, list.row_background.corners @ variant inset` (an AdwExpanderRow in a plain boxed list: a `list` row with a `disclosure`, as Material's and iOS's expandable rows; in a preferences group a `form.row` of kind `expander`; its arrow and nested box: GN-1.257–GN-1.260) | rule |
 | GN-2.10 | `form.values.group_gap, form.group_title.padding, form.group_title.min_height, form.page.padding, form.values.page_gap` | field |
-| GN-2.10 | `dialog.values.breakpoints @ variant paged (the preferences dialog's two thresholds on its content bin, width AtMost each, setting @bar_layout); dialog.values.page_switcher (BottomBar) @ variants {paged,@bar_layout}` | field |
-| GN-2.11 | `banner.body.{fill,padding}, banner.values.content_gap, banner.values.action_gap, banner.values.actions_wrap (BelowWhenNotFitting)` | field |
+| GN-2.10 | `dialog.values.breakpoints @ variant paged (the preferences dialog's two thresholds, measured Measured::Part(dialog.content), its breakpoint bin, width AtMost each, setting @bar_layout); dialog.values.page_switcher (BottomBar) @ variants {paged,@bar_layout}` | field |
+| GN-2.11 | `banner.body.{fill,padding}, banner.edge_line (absent = true: AdwBanner draws no line; GtkInfoBar's is GN-2.31's, under @info_bar), banner.values.content_gap, banner.values.action_gap, banner.values.actions_wrap (BelowWhenNotFitting)` | field |
 | GN-2.11 | `button.body.min_width @ context banner.action_area / context banner.action_area[vertical]; banner.values.{content_gap,action_gap} @ variant vertical` (one width and spacing side by side, others stacked; the connector sets `vertical`) | rule |
 | GN-2.11 | `banner.body.fill, banner.title.opacity, banner.message.opacity, banner.action_area.opacity @ cond window_inactive` | rule |
 | GN-2.11 | `banner.body.{fill,stroke} @ context sidebar.pane` (AdwBanner in a sidebar: a context, as GN-1.146) | rule |
@@ -711,9 +712,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.25 | `calendar.day.opacity @ {other_month}` | rule |
 | GN-2.25 | `calendar.day.focus @ {focus_visible}` | rule |
 | GN-2.26 | `level_indicator.track.{fill,corners}, level_indicator.values.stroke_width, level_indicator.values.thresholds` | field |
-| GN-2.26 | `level_indicator.fill.{fill,corners} @ variant continuous; level_indicator.block.fill @ {filled} variant discrete / !{filled} variant discrete; level_indicator.block.corners @ pos first variant discrete / pos last variant discrete; level_indicator.values.{block_gap,block_min_length} @ variant discrete` (filled and empty blocks, the end radii) | rule |
+| GN-2.26 | `level_indicator.value.{fill,corners} @ variant continuous; level_indicator.block.fill @ {filled} variant discrete / !{filled} variant discrete; level_indicator.block.corners @ pos first variant discrete / pos last variant discrete; level_indicator.values.{block_gap,block_min_length} @ variant discrete` (filled and empty blocks, the end radii) | rule |
 | GN-2.26 | `level_indicator.values.stroke_width @ variant vertical` | rule |
-| GN-2.26 | `level_indicator.fill.fill, level_indicator.block.fill @ {@low} / {@high} / {@full}` | rule |
+| GN-2.26 | `level_indicator.value.fill, level_indicator.block.fill @ {@low} / {@high} / {@full}` | rule |
 | GN-2.26 | `level_indicator.track.{fill,stroke} @ cond contrast_high` | rule |
 | GN-2.26 | `level_indicator.body.opacity @ {disabled}` | rule |
 | GN-2.27 | `color_button.body.padding, color_button.swatch.corners, color_button.swatch_ring.corners` | field |
@@ -722,7 +723,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.27 | `color_picker.swatch.focus @ {focus_visible}` | rule |
 | GN-2.27 | `color_picker.swatch_ring.stroke @ context color_picker.swatch {drop_target} / cond contrast_high` | rule |
 | GN-2.27 | `color_picker.preview.corners (the editor's sample)` | field |
-| GN-2.28 | `font_chooser.requester.{fill,stroke,corners,padding,focus}, font_chooser.requester_separator.stroke (hidden), font_chooser.requester_label.text, font_chooser.values.requester_gap` | field |
+| GN-2.28 | `font_chooser.requester.{fill,stroke,corners,padding,focus}, font_chooser.requester_separator (absent = true: GTK hides the separator), font_chooser.requester_label.text, font_chooser.values.requester_gap` | field |
 | GN-2.29 | `split_button.primary.{corners,padding}, split_button.secondary.{corners,padding}, split_button.values.part_gap (negative overlap), split_button.divider.{stroke,padding}, split_button.values.divider_margin` | field |
 | GN-2.29 | `split_button.divider.stroke @ variant flat / variant flat cond contrast_high; split_button.divider.opacity @ {hover} variant flat / {focus_visible} variant flat` | rule |
 | GN-2.29 | `split_button.primary.fill, split_button.secondary.fill, split_button.divider.stroke @ variant primary / variant destructive / variant @opaque (the inset separator)` | rule |
@@ -730,10 +731,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.30 | `menu_bar.bar.{stroke,padding}, menu_bar.item.{padding,min_height,corners}` | field |
 | GN-2.30 | `menu.body.{padding,corners} @ context any menu_bar (the submenu popovers)` | rule |
 | GN-2.30 | `menu_bar.item.fill @ {open} / {hover}; menu_bar.item.stroke @ cond contrast_high` | rule |
-| GN-2.31 | `banner.body.fill @ variant info / variant @question / variant warning / variant error` | rule |
-| GN-2.31 | `banner.edge_line.stroke, banner.body.padding, banner.values.content_gap` | field |
-| GN-2.31 | `button.body.fill @ {hover} context banner.action_area / {pressed} context banner.action_area` | rule |
-| GN-2.31 | `button.body.{fill,min_width,min_height,corners} @ variant close context banner (round, flat)` | rule |
+| GN-2.31 | `banner.body.fill @ variant @info_bar / variants {@info_bar,info} / variants {@info_bar,@question} / variants {@info_bar,warning} / variants {@info_bar,error}` (the first: a GtkInfoBar of `GTK_MESSAGE_OTHER`, no severity, its fill as `_deprecated.scss:150-191` states it) | rule |
+| GN-2.31 | `banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant) | rule |
+| GN-2.31 | `button.body.fill @ {hover} context banner.action_area variant @info_bar / {pressed} context banner.action_area variant @info_bar` | rule |
+| GN-2.31 | `button.body.{fill,min_width,min_height,corners} @ variant close context banner variant @info_bar (round, flat)` | rule |
 | GN-2.32 | `group_box.body.stroke, group_box.body.corners, group_box.values.title_margin` | field |
 | GN-2.32 | `scroll_view.frame.stroke @ variant @frame` (the `.frame` style class: the same border on a scrolled window, without the radius or label, `_misc.scss:4-7`; `scroll_view.frame` absent outside it) | rule |
 | GN-2.33 | `view_switcher.item.{fill,stroke,padding} @ variant @stack; view_switcher.item.corners @ variant @stack pos first / variant @stack pos last / variant @stack pos only` (linked toggle buttons, the inner corners joined) | rule |
@@ -746,9 +747,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.35 | `badge.body.{fill,corners,min_width,min_height} @ variants {dot,attention} context component.tab_overview.thumbnail` (a thumbnail's needs-attention dot) | rule |
 | GN-2.35 | `button.body.{fill,min_width,min_height,corners} @ variant close context component.tab_overview / {hover} variant close context component.tab_overview / {pressed} variant close context component.tab_overview / variant @unpin context component.tab_overview / {hover} variant @unpin context component.tab_overview / {pressed} variant @unpin context component.tab_overview` (the close and unpin buttons) | rule |
 | GN-2.35 | `button.body.padding @ variant add context component.tab_overview (the new-tab button's margin)` | rule |
-| GN-2.35 | `component.tab_overview.drop_target.{fill,stroke,corners}` | component |
+| GN-2.35 | `component.tab_overview.thumbnail.{fill,shadow} @ {drop_target}; component.tab_overview.grid.shadow (Absent) @ {drop_target}` (a drop over a thumbnail: its tinted fill and its inset ring, a shadow layer as GN-1.25's; the grid's own drop ring switched off, `A/w/_tab-view.scss:194-197`, `:300-304`) | component |
 | GN-2.35 | `component.tab_overview.values.{grid_gap,columns_min,columns_max}, component.tab_overview.thumbnail.{min_width,max_width}` (the thumbnail width bounds, the part's fields) | component |
-| GN-2.35 | `component.tab_overview.values.presentations events Appear, Disappear, Move, @thumbnail_fade / @ cond reduced_motion (crossfade)` | component |
+| GN-2.35 | `component.tab_overview.values.presentations events Appear, Disappear, Move, @thumbnail_fade / @ cond reduced_motion (crossfade)` (`@thumbnail_fade`: the current page's thumbnail's controls fading back in once the overview's open or close animation ends, `A/c/adw-tab-thumbnail.c:18`, `:258-270`) | component |
 | GN-2.36 | `badge.body.{fill,min_width,min_height,corners,padding} @ variant dot / variants {dot,attention}` | rule |
 | GN-2.36 | `badge.body.{fill,min_height,padding,corners}, badge.label.text @ variant count; badge.values.cutout` | rule |
 | GN-2.37 | `badge.label.text @ context button.body[@tab_button] / size small context button.body[@tab_button]` (AdwTabButton's counter) | rule |
@@ -817,7 +818,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.56† | `menu.item.fill @ {hover} context autocomplete (hover selection)` | rule |
 | GN-2.56† | `autocomplete.values.filter_delay, autocomplete.values.hover_selects` | field |
 | GN-2.56† | `autocomplete.values.placement (GtkPopover; width AnchorWidth, max_visible_items, no arrow)` | placement |
-| GN-2.57† | - (GTK's print, page setup and app chooser dialogs) | out (R1.1) |
+| GN-2.57† | - (GTK's print, page setup and app chooser dialogs: drawn by xdg-desktop-portal-gnome through the Print and AppChooser portals, GN-P4-3†) | out (R1.1) |
 | GN-2.57† | `dialog.values.action_layout.row_gap, dialog.action_area.padding (GtkDialog's action area)` | field |
 | GN-2.58† | `input.values.mask_character @ variant secure (a preference list: the first the font covers)` | field |
 | GN-3.01 | `PartStyle.shadow.layers (S2.5, per part)` | field |
@@ -902,6 +903,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.39 | `input.caret.fill per widget (caret part, ADD-A24)` | field |
 | GN-3.39 | `text_area.drop_caret.fill @ {drop_target}` (the accent on a drop target, `_views.scss:42-44`: the text view's drop-position caret) | rule |
 | GN-3.39 | `text_area.caret.fill` | field |
+| GN-3.39 | `selectable_label.caret.fill` (a focused selectable label's caret, `caret-color: currentColor`, `_labels.scss:2`; `G/gtklabel.c:1503-1515`) | field |
 | GN-3.73† | `input.caret, text_area.caret (absent = true) @ {text_selected}` (no caret while text is selected) | rule |
 | GN-3.73† | `input.drop_caret.{fill,min_width} @ {drop_target}` (the drop-position caret) | rule |
 | GN-3.73† | `input.caret, text_area.caret @ !{focused}` (`absent = true`: no caret outside the focused widget) | rule |
@@ -929,7 +931,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.67† | `input.body.cursor, text_area.body.cursor, link.body.cursor, color_picker.plane.cursor, window.resize_zone.cursor` | field |
 | GN-3.67† | `splitter.divider.cursor @ !variant vertical / variant vertical` (column or row resize by orientation) | rule |
 | GN-3.67† | `token.behavior.hide_pointer_while_typing` | token |
-| GN-3.67† | `component.selectable_label.body.cursor` (Text: a selectable label, `G/gtklabel.c:804-806`) | component |
+| GN-3.67† | `selectable_label.body.cursor` (Text: a selectable label, `G/gtklabel.c:804-806`) | field |
 | GN-3.72† | - | out (R1.1) |
 | GN-3.47 | `token.behavior.double_click_time, token.behavior.double_click_distance` | token |
 | GN-3.47 | `reader:gnome:org.gnome.desktop.peripherals double-click` | reader |
@@ -939,8 +941,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.50 | `token.behavior.mnemonics OnAlt delay (ADD-A12)` | token |
 | GN-3.51 | `token.behavior.spring_loading (ADD-A45)` | token |
 | GN-3.51 | `expander.values.drag_hover_delay, view_switcher.values.drag_hover_delay, sidebar.values.drag_hover_delay, tab.values.drag_hover_delay, component.tab_overview.values.drag_hover_delay` (each `= token.behavior.spring_loading`; the last the tab grid's) | field |
-| GN-3.68† | `token.behavior.key_repeat_delay, token.behavior.key_repeat_interval` | token |
-| GN-3.68† | `token.behavior.{key_repeat_delay,key_repeat_interval}` (the read `repeat` setting off, keys not repeating, is "never", not `Absent`: it awaits the core's `Option` for these two fields, the catalogue's open core question) | token |
+| GN-3.68† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
+| GN-3.68† | `token.behavior.key_repeat` (the read `repeat` setting off, keys not repeating: `none`, `Behavior.key_repeat`'s `None`, never `Absent`; ADD-A104) | token |
 | GN-3.68† | `reader:gnome:org.gnome.desktop.peripherals key repeat` | reader |
 | GN-3.69† | `stepper.values.repeat_delay, stepper.values.repeat_interval, stepper.values.climb_after_repeats` (the step growing by the climb rate after that many repeats) | field |
 | GN-3.69† | `scrollbar.values.repeat_delay, scrollbar.values.repeat_interval (trough paging)` | field |
@@ -1022,6 +1024,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-4† | `window.values.caption_button_capabilities` | field |
 | GN-P3-4† | `window.caption_button_glyph.glyph @ variant restore` | rule |
 | GN-P3-5† | `window.title_bar @ cond full_screen (absent)` | rule |
+| GN-P3-5† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} (absent = true) @ cond full_screen` (the parts nested in the title bar, each by its own rule: Nesting) | rule |
 | GN-P3-5† | `toolbar.values.presentations events Appear, Disappear` (AdwToolbarView's revealed bars) | field |
 | GN-P3-5† | - (GNOME Shell's size-change animation on entering and leaving full screen) | out (R1.1) |
 | GN-P3-6† | - | out (R1.1) |

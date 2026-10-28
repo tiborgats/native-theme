@@ -31,6 +31,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-W2 | `window.values.presentations event @predictive_back` | field |
 | MAT-W2 | - (the activity and window transitions the system runs) | out (R1.1) |
 | MAT-W4† | `window.values.caption_bar_transparent (the opt-in to a transparent caption bar, APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND); window.title_bar.fill (the caption's fill taken from the app)` | field |
+| MAT-W4† | `window.title_bar (absent = true) @ !cond freeform` (only a desktop-windowing window has a caption) | rule |
 | MAT-W4† | `reader:android:WindowInsets.Type.captionBar(), the caption's fill taken from the app` | readers (R18) |
 | MAT-W4† | - (the caption buttons, chip, outline and shadow) | out (R1.1) |
 | MAT-W5† | `window.frame.corners (Radius::Concentric per corner, following the display, the root's container: RootInputs.display_corner_radius, which Android reports, else the four tokens token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left} (per corner), else none; S4.6, S8, R25.11)` | field |
@@ -539,7 +540,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N30† | `edit_menu.values.placement (AndroidTextToolbar)` | placement |
 | MAT-N31† | `picker_wheel.container.{fill,corners,min_height}; picker_wheel.values.visible_items` | field |
 | MAT-N31† | `picker_wheel.container.fill @ {disabled}; picker_wheel.item.text.fill @ !{selected} / {selected} / {disabled}; picker_wheel.item.focus @ {focus_visible}` | rule |
-| MAT-N31† | `picker_wheel.item.text.{font.size,line_height,letter_spacing}, picker_wheel.item.opacity` as expressions over `element.scroll_progress`, `element.item_index` (the style interpolated between two text roles, ADD-B13) | field |
+| MAT-N31† | `picker_wheel.item.text.{font.size,line_height,letter_spacing}, picker_wheel.item.opacity` as expressions over `element.scroll_progress`, `element.item_index`, `element.item_count` (the style interpolated between two text roles, ADD-B13) | field |
 | MAT-N31† | `picker_wheel.item.transitions (Geometry with Timing::Spring, Fill, Text: the snap to the centre)` | field |
 | MAT-X1 | `role.@tertiary, role.@on_tertiary, role.@tertiary_container, role.@on_tertiary_container; role.@primary_container, role.@on_primary_container, role.@secondary_container, role.@on_secondary_container, role.@error_container, role.@on_error_container` | role |
 | MAT-X1 | `role.@primary_fixed, role.@primary_fixed_dim, role.@on_primary_fixed, role.@on_primary_fixed_variant (and the same for secondary and tertiary)` | role |
@@ -572,7 +573,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X12 | `spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape)` | rule |
 | MAT-X13 | `token.motion.durations.<duration key>` | token |
 | MAT-X13 | `token.motion.timings.<easing or spring key> (cubic Béziers, Timing::Spring)` | token |
-| MAT-X13 | `declare.flavors baseline, expressive` | field |
+| MAT-X13 | `cond flavor:expressive` (the flavours `baseline`, `expressive`, `[declare] flavors`) | condition |
 | MAT-X13 | `token.motion.timings @ cond flavor:expressive (the expressive motion scheme over the standard one)` | rule |
 | MAT-X14 | `navigation_view.values.presentations events @push, @pop` (kinds `PresentationKind::Keyed` container_transform / shared_axis / fade_through, `PresentationKind::Fade`, ADD-A26) | field |
 | MAT-X16 | `TextStyle.{letter_spacing,line_height}, TextStyle.font.{axes,features}` | field |
@@ -656,7 +657,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-FM03† | `slider.{track,fill,thumb}.* @ dir rtl (the active track's clip, the thumb's offset, the inside and outside corners); progress_bar.{indicator,stop_indicator}.* @ dir rtl; tab.indicator.* @ dir rtl; calendar.range_band.* @ dir rtl; text_area.* @ dir rtl (the outlined field's resize handle)` | rule |
 | MAT-FM03† | `sidebar.values.presentations @ dir rtl (the drawer's swipe and predictive-back origin); search_field.values.presentations @ dir rtl (its predictive-back offset); menu.values.placement (PlacementParams.align, mirrored in RTL, S13)` | rule |
 | MAT-FM03† | `reader:android:Configuration.getLayoutDirection` | readers (R18) |
-| MAT-FM04† | `token.icons.mirroring (IconRole, Mirroring::ExceptLanguages: Arabic and Farsi, not Hebrew; S2.9)` | token |
+| MAT-FM04† | `token.icons.mirroring` (per IconRole: the arrows, undo, redo and the rest of Google's list `Mirroring::Always`; the question-mark icons `Mirroring::ExceptLanguages([he])`, mirrored in Arabic and Farsi, not in Hebrew; S2.9) | token |
 | MAT-FM04† | `Element.language, Element.direction (icon lookup per language and script, S2.9, S8; ADD-B05)` | field |
 | MAT-P3-1† | - | out (R1.1) |
 | MAT-P3-2† | - | out (R1.1) |
@@ -679,7 +680,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-P3-12† | `segmented_control.values.segment_width (FillEqually)` | field |
 | MAT-P3-12† | `segmented_control.segment.min_width` | field |
 | MAT-P3-13† | `layout.values.{max_panes_horizontal,max_panes_vertical,pane_width,pane_height,avoids_hinge} @ h_size_class compact / h_size_class medium / h_size_class expanded / h_size_class large / h_size_class extra_large / v_size_class <c> / cond posture:tabletop` (the tall single-pane window; two stacked panes in tabletop posture, ADD-A83); `layout.values.vertical_pane_gap` (the vertical spacer) | rule |
-| MAT-P3-14† | `token.behavior.{key_repeat_delay,key_repeat_interval}` | token |
+| MAT-P3-14† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | MAT-P3-14† | `reader:android:ViewConfiguration.getKeyRepeatTimeout, getKeyRepeatDelay` | readers (R18) |
 | MAT-P3-15† | `token.behavior.{hide_pointer_while_typing,hide_pointer_fade}` (its gradual fade-out, ADD-A86) | token |
 | MAT-P3-16† | `token.behavior.scroll.{deceleration,min_fling_velocity,max_fling_velocity} (the fling's spline decay, started and capped by the velocities)` | token |

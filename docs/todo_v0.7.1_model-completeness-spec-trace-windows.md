@@ -330,8 +330,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-120 | `switch.thumb.{fill,min_width} @ {pressed} / {checked,pressed} (the fill and the stretch)` | rule |
 | W1-121 | `switch.thumb.fill @ {hover} / {checked,hover}` | rule |
 | W1-122 | `switch.thumb.{min_width,min_height} @ {hover} / {checked,hover}` | rule |
-| W1-123 | `switch.thumb.transitions (Geometry)` | field |
-| W1-123 | `switch.thumb.transitions (Geometry: the slide; measured)` | field |
+| W1-123 | `switch.thumb.transitions (Geometry: the knob growing and shrinking by state)` | field |
+| W1-123 | `switch.thumb.transform @ {checked}` (the slide: a translation per state, as WinUI moves the knob) | rule |
+| W1-123 | `switch.thumb.transitions (Transform: the slide, RepositionThemeAnimation; measured)` | field |
 | W1-123 | `token.motion.durations.control_faster, token.motion.timings.control_fast_out_slow_in` | token |
 | W1-124 | `switch.state_label.text` | field |
 | W1-124 | `switch.state_label.text.fill @ {disabled}` | rule |
@@ -605,7 +606,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.values.{collapse,breakpoints} (AtBreakpoints; measured Allocation, width Below the wrap threshold setting `collapsed` and Below the no-icon threshold setting `@right_wrapped_no_icon`, under `@right`)` | field |
 | W2-40† | `form.row_icon.opacity @ {disabled} variant bitmap_icon` (the bitmap header icon dimmed; a glyph icon is recoloured, W3-51†) | rule |
 | W2-40† | `form.{row.padding,row.stroke,row_arrow.icon} @ variant expander / variant action (the expander's header and items, their top border, the chevron button, the clickable items)` | rule |
-| W2-41† | `level_indicator.{track.fill,fill.fill,tick.fill,needle.fill,needle.stroke,needle.min_width,needle.min_height,value_label.text,unit_label.text} @ variant circular / cond contrast_high variant circular` (the scale arc is `track`, the trail arc `fill`: one structure with iOS's circular gauge); `level_indicator.tick.fill @ variant @scale` (the scale ticks) | rule |
+| W2-41† | `level_indicator.{track.fill,value.fill,tick.fill,needle.fill,needle.stroke,needle.min_width,needle.min_height,value_label.text,unit_label.text} @ variant circular / cond contrast_high variant circular` (the scale arc is `track`, the trail arc `value`: one structure with iOS's circular gauge); `level_indicator.tick.fill @ variant @scale` (the scale ticks) | rule |
 | W2-41† | `level_indicator.body.opacity @ {disabled} variant circular` | rule |
 | W2-41† | `level_indicator.values.{start_angle,end_angle,stroke_width,tick_spacing,cap}` (the arcs' round caps: `cap`) | field |
 | W2-42† | `color_button.{swatch.corners,swatch.min_width,swatch.min_height,swatch.stroke,body.padding}; color_button.checkerboard.fill (PaintKind::Pattern checkerboard, ADD-B01)` | field |
@@ -635,6 +636,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-07 | `reader:windows:the material policy state (AcrylicBrush's OnMaterialPolicyStatusChanged; its inputs to verify)` | reader |
 | W3-07 | `PartStyle.transitions (crossfade, tint transition)` | field |
 | W3-07 | `cond battery_saver` | condition |
+| W3-07 | `reader:windows:the battery saver state (API to verify) -> cond battery_saver` | reader |
 | W3-08 | `Material.tint (an expression on role.global.accent or its ramp, role.global.accent_ramp, for the accent acrylic materials @accent_acrylic_background, @accent_acrylic_in_app)` | field |
 | W3-09 | `role.@layer_fill_default, role.@layer_fill_alt, role.@layer_on_acrylic_fill_default, role.@layer_on_accent_acrylic_fill_default, role.@layer_on_mica_base_alt_*` | role |
 | W3-09 | `PartStyle.fill (a Color layer over the backdrop's Material: the content and commanding layers, Paint.layers)` | field |
@@ -655,7 +657,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-16 | `role.@background_solid_*` | role |
 | W3-17 | `role.global.status.{info,success,warning,error,neutral}.{background,background_solid} (attention, success, caution, critical, neutral backgrounds and their solid variants)` | role |
 | W3-18 | `role.global.status.neutral.fill` | role |
-| W3-18 | `role.@fill_* (the solid neutral fill, a fill tier)` | role |
+| W3-18 | `role.@system_fill_solid_neutral` (`SystemFillColorSolidNeutral`, the solid neutral fill, a fill tier) | role |
 | W3-45† | `PartStyle.fill (an alpha Color layer appended over base, fill.append, S2.3, R6: the translucent fill drawn over what lies behind)` | field |
 | W3-45† | `button.body.fill, combo_box.body.fill, switch.track.fill @ {hover} / {pressed} (appended translucent layers, not flattened colours)` | rule |
 | W3-46† | `role.@text_inverse` | role |
@@ -758,7 +760,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-40 | `menu.body.min_width @ cond input:touch context combo_box` | rule |
 | W3-40 | `menu.body.min_width @ {opened_by_touch} context button.body variant overflow` | rule |
 | W3-40 | `cond input:touch` | condition |
-| W3-41 | `token.behavior.{double_click_time,hover_open_delay,drag_threshold,scroll_lines_per_step,key_repeat_delay}` | token |
+| W3-41 | `token.behavior.{double_click_time,hover_open_delay,drag_threshold,scroll_lines_per_step}` | token |
+| W3-41 | `token.behavior.key_repeat.delay` (`SPI_GETKEYBOARDDELAY`); `token.behavior.key_repeat.interval` (KeyRepeat requires it: the keyboard repeat rate the row's "keyboard repeat" names, its read named in the value phase) | token |
 | W3-41 | `menu.values.submenu_open_delay` | field |
 | W3-41 | - (`UISettings.MessageDuration`: how long the system's notifications stay, which the shell draws; WinUI has no timed message control) | out (R1.1) |
 | W3-41 | `reader:windows:GetDoubleClickTime, UISettings.DoubleClickTime, SPI_GETMOUSEHOVERTIME, SPI_GETMENUSHOWDELAY, SM_CXDRAG, SM_CYDRAG, SPI_GETWHEELSCROLLLINES, SPI_GETKEYBOARDDELAY` | reader |
@@ -799,6 +802,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P3-1† | `window.frame.corners @ cond tiled:left / cond tiled:right / cond tiled:top / cond tiled:bottom` | rule |
 | W-P3-1† | - (the snap overlay, the Snap bar, the shared edge of snapped windows, the snapped windows' gaps to the screen edge and to each other, and the settings that switch snapping: the shell's) | out (R1.1) |
 | W-P3-2† | `window.title_bar (absent) @ cond full_screen` | rule |
+| W-P3-2† | `window.{title_bar_content,title,subtitle,title_icon,caption_buttons,caption_button,caption_button_glyph,window_menu} (absent = true) @ cond full_screen` (the parts nested in the title bar, each by its own rule: Nesting) | rule |
 | W-P3-2† | `window.values.full_screen_title_bar_reveal (SwipeFromTop)` | field |
 | W-P3-2† | `window.values.presentations (event @title_bar_show)` | field |
 | W-P3-2† | `window.{frame.corners,title_bar.min_height,values.default_size} @ variant @compact_overlay` | rule |
@@ -830,7 +834,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P3-14† | - | newest (R1.5) |
 | W-P3-15† | - | preset (R1.3) |
 | W-P3-16† | `token.theme_change` | token |
-| W-P3-17† | `autocomplete.token.text, autocomplete.token.fill; autocomplete.values.trigger_prefix` | field |
+| W-P3-17† | `autocomplete.token.text, autocomplete.token.fill` (RichSuggestBox's `Prefix`, which opens the list, is the application's setting, not a look: no value carries it) | field |
 | W-P3-17† | `menu.{body.fill,body.stroke,body.shadow,body.corners,item.fill} @ context autocomplete (AutoSuggestBox's list, its radius the overlay radius)` | rule |
 | W-P3-17† | `WinUiAutoSuggest (autocomplete.values.placement, relative to the caret: to verify)` | placement |
 | W-RV-1† | `image_cropper.frame.{fill,stroke,corners,padding}; image_cropper.{mask.fill,overlay.fill}` | field |
@@ -868,7 +872,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-12† | `Element.direction` (icon lookup by the element's direction, S2.9, S8; ADD-B05: the "Mirrored" code point as the right-to-left form) | field |
 | W-P4-13† | - | preset (R1.3) |
 | W-P4-14† | - | out (R1.1) |
-| W-P4-15† | - | out (R1.1) |
+| W-P4-15† | - (Win32's page setup dialog, drawn by comdlg32 in the application's process: another toolkit) | preset (R1.3) |
 | W-P4-16† | `scrollbar.values.repeat_delay; scrollbar.values.repeat_interval` | field |
 | W-P4-16† | `scrollbar.values.trough_click` | field |
 | W-P4-17† | `menu.values.submenu_close_delay (= the read MenuShowDelay)` | field |

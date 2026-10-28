@@ -661,7 +661,7 @@ pub struct PartStyle {
     pub focus: Value<FocusIndicator>,
     pub padding: Sides<Value<Px>>,
     pub margin: Sides<Value<Px>>,            // outside the box; may be negative (GN-1.18, GN-1.73, GN-1.119)
-    pub min_width: Value<Px>, pub min_height: Value<Px>,
+    pub min_width: Value<Px>, pub min_height: Value<Px>,   // `auto` on every part: no minimum beyond the content
     pub max_width: Value<Px>, pub max_height: Value<Px>,   // `auto` on every part: no maximum, the content
                                                            // decides (resolves `Length::Auto`, S6.1)
     pub cursor: Value<CursorShape>,
@@ -1056,8 +1056,8 @@ its fields may be. `may_be_absent` is about what a platform draws, never about a
 element's content lacks (a dialog given no icon, an icon-only tab's label) is simply not queried by the connector,
 and the catalogue does not list it. A `Style` patch after a `PartPatch::Absent` brings the part back with the fields stated below the
 `Absent`. Likewise `Auto` is allowed only on the length fields the catalogue marks `auto` (sizes, widths, heights,
-gaps), per part, and on the core's own marks: `TextStyle.line_height`, and `PartStyle.max_width` and `max_height` on
-every part ("no maximum", S2.11); their resolved types are S6.1's.
+gaps), per part, and on the core's own marks: `TextStyle.line_height`, `PartStyle.min_width` and `min_height` ("no minimum
+beyond the content") and `max_width` and `max_height` ("no maximum") on every part (S2.11); their resolved types are S6.1's.
 
 **May be absent, in the core's blocks** (the first source; wherever the block appears unless a mark names its place,
 because some platform has no
@@ -1549,11 +1549,16 @@ sizes = ["regular"]                            # a component's sizes and densiti
 values = { indent_per_level = "length", presentations = "presentations" }   # values' types,
 variants = ["@<variant>"]                                           # variants, flags
 flags = ["@<flag>"]
+
+[declare.widget.segmented_control]
+keys = { compression = ["<key>", …] }          # the keys of a typed widget's `Value<Key>` value or keyed map
+breakpoints = [{ measured = { part = "content" }, width = { at_most = <n> }, variant = "@<v>" }]
+                                               # `Measured::Part` in TOML, by S11's enum rule
 ```
 
 A component value's type names one `WidgetValue` member (S1): `"number"`, `"integer"`, `"length"`, `"duration"`,
 `"bool"`, `"color"`, `"paint"`, `"timing"`, `"transition"`, `"loop"`, `"glyph"`, `"icon_style"`,
-`"scroll_physics"`, `"breakpoints"`, `"presentations"`, `"placement"`; `"enum:<Name>"` for one of the model's public
+`"scroll_physics"`, `"breakpoints"`, `"presentations"`, `"placement"`, `"sides"` (a length per side); `"enum:<Name>"` for one of the model's public
 enums (`"enum:Alignment"`, a shared value type of the catalogue's); and `{ key = ["<k>", …] }` for an enumerated
 value of the component's own, a `Value<Key>` whose keys the catalogue entry lists.
 
@@ -1661,7 +1666,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - a glyph's `mirroring` is `SwapWith`, which names an icon role (S2.9);
 - an expression mistypes, refers to an unknown name, forms a cycle (through bindings too), or can meet an absent
   operand under any binding and rule it can apply under;
-- an expression names element data its part does not declare, or names a `Concentric` or `FollowPart`
+- an expression names element data its part does not declare (root inputs need no declaration: the window's and
+  screen's size, the display radius), or names a `Concentric` or `FollowPart`
   corner (S8), or a focus indicator states `FollowPart` on a corner whose two sides have different offsets;
 - an expression nests deeper than 32, or a chain of references is longer than 32;
 - a `Fields` patch can meet an `Absent` or `Auto` block under some combination of the rules before it, following
@@ -1728,7 +1734,8 @@ pub struct PlacementParams { pub gap: Value<Px>, pub edge_margin: Sides<Value<Px
                              pub over_selected_item: bool, pub max_visible_items: Option<u32>,   // None: no limit
                              pub use_full_screen_height: bool, pub anchor_grow: Sides<Value<Px>>,
                              pub host: HostArea, pub window_edge_margin: Value<Px>,
-                             pub handedness: bool }               // WinUI's and AppKit's menus (ADD-A21, ADD-A22)
+                             pub handedness: bool }               // the menu drop alignment the platform reads
+                                                                  // (Win32 menus; WinUI flyouts to verify, W3-55†)
 pub enum PlacementSide { Below, Above, Start, End, AtPointer }
 pub enum PlacementAlign { Start, Center, End }
 pub enum AnchorWidth { Content, AtLeastAnchor, Anchor }
@@ -2170,6 +2177,7 @@ lines that cite it.
 | ADD-A102 | `div` | S2.2 |
 | ADD-A103 | the font DPI (`token.text.font_dpi`, `ReaderState.font_dpi`, points converted before text scaling, R10); `Radius::Full.maximum` and `corners::full`'s `maximum`; `Path`, `PathCommand`, `Outline` and `morph` over corners and shapes; `[declare] symbol_scales`, `spec_versions`; `KdeEffects` amounts as `f32`; `kde-breeze`'s accent-dependent roles as `kde_accent` in the preset, palettes' accent rules; `Palette::bundled` fallible; integer conversion and the clamps of the totality rules; one route for weight, width and small caps; lists never absent; `auto` maxima; `Placement`; the error and status types; component value types | S2.2, S2.4, S2.8, S2.11, S4.4, S4.8, S9.1, S9.2, S9.4, S10, S12, S13, S14, S16, S1 |
 | ADD-A104 | key repeat as `Option`, `Measured::Part`, undeclared keyed flags | S4.2, S7.3, S8 |
+| ADD-A107 | `auto` minimums, the `sides` value type, `keys` declarations, root inputs undeclared | S2.11, S10, S12 |
 | ADD-A106 | the reader's accent portable only where `accent_inputs` is the accent alone | S9.5 |
 | ADD-A105 | `OutlineCorners` (resolved radii for `outline`/`morph`); construction routes (`SchemeMap::new`/`one`, `InputValue::new`, `ComponentValuesPatch::new`, `ContextMatch::new`, `KeyRepeat::new`; `SystemAppearance` exhaustive); the no-reader state, `from_preset(id, scheme)`, `Theme::system() -> Option`, `ThemeError::Reader`/`PresetNotForPlatform`; today's API decided (`PresetId`/`PaletteId` listing, `from_system(generation)`, `from_system_async`, `reload_reader_async`, `ResolvedTheme::icon`, `ResolvedIconStyle`, `IconId`/`IconData` kept; `to_toml`, `lint_toml`, `ResolutionContext`, the `detect` scheme and accessibility functions removed); preset-scoped reader rules; `[declare] accent_inputs`; accent inputs refused in application layers; inactive input roles under a mapping palette and in a port; `kde_scheme.<set>.inactive.<key>`; `FocusVisibleWhen::Keyboard.timeout` as `Option`; one route for a solid line (`Edge.dash` absent only on an edge not drawn); `KeyRepeat`; `Palette::from_port(file, scheme)`, `with_port`; the perturbed gate run; content-sizing fields in the layout ban; `ViewBox`; `FadeLength`; `IconStyle.fill` absent under `Original` only; zero theme-change durations refused; elevation references resolved to layers; stand-in factor and container-size checks; `container_sizes`' default | S2.2, S2.4, S2.5, S2.8, S2.9, S2.10, S4.2, S4.3, S6.3, S7, S8, S9, S10, S12, S14, S16, S17, S1 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |

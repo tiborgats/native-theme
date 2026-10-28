@@ -49,6 +49,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W03 | `window.title.text.elision` | field |
 | MAC-W04 | `window.title_bar.stroke @ variant @separator_line {scrolled}` | rule |
 | MAC-W04 | `window.title_bar.shadow @ variant @separator_shadow {scrolled}` | rule |
+| MAC-W04 | `window.title_bar.{stroke,shadow} @ {scrolled}` (the style `.automatic` picks, measured) | rule |
 | MAC-W05 | `window.frame.corners (Continuous)` | field |
 | MAC-W05 | `window.frame.corners @ variant utility / @hud / dialog / @no_toolbar / @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-W05 | `dialog.body.corners @ variant @sheet` | rule |
@@ -158,6 +159,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN04 | `menu.accelerator.text` | field |
 | MAC-MN04 | `menu.accelerator.text.fill @ {hover} / {disabled}` | rule |
 | MAC-MN04 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
+| MAC-MN04 | `menu.accelerator.text.letter_spacing` (the modifier-glyph spacing; the capture decides whether AppKit spaces the glyphs as text or lays modifiers and key in columns, which would make it a value) | field |
 | MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
@@ -189,6 +191,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-T06† | `tooltip.values.show_delay @ variant @expansion` | rule |
 | MAC-T06† | `tooltip.values.placement @ variant @expansion (AppKitExpansionTip)` | placement |
 | MAC-S01 | `scrollbar.thumb.{min_width,min_height} @ cond overlay_scrollbars context scrollbar {hover}` | rule |
+| MAC-S01 | `cond overlay_scrollbars` | condition |
+| MAC-S01 | `reader:macos:NSScroller.preferredScrollerStyle -> cond overlay_scrollbars` (read today into scrollbar.overlay_mode, gap-map-macos's W1-152† note) | reader |
 | MAC-S01 | `scrollbar.thumb.transitions (Geometry: the knob's expansion)` | field |
 | MAC-S02 | `scrollbar.track.{fill,stroke} @ {hover} cond overlay_scrollbars` | rule |
 | MAC-S03 | `scrollbar.thumb.{stroke,fill} @ variant dark / light` | rule |
@@ -250,7 +254,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SB09† | `sidebar.values.breakpoints (the collapse rule: measured Allocation, the split view's width; its comparison to verify)` | field |
 | MAC-SB09† | `sidebar.values.presentations event @collapse` | field |
 | MAC-SB09† | `reader:macos:NSSplitViewItem minimumThickness, maximumThickness` | reader |
-| MAC-TL01 | `toolbar.bar.min_height, toolbar.bar.padding @ variant @unified / @unified_compact / @expanded / @preference` | rule |
+| MAC-TL01 | `toolbar.bar.min_height, toolbar.bar.padding @ context window variant @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-TL01 | `reader:macos:contentLayoutRect per toolbar style` | reader |
 | MAC-TL02 | `button.body.fill @ variant tool context toolbar.bar / {hover} variant tool context toolbar.bar / {pressed} variant tool context toolbar.bar / {disabled} variant tool context toolbar.bar` | rule |
 | MAC-TL02 | `button.icon.icon.fill, button.label.text @ variant tool context toolbar.bar / {hover} variant tool context toolbar.bar / {pressed} variant tool context toolbar.bar / {disabled} variant tool context toolbar.bar` | rule |
@@ -488,7 +492,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `input.highlight` | input |
+| MAC-DF05† | `input.highlight` (an accent input, S9.1) | input |
 | MAC-DF05† | `role.@highlight` | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
@@ -562,8 +566,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N05 | `color_button.chevron.glyph @ variant @minimal` | rule |
 | MAC-N05 | `color_button.expand_button.{fill,glyph} @ variant @expanded` | rule |
 | MAC-N05 | `color_button.{body,swatch}.* @ variant @hdr` (the HDR well, `maximumLinearExposure` above one) | rule |
-| MAC-N06 | `level_indicator.fill.fill, level_indicator.block.fill @ {@warning} / {@critical}; level_indicator.block.fill @ {filled} / !{filled} / {filled,@warning} variant @tiered / {filled,@critical} variant @tiered` (the block an element, tiered blocks each in their own tier) | rule |
-| MAC-N06 | `level_indicator.block, level_indicator.fill @ variant continuous / discrete / @relevancy` | rule |
+| MAC-N06 | `level_indicator.value.fill, level_indicator.block.fill @ {@warning} / {@critical}; level_indicator.block.fill @ {filled} / !{filled} / {filled,@warning} variant @tiered / {filled,@critical} variant @tiered` (the block an element, tiered blocks each in their own tier) | rule |
+| MAC-N06 | `level_indicator.block, level_indicator.value @ variant continuous / discrete / @relevancy` | rule |
 | MAC-N06 | `level_indicator.tick.fill` | field |
 | MAC-N06 | `level_indicator.values.thresholds` | field |
 | MAC-N06 | `reader:macos:a new NSLevelIndicator's fillColor, warningFillColor, criticalFillColor` | reader |
@@ -601,7 +605,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N14 | `window.title_bar.{fill,min_height}, window.title.text @ variant @hud` | rule |
 | MAC-N14 | `window.caption_button_glyph @ variant close context window.frame variant @hud` | rule |
 | MAC-N14 | `<widget>.* @ context any window variant @hud (the controls drawn in it)` | rule |
-| MAC-N15 | `dial.groove, dial.knob_dot, dial.tick @ variant @circular_slider` | rule |
+| MAC-N15 | `dial.groove, dial.knob_dot, dial.tick` (the circular slider is `macos-*`'s base: a `dial` there is always one) | field |
 | MAC-N16 | `window.title_bar.min_height, window.caption_button_glyph.{min_width,min_height}, window.title.text @ variant utility` | rule |
 | MAC-N16 | `reader:macos:a utility panel's title-bar height (frame against content rect)` | reader |
 | MAC-N17 | `ruler.tick.stroke, ruler.label.text, ruler.marker.glyph` | field |
@@ -624,6 +628,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N20 | `reader:macos:NSStatusBar.system.thickness, NSMenu.menuBarHeight, menuBarFontOfSize:` | reader |
 | MAC-N21 | `form.card.{fill,corners,padding}, form.row_separator.{stroke,padding}, form.row.min_height, form.group_title.text, form.group_description.text` | field |
 | MAC-N22 | `level_indicator.* @ variant circular` (the linear gauge is the base) | rule |
+| MAC-N23 | `bottom_tab_bar.*` (the toolbar tab bar, the widget's base on `macos-*`) | field |
 | MAC-N23 | `bottom_tab_bar.* @ variant @sidebar_adaptable` | rule |
 | MAC-N24 | `pull_to_refresh.indicator` | field |
 | MAC-N24 | `spinner.* @ context pull_to_refresh` | rule |
@@ -735,7 +740,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | - (the minimise effect, which the Dock draws; the full-screen enter and exit, which the window server animates) | out (R1.1) |
 | MAC-X11 | `reader:macos:NSAnimationContext.duration, NSWindow.animationResizeTime, CAMediaTimingFunction control points` | reader |
 | MAC-X12 | `token.caret.blink_on / blink_off` | token |
-| MAC-X12 | `token.behavior.double_click_time / key_repeat_delay / key_repeat_interval / drag_threshold / spring_loading` | token |
+| MAC-X12 | `token.behavior.double_click_time / key_repeat.delay / key_repeat.interval / drag_threshold / spring_loading` | token |
 | MAC-X12 | `tooltip.values.show_delay` | field |
 | MAC-X12 | `menu.values.submenu_open_delay` | field |
 | MAC-X12 | `menu.values.activation_flash` | field |
@@ -824,6 +829,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X25 | `PartStyle.transitions and presentation transitions @ cond reduced_motion (reduced forms)` | rule |
 | MAC-X25 | `cond reduced_motion` | condition |
 | MAC-X26 | `cond button_shapes` | condition |
+| MAC-X26 | `reader:macos:the "Show toolbar button shapes" setting (API or key to verify) -> cond button_shapes` | reader |
 | MAC-X26 | `button.body.{fill,stroke} @ variant tool context toolbar.bar cond button_shapes` | rule |
 | MAC-X26 | `reader:macos:the Text size setting (14+; no public API, to verify) -> text_scaling_factor (S9.4; the operand text_scale, ADD-A55)` | reader |
 | MAC-X26 | `token.pointer.size (ADD-A46)` | token |
@@ -831,7 +837,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X27 | `cond system_setting:wallpaper_tinting (ADD-A04)` | condition |
 | MAC-X27 | `input.accent multicolour (no accent chosen)` | input |
 | MAC-X27 | `role.* @ cond system_setting:wallpaper_tinting` | rule |
-| MAC-X27 | `input.highlight` | input |
+| MAC-X27 | `input.highlight` (an accent input, S9.1) | input |
 | MAC-X28 | `input.misspelling.text.decoration (Dotted / Wavy); text_area.misspelling.text.decoration` | field |
 | MAC-X28 | `input.grammar_mark.text, text_area.grammar_mark.text` | field |
 | MAC-X28 | `input.preedit.text, text_area.preedit.text (marked text underline)` | field |

@@ -147,8 +147,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | D-17 | - | readers (R18) |
 | D-18 | `token.focus (corners.curve, offset)` | token |
 | D-18 | - | readers (R18) |
-| D-19 | `token.icons.sizes.keyed.*.weight` | token |
-| D-19 | `token.icons.sizes.keyed.*.scale` (a key declared in `[declare] symbol_scales`, S10) | token |
+| D-19 | `token.icons.sizes.*.weight` (every context, the typed ones and each keyed one) | token |
+| D-19 | `token.icons.sizes.*.scale` (every context, the typed ones and each keyed one; a key declared in `[declare] symbol_scales`, S10) | token |
 | D-19 | - | readers (R18) |
 | D-20 | `token.params.opacity.disabled` (each widget's `{disabled}` rules carry the per-control rendering: state colours or this alpha, per control) | token |
 | D-20 | `role.window.disabled.foreground` | role |
@@ -213,7 +213,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-12 | `button.body.fill, button.icon.glyph.fill @ {pressed} variant close / {pressed} variant @info / {pressed} variant @contact_add` | rule |
 | B-13 | `button.label.text.font.weight @ variant primary / variant tinted / variant @gray / variant flat` | rule |
 | B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight) | rule |
-| B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary` | rule |
+| B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary / @borderless / @bordered / variants {@bordered,tinted} / variants {@bordered,primary} / glass / clear / variants {glass,primary} / variants {clear,primary}` (the disabled look per declared style) | rule |
 | B-15 | `button.body.fill, button.label.text.decoration @ cond button_shapes` | rule |
 | B-15 | `cond button_shapes (S7.1)` | condition |
 | B-15 | `reader:ios:the Button Shapes setting` | readers (R18) |
@@ -386,7 +386,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SD-9† | `sidebar.scrim.{fill,opacity} @ variant overlay / variant @displace` (the dim of the covered column) | rule |
 | SD-9† | `sidebar.values.presentations events Appear, Disappear @ variant overlay / variant @displace` | rule |
 | SD-9† | `reader:ios:UISplitViewController.SplitBehavior` | readers (R18) |
-| SD-10† | `sidebar.values.width, sidebar.values.width_fraction; sidebar.pane.min_width, sidebar.pane.max_width` | field |
+| SD-10† | `sidebar.values.width, sidebar.values.preferred_width_fraction (one of the two states the natural width, the other Absent); sidebar.pane.min_width, sidebar.pane.max_width` | field |
 | SD-10† | `reader:ios:UISplitViewController primary column widths` | readers (R18) |
 | TB-1 | `toolbar.bar.fill (material)` | field |
 | TB-1 | `toolbar.bar.fill @ {scrolled} / !{scrolled}` (the standard and scroll-edge appearances) | rule |
@@ -562,7 +562,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | EX-1 | `list.disclosure.glyph` (iOS's outline disclosure is a list row's `disclosure`; `expander` is unavailable on `ios-*`) | field |
 | EX-1 | `list.disclosure.transform @ {open}` | rule |
 | EX-1 | `reader:ios:UICellAccessory.outlineDisclosure options` | readers (R18) |
-| EX-2 | `list.disclosure.transitions (transform)` | field |
+| EX-2 | `list.disclosure.transitions (Transform)` | field |
 | EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion) | field |
 | EX-3 | `list.disclosure.{glyph,fill} @ variant @header / variant @cell` (the outline style; under `.header` the toggling row is a `list.section_header` element, its look that part's) | rule |
 | EX-3 | `reader:ios:UICellAccessory.OutlineDisclosureOptions.style` | readers (R18) |
@@ -571,7 +571,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | LK-1 | `link.body.corners @ variant inline` | rule |
 | LY-1 | `layout.values.window_margin @ h_size_class compact / h_size_class regular` (ADD-A20) | rule |
 | LY-1 | `reader:ios:systemMinimumLayoutMargins` | readers (R18) |
-| LY-2 | `layout.values.max_content_width @ variant page` | rule |
+| LY-2 | `layout.values.max_content_width @ variant clamp` | rule |
 | LY-2 | `reader:ios:readableContentGuide` | readers (R18) |
 | LY-3 | `layout.values.widget_gap (= uifm_scaled, ADD-A55)` | field |
 | LY-4 | `layout.values.* as uifm_scaled expressions (ADD-A55)` | field |
@@ -625,7 +625,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-6 | `calendar.day_label.text.font, calendar.title.text.font` (`fontDesign`: the system design, D-3) | field |
 | C-6 | - | readers (R18) |
 | C-7 | `picker_wheel.item.text, picker_wheel.item.min_height, picker_wheel.values.visible_items, picker_wheel.values.curvature, picker_wheel.values.component_gap, picker_wheel.values.momentum` | field |
-| C-7 | `picker_wheel.item.opacity` as an expression over `element.scroll_progress` and `element.item_index` (the off-centre rows' fading; ADD-B13) | field |
+| C-7 | `picker_wheel.item.opacity` as an expression over `element.scroll_progress`, `element.item_index` and `element.item_count` (the off-centre rows' fading; ADD-B13) | field |
 | C-7 | `picker_wheel.selection_band.{fill,corners,min_height,margin}` (the band and its insets) | field |
 | C-7 | `picker_wheel.* @ context time_picker.popup / context time_picker variant inline` (UIDatePicker's `.time` mode: the wheels in the compact pill's popover, or inline) | rule |
 | C-7 | - | readers (R18) |
@@ -739,7 +739,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-28 | - | readers (R18) |
 | C-29 | `button.icon.glyph @ variant pane_toggle context toolbar.bar` (a `NamedSystemImage`) | rule |
 | C-29 | - | readers (R18) |
-| C-30 | `level_indicator.track.fill, level_indicator.fill.fill, level_indicator.values.cap, level_indicator.values.stroke_width @ variant circular / variant @accessory / variant @capacity` (the linear gauge the base; the fill a gradient paint where drawn) | rule |
+| C-30 | `level_indicator.track.fill, level_indicator.value.fill, level_indicator.values.cap, level_indicator.values.stroke_width @ variant circular / variant @accessory / variant @capacity` (the linear gauge the base; the value's fill a gradient paint where drawn) | rule |
 | C-31 | `spinner.indicator.fill, spinner.values.stroke_width @ variant determinate` (its geometry, to verify) | rule |
 | C-32 | `group_box.body.fill, group_box.body.corners, group_box.body.padding, group_box.title.text` | field |
 | C-33 | `text_area.writing_tools_glow` | field |
@@ -1036,8 +1036,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-11† | `token.behavior.spring_loading (ADD-A45)` | token |
 | P3-11† | `button.values.presentations, list.values.presentations, segmented_control.values.presentations, bottom_tab_bar.values.presentations event @spring_load` (the visual effect while a drag hovers) | field |
 | P3-11† | `button.body.fill, list.row_background.fill, segmented_control.segment.fill, bottom_tab_bar.item.fill @ {drop_target}` (the activating states) | rule |
-| P3-12† | - (the pointer and the settings the system applies to it and to scrolling) | out (R1.1) |
-| P3-13† | `token.behavior.key_repeat_delay, token.behavior.key_repeat_interval` | token |
+| P3-12† | - (the pointer itself and its Color, Pointer Size, Increase Contrast and Automatically Hide Pointer settings, which the system draws, X-PH-2) | out (R1.1) |
+| P3-12† | `cond system_setting:pointer_animations (ADD-A04)` | condition |
+| P3-12† | `button.body.transitions @ variant @pointer_highlight / variant @pointer_lift / variant @pointer_hover !cond system_setting:pointer_animations` (X-PH-1's pointer effects with Pointer Animations off; what it removes is the row's measurement) | rule |
+| P3-12† | `token.behavior.scroll.touchpad_deceleration, token.behavior.scroll.touchpad_factor` (Trackpad Inertia and Scrolling Speed, how scrolling moves, X-MO-8) | token |
+| P3-12† | - (their run-time read: none found, as the row says) | readers (R18) |
+| P3-13† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | P3-14† | `token.icons.mirroring` (S2.9) | token |
 | P3-14† | `Element.language`, `Element.direction` (the icon lookup's inputs, S2.9, S8; ADD-B05) | field |
 | P3-14† | `reader:ios:semanticContentAttribute, layoutDirection` | readers (R18) |
