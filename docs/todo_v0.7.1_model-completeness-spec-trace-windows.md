@@ -535,7 +535,7 @@ rationale, each decided in the core's additions register (S22).
 | W3-46† | `role.@text_inverse (status icon backplates)` | role |
 | W3-19 | `FocusIndicator.secondary (inner ring colour and width, ADD-A17)` | field |
 | W3-20 | `FocusIndicator.offset and corners per part; FocusIndicator.kind per control` | field |
-| W3-21 | `token.behaviour.focus_visible_when (Keyboard { … }; ADD-A16)` | token |
+| W3-21 | `token.behavior.focus_visible_when (Keyboard { … }; ADD-A16)` | token |
 | W3-21 | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
 | W3-22 | `token.text.rendering (ADD-B04)` | token |
 | W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST` | reader |
@@ -563,7 +563,7 @@ rationale, each decided in the core's additions register (S22).
 | W3-29 | `reader:windows:UISettings.CursorSize, SM_CXCURSOR` | reader |
 | W3-47† | `token.text.roles.monospace` | token |
 | W3-47† | `reader:windows:HKCU\Console FaceName, FontSize, FontWeight` | reader |
-| W3-48† | `token.behaviour.mnemonics (ADD-A12)` | token |
+| W3-48† | `token.behavior.mnemonics (ADD-A12)` | token |
 | W3-48† | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
 | W3-49† | `drag_image.image.{fill,opacity}` | field |
 | W3-49† | `drag_image.caption.text` | field |
@@ -584,7 +584,7 @@ rationale, each decided in the core's additions register (S22).
 | W3-33 | `token.motion.durations.connected, token.motion.timings.connected` | token |
 | W3-34 | `PartStyle.transitions and widget presentation transitions per control` | field |
 | W3-34 | `token.motion.durations.*` | token |
-| W3-52† | `token.behaviour.scroll (wheel animation, inertia, overpan, snap settle)` | token |
+| W3-52† | `token.behavior.scroll (wheel animation, inertia, overpan, snap settle)` | token |
 | W3-52† | `reader:windows:SPI_GETWHEELSCROLLLINES, SPI_GETWHEELSCROLLCHARS` | reader |
 | W3-52† | `token.motion.speed_factor @ cond animations_off` | rule |
 | W3-53† | `cond system_setting:menu_fade / cond system_setting:tooltip_fade / cond system_setting:selection_fade / cond system_setting:combo_animation / cond system_setting:listbox_smooth_scroll / cond system_setting:hot_tracking / cond system_setting:drop_shadow / cond system_setting:ui_effects (ADD-A04)` | condition |
@@ -594,7 +594,7 @@ rationale, each decided in the core's additions register (S22).
 | W3-53† | `list.row_background.fill @ !cond system_setting:hot_tracking` | rule |
 | W3-53† | `window.frame.shadow, menu.body.shadow @ !cond system_setting:drop_shadow` | rule |
 | W3-53† | `menu.item.transitions @ !cond system_setting:selection_fade (the chosen item's fade-out)` | rule |
-| W3-53† | `token.behaviour.scroll @ !cond system_setting:listbox_smooth_scroll (list boxes' animated scrolling)` | rule |
+| W3-53† | `token.behavior.scroll @ !cond system_setting:listbox_smooth_scroll (list boxes' animated scrolling)` | rule |
 | W3-53† | `PartStyle.transitions, <widget>.values.presentations @ !cond system_setting:ui_effects (the master switch)` | rule |
 | W3-53† | `reader:windows:SPI_GETMENUFADE, SPI_GETTOOLTIPFADE, SPI_GETSELECTIONFADE, SPI_GETCOMBOBOXANIMATION, SPI_GETLISTBOXSMOOTHSCROLLING, SPI_GETHOTTRACKING, SPI_GETDROPSHADOW, SPI_GETUIEFFECTS` | reader |
 | W3-35 | `role.* @ cond contrast_high (eight system colours)` | rule |
@@ -614,7 +614,7 @@ rationale, each decided in the core's additions register (S22).
 | W3-40 | `combo_box.item.padding @ context combo_box.popup {opened_by_touch}` | rule |
 | W3-40 | `combo_box.popup.min_width @ {opened_by_touch}` | rule |
 | W3-40 | `cond input:touch` | condition |
-| W3-41 | `token.behaviour.{double_click_ms,hover_open_delay_ms,drag_threshold,scroll_lines_per_step,key_repeat_delay_ms}` | token |
+| W3-41 | `token.behavior.{double_click_ms,hover_open_delay_ms,drag_threshold,scroll_lines_per_step,key_repeat_delay_ms}` | token |
 | W3-41 | `menu.values.submenu_open_delay_ms` | field |
 | W3-41 | - (`UISettings.MessageDuration`: how long the system's notifications stay, which the shell draws; WinUI has no timed message control) | out (R1.1) |
 | W3-41 | `reader:windows:GetDoubleClickTime, UISettings.DoubleClickTime, SPI_GETMOUSEHOVERTIME, SPI_GETMENUSHOWDELAY, SM_CXDRAG, SM_CYDRAG, SPI_GETWHEELSCROLLLINES, UISettings.MessageDuration, SPI_GETKEYBOARDDELAY` | reader |
@@ -669,13 +669,13 @@ rationale, each decided in the core's additions register (S22).
 | W-P3-8† | - | out (R1.2) |
 | W-P3-9† | `token.caret.hides_while_selecting` | token |
 | W-P3-9† | `input.caret.fill @ {drop_target}` | rule |
-| W-P3-10† | `token.behaviour.hide_pointer_while_typing` | token |
+| W-P3-10† | `token.behavior.hide_pointer_while_typing` | token |
 | W-P3-10† | `reader:windows:SPI_GETMOUSEVANISH` | reader |
 | W-P3-10† | `PartStyle.cursor Progress (Working in Background)` | field |
 | W-P3-11† | `cond system_setting:show_sounds (ADD-A04)` | condition |
 | W-P3-11† | `reader:windows:SM_SHOWSOUNDS` | reader |
 | W-P3-11† | - (the SoundSentry flash) | out (R1.1) |
-| W-P3-12† | `token.behaviour.double_click_distance (width and height, ADD-A45)` | token |
+| W-P3-12† | `token.behavior.double_click_distance (width and height, ADD-A45)` | token |
 | W-P3-12† | `reader:windows:SM_CXDOUBLECLK, SM_CYDOUBLECLK` | reader |
 | W-P3-13† | - | out (R1.1) |
 | W-P3-14† | - | newest (R1.5) |

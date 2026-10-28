@@ -15,7 +15,7 @@ rename table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.
 is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type
 (`PartStyle.…`, `FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`:
 `{a,b}` states that hold together, `!{a}` states absent, `variant v` (`@v` keyed, `!variant v` negated),
-`cond c` (a condition, S7.1; `flavour:kirigami`, `system_setting:<key>`; `!cond c` negated), `context w.part` or
+`cond c` (a condition, S7.1; `flavor:kirigami`, `system_setting:<key>`; `!cond c` negated), `context w.part` or
 `context any w` (an ancestor), `not_context w.part`, `pos first` / `pos last` / `pos only` / `pos parity odd` and
 `prev w{…}` / `next w{…}` (siblings), `size s`, `h_size_class c` / `v_size_class c`, `dir rtl`; ` / ` separates
 alternatives, each a rule of its own. A name with no unit suffix and the same name with `_px` or `_ms` are one field
@@ -110,8 +110,9 @@ rationale, each decided in the core's additions register (S22).
 | MAC-I04 | `input.body.stroke` | field |
 | MAC-I05 | `input.selection.{fill,text.fill} @ !{focused}` | rule |
 | MAC-I05 | `role.global.selection_text_background_unfocused` | role |
-| MAC-I05 | `role.global.selection_text_background, role.global.selection_text_foreground @ cond window_inactive` | rule |
-| MAC-I05 | `reader:macos:NSColor.unemphasizedSelectedTextBackgroundColor, unemphasizedSelectedTextColor -> role.global.selection_text_background_unfocused, role.global.selection_text_foreground @ cond window_inactive` | reader |
+| MAC-I05 | `role.global.selection_text_foreground_unfocused` | role |
+| MAC-I05 | `role.global.selection_text_background, role.global.selection_text_foreground @ cond window_inactive` (the unfocused roles) | rule |
+| MAC-I05 | `reader:macos:NSColor.unemphasizedSelectedTextBackgroundColor, unemphasizedSelectedTextColor -> role.global.selection_text_background_unfocused, role.global.selection_text_foreground_unfocused` | reader |
 | MAC-I06 | `input.prediction.text; text_area.prediction.text` | field |
 | MAC-I06 | `popover.body @ context text_area` | rule |
 | MAC-I06 | `list.row @ context text_area` | rule |
@@ -306,7 +307,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-SW04 | `switch.track.fill @ {checked} cond window_inactive` | rule |
 | MAC-SW05 | `switch.track.min_width, switch.track.min_height, switch.thumb.min_width, switch.thumb.min_height @ size mini / small / regular / large` | rule |
 | MAC-SW05 | `[declare.widget.switch] sizes for macos-*` | field |
-| MAC-SW06 | `switch.on_glyph.glyph, switch.off_glyph.glyph @ cond differentiate_without_colour (to verify)` | rule |
+| MAC-SW06 | `switch.on_glyph.glyph, switch.off_glyph.glyph @ cond differentiate_without_color (to verify)` | rule |
 | MAC-D01 | `dialog.values.{title_alignment,message_alignment,action_layout} @ variant alert` | rule |
 | MAC-D01 | `dialog.body.min_width @ variant alert (fixed width)` | rule |
 | MAC-D01 | `dialog.message.text @ variant alert` | rule |
@@ -583,7 +584,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
 | MAC-X11 | `reader:macos:NSAnimationContext.duration, NSWindow.animationResizeTime, CAMediaTimingFunction control points` | reader |
 | MAC-X12 | `token.caret.blink_on_ms / blink_off_ms` | token |
-| MAC-X12 | `token.behaviour.double_click_ms / key_repeat_delay_ms / key_repeat_interval_ms / drag_threshold / spring_loading_ms` | token |
+| MAC-X12 | `token.behavior.double_click_ms / key_repeat_delay_ms / key_repeat_interval_ms / drag_threshold / spring_loading_ms` | token |
 | MAC-X12 | `tooltip.values.show_delay_ms` | field |
 | MAC-X12 | `menu.values.submenu_open_delay_ms` | field |
 | MAC-X12 | `menu.values.activation_flash count` | field |
@@ -629,9 +630,9 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X22 | `reader:macos:NSColor resolved under accessibilityHighContrastAqua and DarkAqua` | reader |
 | MAC-X23 | `PartStyle.fill @ cond reduced_transparency (opaque values)` | rule |
 | MAC-X23 | `Material.fallback` | field |
-| MAC-X24 | `cond differentiate_without_colour` | condition |
+| MAC-X24 | `cond differentiate_without_color` | condition |
 | MAC-X24 | `reader:macos:NSWorkspace.accessibilityDisplayShouldDifferentiateWithoutColor` | reader |
-| MAC-X24 | `PartStyle rules @ cond differentiate_without_colour` | rule |
+| MAC-X24 | `PartStyle rules @ cond differentiate_without_color` | rule |
 | MAC-X25 | `PartStyle.transitions and presentation transitions @ cond reduced_motion (reduced forms)` | rule |
 | MAC-X25 | `cond reduced_motion` | condition |
 | MAC-X26 | `cond button_shapes` | condition |
@@ -660,7 +661,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X32† | `window.caption_button_glyph.{opacity,transitions} @ context window.caption_buttons {hover}` | rule |
 | MAC-X32† | `window.values.presentations event @title_bar_reveal (MAC-W12†)` | field |
 | MAC-X32† | `token.theme_change (the light / dark switch: a change of the Scheme condition, S4.3)` | token |
-| MAC-X32† | `token.behaviour.scroll.deceleration (momentum)` | token |
+| MAC-X32† | `token.behavior.scroll.deceleration (momentum)` | token |
 | MAC-X32† | `window.values.presentations events @tab_open, @tab_close (part tab), Move (MAC-W09, MAC-SF07†)` | field |
 | MAC-X32† | `<part>.transitions (PropertyGroup::Icon, TransitionKind::Keyed) and IconStyle.animation (MAC-IC05†)` | field |
 | MAC-X32† | - (window tiling's motion, which the window server draws) | out (R1.1) |
@@ -721,22 +722,22 @@ rationale, each decided in the core's additions register (S22).
 | MAC-P3-10† | `navigation_view.edge_shadow @ variant @stack_history / @stack_book (the shadow under the top page, to verify)` | rule |
 | MAC-P3-10† | `navigation_view.values.presentations @ cond reduced_motion` | rule |
 | MAC-P3-11† | `input.caret.fill @ cond window_inactive / !{focused} (caret visibility, ADD-A24)` | rule |
-| MAC-P3-12† | `token.behaviour.hide_pointer_while_typing` | token |
+| MAC-P3-12† | `token.behavior.hide_pointer_while_typing` | token |
 | MAC-P3-13† | - | out (R1.1) |
 | MAC-P3-14† | - | out (R1.1) |
 | MAC-P3-15† | - | out (R1.1) |
 | MAC-P3-16† | - | out (R1.1) |
-| MAC-P3-17† | `token.behaviour.scroll_lines_per_step / scroll distances` | token |
+| MAC-P3-17† | `token.behavior.scroll_lines_per_step / scroll distances` | token |
 | MAC-P3-17† | `reader:macos:NSScrollView line and page scroll properties` | reader |
 | MAC-P4-1† | `menu.* @ context window.title (title pop-up menu)` | rule |
 | MAC-P4-1† | `window.values.title_menu_placement (AppKitMenu)` | placement |
 | MAC-P4-2† | - | out (R1.1) |
 | MAC-P4-3† | - | out (R1.1) |
-| MAC-P4-4† | `token.behaviour.scroll smooth wheel step` | token |
+| MAC-P4-4† | `token.behavior.scroll smooth wheel step` | token |
 | MAC-P4-4† | `reader:macos:user default NSScrollAnimationEnabled` | reader |
 | MAC-P4-5† | `window.values.tab_bar_overflow` | field |
 | MAC-P4-5† | `window.{tab,tab_title} (narrowed and truncated)` | field |
-| MAC-P4-6† | `token.behaviour.double_click_distance` | token |
+| MAC-P4-6† | `token.behavior.double_click_distance` | token |
 | MAC-P4-7† | `token.icon_mirroring (S2.9)` | token |
 | MAC-P4-7† | `icon lookup by Element.direction and Element.language (S2.9, S8; ADD-B05)` | field |
 | MAC-P4-8† | `menu.values.placement (AppKitMenu pull-down: width, edge)` | placement |

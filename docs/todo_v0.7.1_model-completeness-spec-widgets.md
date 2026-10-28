@@ -42,7 +42,7 @@ Each `### <widget>` section states, in this order:
   sliding to its new place is an entry of event `Move` whose step names the part; a value change animated on a part
   is that part's `transitions` (group `Geometry`), not a widget value. A value of type `Placement` is `{ strategy:
   PlacementStrategy, params: PlacementParams }` (S13). Every widget has `focus_visible_when: FocusVisibleWhen`
-  (S2.11, ADD-A16, its default `token.behaviour.focus_visible_when`): an entry lists it only where a row states it.
+  (S2.11, ADD-A16, its default `token.behavior.focus_visible_when`): an entry lists it only where a row states it.
   Absence is `Value::Absent` (S2.2): a value that may be absent is a `Value<T>` listed under **may_be_absent**.
 - **Variants:** a variant is typed when two or more platforms share its meaning anywhere in the catalogue (R15; the
   typed variants are one `Variant` enum, and a widget declares the ones it has), keyed (`@name`) otherwise. The
@@ -117,7 +117,7 @@ spaces:
 | `{a,b}` | the element's states: all of them hold together |
 | `!{a}` | none of these states |
 | `variant v`, `variant @k`, `variants {v,w}`, `!variant v`, `w.part[v]` | the element's (or the named ancestor's) variants; `@k` is keyed |
-| `cond c`, `!cond c` | a condition (S7.1, snake_case): `window_inactive`, `contrast_high`, `scheme:dark`, `input:touch`, `idiom:pad`, `flavour:kirigami`, `preset:ios-26`, `system_setting:<key>` (ADD-A04), `container_size(sidebar, small)`, `tiled:top` |
+| `cond c`, `!cond c` | a condition (S7.1, snake_case): `window_inactive`, `contrast_high`, `scheme:dark`, `input:touch`, `idiom:pad`, `flavor:kirigami`, `preset:ios-26`, `system_setting:<key>` (ADD-A04), `container_size(sidebar, small)`, `tiled:top` |
 | `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch` (an ancestor; `AnyAncestor` or `NearestAmong`) |
 | `not_context w.part` | `Selector.not_context` |
 | `pos first`, `pos last`, `pos only`, `pos parity odd`, `prev w{…}`, `next w{…}` | `PositionMatch` (parity: ADD-B06; by part: ADD-B07) |
@@ -190,7 +190,7 @@ and the owning group's name where the kinds are the same.
 | 53 | the glass container's merge spacing as `Material.params` (8) | `glass_container.values.merge_gap` | group 7's widget value |
 | 54 | `window.content.fill` with the material `background_extension` (8, MAC-X06) | `background_extension.extension` | group 7's widget |
 | 55 | `token.lengths` (4), `token.kirigami` (2), `token.opacities` (5), `token.colour_effects.frame_contrast` (2) | `token.params.layout`, `token.params.opacity`, `token.params.color.frame_contrast` | one keyed-scalar token mechanism (ADD-A44); identifiers are American (S1) |
-| 56 | value `focus_visible`, `token.behaviour.focus_visible`; types `FocusVisiblePolicy`, `FocusVisible`; variants `KeyboardOnly`, `AfterKeyboard`, `WithFullKeyboardAccess`, `Always` (2, 3, 8) | `focus_visible_when`, `token.behaviour.focus_visible_when`; `FocusVisibleWhen { Keyboard { timeout_ms }, AnyFocus, FocusWithin, Never }`; Full Keyboard Access is a rule `@ cond full_keyboard_access` | the bare name is the state flag (ADD-A16); every widget has the value (S2.11), so an entry lists it only where a row states it |
+| 56 | value `focus_visible`, `token.behavior.focus_visible`; types `FocusVisiblePolicy`, `FocusVisible`; variants `KeyboardOnly`, `AfterKeyboard`, `WithFullKeyboardAccess`, `Always` (2, 3, 8) | `focus_visible_when`, `token.behavior.focus_visible_when`; `FocusVisibleWhen { Keyboard { timeout_ms }, AnyFocus, FocusWithin, Never }`; Full Keyboard Access is a rule `@ cond full_keyboard_access` | the bare name is the state flag (ADD-A16); every widget has the value (S2.11), so an entry lists it only where a row states it |
 | 57 | `role.keyed.<x>` (8) | `role.@<x>` | S2.2's grammar |
 | 58 | `role.@palette_dark`, `role.@palette_shadow` (7), `role.<set>.shade.light` (8) | `role.@shade_dark`, `role.@shade_shadow`, `role.@shade_light` | group 5's KDE keyed shades (Qt's 3-D roles, from Window) |
 | 59 | `active_background`, `link_background`, `visited_background`, `negative_background`, `neutral_background`, `positive_background` (8) | `background_active`, … | group 5's record fields |
@@ -639,10 +639,10 @@ and the owning group's name where the kinds are the same.
   - `icon` — the tooltip's icon (GNOME): `icon`.
   - `accelerator` — the shortcut shown in a tooltip (W3-26): `text`.
   - `arrow` — Material's caret: `min_width`, `min_height`, `glyph` or `corners`, `fill`.
-- **Widget values:** `show_delay_ms` (today; Kirigami's under `cond flavour:kirigami`, Q1.136, Q1.65, Q1.82),
+- **Widget values:** `show_delay_ms` (today; Kirigami's under `cond flavor:kirigami`, Q1.136, Q1.65, Q1.82),
   `reshow_delay_ms` (browse mode), `browse_timeout_ms`, `hide_delay_ms` (after the pointer leaves, MAT-X25),
   `keyboard_show_delay_ms: Value<f32>`; `show_on_press: Value<bool>` (tablet mode, touch; with `show_delay_ms` `=
-  token.behaviour.long_press_ms` under that condition, Q3.28); `display_time: DisplayTime { base_ms: Value<f32>,
+  token.behavior.long_press_ms` under that condition, Q3.28); `display_time: DisplayTime { base_ms: Value<f32>,
   per_char_ms: Value<f32>, free_chars: Value<u32> }` (`Absent` for "never times out while hovered");
   `icon_text_gap_px: Value<f32>`; `placement: Placement`; `presentations: Vec<PresentationTransition>`: events
   `Appear`, `Disappear`.
@@ -664,7 +664,7 @@ and the owning group's name where the kinds are the same.
   `body.max_width`; `show_delay_ms` → `values.show_delay_ms`; `border.*` → `body.stroke`, `body.corners`,
   `body.padding`, `body.shadow`.
 - **Notes:**
-  - Groups 2 and 4: Kirigami's tooltips take `show_delay_ms` under `cond flavour:kirigami` (Q1.136, Q1.65, Q1.82),
+  - Groups 2 and 4: Kirigami's tooltips take `show_delay_ms` under `cond flavor:kirigami` (Q1.136, Q1.65, Q1.82),
     also in `context sidebar.pane variant compact`.
   - Group 3: the shortcut tooltip of an action field is this widget in `context input` (Q1.18).
   - `body.max_width` in characters names `element.char_width`, which the part declares as its data (S8).
@@ -1730,7 +1730,7 @@ and the owning group's name where the kinds are the same.
   `thumb.min_width @ variant vertical`; `min_thumb_length_px` → `thumb.min_width` and
   `thumb.min_height @ variant vertical`; `overlay_mode` → the condition `cond overlay_scrollbars` (ADD-A11).
 - **Notes:** conditions the rules use: `cond overlay_scrollbars` (ADD-A11), `cond input:touch` (Kirigami's transient
-  touch overlay, WinUI's touch indicator), the contrast conditions, `cond flavour:kirigami`. The corner square and the
+  touch overlay, WinUI's touch indicator), the contrast conditions, `cond flavor:kirigami`. The corner square and the
   view frame belong to `scroll_view`. Provenance: group 7 wrote the annotated bar's scroll buttons as a part of their
   own (here `arrow_button`); group 8 the hide delay (MAC-X12) and the repeat values; group 1 the trough click
   (GN-P4-5†); Material's fade delay (MAT-X25) is the same `auto_hide_delay`.
@@ -2430,8 +2430,8 @@ and the owning group's name where the kinds are the same.
   Sides<Value<f32>>` (GN-2.39); `width: Value<f32>` (macOS's panel, MAC-N32†); `release_gap: Value<f32>` (the
   space between releases in kirigami-addons' release history, K-KA-44†).
 - **Variants:** keyed `kde-breeze` `@ka_about` (kirigami-addons' AboutPage, K-KA-44†). KDE's two forms are the
-  flavour condition, not variants: `cond flavour:widgets` (KAboutApplicationDialog with tabs, K-P3-8†) and
-  `cond flavour:kirigami` (the About page on form cards, Q2.57†, K-KA-44†).
+  flavour condition, not variants: `cond flavor:widgets` (KAboutApplicationDialog with tabs, K-P3-8†) and
+  `cond flavor:kirigami` (the About page on form cards, Q2.57†, K-KA-44†).
 - **Sizes and densities:** none (no row states sizes).
 - **Flags:** none of its own; state flags used: hover, pressed, focus_visible, disabled (on `link_button`).
 - **Exclusive groups:** none (the presets that draw it, GNOME, KDE and macOS, combine states); precedence: state
@@ -2445,10 +2445,10 @@ and the owning group's name where the kinds are the same.
   `kabstractaboutdialog_p.cpp`, `AboutItem.qml`, kirigami-addons `AboutPage`; macOS
   `NSApplication.AboutPanelOptionKey` and the panel as drawn.
 - **Today's fields:** none (MAC-N32†'s stand-in `dialog.*` stays `dialog`'s).
-- **Notes:** in `cond flavour:kirigami` the page's sections are `form` elements in `context about_dialog` (Q2.57†;
+- **Notes:** in `cond flavor:kirigami` the page's sections are `form` elements in `context about_dialog` (Q2.57†;
   K-KA-44†'s link rows are `form` variant `@ka_info_card`), the authors' pictures `avatar` elements, the "What's
   new" badge a `badge`; K-KA-44†'s release history is a `dialog` (keyed `@ka_dialog`) in `context about_dialog`.
-  In `cond flavour:widgets` the pages are `tab` elements and the Close button a `button` (K-P3-8†).
+  In `cond flavor:widgets` the pages are `tab` elements and the Close button a `button` (K-P3-8†).
 
 ### autocomplete
 
@@ -5010,10 +5010,10 @@ and amount, colour effect, amount and colour, contrast effect and amount: K3.50,
 in `icon_state_effects`), their gray, transparency and gamma parameters `token.params.icon_effect.<key>`. A palette from
 a KDE port states `token.kde` itself (R19, S14).
 
-**token.behaviour** (S4.2): the existing fields (double-click time and distance, drag threshold, hover-open delay,
+**token.behavior** (S4.2): the existing fields (double-click time and distance, drag threshold, hover-open delay,
 key repeat delay and interval, scroll lines per step, hide pointer while typing, scroll physics) carry these rows:
 GN-3.47, GN-3.48, GN-3.67†, GN-3.68†, K3.70–K3.72, K-P3-16†, W3-41, MAC-X12, MAC-P3-12†, MAC-P3-17†, MAT-P3-14†,
-MAT-P3-15†, MAT-X32†, P3-13†, GN-P3-15†. Scroll physics (`token.behaviour.scroll`) carries kinetic friction,
+MAT-P3-15†, MAT-X32†, P3-13†, GN-P3-15†. Scroll physics (`token.behavior.scroll`) carries kinetic friction,
 overshoot and its spring, animated-scroll duration and curve, snap settle, momentum: GN-3.24, GN-3.06, K-P3-18†,
 MAC-P4-4†, MAC-X32†, W3-52†, X-MO-8, MAT-P3-16† (its minimum and maximum fling velocities: `min_fling_velocity`,
 `max_fling_velocity`). New fields: ADD-A45. `focus_visible_when` (when focus becomes visible, a `FocusVisibleWhen`, the
@@ -5065,7 +5065,7 @@ sets it, K3.91, R25.2):
   (K3.90).
 - `input:touch` and `input:pen` (`Input(InputKind)`) carry Material's pointer-precision sizing (MAT-X31), WinUI's touch
   menu sizes (W3-40, with the `opened_by_touch` flag for the element) and Kirigami's transient touch.
-- `flavour:baseline` and `flavour:expressive` carry the Material look choice (MAT-P3-19†, MAT-X13).
+- `flavor:baseline` and `flavor:expressive` carry the Material look choice (MAT-P3-19†, MAT-X13).
 
 The conditions these rows added to S7.1 (ADD-A04 … ADD-A11), each with its source and the rows:
 

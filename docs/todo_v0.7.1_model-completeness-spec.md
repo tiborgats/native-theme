@@ -47,7 +47,9 @@ platform is stated here: values come from the facts (S17) in the value phase.
   `CaretShape` is `Bar | Block | Underline`; `SizeClassThreshold` is a width or height in px per axis, the boundary
   the platform states; `WinUiPlacement` is WinUI's `FlyoutPlacementMode`; `Accent` is a `Color`, or on `windows-11`,
   `macos-*` and `ios-*` a `Color` with the derived inputs those platforms require (S9.2); `WidgetValue` is the union
-  of the value types widget values use (a keyed component's values are typed by its declaration, S10).
+  of the value types widget values use: a number, length, duration, bool, key, enum variant, colour, timing,
+  transition, `Vec<PresentationTransition>` and a placement (`PlacementStrategy` with its `PlacementParams`); a keyed
+  component's values are typed by its declaration (S10).
   `DisabledRoles` and `StatusRoles` are the catalogue's (*Colour roles*).
 
 ## S2. Blocks (R2.1)
@@ -104,9 +106,12 @@ ref      := "role." set "." role        typed colour role of a surface set      
           | "element." data               the element's data (S8): width, height, progress,
                                           scroll_offset, scroll_progress, item_index,
                                           item_count, text, color, char_width,
-                                          screen_width, screen_height,
+                                          screen_width, screen_height, window_width,
+                                          font_x_height, font_height,
                                           display_corner_radius                        (R25.3)
           | "part." field                 another resolved field of the same part      (R25.3)
+          | "values." name                the element's widget's resolved value (the spinner's stroke weight,
+                                          GN-1.227; a delay button's delay, Q2.3)      (R25.3)
           | "text_scale"                  the text-scaling factor (S9.4)               (ADD-A55)
 call     := name "(" expr { "," expr } ")"
 ```
@@ -153,7 +158,9 @@ duration, number, font size, text, bool, name); a name operand is checked agains
 function's parameter names (`effect: KdeIntensityEffect`, `design: @key`); a bare number takes the type of the other
 operand; a mismatch is an error when the layer is added (S12).
 
-**Totality** (the query cannot fail, R2.8): `alpha` and `mix` clamp their fraction to `0..=1`; `pick` takes the
+**Totality** (the query cannot fail, R2.8): `alpha` clamps the resulting alpha to `0..=1`, as GTK's `alpha()` does
+(a factor above one is valid: libadwaita multiplies a shade's alpha by more, GN-1.210); `mix` clamps its fraction to
+`0..=1`; `pick` takes the
 index modulo the count; a count of zero is one; a length or duration that comes out negative where the field cannot
 be negative is zero; a non-finite result, or non-finite element data, is zero. A platform function follows its
 source's own clamping first. An expression naming `element.<data>` is re-evaluated by each query, so a connector queries again when the
@@ -412,7 +419,7 @@ in the catalogue is its root part; the root part's bindings apply to all the wid
 (R5.2), and the other parts' bindings to themselves and their descendants. A block-typed field set to a reference
 holds the referenced token (S2.2). `CursorShape` gains
 `Crosshair` and `WhatsThis` (ADD-A59). Every widget's "when focus becomes visible" value is a
-`focus_visible_when: FocusVisibleWhen`, its default `token.behaviour.focus_visible_when` (ADD-A16).
+`focus_visible_when: FocusVisibleWhen`, its default `token.behavior.focus_visible_when` (ADD-A16).
 
 ## S3. Colour roles (R5.1–R5.3)
 
@@ -441,6 +448,7 @@ pub struct GlobalRoles {
     pub selection_text_background: Value<Color>,               // selected text; may be absent (ADD-A48)
     pub selection_text_foreground: Value<Color>,
     pub selection_text_background_unfocused: Value<Color>,     // an unfocused field's selection (ADD-A49)
+    pub selection_text_foreground_unfocused: Value<Color>,     // macOS's unemphasized text colour (MAC-I05)
     pub find_highlight: Value<Color>, pub drop_highlight: Value<Color>,
     pub scrim: Value<Color>,
 }
@@ -480,7 +488,7 @@ pub struct Tokens {
     pub icon_sizes: IconSizeTokens,        // S4.5
     pub focus: FocusIndicator,             // the platform's indicator (R12)
     pub caret: Caret,
-    pub behaviour: Behaviour,
+    pub behavior: Behavior,
     pub size_classes: Vec<(SizeClass, SizeClassThreshold)>,   // where the platform states widths (R16)
     pub params: Vec<(Key, Vec<(Key, Value<f32>)>)>,          // keyed scalar groups (S4.6)
     pub pointer: PointerTokens,                              // S4.7
@@ -516,7 +524,7 @@ pub struct Caret { pub color: Value<Color>, pub width: Value<f32>, pub shape: Ca
                    pub hides_while_selecting: bool, pub shown_in_read_only: Value<bool>,
                    pub overwrite_shape: CaretShape, pub block_text: Value<Color> }     // ADD-A23
 pub enum BlinkStyle { Hard, Fade }
-pub struct Behaviour { pub double_click_ms: Value<f32>, pub double_click_distance: Value<f32>,
+pub struct Behavior { pub double_click_ms: Value<f32>, pub double_click_distance: Value<f32>,
                        pub drag_threshold: Value<f32>, pub hover_open_delay_ms: Value<f32>,
                        pub key_repeat_delay_ms: Value<f32>, pub key_repeat_interval_ms: Value<f32>,
                        pub scroll_lines_per_step: Value<f32>, pub hide_pointer_while_typing: Value<bool>,
@@ -524,15 +532,17 @@ pub struct Behaviour { pub double_click_ms: Value<f32>, pub double_click_distanc
                        pub long_press_ms: Value<f32>, pub spring_loading_ms: Value<f32>,       // ADD-A45
                        pub drag_time_ms: Value<f32>, pub single_click_activates: Value<bool>,
                        pub double_click_height: Value<f32>,      // with double_click_distance as the width
-                       pub touch: TouchBehaviour,
+                       pub touch: TouchBehavior,
                        pub mnemonics: Mnemonics,                 // ADD-A12
                        pub focus_visible_when: FocusVisibleWhen }
-pub struct TouchBehaviour { pub slop: Value<f32>, pub paging_slop: Value<f32>, pub double_tap_ms: Value<f32>,
+pub struct TouchBehavior { pub slop: Value<f32>, pub paging_slop: Value<f32>, pub double_tap_ms: Value<f32>,
                             pub double_tap_slop: Value<f32>, pub delay_ms: Value<f32> }
 pub enum Mnemonics { Never, OnAlt { delay_ms: Value<f32> }, Always }
 pub struct ScrollPhysics { pub deceleration: Value<f32>, pub overscroll: Value<Timing>,
                            pub overscroll_effect: OverscrollEffect, pub overscroll_extent: Value<f32>,  // ADD-A29
                            pub min_fling_velocity: Value<f32>, pub max_fling_velocity: Value<f32>,  // MAT-P3-16†
+                           pub wheel_step_duration: Value<f32>, pub wheel_step_timing: Value<Timing>,
+                                                                 // smooth wheel scrolling (MAC-P4-4†)
                            pub snap: Value<bool> }
 pub enum OverscrollEffect { None, RubberBand, Stretch, Glow }   // None: the platform draws none
 ```
@@ -595,7 +605,7 @@ platform's lookup chain, as a KDE application resolves it, not a mixing of sets.
 `Tokens.params` holds keyed groups of scalars, referred to as `token.params.<group>.<key>` and declared per preset
 (`params = [...]`, S10): `layout` (Kirigami's grid unit and spacings, Qt style metrics), `opacity` (disabled, dim,
 …; restated by `Tokens` rules under `ContrastHigh`), `shadow`, `motion`, `colour` (KDE's contrast and frame
-contrast), `caret`, `shape`, `display` (`corner_radius`, the measured display radius per idiom, set by rules
+contrast), `icon_effect` (KDE's icon-effect amounts, K3.60, Q3.18), `caret`, `shape`, `display` (`corner_radius`, the measured display radius per idiom, set by rules
 under `Idiom`, R25.11) (ADD-A44).
 
 ### S4.7 Pointer
@@ -698,6 +708,7 @@ pub enum VariantRef { Typed(Variant), Keyed(Key) }   // Variant: the catalogue's
 pub struct SetMatch<T> { pub all_of: Vec<T>, pub none_of: Vec<T> }
 pub struct ContextMatch { pub scope: ContextScope, pub widget: Option<WidgetRef>,   // None: any widget (R25.9)
                           pub part: Option<PartRef>,
+                          pub surface: Option<SurfaceSet>,     // the ancestor binds this surface set (Q1.37)
                           pub variants: SetMatch<VariantRef>, pub states: SetMatch<StateFlag> }
 pub enum ContextScope { AnyAncestor, NearestAmong(Vec<WidgetRef>) }
 pub struct PositionMatch { pub among: SiblingScope,                 // which siblings count (R25.9)
@@ -722,7 +733,7 @@ A rule targeting `Colors` or `Tokens` may only have `conditions` (S12 rejects ot
 pub enum Condition {
     // system, by the reader (R2.3)
     Scheme(Scheme), ContrastIncreased, ContrastHigh, ReducedTransparency, ReducedMotion, AnimationsOff,
-    BoldText, ButtonShapes, DifferentiateWithoutColour, TabletMode, MobileFormFactor, BatterySaver,
+    BoldText, ButtonShapes, DifferentiateWithoutColor, TabletMode, MobileFormFactor, BatterySaver,
     ContainerSize { container: WidgetRef, size: Key },     // macOS's sidebar icon size
     OverlayScrollbars, OnOffLabels, FullKeyboardAccess, PreferCrossFade, AccessibilityTextSize,
     Idiom(Idiom), SystemSetting(Key),                      // a platform switch the reader reads, declared (S10)
@@ -732,7 +743,7 @@ pub enum Condition {
                                                            // touch, WinUI's input kind; R2.3)
     NotComposited, Shaded, AttentionFlash, TintDimmed, MnemonicsVisible,
     // application
-    Flavour(Key), Preset(PresetId),
+    Flavor(Key), Preset(PresetId),
 }
 pub enum Scheme { Light, Dark }
 pub enum InputKind { Mouse, Touch, Pen, GameController }
@@ -753,8 +764,11 @@ pub enum StateFlag { Hover, Pressed, Focused, FocusWithin, FocusVisible, Disable
                      Indeterminate, Open, Default, Dragged, DropTarget, ReadOnly, Invalid, Visited,
                      Autofilled, Scrolled, OverDarkContent, OpenedByTouch, Overflowing, Redacted,
                      Shared(SharedFlag), Widget(Key) }
-pub enum SharedFlag { Empty, InFill, Overlapping, Today, OtherMonth, Current, Multiline, Filled, Half, HasValue,
-                      HasText, Pulling, Refreshing }   // flags two or more platforms draw on a typed widget (ADD-A15)
+pub enum SharedFlag { Empty, InFill, Today, OtherMonth, Current, Multiline, Filled, Half, Preview, Placeholder,
+                      Pulling, Refreshing, PlacedAbove, PlacedBelow, RouteActive, Editing, Swiped, ContextMenuOpen,
+                      Sorted, Descending, Overwrite, Composing, Minimized }
+                      // flags two or more platforms draw on a typed widget (ADD-A15); the catalogue's
+                      // *Shared flags* table names the widgets that declare each
 ```
 
 `Shared` flags have one name for a portable application: the list is exactly the catalogue's flags that two or
@@ -846,6 +860,9 @@ pub struct ElementData<'a> {                                            // R25.3
     pub color: Color,                          // an application-chosen colour derived values follow
     pub char_width: f32,                       // the part's font's character width, as the toolkit measures it
     pub screen_width: f32, pub screen_height: f32,   // the screen's work area (KMessageBox's limits, K-P3-7†)
+    pub window_width: f32,                           // the window's width (Q2.50)
+    pub font_x_height: f32, pub font_height: f32,    // the part's font's metrics, as the toolkit measures them
+                                                     // (K-RL04†)
     pub display_corner_radius: Option<f32>,    // where the platform reports it; None: the preset's
 }                                              // token.params.display.corner_radius (R25.11)
 ```
@@ -894,7 +911,7 @@ itself); the query multiplies font sizes by it before font-derived lengths, and 
 
 ```toml
 [declare]
-flavours = ["widgets", "kirigami"]            # first is the default
+flavors = ["widgets", "kirigami"]            # first is the default
 materials = ["mica", "mica_alt", "acrylic"]
 color_roles = ["fill_tertiary", …]            # keyed roles
 text_styles = [ … ]
@@ -927,7 +944,7 @@ requires_variants = []                                     # e.g. iOS's checkbox
 
 may_be_absent_parts = []                                   # parts this preset does not draw (S6.3)
 
-[declare.flavour.kirigami.widget.button]                   # a flavour's declarations where they differ (R2.7)
+[declare.flavor.kirigami.widget.button]                   # a flavour's declarations where they differ (R2.7)
 sizes = ["regular"]
 
 [declare.widget.spinner]
@@ -1022,8 +1039,8 @@ pub enum PlacementStrategy { GtkPopover, GtkTooltip, QtMenu, QtTooltip, QtQuickT
                              KirigamiAddonsSearchPopup, KirigamiAddonsOnboardingTip,
                              CenteredInHost, BottomSheet, KeyboardAvoid(KeyboardAvoidance) }
 pub enum ScaffoldSlot { Fab, Snackbar }
-pub enum KeyboardAvoidance { WinUiContentDialog, UiKitAlert, WinUiScrollIntoView, AndroidPan, AndroidResize,
-                             AndroidInsetsAnimation }
+pub enum KeyboardAvoidance { WinUiContentDialog, UiKitAlert, UiKitSheet, WinUiScrollIntoView, AndroidPan,
+                             AndroidResize, AndroidInsetsAnimation }
 pub struct PlacementParams { pub gap: Value<f32>, pub edge_margin: Sides<Value<f32>>, pub side: PlacementSide,
                              pub align: PlacementAlign,            // mirrored in RTL
                              pub flip: Axes<bool>, pub slide: Axes<bool>, pub width: AnchorWidth,
@@ -1084,7 +1101,7 @@ mark together, R11). The list of `SystemControl`s is the traceability's rows tha
 ## S16. The API surface
 
 `SystemTheme` is renamed `Theme`, the one owner of layers, inputs and the application's conditions: it keeps
-`pick(Scheme)` (it sets the application's scheme condition, R2.3), gains `set_flavour`, `add_layer` (which
+`pick(Scheme)` (it sets the application's scheme condition, R2.3), gains `set_flavor`, `add_layer` (which
 `with_overlay` becomes), `apply_palette`, `set_accent` and `resolve`. `AccessibilityPreferences` goes: the reader
 reports conditions (S7.1) and the text-scaling factor (S9.4). The generation (R1.5) is the preset an application
 picks (`ios-18` against `ios-26`); an application that opts out of the newest design picks the older preset.
@@ -1214,10 +1231,10 @@ lines that cite it.
 | ADD-A46 | `Tokens.pointer` | S4.7 |
 | ADD-A47 | `Material.params` | S2.3 |
 | ADD-A48 | Colour-role closure | S3 |
-| ADD-A49 | `GlobalRoles.selection_background_inactive` | S3 |
+| ADD-A49 | `GlobalRoles.selection_text_background_unfocused` | S3 |
 | ADD-A50 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | S2.2 |
-| ADD-A51 | `kcu_overlay(base, paint)` | S2.2 |
-| ADD-A52 | `qt_tint(base, tint)` | S2.2 |
+| ADD-A51 | `kcu_overlay(under, over)` | S2.2 |
+| ADD-A52 | `kirigami_tint(c, tint, alpha)` | S2.2 |
 | ADD-A53 | Kirigami functions | S2.2 |
 | ADD-A54 | `sf_tracking(font_size, design)` | S2.2 |
 | ADD-A55 | Lengths that follow text scaling | S2.2 |

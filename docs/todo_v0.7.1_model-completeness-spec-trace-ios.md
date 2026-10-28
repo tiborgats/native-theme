@@ -763,7 +763,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-6 | `tab.tab.transitions` | field |
 | X-MO-6 | `button.body.transitions` | field |
 | X-MO-6 | `expander.arrow.transitions` | field |
-| X-MO-8 | `token.behaviour.scroll.{deceleration,overscroll,overscroll_effect,snap}` (rubber-band overscroll, paging snap) | token |
+| X-MO-8 | `token.behavior.scroll.{deceleration,overscroll,overscroll_effect,snap}` (rubber-band overscroll, paging snap) | token |
 | X-MO-8 | `reader:ios:UIScrollView.DecelerationRate raw values` | readers (R18) |
 | X-MO-9 | `<part>.transitions` (`PropertyGroup::Icon`, `TransitionKind::Keyed`: bounce, replace, appear, disappear, draw_on, draw_off, scale; R25.12, ADD-A27) | field |
 | X-MO-9 | `IconStyle.animation` (a `Loop`: pulse, variable color, breathe, rotate, wiggle while a state holds; R25.12) | field |
@@ -823,12 +823,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SC-1 | `role.global.scrim` | role |
 | X-SC-1 | `dialog.scrim.fill (Material blur)` | field |
 | X-SC-1 | `sheet.scrim.fill` | field |
-| X-BT-1 | `token.behaviour.long_press_ms (ADD-A45)` | token |
-| X-BT-1 | `token.behaviour.touch.delay_ms (ADD-A45)` | token |
+| X-BT-1 | `token.behavior.long_press_ms (ADD-A45)` | token |
+| X-BT-1 | `token.behavior.touch.delay_ms (ADD-A45)` | token |
 | X-BT-1 | `button.values.repeat_delay_ms / repeat_interval_ms` | field |
 | X-BT-1 | `button.body.transitions (highlight fade)` | field |
 | X-BT-1 | `reader:ios:UILongPressGestureRecognizer minimumPressDuration` | readers (R18) |
-| X-BT-2† | `token.behaviour.touch.{double_tap_ms,double_tap_slop}` (ADD-A45) | token |
+| X-BT-2† | `token.behavior.touch.{double_tap_ms,double_tap_slop}` (ADD-A45) | token |
 | X-SV-1 | `SizeMatch.size_classes` (`h_size_class`, `v_size_class`; ADD-A20) | rule |
 | X-SV-1 | `cond idiom:phone / cond idiom:pad (ADD-A09)` | condition |
 | X-SV-1 | `reader:ios:UITraitCollection horizontalSizeClass, verticalSizeClass, userInterfaceIdiom` | readers (R18) |
@@ -850,8 +850,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-A11-6 | `cond on_off_labels (ADD-A05)` | condition |
 | X-A11-6 | `switch.on_glyph, switch.off_glyph` | field |
 | X-A11-6 | `reader:ios:isOnOffSwitchLabelsEnabled` | readers (R18) |
-| X-A11-7 | `cond differentiate_without_colour` | condition |
-| X-A11-7 | `PartStyle rules @ cond differentiate_without_colour` | rule |
+| X-A11-7 | `cond differentiate_without_color` | condition |
+| X-A11-7 | `PartStyle rules @ cond differentiate_without_color` | rule |
 | X-A11-7 | `reader:ios:shouldDifferentiateWithoutColor` | readers (R18) |
 | X-A11-8 | - | out (R1.1) |
 | X-A11-9 | `cond prefer_cross_fade (ADD-A07)` | condition |
@@ -908,10 +908,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-10† | `drag_image.drop_badge (drop operation feedback)` | field |
 | P3-10† | `drag_image.image` | field |
 | P3-10† | `token.pointer.drag_cursors.<drop operation>` | token |
-| P3-11† | `token.behaviour.spring_loading_ms (ADD-A45)` | token |
+| P3-11† | `token.behavior.spring_loading_ms (ADD-A45)` | token |
 | P3-11† | `PartStyle rules @ {drop_target} spring-load state` | rule |
 | P3-12† | - | out (R1.1) |
-| P3-13† | `token.behaviour.key_repeat_delay_ms / key_repeat_interval_ms` | token |
+| P3-13† | `token.behavior.key_repeat_delay_ms / key_repeat_interval_ms` | token |
 | P3-14† | `token.icon_mirroring` (S2.9) | token |
 | P3-14† | `Element.language`, `Element.direction` (the icon lookup's inputs, S2.9, S8; ADD-B05) | field |
 | P3-14† | `reader:ios:semanticContentAttribute, layoutDirection` | readers (R18) |
@@ -930,7 +930,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P4-10† | `toolbar.values.presentations event @customize` | field |
 | P4-10† | `toolbar_editor.*` | field |
 | P4-10† | `reader:ios:UINavigationItem.customizationIdentifier` | readers (R18) |
-| P4-11† | `token.behaviour.touch.double_tap_slop (ADD-A45)` | token |
+| P4-11† | `token.behavior.touch.double_tap_slop (ADD-A45)` | token |
 | P4-12† | `menu.values.placement (UiKitMenu)` | placement |
 | P4-12† | `menu.values.item_order` | field |
 | P4-13† | `text_area.selection (one element per range); text_area.caret` | field |

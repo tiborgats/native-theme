@@ -15,7 +15,7 @@ rename table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.
 is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type
 (`PartStyle.…`, `FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`:
 `{a,b}` states that hold together, `!{a}` states absent, `variant v` or `variants {v,w}` (`@v` keyed, `!variant v`
-negated), `cond c` (a condition, S7.1; `flavour:expressive`, `input:touch`; `!cond c` negated), `context w.part` or
+negated), `cond c` (a condition, S7.1; `flavor:expressive`, `input:touch`; `!cond c` negated), `context w.part` or
 `context any w` (an ancestor), `not_context w.part`, `pos first` / `pos last` / `pos only` / `pos parity odd` and
 `prev w{…}` / `next w{…}` (siblings), `size s`, `density d`, `h_size_class c` / `v_size_class c`, `dir rtl`; ` / `
 separates alternatives, each a rule of its own. A name with no unit suffix and the same name with `_px` or `_ms` are
@@ -51,11 +51,11 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-B7 | `button.icon.icon.size` | field |
 | MAT-B7 | `button.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled}; button.icon.opacity @ {disabled}` | rule |
 | MAT-B8 | `button.body.padding @ variant with_icon` | rule |
-| MAT-B9 | `button.body.min_height, button.icon.icon.size, button.values.icon_text_gap, button.body.padding, button.label.text @ size extra_small / small / regular / large / extra_large, each cond flavour:expressive (ADD-A62)` | rule |
-| MAT-B9 | `button.body.stroke @ size <s> variant @outlined cond flavour:expressive` | rule |
-| MAT-B10 | `button.body.corners @ variant @square cond flavour:expressive` | rule |
-| MAT-B10 | `button.body.corners @ {checked} variant toggle cond flavour:expressive; @ {pressed} size <s> cond flavour:expressive` | rule |
-| MAT-B11 | `button.body.transitions (Corners, Timing::Spring) @ cond flavour:expressive (base and @ {pressed})` | rule |
+| MAT-B9 | `button.body.min_height, button.icon.icon.size, button.values.icon_text_gap, button.body.padding, button.label.text @ size extra_small / small / regular / large / extra_large, each cond flavor:expressive (ADD-A62)` | rule |
+| MAT-B9 | `button.body.stroke @ size <s> variant @outlined cond flavor:expressive` | rule |
+| MAT-B10 | `button.body.corners @ variant @square cond flavor:expressive` | rule |
+| MAT-B10 | `button.body.corners @ {checked} variant toggle cond flavor:expressive; @ {pressed} size <s> cond flavor:expressive` | rule |
+| MAT-B11 | `button.body.transitions (Corners, Timing::Spring) @ cond flavor:expressive (base and @ {pressed})` | rule |
 | MAT-B12 | `button.body.fill @ !{checked} variant toggle / {checked} variant toggle` | rule |
 | MAT-B12 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}, each variant toggle` | rule |
 | MAT-B13 | `button.body.transitions (Shadow)` | field |
@@ -127,14 +127,14 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-M7 | `menu.body.padding (top, bottom)` | field |
 | MAT-M8 | `menu.body.{min_width,max_width}` | field |
 | MAT-M9 | `menu.values.presentations (ClipReveal; item fade with stagger; per part, ADD-B09, ADD-B10, ADD-A25)` | field |
-| MAT-M10 | `menu.body.corners @ cond flavour:expressive` | rule |
-| MAT-M10 | `menu.item.corners @ pos first / pos last / {selected}, each cond flavour:expressive` | rule |
+| MAT-M10 | `menu.body.corners @ cond flavor:expressive` | rule |
+| MAT-M10 | `menu.item.corners @ pos first / pos last / {selected}, each cond flavor:expressive` | rule |
 | MAT-M10 | `menu.group` | field |
 | MAT-M10 | `menu.values.group_gap_px` | field |
-| MAT-M10 | `menu.* @ variant @vibrant cond flavour:expressive` | rule |
+| MAT-M10 | `menu.* @ variant @vibrant cond flavor:expressive` | rule |
 | MAT-M10 | `menu.* @ variant horizontal / variant icon_only` | rule |
-| MAT-M10 | `menu.section_header @ cond flavour:expressive` | rule |
-| MAT-M10 | `menu.item.{min_height,padding} @ cond flavour:expressive` | rule |
+| MAT-M10 | `menu.section_header @ cond flavor:expressive` | rule |
+| MAT-M10 | `menu.item.{min_height,padding} @ cond flavor:expressive` | rule |
 | MAT-M11 | `menu.item_label.text.{letter_spacing,line_height}` | field |
 | MAT-T1 | `tooltip.* @ variant rich` | rule |
 | MAT-T1 | `tooltip.title.text` | field |
@@ -145,12 +145,12 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-T4 | `tooltip.values.placement (MaterialTooltip with its params.gap)` | placement |
 | MAT-T4 | `tooltip.arrow.{min_width,min_height,glyph}` | field |
 | MAT-T5 | `tooltip.body.min_height` | field |
-| MAT-T6 | `tooltip.values.{show_on_press,show_delay_ms} @ cond input:touch (show_delay_ms = token.behaviour.long_press_ms)` | rule |
+| MAT-T6 | `tooltip.values.{show_on_press,show_delay_ms} @ cond input:touch (show_delay_ms = token.behavior.long_press_ms)` | rule |
 | MAT-T6 | - | readers (R18) |
 | MAT-T7 | `tooltip.label.text.{letter_spacing,line_height}` | field |
 | MAT-SC1 | `scrollbar.values.auto_hide_delay; scrollbar.values.presentations` | field |
 | MAT-SC1 | - | readers (R18) |
-| MAT-SC2 | `token.behaviour.scroll.overscroll (with the overscroll effect, ADD-A29)` | token |
+| MAT-SC2 | `token.behavior.scroll.overscroll (with the overscroll effect, ADD-A29)` | token |
 | MAT-SC3† | `scrollbar.thumb.{fill,min_width,min_height}; scrollbar.track.fill; scrollbar.body.padding (the insets along and across the axis)` | field |
 | MAT-SC3† | `scrollbar.values.{thumb_max_fraction,auto_hide_delay,presentations,always_visible}` | field |
 | MAT-SC3† | `scrollbar.body.padding @ variant vertical / dir rtl (the bar's edge: the end edge of a vertical bar, the bottom of a horizontal one, mirrored in RTL)` | rule |
@@ -242,10 +242,10 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-L5 | `list.row_background.opacity, list.row.opacity @ {selected,disabled}` | rule |
 | MAT-L6 | `list.row_separator.stroke, list.values.row_separator_inset, list.values.row_gap` | field |
 | MAT-L7 | `list.values.leading_gap` | field |
-| MAT-L8 | `list.row_background.fill, list.values.row_gap @ variant separated cond flavour:expressive` | rule |
-| MAT-L8 | `list.row_background.corners @ {hover} / {focus_visible} / {pressed} / {dragged} / {disabled} / {selected} / {selected,hover} / {selected,pressed}, each cond flavour:expressive` | rule |
-| MAT-L8 | `list.row_background.transitions (Corners) @ cond flavour:expressive` | rule |
-| MAT-L8 | `list.leading_icon.icon.size, list.trailing_icon.icon.size, list.leading_icon.corners @ cond flavour:expressive` | rule |
+| MAT-L8 | `list.row_background.fill, list.values.row_gap @ variant separated cond flavor:expressive` | rule |
+| MAT-L8 | `list.row_background.corners @ {hover} / {focus_visible} / {pressed} / {dragged} / {disabled} / {selected} / {selected,hover} / {selected,pressed}, each cond flavor:expressive` | rule |
+| MAT-L8 | `list.row_background.transitions (Corners) @ cond flavor:expressive` | rule |
+| MAT-L8 | `list.leading_icon.icon.size, list.trailing_icon.icon.size, list.leading_icon.corners @ cond flavor:expressive` | rule |
 | MAT-L9 | `list.row_background.fill @ {open}` | rule |
 | MAT-L9 | `list.disclosure.{fill,corners,glyph.fill} @ {open} / !{open}` | rule |
 | MAT-L10 | `list.row_background.fill, list.row.text.fill, list.leading_icon.icon.fill, list.row_background.corners, list.row_background.shadow @ {dragged}` | rule |
@@ -533,8 +533,8 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-X25 | `tooltip.values.display_time` | field |
 | MAT-X25 | `toast.values.durations` | field |
 | MAT-X25 | `menu.values.{submenu_open_delay_ms,submenu_close_delay_ms}` | field |
-| MAT-X25 | `token.behaviour.long_press_ms (ADD-A45)` | token |
-| MAT-X25 | `token.behaviour.touch.double_tap_ms (ADD-A45)` | token |
+| MAT-X25 | `token.behavior.long_press_ms (ADD-A45)` | token |
+| MAT-X25 | `token.behavior.touch.double_tap_ms (ADD-A45)` | token |
 | MAT-X25 | `scrollbar.values.auto_hide_delay; scrollbar.values.presentations (event Disappear: the fade)` | field |
 | MAT-X25 | `token.caret.{blink_on_ms,blink_off_ms}` | token |
 | MAT-X25 | `PartStyle.transitions (TransitionKind::Ripple's touch_delay_ms, min_press_ms)` | field |
@@ -551,8 +551,8 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-X31 | `cond input:touch` | condition |
 | MAT-X31 | `cond input:pen` | condition |
 | MAT-X31 | `PartStyle.{min_width,min_height,padding} @ cond input:mouse / cond input:touch` | rule |
-| MAT-X32† | `token.behaviour.touch.slop / paging_slop / double_tap_slop (ADD-A45)` | token |
-| MAT-X32† | `token.behaviour.scroll_lines_per_step` | token |
+| MAT-X32† | `token.behavior.touch.slop / paging_slop / double_tap_slop (ADD-A45)` | token |
+| MAT-X32† | `token.behavior.scroll_lines_per_step` | token |
 | MAT-X32† | `reader:android:ViewConfiguration.getScaledTouchSlop, getScaledPagingTouchSlop, getScaledDoubleTapSlop, getScaledVerticalScrollFactor` | readers (R18) |
 | MAT-X33† | `PartStyle.cursor per part and state` | field |
 | MAT-X33† | `token.pointer.{size,color} (ADD-A46)` | token |
@@ -601,16 +601,16 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-P3-12† | `segmented_control.values.segment_width (FillEqually)` | field |
 | MAT-P3-12† | `segmented_control.segment.min_width` | field |
 | MAT-P3-13† | `layout.values.max_panes_horizontal, max_panes_vertical, pane_width, pane_height, avoids_hinge @ h_size_class <c> / v_size_class <c>` | rule |
-| MAT-P3-14† | `token.behaviour.key_repeat_delay_ms / key_repeat_interval_ms` | token |
+| MAT-P3-14† | `token.behavior.key_repeat_delay_ms / key_repeat_interval_ms` | token |
 | MAT-P3-14† | `reader:android:ViewConfiguration.getKeyRepeatTimeout, getKeyRepeatDelay` | readers (R18) |
-| MAT-P3-15† | `token.behaviour.hide_pointer_while_typing` | token |
-| MAT-P3-16† | `token.behaviour.scroll.{deceleration,min_fling_velocity,max_fling_velocity} (the fling's spline decay, started and capped by the velocities)` | token |
+| MAT-P3-15† | `token.behavior.hide_pointer_while_typing` | token |
+| MAT-P3-16† | `token.behavior.scroll.{deceleration,min_fling_velocity,max_fling_velocity} (the fling's spline decay, started and capped by the velocities)` | token |
 | MAT-P3-16† | `reader:android:ViewConfiguration.getScrollFriction, getScaledMinimumFlingVelocity, getScaledMaximumFlingVelocity` | readers (R18) |
 | MAT-P3-17† | - | out (R1.1) |
 | MAT-P3-18† | `token.theme_change` | token |
 | MAT-P3-18† | `reader:android:Configuration.uiMode` | readers (R18) |
-| MAT-P3-19† | `cond flavour:baseline` | condition |
-| MAT-P3-19† | `cond flavour:expressive` | condition |
+| MAT-P3-19† | `cond flavor:baseline` | condition |
+| MAT-P3-19† | `cond flavor:expressive` | condition |
 | MAT-P3-19† | `token.material.spec_version` | token |
 | MAT-P3-20† | `rich_text.heading_1 … heading_6.text, rich_text.preformatted.text, rich_text.list_marker, rich_text.values.list_indent_per_level, rich_text.subscript, rich_text.superscript, rich_text.block_quote @ variant html` | rule |
 | MAT-P3-20† | `link.* @ variant inline context rich_text variant html` | rule |

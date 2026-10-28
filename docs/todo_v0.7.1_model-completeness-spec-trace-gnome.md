@@ -15,7 +15,7 @@ rename table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.
 is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type
 (`PartStyle.…`, `FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`:
 `{a,b}` states that hold together, `!{a}` states absent, `variant v` or `variants {v,w}` (`@v` keyed, `!variant v`
-negated), `cond c` (a condition, S7.1; `flavour:kirigami`), `context w.part`, `context any w` or `context nearest {A, B}
+negated), `cond c` (a condition, S7.1; `flavor:kirigami`), `context w.part`, `context any w` or `context nearest {A, B}
 = A` (an ancestor), `not_context w.part`, `pos first`, `pos last`, `pos only`, `pos parity odd`, `prev w{…}` and
 `next w{…}` (siblings), `size s`, `density d`, `h_size_class c`, `v_size_class c`, `dir rtl`; ` / ` separates
 alternatives, each a rule of its own. A name with no unit suffix and the same name with `_px` or `_ms` are one field
@@ -434,10 +434,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.201 | `switch.thumb.shadow` | field |
 | GN-1.201 | `switch.thumb.shadow @ {disabled}` | rule |
 | GN-1.202 | `switch.on_glyph, switch.off_glyph (parts; glyph ThemeIcon switch-on-symbolic / switch-off-symbolic)` | field |
-| GN-1.202 | `switch.on_glyph.glyph, switch.off_glyph.glyph @ cond differentiate_without_colour (base Absent)` | rule |
-| GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_colour cond contrast_high` | rule |
+| GN-1.202 | `switch.on_glyph.glyph, switch.off_glyph.glyph @ cond differentiate_without_color (base Absent)` | rule |
+| GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_color cond contrast_high` | rule |
 | GN-1.202 | `reader:gnome:org.gnome.desktop.a11y.interface show-status-shapes` | reader |
-| GN-1.202 | `cond differentiate_without_colour (GNOME: from show-status-shapes)` | condition |
+| GN-1.202 | `cond differentiate_without_color (GNOME: from show-status-shapes)` | condition |
 | GN-1.203 | `switch.values.presentations (event Move, part thumb)` | field |
 | GN-1.204 | `switch.track.transitions (Fill)` | field |
 | GN-1.204 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
@@ -682,7 +682,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.05 | `navigation_view.edge_shadow.shadow` | field |
 | GN-3.05 | `navigation_view.values.presentations event @push (slide with edge shadow)` | field |
 | GN-3.06 | `scroll_view.edge_effect.fill (overshoot and undershoot gradient)` | field |
-| GN-3.06 | `token.behaviour.scroll.overscroll` | token |
+| GN-3.06 | `token.behavior.scroll.overscroll` | token |
 | GN-3.07 | `button.icon.shadow (PartStyle.shadow of an icon part)` | field |
 | GN-3.07 | `PartStyle.shadow.layers on every icon part (S2.5)` | field |
 | GN-3.08 | `Color.a translucent roles and fills (S2.1, R5.3)` | field |
@@ -713,9 +713,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
 | GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration)` | token |
-| GN-3.24 | `token.behaviour.scroll.deceleration (kinetic friction)` | token |
-| GN-3.24 | `token.behaviour.scroll.overscroll` | token |
-| GN-3.24 | `token.behaviour.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
+| GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
+| GN-3.24 | `token.behavior.scroll.overscroll` | token |
+| GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
 | GN-3.24 | `token.motion.durations.scroll_animation` | token |
 | GN-3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | GN-3.25 | `dialog.values.presentations @ cond reduced_motion (bottom sheet slide to crossfade)` | rule |
@@ -731,7 +731,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
 | GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
 | GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box)` | field |
-| GN-3.30 | `token.behaviour.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
+| GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |
 | GN-3.31 | `token.focus @ cond contrast_high (paint)` | rule |
 | GN-3.31 | `cond contrast_high` | condition |
@@ -770,16 +770,16 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.46 | `token.pointer.theme / token.pointer.size (ADD-A46)` | token |
 | GN-3.46 | `reader:gnome:org.gnome.desktop.interface cursor theme and size` | reader |
 | GN-3.67† | `PartStyle.cursor per part (S2.11)` | field |
-| GN-3.67† | `token.behaviour.hide_pointer_while_typing` | token |
+| GN-3.67† | `token.behavior.hide_pointer_while_typing` | token |
 | GN-3.72† | - | out (R1.1) |
-| GN-3.47 | `token.behaviour.double_click_ms / double_click_distance` | token |
+| GN-3.47 | `token.behavior.double_click_ms / double_click_distance` | token |
 | GN-3.47 | `reader:gnome:org.gnome.desktop.peripherals double-click` | reader |
-| GN-3.48 | `token.behaviour.drag_threshold` | token |
+| GN-3.48 | `token.behavior.drag_threshold` | token |
 | GN-3.48 | `reader:gnome:org.gnome.desktop.peripherals drag threshold` | reader |
-| GN-3.49 | `token.behaviour.long_press_ms (ADD-A45)` | token |
-| GN-3.50 | `token.behaviour.mnemonics OnAlt delay (ADD-A12)` | token |
-| GN-3.51 | `token.behaviour.spring_loading_ms (ADD-A45)` | token |
-| GN-3.68† | `token.behaviour.key_repeat_delay_ms / key_repeat_interval_ms` | token |
+| GN-3.49 | `token.behavior.long_press_ms (ADD-A45)` | token |
+| GN-3.50 | `token.behavior.mnemonics OnAlt delay (ADD-A12)` | token |
+| GN-3.51 | `token.behavior.spring_loading_ms (ADD-A45)` | token |
+| GN-3.68† | `token.behavior.key_repeat_delay_ms / key_repeat_interval_ms` | token |
 | GN-3.68† | `reader:gnome:org.gnome.desktop.peripherals key repeat` | reader |
 | GN-3.69† | `stepper.values.repeat_delay_ms / repeat_interval_ms` | field |
 | GN-3.69† | `scrollbar.values.repeat_delay / repeat_interval (trough paging)` | field |
@@ -865,7 +865,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-12† | `token.pointer.drag_cursors.<drop operation> (ADD-A46)` | token |
 | GN-P3-13† | - | out (R1.1) |
 | GN-P3-14† | - | out (R1.1) |
-| GN-P3-15† | `token.behaviour.scroll_lines_per_step` | token |
+| GN-P3-15† | `token.behavior.scroll_lines_per_step` | token |
 | GN-P3-16† | `Edge.snap (ADD-A33: libadwaita's one-pixel lines at a fractional scale)` | field |
 | GN-P3-16† | - (the display scale itself) | out (R1.1) |
 | GN-P3-17† | - | preset (R1.3) |
