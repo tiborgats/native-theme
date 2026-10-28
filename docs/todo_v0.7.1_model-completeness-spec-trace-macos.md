@@ -78,7 +78,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-W09 | `tab.tab.{opacity,shadow} @ {dragged} context window.title_bar` | rule |
 | MAC-W10 | `window.title_bar.fill (titlebar material) @ variant @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-W11† | `window.title_chevron.{glyph,opacity}` | field |
-| MAC-W11† | `window.title_chevron.{opacity,transitions} @ context window.title {hover}` | rule |
+| MAC-W11† | `window.title_chevron.{opacity,transitions} @ {hover}` (the `title` element's hover; the chevron is queried with it) | rule |
 | MAC-W11† | `window.title_status.text @ {@document_edited}` | rule |
 | MAC-W11† | `popover.body, popover.arrow @ context window.title (the rename and location popover)` | rule |
 | MAC-W12† | `window.title_bar.fill (fullScreenUI material) @ cond full_screen` | rule |
@@ -92,7 +92,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-W13† | `window.frame.corners @ cond tiled:left / tiled:right / tiled:top / tiled:bottom` | rule |
 | MAC-W13† | - (the drag-to-edge tiling preview; the margins between tiled windows) | out (R1.1) |
 | MAC-W14† | `window.title_bar.{fill,stroke} @ variant transparent_title_bar` | rule |
-| MAC-W14† | `window.title @ variant @title_hidden (absent)` | rule |
+| MAC-W14† | `window.title @ variant @title_hidden` (`absent = true`: the title goes, the bar and its traffic lights stay) | rule |
 | MAC-W14† | `window.title_bar.{fill,stroke,min_height}, window.values.title_alignment @ variant @no_toolbar / @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-W15† | `window.title.text.fill @ cond window_inactive` | rule |
 | MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @recessed / @round_rect / @inline / @textured_rounded / @shadowless_square / flat (borderless)` | rule |
@@ -107,7 +107,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-B05 | `button.body.shadow (inset highlight layer for the bevel)` | field |
 | MAC-B06 | `button.label.text.fill @ variant destructive (and context any dialog where it differs)` | rule |
 | MAC-B07 | `button.body.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` | rule |
-| MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill as expressions on element.color (bezelColor, contentTintColor; R25.3)` | field |
+| MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill` as expressions on `element.color` (bezelColor, contentTintColor; the parts declare it, `data = { body = ["color"], label = ["color"], icon = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-B08 | `button.body.corners @ variant pill / @rounded_rectangle / circular` | rule |
 | MAC-B08 | `button.body.corners @ size small / regular / large / extra_large (automatic shape)` | rule |
 | MAC-B09 | `button.icon.icon.size @ size mini / small / regular / large / extra_large` | rule |
@@ -177,7 +177,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-MN13 | `menu.item.stroke @ variant palette {checked} (selection ring)` | rule |
 | MAC-MN14 | `menu.body.{stroke,shadow,fill}` | field |
 | MAC-MN15 | `menu.values.placement @ context combo_box (AppKitMenu, over_selected_item)` | placement |
-| MAC-MN15 | `menu.item_label.text @ context combo_box size mini / small / large (the pop-up button's control size)` | rule |
+| MAC-MN15 | `menu.item_label.text @ context combo_box.body[size mini] / context combo_box.body[size small] / context combo_box.body[size large]` (the pop-up button's control size, `ContextMatch.sizes`, ADD-A84) | rule |
 | MAC-MN16 | `menu.body.min_width` | field |
 | MAC-MN17† | `menu.item_label.text.fill @ variant destructive` | rule |
 | MAC-T01 | `tooltip.body.shadow` | field |
@@ -261,14 +261,14 @@ rationale, each decided in the core's additions register (S22).
 | MAC-TL03 | `toolbar.values.group_gap` | field |
 | MAC-TL03 | `segmented_control.* @ context toolbar.bar (NSToolbarItemGroup's segmented look)` | rule |
 | MAC-TL04 | `button.body.fill @ context toolbar.bar variant primary (the accent tint)` | rule |
-| MAC-TL04 | `button.body.fill @ context toolbar.bar variant primary as an expression on element.color (backgroundTintColor; R25.3)` | rule |
+| MAC-TL04 | `button.body.fill @ context toolbar.bar variant primary` as an expression on `element.color` (backgroundTintColor; `button.body` declares `color`; R25.3, ADD-B16) | rule |
 | MAC-TL05 | `badge.* @ context toolbar.bar` | rule |
 | MAC-TL06 | `button.body, button.icon @ variant overflow context toolbar.bar` | rule |
 | MAC-TL06 | `menu.* @ context button variant overflow` | rule |
 | MAC-TL06 | `toolbar.values.overflow_placement` | placement |
 | MAC-TL07 | `button.body, button.icon @ context toolbar.bar variant tool (the collapsed search item)` | rule |
 | MAC-TL07 | `search_field.*, input.* @ context toolbar.bar (the expanded field)` | rule |
-| MAC-TL07 | `search_field.values.presentations event @expand` | field |
+| MAC-TL07 | `search_field.values.presentations event @expand` (the one home of the expand motion, not the toolbar's) | field |
 | MAC-TL08 | `toolbar.separator @ variant @tracking` | rule |
 | MAC-TL09 | `toolbar.bar.fill (material)` | field |
 | MAC-TL09 | `toolbar.bar.fill @ !{scrolled} (transparent over content)` | rule |
@@ -380,7 +380,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-SG04 | `segmented_control.track.*, segmented_control.segment.* @ variant @rounded / @round_rect / @textured_rounded / pill / @textured_square / @small_square / @separated / @rounded_rectangle` | rule |
 | MAC-SG05 | `segmented_control.* @ variant @select_any / momentary` | rule |
 | MAC-SG05 | `segmented_control.indicator.fill (selectedSegmentBezelColor default)` | field |
-| MAC-SG05 | `segmented_control.indicator.fill as an expression on element.color (an application's selectedSegmentBezelColor; R25.3)` | field |
+| MAC-SG05 | `segmented_control.indicator.fill` as an expression on `element.color` (an application's selectedSegmentBezelColor; `data = { indicator = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-SG05 | `reader:macos:a new NSSegmentedControl's selectedSegmentBezelColor -> segmented_control.indicator.fill` | reader |
 | MAC-SG06 | `segmented_control.segment.fill @ {pressed}; segmented_control.indicator.fill @ {checked,pressed}` | rule |
 | MAC-SG06 | `segmented_control.segment.opacity, segmented_control.label.text.fill @ {disabled} (per segment)` | rule |
@@ -561,8 +561,8 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N05 | `color_button.swatch_ring.stroke @ {@active}` | rule |
 | MAC-N05 | `color_button.chevron.glyph @ variant @minimal` | rule |
 | MAC-N05 | `color_button.expand_button.{fill,glyph} @ variant @expanded` | rule |
-| MAC-N05 | `color_button.swatch (the HDR well, maximumLinearExposure: no variant or flag)` | field |
-| MAC-N06 | `level_indicator.fill.fill, level_indicator.block.fill @ {@warning} / {@critical}` | rule |
+| MAC-N05 | `color_button.{body,swatch}.* @ variant @hdr` (the HDR well, `maximumLinearExposure` above one) | rule |
+| MAC-N06 | `level_indicator.fill.fill, level_indicator.block.fill @ {@warning} / {@critical}; level_indicator.block.fill @ {filled} / !{filled} / {filled,@warning} variant @tiered / {filled,@critical} variant @tiered` (the block an element, tiered blocks each in their own tier) | rule |
 | MAC-N06 | `level_indicator.block, level_indicator.fill @ variant continuous / discrete / @relevancy` | rule |
 | MAC-N06 | `level_indicator.tick.fill` | field |
 | MAC-N06 | `level_indicator.values.thresholds` | field |
@@ -667,9 +667,9 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X01 | `window.frame.shadow @ cond window_inactive / variant utility / variant @hud` | rule |
 | MAC-X01 | `dialog.body.shadow @ variant @sheet / variant alert` | rule |
 | MAC-X01 | `menu.body.shadow, popover.body.shadow, tooltip.body.shadow` | field |
-| MAC-X01 | `drag_image.image (its shadow: the part has no shadow field)` | field |
+| MAC-X01 | `drag_image.image.shadow` | field |
 | MAC-X01 | `button.body.shadow, combo_box.body.shadow, segmented_control.indicator.shadow, slider.thumb.shadow, switch.thumb.shadow (macos-monterey)` | field |
-| MAC-X01 | `button.body.shadow @ variant glass; toolbar.item_group.shadow; sidebar.pane.shadow @ variant floating (macos-tahoe's glass shadows)` | rule |
+| MAC-X01 | `button.body.shadow @ variant glass; toolbar.item_group.shadow; sidebar.pane.shadow @ variant floating; glass_container.surface.shadow` (macos-tahoe's glass shadows) | rule |
 | MAC-X01 | `PartStyle.shadow.layers (ShadowLayer: offset, blur, spread, colour, inset)` | field |
 | MAC-X02 | `PartStyle.fill Material identities (vibrancy materials, blur, saturation, tint)` | field |
 | MAC-X02 | `Material.params (the blending mode, behind or within the window; isEmphasized; ADD-A47)` | field |
@@ -714,7 +714,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X11 | `popover.values.presentations events Appear, Disappear` | field |
 | MAC-X11 | `dialog.values.presentations events Appear @ variant alert / @sheet_attach, @sheet_detach @ variant @sheet` | rule |
 | MAC-X11 | `window.frame.transitions (Geometry: an animated resize)` | field |
-| MAC-X11 | `tab.values.presentations (the tab switch: no event for it)` | field |
+| MAC-X11 | `tab.values.presentations event @switch` (the tab switch) | field |
 | MAC-X11 | `tooltip.values.presentations events Appear, Disappear` | field |
 | MAC-X11 | `scrollbar.values.presentations events Appear, Disappear, @flash; scrollbar.body.transitions, scrollbar.thumb.transitions (the expansion)` | field |
 | MAC-X11 | `token.behavior.scroll.{overscroll,overscroll_effect} (elastic overscroll and its bounce-back)` | token |
@@ -727,7 +727,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X11 | `glass_container.surface.transitions (glass morphing)` | field |
 | MAC-X11 | `PartStyle.transitions and widget presentation transitions` | field |
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
-| MAC-X11 | `window.values.presentations events Appear, Disappear @ variant dialog / variant utility (window open and close per NSWindow.AnimationBehavior, which the application chooses; the window entry lists neither event)` | rule |
+| MAC-X11 | `window.values.presentations events Appear, Disappear` (the base) `@ variant dialog / variant utility` (window open and close per NSWindow.AnimationBehavior, which the application chooses) | rule |
 | MAC-X11 | - (the minimise effect, which the Dock draws; the full-screen enter and exit, which the window server animates) | out (R1.1) |
 | MAC-X11 | `reader:macos:NSAnimationContext.duration, NSWindow.animationResizeTime, CAMediaTimingFunction control points` | reader |
 | MAC-X12 | `token.caret.blink_on / blink_off` | token |
@@ -796,7 +796,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X19 | `button.icon.icon.fill @ variant primary / {default} (on accent fills)` | rule |
 | MAC-X20 | `PartStyle.cursor per part` | field |
 | MAC-X20 | `input.body.cursor, text_area.body.cursor (I-beam); link.text.cursor (pointing hand)` | field |
-| MAC-X20 | `splitter.divider.cursor; list.header_section.cursor; window.resize_zone.cursor (resize)` | field |
+| MAC-X20 | `splitter.divider.cursor; list.header_separator.cursor` (the column-resize cursor); `window.resize_zone.cursor` (resize) | field |
 | MAC-X20 | `token.pointer.drag_cursors (copy, link, not allowed)` | token |
 | MAC-X20 | `token.pointer.{size,color} (ADD-A46)` | token |
 | MAC-X20 | `reader:macos:pointer accessibility user defaults (keys to verify) -> token.pointer.{size,color}; linkTextAttributes cursor` | reader |
@@ -829,11 +829,11 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X27 | `role.* @ cond system_setting:wallpaper_tinting` | rule |
 | MAC-X27 | `input.highlight` | input |
 | MAC-X28 | `input.misspelling.text.decoration (Dotted / Wavy); text_area.misspelling.text.decoration` | field |
-| MAC-X28 | `input.grammar_mark.text (text_area has no grammar_mark)` | field |
+| MAC-X28 | `input.grammar_mark.text, text_area.grammar_mark.text` | field |
 | MAC-X28 | `input.preedit.text, text_area.preedit.text (marked text underline)` | field |
 | MAC-X28 | `input.prediction.text` | field |
 | MAC-X28 | `text_area.writing_tools_glow` | field |
-| MAC-X28 | `text_area.highlight.{fill,text,corners} (the 15+ highlight styles, to verify)` | field |
+| MAC-X28 | `text_area.highlight.{fill,text,corners}` (macOS 15's highlight styles, keyed on `highlight` per style; to verify) | field |
 | MAC-X29 | `PartStyle rules @ {checked,hover}, {checked,pressed}, {checked,disabled}, {default,pressed}, {focused,hover} per widget` | rule |
 | MAC-X29 | `cond not_main` | condition |
 | MAC-X29 | `declare.widget.*.exclusive` | field |
@@ -898,7 +898,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-P3-5† | `segmented_control.segment.padding` | field |
 | MAC-P3-5† | `segmented_control.values.compression` | field |
 | MAC-P3-6† | `toolbar_editor.body` | field |
-| MAC-P3-6† | `toolbar_editor.values.presentations events @customize, @items_change` | field |
+| MAC-P3-6† | `toolbar.values.presentations events @customize, @items_change` (the items parting and re-laid out in the bar while the editor runs; one home, R20) | field |
 | MAC-P3-6† | `button.* @ {dragged} context toolbar.bar` | rule |
 | MAC-P3-6† | `toolbar.bar @ {drop_target}` | rule |
 | MAC-P3-7† | `autocomplete.body @ context input` | rule |
@@ -950,7 +950,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-P4-11† | `context_help.values.mode_cursor (CursorShape::WhatsThis, ADD-A59)` | field |
 | MAC-P4-12† | `image_cropper.outline.stroke, image_cropper.mask.fill` | field |
 | MAC-P4-12† | `image_cropper.thumb @ variant corner / variant edge / {hover} / {pressed}` | rule |
-| MAC-P4-12† | `image_cropper.frame (the picture taker panel's layout: no target yet)` | field |
+| MAC-P4-12† | `dialog.{body.padding,values.*} @ variant @picture_taker; image_cropper.*, slider.*, button.* @ context dialog.body[@picture_taker]` (the picture taker panel: its layout, the cropper, the zoom slider and the buttons) | rule |
 | MAC-P4-13† | `redaction.mask.fill / corners` | field |
 | MAC-P4-13† | `redaction flags redacted (StateFlag::Redacted, ADD-A14)` | flag |
 | MAC-P4-13† | `redaction.mask.transitions` | field |

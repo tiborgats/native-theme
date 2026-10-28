@@ -67,7 +67,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.17 | `window.title_bar_content.{opacity,transitions} @ variant @inline cond window_inactive (no backdrop change)` | rule |
 | GN-1.18 | `window.title.{text,padding}` | field |
 | GN-1.18 | `window.subtitle.{text,padding,opacity}` | field |
-| GN-1.18 | `window.title.padding (the title box's negative vertical margins: no field, gap list)` | field |
+| GN-1.18 | `window.title.margin, window.subtitle.margin` (the title box's negative margins, ADD-A79) | field |
 | GN-1.19 | `window.title.text.font (the UI font's family and size, its own weight)` | field |
 | GN-1.19 | `reader:gnome:titlebar-uses-system-font (titlebar-font only when false)` | reader |
 | GN-1.20 | `window.values.caption_button_layout` | field |
@@ -86,9 +86,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.23 | `window.{frame,title_bar,caption_button} @ variants {@ssd_frame,@default_decoration} (mutter-x11-frames draws libadwaita's rules)` | rule |
 | GN-1.23 | `- (mutter's frames drawn with the GTK 4 theme when libadwaita is not loaded, GN-P3-17†)` | preset (R1.3) |
 | GN-1.278† | `button.{body,icon} @ variant back context window.title_bar` | rule |
-| GN-1.278† | `button.values.menu_trigger @ variant back context window.title_bar (long press, secondary click: menu_trigger is listed absent on adwaita and has no secondary-click case, gap list)` | rule |
-| GN-1.278† | `menu.values.placement @ context button variant back (navigation menu, no arrow)` | placement |
-| GN-1.282† | `window.values.resize_band (outside: the CSS border plus the shadow's extent, at least a minimum; corner_px at least the frame's corner radius; includes_shadow)` | field |
+| GN-1.278† | `button.values.menu_trigger @ variant back context window.title_bar` (`LongPressOrSecondaryClick`) | rule |
+| GN-1.278† | `menu.values.{placement,has_arrow} @ context button variant back` (the navigation menu, start-aligned, `has_arrow` false) | placement |
+| GN-1.282† | `window.values.resize_band` (outside: the CSS border plus the shadow's extent, at least a minimum, over `widget.frame.padding` and `shadow_extent(widget.frame.shadow, <side>)` (ADD-A90); corner_px `= max(<minimum>, widget.frame.corners.<corner>)`; includes_shadow; ADD-A80) | field |
 | GN-1.282† | `window.values.resize_band @ cond maximized / cond full_screen / cond tiled:top / cond tiled:right / cond tiled:bottom / cond tiled:left (Absent)` | rule |
 | GN-1.282† | `window.resize_zone.cursor @ variant top / variant right / variant bottom / variant left / variant top_left / variant top_right / variant bottom_right / variant bottom_left` | rule |
 | GN-1.24 | `button.body.fill @ {checked,hover}` | rule |
@@ -145,9 +145,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.41 | `button flags @needs_attention (adwaita)` | flag |
 | GN-1.41 | `button.attention_dot.opacity, button.attention_dot.transform, button.attention_dot.transitions @ {@needs_attention}` | rule |
 | GN-1.41 | `button.values.attention_dot_offset` | field |
-| GN-1.42 | `button.body.corners @ context any layout variant @linked / context any layout variant @linked pos first / context any layout variant @linked pos last / context any layout variant @linked pos only (position among siblings of any kind, SiblingScope::Any, CONTRA-3)` | rule |
-| GN-1.42 | `button.body.corners @ context any layout variant @linked pos first dir rtl / context any layout variant @linked pos last dir rtl` | rule |
-| GN-1.42 | `button.body.corners @ context any layout variants {@linked,vertical} pos first / context any layout variants {@linked,vertical} pos last` | rule |
+| GN-1.42 | `button.body.corners @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variant @linked pos last among any / context any layout variant @linked pos only among any` (position among siblings of any kind, `SiblingScope::Any`, CONTRA-3) | rule |
+| GN-1.42 | `button.body.corners @ context any layout variant @linked pos first among any dir rtl / context any layout variant @linked pos last among any dir rtl` | rule |
+| GN-1.42 | `button.body.corners @ context any layout variants {@linked,vertical} pos first among any / context any layout variants {@linked,vertical} pos last among any` | rule |
 | GN-1.42 | `layout.values.item_gap @ variant @linked / variants {@linked,vertical} (negative overlap)` | rule |
 | GN-1.43 | `input.values.icon_text_gap` | field |
 | GN-1.43 | `input.icon.padding @ variant leading / variant trailing (the icon's margin toward the text)` | rule |
@@ -160,7 +160,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.45 | `input.text.text.fill @ variant error / variant warning / variant success (= role.global.accent_standalone, rebound)` | rule |
 | GN-1.46 | `input.body.shadow (inset ring layer) @ {drop_target}` | rule |
 | GN-1.47 | `input.body.{fill,corners,padding,min_height} @ variant flat` | rule |
-| GN-1.48 | `input.progress.{fill,min_height} (its bottom margin: no field, gap list)` | field |
+| GN-1.48 | `input.progress.{fill,min_height,margin}` (its bottom margin, ADD-A79) | field |
 | GN-1.49 | `input.block_caret.{fill,text} @ {overwrite}` | rule |
 | GN-1.49 | `token.caret.overwrite_shape` | token |
 | GN-1.50 | `input.values.focus_visible_when` | field |
@@ -173,7 +173,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.281† | `text_area.preedit.text.decoration` | field |
 | GN-1.281† | `input @ {composing}; text_area @ {composing}` | flag |
 | GN-1.281† | `input.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` | rule |
-| GN-1.281† | `text_area.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` | rule |
+| GN-1.281† | `text_area.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` (declared on `text_area` as on `input`) | rule |
 | GN-1.55 | `checkbox.box.fill @ {pressed} !{checked,indeterminate}` | rule |
 | GN-1.55 | `checkbox.box.stroke @ {pressed} !{checked,indeterminate} (no ring)` | rule |
 | GN-1.55 | `radio.ring.fill, radio.ring.stroke @ {pressed} !{checked}` | rule |
@@ -189,7 +189,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.61 | `checkbox.body.padding @ variant @text_button` | rule |
 | GN-1.61 | `checkbox.values.label_gap` | field |
 | GN-1.61 | `radio.body.padding, radio.body.corners, radio.body.focus, radio.values.label_gap` | field |
-| GN-1.61 | `radio.body.padding (the .text-button padding: radio declares no @text_button variant, gap list)` | field |
+| GN-1.61 | `radio.body.padding @ variant @text_button` (the `.text-button` padding) | rule |
 | GN-1.62 | `checkbox.box.{corners,min_width,min_height} @ variant selection (the check's padding counted into its box)` | rule |
 | GN-1.62 | `checkbox.body.corners @ variant selection` | rule |
 | GN-1.62 | `checkbox.values.label_gap @ variant selection` | rule |
@@ -210,7 +210,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.72 | `menu.accelerator.{opacity,padding}` | field |
 | GN-1.72 | `menu.values.accelerator_gap_px` | field |
 | GN-1.73 | `menu.check_indicator.{min_width,min_height,padding,glyph}` | field |
-| GN-1.73 | `menu.check_indicator.padding / menu.check_indicator.padding @ dir rtl (its margins toward the label; the outer margin is negative: no field, gap list)` | rule |
+| GN-1.73 | `menu.check_indicator.margin / menu.check_indicator.margin @ dir rtl` (its margins, the outer one negative, ADD-A79) | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio` | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio cond contrast_high` | rule |
 | GN-1.74 | `menu.submenu_arrow.{glyph,opacity,min_width}` | field |
@@ -223,7 +223,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.78 | `menu.item.{min_width,min_height,padding,fill} @ variant icon_only / {selected} variant icon_only / {selected,pressed} variant icon_only` | rule |
 | GN-1.78 | `menu.item.{padding,stroke,fill} @ variants {icon_only,circular} / {selected} variants {icon_only,circular} / {selected,pressed} variants {icon_only,circular}` | rule |
 | GN-1.78 | `menu.values.icon_row_gap_px` | field |
-| GN-1.79 | `list.row.{padding,corners,min_height} @ context menu.body (the standalone list's row padding against the in-section one: no selector tells them apart, gap list)` | rule |
+| GN-1.79 | `list.row.{padding,corners,min_height} @ context nearest {menu, layout} = menu` (a standalone list, the popover's own content) `/ context nearest {menu, layout} = layout context menu.body` (a list inside a menu section) | rule |
 | GN-1.79 | `list.row.fill @ {hover} context menu.body / {selected,hover} context menu.body / {pressed} context menu.body` | rule |
 | GN-1.80 | `menu.item.shadow @ {hover} / {selected} / {pressed} cond contrast_high (inset ring)` | rule |
 | GN-1.285† | `menu.values.show_item_icons (OnlyWithoutLabel)` | field |
@@ -294,10 +294,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.116 | `tab.bar.stroke (the page-side edge) @ variant top / variant bottom / variant left / variant right` | rule |
 | GN-1.117 | `tab.indicator.fill @ context tab.tab {hover}` | rule |
 | GN-1.118 | `tab.values.indicator_edge @ variant left / variant right` | rule |
-| GN-1.119 | `tab.scroll_arrow.{fill,glyph,padding,min_width} (its negative margins: no field, gap list)` | field |
+| GN-1.119 | `tab.scroll_arrow.{fill,glyph,padding,margin,min_width}` (`margin` negative, ADD-A79) | field |
 | GN-1.119 | `tab.scroll_arrow.glyph @ variant left / variant right (the pan glyphs per bar position)` | rule |
 | GN-1.119 | `tab.values.overflow` | field |
-| GN-1.120 | `button.body.{fill,min_width,min_height,padding} @ variant close context tab.tab (flat; its margins, one negative: no field, gap list)` | rule |
+| GN-1.120 | `button.body.{fill,min_width,min_height,padding,margin} @ variant close context tab.tab` (flat; its margins, one negative, ADD-A79) | rule |
 | GN-1.120 | `button.icon.icon.fill @ variant close context tab.tab / {hover} variant close context tab.tab / {pressed} variant close context tab.tab` | rule |
 | GN-1.121 | `tab.bar.padding, tab.tab.padding` | field |
 | GN-1.121 | `tab.values.tab_gap` | field |
@@ -307,8 +307,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.124 | `tab.tab.min_height, tab.tab.padding, tab.tab.corners @ variant document` | rule |
 | GN-1.124 | `tab.tab.fill @ pos only variant document` | rule |
 | GN-1.125 | `tab.bar.fill, tab.bar.stroke.bottom, tab.bar.padding, tab.bar.min_height, tab.bar.bindings (surface Header) @ variant document` | rule |
-| GN-1.125 | `tab.bar.padding @ variant document (the tab box's and the start and end actions' paddings: no parts, gap list)` | rule |
-| GN-1.125 | `tab.bar.fill, tab.tab.opacity, tab.separator.opacity @ cond window_inactive variant document (its transition: tab.bar has no transitions, gap list)` | rule |
+| GN-1.125 | `tab.tab_box.padding, tab.start_actions.padding, tab.end_actions.padding @ variant document` | rule |
+| GN-1.125 | `tab.bar.fill, tab.tab.opacity, tab.separator.opacity @ cond window_inactive variant document; tab.bar.transitions` | rule |
 | GN-1.125 | `tab.bar.{fill,stroke,padding} @ variant @inline; tab.bar.fill, tab.tab.opacity @ variant @inline cond window_inactive (no backdrop change)` | rule |
 | GN-1.125 | `tab.bar.{padding,min_height} @ variant @shrunk` | rule |
 | GN-1.126 | `tab.separator.{stroke,padding} @ variant document` | rule |
@@ -322,7 +322,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.128 | `tab.attention_indicator.min_width @ variant @pinned` | rule |
 | GN-1.129 | `tab.values.base_width_px; tab.tab.max_width` | field |
 | GN-1.129 | `tab.values.pinned_width_px @ variant @pinned` | rule |
-| GN-1.129 | `tab.label.text.elision (Fade, at both edges; under the close button, now a button element that Elision::Fade's part reference cannot name: gap list)` | field |
+| GN-1.129 | `tab.label.text.elision` (Fade, at both edges; `under: FadeUnder::Element { widget: button, variant: close }`, the close button, ADD-A89) | field |
 | GN-1.130 | `button.body.{fill,min_width,min_height,corners,padding} @ variant close context tab.tab variant document` | rule |
 | GN-1.130 | `tab.values.close_button_shown @ variant document` | rule |
 | GN-1.130 | `button.values.presentations @ variant close context tab.tab variant document (Appear, Disappear: fade)` | rule |
@@ -357,27 +357,27 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.149 | `toolbar.bar.padding, toolbar.bar.corners, toolbar.bar.bindings (surface Osd) @ variant @osd` | rule |
 | GN-1.150 | `toolbar.bar.padding @ variant @collapse_spacing` | rule |
 | GN-1.151 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar (a popover between them restores the raised look)` | rule |
-| GN-1.151 | `split_button.{primary,secondary}.fill, split_button.divider.opacity @ !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar (the flat split button; its .raised class has no variant: gap list)` | rule |
-| GN-1.151 | `combo_box.body.{fill,shadow} @ context nearest {toolbar, popover} = toolbar.bar (the flat drop-down; its .raised class has no variant: gap list)` | rule |
+| GN-1.151 | `split_button.{primary,secondary}.fill, split_button.divider.opacity @ !variant primary !variant destructive !variant @opaque !variant @raised context nearest {toolbar, popover} = toolbar.bar` (the flat split button; `.raised` is `@raised`) | rule |
+| GN-1.151 | `combo_box.body.{fill,shadow} @ !variant @raised context nearest {toolbar, popover} = toolbar.bar` (the flat drop-down; `.raised` is `@raised`) | rule |
 | GN-1.152 | `switch.body.padding @ context toolbar.bar` | rule |
 | GN-1.153 | `toolbar.bar.{fill,shadow,bindings} @ variants {@raised,top} / variants {@raised,bottom}` | rule |
 | GN-1.153 | `toolbar.bar.shadow @ variants {@raised,top} cond contrast_high / variants {@raised,bottom} cond contrast_high` | rule |
 | GN-1.154 | `toolbar.bar.stroke (one edge), toolbar.bar.shadow (Absent) @ variants {@raised,@border,top} / variants {@raised,@border,bottom}` | rule |
 | GN-1.155 | `toolbar.bar.fill @ cond window_inactive variant @raised` | rule |
-| GN-1.155 | `button.body.opacity @ cond window_inactive context toolbar.bar (every item of the bar is dimmed; toolbar has no content part to dim as one group: gap list)` | rule |
+| GN-1.155 | `toolbar.content.{opacity,transitions} @ cond window_inactive variant @raised` (the bar's content dimmed as one group) | rule |
 | GN-1.155 | `toolbar.bar.transitions` | field |
 | GN-1.155 | `button.body.transitions @ context toolbar.bar (opacity)` | rule |
 | GN-1.156 | `scroll_view.edge_effect.{fill,stroke} @ {scrolled} (the content under an AdwToolbarView bar: the undershoot)` | rule |
 | GN-1.157 | `toolbar.bar.fill, toolbar.bar.stroke.top, toolbar.bar.padding @ variant bottom (GtkActionBar, AdwToolbarView's bottom bar)` | rule |
 | GN-1.157 | `toolbar.values.item_gap @ variant bottom` | rule |
 | GN-1.157 | `toolbar.bar.fill @ cond window_inactive variant bottom` | rule |
-| GN-1.157 | `button.body.opacity @ cond window_inactive context toolbar.bar variant bottom (the bar's content: no content part, gap list)` | rule |
+| GN-1.157 | `toolbar.content.opacity @ cond window_inactive variant bottom` (the bar's content, as one group) | rule |
 | GN-1.158 | `list.row_background.fill.append @ {pressed}` | rule |
 | GN-1.159 | `list.row_background.fill @ {selected,hover} / {selected,pressed}` | rule |
 | GN-1.160 | `list.row_background.fill @ {context_menu_open} / {selected,context_menu_open}` | rule |
 | GN-1.161 | `list.row_background.focus (offset inset)` | field |
 | GN-1.162 | `list.row_separator.stroke @ variant row_separators` | rule |
-| GN-1.162 | `list.row_separator.stroke @ variant row_separators (on the left edge in a horizontal list: list declares no horizontal variant, gap list)` | rule |
+| GN-1.162 | `list.row_separator.stroke @ variants {row_separators,horizontal}` (on the left edge in a horizontal list) | rule |
 | GN-1.163 | `list.section_header.text, list.section_header.padding` | field |
 | GN-1.163 | `list.section_header.padding @ variant @rich_list` | rule |
 | GN-1.164 | `list.row.padding, list.row.min_height, list.values.leading_gap @ variant @rich_list` | rule |
@@ -553,7 +553,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.246 | `segmented_control.segment.fill @ {checked} / {checked,hover} / {checked,pressed} variant flat` | rule |
 | GN-1.247 | `segmented_control.segment.fill, segmented_control.label.text.fill, segmented_control.icon.icon.fill @ {checked} variant @osd / {checked} context any variant @osd (any widget, R25.9)` | rule |
 | GN-1.247 | `segmented_control.segment.{shadow,focus} @ {checked} variant @osd !variant flat / {checked} !variant flat context any variant @osd (outer ring, its paint overridden)` | rule |
-| GN-1.247 | `segmented_control.segment.shadow @ {checked,disabled} variant @osd !variant flat (the checked toggle's accent and status roles rebound: segment has no bindings field, gap list)` | rule |
+| GN-1.247 | `segmented_control.segment.{shadow,bindings} @ {checked} variant @osd !variant flat / {checked,disabled} variant @osd !variant flat` (the checked toggle's accent and status roles rebound) | rule |
 | GN-1.248 | `segmented_control.segment.min_width @ variant vertical` | rule |
 | GN-1.249 | `segmented_control.segment.transitions (Text, Fill, Shadow)` | field |
 | GN-1.249 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
@@ -630,7 +630,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.03 | `form.row_indicator.opacity @ variant entry cond contrast_high` | rule |
 | GN-2.03 | `input.text.text.fill @ {disabled} context form.row variant entry (the text at the disabled opacity)` | rule |
 | GN-2.03 | `form.row.{focus,transitions} @ {focus_within} variant entry / {focus_within} variant spin (offset inset, with the row transition)` | rule |
-| GN-2.03 | `form.row_title.text.fill, form.row_subtitle.opacity @ variants {entry,error} / variants {entry,warning} / variants {entry,success} (the accent rebound to the status colour: form.row has no bindings field, gap list)` | rule |
+| GN-2.03 | `form.row.bindings, form.row_title.text.fill, form.row_subtitle.opacity @ variants {entry,error} / variants {entry,warning} / variants {entry,success}` (the accent rebound to the status colour) | rule |
 | GN-2.03 | `input.text.text @ context form.row variants {entry,@monospace}` | rule |
 | GN-2.04 | `form.row_title.text @ variant entry !{empty} / variant entry {focus_within}` | rule |
 | GN-2.04 | `form.row_title.transitions (Geometry, Text: the title shrinking)` | field |
@@ -650,7 +650,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.10 | `form.values.group_gap_px, form.group_title.padding, form.group_title.min_height, form.page.padding, form.values.page_gap_px` | field |
 | GN-2.10 | `form.values.collapse (AtThresholds), form.values.collapse_thresholds; view_switcher.values.breakpoints (the preferences dialog's thresholds)` | field |
 | GN-2.11 | `banner.body.{fill,padding}, banner.values.content_gap_px, banner.values.action_gap_px, banner.values.actions_wrap (BelowWhenNotFitting)` | field |
-| GN-2.11 | `button.body.min_width @ context banner.action_area (one width side by side, another stacked; the spacings likewise: no flag selects the stacked layout, gap list)` | rule |
+| GN-2.11 | `button.body.min_width @ context banner.action_area / context banner.action_area[vertical]; banner.values.{content_gap_px,action_gap_px} @ variant vertical` (one width and spacing side by side, others stacked; the connector sets `vertical`) | rule |
 | GN-2.11 | `banner.body.fill, banner.title.opacity, banner.message.opacity, banner.action_area.opacity @ cond window_inactive` | rule |
 | GN-2.11 | `banner.body.{fill,stroke} @ variant @sidebar` | rule |
 | GN-2.11 | `banner.values.presentations events @reveal, @conceal` | field |
@@ -671,7 +671,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.15 | `badge.body.{min_width,min_height,corners,padding} @ variant count context any view_switcher variant @sidebar / variant dot context any view_switcher variant @sidebar` | rule |
 | GN-2.15 | `view_switcher.values.drag_hover_delay_ms, view_switcher.values.presentations @bar_reveal` | field |
 | GN-2.16 | `view_switcher.{bar,item} @ variant @inline (the toggle group's look restated, GN-1.239–GN-1.251)` | rule |
-| GN-2.16 | `view_switcher.item_label.padding @ variant @inline (its image-text spacing: view_switcher has no icon-label gap, gap list)` | rule |
+| GN-2.16 | `view_switcher.item_label.padding, view_switcher.values.icon_text_gap_px @ variant @inline` (the label padding, the image-text spacing) | rule |
 | GN-2.16 | `badge.values.{anchor_offset_x_px,anchor_offset_y_px} @ context any view_switcher variant @inline; view_switcher.values.drag_hover_delay_ms @ variant @inline` | rule |
 | GN-2.17 | `sheet.scrim.fill (= alpha(surface.shade, <factor>)) @ variant bottom` | rule |
 | GN-2.17 | `sheet.body.{shadow,corners,stroke} @ variant bottom / variants {bottom,@flush}` | rule |
@@ -681,16 +681,16 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_reveal; sheet.values.top_padding_range` | field |
 | GN-2.18 | `navigation_view.values.presentations events @push, @pop (spring), navigation_view.page.{transform,opacity}, navigation_view.edge_shadow.{fill,min_width,opacity}, navigation_view.scrim.{fill,opacity}, navigation_view.values.swipe_back, navigation_view.values.swipe_duration_min_ms, navigation_view.values.swipe_duration_max_ms` | field |
 | GN-2.18 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
-| GN-2.19 | `sidebar.scrim.{fill,opacity}, sidebar.edge_shadow.fill, sidebar.pane.bindings @ variant overlay (the catalogue lists scrim and edge_shadow as absent on adwaita: gap list)` | rule |
+| GN-2.19 | `sidebar.scrim.{fill,opacity}, sidebar.edge_shadow.fill, sidebar.pane.bindings @ variant overlay` | rule |
 | GN-2.19 | `sidebar.values.presentations events @open, @close (spring)` | field |
 | GN-2.19 | `sidebar.pane.bindings (Surface(Sidebar); the middle pane Surface(SecondarySidebar), GN-1.137)` | field |
 | GN-2.20 | `toolbar.bar.{fill,stroke,padding,bindings} @ variant bottom (GtkActionBar, AdwToolbarView's bottom bar: the header-bar fill and fg, the top shade line)` | rule |
 | GN-2.20 | `toolbar.bar.stroke @ variant bottom cond contrast_high` | rule |
 | GN-2.20 | `toolbar.values.item_gap_px @ variant bottom` | rule |
-| GN-2.20 | `toolbar.bar.fill @ cond window_inactive variant bottom; button.body.opacity @ cond window_inactive context toolbar.bar variant bottom (the content: no content part, gap list)` | rule |
+| GN-2.20 | `toolbar.bar.fill, toolbar.content.opacity @ cond window_inactive variant bottom` (the content, as one group) | rule |
 | GN-2.20 | `toolbar.bar.{fill,stroke,padding} @ variants {bottom,@inline} / variants {bottom,@shrunk}; toolbar.bar.fill @ variants {bottom,@inline} cond window_inactive (no backdrop change)` | rule |
 | GN-2.21 | `search_field.bar.{fill,stroke,padding}` | field |
-| GN-2.21 | `button.body.{fill,min_width,min_height,padding,corners} @ variant close context search_field.bar (round, flat; its margins: no field, gap list)` | rule |
+| GN-2.21 | `button.body.{fill,min_width,min_height,padding,corners,margin} @ variant close context search_field.bar` (round, flat; its margins, ADD-A79) | rule |
 | GN-2.21 | `search_field.bar.fill @ cond window_inactive; button.body.opacity @ cond window_inactive context search_field.bar` | rule |
 | GN-2.21 | `search_field.bar.{fill,stroke,padding} @ variant @inline / variant flat / variant @shrunk` | rule |
 | GN-2.22 | `input.icon.{icon,opacity} @ variant leading context any search_field / {hover} variant leading context any search_field / {pressed} variant leading context any search_field (the entry icon rules, GN-1.44)` | rule |
@@ -710,7 +710,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.25 | `calendar.day.opacity @ {other_month}` | rule |
 | GN-2.25 | `calendar.day.focus @ {focus_visible}` | rule |
 | GN-2.26 | `level_indicator.track.{fill,corners}, level_indicator.values.thickness_px, level_indicator.values.thresholds` | field |
-| GN-2.26 | `level_indicator.fill.{fill,corners} @ variant continuous; level_indicator.block.{fill,corners}, level_indicator.values.{block_gap_px,block_min_length_px} @ variant discrete (filled and empty blocks, end radii: block is no element, gap list)` | rule |
+| GN-2.26 | `level_indicator.fill.{fill,corners} @ variant continuous; level_indicator.block.fill @ {filled} variant discrete / !{filled} variant discrete; level_indicator.block.corners @ pos first variant discrete / pos last variant discrete; level_indicator.values.{block_gap_px,block_min_length_px} @ variant discrete` (filled and empty blocks, the end radii) | rule |
 | GN-2.26 | `level_indicator.values.thickness_px @ variant vertical` | rule |
 | GN-2.26 | `level_indicator.fill.fill, level_indicator.block.fill @ {@low} / {@high} / {@full}` | rule |
 | GN-2.26 | `level_indicator.track.{fill,stroke} @ cond contrast_high` | rule |
@@ -721,7 +721,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.27 | `color_picker.swatch.focus @ {focus_visible}` | rule |
 | GN-2.27 | `color_picker.swatch_ring.stroke @ context color_picker.swatch {drop_target} / cond contrast_high` | rule |
 | GN-2.27 | `color_picker.preview.corners (the editor's sample)` | field |
-| GN-2.28 | `font_chooser.requester.{fill,stroke,corners,padding,focus}, font_chooser.requester_separator.fill (hidden), font_chooser.requester_label.text (its spacing: no value, gap list)` | field |
+| GN-2.28 | `font_chooser.requester.{fill,stroke,corners,padding,focus}, font_chooser.requester_separator.fill (hidden), font_chooser.requester_label.text, font_chooser.values.requester_gap_px` | field |
 | GN-2.29 | `split_button.primary.{corners,padding}, split_button.secondary.{corners,padding}, split_button.values.part_gap_px (negative overlap), split_button.divider.{fill,padding}, split_button.values.divider_margin_px` | field |
 | GN-2.29 | `split_button.divider.fill @ variant flat / variant flat cond contrast_high; split_button.divider.opacity @ {hover} variant flat / {focus_visible} variant flat` | rule |
 | GN-2.29 | `split_button.primary.fill, split_button.secondary.fill, split_button.divider.fill @ variant primary / variant destructive / variant @opaque (the inset separator)` | rule |
@@ -734,23 +734,23 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.31 | `button.body.fill @ {hover} context banner.action_area / {pressed} context banner.action_area` | rule |
 | GN-2.31 | `button.body.{fill,min_width,min_height,corners} @ variant close context banner (round, flat)` | rule |
 | GN-2.32 | `group_box.body.stroke, group_box.body.corners, group_box.values.title_margin_px` | field |
-| GN-2.33 | `view_switcher.item.{fill,stroke,padding} @ variant @stack (linked toggle buttons: view_switcher.item has no corners field for the joined inner corners, gap list)` | rule |
+| GN-2.33 | `view_switcher.item.{fill,stroke,padding} @ variant @stack; view_switcher.item.corners @ variant @stack pos first / variant @stack pos last / variant @stack pos only` (linked toggle buttons, the inner corners joined) | rule |
 | GN-2.33 | `view_switcher.values.item_min_width @ variant @stack (text buttons)` | rule |
 | GN-2.33 | `badge.body.fill @ variant dot context any view_switcher variant @stack (the needs-attention dot)` | rule |
 | GN-2.34 | `list.row.padding @ variant @stack_sidebar (the row's and its label's padding)` | rule |
 | GN-2.34 | `badge.body @ variant dot context list.row {@needs_attention} (in a @stack_sidebar list)` | rule |
 | GN-2.35 | `component.tab_overview.grid.{fill,padding}` | component |
-| GN-2.35 | `component.tab_overview.thumbnail.{fill,corners,shadow,stroke,padding,transitions} (the pinned thumbnail's colours: the component declares no pinned variant, gap list)` | component |
+| GN-2.35 | `component.tab_overview.thumbnail.{fill,corners,shadow,stroke,padding,transitions}; component.tab_overview.thumbnail.{fill,stroke} @ variant @pinned` (the pinned thumbnail's colours) | component |
 | GN-2.35 | `component.tab_overview.attention_dot.{fill,corners,shadow,min_width,min_height}` | component |
-| GN-2.35 | `button.body.{fill,min_width,min_height,corners} @ variant close context component.tab_overview / {hover} variant close context component.tab_overview / {pressed} variant close context component.tab_overview (the close and unpin buttons: unpin has no identity, gap list)` | rule |
+| GN-2.35 | `button.body.{fill,min_width,min_height,corners} @ variant close context component.tab_overview / {hover} variant close context component.tab_overview / {pressed} variant close context component.tab_overview / variant @unpin context component.tab_overview / {hover} variant @unpin context component.tab_overview / {pressed} variant @unpin context component.tab_overview` (the close and unpin buttons) | rule |
 | GN-2.35 | `button.body.padding @ variant add context component.tab_overview (the new-tab button's margin)` | rule |
 | GN-2.35 | `component.tab_overview.drop_target.{fill,stroke,corners}` | component |
 | GN-2.35 | `component.tab_overview.values.{grid_gap_px,columns_min,columns_max,thumbnail_width_min_px,thumbnail_width_max_px}` | component |
 | GN-2.35 | `component.tab_overview.values.presentations events @open, @close, @reorder, @thumbnail_fade / @ cond reduced_motion (crossfade)` | component |
 | GN-2.36 | `badge.body.{fill,min_width,min_height,corners,padding} @ variant dot / variants {dot,attention}` | rule |
 | GN-2.36 | `badge.body.{fill,min_height,padding,corners}, badge.label.text @ variant count; badge.values.cutout_px` | rule |
-| GN-2.37 | `badge.label.text @ context any button / size small context any button (AdwTabButton's counter: nothing identifies the tab button, gap list)` | rule |
-| GN-2.37 | `badge.values.{anchor_offset_x_px,anchor_offset_y_px} @ context any button` | rule |
+| GN-2.37 | `badge.label.text @ context button.body[@tab_button] / size small context button.body[@tab_button]` (AdwTabButton's counter) | rule |
+| GN-2.37 | `badge.values.{anchor_offset_x_px,anchor_offset_y_px} @ context button.body[@tab_button]` | rule |
 | GN-2.38 | `carousel.item.transitions (Geometry, spring: the page settle), carousel.values.scroll_timeout_ms` | field |
 | GN-2.38 | `page_indicator.dot.transitions, page_indicator.line.transitions` | field |
 | GN-2.39 | `about_dialog.icon.icon.size` | field |
@@ -796,7 +796,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.52† | `breadcrumb.crumb.{fill,stroke,corners,padding} (the raised button look), breadcrumb.crumb_icon.icon, breadcrumb.crumb_label.padding` | field |
 | GN-2.52† | `breadcrumb.crumb.corners @ pos first / pos last / pos only (linked: the inner corners squared)` | rule |
 | GN-2.52† | `breadcrumb.crumb.fill @ {hover} / {pressed} / {checked} / {checked,hover}` | rule |
-| GN-2.52† | `breadcrumb.crumb.padding (the text crumbs' side padding; with an icon, the icon–label spacing in crumb_label.padding: breadcrumb declares no with_icon variant, gap list)` | field |
+| GN-2.52† | `breadcrumb.crumb.padding @ !variant with_icon / variant with_icon; breadcrumb.values.icon_text_gap_px` (the text crumbs' side padding, the icon crumbs', the icon–label spacing) | rule |
 | GN-2.52† | `breadcrumb.values.presentations event @scroll (the horizontally scrolling row)` | field |
 | GN-2.53† | `color_picker.values.grid_gap_px; color_picker.plane.{min_width,min_height,focus,cursor}; color_picker.preview.corners` | field |
 | GN-2.53† | `color_picker.crosshair.stroke @ {focused} / !{focused}` | rule |
@@ -831,7 +831,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.06 | `scroll_view.overshoot.{fill,transitions} @ {@overshoot} (two radial gradients)` | rule |
 | GN-3.06 | `token.behavior.scroll.overscroll` | token |
 | GN-3.07 | `about_dialog.icon.shadow (.icon-dropshadow)` | field |
-| GN-3.07 | `PartStyle.shadow on icon parts (.icon-dropshadow and .lowres-icon on any image: only about_dialog.icon lists shadow, and no widget stands for a plain image, gap list)` | field |
+| GN-3.07 | `component.image.body.shadow @ variant @icon_dropshadow / variant @lowres_icon` (a standalone image with either class) | component |
 | GN-3.08 | `Color.a translucent roles and fills (S2.1, R5.3)` | field |
 | GN-3.08 | `PartStyle.fill.append over base (S2.3)` | field |
 | GN-3.09 | `role.osd.* (SurfaceSet::Osd)` | role |
@@ -897,8 +897,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.39 | `input.caret.fill @ {drop_target}` | rule |
 | GN-3.39 | `text_area.caret.fill` | field |
 | GN-3.73† | `token.caret.hides_while_selecting` | token |
-| GN-3.73† | `input.drop_caret.{fill,min_width} @ {drop_target} (the drop-position caret; the catalogue lists drop_caret absent on adwaita: gap list)` | rule |
-| GN-3.73† | `input.caret, text_area.caret @ !{focused} (not drawn outside the focused widget: neither caret part is listed may_be_absent, gap list)` | rule |
+| GN-3.73† | `input.drop_caret.{fill,min_width} @ {drop_target}` (the drop-position caret) | rule |
+| GN-3.73† | `input.caret, text_area.caret @ !{focused}` (`absent = true`: no caret outside the focused widget) | rule |
 | GN-3.40 | `input.selection.fill @ !{focus_within}; text_area.selection.fill @ !{focus_within}` | rule |
 | GN-3.40 | `role.global.selection_text_background_unfocused (ADD-A49)` | role |
 | GN-3.41 | `role.global.selection_text_foreground (Absent: the selected text keeps its own colour)` | role |
@@ -921,7 +921,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.46 | `reader:gnome:org.gnome.desktop.interface cursor theme and size` | reader |
 | GN-3.67† | `PartStyle.cursor per part (S2.11)` | field |
 | GN-3.67† | `input.body.cursor, text_area.body.cursor, link.body.cursor, color_picker.plane.cursor, window.resize_zone.cursor` | field |
-| GN-3.67† | `splitter.divider.cursor (column or row resize by orientation: splitter declares no orientation, gap list)` | field |
+| GN-3.67† | `splitter.divider.cursor @ !variant vertical / variant vertical` (column or row resize by orientation) | rule |
 | GN-3.67† | `token.behavior.hide_pointer_while_typing` | token |
 | GN-3.72† | - | out (R1.1) |
 | GN-3.47 | `token.behavior.double_click_time, token.behavior.double_click_distance` | token |
@@ -931,10 +931,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.49 | `token.behavior.long_press (ADD-A45)` | token |
 | GN-3.50 | `token.behavior.mnemonics OnAlt delay (ADD-A12)` | token |
 | GN-3.51 | `token.behavior.spring_loading (ADD-A45)` | token |
-| GN-3.51 | `expander.values.drag_hover_delay_ms, view_switcher.values.drag_hover_delay_ms, sidebar.values.drag_hover_delay_ms, tab.values.drag_hover_delay_ms (each = token.behavior.spring_loading; the tab grid's: tab_overview declares no such value, gap list)` | field |
+| GN-3.51 | `expander.values.drag_hover_delay_ms, view_switcher.values.drag_hover_delay_ms, sidebar.values.drag_hover_delay_ms, tab.values.drag_hover_delay_ms, component.tab_overview.values.drag_hover_delay_ms` (each `= token.behavior.spring_loading`; the last the tab grid's) | field |
 | GN-3.68† | `token.behavior.key_repeat_delay, token.behavior.key_repeat_interval` | token |
 | GN-3.68† | `reader:gnome:org.gnome.desktop.peripherals key repeat` | reader |
-| GN-3.69† | `stepper.values.repeat_delay_ms, stepper.values.repeat_interval_ms (the step's growth after some repeats: no value, gap list)` | field |
+| GN-3.69† | `stepper.values.repeat_delay_ms, stepper.values.repeat_interval_ms, stepper.values.climb_after_repeats` (the step growing by the climb rate after that many repeats) | field |
 | GN-3.69† | `scrollbar.values.repeat_delay_ms, scrollbar.values.repeat_interval_ms (trough paging)` | field |
 | GN-3.69† | `slider.values.repeat_delay_ms, slider.values.repeat_interval_ms (trough paging)` | field |
 | GN-3.56 | `token.text.rendering.{antialiasing,hinting,subpixel_order} (ADD-B04)` | token |
@@ -970,7 +970,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-SF13† | `autocomplete @ context code_editor; menu.body.{corners,shadow,padding} @ context autocomplete context code_editor` | rule |
 | GN-SF13† | `menu.item.min_height, menu.item_icon.icon, menu.values.icon_column_width_px, menu.item_subtitle.text (the "before" column at a reduced alpha) @ context autocomplete context code_editor` | rule |
 | GN-SF13† | `autocomplete.details_pane.{fill,stroke,corners,padding,text} @ context code_editor` | rule |
-| GN-SF13† | `popover.body.{fill,corners,shadow} @ context code_editor (the informative popup; its warning and error fills: popover declares no severity variants, gap list)` | rule |
+| GN-SF13† | `popover.body.{fill,corners,shadow} @ context code_editor; popover.body.fill @ variant warning context code_editor / variant error context code_editor` (the informative popup and its warning and error fills) | rule |
 | GN-SF14† | `component.dock_frame_drop.drop_overlay.fill` | component |
 | GN-SF14† | `component.dock_frame_drop.drop_overlay.fill @ {drop_target}` | component |
 | GN-SF14† | `component.dock_frame_drop.drop_overlay.stroke @ {drop_target}` | component |
@@ -1009,7 +1009,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-2† | - | out (R1.1) |
 | GN-P3-3† | `window.values.window_menu_items (GTK's fallback)` | field |
 | GN-P3-3† | `window.values.window_menu_placement (GtkPopover at the pointer)` | placement |
-| GN-P3-3† | `menu.{body,item} @ context window.window_menu (GTK's arrowless popover menu)` | rule |
+| GN-P3-3† | `menu.{body,item}, menu.values.has_arrow @ context window.window_menu` (GTK's arrowless popover menu) | rule |
 | GN-P3-3† | `window.values.title_bar_click_actions` | field |
 | GN-P3-3† | `reader:gnome:org.gnome.desktop.wm.preferences action-right-click-titlebar` | reader |
 | GN-P3-3† | - (the window menu GNOME Shell draws) | out (R1.1) |
@@ -1027,12 +1027,13 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-12† | `token.pointer.drag_cursors.<drop operation> (ADD-A46)` | token |
 | GN-P3-13† | - | out (R1.1) |
 | GN-P3-14† | - | out (R1.1) |
-| GN-P3-15† | `token.behavior.scroll_lines_per_step (GTK's step is a function of the scrolled view's page size, and touchpad deltas are scaled: no carrier for either, gap list; a slider's step is its adjustment's page increment, the application's)` | token |
+| GN-P3-15† | `scroll_view.values.wheel_step (= gtk_wheel_step(element.height), gtk_wheel_step(element.width): the view's page sizes, ADD-A90)` (a slider's step is its adjustment's page increment, the application's) | field |
+| GN-P3-15† | `token.behavior.scroll.touchpad_factor` (ADD-A91) | token |
 | GN-P3-16† | `Edge.snap (ADD-A33: libadwaita's one-pixel lines at a fractional scale)` | field |
 | GN-P3-16† | - (the display scale itself) | out (R1.1) |
 | GN-P3-17† | - | preset (R1.3) |
 | GN-P3-18† | - | newest (R1.5) |
-| GN-P3-19† | `button.icon (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition: sliders.gpa on the font dialog's toggle; ADD-A27, R25.12; button.icon lists no transitions field, gap list)` | field |
+| GN-P3-19† | `button.icon.transitions` (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition: sliders.gpa on the font dialog's toggle; ADD-A27, R25.12) | field |
 | GN-P3-19† | `spinner.icon.glyph, spinner.values.loop (the looping process-working.gpa, R25.12)` | field |
 | GN-P3-20† | `font_chooser.filter_title.text, font_chooser.family_row_label.text, font_chooser.preview.text, font_chooser.values.row_margins, font_chooser.values.grid_gap_px` | field |
 | GN-P3-20† | `input @ context any layout variant @linked context font_chooser.body (the search entry)` | rule |
@@ -1041,7 +1042,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-20† | `list @ context font_chooser.body (the framed family and language lists); slider @ context font_chooser.body, stepper @ context font_chooser.body (the Size row); status_page @ context font_chooser.body (No Fonts Found)` | rule |
 | GN-P3-21† | - | out (R1.1) |
 | GN-P3-22† | `list.row.padding, list.leading_icon.icon (at a reduced alpha), list.values.leading_gap_px @ context any file_chooser / dir rtl context any file_chooser` | rule |
-| GN-P3-22† | `button.body.{fill,min_width,min_height,corners} @ variants {flat,circular} context any file_chooser; button.icon.icon @ variants {flat,circular} context any file_chooser / {hover} variants {flat,circular} context any file_chooser / {pressed} variants {flat,circular} context any file_chooser (the eject button; its margins: no field, gap list)` | rule |
+| GN-P3-22† | `button.body.{fill,min_width,min_height,corners} @ variants {flat,circular} context any file_chooser; button.icon.icon @ variants {flat,circular} context any file_chooser / {hover} variants {flat,circular} context any file_chooser / {pressed} variants {flat,circular} context any file_chooser; button.body.margin @ variants {flat,circular} context any file_chooser` (the eject button and its margins, ADD-A79) | rule |
 | GN-P3-22† | `spinner @ context list.row context any file_chooser (the busy spinner); separator @ context any file_chooser (between sections)` | rule |
 | GN-P3-22† | `list.row.text.fill @ variant @new_bookmark; list.row.min_height, list.row_background.fill @ variant @drop_placeholder` | rule |
 | GN-P3-22† | `list.row_background.{fill,stroke} @ {drop_target} context any file_chooser; list.row_background.shadow @ {selected,pressed} context any file_chooser (none)` | rule |
@@ -1049,7 +1050,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-23† | `button.body.{fill,shadow} @ variant flat context any file_chooser (the view-toggle and new-folder buttons beside the path bar)` | rule |
 | GN-P3-23† | `list.cell.padding @ context any file_chooser` | rule |
 | GN-P3-23† | `list.view.padding, list.row_background.corners, list.values.row_background_inset, list.row.padding @ variant grid context any file_chooser; scroll_view.edge_effect.{fill,stroke} @ {scrolled} context list variant grid` | rule |
-| GN-P3-23† | `button.menu_indicator.{glyph,transitions} @ {open} context any file_chooser (the server-list arrow's half turn: menu_indicator has no transform, gap list)` | rule |
+| GN-P3-23† | `button.menu_indicator.{glyph,transform,transitions} @ {open} context any file_chooser` (the server-list arrow's half turn) | rule |
 | GN-P3-24† | `layout.values.item_gap, layout.values.line_gap, layout.values.flow_max_per_line @ variant flow` | rule |
 | GN-P3-25† | `segmented_control.values.segment_width (Fit)` | field |
 | GN-P3-26† | `input.magnifier.{fill,corners,shadow,min_width,min_height}; text_area.magnifier.{fill,corners,shadow,min_width,min_height}` | field |
@@ -1058,19 +1059,19 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-1† | - | out (R1.1) |
 | GN-P4-2† | `popover.values.placement (GtkPopover)` | placement |
 | GN-P4-2† | `menu.values.placement (GtkPopover)` | placement |
-| GN-P4-2† | `menu.values.placement @ context combo_box (GtkPopover; width AtLeastAnchor, no arrow, start-aligned)` | placement |
+| GN-P4-2† | `menu.values.{placement,has_arrow} @ context combo_box` (GtkPopover; width AtLeastAnchor, start-aligned; `has_arrow` false); `menu.arrow` where a popover menu draws its arrow | placement |
 | GN-P4-2† | `menu.values.placement @ context button variant @arrow_up / context button variant @arrow_start / context button variant @arrow_end (the menu button's direction)` | placement |
 | GN-P4-3† | - | out (R1.1) |
 | GN-P4-4† | `token.caret.overwrite_shape, token.caret.block_text (ADD-A23)` | token |
 | GN-P4-4† | `text_area flags overwrite; code_editor flags overwrite (ADD-A23)` | flag |
 | GN-P4-4† | `text_area.block_caret.{fill,text} @ {overwrite} (ADD-A23, ADD-A24)` | rule |
-| GN-P4-4† | `code_editor.caret.{fill,min_width} @ {overwrite} (the covered character redrawn in the background: code_editor.caret has no text field, gap list)` | rule |
+| GN-P4-4† | `code_editor.caret.{fill,min_width,text} @ {overwrite}` (the covered character redrawn in the background) | rule |
 | GN-P4-5† | `scrollbar.values.trough_click` | field |
 | GN-P4-5† | `slider.values.trough_click` | field |
 | GN-P4-6† | `menu.values.submenu_switch` | field |
 | GN-P4-6† | `menu.values.submenu_placement (GtkPopover nested: end side, top-aligned)` | placement |
 | GN-P4-7† | `checkbox.mark.glyph (GlyphSource::Path from check.svg)` | field |
 | GN-P4-7† | `radio.dot.glyph (GlyphSource::Path from bullet.svg)` | field |
-| GN-P4-8† | `menu.values.placement @ context input / context text_area (GtkPopover, point anchor)` | placement |
+| GN-P4-8† | `menu.values.{placement,has_arrow} @ context input / context text_area` (GtkPopover, point anchor; `has_arrow` false) | placement |
 | GN-P4-8† | `input.values.context_menu_items, text_area.values.context_menu_items` | field |
 | GN-P4-9† | - | out (R1.1) |

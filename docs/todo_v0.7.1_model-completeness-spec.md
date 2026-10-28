@@ -169,9 +169,10 @@ colour expression stated on a `Value<Paint>` field, or in `append`, is one `Colo
 | `kirigami_tint(c, tint, alpha)` | colour | Kirigami's `ColorUtils.tintWithAlpha` (ADD-A52) |
 | `kirigami_label_icon_size(line_height)`, `kirigami_badge_text(text, background)` | length, colour | Kirigami's `units.cpp` and `Badge.qml` (ADD-A53) |
 | `ka_card_border(background, text)`, `ka_banner_line(type_text, frame)`, `ka_contrast_text(c)` | colour | kirigami-addons' FormCard background, banner and avatar code (ADD-A66) |
-| `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp` (ADD-A57) |
+| `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)`, `kte_mark_underlay(hue_from, background, foreground)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp`: the marks' HSV recolouring, and their underlay in HSL (one colour's hue and saturation at the background's lightness moved toward the foreground, K-P3-12†) (ADD-A57) |
 | `sf_tracking(font_size, design)` | length | Apple's size-to-tracking tables for SF Pro, SF Pro Rounded, New York (ADD-A54) |
 | `uikit_prominence(c, prominence)` | colour | `UIColor.withProminence(_:)` (X-CO-5) |
+| `shadow_extent(shadow, side)` | length | how far a shadow reaches beyond the box on that side, over its layers, to GTK's `gtk_css_shadow_value_get_extents` (GN-1.282†) |
 | `gtk_wheel_step(page_size)` | length | GTK's scroll step from the page size, to `gtkrange.c` / `gtkscrolledwindow.c` (GN-P3-15†) |
 | `uifm_scaled(x, text_role)` | length | `UIFontMetrics.scaledValue(for:)` (ADD-A55) |
 | `kde_accent(set, key)` | colour | Plasma's accent derivation for one key of one colour set, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1) |
@@ -601,6 +602,7 @@ pub struct ScrollPhysics { pub deceleration: Value<f32>, pub overscroll: Value<T
                            pub overscroll_effect: OverscrollEffect, pub overscroll_extent: Value<Px>,  // ADD-A29
                            pub min_fling_velocity: Value<f32>, pub max_fling_velocity: Value<f32>,   // px/s (MAT-P3-16†)
                            pub wheel_step_duration: Value<Ms>, pub wheel_step_duration_max: Value<Ms>,
+                           pub touchpad_factor: Value<f32>,          // touchpad deltas' multiplier (GN-P3-15†)
                            pub wheel_step_timing: Value<Timing>,     // the duration grows with the distance
                                                                      // up to the maximum (K-P3-18†)
                                                                  // smooth wheel scrolling (MAC-P4-4†)
@@ -916,7 +918,7 @@ these are theme changes.
 
 **Query.** `ResolvedTheme::root_scope(&RootInputs) -> Scope` gives the window's root scope; every query takes its
 parent's scope and returns its own, so a connector queries top-down, as it draws. The scope carries the ancestor
-chain (each ancestor's widget, part, variants and states) that context selectors match, with the bindings, density,
+chain (each ancestor's widget, part, variants, states and control size) that context selectors match, with the bindings, density,
 size classes, direction and language folded from the root. Tokens and roles are read in a scope too, for what no
 part carries (behaviour timings, the caret, text rendering, the pointer, the window's background):
 `ResolvedTheme::tokens(&Scope) -> ResolvedTokens`, `ResolvedTheme::role(&Scope, RoleRef) -> Color`.
@@ -976,7 +978,8 @@ and is refused on `Concentric` (S12). Expressions over `element.width` and `elem
 part's padding and size limits, which lay the element out (S12), so one query per frame suffices. `Element.variants` includes the variants
 the connector sets from the element's content (`icon_only`, `with_icon`; GTK sets `.image-button` itself,
 ADD-A61). The query cannot fail (R2.8): element data are plain values,
-and each part declares the data its values read (S10, `data = [...]`, font metrics included), which is what a
+and each part declares the data its values read (S10, `data = [...]`, font metrics included; a widget value that
+reads element data, a presentation step's duration over `move_distance`, is declared under `values`), which is what a
 connector must supply for it, as it supplies the element's states; S12 rejects an expression naming data its part does not declare.
 
 ## S9. Inputs and readers (R2.6, R18)
@@ -1031,6 +1034,7 @@ presentation_events = [ … ]
 container_sizes = { sidebar = [ … ] }
 symbol_variants = [ … ]
 icon_state_effects = [ … ]
+focus_kinds = [ … ]                            # FocusKind::Keyed (WinUI's reveal)
 material_params = { <key> = "<unit>" }
 duration_keys = [ … ]                          # also: motion durations, icon-size contexts, status colours,
 icon_contexts = [ … ]                          # drag cursors and the accent ramp's keys
@@ -1410,7 +1414,8 @@ lines that cite it.
 | ADD-A87 | `ElementData.move_distance` | S8 |
 | ADD-A88 | `TextScaling` | S4.4, S9.4 |
 | ADD-A89 | `FadeUnder` | S2.8 |
-| ADD-A90 | `uikit_prominence`, `gtk_wheel_step` | S2.2 |
+| ADD-A90 | `uikit_prominence`, `gtk_wheel_step`, `shadow_extent`, `kte_mark_underlay` | S2.2 |
+| ADD-A91 | `ScrollPhysics.touchpad_factor` | S4.2 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

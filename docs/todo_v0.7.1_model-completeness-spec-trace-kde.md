@@ -245,7 +245,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.131 | `reader:kde:breezerc [Style] TabBarDrawCenteredTabs` | reader |
 | K1.132 | `tab.label.text.fill @ {disabled}` | rule |
 | K1.132 | `tab.tab.transitions (Fill: the hover fade)` | field |
-| K1.133† | `tab.values.presentations (Move, step part tab: the tabs sliding to their new place; duration shorter for short moves)` | field |
+| K1.133† | `tab.values.presentations` (Move, step part `tab`: the tabs sliding to their new place, the step's duration an expression over `element.move_distance`, which `tab` declares; ADD-A87) | field |
 | K1.133† | `tab.values.drag_hover_delay_ms` | field |
 | K1.140 | `sidebar.pane.stroke (the inner edge only; the Inactive group's highlight) @ variant @side_panel` | rule |
 | K1.140 | `sidebar.pane.stroke (the Active group's highlight) @ {focus_within} variant @side_panel` | rule |
@@ -256,7 +256,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.142† | `list.leading_icon.icon.size @ context sidebar.pane[@places]` | rule |
 | K1.142† | `progress_bar.track.fill, progress_bar.track.corners (Full), progress_bar.track.min_height (= an expression over the row's icon size), progress_bar.indicator.fill @ variant @capacity context sidebar.pane` | rule |
 | K1.142† | `progress_bar.indicator.fill @ variant @capacity context list.row {selected} !cond window_inactive` | rule |
-| K1.142† | `progress_bar.indicator.fill @ variant @capacity context sidebar.pane (above the nearly-full threshold: no selector carries it, gap)` | rule |
+| K1.142† | `progress_bar.indicator.fill @ {@nearly_full} variant @capacity context sidebar.pane; progress_bar.values.warning_threshold @ variant @capacity context sidebar.pane` (the connector sets `@nearly_full` above the threshold) | rule |
 | K1.142† | `list.trailing_icon.icon @ context sidebar.pane[@places] (the eject action)` | rule |
 | K1.142† | `list.row.opacity @ {@hidden_place} context sidebar.pane[@places]` | rule |
 | K1.142† | `list.values.presentations (Appear, Disappear: Fade, step part section) @ context sidebar.pane[@places]` | rule |
@@ -324,7 +324,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.201 | `separator.line.stroke (centred on the half pixel: the edge's snap)` | field |
 | K1.201 | `component.multi_tab_bar.separator.fill, component.multi_tab_bar.separator.min_width, component.multi_tab_bar.separator.min_height` | component |
 | K1.210 | `layout.values.form_label_alignment, layout.values.form_field_growth, layout.values.form_wraps @ variant form` | rule |
-| K1.210 | `layout.values.form_label_alignment @ variant form (the form's own left and top alignment: no value carries it, gap)` | rule |
+| K1.210 | `layout.values.form_alignment @ variant form` (the form's own left and top alignment, `SH_FormLayoutFormAlignment`) | rule |
 | K1.211 | `group_box.values.title_margin_px, group_box.title.text, group_box.body.padding (the space the title takes)` | field |
 | K1.220 | `dialog.values.action_layout (row_order: KdeLayout's roles, Help and Reset leading, the stretch, then the rest)` | field |
 | K1.221 | `dialog.values.button_icons` | field |
@@ -425,7 +425,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.16 | `menu.item.padding @ context autocomplete context any search_field cond flavor:kirigami` | rule |
 | Q1.17 | `input.icon.icon.size (= token.icon_sizes.keyed.for_labels), input.icon.icon.fill (= the placeholder's colour) @ variant leading context any search_field cond flavor:kirigami` | rule |
 | Q1.17 | `input.values.search_delay_ms (= token.motion.durations.short) @ context any search_field cond flavor:kirigami` | rule |
-| Q1.17 | `input.values.search_delay_ms (= the human-moment duration, under the field's delaySearch: no selector carries delaySearch, gap) @ context any search_field cond flavor:kirigami` | rule |
+| Q1.17 | `input.values.search_delay_ms (= token.motion.durations.human_moment) @ context search_field.body[@delay_search] cond flavor:kirigami` (the field's `delaySearch`) | rule |
 | Q1.18 | `button.icon.icon.size (= token.icon_sizes.keyed.for_labels), button.body.padding @ variant tool context input cond flavor:kirigami (the inline actions)` | rule |
 | Q1.18 | `input.values.icon_text_gap_px @ cond flavor:kirigami (the actions' spacing)` | rule |
 | Q1.18 | `input.body.transitions (Geometry: the padding, as actions appear; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
@@ -696,7 +696,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.8 | `group_box.body.fill, group_box.body.stroke, group_box.body.corners, group_box.title.text` | field |
 | K2.8 | `group_box.body.fill, group_box.body.stroke (Absent), group_box.title.text (= token.text.keyed.flat_group_title) @ variant flat` | rule |
 | K2.8 | `checkbox @ context any group_box (the checkable title)` | rule |
-| K2.8 | `group_box.focus_line.fill @ {focus_visible} (its fade: the part lists no transitions, gap)` | rule |
+| K2.8 | `group_box.focus_line.{fill,transitions} @ {focus_visible}` (the line and its fade) | rule |
 | K2.9 | `component.tool_box.page_button.min_width, component.tool_box.values.tab_min_width_px` | component |
 | K2.9 | `component.tool_box.selected_outline.stroke, component.tool_box.selected_outline.corners @ context component.tool_box.page_button {checked}` | component |
 | K2.9 | `component.tool_box.hover_outline.stroke, component.tool_box.hover_outline.corners @ context component.tool_box.page_button {hover}` | component |
@@ -844,7 +844,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.24 | `chip @ variant @interactive / variant @closable` | rule |
 | Q2.25 | `badge.body.stroke, badge.body.fill @ variant info / variant success / variant warning / variant error` | rule |
 | Q2.26 | `badge.label.text.fill (= kirigami_badge_text, ADD-A53)` | field |
-| Q2.26 | `badge.body.stroke (= mix(element.color, the text, <fraction>), ADD-B16, where the application gives a colour: no selector tells that apart, gap)` | field |
+| Q2.26 | `badge.body.stroke (= mix(element.color, the text, <fraction>)) @ variant @custom_color` (where the application gives a colour; `badge.body` declares `color`, ADD-B16) | rule |
 | Q2.27 | `badge.label.text (= token.text.keyed.smallest_readable, its weight restated), badge.body.padding, badge.icon.icon (= token.icon_sizes.keyed.for_labels)` | field |
 | Q2.27 | `badge.body.corners (Full) @ !{multiline} / (the corner radius) @ {multiline}` | rule |
 | Q2.27 | `badge.body.padding (the pill's extra horizontal padding) @ !{multiline}` | rule |
@@ -863,7 +863,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.34 | `bottom_tab_bar.item.bindings (Surface(Window)), bottom_tab_bar.item.padding @ cond flavor:kirigami` | rule |
 | Q2.34 | `bottom_tab_bar.item.min_height @ variant stacked cond flavor:kirigami / (none) @ variant inline cond flavor:kirigami` | rule |
 | Q2.34 | `bottom_tab_bar.item_icon.icon (= token.icon_sizes.keyed.small_medium) @ variant stacked / (= token.icon_sizes.keyed.small) @ variant inline` | rule |
-| Q2.34 | `bottom_tab_bar.item_label.text (= mul(font_size, <factor>)) @ cond flavor:kirigami for a text-only item (bottom_tab_bar declares no content selector for it, gap)` | rule |
+| Q2.34 | `bottom_tab_bar.item_label.text (= mul(font_size, <factor>)) @ !variant with_icon !variant icon_only cond flavor:kirigami` (a text-only item: the content variants on `item`, ADD-A61) | rule |
 | Q2.35 | `bottom_tab_bar.item.fill @ {pressed} / {hover} / {checked}` | rule |
 | Q2.35 | `bottom_tab_bar.item.stroke @ {checked} / {pressed}` | rule |
 | Q2.35 | `bottom_tab_bar.item.corners` | field |
@@ -880,7 +880,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.41 | `list.section_header_line.stroke (filling the rest of the row)` | field |
 | Q2.41 | `list.section_header.fill (Absent: no hover or background) @ cond flavor:kirigami` | rule |
 | Q2.42 | `list.inline_header.fill (= kirigami_tint, ADD-A52), list.inline_header.padding, list.inline_header.text (= token.text.keyed.heading_2)` | field |
-| Q2.42 | `list.inline_header.stroke (its bottom edge; the top edge where it is the view's footer: no selector tells a footer, gap)` | field |
+| Q2.42 | `list.inline_header.stroke` (its bottom edge) `/ list.inline_header.stroke @ variant @inline_footer` (the top edge, placed as the view's footer) | rule |
 | Q2.42 | `button @ context list.inline_header (the trailing actions)` | rule |
 | Q2.43 | `component.list_item_drag_handle.handle.icon (= token.icon_sizes.keyed.small_medium)` | component |
 | Q2.43 | `component.list_item_drag_handle.handle.opacity / @ {hover} / @ {pressed}` | component |
@@ -931,7 +931,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.57† | `form @ variant @cards context any about_dialog (the sections as groups split by separators)` | rule |
 | Q2.57† | `avatar.body.min_width, avatar.body.min_height (= token.icon_sizes.keyed.medium's size) @ context any about_dialog` | rule |
 | Q2.58† | `dialog.values.window_margin, dialog.header.padding, dialog.title.text (a heading, elision End) @ cond mobile_form_factor` | rule |
-| Q2.58† | `dialog.header (its height: the part lists no min_height, gap) @ cond mobile_form_factor` | rule |
+| Q2.58† | `dialog.header.min_height @ cond mobile_form_factor` | rule |
 | Q2.58† | `button.icon.icon.size (= token.icon_sizes.keyed.small_medium), button.icon.glyph (ThemeIcon) @ variant close context dialog.header cond mobile_form_factor / variant close context dialog.header {hover} cond mobile_form_factor` | rule |
 | Q2.58† | `dialog @ variant full_size cond mobile_form_factor (a narrower window: the full-window layer, Q2.15) / variant separate_window (the desktop); dialog.values.natural_size @ variant separate_window` | rule |
 | Q2.58† | `dialog.values.presentation_breakpoint (the connector picks by width, R16)` | field |
@@ -1027,7 +1027,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.64 | `token.pointer.theme, token.pointer.size (ADD-A46)` | token |
 | K3.64 | `reader:kde:kcminputrc [Mouse] cursorTheme, cursorSize` | reader |
 | K3.65† | `PartStyle.cursor per part: link.body.cursor, link.text (selectable labels), splitter.divider.cursor @ variant @column_view, component.list_item_drag_handle.handle.cursor, button.body.cursor @ variant help, sidebar.handle (the drawer edges)` | field |
-| K3.65† | `token.behavior.hide_pointer_while_typing (the delay after which KLineEdit hides it: no field carries it, gap)` | token |
+| K3.65† | `token.behavior.{hide_pointer_while_typing,hide_pointer_delay}` (KLineEdit hides the pointer after its delay, ADD-A86) | token |
 | K3.66† | - | out (R1.1) |
 | K3.70 | `token.behavior.double_click_time` | token |
 | K3.70 | `reader:kde:kdeglobals [KDE] DoubleClickInterval` | reader |
@@ -1186,7 +1186,7 @@ rationale, each decided in the core's additions register (S22).
 | K-RL06† | `drag_image.image.opacity, drag_image.values.hotspot (the press point) @ context list` | rule |
 | K-RL06† | `list.row_background.fill, list.row.text.fill (drawn as under {selected}) @ {dragged}` | rule |
 | K-RL07† | `button.values.repeat_delay_ms, button.values.repeat_interval_ms` | field |
-| K-RL07† | `tab.scroll_arrow (its repeat: tab lists no repeat values, gap)` | field |
+| K-RL07† | `tab.values.repeat_delay_ms, tab.values.repeat_interval_ms` (the scroll arrows' auto-repeat) | field |
 | K-FM01† | `token.text.fallbacks.emoji_family (ADD-A41)` | token |
 | K-FM01† | `reader:kde:fontconfig emoji family (fc-match emoji)` | reader |
 | K-FM02† | `token.text.fallbacks.families, token.text.fallbacks.per_language (ADD-A41)` | token |
@@ -1235,7 +1235,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-12† | `code_editor.minimap_slider.fill, code_editor.minimap_slider.stroke` | field |
 | K-P3-12† | `code_editor.minimap_fade.fill` | field |
 | K-P3-12† | `code_editor.scroll_mark.fill, code_editor.scroll_mark.min_height (Absent by default: marks off)` | field |
-| K-P3-12† | `code_editor.scroll_mark (its underlay: an HSL colour from role.@shade_mid's hue and saturation at the background's lightness moved toward the foreground; no listed function computes it, gap)` | field |
+| K-P3-12† | `code_editor.scroll_mark.fill` underlay layer `= kte_mark_underlay(role.@shade_mid, surface.background, surface.foreground)` (ADD-A57) | field |
 | K-P3-13† | `menu.body.stroke (a raised box frame, K2.21) @ context autocomplete context code_editor` | rule |
 | K-P3-13† | `menu.item, menu.item_label.text (the syntax highlighting of the completed text) @ context autocomplete context code_editor` | rule |
 | K-P3-13† | `menu.values.placement (KTextEditorCompletion: under the completion's start, its gap = an expression on the font's height; kept inside the window) @ context autocomplete context code_editor` | placement |
@@ -1248,7 +1248,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-16† | `reader:kde:kcminputrc [Keyboard] RepeatDelay, RepeatRate, KeyRepeat` | reader |
 | K-P3-17† | `scrollbar.values.repeat_delay_ms, scrollbar.values.repeat_interval_ms (the arrows and the trough)` | field |
 | K-P3-17† | `slider.values.repeat_delay_ms, slider.values.repeat_interval_ms (the page steps)` | field |
-| K-P3-18† | `token.behavior.scroll.wheel_step_duration, token.behavior.scroll.wheel_step_timing (a duration growing with the distance between bounds: no field carries the bounds, gap)` | token |
+| K-P3-18† | `token.behavior.scroll.{wheel_step_duration,wheel_step_duration_max,wheel_step_timing}` (the duration growing with the distance between the two bounds, ADD-A86) | token |
 | K-P3-18† | `token.behavior.scroll.deceleration, token.behavior.scroll.max_fling_velocity @ cond flavor:kirigami (the touchpad inertia and the page's flick)` | token |
 | K-P3-18† | `token.behavior.scroll.overscroll_effect (to verify)` | token |
 | K-P3-18† | `reader:kde:kdeglobals [KDE] SmoothScroll` | reader |
@@ -1325,11 +1325,11 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-5† | `form.group_title.text (the default font, its weight restated, wrap Word), form.group_title.bindings (Surface(View)), form.group_title.padding @ variant @ka_form_card / variants {@ka_form_card,@width_limited}` | rule |
 | K-KA-5† | `button @ variant tool context form.group_title (the trailing actions)` | rule |
 | K-KA-5† | `form.group_description.text (fill = surface.disabled.foreground; centred) @ variant @ka_form_card` | rule |
-| K-KA-5† | `form.group_description (its max width and margins: the part lists only text, gap)` | field |
+| K-KA-5† | `form.group_description.{max_width,margin} @ variant @ka_form_card` | rule |
 | K-KA-6† | `form.page.fill (= mix(role.window.background, role.view.background, <fraction>)) @ variant @ka_form_card` | rule |
 | K-KA-6† | `form.page.padding (none: the cards reach the page's edges) @ variant @ka_form_card !variant @width_limited (below the card breakpoint, R16)` | rule |
 | K-KA-7† | `form.row_arrow.icon (the arrow theme icon and its size), form.values.arrow_gap_px @ variant @ka_form_card / variant @ka_form_card dir rtl` | rule |
-| K-KA-7† | `form.row_arrow (shown only while the row has its background: the part lists no opacity and is not may_be_absent, gap) @ !{hover} !{focus_visible} !{pressed} variant @ka_form_card` | rule |
+| K-KA-7† | `form.row_arrow @ !{hover} !{focus_visible} !{pressed} variant @ka_form_card` (`absent = true`: shown only while the row has its background) | rule |
 | K-KA-7† | `form.row_arrow.icon (the open-link icon; its rtl form under dir rtl) @ variant @link` | rule |
 | K-KA-7† | `menu @ context form.row variant @link (Open Link, Copy Link, K-KA-31†)` | rule |
 | K-KA-7† | `form.row_arrow.icon (the up arrow) @ {open} variant expander` | rule |
@@ -1366,7 +1366,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-14† | `color_button.swatch.corners (Full), color_button.swatch.min_width, color_button.swatch.min_height (= token.icon_sizes.keyed.small_medium's size), color_button.swatch.stroke (Absent), color_button.values.swatch_gap_px @ context form.row variant @ka_form_card` | rule |
 | K-KA-14† | `form.row_icon.icon (the color-picker icon) @ variant @ka_form_card context color_button` | rule |
 | K-KA-14† | `form.row_icon.icon (= token.icon_sizes.keyed.small) @ variants {@icon_row,@ka_form_card}` | rule |
-| K-KA-14† | `form.row_suffix (the chosen icon at token.icon_sizes.keyed.small: the suffix box lists only padding, gap) @ variants {@icon_row,@ka_form_card}` | rule |
+| K-KA-14† | `form.row_suffix.icon (= token.icon_sizes.keyed.small) @ variants {@icon_row,@ka_form_card}` (the chosen icon) | rule |
 | K-KA-15† | `form.values.grid_columns, form.values.grid_min_cell_width_px, form.values.grid_gap_px @ variant @ka_info_card` | rule |
 | K-KA-15† | `form.card.padding, form.card.corners @ variant @ka_info_card / variants {@ka_info_card,@width_limited}` | rule |
 | K-KA-15† | `form.row_icon.icon (top-aligned), form.row_title.text (= token.text.keyed.heading_4_primary; centred without an icon), form.row_subtitle.opacity @ variant @ka_info_card` | rule |
