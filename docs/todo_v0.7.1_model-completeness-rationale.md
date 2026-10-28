@@ -291,8 +291,8 @@ may also be negated (*not* these); the rule matches when every stated part holds
 - *Context,* the element's ancestors: any ancestor of the named kind, or the nearest ancestor among a
   stated set of kinds ("nearest of {header bar, popover} is a header bar": flat in a header bar, raised
   again in a popover opened from it), each matched by widget, part, variants and states.
-- *Position* among the element's siblings of the same widget kind (a separator between tabs is not a
-  tab): first, last, only, which follow from absent previous or next siblings of that kind; and the
+- *Position* among the element's siblings of the same widget kind by default, or of any kind or stated kinds
+  where the rule says so (R25.9): first, last, only, which follow from absent previous or next siblings of that kind; and the
   previous and the next sibling's widget, variants and states (libadwaita's lone tab is a rule for
   "only", where its stylesheet uses a `.single-tab` class), for the separators that hide beside a hovered or selected neighbour
   (MAC-SG01, Q2.56†) and the shared glass capsules of grouped bar items (MAC-X07, TB-5).
@@ -516,7 +516,7 @@ is checked against KDE's code in the specification); libadwaita's derivation of 
 in OKLab, to its stylesheet's code; Material's scheme function (material-color-utilities, which defines
 Material's dynamic colour, MAT-X17), over its inputs (R2.6); and, for lengths and durations, multiples of the
 font size, the line height or a token, and products of tokens (Kirigami's grid unit, Q1.62; a width in
-characters, GN-1.283†; a duration times the speed factor, and Kirigami's `longDuration` times it, Q3.24;
+characters, a multiple of the font's character width, which the connector supplies, R25.3, GN-1.283†; a duration times the speed factor, and Kirigami's `longDuration` times it, Q3.24;
 R9). A platform whose arithmetic differs gets its own function; a function is
 added only when a platform's rule needs it. Composition over the value beneath is a paint layer appended over
 `base` (R6), not a colour function. Evaluation follows dependencies; a cycle is an error at resolution.
@@ -602,7 +602,7 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
   Material state springs; Apple's response and damping fraction convert to it exactly; velocity-dependent
-  curves (Kirigami's, Q3.26) are a timing kind of their own.
+  curves (Kirigami's, Q3.26) are keyed timings, each defined in its platform's facts (R25.6).
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
@@ -979,14 +979,19 @@ K-P3-10†, C-45†), and a text whose hash picks a colour (an avatar's colour f
 leave them to the connector (against: the platform's rule would be lost), or a typed set of **element data** the
 connector supplies in the query (size, progress, scroll offset and progress, index and count, a text), which
 expressions may name, with the functions the platforms use over them (`pick(hash(text), list)` to the platform's own
-hash and list, cited). **Decision:** element data in the query, as plain values each part declares it reads, so the
-query still cannot fail (R2.8); the connector supplies them and queries again when they change, as for a state.
+hash and list, cited). Also element data: a colour the application chose
+for the element that derived values follow (a badge's custom colour, Q2.26), the width of a character of the part's
+font as the toolkit measures it (GTK's `max-width-chars`, KMessageBox's widths in characters, GN-1.283†, K-P3-7†),
+and the display's corner radius (R25.11). A value may also follow another resolved field of the same part (Compose's
+optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
+declares it reads, so the query still cannot fail (R2.8); the connector supplies them and queries again when they
+change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4).
 
 **R25.4 — Pattern paint (extends R6).** Some fills are patterns no gradient makes: a colour well's transparency
 checkerboard (GN-2.53†, W2-42†), Qt's dense brush patterns (K-SF09†), a code editor's background grid (GN-SF11†),
 libadwaita's developer-build stripes (GN-1.10). **Decision:** a paint layer kind for patterns, a closed set each
 defined to its platform's source (checkerboard, Qt's brush patterns, grid), plus repeating gradients (Breeze's busy
-stripes, K1.110); never an image drawn by native-theme. libadwaita's developer stripes are its own SVG file
+stripes, K1.110) and a conic gradient (the activity rings, C-46†, as CSS's `conic-gradient`); never an image drawn by native-theme. libadwaita's developer stripes are its own SVG file
 (`devel-stripes.svg`); the value phase reads what it draws and states it with these kinds, and a platform image a
 pattern cannot state is a finding for the rationale.
 
@@ -1015,8 +1020,8 @@ takes the element's language and direction.
 (GTK's `.linked` groups buttons and entries together, against R2.3's "of the same widget kind"), parity (Breeze's alternate
 rows, Q1.77), siblings matched by part (separators beside a selected tab, KDE's per-cell rounding), and a context
 matched by variant alone, whatever the ancestor's widget (libadwaita's `.osd &`). **Decision:** all four, in the
-position and context parts of the selector; R2.3's "of the same widget kind" becomes "of the kind the rule states, any
-kind by default".
+position and context parts of the selector; position counts siblings of the same widget kind unless the rule states
+any kind or a set of kinds (R2.3's default stays: tabs and segments count each other, and a separator is a part).
 
 **R25.10 — Sizes (extends R15, R16).** Material Expressive has five button and slider sizes; `ControlSize` gains
 `ExtraSmall`, and each preset's facts say which of its sizes fills which slot. Size classes have two axes, horizontal and
@@ -1024,10 +1029,19 @@ vertical, as iOS's do.
 
 **R25.11 — Scope details (extends R1.1, R1.2).** libspelling (GN-P3-27†) passes R1.2's test and is in. The
 `adwaita` preset carries GtkSourceView's Adwaita and Adwaita-dark schemes, which GNOME Text Editor sets, and
-`classic`, GtkSourceView's default for an application that sets none (GN-SF01†), as a keyed variant. A display's own corner radius is the windowing system's
-(R1.1, out); concentric corners use the container's radius, which the toolkit has.
+`classic`, GtkSourceView's default for an application that sets none (GN-SF01†), as a keyed variant. Drawing a display's corners is the system's
+(R1.1, out), but its radius is what a full-screen container's concentric corners follow (W-6, MAT-W5, X-CR-4): it is
+element data the connector supplies where the platform reports it (Android's `RoundedCorner`), and the preset's
+measured value per device idiom where it does not (iOS states none publicly).
 
-**R25.12 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
+**R25.12 — Symbol effects (confirms R11).** An SF Symbol effect triggered by a change is a transition of a keyed
+kind; one that repeats while a state holds is a loop. A third route (an "effect" on the icon style) is not adopted.
+
+**R25.13 — Details inside decided mechanisms.** The catalogue also needed conditions, flags, placement strategies,
+functions, block fields and token fields inside the mechanisms above; the specification lists them with their rows in
+its additions register (S22), and each function there is implemented to the platform source it names (R5.4).
+
+**R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
 
 ## 4. What the specification decides

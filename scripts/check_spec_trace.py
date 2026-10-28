@@ -28,11 +28,13 @@ row's ID cell and contains `Withdrawn (review`; withdrawn rows need no target.
 Traceability. Each platform's trace file holds a table `| Row | Target |
 Kind |`; a row needing several targets has several lines. A line's Kind is a
 target kind or a verdict (KINDS, VERDICTS below, the specification's S20). A
-target kind needs a target; a verdict's target is `-`.
+target kind needs a target; a verdict's target is `-`, or `- (note)` naming
+the part of the row it covers, except that `readers (R18)` may name the read
+the later reader makes.
 
 Problems: a row without a line; a line for a row the map does not have, or
 for a withdrawn row; an unknown kind; a target kind without a target, or a
-verdict with one.
+verdict other than `readers (R18)` with one.
 """
 import re
 import sys
@@ -62,7 +64,8 @@ class InputError(Exception):
 
 
 def cells(line: str) -> list[str]:
-    return [c.strip() for c in line.strip().strip("|").split("|")]
+    """A table line's cells; `\\|` is a literal bar inside a cell, as in Markdown tables."""
+    return [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
 
 
 def map_rows(map_text: str) -> dict[str, set[str]]:
@@ -120,7 +123,7 @@ def problems(rows: set[str], gone: set[str], trace: list[tuple[str, str, str]]) 
             if target in ("", "-"):
                 found.append((row, f"kind {kind} without a target"))
         elif kind in VERDICTS:
-            if target != "-":
+            if kind != "readers (R18)" and not (target == "-" or target.startswith("- (")):
                 found.append((row, f"verdict {kind} with a target"))
         else:
             found.append((row, f"unknown kind {kind!r}"))
@@ -168,8 +171,11 @@ def self_test() -> int:
 | Row | Target | Kind |
 |---|---|---|
 | MAC-1 | `window.body.shadow` | field |
+| MAC-2 | `menu.body.fill @ {a\\|b}` | rule |
 | MAC-3† | `menu.body.shadow` | field |
 | MAC-9 | - | out (R1.1) |
+| MAC-2 | - (its panel) | out (R1.1) |
+| MAC-2 | `reader:macos:x` | readers (R18) |
 | MAC-1 | - | rule |
 | MAC-1 | `menu` | out (R1.1) |
 | MAC-1 | `x` | guess |
@@ -188,7 +194,6 @@ def self_test() -> int:
         ("MAC-1", "kind rule without a target"),
         ("MAC-1", "verdict out (R1.1) with a target"),
         ("MAC-1", "unknown kind 'guess'"),
-        ("MAC-2", "no target"),
     ]
     if got != want:
         failures.append(f"problems: got {got}, want {want}")
