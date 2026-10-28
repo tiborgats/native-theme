@@ -123,11 +123,14 @@ ref      := "role." set "." role        typed colour role of a surface set      
           | "element." data               the element's data (S8): width, height, progress,
                                           scroll_offset, scroll_progress, item_index,
                                           item_count, text, color, screen_width,
-                                          screen_height, window_width, window_height,
+                                          screen_height, window_width, window_height, move_distance,
                                           display_corner_radius.<corner> (top_left, …),
                                           and char_width, font_x_height, font_height (the
                                           part's font, through `Element.metrics`)      (R25.3)
           | "part." field                 another resolved field of the same part      (R25.3)
+          | "widget." part "." field      a resolved field of another part of the same widget (a band
+                                          following the frame's shadow, GN-1.282†; a label following its
+                                          half's corners, MAT-X37†)                    (R25.3)
           | "values." name                the element's widget's resolved value (the spinner's stroke weight,
                                           GN-1.227; a delay button's delay, Q2.3)      (R25.3)
           | "text_scale"                  the text-scaling factor (S9.4)               (ADD-A55)
@@ -168,6 +171,8 @@ colour expression stated on a `Value<Paint>` field, or in `append`, is one `Colo
 | `ka_card_border(background, text)`, `ka_banner_line(type_text, frame)`, `ka_contrast_text(c)` | colour | kirigami-addons' FormCard background, banner and avatar code (ADD-A66) |
 | `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp` (ADD-A57) |
 | `sf_tracking(font_size, design)` | length | Apple's size-to-tracking tables for SF Pro, SF Pro Rounded, New York (ADD-A54) |
+| `uikit_prominence(c, prominence)` | colour | `UIColor.withProminence(_:)` (X-CO-5) |
+| `gtk_wheel_step(page_size)` | length | GTK's scroll step from the page size, to `gtkrange.c` / `gtkscrolledwindow.c` (GN-P3-15†) |
 | `uifm_scaled(x, text_role)` | length | `UIFontMetrics.scaledValue(for:)` (ADD-A55) |
 | `kde_accent(set, key)` | colour | Plasma's accent derivation for one key of one colour set, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1) |
 | `name_index(text, count, method)` | number | the index a platform's avatar hashes a name to; `method` keyed per platform (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3) |
@@ -299,6 +304,8 @@ pub enum TransitionKind {
              opacity: Value<Fraction>, fade: Value<Ms>, min_press: Value<Ms>,
              touch_delay: Value<Ms> },    // MAT-X9, MAT-X25
     FocusMove,                                // the indicator travelling between elements (ADD-A19)
+    Keyframes(Vec<Keyframe>),                 // runs once on the change (Material's focus ring growing then
+                                              // settling, MAT-X10)
     Keyed { key: Key, params: Vec<(Key, Value<Scalar>)> },   // SF Symbols' content transitions and effects,
 }                                             // WinUI's AnimatedIcon states; values measured (ADD-A27, R25.12)
 pub struct PresentationTransition {          // one event's presentation: its steps run together (R25.6)
@@ -362,10 +369,13 @@ pub struct Decoration { pub line: DecorationLine, pub style: DecorationStyle,
 pub enum DecorationLine { Underline, Overline, Strike }
 pub enum DecorationStyle { Solid, Double, Dotted, Dashed, Wavy }
 pub enum Elision { None, End, Middle, Start,
-                   Fade { length: Value<Px>, relative: bool, under: Option<PartRef> } }  // relative: a fraction
+                   Fade { length: Value<Px>, relative: bool, under: Option<FadeUnder> } }  // relative: a fraction
                                                                                         // of the box (ADD-A38);
                                                                                         // under: None, the text's own
 pub enum Wrap { None, Word, Char }
+pub enum FadeUnder { Part(PartRef), Element { widget: WidgetRef, variant: Option<VariantRef> } }
+                                              // the fade ends under a part, or under a nested element (a
+                                              // tab's close button, GN-1.129)
 ```
 
 The text ramp (S4.4) holds the semantic `TextRole` slots and the keyed platform styles.
@@ -407,6 +417,7 @@ language (GTK's `-rtl` and `-ltr` names, SF Symbols' localized forms; R25.8).
 
 ```rust
 pub struct FocusIndicator { pub kind: FocusKind, pub width: Value<Px>, pub paint: Value<Paint>,
+                            pub dash: Value<DashPattern>,                  // WinUI's DottedLine (W3-20)
                             pub offset: Sides<Value<Px>>,                 // per side (ADD-A18)
                             pub corners: FocusCorners,
                             pub secondary: Value<FocusRing>,               // the inner ring; may be absent (ADD-A17)
@@ -415,7 +426,8 @@ pub enum FocusCorners { FollowPart, Stated(Corners) }   // FollowPart: each corn
                                                         // of its two sides' offsets, at least zero; R12
 pub struct FocusRing { pub width: Value<Px>, pub paint: Value<Paint>, pub offset: Sides<Value<Px>> }
 pub enum FocusVisibleWhen { Keyboard { timeout: Value<Ms> }, AnyFocus, FocusWithin, Never }   // ADD-A16
-pub enum FocusKind { Ring, FilledRing, Underline }  // no indicator: the part's `focus` is `Absent`
+pub enum FocusKind { Ring, FilledRing, Underline, Keyed(Key) }  // Keyed: WinUI's Reveal (W3-20); no indicator:
+                                                                // the part's `focus` is `Absent`
 ```
 
 ### S2.11 Part style
@@ -434,6 +446,7 @@ pub struct PartStyle {
     pub glyph: Value<Glyph>,
     pub focus: Value<FocusIndicator>,
     pub padding: Sides<Value<Px>>,
+    pub margin: Sides<Value<Px>>,            // outside the box; may be negative (GN-1.18, GN-1.73, GN-1.119)
     pub min_width: Value<Px>, pub min_height: Value<Px>,
     pub max_width: Value<Px>, pub max_height: Value<Px>,
     pub cursor: Value<CursorShape>,
@@ -565,12 +578,15 @@ pub struct Caret { pub color: Value<Color>, pub width: Value<Px>, pub shape: Car
                    pub blink_style: BlinkStyle,                                         // ADD-A24
                    pub secondary: Value<Color>,          // the bidirectional secondary caret; may be absent
                    pub hides_while_selecting: bool, pub shown_in_read_only: Value<bool>,
-                   pub overwrite_shape: CaretShape, pub block_text: Value<Color> }     // ADD-A23
+                   pub overwrite_shape: CaretShape, pub block_text: Value<Color>,      // ADD-A23
+                   pub solid_while_typing: Value<bool> }                                // X-CA-2
 pub enum BlinkStyle { Hard, Fade }
 pub struct Behavior { pub double_click_time: Value<Ms>, pub double_click_distance: Value<Px>,
                        pub drag_threshold: Value<Px>, pub hover_open_delay: Value<Ms>,
                        pub key_repeat_delay: Value<Ms>, pub key_repeat_interval: Value<Ms>,
-                       pub scroll_lines_per_step: Value<f32>, pub hide_pointer_while_typing: Value<bool>,
+                       pub scroll_lines_per_step: Value<f32>, pub scroll_px_per_step: Value<Px>,  // MAT-X32†
+                       pub hide_pointer_while_typing: Value<bool>, pub hide_pointer_delay: Value<Ms>,  // K3.65†
+                       pub hide_pointer_fade: Value<Ms>,                                     // MAT-P3-15†
                        pub scroll: ScrollPhysics,
                        pub long_press: Value<Ms>, pub spring_loading: Value<Ms>,       // ADD-A45
                        pub drag_time: Value<Ms>, pub single_click_activates: Value<bool>,
@@ -584,7 +600,9 @@ pub enum Mnemonics { Never, OnAlt { delay: Value<Ms> }, Always }
 pub struct ScrollPhysics { pub deceleration: Value<f32>, pub overscroll: Value<Timing>,
                            pub overscroll_effect: OverscrollEffect, pub overscroll_extent: Value<Px>,  // ADD-A29
                            pub min_fling_velocity: Value<f32>, pub max_fling_velocity: Value<f32>,   // px/s (MAT-P3-16†)
-                           pub wheel_step_duration: Value<Ms>, pub wheel_step_timing: Value<Timing>,
+                           pub wheel_step_duration: Value<Ms>, pub wheel_step_duration_max: Value<Ms>,
+                           pub wheel_step_timing: Value<Timing>,     // the duration grows with the distance
+                                                                     // up to the maximum (K-P3-18†)
                                                                  // smooth wheel scrolling (MAC-P4-4†)
                            pub snap: Value<bool> }
 pub enum OverscrollEffect { None, RubberBand, Stretch, Glow }   // None: the platform draws none
@@ -624,7 +642,8 @@ pub struct TextRoles {                        // one field per semantic slot, ea
     pub monospace: Value<TextStyle>, pub numeric: Value<TextStyle>,
 }
 pub struct TextTokens { pub roles: TextRoles, pub keyed: Vec<(Key, TextStyle)>,
-                        pub fallbacks: FontFallbacks, pub rendering: TextRendering }
+                        pub fallbacks: FontFallbacks, pub rendering: TextRendering, pub scaling: TextScaling }
+pub enum TextScaling { Linear, AndroidNonLinear }   // S9.4
 pub struct FontFallbacks { pub families: Vec<String>, pub emoji_family: Value<String>,
                            pub per_language: Vec<(LanguageTag, Vec<String>)>,
                            pub per_family: Vec<(String, Vec<String>)> }   // Core Text's per-font cascade lists
@@ -760,6 +779,7 @@ pub enum VariantRef { Typed(Variant), Keyed(Key) }   // Variant: the catalogue's
 pub struct SetMatch<T> { pub all_of: Vec<T>, pub none_of: Vec<T> }
 pub struct ContextMatch { pub scope: ContextScope, pub widget: Option<WidgetRef>,   // None: any widget (R25.9)
                           pub part: Option<PartRef>,
+                          pub sizes: SetMatch<ControlSize>,    // the ancestor's control size (MAC-MN15)
                           pub surface: Option<SurfaceSet>,     // the ancestor binds this surface set (Q1.37,
                                                                // ADD-A68); None in any of these: not matched on
                           pub variants: SetMatch<VariantRef>, pub states: SetMatch<StateFlag> }
@@ -794,7 +814,10 @@ pub enum Condition {
     WindowInactive, NotMain, AppInactive, Maximized, FullScreen, Tiled(TiledEdges),
     Elevated, Input(InputKind),                            // the kind of the last input (Kirigami's transient
                                                            // touch, WinUI's input kind; R2.3)
-    NotComposited, Shaded, AttentionFlash, TintDimmed, MnemonicsVisible,
+    NotComposited, Shaded, AttentionFlash, TintDimmed, MnemonicsVisible, Freeform,   // Freeform: Android's desktop
+                                                           // windowing (MAT-W5†)
+    Posture(Posture), DeviceModel(Key),                    // MAT-P3-13†; the device model where a measured value
+                                                           // differs per model (the display radius, W-6, X-CR-4)
     UnitScale,                                             // device pixel ratio 1 (Qt Quick's text rendering, Q3.32)
     // application
     Flavor(Key), Preset(PresetId),
@@ -802,6 +825,7 @@ pub enum Condition {
 pub enum Scheme { Light, Dark }
 pub enum InputKind { Mouse, Touch, Pen, GameController }
 pub enum Idiom { Phone, Pad }                          // what the rows need (ADD-A09)
+pub enum Posture { Flat, Tabletop, Book }              // a foldable's posture (Jetpack WindowManager)
 pub struct TiledEdges { pub top: bool, pub right: bool, pub bottom: bool, pub left: bool }
 ```
 
@@ -934,6 +958,7 @@ pub struct ElementData<'a> {                                            // R25.3
     pub color: Color,                          // an application-chosen colour derived values follow
     pub screen_width: Px, pub screen_height: Px,     // the screen's work area (KMessageBox's limits, K-P3-7†)
     pub window_width: Px, pub window_height: Px,     // the window's size (Q2.50, Q1.60)
+    pub move_distance: Px,                           // how far a Move presentation moves it (K1.133†)
     pub display_corner_radius: Option<[Px; 4]>,   // per corner, where the platform reports it (Android, MAT-W5†);
 }                                                 // None: the preset's token.params.display.corner_radius (R25.11)
 ```
@@ -980,7 +1005,9 @@ bases, other conditions into reader rules (or inputs' per-contrast bases). The n
 of the traceability whose target is a reader read (S20); each is a `reader::<platform>` change.
 
 **S9.4 Text scaling:** the reader supplies `text_scaling_factor` (1 where the platform scales by the font size
-itself); the query multiplies font sizes by it before font-derived lengths, and pixel line heights with it (R10).
+itself); the query scales font sizes by it before font-derived lengths, and pixel line heights with it (R10), by the
+preset's `token.text.scaling`: `Linear` (a product), or `AndroidNonLinear`, Android 14's `FontScaleConverter`, which
+scales large sizes less (MAT-X19).
 
 ## S10. Declarations (R2.7)
 
@@ -1372,6 +1399,18 @@ lines that cite it.
 | ADD-A76 | `Condition::UnitScale` | S7.1 |
 | ADD-A77 | `Stroke.outset` | S2.4 |
 | ADD-A78 | `ElementData.window_height` | S8 |
+| ADD-A79 | `PartStyle.margin` | S2.11 |
+| ADD-A80 | `widget.<part>.<field>` references | S2.2 |
+| ADD-A81 | `TransitionKind::Keyframes` | S2.7 |
+| ADD-A82 | `FocusIndicator.dash`, `FocusKind::Keyed` | S2.10 |
+| ADD-A83 | `Condition::Freeform`, `Posture`, `DeviceModel` | S7.1 |
+| ADD-A84 | `ContextMatch.sizes` | S7 |
+| ADD-A85 | `Caret.solid_while_typing` | S4.2 |
+| ADD-A86 | pointer-hide delay and fade, pixels per wheel step, wheel-step duration range | S4.2 |
+| ADD-A87 | `ElementData.move_distance` | S8 |
+| ADD-A88 | `TextScaling` | S4.4, S9.4 |
+| ADD-A89 | `FadeUnder` | S2.8 |
+| ADD-A90 | `uikit_prominence`, `gtk_wheel_step` | S2.2 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
