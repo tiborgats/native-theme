@@ -29,7 +29,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W01 | `reader:macos:NSWindow frameRect(forContentRect:styleMask:) and contentLayoutRect` | reader |
 | MAC-W02 | `window.caption_buttons.padding` | field |
 | MAC-W02 | `window.caption_buttons.padding, window.values.caption_button_gap @ variant @no_toolbar / @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
-| MAC-W02 | `window.values.caption_button_gap_px` | field |
+| MAC-W02 | `window.values.caption_button_gap` | field |
 | MAC-W02 | `window.caption_button_glyph.{fill,stroke,min_width,min_height}` | field |
 | MAC-W02 | `window.caption_button_glyph.fill @ variant close / variant minimize / variant maximize` | rule |
 | MAC-W02 | `window.caption_button_glyph.glyph @ variant close / variant minimize / variant maximize` | rule |
@@ -157,10 +157,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN03 | `menu.separator.{stroke,padding,min_height} (the line's colour and width as its stroke; its insets as padding; the row's height as min_height)` | field |
 | MAC-MN04 | `menu.accelerator.text` | field |
 | MAC-MN04 | `menu.accelerator.text.fill @ {hover} / {disabled}` | rule |
-| MAC-MN04 | `menu.values.{accelerator_gap_px,accelerator_alignment}` | field |
+| MAC-MN04 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
 | MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
-| MAC-MN05 | `menu.values.{check_column,check_column_width_px}` | field |
+| MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN06 | `menu.item.fill @ {open}` | rule |
@@ -169,7 +169,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN09 | `menu.item_subtitle.text` | field |
 | MAC-MN10 | `menu.item_icon.icon.fill @ {hover} / {disabled}` | rule |
 | MAC-MN10 | `menu.values.show_item_icons` | field |
-| MAC-MN11 | `menu.values.indent_step_px` | field |
+| MAC-MN11 | `menu.values.indent_step` | field |
 | MAC-MN12 | `menu.scroll_arrow.{glyph,fill,min_height}` | field |
 | MAC-MN13 | `menu.item @ variant palette` | rule |
 | MAC-MN13 | `menu.item.stroke @ variant palette {checked} (selection ring)` | rule |
@@ -181,12 +181,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-T01 | `tooltip.body.shadow` | field |
 | MAC-T02 | `tooltip.body.fill (material)` | field |
 | MAC-T03 | `tooltip.values.placement (AppKitToolTip)` | placement |
-| MAC-T04 | `tooltip.values.{reshow_delay_ms,display_time}` | field |
+| MAC-T04 | `tooltip.values.{reshow_delay,display_time}` | field |
 | MAC-T04 | `tooltip.values.presentations` | field |
-| MAC-T05 | `tooltip.values.show_delay_ms` | field |
+| MAC-T05 | `tooltip.values.show_delay` | field |
 | MAC-T05 | `reader:macos:NSInitialToolTipDelay user default` | reader |
 | MAC-T06† | `tooltip.* @ variant @expansion` | rule |
-| MAC-T06† | `tooltip.values.show_delay_ms @ variant @expansion` | rule |
+| MAC-T06† | `tooltip.values.show_delay @ variant @expansion` | rule |
 | MAC-T06† | `tooltip.values.placement @ variant @expansion (AppKitExpansionTip)` | placement |
 | MAC-S01 | `scrollbar.thumb.{min_width,min_height} @ cond overlay_scrollbars context scrollbar {hover}` | rule |
 | MAC-S01 | `scrollbar.thumb.transitions (Geometry: the knob's expansion)` | field |
@@ -246,7 +246,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SB07 | `sidebar.pane.fill @ cond window_inactive` | rule |
 | MAC-SB08 | `list.disclosure, list.values.indent_per_level @ variant sidebar` | rule |
 | MAC-SB08 | `reader:macos:NSOutlineView.indentationPerLevel` | reader |
-| MAC-SB09† | `sidebar.values.width_px; sidebar.pane.min_width, sidebar.pane.max_width` | field |
+| MAC-SB09† | `sidebar.values.width; sidebar.pane.min_width, sidebar.pane.max_width` | field |
 | MAC-SB09† | `sidebar.values.breakpoints (the collapse rule: measured Allocation, the split view's width; its comparison to verify)` | field |
 | MAC-SB09† | `sidebar.values.presentations event @collapse` | field |
 | MAC-SB09† | `reader:macos:NSSplitViewItem minimumThickness, maximumThickness` | reader |
@@ -391,7 +391,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SG10† | `segmented_control.icon.icon.fill @ {selected} / {pressed} / {disabled}` | rule |
 | MAC-BX01 | `group_box.title.text, group_box.values.title_position, group_box.values.title_margin` | field |
 | MAC-BX01 | `reader:macos:NSBox titleFont and titleRect` | reader |
-| MAC-BX02 | `group_box.* @ variant @primary / @custom / @separator / @transparent` | rule |
+| MAC-BX02 | `group_box.* @ variant @primary / @custom / @transparent` | rule |
+| MAC-BX02 | `separator.line.stroke` (`NSBox`'s separator type, a line to the user, as MAC-SE01 says) | field |
+| MAC-BX02 | `separator.line.stroke @ variant vertical` (a separator box taller than wide) | rule |
 | MAC-EX01 | `expander.header, expander.arrow @ variant @push_disclosure` | rule |
 | MAC-EX01 | `expander.arrow.glyph (GlyphSource SystemControl AppKitPushDisclosure, ADD-A58)` | system-control |
 | MAC-EX02 | `expander.arrow.glyph (GlyphSource SystemControl AppKitDisclosure; AppKitPushDisclosure, ADD-A58)` | system-control |
@@ -524,7 +526,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N01 | `stepper.separator.stroke` | field |
 | MAC-N01 | `stepper.body.fill (macos-tahoe's translucent body)` | field |
 | MAC-N01 | `stepper.body, stepper.increment, stepper.decrement @ size mini / small / regular` | rule |
-| MAC-N01 | `stepper.values.field_gap, stepper.values.repeat_delay_ms, stepper.values.repeat_interval_ms` | field |
+| MAC-N01 | `stepper.values.field_gap, stepper.values.repeat_delay, stepper.values.repeat_interval` | field |
 | MAC-N01 | `reader:macos:the NSStepper metrics the map marks readable` | reader |
 | MAC-N02 | `input.body.{fill,stroke,corners,focus} @ context any search_field (the bezel and its focus ring)` | rule |
 | MAC-N02 | `input.icon.icon @ variant leading context any search_field (the magnifier)` | rule |
@@ -541,10 +543,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N03 | `chip.body.fill @ {selected} context any input` | rule |
 | MAC-N03 | `chip.body.* @ variant @rounded / @squared / @plain_squared` (the default style is the base) | rule |
 | MAC-N03 | `chip.menu_arrow.glyph` | field |
-| MAC-N03 | `layout.values.item_gap_px @ variant flow context any input` (the token spacing) | rule |
+| MAC-N03 | `layout.values.item_gap @ variant flow context any input` (the token spacing) | rule |
 | MAC-N03 | `input.{body,text,caret}.*` (the token field's frame, text and caret are the `input`'s) | rule |
 | MAC-N04 | `date_picker.segment.{fill,text} @ {selected} context date_picker.field variant text_field / {selected} context date_picker.field variant @text_field_and_stepper` | rule |
 | MAC-N04 | `stepper.* @ context date_picker variant @text_field_and_stepper` | rule |
+| MAC-N04 | `time_picker.field_segment.{fill,text} @ {selected} variant text_field / {selected} variant @text_field_and_stepper; stepper.* @ context time_picker variant @text_field_and_stepper` (the time elements alone: a time picker, gap map "time picker") | rule |
 | MAC-N04 | `calendar.header, calendar.title.text @ context any date_picker variant inline (the month header)` | rule |
 | MAC-N04 | `button.* @ variant previous / next context calendar.header` | rule |
 | MAC-N04 | `calendar.weekday_label.text, calendar.day, calendar.day_label.text @ context any date_picker variant inline` | rule |
@@ -625,8 +628,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N24 | `pull_to_refresh.indicator` | field |
 | MAC-N24 | `spinner.* @ context pull_to_refresh` | rule |
 | MAC-N25 | - | out (R1.1) |
-| MAC-N26 | `component.touch_bar.bar.{fill,padding}, component.touch_bar.item.{fill,corners,padding,min_width,min_height,text,icon}, component.touch_bar.values.item_gap_px` (the application's `NSTouchBar` items, which AppKit draws in its process: what it configures, R1.1) | component |
-| MAC-N26 | `component.touch_bar.scrubber.{fill,corners,padding}, component.touch_bar.scrubber_item.{fill,corners,text,icon}, component.touch_bar.scrubber_selection.{fill,stroke,corners}, component.touch_bar.values.scrubber_item_gap_px` (`NSScrubber`) | component |
+| MAC-N26 | `component.touch_bar.bar.{fill,padding}, component.touch_bar.item.{fill,corners,padding,min_width,min_height,text,icon}, component.touch_bar.values.item_gap` (the application's `NSTouchBar` items, which AppKit draws in its process: what it configures, R1.1) | component |
+| MAC-N26 | `component.touch_bar.scrubber.{fill,corners,padding}, component.touch_bar.scrubber_item.{fill,corners,text,icon}, component.touch_bar.scrubber_selection.{fill,stroke,corners}, component.touch_bar.values.scrubber_item_gap` (`NSScrubber`) | component |
 | MAC-N27† | - | out (R1.1) |
 | MAC-N28† | `split_button.primary.{fill,stroke,corners}, split_button.secondary.{fill,stroke,corners}, split_button.divider.stroke, split_button.arrow.glyph` | field |
 | MAC-N28† | `split_button.primary.fill, split_button.secondary.fill @ {pressed} / {disabled}` | rule |
@@ -641,7 +644,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N30† | `button.* @ context media_controls.bar (the sharing button)` | rule |
 | MAC-N30† | `slider.* @ context media_controls (the scrubber)` | rule |
 | MAC-N30† | `media_controls.time_label.text` | field |
-| MAC-N30† | `media_controls.values.auto_hide_ms` | field |
+| MAC-N30† | `media_controls.values.auto_hide` | field |
 | MAC-N31† | `rubber_band.body.fill, rubber_band.body.stroke, rubber_band.body.corners` | field |
 | MAC-N32† | `about_dialog.icon.icon.size, about_dialog.name.text, about_dialog.version.text, about_dialog.credits.text, about_dialog.copyright.text` | field |
 | MAC-N32† | `about_dialog.{icon,name,version,credits,copyright}.margin` (the gaps between the icon, name, version, credits and copyright, each part's own; read from the subview frames) | field |
@@ -700,7 +703,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X08 | `PartStyle.stroke per-side Edge (S2.4)` | field |
 | MAC-X08 | `PartStyle.shadow.layers[inset] (rims, bevels)` | field |
 | MAC-X09 | `PaintKind::Linear on PartStyle.fill (S2.3)` | field |
-| MAC-X10 | `Color extended sRGB (S2.1, R5.5)` | field |
+| MAC-X10 | `Color extended sRGB (S2.1, R5.5); a colour Apple publishes in Display P3 stated as the TOML literal display_p3(r, g, b[, a]), converted when the file is read (S2.1)` | field |
 | MAC-X10 | `reader:macos:NSColor colorSpace read without clipping to sRGB` | reader |
 | MAC-X11 | `token.motion.durations.<AppKit durations>` | token |
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
@@ -733,11 +736,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `reader:macos:NSAnimationContext.duration, NSWindow.animationResizeTime, CAMediaTimingFunction control points` | reader |
 | MAC-X12 | `token.caret.blink_on / blink_off` | token |
 | MAC-X12 | `token.behavior.double_click_time / key_repeat_delay / key_repeat_interval / drag_threshold / spring_loading` | token |
-| MAC-X12 | `tooltip.values.show_delay_ms` | field |
-| MAC-X12 | `menu.values.submenu_open_delay_ms` | field |
+| MAC-X12 | `tooltip.values.show_delay` | field |
+| MAC-X12 | `menu.values.submenu_open_delay` | field |
 | MAC-X12 | `menu.values.activation_flash` | field |
-| MAC-X12 | `scrollbar.values.auto_hide_delay_ms` | field |
-| MAC-X12 | `button.values.repeat_delay_ms / repeat_interval_ms` | field |
+| MAC-X12 | `scrollbar.values.auto_hide_delay` | field |
+| MAC-X12 | `button.values.repeat_delay / repeat_interval_ms` | field |
 | MAC-X12 | `reader:macos:NSEvent.doubleClickInterval, keyRepeatDelay, keyRepeatInterval; getPeriodicDelay; NSTextInsertionPointBlinkPeriodOn/Off; NSInitialToolTipDelay` | reader |
 | MAC-X13 | `PartStyle.focus FocusIndicator (shape, offset, opacity, transition) per control` | field |
 | MAC-X13 | `list.row_background.focus (the ring on table rows)` | field |
@@ -869,7 +872,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SF03† | `rich_text.inline_code.text, rich_text.inline_code.fill @ cond window_inactive` | rule |
 | MAC-SF04† | `link.text.text.{fill,decoration} @ variant inline context rich_text` | rule |
 | MAC-SF04† | `link.text.text.{fill,decoration} @ variant inline {pressed} context rich_text` | rule |
-| MAC-SF05† | `text_area.values.intent_styles` | field |
+| MAC-SF05† | `rich_text.{emphasis,strong,strikethrough}.text, rich_text.inline_code.{text,fill} @ variant markdown context any text_area` (AppKit's rendering of the presentation intents in an `NSTextView`; whether it renders them, and how, the probe shows, to verify) | rule |
 | MAC-SF06† | `rich_text.heading_1 … heading_6, rich_text.code_block, rich_text.inline_code, rich_text.preformatted, rich_text.block_quote, rich_text.list_marker, rich_text.table @ variant html` | rule |
 | MAC-SF06† | `link.* @ variant inline context rich_text variant html` | rule |
 | MAC-SF07† | `tab.bar.fill @ {drop_target} context window.title_bar` | rule |
@@ -952,7 +955,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P4-8† | `combo_box.values.popup_placement @ variant editable (AppKitComboList: placement and width)` | placement |
 | MAC-P4-9† | `token.theme_change (accent and highlight colour change)` | token |
 | MAC-P4-10† | `menu.values.submenu_switch (SafeTriangle)` | field |
-| MAC-P4-10† | `menu.values.submenu_close_delay_ms` | field |
+| MAC-P4-10† | `menu.values.submenu_close_delay` | field |
 | MAC-P4-11† | `context_help.body.{fill,stroke,shadow,padding}` | field |
 | MAC-P4-11† | `context_help.text.text` | field |
 | MAC-P4-11† | `context_help.values.placement (AppKitContextHelp)` | placement |

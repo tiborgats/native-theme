@@ -128,7 +128,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-036 | `text_area.values.scrollbar_inset; text_area.body.padding` | field |
 | W1-036 | `scrollbar.* @ context any text_area` | rule |
 | W1-036 | `text_area.{body.fill,body.stroke,text.text.fill,placeholder.text.fill,selection.fill} @ {hover} / {focused} / {disabled} (the text box's rows W1-026 to W1-034 restated on text_area, R20)` | rule |
-| W1-036 | `text_area.{header.text,supporting_text.text}; text_area.values.{header_gap_px,supporting_text_gap_px}` (W1-031's header and description, which the multi-line box also draws) | field |
+| W1-036 | `text_area.{header.text,supporting_text.text}; text_area.values.{header_gap,supporting_text_gap}` (W1-031's header and description, which the multi-line box also draws) | field |
 | W1-150† | `input.supporting_text.text; input.values.supporting_text_gap` | field |
 | W1-150† | `combo_box.supporting_text.text; combo_box.values.supporting_text_gap` | field |
 | W1-150† | `input.supporting_text.text @ context stepper / context any search_field (NumberBox's and AutoSuggestBox's description; PasswordBox is input variant secure)` | rule |
@@ -172,7 +172,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-053 | `menu.body.shadow (Shadow::Elevation, the flyout entry of the ramp)` | field |
 | W1-054 | `menu.values.presentations (events Appear, Disappear: Slide from TowardAnchor with Fade, ADD-B10, ADD-A25)` | field |
 | W1-054 | `menu.values.presentations @ !cond system_setting:menu_animation (Instant)` | rule |
-| W1-054 | `menu.values.{submenu_open_delay_ms,submenu_close_delay_ms}` | field |
+| W1-054 | `menu.values.{submenu_open_delay,submenu_close_delay}` | field |
 | W1-054 | `reader:windows:SPI_GETMENUSHOWDELAY, SPI_GETMENUANIMATION` | reader |
 | W1-055 | `menu.dismiss_overlay.fill` | field |
 | W1-056 | `tooltip.body.fill (PaintKind::Material @acrylic_in_app, its fallback)` | field |
@@ -180,10 +180,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-058 | `tooltip.values.presentations (events Appear, Disappear: Fade)` | field |
 | W1-058 | `tooltip.values.presentations @ !cond system_setting:tooltip_animation (Instant)` | rule |
 | W1-058 | `reader:windows:SPI_GETTOOLTIPANIMATION (system_setting tooltip_animation)` | reader |
-| W1-059 | `tooltip.values.{reshow_delay_ms,keyboard_show_delay_ms,display_time}` | field |
-| W1-059 | `tooltip.values.show_delay_ms @ cond input:touch` | rule |
+| W1-059 | `tooltip.values.{reshow_delay,keyboard_show_delay,display_time}` | field |
+| W1-059 | `tooltip.values.show_delay @ cond input:touch` | rule |
 | W1-059 | `WinUiToolTip (tooltip.values.placement; its gap: the offset from the pointer or the target)` | placement |
-| W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> tooltip.values.{show_delay_ms,reshow_delay_ms}` | reader |
+| W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> tooltip.values.{show_delay,reshow_delay}` | reader |
 | W1-060 | `scrollbar.{body.min_width,thumb.min_width,thumb.fill} @ cond overlay_scrollbars !{hover} (the panning indicator: a thin thumb)` | rule |
 | W1-060 | `scrollbar.track.fill (Absent) @ cond overlay_scrollbars !{hover} (no track)` | rule |
 | W1-060 | `scrollbar.body.{min_width,min_height}; scrollbar.thumb.{stroke,min_width} (the expanded bar)` | field |
@@ -221,7 +221,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-074 | `slider.body.fill @ {hover}` | rule |
 | W1-153† | `slider.{thumb.fill,thumb.corners,thumb.min_width,thumb.min_height,fill.fill,track.fill} @ variant range` | rule |
 | W1-153† | `slider.fill.fill @ {hover} variant range / {pressed} variant range / {disabled} variant range` | rule |
-| W1-153† | `slider.values.{range_min_gap_px,range_thumb_order} @ variant range` (the minimum gap and which thumb is drawn on top where they overlap) | rule |
+| W1-153† | `slider.values.{range_min_gap,range_thumb_order} @ variant range` (the minimum gap and which thumb is drawn on top where they overlap) | rule |
 | W1-075 | `progress_bar.values.loop (keyframes: the two indicators' widths and positions; period, timing)` | field |
 | W1-075 | `progress_bar.{indicator,secondary_indicator}.{fill,corners} @ {indeterminate}` | rule |
 | W1-076 | `progress_bar.{indicator,secondary_indicator}.fill @ {@paused} / {@error} / {@paused,indeterminate} / {@error,indeterminate}` | rule |
@@ -377,7 +377,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-139 | `card.body.shadow (Shadow::Elevation, the card entry of the ramp, measured)` | field |
 | W1-140 | `expander.{header.text.fill,header.stroke} @ {hover} / {pressed} / {disabled}` | rule |
 | W1-140 | `expander.arrow.{fill,stroke,glyph}` (the chevron button's fill, border and glyph) | field |
-| W1-140 | `expander.{arrow.fill,arrow.stroke,arrow.glyph.fill} @ {hover} / {pressed}` | rule |
+| W1-140 | `expander.{arrow.fill,arrow.stroke,arrow.glyph.fill} @ context expander.header {hover} / context expander.header {pressed}` (the header toggle's CommonStates: the arrow nests in the header) | rule |
 | W1-141 | `expander.content.{fill,stroke,corners}` | field |
 | W1-141 | `expander.content.{stroke,corners} @ variant @expand_up (the content above the header)` | rule |
 | W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` | field |
@@ -585,7 +585,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-34 | `button.{body.fill,body.stroke,icon.glyph,label.text} @ variant @zoom_out context component.semantic_zoom` | rule |
 | W2-34 | `button.{body.fill,body.stroke,icon.glyph.fill} @ {hover} / {pressed} / {disabled} variant @zoom_out context component.semantic_zoom` | rule |
 | W2-34 | `component.semantic_zoom.values.presentations (event @zoom)` | component |
-| W2-35 | `media_controls.{bar.fill,time_label.text}; media_controls.values.auto_hide_ms; media_controls.values.presentations (event Disappear)` | field |
+| W2-35 | `media_controls.{bar.fill,time_label.text}; media_controls.values.auto_hide; media_controls.values.presentations (event Disappear)` | field |
 | W2-35 | `button.* @ variant play context media_controls.bar / variant volume context media_controls.bar / variant full_screen context media_controls.bar / variant frame_step context media_controls.bar` | rule |
 | W2-35 | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} context media_controls.bar` | rule |
 | W2-35 | `popover.* @ context media_controls.bar (the volume flyout)` | rule |
@@ -607,7 +607,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.{row.padding,row.stroke,row_arrow.icon} @ variant expander / variant action (the expander's header and items, their top border, the chevron button, the clickable items)` | rule |
 | W2-41† | `level_indicator.{track.fill,fill.fill,tick.fill,needle.fill,needle.stroke,needle.min_width,needle.min_height,value_label.text,unit_label.text} @ variant circular / cond contrast_high variant circular` (the scale arc is `track`, the trail arc `fill`: one structure with iOS's circular gauge); `level_indicator.tick.fill @ variant @scale` (the scale ticks) | rule |
 | W2-41† | `level_indicator.body.opacity @ {disabled} variant circular` | rule |
-| W2-41† | `level_indicator.values.{start_angle_deg,end_angle_deg,thickness,tick_spacing,end_cap}` (the arcs' round caps: `end_cap`) | field |
+| W2-41† | `level_indicator.values.{start_angle,end_angle,thickness,tick_spacing,end_cap}` (the arcs' round caps: `end_cap`) | field |
 | W2-42† | `color_button.{swatch.corners,swatch.min_width,swatch.min_height,swatch.stroke,body.padding}; color_button.checkerboard.fill (PaintKind::Pattern checkerboard, ADD-B01)` | field |
 | W2-42† | `color_button.chevron.glyph` | field |
 | W2-42† | `color_button.chevron.glyph.fill @ {hover} / {pressed}` | rule |
@@ -758,7 +758,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-40 | `menu.body.min_width @ {opened_by_touch} context button.body variant overflow` | rule |
 | W3-40 | `cond input:touch` | condition |
 | W3-41 | `token.behavior.{double_click_time,hover_open_delay,drag_threshold,scroll_lines_per_step,key_repeat_delay}` | token |
-| W3-41 | `menu.values.submenu_open_delay_ms` | field |
+| W3-41 | `menu.values.submenu_open_delay` | field |
 | W3-41 | - (`UISettings.MessageDuration`: how long the system's notifications stay, which the shell draws; WinUI has no timed message control) | out (R1.1) |
 | W3-41 | `reader:windows:GetDoubleClickTime, UISettings.DoubleClickTime, SPI_GETMOUSEHOVERTIME, SPI_GETMENUSHOWDELAY, SM_CXDRAG, SM_CYDRAG, SPI_GETWHEELSCROLLLINES, SPI_GETKEYBOARDDELAY` | reader |
 | W3-43 | - | preset (R1.3) |
@@ -795,7 +795,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-FM02† | `reader:windows:IDWriteFontFallback::MapCharacters per locale, LanguageFontGroup` | reader |
 | W-FM02† | - (GDI's SystemLink font-linking chains: Win32 controls) | preset (R1.3) |
 | W-P3-1† | `window.frame.corners @ cond tiled:left / cond tiled:right / cond tiled:top / cond tiled:bottom` | rule |
-| W-P3-1† | - (the snap overlay, the Snap bar and the shared edge of snapped windows: drawn by the shell) | out (R1.1) |
+| W-P3-1† | - (the snap overlay, the Snap bar, the shared edge of snapped windows, the snapped windows' gaps to the screen edge and to each other, and the settings that switch snapping: the shell's) | out (R1.1) |
 | W-P3-2† | `window.title_bar (absent) @ cond full_screen` | rule |
 | W-P3-2† | `window.values.full_screen_title_bar_reveal (SwipeFromTop)` | field |
 | W-P3-2† | `window.values.presentations (event @title_bar_show)` | field |
@@ -861,7 +861,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-8† | - | out (R1.1) |
 | W-P4-9† | `layout.values.{item_gap,line_gap} @ variant flow` | rule |
 | W-P4-10† | - | preset (R1.3) |
-| W-P4-11† | `list.values.drag_hover_delay_ms` | field |
+| W-P4-11† | `list.values.drag_hover_delay` | field |
 | W-P4-12† | `token.icons.mirroring (S2.9; the "Mirrored" code points as the right-to-left forms)` | token |
 | W-P4-12† | `Element.direction` (icon lookup by the element's direction, S2.9, S8; ADD-B05: the "Mirrored" code point as the right-to-left form) | field |
 | W-P4-13† | - | preset (R1.3) |
@@ -869,7 +869,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-15† | - | out (R1.1) |
 | W-P4-16† | `scrollbar.values.repeat_delay; scrollbar.values.repeat_interval` | field |
 | W-P4-16† | `scrollbar.values.trough_click` | field |
-| W-P4-17† | `menu.values.submenu_close_delay_ms (= the read MenuShowDelay)` | field |
+| W-P4-17† | `menu.values.submenu_close_delay (= the read MenuShowDelay)` | field |
 | W-P4-17† | `menu.values.submenu_switch (CloseTimer, for top-level sub-items and the mouse only)` | field |
 | W-P4-17† | `menu.values.submenu_switch @ cond input:touch (Immediate: touch skips the timers)` | rule |
 | W-P4-17† | `reader:windows:HKCU Control Panel Desktop MenuShowDelay (also the close delay)` | reader |

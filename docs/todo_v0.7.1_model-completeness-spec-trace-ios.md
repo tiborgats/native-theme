@@ -62,7 +62,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | D-4 | `token.text.keyed.caption_1.line_height` | token |
 | D-4 | `token.text.keyed.caption_2.line_height` | token |
 | D-4 | - | readers (R18) |
-| D-5 | `token.text.roles.*` (the values at the default Dynamic Type category) | token |
+| D-5 | `token.text.scaling` (`dynamic_type`: each style's size, and its leading, from Apple's published table for the reader's or the stand-in's `content_size_category`; S9.4, R25.15, ADD-A88); `token.text.keyed.*.scaling_role` (the `TextRole` whose table row scales each style); `token.text.roles.*` (the values at the default category) | token |
 | D-5 | - | readers (R18) |
 | D-6 | `token.text.keyed.large_title_tight` | token |
 | D-6 | `token.text.keyed.large_title_loose` | token |
@@ -161,7 +161,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TS-1 | `token.text.roles.subheadline` | token |
 | TS-1 | `token.text.roles.footnote` | token |
 | TS-1 | `token.text.roles.caption2` | token |
-| TS-2 | `token.text.roles.*` (the values at the default Dynamic Type category) | token |
+| TS-2 | `token.text.scaling` (`dynamic_type`: each style's size, and its leading, from Apple's published table for the reader's or the stand-in's `content_size_category`; S9.4, R25.15, ADD-A88); `token.text.keyed.*.scaling_role` (the `TextRole` whose table row scales each style); `token.text.roles.*` (the values at the default category) | token |
 | TS-2 | - | readers (R18) |
 | TS-3 | `token.text.keyed.*.font.weight @ cond bold_text` | rule |
 | TS-3 | - | readers (R18) |
@@ -177,8 +177,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | W-4 | - | readers (R18) |
 | W-5 | `window.values.status_bar_style` | field |
 | W-5 | `window.values.status_bar_style @ cond scheme:dark` | rule |
-| W-6 | `window.frame.corners` (`Radius::Concentric` per corner, each with its stated minimum, following the display, the root's container: `RootInputs.display_corner_radius` where the platform reports it, else `token.params.display.corner_radius`, else none; S4.6, S8, R25.11) | field |
-| W-6 | `token.params.display.corner_radius @ cond device_model:<key>` (measured per device model, the map's M-r; an unlisted model's radius `Absent`, S4.6, R25.11, ADD-A83) | rule |
+| W-6 | `window.frame.corners` (`Radius::Concentric` per corner, each with its stated minimum, following the display, the root's container: `RootInputs.display_corner_radius` where the platform reports it, else the four tokens `token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left}` (per corner, in `display_corner_radius`'s order), else none; S4.6, S8, R25.11) | field |
+| W-6 | `token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left} @ cond device_model:<key>` (measured per device model, the map's M-r; an unlisted model's radius `Absent`, S4.6, R25.11, ADD-A83) | rule |
 | W-7 | - | out (R1.1) |
 | W-9 | - | out (R1.1) |
 | W-10† | - | out (R1.1) |
@@ -237,7 +237,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | I-5 | `input.correction.{fill,text,corners}` (the autocorrection mark and bubble) | field |
 | I-6 | `input.prediction.text` | field |
 | I-7 | `input.values.min_font_size` | field |
-| I-9† | `input.values.mask_character; input.values.mask_reveal_ms` | field |
+| I-9† | `input.values.mask_character; input.values.mask_reveal` | field |
 | I-9† | `input.body.fill @ {autofilled} variant secure` (the strong-password field's fill) | rule |
 | I-9† | `input.autofill_affordance.{icon,fill,corners,padding,text} @ variant secure` (the suggestion and its label) | rule |
 | I-10† | `input.{body.fill,text.text.fill,placeholder.text.fill} @ {disabled}` | rule |
@@ -293,7 +293,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-16 | `menu.* @ variant @compact` | rule |
 | MN-17† | `menu.item.{corners,padding}` | field |
 | MN-17† | `menu.body.padding` | field |
-| MN-17† | `menu.values.icon_text_gap_px` | field |
+| MN-17† | `menu.values.icon_text_gap` | field |
 | MN-18† | `menu.{item_label.text.fill,item_subtitle.text.fill,item_trailing_icon.icon.fill} @ {disabled}` | rule |
 | SB-1 | `scrollbar.thumb.fill @ variant dark / light` | rule |
 | SB-1 | `scrollbar.thumb.fill @ {over_dark_content}` | rule |
@@ -500,7 +500,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | DL-1 | `dialog.body.fill (material) @ variant alert` | rule |
 | DL-2 | `dialog.scrim.fill` | field |
 | DL-3 | `dialog.values.{title_alignment,message_alignment}` | field |
-| DL-4 | `dialog.values.{title_message_gap_px,message_actions_gap_px}` | field |
+| DL-4 | `dialog.values.{title_message_gap,message_actions_gap}` | field |
 | DL-4 | `dialog.body.padding @ variant alert` | rule |
 | DL-5 | `dialog.separator.stroke @ variant alert` (13–18's hairlines between the cells) | rule |
 | DL-5 | `dialog.action_area.stroke @ variant alert` (the hairline above them) | rule |
@@ -607,12 +607,15 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-4 | `stepper.body.{fill,corners,min_width,min_height}, stepper.separator.stroke` (the two-segment body, its divider and size) | field |
 | C-4 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph` (the plus and minus glyphs and colour) | field |
 | C-4 | `stepper.increment.fill, stepper.decrement.fill @ {pressed} / {disabled}` (the pressed segment; the segment disabled at a limit) | rule |
-| C-4 | `stepper.values.button_layout, stepper.values.repeat_delay_ms, stepper.values.repeat_interval_ms` | field |
+| C-4 | `stepper.values.button_layout, stepper.values.repeat_delay, stepper.values.repeat_interval` | field |
 | C-4 | - | readers (R18) |
 | C-5 | `date_picker.field.{fill,corners,padding}, date_picker.field_label.text @ variant with_popup` (the date and time pills, their text in the accent) | rule |
 | C-5 | `date_picker.field.fill, date_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `date_picker.popup.{fill,corners,shadow}` (the popover it opens) | field |
 | C-5 | `date_picker.values.placement (UiKitPopover)` | placement |
+| C-5 | `time_picker.field.{fill,corners,padding,text}, time_picker.popup.{fill,corners,shadow} @ variant with_popup` (the `.time` mode's pill, its text in the accent, and its popover: a time picker, gap map "time picker") | rule |
+| C-5 | `time_picker.field.{fill,text.fill} @ {pressed} variant with_popup` | rule |
+| C-5 | `time_picker.values.placement (UiKitPopover)` | placement |
 | C-5 | - | readers (R18) |
 | C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.time_row.{text,padding}, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
 | C-6 | `button.icon.glyph @ variant previous context calendar.header / variant next context calendar.header` (the navigation chevrons) | rule |
@@ -624,6 +627,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-7 | `picker_wheel.item.text, picker_wheel.item.min_height, picker_wheel.values.visible_items, picker_wheel.values.curvature, picker_wheel.values.component_gap, picker_wheel.values.momentum` | field |
 | C-7 | `picker_wheel.item.opacity` as an expression over `element.scroll_progress` and `element.item_index` (the off-centre rows' fading; ADD-B13) | field |
 | C-7 | `picker_wheel.selection_band.{fill,corners,min_height,margin}` (the band and its insets) | field |
+| C-7 | `picker_wheel.* @ context time_picker.popup / context time_picker variant inline` (UIDatePicker's `.time` mode: the wheels in the compact pill's popover, or inline) | rule |
 | C-7 | - | readers (R18) |
 | C-8 | `color_button.swatch_ring.stroke, color_button.swatch.{min_width,min_height,corners}` (the multicolour ring, the inner swatch, their sizes) | field |
 | C-8 | `color_button.body.fill, color_button.swatch_ring.stroke @ {pressed}` | rule |
@@ -721,7 +725,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-24 | `drag_image.lift_preview.corners` | field |
 | C-24 | `badge.body.fill, badge.label.text @ context drag_image` (the drag-count badge) | rule |
 | C-24 | `role.global.drop_highlight` | role |
-| C-24 | `drag_image.values.lift_delay_ms` | field |
+| C-24 | `drag_image.values.lift_delay` | field |
 | C-24 | `drag_image.values.presentations events @lift, @drop, @cancel` | field |
 | C-24 | - | readers (R18) |
 | C-25 | `find_bar.bar.{fill,padding}, find_bar.result_count.text, find_bar.values.bar_position` | field |
@@ -748,7 +752,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-37† | `menu_bar.bar.fill (material), menu_bar.item_label.text` | field |
 | C-37† | `menu_bar.values.presentations event Appear` (the hidden bar revealed at the top edge) | field |
 | C-37† | `menu.item.{min_height,padding} @ context menu_bar cond idiom:pad` (iPad menu rows use more space) | rule |
-| C-37† | `menu.values.submenu_open_delay_ms @ context menu_bar` (submenus on pointer hover, to verify) | rule |
+| C-37† | `menu.values.submenu_open_delay @ context menu_bar` (submenus on pointer hover, to verify) | rule |
 | C-37† | - (the window controls in the bar, which the system draws, W-1) | out (R1.1) |
 | C-37† | - | readers (R18) |
 | C-38† | `menu.body.fill, menu.item.fill, menu.item_icon.icon, menu.item_label.text @ context autocomplete.body variant @menu / context autocomplete.body variant @list` | rule |
@@ -785,7 +789,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-45† | `chart.series.fill = pick(element.item_index, …)` (the default series colour order; ADD-B15) | field |
 | C-45† | `chart.values.grid_lines` (`AxisMarks`' defaults) | field |
 | C-45† | - | readers (R18) |
-| C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.ring_width_px`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
+| C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.ring_width`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
 | C-46† | `component.activity_rings.track.fill` | component |
 | C-46† | `component.activity_rings.values.ring_gap` | component |
 | C-46† | - | readers (R18) |
@@ -824,7 +828,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MT-8 | `glass_container.surface.{fill,transform,transitions} @ {pressed}; button.body.{fill,transform,transitions} @ {pressed} variant glass` (press scale, highlight, shimmer) | rule |
 | X-MT-9 | `glass_container.values.merge_gap` | field |
 | X-MT-9 | `PresentationKind::Morph` in the merging elements' `presentations` (S2.7) | field |
-| X-MT-10 | `PartStyle.fill.append @ !{over_dark_content}` (the dimming layer over clear glass) | rule |
+| X-MT-10 | `glass_container.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the dimming layer over clear glass where the content beneath is bright: the clear glass alone) | rule |
 | X-MT-11 | `cond system_setting:glass_look (ADD-A04)` | condition |
 | X-MT-11 | `PartStyle.fill @ cond system_setting:glass_look` | rule |
 | X-MT-11 | `reader:ios:user Liquid Glass look preference` | readers (R18) |
@@ -835,7 +839,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-CR-2 | `reader:ios:UICornerConfiguration, effectiveRadius(corner:)` | readers (R18) |
 | X-CR-3 | `Corners per-corner Radius` | field |
 | X-CR-4 | `window.frame.corners (Concentric, following the display, the root's container, S4.6)` | field |
-| X-CR-4 | `token.params.display.corner_radius @ cond device_model:<key>` (per device model; an unlisted model's `Absent`, S4.6, R25.11, ADD-A83) | rule |
+| X-CR-4 | `token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left} @ cond device_model:<key>` (per device model; an unlisted model's `Absent`, S4.6, R25.11, ADD-A83) | rule |
 | X-MO-1 | `token.motion.durations.*` | token |
 | X-MO-1 | `token.motion.timings.*` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
@@ -870,7 +874,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-10 | `navigation_view.values.presentations, sheet.values.presentations @ cond prefer_cross_fade` (the cross-fade replacing slides) | rule |
 | X-MO-10 | `reader:ios:isReduceMotionEnabled, prefersCrossFadeTransitions` | readers (R18) |
 | X-MO-11† | `token.theme_change` | token |
-| X-DT-1 | `token.text.roles.*` (the values at the default Dynamic Type category) | token |
+| X-DT-1 | `token.text.scaling` (`dynamic_type`: each style's size, and its leading, from Apple's published table for the reader's or the stand-in's `content_size_category`; S9.4, R25.15, ADD-A88); `token.text.keyed.*.scaling_role` (the `TextRole` whose table row scales each style); `token.text.roles.*` (the values at the default category) | token |
 | X-DT-1 | `reader:ios:Dynamic Type size per style per content size category` | readers (R18) |
 | X-DT-2 | `text_scale` and `uifm_scaled` (ADD-A55) in the bases of `list.row.min_height`, `button.body.min_height`, `toolbar.bar.min_height`, the parts' `padding` and `token.icons.sizes.*`; a bar's clamp a `min(…)` (ADD-A56) | field |
 | X-DT-2 | `reader:ios:UIFontMetrics scaled values` | readers (R18) |
@@ -927,13 +931,13 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SC-1 | `sheet.scrim.{fill,opacity}` (per detent, with `sheet.values.undimmed_up_to`) | field |
 | X-SC-1 | `component.context_menu_preview.scrim.{fill,opacity}` (the blur and dim) | component |
 | X-SC-1 | `sheet.values.presenter_transform, sheet.values.presenter_corners; sheet.presenter_backdrop.fill` (the 13–18 card-sheet background and its black backdrop) | field |
-| X-SC-1 | `PartStyle.fill.append @ !{over_dark_content}` (the clear-glass dimming, X-MT-10) | rule |
+| X-SC-1 | `glass_container.surface.fill.append @ variant clear !{over_dark_content} / button.body.fill.append @ variant clear !{over_dark_content}` (the clear-glass dimming, X-MT-10) | rule |
 | X-BT-1 | `token.behavior.long_press (ADD-A45)` | token |
 | X-BT-1 | `token.behavior.touch.delay (ADD-A45)` (the touch-highlight delay in scroll views) | token |
 | X-BT-1 | `token.caret.{blink_on,blink_off}` | token |
 | X-BT-1 | `scrollbar.values.auto_hide_delay; scrollbar.values.presentations event Disappear` | field |
-| X-BT-1 | `stepper.values.repeat_delay_ms, stepper.values.repeat_interval_ms` | field |
-| X-BT-1 | `pull_to_refresh.values.trigger_distance; list.values.{swipe_full_expansion,swipe_threshold_px}` (the refresh and swipe thresholds) | field |
+| X-BT-1 | `stepper.values.repeat_delay, stepper.values.repeat_interval` | field |
+| X-BT-1 | `pull_to_refresh.values.trigger_distance; list.values.{swipe_full_expansion,swipe_threshold}` (the refresh and swipe thresholds) | field |
 | X-BT-1 | `reader:ios:UILongPressGestureRecognizer minimumPressDuration` | readers (R18) |
 | X-BT-2† | `token.behavior.touch.{double_tap_time,slop}` (ADD-A45) | token |
 | X-SV-1 | `SizeMatch.size_classes` (`h_size_class`, `v_size_class`; ADD-A20) | rule |
@@ -983,7 +987,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SF-3† | `rich_text.inline_code.text, rich_text.inline_code.fill` | field |
 | SF-4† | `link.text.text.{fill,decoration} @ variant inline context rich_text` (the rest colour, the tint to verify, and the underline) | rule |
 | SF-4† | `link.text.text.{fill,decoration} @ {pressed} variant inline context rich_text` | rule |
-| SF-5† | `text_area.values.intent_styles` | field |
+| SF-5† | `rich_text.{emphasis,strong,strikethrough}.text, rich_text.inline_code.{text,fill} @ variant markdown context any text_area / variant markdown` (UIKit's rendering of the presentation intents in a `UITextView`, or a `UILabel` with no host widget; which intents it renders, and the block parts' absence, the probe shows, to verify) | rule |
 | SF-6† | `rich_text.heading_1.text … rich_text.heading_6.text, rich_text.code_block.{text,fill}, rich_text.preformatted.text, rich_text.block_quote.{fill,stroke}, rich_text.list_marker.glyph, rich_text.table.stroke, rich_text.table_cell.{padding,stroke,text}, rich_text.table_header_cell.text, rich_text.heading_1.margin … rich_text.heading_6.margin, rich_text.{paragraph,code_block,preformatted,block_quote,table}.margin @ variant html` | rule |
 | SF-6† | `link.text.text @ variant inline context rich_text` | rule |
 | SF-7† | `sheet.values.anchor @ h_size_class compact / h_size_class regular / v_size_class compact / v_size_class regular` (ADD-A20) | rule |
@@ -1060,7 +1064,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P4-12† | `menu.values.item_order` | field |
 | P4-13† | `text_area.selection (one element per range); text_area.caret` | field |
 | P4-13† | `text_area.values.empty_ranges_draw_carets` | field |
-| P4-14† | `menu.values.{submenu_switch,submenu_close_delay_ms}` | field |
+| P4-14† | `menu.values.{submenu_switch,submenu_close_delay}` | field |
 | P4-16† | `sidebar.values.breakpoints` (the arrangement per app width, measured Window; the breakpoints set: tiled, variant `overlay`, variant `@displace`; their comparisons and widths to verify; R16) | field |
 | P4-16† | `sidebar.* @ h_size_class compact / h_size_class regular` (ADD-A20) | rule |
 | P4-16† | `sidebar.values.presentations events @collapse, @expand` | field |

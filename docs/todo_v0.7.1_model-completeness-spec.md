@@ -229,7 +229,7 @@ reference: a `Fields` patch over a reference that can resolve `Absent` or `Auto`
 | `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)`, `kcu_shade(c, luma, chroma)` | colour | `KColorUtils`, to `kcolorutils.cpp` |
 | `adw_standalone(c, scheme)` | colour | libadwaita's standalone accent derivation in OKLab, to its stylesheet |
 | `m3_role(role)` | colour | material-color-utilities' dynamic scheme, the role of that scheme; it reads `input.accent` (the seed), `token.material.{variant, spec_version, contrast_level}` and the colours' scheme itself, listed as its operands |
-| `mul(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56) |
+| `mul(x, y)`, `div(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56) |
 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | colour | `QColor::lighter`, `QColor::darker` in HSV, to qtbase `qcolor.cpp` (ADD-A50) |
 | `kcu_overlay(under, over)` | colour | `KColorUtils::overlayColors`, to `kcolorutils.cpp` (ADD-A51) |
 | `kirigami_tint(c, tint, alpha)` | colour | Kirigami's `ColorUtils.tintWithAlpha` (ADD-A52) |
@@ -255,7 +255,7 @@ duration, angle, number, font size, text, bool, name); a name operand is checked
 set the function's parameter names (`design: TrackingDesign`, `group: KdeGroup`, `role_kind: KdeRoleKind`;
 `m3_role`'s `role` is a declared keyed colour role, `uifm_scaled`'s `text_role` a `TextRoles` slot or a declared text
 style); a bare number takes the type of
-the other operand; `mul(T, number)`, `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)` and `floor(T)` give a `T`;
+the other operand; `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)` and `floor(T)` give a `T`;
 a mismatch is an error when the layer is added (S12). A function that reads inputs or reader values itself
 (`kde_accent` reads `input.accent`, `input.kde_scheme.<set>.<key>`, `token.kde.tint_factor` and
 `titlebar_is_accent_colored`; with tinting on, every role depends on the accent; `uifm_scaled` the reader's content-size
@@ -605,7 +605,7 @@ as well as its own (a list row matches the list's `sidebar` variant). An *(eleme
 scope with the plain part's bindings, opacity and transform applied. A part marked *(element)* in the catalogue (a
 caption button, a tab) is an element of
 its own, queried in the scope of the element that contains it (the root part's, or an enclosing *(element)* part's:
-a caption button inside the caption-button group) with its own states, and its sub-parts are queried with it. A
+a caption button inside the caption-button group) with its own states, and the parts the catalogue names as belonging to it are queried with it; a part merely nested in it is queried with the widget's element. A
 block-typed field set to a reference takes the referenced token's or field's value where it is used, with any
 `Fields` patches over it applied after the referenced value's own rules (S2.2). `CursorShape` is CSS's
 cursor keywords (CSS Basic UI 4: `Default`, `ContextMenu`, `Help`, `Pointer`, `Progress`, `Wait`, `Cell`,
@@ -951,7 +951,8 @@ field of a part (`button.body.shadow`), a whole part (`slider.ticks`: some platf
 widget (a preset declares it `available = false`, S10). A whole part is made absent by a base or a rule
 (`PartPatch::Absent`, TOML `absent = true`), so it may be absent under a condition only (a title bar in full
 screen); the query then answers `NotDrawn`. An unavailable widget and an absent part need no fields. A compound widget value listed `may_be_absent` (a `Placement`, a record of `Value`s) allows each of its `Value`
-members to be absent. A widget's root
+members to be absent, and, where it is a `Value` itself (`Value<Placement>`), to be absent as a whole (a desktop that
+avoids no keyboard). A widget's root
 part is never absent as a whole and is never a repeated element (the catalogue gives such widgets a container root);
 its fields may be. `may_be_absent` is about what a platform draws, never about an element's content: a part the
 element's content lacks (a dialog given no icon, an icon-only tab's label) is simply not queried by the connector,
@@ -1394,7 +1395,7 @@ data = { indicator = ["width", "height"] }                 # element data a part
 [declare.component.rule_editor]                # parts and their fields: the catalogue's, generated (S5.1, S6.1);
 available = true                               # here only what varies per preset: availability,
 sizes = ["regular"]                            # a component's sizes and densities, as a widget's,
-values = { row_gap = "length", presentations = "presentations" }   # values' types,
+values = { indent_per_level = "length", presentations = "presentations" }   # values' types,
 variants = ["@<variant>"]                                           # variants, flags
 flags = ["@<flag>"]
 ```
@@ -1866,6 +1867,7 @@ lines that cite it.
 | ADD-A93 | `Mirroring::SwapWith` | S2.9 |
 | ADD-A94 | `gtk_contrast_pick` | S2.2 |
 | ADD-A95 | `Radius::FollowPart`, `Breakpoint`, `sizes_by_variant`, touchpad inertia, `Theme::set_contrast`, `WindowState` | S2.4, S7.3, S10, S4.2, S16, S8 |
+| ADD-A102 | `div` | S2.2 |
 | ADD-A96 | `Comparison`, `Measured`, `OverlayBottomCenter`, two-edge fade, touchpad velocity samples, `Theme::system`, decoration patterns | S7.3, S13, S2.8, S4.2, S16 |
 | ADD-A97 | `PartPatch::DrawnAs`, `Styled::DrawnAs`, `RuleBody`, `Keyframe.part`/`timing`, `Glyph.draw_start`, `FontMetrics::line_spacing` | S6.1, S8, S2.7, S2.9 |
 | ADD-A98 | `SharedFlag::DropCopy`/`DropMove`, `FontMetrics::max_char_width`, `DrawnAs.part`, the concentric container | S7.2, S8, S6.1, S2.4 |
