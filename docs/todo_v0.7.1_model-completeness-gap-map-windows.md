@@ -590,3 +590,130 @@ MUX; nothing to measure. "WinUI" / "Win32" splits a cell where the two draw diff
 Tallies: A — 46 controls: 8 decision 1 (4 with new rows), 11 decision 2 (6 with new rows), 27 decision 3. B — 28
 capabilities: 19 with rows added, 9 with no further row. C — 56 cells: 13 b, 43 a (4 of them inherited). Rows added:
 §4.1 12, §4.2 4, §4.3 12 (28 in all).
+
+## Seed follow-up (2026-10-28)
+
+Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
+map's §5). The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+are the row's capability tags (main map §4.3) and source kinds.
+
+### Code editor and rich text (G12, G27)
+
+**Code editor: not on this platform.** WinUI 3 has no code-editor control: MUX `controls/dev` at
+8463f451 has no control with a gutter or syntax colours (`grep -ril 'linenumber\|syntax'` over it
+finds nothing), RichEditBox's template draws a text field only (the Windows file's §4.1 treats it as
+`text_area`), and neither the CTK release (`components/` at a6b4dc45) nor Labs
+(`components/` at 27ef7604: Adorners … WrapPanel2) has a code editor.
+
+**Rich text / Markdown.** WinUI's `RichTextBlock` renders rich text but parses no Markdown; its
+inline `Hyperlink` is already W1-143 and W1-145. The one Microsoft Markdown renderer is the Labs
+`MarkdownTextBlock` (experimental, see the source table). Its look is a `MarkdownThemes` object
+whose defaults are WinUI theme resources and constants:
+
+| ID | § | Model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| W-SF01† | 4.2 | rich text view | MarkdownTextBlock, headings H1–H6 | Six font sizes (22, 20, 18, 16, 14, 12), weight SemiBold each, foreground `TextFillColorPrimaryBrush` each, top margins (16 for H1–H4, 8 for H5–H6) | P: `labs/MarkdownThemes.cs:25-61` | `text_scale.*` (four roles, no heading ladder, no margins) | C18, C24, C26 | P |
+| W-SF02† | 4.2 | rich text view | Inline code | Fill `CardBackgroundFillColorSecondaryBrush`, foreground `TextFillColorPrimaryBrush`, 1 px border `CardStrokeColorDefaultBrush`, corner radius 2, padding 0, font size 10, weight Normal; no family of its own (it inherits); the box is shifted down by a 3D transform `TranslateY = 4` | P: `labs/MarkdownThemes.cs:67-80`; `labs/TextElements/MyInlineCode.cs:25-39` | none (`defaults.mono_font` is not used here) | C11, C12, C18, C24 | P |
+| W-SF03† | 4.2 | rich text view | Code block | Fill `CardBackgroundFillColorSecondaryBrush`, border `CardStrokeColorDefaultBrush` 1 px, padding 8, margin 0 8 0 8, family `Consolas`, foreground `TextFillColorPrimaryBrush`, corner radius 4 | P: `labs/MarkdownThemes.cs:86-93`; `labs/TextElements/MyCodeBlock.cs:27-35` | `defaults.mono_font` (family only) | C11, C12, C18, C24 | P |
+| W-SF04† | 4.2 | rich text view | Block quote | Left bar of width `QuoteBorderThickness.Left` (4) in `CardStrokeColorDefaultBrush` (gray when unset), 4 px gap after the bar, fill transparent, padding 4, corner radius 4, margin 0 4 0 4, text `TextFillColorPrimaryBrush` | P: `labs/MarkdownThemes.cs:110-117`; `labs/TextElements/MyQuote.cs:34-48` | none | C12, C13, C24, C26 | P |
+| W-SF05† | 4.2 | rich text view | List markers and indentation | Unordered marker the string `"• "` for every level; ordered `1.`, `a.`, `A.`, roman; spaces after the marker `ListBulletSpacing` 4; indent per level `ListGutterWidth` 32; list margin 0 4 0 4 | P: `labs/Renderers/ObjectRenderers/ListRenderer.cs:14`, `:55-72`; `labs/MarkdownThemes.cs:104-108` | none | C13, C24, C26 | P |
+| W-SF06† | 4.2 | rich text view | Tables | Border `CardStrokeColorDefaultBrush` 1, cell padding 4, margin 0 8 0 8, header-row fill `CardBackgroundFillColorDefaultBrush` | P: `labs/MarkdownThemes.cs:63-65`, `:124-128`; `labs/TextElements/MyTable.cs:34` | `list.header_background` (a list's, not a text table's) | C12, C24 | P |
+| W-SF07† | 4.2 | rich text view | Horizontal rule, paragraphs, links | Rule `DividerStrokeColorDefaultBrush`, thickness 1, margin 0 12 0 12; paragraph margin 0 8 0 8; links `AccentTextFillColorPrimaryBrush` (no state brushes); bold runs SemiBold | P: `labs/MarkdownThemes.cs:82`, `:95-104`; `labs/TextElements/MyHyperlink.cs:46`, `:59` | `separator.*` (no margins), `defaults.link_color` | C18, C24, C26 | P |
+| W-SF08† | 4.2 | rich text view | The control's own frame | `Padding` 8, `InternalMargin` 4, `CornerRadius` 4 of the theme object; the template binds Background, BorderBrush, BorderThickness, CornerRadius from the control | P: `labs/MarkdownThemes.cs:19-23`; `labs/MarkdownTextBlock.xaml:8-20` | none | C24, C26 | P |
+
+All rows: scope (Labs, experimental) is for the rationale, with §6.2's CTK question.
+
+### Drop zones and dialog placement (G19, G24)
+
+#### G19 — drop zone under a dragged pane, tab or dock
+
+Covered by: W1-087 (tab drag fill, reorder / add / remove transitions), W1-110 (list drag, reorder, drop-target
+visuals, including `ListViewItemReorderHintThemeOffset`, which `TabViewItem` uses for its reorder-hint states:
+`MUX/TabView/TabView.xaml:411-432`, `DragOverThemeAnimation` Bottom / Top / Right / Left), W3-49† (system drag
+and drop visuals).
+
+Not on this platform: a pane or dock dragged onto another pane. WinUI 3 has no docking control; `SplitView`
+(W2-30) and `NavigationView` resize or overlay a pane and accept no dropped pane; the Community Toolkit has no
+docking control either (to verify). Snap Layouts and the snap zones are drawn by the shell, not by the app, so
+they are §6.2's scope question (KDE's equivalent is K1.19†, macOS's MAC-W13†).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| W-SF09† | 4.1 | [tab] | TabView: a torn-out tab over another TabView | With `CanTearOutTabs` (Windows App SDK 1.6+, default `false`) a dragged tab becomes a new window (`TabTearOutWindowRequested`), and dropping it on another TabView raises `ExternalTornOutTabsDropping` / `ExternalTornOutTabsDropped` instead of `TabStripDragOver` / `TabStripDrop`. What the target strip draws while the torn-out window hovers it (the reorder-hint gap of W1-110, or nothing) is to measure. | P: Learn `TabView.CanTearOutTabs` (updated 2026-07-28); M: os-probe recording of a tear-out between two windows | none | C17, C07, C14 | P, M, V |
+
+#### G24 — where a modal dialog is placed
+
+Covered by: W1-155† (the full-size variant stretches the dialog vertically: `FullDialogSizing`,
+`MUX/CommonStyles/ContentDialog_themeresources.xaml:136-142`); W1-125 (the smoke layer).
+No window-size breakpoint: the ContentDialog template's visual-state groups are `DialogShowingStates`,
+`DialogSizingStates` (set by `FullSizeDesired`, not by the window size), `ButtonsVisibilityStates`,
+`DefaultButtonStates` and `DialogBorderStates` (`ContentDialog_themeresources.xaml:72`, `:136`, `:144`, `:194`,
+`:212`).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| W-SF10† | 4.1 | [dialog] | ContentDialog: position | The dialog box is centred both ways: `BackgroundElement` has `HorizontalAlignment="Center" VerticalAlignment="Center"` inside `LayoutRoot`, whose first child is the smoke rectangle filling the root; the root is the XAML window's `PopupRoot` (`ContentDialogPlacement.Popup`, default) or the parent's visual tree (`InPlace`). | P: `MUX/CommonStyles/ContentDialog_themeresources.xaml:221-223`; Learn `ContentDialogPlacement` (updated 2026-07-28) | none | C26 | P |
+| W-SF11† | 4.1 | [dialog] | ContentDialog: the area it centres in | Whether the centring area (and the smoke) includes the title bar: with the system title bar the XAML root is the client area; with `ExtendsContentIntoTitleBar` or the WinUI `TitleBar` control it reaches the caption-button band. To measure in both. | M: os-probe renders a ContentDialog in a window with and without `ExtendsContentIntoTitleBar` and captures it | none | C26, C20 | M, V |
+| W-SF12† | 4.1 | [dialog] | ContentDialog with the on-screen keyboard | The built-in buttons make sure "the command area remains visible even when the on-screen keyboard is up": the dialog moves or shrinks; how is to measure. | P: Learn *Dialog controls* (updated 2026-07-17), *The three dialog buttons*; M: touch-keyboard capture | none | C26 | P, M |
+| W-SF13† | 4.1 | [dialog] | Win32 task dialog and message box: position | `TaskDialogIndirect`: centred on `hwndParent` with `TDF_POSITION_RELATIVE_TO_WINDOW`, otherwise "centered relative to the monitor". `MessageBox`: no document states where it opens (to measure). | P: Learn `TASKDIALOGCONFIG` (updated 2024-02-22); M: os-probe opens a `MessageBox` with and without an owner and reads its rect | none | C26 | P, M |
+
+---
+
+## Relabelled controls (2026-10-28)
+
+Pass 2 asked the platforms about 18 controls under a wrong control name (a tagging
+error: GN-2.40–2.46, GN-2.49, K2.7, K2.15–2.17, K2.22, Q2.43, W2-13, W2-14, W2-19,
+W2-25), so this check asked again for this platform. Decisions: 1 a new §4.2 row, 2 a
+new §4.1 row, 3 a row already covers it (the same job, possibly done another way),
+4 the platform has no such thing.
+
+Sources beyond the Windows file's citation base: Learn *Parts and States* (`controls/parts-and-states`, updated
+2025-03-11), *Button Styles* (updated 2021-03-22), *List-View Window Styles* (updated 2021-03-22), *Tab Control Styles*
+(updated 2021-03-22), `PROPSHEETHEADERA_V2` (updated 2024-02-22), all read 2026-10-28; the windows-rs
+`Win32::UI::Controls` index (`microsoft.github.io/windows-docs-rs`, read 2026-10-28) for constant names Learn does not
+list (`VSCLASS_AEROWIZARD`, `AW_*`, `TVS_EDITLABELS`, `LVM_EDITLABEL`, `TVM_EDITLABEL`); Microsoft Support article 4534547
+(`support.microsoft.com/help/4534547`) for the emoji panel. "MUX tree" and "CTK" as in the Windows file's Cross-check.
+
+| Control | Decision 1–4 | Row added, row covering it, or the source showing it is absent |
+|---|---|---|
+| keyboard shortcut keycap (GN-2.40) | 3 | W1-048 (menu accelerator text), W3-26 (accelerator hints in menus, overflow menus and tooltips), W1-102 (overflow accelerator column). Windows draws a shortcut only as text ("Ctrl+S"); no keycap look: the MUX tree has no keycap control. KeyTips (W2-37) are access-key badges, a different thing |
+| shortcuts dialog (GN-2.41) | 4 | The MUX tree (`controls/dev`) and CTK `components/` have no shortcuts dialog or overlay; WinUI shows accelerators only inside menus and tooltips (W3-26) |
+| text selection handles (GN-2.42) | 3 | W1-034 and W3-25 (touch selection grippers: size, colour). The grippers are not in the XAML templates (`dxaml/xcp/dxaml/themes/generic.xaml` has no gripper element), so they are measured. Whether Windows draws a magnifier while a gripper is dragged: to verify in W1-034's touch capture |
+| emoji chooser (GN-2.43) | 4 | The emoji panel (Windows logo key + period, Microsoft Support 4534547) is drawn by the shell, outside the model's scope (§4.2 closing paragraph); the MUX tree and CTK have no emoji picker control. Scope question below |
+| video play overlay (GN-2.44) | 3 | W2-35 (MediaTransportControls). Its template draws no centred play image over the video: the play/pause control is an `AppBarButton` in the transport bar (`PlayPauseButtonOnLeft`, `PlayPauseButton`; `dxaml/xcp/dxaml/themes/generic.xaml:13453`, `:14062`, `:14160`), which fades with the panel (`ControlPanelFadeIn` / `ControlPanelFadeOut`) |
+| editable label (GN-2.45) | 2 | new 4.1 row: List and tree (Win32 list view, tree view): in-place label edit. WinUI has none: the MUX tree's `controls/dev` has no editable-label control |
+| wrap box (GN-2.46) | 3 | W2-43† (CTK `TokenizingTextBox`: "token spacing and the box's padding"); its tokens wrap in a CTK `WrapPanel` whose horizontal and vertical spacing are bound to `TokenSpacing` (CTK `TokenizingTextBox/src/TokenizingTextBox.xaml:14`, `:62-65`). The general wrap panels carry no theme visuals: MUX `WrapPanel` (preview) has `ItemSpacing` and `LineSpacing` and no theme resource (`controls/dev/WrapPanel/WrapPanel.idl`), like the panels the Windows file's §4.2 closing paragraph lists |
+| drag icon (GN-2.49) | 3 | W3-49† (the drag image, its translucency, caption and glyph), W1-110 (list drag opacity, multi-drag count badge). W3-49†'s read source can add the uxtheme `DRAGDROP` class (`DD_COPY`, `DD_MOVE`, `DD_CREATELINK`, `DD_WARNING`, `DD_NONE`, `DD_UPDATEMETADATA` × `*_HIGHLIGHT` / `*_NOHIGHLIGHT`, `DD_IMAGEBG`, `DD_TEXTBG`; Learn *Parts and States*) |
+| command link button (K2.7) | 2 | new 4.1 row: Command link button (Win32 `BS_COMMANDLINK`, `BS_DEFCOMMANDLINK`). The task dialog's command links are already in W1-156†; WinUI has no command link (MUX tree) |
+| title widget (K2.15) | 3 | W1-147 (Fluent type ramp: Title, TitleLarge, Subtitle … styles the WinUI page and section titles use), W1-156† (Win32 `TEXTSTYLE` `TEXT_MAININSTRUCTION`, the main-instruction title). No title control with an icon and a message-type comment line: none in the MUX tree or CTK `components/` |
+| side tab bar (K2.16) | 4 | TabView has no strip placement (no placement or orientation property in `controls/dev/TabView/TabView.idl`); the Win32 tab control's `TCS_VERTICAL` / `TCS_RIGHT` are "not supported if you use ComCtl32.dll version 6" / "if you use visual styles" (Learn *Tab Control Styles*). Side navigation is NavigationView's left pane (`[sidebar]`, W1-091–W1-098) |
+| splitter collapser (K2.17) | 4 | No collapse button on a divider: WinUI has no splitter, and the CTK sizers draw only a thumb with visible / collapsed states (`Sizers/src/SizerBase.xaml:105-125`; W1-157†). A pane is collapsed by the pane-toggle button of NavigationView (W1-095) or of the `TitleBar` control (W1-011), not at the divider |
+| wizard (K2.22) | 1 | new 4.2 row: Aero wizard (Win32 property sheet `PSH_WIZARD` + `PSH_AEROWIZARD`). WinUI has no wizard (MUX tree) |
+| drag handle (Q2.43) | 4 | No drag-handle control in the MUX tree or CTK `components/`; WinUI reorders a list by dragging the item itself (W1-110). The only handle in CTK is hand-built in a sample, not a control: `SettingsControls/samples/SettingsExpanderDragHandleSample.xaml` (a `TextBlock` with U+283F) |
+
+Tally over 14 controls: 1 — 1 (wizard); 2 — 2 (editable label, command link button); 3 — 6 (keycap, text selection
+handles, video play overlay, wrap box, drag icon, title widget); 4 — 5 (shortcuts dialog, emoji chooser, side tab bar,
+splitter collapser, drag handle).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| W-RL01† | 4.1 | [list] | List and tree (Win32 list view, tree view): in-place label edit | The edit box a Win32 list view with `LVS_EDITLABELS` ("Item text can be edited in place") or a tree view with `TVS_EDITLABELS` opens over an item's label (File Explorer-style rename): its border, fill, text and selection colours, its size against the label (in icon view the label wraps), and how the item looks while its label is edited | P: Learn *List-View Window Styles* (updated 2021-03-22) `LVS_EDITLABELS`; `TVS_EDITLABELS` (Learn *Tree-View Control Window Styles*, wording to verify); M: os-probe creates a list view and a tree view with the style, starts editing with `LVM_EDITLABEL` / `TVM_EDITLABEL` and captures | `input.*` (a field, not an in-place editor); W3-43 (the Win32 look in general) | C07, C13 | P, M |
+| W-RL02† | 4.1 | [button] | Command link button (Win32 `BS_COMMANDLINK`, `BS_DEFCOMMANDLINK`) | A push button with a glyph before the text (Learn: "a green arrow on the left pointing to the button text"; the Windows 11 glyph to measure) and a second text line, the note (`BCM_SETNOTE`): part `BP_COMMANDLINK` × `CMDLS_NORMAL`, `CMDLS_HOT`, `CMDLS_PRESSED`, `CMDLS_DISABLED`, `CMDLS_DEFAULTED`, `CMDLS_DEFAULTED_ANIMATING`; glyph part `BP_COMMANDLINKGLYPH` × `CMDLGS_NORMAL`, `CMDLGS_HOT`, `CMDLGS_PRESSED`, `CMDLGS_DISABLED`, `CMDLGS_DEFAULTED`; title and note fonts and colours per state, padding, glyph–text gap; the defaulted variant's animation | R: uxtheme `OpenThemeData(L"BUTTON")` + `GetThemeColor` / `GetThemeFont` / `GetThemeMargins` / `GetThemePartSize` on `BP_COMMANDLINK`, `BP_COMMANDLINKGLYPH` (Learn *Parts and States*, updated 2025-03-11; which properties each part defines: to verify); P: Learn *Button Styles* (updated 2021-03-22) `BS_COMMANDLINK`, `BS_DEFCOMMANDLINK`; M: os-probe renders both styles in each state and records the defaulted animation | `button.*` (a one-line push button: no note, glyph or defaulted-animating state) | C07, C09, C13, C14, C18 | R, P, M |
+| W-RL03† | 4.2 | wizard | Aero wizard (Win32 property sheet `PSH_WIZARD` + `PSH_AEROWIZARD`) | The wizard frame comctl32 draws: the title-bar area (part `AW_TITLEBAR`, states `AW_S_TITLEBAR_ACTIVE` / `AW_S_TITLEBAR_INACTIVE`; the back button shown there: to verify, the `NAVIGATION` class's `NAV_BACKBUTTON` is a candidate), the header area with the page title (`AW_HEADERAREA`, `AW_S_HEADERAREA_NOMARGIN`), the content area (`AW_CONTENTAREA`, `AW_S_CONTENTAREA_NOMARGIN`), the command area with its buttons (`AW_COMMANDAREA`, `AW_BUTTON`), and the TAB class's `TABP_AEROWIZARDBODY`: fills, title fonts and colours, margins, heights, active vs inactive. The older Wizard97 style (`PSH_WIZARD97` with `PSH_HEADER` / `PSH_WATERMARK` bitmaps) can still be created; its Windows 11 look to measure | R: uxtheme `OpenThemeData` on `VSCLASS_AEROWIZARD` with the `AW_*` parts and states (names from the windows-rs `Win32::UI::Controls` index; Learn *Parts and States* does not list the class; which properties each part defines: to verify) and the TAB class part `TABP_AEROWIZARDBODY` (Learn *Parts and States*, updated 2025-03-11); P: Learn `PROPSHEETHEADERA_V2` (updated 2024-02-22): "PSH_AEROWIZARD should be combined with PSH_WIZARD"; M: os-probe opens an Aero wizard and a Wizard97 property sheet and captures them, key and non-key | `dialog.*` (a dialog's fill, padding and button order; no header, command area or wizard title bar) | C06, C13, C18, C20, C24, C26 | R, P, M |
+
+## Fonts and mirroring (2026-10-28)
+
+A completeness check of the map found two gaps no row covered: the emoji font and
+the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
+layout where this file had no general row. The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+
+Not covered by any row (see the top; W3-22 is rendering mode, W3-23 Segoe UI Variable's optical sizes).
+Two text stacks draw on Windows 11 and choose fallback fonts by different mechanisms: WinUI 3 (DirectWrite
+system font fallback) and Win32 common controls (GDI font linking), so both are named.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| W-FM01† | 4.3 | typography | Emoji font | Segoe UI Emoji ("User-interface font for Emoji", file `Seguiemj.ttf`, script tags `Zsye`, `Zsym`), and Segoe UI Symbol as the "Fallback font for symbols". WinUI's `TextBlock` draws colour glyphs by default (`IsColorFontEnabled` true) and their layout metrics can differ from the monochrome ones; whether Win32 (GDI) controls draw emoji in colour or monochrome is to verify. The model has no emoji family. | P: `Learn` *Typography in Windows*, *Segoe UI Emoji font family*, *TextBlock.IsColorFontEnabled*; R: `IDWriteFactory2::GetSystemFontFallback` then `IDWriteFontFallback::MapCharacters` on an emoji string (Windows 8.1) names the mapped font; M: OS probe, the sample set through `MapCharacters`, and a WinUI and a Win32 render for colour | none (`defaults.font.family` is one name) | C18, C25 | P, R, M |
+| W-FM02† | 4.3 | typography | Fallback chain per language | The font each script falls back to, per language: Microsoft's table names Yu Gothic UI (Japanese), Microsoft YaHei UI (Simplified Chinese), Microsoft JhengHei UI (Traditional Chinese), Malgun Gothic (Korean), Segoe UI (Arabic, Armenian, Georgian, Hebrew), Nirmala UI (South Asian scripts), Leelawadee UI (Southeast Asian), Ebrima (African), Gadugi (North American), Myanmar Text (Myanmar). DirectWrite maps per run with the text's locale; GDI (Win32 controls) uses the font-linking chains of the `SystemLink` registry key instead. Which of these WinUI's `XamlAutoFontFamily` uses is to verify. The model has one family and no language. | P: `Learn` *Typography in Windows* ("Fonts for non-Latin languages"), *Fonts* (font linking); R: `IDWriteFontFallback::MapCharacters` with a locale per sample, `Windows.Globalization.Fonts.LanguageFontGroup(languageTag)` (recommended fonts per language and usage), registry `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink` (`Learn`); M: OS probe, the sample set per locale through both stacks | none (`defaults.font.family`) | C18, C25 | P, R, M |

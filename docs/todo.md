@@ -1810,7 +1810,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
 - [ ] [v0.7.x] **Material has a scrollbar.** Compose Material 3 draws one
       (`Scrollbar.kt`, `NonInteractiveScrollbarDefaults` at `:119-148`, androidx
       1e677685), against `platform-facts.md:1304-1311` and the gap map's "M3 has no
-      scrollbar component" (MAT-SC3†).
+      scrollbar component" (MAT-SC3†). Its `Text` also styles the links of rich text,
+      `colorScheme.primary` and an underline (`Text.kt:673-695`), where
+      `platform-facts.md` §2.28 states no Material link value.
 - [ ] [v0.7.x] **ios-13 states values for things iOS does not draw**: hover colours,
       `tab.active_background` (13–18 mark the selected tab by colour and symbol only; to
       confirm on a render), `dialog.icon_size_px` (alerts draw no icon) and

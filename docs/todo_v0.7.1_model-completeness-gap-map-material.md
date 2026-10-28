@@ -131,7 +131,7 @@ field today · seed.
 | MAT-SC3† | scrollbar (Compose M3 `nonInteractiveScrollbar`) | Compose Material 3 draws a visual-only scrollbar: thumb colour stated as a colour role at an opacity, thickness, minimum thumb length, maximum thumb length as a fraction of the viewport, a track colour (transparent by default), track insets along and across the axis, fade-in while scrolling and fade-out after a delay (duration and delay), an always-visible option, and its edge (end edge for vertical, bottom for horizontal). No hover or pressed state (visual only). The model has the colours, width, minimum length and overlay flag; it lacks the fade timings, the two insets, the maximum fraction and the colour-at-opacity form | *published*: `compose/Scrollbar.kt:46-117` (the modifier and its parameters), `:119-148` (`NonInteractiveScrollbarDefaults`) | `scrollbar.thumb_color`, `track_color`, `thumb_width_px`, `min_thumb_length_px`, `overlay_mode` (partial) | platform-facts.md §2.8 cells (lines 1304-1311, "M3 has no scrollbar component") |
 | MAT-SC4† | overscroll (Android 11 and older) | The glow edge effect drawn before Android 12's stretch (MAT-SC2): its colour, shape, growth with the pull and fade | *read*: theme attribute `android:colorEdgeEffect`, `EdgeEffect.getColor()`, `EdgeEffect.getType()` (API levels to verify); Compose foundation's pre-API-31 overscroll (file to verify); *measure-compose* on an API 30 emulator | none | — |
 
-(M3 has no scrollbar component; the preset's scrollbar values have no Material source, platform-facts.md §2.8 — a value question, not a model gap.)
+(Corrected by pass 2: Compose Material 3 draws a scrollbar, MAT-SC3†, so the preset's scrollbar values have a Material source that platform-facts.md §2.8 does not cite yet — a value question, not a model gap.)
 
 ### Slider (§2.9)
 
@@ -335,7 +335,7 @@ No Material gap: M3 has no status bar (platform-facts.md §2.14). Android's syst
 
 ### Link (§2.28)
 
-No Material gap: M3 has no link component (platform-facts.md §2.28).
+No Material gap: M3 has no link component, but Compose Material 3's `Text` styles the links of rich text, `colorScheme.primary` and an underline (`compose/Text.kt:673-695`; the seed follow-up, 2026-10-28). The model has both fields (`defaults.link_color`, `link.underline_enabled`), so this is a value `platform-facts.md` §2.28 lacks, not a gap.
 
 ---
 
@@ -636,3 +636,129 @@ scrollbar's six (1304, 1305, 1307–1310) come with MAT-SC3† for what the mode
 - **Tag:** MAT-X9's ripple soft edge is a radial gradient (C27).
 - **A "to verify" settled:** MAT-X22's Compose minimum interactive size is
   `compose/InteractiveComponentSize.kt:47-71`.
+
+## Seed follow-up (2026-10-28)
+
+Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
+map's §5). The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+are the row's capability tags (main map §4.3) and source kinds.
+
+### Code editor and rich text (G12, G27)
+
+**Code editor: not on this platform.** Neither catalogue the Material file uses has one: the
+component token files of `latest/` (app bar … top app bar, no code or text-view component) and the
+93 entries of `compose/` at 1e677685 (the text ones are `Text.kt`, `TextField.kt`,
+`TextFieldDefaults.kt`, `OutlinedTextField.kt`, `SecureTextField.kt`), both read 2026-10-28 through
+the GitHub contents API.
+
+**Rich text / Markdown: not on this platform**, by the same two catalogues: no Markdown component
+and no token for code, quotes or list markers. Compose Material 3's `Text(AnnotatedString)` draws
+rich text from the app's spans and styles only its **links**: colour `colorScheme.primary` and
+underline, for links that state no style, with no hover, focus or pressed style
+(`compose/Text.kt:673-695`). The model has both fields (`defaults.link_color`,
+`link.underline_enabled`), so it is not a model gap; but the Material file's *Link* section says
+"No Material gap: M3 has no link component" and `platform-facts.md` §2.28 states no Material link
+values, which this source contradicts: value work for §7, not a row.
+
+---
+
+### Drop zones and dialog placement (G19, G24)
+
+#### G19 — drop zone under a dragged pane, tab or dock
+
+Covered by: MAT-L10 (list reorder: dragged item colours, drop-zone colour, shadow, shape), MAT-SP1 / MAT-SP2
+(pane drag handle geometry and states), MAT-X29 (dragged state layer and elevation).
+
+Not on this platform: a pane dragged onto another pane. Compose's adaptive panes are resized (the pane
+expansion drag handle) or levitated, never dropped on one another: the adaptive-layout package at
+`1e677685` lists no drag-and-drop or drop-target type (`compose/material3/adaptive/adaptive-layout/src/commonMain/kotlin/androidx/compose/material3/adaptive/layout/`:
+`AdaptStrategy.kt` … `WindowSizeClassHelper.kt`, `PaneExpansionDraggableModifier.kt`, `DragToResizeState.kt` —
+resize only; to verify against the sources' contents). Material tabs have no drag-to-reorder in material-web (no `drag` or `drop` anywhere in `mw/tabs/`, by grep).
+
+#### G24 — where a modal dialog is placed
+
+Covered by: MAT-DG8 (the 48 margin to the window edges at maximum size), MAT-N26 (the full-screen dialog's
+look), MAT-N19 (the bottom sheet's look), MAT-N20 (side sheet).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAT-SF01† | 4.1 | [dialog] | Dialog: position | Centred both ways: material-web's host is `position: fixed` with `margin: auto`; Compose's `Dialog` window has `Gravity.CENTER`. | P: `mw/dialog/internal/_dialog.scss:37-45`; `ax/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/window/AndroidDialog.android.kt:660`; M: measure-web, measure-compose | none | C26 | P, M |
+| MAT-SF02† | 4.1 | [dialog] | Dialog: when it becomes full-screen (the breakpoint) | The rule for using the full-screen dialog (MAT-N26) instead of the basic one on compact windows, and the window-width class where it applies; neither material-web nor Compose switches automatically (to verify). | P: m3.io dialogs and window size classes (to verify, m3.io unreadable without JavaScript, as the Material file records) | none | C26, C10 | P, V |
+| MAT-SF03† | 4.2 | bottom sheet | Modal bottom sheet: position on wide windows | Attached to the bottom edge, horizontally centred, at most `SheetMaxWidth` 640 dp wide, so wide windows leave side gaps. MAT-N19 lists the sheet's look, not this. | P: `ax/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SheetDefaults.kt:536`; `…/ModalBottomSheet.kt:100`, `:159-162` | none | C24, C26 | P |
+| MAT-SF04† | 4.3 | placement | Levitated pane (adaptive scaffolds) | A pane with `AdaptStrategy.Levitate` floats above the scaffold "like a pop-up or a sheet (for example, as a bottom sheet or a side sheet)": its alignment (default `Alignment.Center`) and an optional scrim (`LevitatedPaneScrim`). | P: `ax/compose/material3/adaptive/adaptive-layout/src/commonMain/kotlin/androidx/compose/material3/adaptive/layout/AdaptStrategy.kt:77-120` | none | C26, C24 | P |
+
+---
+
+## Relabelled controls (2026-10-28)
+
+Pass 2 asked the platforms about 18 controls under a wrong control name (a tagging
+error: GN-2.40–2.46, GN-2.49, K2.7, K2.15–2.17, K2.22, Q2.43, W2-13, W2-14, W2-19,
+W2-25), so this check asked again for this platform. Decisions: 1 a new §4.2 row, 2 a
+new §4.1 row, 3 a row already covers it (the same job, possibly done another way),
+4 the platform has no such thing.
+
+"cat." as in the Material file's Cross-check table A: the component token files of `latest/` (material-web
+`cbd34a8921915af94d5ef65c2a69eece41d5b4f3`, `tokens/versions/latest/sass/`, listed again 2026-10-28 through the
+GitHub contents API: 195 files) and the file list of `compose/` at androidx
+`1e6776853023ebe4266aca2b308305723e3a2d57` (`xcm/compose-ls.json`). System-drawn Android UI follows the file's
+convention: what the framework draws inside the app's window counts (MAT-N30†, MAT-I13, MAT-I17†); what another
+process draws outside it does not (table A, "keyboard").
+
+| Control | Decision 1–4 | Row added, row covering it, or the source showing it is absent |
+|---|---|---|
+| keyboard shortcut keycap (GN-2.40) | 3 | MAT-M4 (a menu item's trailing supporting text, the shortcut, its font and colour). Material draws shortcuts only as that text: no keycap component in cat. (no keycap or shortcut token file in `latest/`, no such file in `compose/`) |
+| shortcuts dialog (GN-2.41) | 4 | None in cat. Android's keyboard-shortcuts helper (an app supplies its groups through `Activity.onProvideKeyboardShortcuts`, `Activity.requestShowKeyboardShortcuts()`, API 24) is drawn by the system, not by the M3 app (to verify who draws it on current Android versions) — outside the app like the keyboard (table A) |
+| text selection handles (touch) (GN-2.42) | 3 | MAT-I13 (handles, `compose/MaterialTheme.kt:276-281` `handleColor`; geometry *measure-compose*), MAT-I17† (magnifier), MAT-X26 (handle shape and colour); the selection's action bar is MAT-N30† |
+| emoji chooser (GN-2.43) | 4 | None in cat. The keyboard's emoji panel is drawn by the input-method app (as table A's "keyboard"). androidx `emoji2/emoji2-emojipicker` (`EmojiPickerView`) is a Jetpack View library outside the M3 component set (whether it takes M3 colours: to verify) |
+| video play overlay (GN-2.44) | 4 | None in cat.; table A "media transport controls" is 3 for the same reason. The list item's leading video (MAT-L2, `latest/_md-comp-list.scss:57-60, :73-74, :93-96`) states only the video's size, no play glyph |
+| editable label (GN-2.45) | 4 | None in cat.: no in-place label editor in `latest/` or `compose/`; editing is the text field (MAT-I*) |
+| wrap box (GN-2.46) | 1 | new 4.2 row: Chip set (`md-chip-set`) |
+| drag icon (GN-2.49) | 3 | MAT-X29 (dragged state layer and elevation of cards, chips, list items, drag handle), MAT-L10 (dragged list item's colours, shadow colour, shape); the drag shadow Android draws across windows stays "to verify, *measure-compose*" (table A, "drag and drop") |
+| command link button (K2.7) | 4 | None in cat.: the button token files are elevated, filled, tonal, outlined, text and the Expressive sizes (MAT-B1, MAT-B9); none has a description line |
+| title widget (K2.15) | 4 | None in cat.: no title/heading component; page titles are the app bar's headline (MAT-TA3, MAT-TA7) and the typescale roles (MAT-TS1) |
+| side tab bar (K2.16) | 4 | None in cat.: the tab files are `primary-navigation-tab` and `secondary-navigation-tab` (`latest/`), and `compose/TabRow.kt` has only `PrimaryTabRow`, `SecondaryTabRow`, `PrimaryScrollableTabRow`, `SecondaryScrollableTabRow` (`:150`, `:201`, `:253`, `:324`), all horizontal rows (to verify for the scrollable ones). The side-edge navigation, the rail (MAT-N13), switches destinations, not tool views |
+| splitter collapser (K2.17) | 4 | None in cat. Compose's adaptive panes are resized by the drag handle (MAT-SP1, MAT-SP2; `compose/DragHandle.kt`), whose state sets the first pane's proportion in 0..1 (androidx `compose/material3/adaptive/adaptive-layout/src/commonMain/kotlin/androidx/compose/material3/adaptive/layout/PaneExpansionState.kt:466-470`); the adaptive-layout file list has no collapse button |
+| wizard (K2.22) | 4 | None in cat.: no stepper or multi-step component in `latest/` or `compose/` |
+| drag handle (Q2.43) | 3 | MAT-SP1, MAT-SP2 (`latest/_md-comp-drag-handle.scss:23-53`, incl. the pressed width, height and shape; Compose `compose/DragHandle.kt`), MAT-N19 (the bottom sheet's handle), MAT-L10 (the reorder list item, `latest/_md-comp-list-reorder.scss:22-45`; the grip glyph is the app's trailing icon, coloured by `trailing-icon.color` at :42-43) |
+| grid view items (W2-13) | 4 | None in cat. (table A, "collection view": Compose's lazy grids are foundation layout with no M3 styling); tiles drawn as cards are MAT-CA*, carousel items MAT-N18 |
+| items view (W2-14) | 3 | MAT-L4, MAT-L5 (item states, selected × state, disabled opacities), MAT-L3 (trailing element colours, incl. a trailing checkbox's slot); as for table A's "list box". A grid layout of items has none (row above) |
+| repeat button (W2-19) | 4 | None in cat.: no auto-repeating button in `latest/` or `compose/` (the button and icon-button files state no repeat delay or interval) |
+| radio group (W2-25) | 4 | None in cat.: `latest/` has only `radio-button`, `compose/` only `RadioButton.kt`, and material-web groups radios by `name` with no group element; no group header or spacing exists to carry. The radio itself is MAT-C1, MAT-C2, MAT-C8, MAT-C9 |
+
+Tally: 1 — 1 (Chip set); 2 — 0; 3 — 5 (keycap, text selection handles, drag icon, drag handle, items view); 4 — 12.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAT-RL01† | 4.2 | chip set | Chip set (`md-chip-set`) | The container that lays chips out in rows that wrap: the wrap rule and the gap between chips, one `gap` for both directions (between chips in a row and between rows). MAT-N9 states each chip, not the space between them. Compose has no chip-set component (an app places chips in foundation's `FlowRow` with its own spacing), so what a Compose app shows is the app's choice — to verify against the M3 chips guidance (m3.io, to verify) | *published*: `mw/chips/internal/_chip-set.scss:7-11` (`flex-wrap: wrap`, `gap`), element `mw/chips/chip-set.ts:25`; no token in `latest/` (cat.) | `layout.widget_gap_px` (unrelated, partial) | C24, C26 | P, V |
+
+## Fonts and mirroring (2026-10-28)
+
+A completeness check of the map found two gaps no row covered: the emoji font and
+the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
+layout where this file had no general row. The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+
+**Emoji and fallback.** Not covered: MAT-X36† is the platform sans and monospace typefaces from
+`fonts.xml`, MAT-X16 tracking, line height, axes and features — neither names the emoji font or the
+per-script fallback. material-web has no fallback of its own: its typeface tokens are single names
+(`md.ref.typeface.brand` and `.plain`, both `Roboto`, `latest/_md-ref-typeface.scss:18-21`), so in a browser
+the emoji and fallback fonts are the host system's (the other five sections) or the browser's; the rows
+below are Android's.
+
+**Right-to-left.** No row covers it. The m3.io guidance could not be read (`m3.io`), so what follows is
+from the two implementations and Google's icon guide. Beyond mirroring, three things are drawn
+differently: icons with a question mark mirror in Arabic and Farsi but not in Hebrew (a per-language
+rule, `GFI`), anything that shows time is drawn moving right to left (`GFI`), and material-web's text field
+can keep a left-to-right direction inside an RTL layout (`textDirection`, "Useful for RTL languages that
+use LTR notation for fractions", `mw/docs/components/text-field.md:502`). No RTL branch was found in either
+implementation's circular progress indicator (a search of `mw/progress/internal/_circular-progress.scss`
+and `compose/ProgressIndicator.kt`, whose two branches are the linear indicator's), so it is not mirrored;
+whether that is the guidance's rule is to verify on m3.io.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAT-FM01† | 4.3 | typography | Emoji font | Android's emoji fonts are the `fonts.xml` families tagged `lang="und-Zsye"`: `NotoColorEmoji.ttf` and `NotoColorEmojiFlags.ttf` (`NotoColorEmojiLegacy.ttf` is listed with `ignore="true"`), placed after the CJK families in `fallback_order.json`. A Compose Material 3 `Text` or `TextField` (Compose UI 1.4 and later) draws emoji through emoji2, which brings "the latest emoji version" down to API 21, so on older devices an M3 app can draw a newer emoji font than the system's; `EmojiSupportMatch.None` turns it off. `fonts.xml` is marked deprecated in favour of the APIs in the next column. The model has no emoji family. | P: `aosp/fonts.xml:1585-1593`, deprecation `:3-21`; `aosp/fallback_order.json:89-96`; `c-emoji`; R: `AFontMatcher_match` with `AFontMatcher_setLocales` on an emoji string (API 29), `ASystemFontIterator_open` / `SystemFonts.getAvailableFonts()` (API 29) (`ndk`); M: *measure-compose*, the sample set in an M3 `Text` on an API ≤ 30 and a current emulator image | none (`defaults.font.family`); related MAT-X36† | C18, C25 | P, R, M |
+| MAT-FM02† | 4.3 | typography | Fallback chain per language | "Fonts are chosen based on a match: full BCP-47 language tag including script, then just language, and finally order (the first font containing the glyph)". The CJK families `zh-Hans`, `zh-Hant,zh-Bopo`, `ja` and `ko` are different faces (`index`) of the same `NotoSansCJK-Regular.ttc`, so Han glyphs follow the text's locale; the order of the script families is `fallback_order.json`'s. How a Compose `TextStyle`'s `localeList` reaches the matcher is to verify. The model has one family and no language. | P: `aosp/fonts.xml:24-26`, `:1411-1584`; `aosp/fallback_order.json:1-136`; R: `AFontMatcher_match` per locale (`ndk`); M: *measure-compose*, the sample set per locale | none (`defaults.font.family`) | C18, C25 | P, R, M |
+| MAT-FM03† | 4.3 | mirroring | Right-to-left layout | Android reports the layout direction (LTR or RTL); Compose lays out by `LocalLayoutDirection`; material-web follows the CSS `direction` and states its geometry in logical properties, its corner shapes per logical corner (`start-start`, `start-end`, `end-start`, `end-end`), so MAT-X11's `-start` / `-end` corner families swap sides. Components that draw RTL explicitly: the slider (active-track clip, thumb offset, drag direction, and in Compose the track's inside and outside corner radii swap), the linear progress indicator (mirrored as a whole; in Compose the bar and the stop indicator), the tab indicator's offset, the navigation drawer (swipe direction, predictive-back transform origin), the date-range selection highlight, the menu's horizontal offset, the outlined field's resize handle, the search bar's predictive-back offset. Cross-check: MAC-X34†, W3-54†, X-SV-3. | R: `Configuration.getLayoutDirection()` (`a-ref`); P: `mw/internal/controller/is-rtl.ts:15-20`; `mw/slider/internal/_slider.scss:202-208`, `:441-455`, `:517-519`; `mw/progress/internal/_linear-progress.scss:172-174`; `mw/field/internal/_outlined-field.scss:325-329`; `mw/menu/internal/controllers/surfacePositionController.ts:100`; `mw/tabs/internal/_tab.scss:75` (logical corners); `compose/Slider.kt:888-897`, `:2422-2495`; `compose/ProgressIndicator.kt:409-411`, `:919-921`; `compose/TabRow.kt:735-740`; `compose/NavigationDrawer.kt:371-379`, `:917-960`, `:1263`; `compose/DateRangePicker.kt:1071-1076`; `compose/SearchBar.kt:4078`; M: *measure-web* with `dir="rtl"`, *measure-compose* under an RTL locale | none | C26, C11, C25 | R, P, M |
+| MAT-FM04† | 4.3 | mirroring | Icons in right-to-left | Which icons mirror. Compose: `Icons.AutoMirrored` ("a subset of Icons that will automatically mirror themselves when displayed in an RTL layout"), used by M3 e.g. for the date picker's month arrows; Android drawables mirror when `autoMirrored`. material-web's `md-icon` never flips; `md-icon-button` flips only with `flip-icon-in-rtl`, checked once ("at startup"). Google's list of icons to mirror includes `arrow_back`, `arrow_forward`, `chevron_left`, `chevron_right`, `undo`, `redo`, `reply`, `send`, `list`, `live_help`; a separate note: icons with a question mark mirror in Arabic and Farsi but not in Hebrew. The model's icon roles that the list covers (`NavBack`, `NavForward`, `ActionUndo`, `ActionRedo`, `Help`) have no mirroring rule. | P: `CAM`; `compose/DatePicker.kt:2511`, `:2519`; `a-ref` (`Drawable.isAutoMirrored()`); `mw/iconbutton/internal/icon-button.ts:61-62`, `:111`, `:245`; `mw/iconbutton/internal/_shared.scss:86-88`; `GFI` ("Which icons should be mirrored for RTL?", the question-mark note); model `native-theme/src/model/icons.rs:78-81`, `:98-101`, `:136-137`; M: *measure-compose* / *measure-web* renders under RTL | `icon_set` (no per-role mirroring) | C19, C26 | P, M |

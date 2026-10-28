@@ -533,3 +533,92 @@ platform-facts.md:1760 — Other geometry/widget metrics (0.5px, padding values,
 platform-facts.md:1763 — NSButton horizontal padding ~8px — macOS (value column) — ❓ WebKit [`RenderThemeMac.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/rendering/mac/RenderThemeMac.mm) `controlPadding(PushButton)` = 8px horizontal; comment says "AppKit wants to use 11px for mini but
 platform-facts.md:1775 — `+toolTipsFontOfSize:` default size — macOS (value column) — ❓ [Apple API docs](https://developer.apple.com/documentation/appkit/nsfont/1527704-tooltipsfontofsize) do not state default size; [Leopard-era Apple HIG](https://leopard-adc.pepas.com/documentation/UserExperience/Concept
 platform-facts.md:1776 — NSProgressIndicator visual bar vs control frame — macOS (value column) — ❓ bar height 6px is the visual track; `NSProgressIndicatorPreferredThickness`=14px deprecated (Apple: "do not accurately represent the geometry"); WebKit [`ProgressBarMac.mm`](https://github.com/WebKit/WebKit/blob/main/S
+
+## Seed follow-up sources
+
+The abbreviations the platform files' *Seed follow-up* sections cite (2026-10-28).
+
+### Code editor and rich text (G12, G27)
+
+| Short | Source |
+|---|---|
+| `gsv/F:L` | GtkSourceView tag **5.22.0** (commit `c7b52cf9f9e42035b133902a1a9b18faae00b1d0`), path F from the repository root |
+| `ksh/F:L` | KSyntaxHighlighting tag **v6.31.0** (KF 6.31.0, commit `6d8ab7945958e7354295db7f399cce06f7de7571`) |
+| `kte/F:L` | KTextEditor tag **v6.31.0** (KF 6.31.0, commit `ea14509c132f2c016d55b38f7a1ec24cc6f9e7d2`) |
+| `qt/F:L` | qtbase tag **v6.11.2** (the tag `platform-facts.md` cites), `src/gui/text/F` |
+| `A/…`, `G/…` | libadwaita 1.10.0 and GTK 4.24.1, as in the GNOME file |
+| `kirigami@81ada72b`, `qqc2@305eb2c4` | the KDE file's Kirigami pin; qqc2-desktop-style `305eb2c44fdc3eb38eebea3b0e6b493cf12d1e5e` (KDE GitHub mirror, `master`; to re-pin to the KF 6.31.0 tag with the KDE file, §6.3) |
+| `labs/F:L` | Windows Community Toolkit **Labs**, `CommunityToolkit/Labs-Windows` at `27ef7604dbc751814ea12d47a1f0e84b0076b8d3` (`main`, 2026-10-26), path `components/MarkdownTextBlock/src/F`. Labs is the toolkit's experimental channel: `MarkdownTextBlock` is **not** in the CTK release the Windows file pins (the `components/` list of `CommunityToolkit/Windows` at `a6b4dc45`, tag v8.2.251219, read through the GitHub contents API, has no MarkdownTextBlock) |
+| `MUX` | microsoft-ui-xaml at `8463f451`, as in the Windows file |
+| Apple `x/y` | `https://developer.apple.com/documentation/x/y`, fetched as JSON (`…/tutorials/data/documentation/x/y.json`) on 2026-10-28 |
+| WWDC26-370 | `https://developer.apple.com/videos/play/wwdc2026/370/` ("Elevate your app's text experience with TextKit"), read 2026-10-28 |
+| `compose/`, `latest/` | androidx `1e6776853023ebe4266aca2b308305723e3a2d57` and material-web `cbd34a89…` `tokens/versions/latest/sass/`, as in the Material file |
+
+SRC: **R** read at run time, **P** published, **M** measure, **V** to verify. CAPS: the IDs of
+`taxonomy.md`. For macOS and iOS a **Gen** column follows *Element*.
+
+**The new controls this file adds to §4.2:** `code editor` (GNOME: GtkSourceView; KDE:
+KTextEditor) and `rich text view` (Markdown or HTML rendered by a platform component: KDE/Qt
+QTextDocument, Windows Labs MarkdownTextBlock, Apple SwiftUI `Text` and the AppKit/UIKit
+attributed-string importers). Both are new rows of the §4.2 table; the other cells are "–" with
+the reason given in each platform's section below.
+
+**"A window's own label" (G27).** The seed is iced's application style: the text colour iced gives
+every text that states none comes from `defaults.text_color`, because "the model states no label of
+the window's own" (`connectors/native-theme-iced/src/styles.rs:2245-2247`). It is a **colour, not a
+font**: the platforms that draw window text and view text in different colours are already rows
+(GNOME GN-1.274 `--view-fg-color` vs window fg; KDE Q3.1, the Window and View colour sets; macOS
+MAC-DF05†, `textColor` that no reader reads, beside `labelColor`). Windows, Material and iOS draw
+both with one colour (`TextFillColorPrimary`, `onSurface`, `label`): no row. No further row.
+
+### Drop zones and dialog placement (G19, G24)
+
+| Short | Source |
+|---|---|
+| `qt/F:L` | qtbase tag **v6.10.1** (the tag the KDE file already cites), `src/widgets/…/F`, fetched from `raw.githubusercontent.com/qt/qtbase/v6.10.1/` |
+| `st:L` | `kstyle/breezestyle.cpp`, KDE/breeze @ `75561b7f` (as in the KDE file) |
+| `kwin/F:L` | KDE/kwin @ `625e3132326c9ff181a9af342be59fd92f05d8fa` (as in the KDE file), `src/F` |
+| `kirigami`, `qqc2` | as in the KDE file (`81ada72b`, `305eb2c4`) |
+| `kate/F:L` | KDE/kate `master` @ `8f4e08cc94f0568c0b7bc93f1054318106cfb719` (2026-10-27), `apps/lib/F` |
+| `konsole/F:L` | KDE/konsole `master` @ `8907008c19a72a9f69b8478225246fc7f163a2a3`, `src/F` |
+| `kdenlive/F:L` | KDE/kdenlive `master` @ `680c1922f2a8b12e05eb30f549ac62ac921ac425` |
+| `kddw/F:L` | KDAB/KDDockWidgets tag **v2.5.1** (`674f2845`), `src/F` |
+| `A/…`, `G/…` | libadwaita 1.10.0, GTK 4.24.1 (as in the GNOME file) |
+| `M/F:L` | mutter tag **51.0** (commit `138a14fbeef09d49ebf5be8a0cb83b042dd5c841`, the mutter of the gnome-shell 51.0 the GNOME file cites) |
+| `GS-data/F:L` | gnome-shell tag **51.0** (`2177bdf9`), `data/F` |
+| `LP/F:L` | GNOME/libpanel tag **1.9.0** (commit `0dbdbf6eb3053430d3af78c970f132c05d996acb`), `src/F` |
+| `MUX/…` | microsoft-ui-xaml @ `8463f451` (as in the Windows file), `controls/dev/…` |
+| Learn | learn.microsoft.com, read 2026-10-28, with the page's `updated_at` |
+| Apple | `developer.apple.com/tutorials/data/documentation/<path>.json`, read 2026-10-28; HIG pages as the macOS/iOS files read them (2026-10-27) |
+| `mw/`, `compose/` | as in the Material file (material-web `cbd34a89`, androidx `1e677685`) |
+| `ax/F:L` | androidx `1e6776853023ebe4266aca2b308305723e3a2d57`, the full path given in the row |
+
+Columns: section · model element · Element · What is missing · Source · Nearest model field · CAPS · SRC.
+For macOS and iOS the "What is missing" cell ends with **Gen:** (whether the generations differ).
+
+## Fonts and mirroring sources
+
+The abbreviations the platform files' *Fonts and mirroring* sections cite (2026-10-28).
+
+| Abbrev. | Source |
+|---|---|
+| `CT` | Apple Core Text / AppKit / UIKit documentation JSON, `https://developer.apple.com/tutorials/data/documentation/<path>.json`, read 2026-10-28: `coretext/ctfontcopydefaultcascadelistforlanguages(_:_:)` (iOS 6.0, macOS 10.8: "An ordered list of CTFontDescriptors for font fallback according to the given language preferences … the system follows this list to pick a fallback font"), `coretext/kctfontcascadelistattribute` (iOS 3.2, macOS 10.5), `coretext/ctfontcreateforstring(_:_:_:)` (iOS 3.2, macOS 10.5), `coretext/ctfontcreateforstringwithlanguage(_:_:_:_:)` (iOS 7.0, macOS 10.9), `appkit/nsfontdescriptor/attributename/cascadelist` and `uikit/uifontdescriptor/attributename/cascadelist` (iOS 7.0; both: "The default value is the system default cascading list for user's locale"), `uikit/nsadaptiveimageglyph` (iOS 18.0) and `appkit/nsadaptiveimageglyph` (macOS 15.0) |
+| `ASF` | Apple, *System Fonts*, `https://developer.apple.com/fonts/system-fonts/`, read 2026-10-28: "Apple Color Emoji", version 20.0d1e3, marked "system font" for iOS, macOS, tvOS, watchOS |
+| `Learn` | learn.microsoft.com, read 2026-10-28, with the page's `updated_at`: *IDWriteFactory2::GetSystemFontFallback* (2024-02-22); *IDWriteFontFallback::MapCharacters* (2024-02-22; "The text source implementation holds the text and locale"; Windows 8.1); *Typography in Windows* `windows/apps/design/signature-experiences/typography` (2026-07-14; "Fonts for non-Latin languages" table; "Segoe UI Emoji — User-interface font for Emoji"; "Segoe UI Symbol — Fallback font for symbols"); *Segoe UI Emoji font family* `typography/font-list/segoe-ui-emoji` (2021-12-06; file `Seguiemj.ttf`, script tags `Zsye`, `Zsym`); *TextBlock.IsColorFontEnabled* (Windows App SDK, 2026-07-28; default `true`; "Some glyphs in multi-color fonts have different layout metrics when rendered in color"); *LanguageFontGroup Class* `uwp/api/windows.globalization.fonts.languagefontgroup` (2025-11-21; "Supplies a set of font recommendations for a given language or script for various usage cases"); *Fonts* `globalization/fonts-layout/fonts` (2023-11-20; font linking in GDI, registry key `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink`) |
+| `fc/` | fontconfig tag **2.15.0** (the version `native-theme/src/fonts.rs:290` cites), `conf.d/`: `45-generic.conf`, `60-generic.conf`, `65-nonlatin.conf` |
+| `qt/` | qtbase tag **v6.10.1** (the KDE file's Qt ref), `src/gui/text/`: `unix/qfontconfigdatabase.cpp`, `qfontdatabase.cpp` |
+| `P/` | pango tag **1.58.2** (commit `d360f14004e4a4824f2352f6e2722016f9a51dd6`), `pango/`; GTK 4.24.1 requires pango ≥ 1.58 (`gtk/meson.build:17-22` at tag 4.24.1) |
+| `G/`, `A/w/`, `S/` | as the GNOME file: GTK 4.24.1 `gtk/`, libadwaita 1.10.0 `src/stylesheet/widgets/`, gsettings-desktop-schemas 51.0 |
+| `st`, `kirigami@81ada72b` | as the KDE file: KDE/breeze @ `75561b7f` `kstyle/breezestyle.cpp`; KDE/kirigami @ `81ada72b` |
+| `aosp/` | AOSP `platform/frameworks/base` @ `1cdfff555f4a21f71ccc978290e2e212e2f8b168` (`refs/heads/main` on android.googlesource.com, read 2026-10-28; committer date 2025-03-26), `data/fonts/`: `fonts.xml`, `fallback_order.json` |
+| `ndk` | developer.android.com/ndk/reference/group/font (updated 2026-08-27): `AFontMatcher_match`, `AFontMatcher_setLocales`, `ASystemFontIterator_open`, "Available since API level 29" |
+| `c-emoji` | developer.android.com/develop/ui/compose/text/emoji (updated 2026-10-22) |
+| `a-ref` | developer.android.com reference, read 2026-10-28: `android.content.res.Configuration#getLayoutDirection()`; `android.graphics.drawable.Drawable#isAutoMirrored()` |
+| `CAM` | developer.android.com reference `androidx.compose.material.icons.Icons.AutoMirrored` (artifact `material-icons-core`, added in 1.6.0), read 2026-10-28 |
+| `GFI` | Google Fonts, *Material Icons Guide*, `developers.google.com/fonts/docs/material_icons`, sections "Icons in RTL" and "Which icons should be mirrored for RTL?" (last updated 2024-07-23) |
+| `mw/`, `latest/`, `compose/` | as the Material file: material-web `cbd34a8921915af94d5ef65c2a69eece41d5b4f3` (repository root; `latest/` = `tokens/versions/latest/sass/`); androidx `1e6776853023ebe4266aca2b308305723e3a2d57`, `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/` |
+| `m3.io` | m3.material.io *Bidirectionality & RTL* (`foundations/layout/understanding-layout/bidirectionality-rtl`) and the m2 page (`m2.material.io/design/usability/bidirectionality.html`) render with JavaScript only and returned no text: **to verify**, as the Material file says of every m3.io cite |
+
+The probe methods named in the rows are the gap map's §3 probes; "the sample set" means one string
+each of emoji (with and without U+FE0F), Han text under the `ja`, `zh-Hans`, `zh-Hant` and `ko`
+languages, Arabic, Hebrew, Devanagari and Thai, laid out in the UI font, recording the font of each run.

@@ -866,3 +866,120 @@ MN-17†, MN-18†, SB-7†, DL-13†, SG-9†).
   "On platforms other than macOS, the circular style may appear as an indeterminate indicator instead." HIG
   offering-help places tooltips "In apps that run on a Mac — including iPhone and iPad apps", which puts TT-1's
   premise (pointer tooltips in the simulator) in doubt.
+
+## Seed follow-up (2026-10-28)
+
+Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
+map's §5). The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+are the row's capability tags (main map §4.3) and source kinds.
+
+### Code editor and rich text (G12, G27)
+
+**Code editor: not on this platform.** UIKit has no code-editor control and no syntax scheme; the
+same WWDC26 session builds the line-number view and collapsing as app code on a `UITextView`
+subclass (WWDC26-370, quotes in the macOS section). Find highlights are TA-2, the find navigator
+C-25.
+
+| ID | § | Model element | Element | Gen (13–18 / 26) | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|---|
+| SF-1† | 4.1 | `[text_area]` | Invisibles (TextKit 1) | same | `NSLayoutManager.showsInvisibleCharacters` on iOS: the substitute glyphs and their colour; whether a TextKit 2 `UITextView` (the default from iOS 16, to verify) draws them is to verify | P: Apple `uikit/nslayoutmanager/showsinvisiblecharacters` (iOS 7.0+); M-r: `UITextView` with a TextKit 1 layout manager, flag on | none | C13, C17 | P, M, V |
+
+**Rich text / Markdown.**
+
+| ID | § | Model element | Element | Gen (13–18 / 26) | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|---|
+| SF-2† | 4.2 | rich text view | SwiftUI `Text` with Markdown: which roles it draws | 13–14: none (Markdown parsing is iOS 15.0; whether `Text` on 13–14 shows the raw markup is to verify); 15–18 and 26: same | Inline roles only; no lists, block quotes, code blocks, tables or headings (Apple's statement, macOS section) | P: Apple `swiftui/text/init(_:tablename:bundle:comment:)`; `foundation/attributedstring/init(markdown:options:baseurl:)-52n3u` (iOS 15.0) | none | C24 | P, V |
+| SF-3† | 4.2 | rich text view | Inline code in `Text` | 15+; 26 to compare | Font, size, colour, fill of code voice | P: Apple `foundation/inlinepresentationintent/code` (iOS 15.0); M-r: simulator render | `defaults.mono_font` | C18, C24 | P, M |
+| SF-4† | 4.2 | rich text view | Links in `Text` Markdown | 15+; 26 to compare | Link colour (tint, to verify), underline, highlighted (pressed) look | M-r and M-v (press) | `defaults.link_color`, `link.underline_enabled` | C07, C24 | M, V |
+| SF-5† | 4.1 | `[text_area]` | `UILabel`/`UITextView` given an `AttributedString(markdown:)` | 15+ | Which presentation intents UIKit renders, and how; not documented (developer reports disagree, so nothing is taken from them) | M-r: probe render; V | none | C18 | M, V |
+| SF-6† | 4.2 | rich text view | HTML imported into an attributed string | same | Default look of headings, code/pre, blockquote, lists, tables, links (WebKit's defaults); scope for the rationale | P: Apple `foundation/nsattributedstring/documenttype/html` (iOS 7.0+); M-r | none | C18, C24 | P, M |
+
+iOS 26's rich-text `TextEditor` takes environment fonts and colours (Apple
+`swiftui/texteditor/init(text:selection:)`, iOS 26.0): no row.
+
+### Drop zones and dialog placement (G19, G24)
+
+#### G19 — drop zone under a dragged pane, tab or dock
+
+Covered by: C-24 (drag and drop: lift preview, count badge, drop-target highlight, motion), L-10 (list cell
+dragging and drop-target states), T-17† (iPadOS 18 tab customization, dragging an item into the tab bar with its
+drop indicator, to verify), W-10† (Slide Over and Split View: the scene's corners, shadow, grabber, the divider).
+
+Not drawn by the app: dragging an app, a scene or a link to the screen edge to make Split View, Slide Over or a
+new window, and iPadOS 26's window tiling. SpringBoard draws those drop previews, outside the app's process, so
+they are §6.2's scope question (source to verify: no UIKit API styles them). Inside an app, UIKit has no pane
+that can be dropped on another: `UISplitViewController` columns are shown, hidden and resized (SP-1…SP-3), not
+rearranged.
+
+#### G24 — where a modal dialog is placed
+
+Covered by: C-11 (action sheet: bottom platters on iPhone, a popover on iPad; 26 anchored to the source, to
+verify), C-12 (sheet look, detents, iPad page/form sizes, the edge-attached variant's look), PO-1 / PO-4 /
+PO-7† (popover arrow side, screen-edge margins, source gap), X-SV-1 (size classes as an axis), DL-13† (alert
+width).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| SF-7† | 4.1 | [dialog] | Sheet placement per size class | Where a page or form sheet goes, by size class: regular width and regular height → centred over a dimming layer (form sheet: over a Liquid Glass layer, by the current page's wording); compact width, regular height → a sheet from the bottom "with part of the background content visible near the top"; compact height → full screen, unless `prefersEdgeAttachedInCompactHeight` attaches it to the bottom edge only, its width then the container's safe-area width unless `widthFollowsPreferredContentSizeWhenEdgeAttached`. C-12 lists these variants' looks, not the rule that picks the placement. **Gen:** same rule; 26 differs in the layer behind a form sheet (glass vs dimming: to verify against 13–18). | R: `uikit/uisheetpresentationcontroller/prefersedgeattachedincompactheight` (15.0), `…/widthfollowspreferredcontentsizewhenedgeattached` (15.0), `…/preferspagesizing` (17.0), `UITraitCollection` size classes; P: `uikit/uimodalpresentationstyle/pagesheet`, `…/formsheet` (read 2026-10-28) | none | C26, C10, C25 | R, P |
+| SF-8† | 4.1 | [dialog] | Default sheet style (`.automatic`) | `.automatic` maps most view controllers to `formSheet` in iOS 18 and later and to `pageSheet` before, so the default sheet's size and placement on iPad differ inside the 13–18 range. **Gen:** differs at 18. | P: `uikit/uimodalpresentationstyle/automatic` (13.0; read 2026-10-28); M-q: frame of a default-presented controller on an iPad simulator, iOS 17 and 18 | none | C26, C10 | P, M |
+| SF-9† | 4.1 | [dialog] | Alert: position | Where `UIAlertController` `.alert` sits: centred on the screen or the scene (iPad windowed scenes / Stage Manager: which, to verify), and how far it moves up when an alert text field brings up the keyboard. No UIKit or HIG page states it (the HIG states a centred alert only for visionOS). **Gen:** to verify on 26. | M-q: the alert view's frame in screen and scene coordinates, with and without `addTextField` and the keyboard up, iPhone and iPad simulators | none | C26 | M, V |
+
+## Relabelled controls (2026-10-28)
+
+Pass 2 asked the platforms about 18 controls under a wrong control name (a tagging
+error: GN-2.40–2.46, GN-2.49, K2.7, K2.15–2.17, K2.22, Q2.43, W2-13, W2-14, W2-19,
+W2-25), so this check asked again for this platform. Decisions: 1 a new §4.2 row, 2 a
+new §4.1 row, 3 a row already covers it (the same job, possibly done another way),
+4 the platform has no such thing.
+
+Apple pages read 2026-10-28 through their JSON form, as the iOS file does (`uikit/x/y`, `swiftui/x`, `HIG <page>`;
+the "HIG catalogue" is the 64 component pages of the iOS file's Cross-check). Saved under the scratchpad's
+`xc-relabel-ios-dl/`.
+
+| Control | Decision 1–4 | Row added, row covering it, or the source showing it is absent |
+|---|---|---|
+| keyboard shortcut keycap (GN-2.40) | 3 | MN-13 (keyboard-shortcut column of menus, iPad with a keyboard) and C-37† (iPadOS menu bar); the discoverability HUD is the new 4.2 row "Keyboard-shortcut discoverability HUD" (below). iOS shows a shortcut as modifier glyphs and a key in a menu row; whether any of these surfaces draws keycap boxes is to verify (M-r) |
+| shortcuts dialog (GN-2.41) | 1 | new 4.2 row: Keyboard-shortcut discoverability HUD. `uikit/uikeycommand/discoverabilitytitle` (iOS 9.0) and `uikit/uicommand/discoverabilitytitle` (iOS 13.0): "In iOS, the system displays this title in the discoverability heads-up display (HUD)" |
+| text selection handles (touch) (GN-2.42) | 3 | X-SE-2 (selection handles: knob, stem, colour, drag magnifier / loupe), I-8, X-CA-1 |
+| emoji chooser (GN-2.43) | 3 | C-23 (the system-drawn keyboard, whose emoji keyboard is one of its layouts; the app sets only `UIKeyboardAppearance`). The emoji picker an iPad shows for a hardware keyboard: whether it follows `UIKeyboardAppearance` is to verify |
+| video play overlay (GN-2.44) | 3 | C-42† (AVKit's playback controls drawn over the video, `showsPlaybackControls`: buttons, scrubber, their fade) |
+| editable label (GN-2.45) | 1 | new 4.2 row: Navigation title inline rename. `uikit/uinavigationitem/renamedelegate-8jiuf` (iOS 16.0): "UIKit shows an inline text field UI for changing the navigation item’s title". C-28 has the title menu only, not the field. No other in-place label editor found in UIKit |
+| wrap box (GN-2.46) | 2 | new 4.1 row: [layout] Flow layout spacing (`UICollectionViewFlowLayout`: "Items … flow from one row or column … to the next, with each row containing as many cells as will fit", `uikit/uicollectionviewflowlayout`) |
+| drag icon (GN-2.49) | 3 | C-24 (lift preview: scale, shadow, corner; drag-count badge; cancel / drop motion) |
+| command link button (K2.7) | 4 | None in the HIG catalogue (no command-link page among the 64 component pages; whether HIG buttons names such a style is to verify). The nearest, a button with a title and a subtitle, is B-8 |
+| title widget (K2.15) | 4 | None in the HIG catalogue. Page titles are the navigation bar's (large) title (C-1), section titles the list headers (L-4, SD-4), the text styles TS-1 |
+| side tab bar (K2.16) | 3 | iPadOS 18's sidebar-adaptable tab bar, whose tabs show as a sidebar along the window's side: C-22, T-13, T-17†; the sidebar SD-* |
+| splitter collapser (K2.17) | 3 | C-29 (split view's display-mode button, the sidebar toggle), C-22 (tab-bar ↔ sidebar toggle), SP-3 (column show / hide motion) |
+| wizard (K2.22) | 4 | None in the HIG catalogue (no assistant or wizard page). Multi-step flows are navigation pushes (C-1, C-2, X-MO-3) or a page view (C-48†) |
+| drag handle (Q2.43) | 3 | L-12 (the list's reorder grabber accessory), L-14 (reorder lift), C-12 (the sheet's grabber), W-10† (Slide Over grabber) |
+| grid view items (W2-13) | 3 | X-SE-3 (list and grid selection: grey touch highlight vs tint selection), L-10 (cell states incl. dragging, drop target), C-24 (drag), C-47† (band selection). Whether a plain grid `UICollectionViewCell` draws any selection look without an app-set background configuration is to verify (M-r) |
+| items view (W2-14) | 3 | As grid view items: L-10, X-SE-3; the list multiselect circle CK-2† |
+| repeat button (W2-19) | 3 | C-4 (UIStepper `autorepeat` timing), X-BT-1 (stepper autorepeat among the visible timings); the stepper is the only autorepeating standard control found |
+| radio group (W2-25) | 3 | iOS has no radio buttons: `swiftui/radiogrouppickerstyle` ("presents the options as a group of radio buttons") lists macOS 10.15 only. The single-choice group iOS draws is the inline picker of checkmark rows in a list section: L-23† (inline picker), L-12 (checkmark accessory), L-4 (section header) |
+
+Tally (18): 1 — 2 (shortcuts dialog, editable label); 2 — 1 (wrap box); 3 — 12; 4 — 3 (command link button, title widget, wizard).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| RL-1† | 4.2 | keyboard-shortcut discoverability HUD | Keyboard-shortcut discoverability HUD (iPad with a hardware keyboard) | System-drawn overlay listing the app's key commands by their `discoverabilityTitle` (else `title`): its fill or material, corner radius, shadow, category headers, row font and colour, the shortcut glyphs' font and alignment, show / hide motion. Drawn by the system, like C-23 and C-26: a toolkit drawing its own needs this look. How it is invoked on iPadOS (holding Command: HIG keyboards states it for visionOS only) and whether iPadOS 26 keeps it beside the menu bar (C-37†) are to verify | P: `uikit/uikeycommand/discoverabilitytitle` (iOS 9.0), `uikit/uicommand/discoverabilitytitle` (iOS 13.0): "In iOS, the system displays this title in the discoverability heads-up display (HUD)"; P: HIG keyboards (the visionOS "shortcut interface"); M-r, M-v | `menu.*` (partial) · 13–18 / 26: to verify (26 menu bar) | C24, C03, C11, C01, C18, C14 | P, M, V |
+| RL-2† | 4.2 | navigation title inline rename | Navigation title inline rename (`UINavigationItem.renameDelegate`, 16+) | The navigation bar's title turned into "an inline text field UI for changing the navigation item’s title", shown when a person taps Rename in the title menu (C-28) or the app calls `rename(_:)`: the field's fill, corner, height and insets in the bar, its font against the title's, the caret and selection (X-CA, X-SE), the transition from title to field and back | P: `uikit/uinavigationitem/renamedelegate-8jiuf` (iOS 16.0), `uikit/uinavigationitemrenamedelegate-5j4ws`; M-r, M-v | `input.*` (partial) · 13–18 / 26: 16+ only; 26 to verify | C24, C07, C13, C14 | P, M |
+| RL-3† | 4.1 | [layout] | Flow layout spacing (`UICollectionViewFlowLayout`) | The spacing a wrapping grid of items (tags, tiles) gets by default: between items in a line (`minimumInteritemSpacing`) and between lines (`minimumLineSpacing`); both pages state "The default value of this property is 10.0" (points). The model has one `widget_gap_px` and no line gap | P: `uikit/uicollectionviewflowlayout/minimuminteritemspacing`, `uikit/uicollectionviewflowlayout/minimumlinespacing` (iOS 6.0) | `layout.widget_gap_px` (one gap) · 13–18 / 26: same (API unchanged; 26 to verify) | C26 | P |
+
+## Fonts and mirroring (2026-10-28)
+
+A completeness check of the map found two gaps no row covered: the emoji font and
+the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
+layout where this file had no general row. The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+
+Not covered by any row (see the top; D-1…D-6 and X-DT-5 are tracking, optical size, design, width and
+leading). Same mechanism as macOS: Core Text's cascade list and Apple Color Emoji, a system font on iOS
+(`ASF`); 13–18 and 26 do not differ in mechanism, and whether a list's members differ per version is what
+the read returns. `NSAdaptiveImageGlyph` (Genmoji, iOS 18.0, `CT`) is user content placed in text, not a
+platform value: no row. iOS has no reader (X-RD-1), so R means the probe app reads it until one exists.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| FM-1† | 4.3 | typography | Emoji font | The colour-emoji font text is drawn in: Apple Color Emoji, a system font on iOS (`ASF`), reached through Core Text's fallback. The model has no emoji family. 13–18 and 26: same font name and mechanism. | R: `CTFontCreateForString` / `CTFontCreateForStringWithLanguage` on an emoji string (iOS 3.2 / 7.0, `CT`); P: `ASF`; M-q: probe app in the simulator, the sample set in a `UILabel`, the font of each `CTRun` | none (`defaults.font.family`) | C18, C25 | R, P, M |
+| FM-2† | 4.3 | typography | Fallback chain per language | The ordered fallback list for characters the UI font lacks, per the user's preferred languages (Han glyphs by language as on macOS). 13–18 and 26: same API; members per version as read. | R: `CTFontCopyDefaultCascadeListForLanguages` (iOS 6.0), `UIFontDescriptor.AttributeName.cascadeList` (iOS 7.0; default "the system default cascading list for the user's locale") (`CT`); M-q: probe app, the sample set under each simulator language (`-AppleLanguages`, to verify) | none (`defaults.font.family`, `defaults.mono_font.family`) | C18, C25 | R, M |

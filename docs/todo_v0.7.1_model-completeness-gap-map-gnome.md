@@ -858,3 +858,133 @@ Pass 1 filed eight §4.2 rows under a control category GNOME does not have (colu
 | 1698 link `hover_background` | a | Hover changes the colour (`A/w/_links.scss:11-13`), not a fill |
 
 Tallies: A — 51 listed controls: 8 decided 1, 12 decided 2, 31 decided 3 (plus the 8 categories pass 1 misfiled). B — 12 capabilities gained rows, 16 need no further row. C — 63 cells: 44 a, 19 b; seven b cells state a wrong value or reason (1061, 1265, 1322, 1600, 1601, 1639, 1641).
+
+## Seed follow-up (2026-10-28)
+
+Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
+map's §5). The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+are the row's capability tags (main map §4.3) and source kinds.
+
+### Code editor and rich text (G12, G27)
+
+**Code editor.** libadwaita and GTK have no code view; the GNOME code editor component is
+GtkSourceView (a GNOME library, not part of libadwaita; whether it counts as the platform is §6.2's
+question). It ships the style schemes *Adwaita* and *Adwaita-dark*, which name each other as their
+variants (`variant` / `dark-variant` / `light-variant` metadata, read with
+`gtk_source_style_scheme_get_metadata`, since 5.4). A buffer whose app sets no scheme uses
+**classic**, not Adwaita; GNOME Text Editor defaults to `'Adwaita'` (`org.gnome.TextEditor`
+`style-scheme`, gnome-text-editor `data/org.gnome.TextEditor.gschema.xml:101-102` on `main`, read
+2026-10-28, to pin). Plain `GtkTextView` gutters are GN-1.52.
+
+| ID | § | Model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| GN-SF01† | 4.2 | code editor | Which scheme draws | Default scheme `classic` ("follow[s] more closely the GTK theme") unless the app sets one; Adwaita/Adwaita-dark pair through scheme metadata | P: `gsv/gtksourceview/gtksourcestylescheme.c:50-51`, `:76`, `:1659-1674`, `:1687`; `gsv/gtksourceview/gtksourcebuffer.c:510`; `gsv/data/styles/Adwaita.xml:24-27`; `Adwaita-dark.xml:24-27` | none | C05, C24 | P |
+| GN-SF02† | 4.2 | code editor | Editor text and fill; selection | `text` style (fill and text colour); `selection` and `selection-unfocused` when a scheme states them (Adwaita states neither, so GTK's selection stands); the scheme is applied as generated CSS on `textview` | P: `gsv/data/styles/Adwaita.xml:104`; `Adwaita-dark.xml:107`; `gsv/docs/style-reference.md:117-127`; `gsv/gtksourceview/gtksourcestylescheme.c:1002-1025` | `input.background_color`, `defaults.text_color` (field values, not the scheme's); `defaults.selection_inactive_background` | C05, C17, C24 | P |
+| GN-SF03† | 4.2 | code editor | Caret, secondary caret | `cursor` colour as `caret-color`; the bidirectional secondary caret `-gtk-secondary-caret-color`, the primary at alpha × 0.5 unless `secondary-cursor` is stated | P: `Adwaita.xml:98`; `Adwaita-dark.xml:101`; `gsv/docs/style-reference.md:129-138`; `gsv/gtksourceview/gtksourcestylescheme.c:797-852` | `input.caret_color` (no secondary caret) | C16, C24 | P |
+| GN-SF04† | 4.2 | code editor | Current line | `current-line` background (only the background is used) | P: `Adwaita.xml:96`; `Adwaita-dark.xml:99`; `gsv/docs/style-reference.md:140-142` | none | C17, C24 | P |
+| GN-SF05† | 4.2 | code editor | Gutter (line numbers) | `line-numbers` text and fill (used for all gutters), `current-line-number` fill, text and bold (bold defaults to true), `line-numbers-border` as a 1 px right border; the renderer's horizontal padding (`xpad`) on each side | P: `Adwaita.xml:97`, `:100`; `Adwaita-dark.xml:100`, `:103`; `gsv/docs/style-reference.md:144-160`; `gsv/gtksourceview/gtksourcestylescheme.c:1027-1050`; `gsv/gtksourceview/gtksourcegutterrendererlines.c:441-443`, `:482-486` | none (GN-1.52 is the plain text view's gutter fill) | C13, C18, C24 | P |
+| GN-SF06† | 4.2 | code editor | Invisibles | `draw-spaces` colour; the marks are drawn as paths: space, tab arrow, newline, no-break space | P: `Adwaita.xml:99`; `Adwaita-dark.xml:102`; `gsv/docs/style-reference.md:178-181`; `gsv/gtksourceview/gtksourcespacedrawer.c:858-965` | none | C13, C24 | P |
+| GN-SF07† | 4.2 | code editor | Bracket matching | `bracket-match` (Adwaita: bold only, no colour) and `bracket-mismatch` (not stated by Adwaita) | P: `Adwaita.xml:95`; `Adwaita-dark.xml:98`; `gsv/docs/style-reference.md:162-168` | none | C17, C18, C24 | P |
+| GN-SF08† | 4.2 | code editor | Search match | `search-match` fill and text colour (Adwaita-dark's fill is translucent) | P: `Adwaita.xml:103`; `Adwaita-dark.xml:106`; `gsv/gtksourceview/gtksourcesearchcontext.c:412` | none (GNOME C17 row: "GTK's text widgets have no find highlight of their own") | C04, C17, C24 | P |
+| GN-SF09† | 4.2 | code editor | Right margin | `right-margin`: the line in its foreground at alpha 40/255 and the area right of it in its background at 15/255, premixed with the editor fill; default column 80 | P: `Adwaita.xml:102`; `gsv/docs/style-reference.md:170-176`; `gsv/gtksourceview/gtksourceview.c:134-138`, `:5115-5170` | none | C04, C13, C24 | P |
+| GN-SF10† | 4.2 | code editor | Syntax roles | 30 `def:` styles with foreground, background, bold, italic, underline (incl. `error` style with `underline-color`), strikethrough: comment, string, statement, type, function, identifier, constant, number/decimal/base-n/floating-point/boolean, preprocessor, special-char, note, shebang, error, warning, and the Markdown roles `heading`, `inline-code`, `list-marker`, `link-text`, `link-destination`, `emphasis`, `strong-emphasis`, `preformatted-section`; per-language overrides (C, C#, CSS, Diff, Go, Python, Rust, Vala, XML) | P: `Adwaita.xml:106-185`; `Adwaita-dark.xml:109-189`; `gsv/docs/style-reference.md:65-114` | none | C05, C18, C24 | P |
+| GN-SF11† | 4.2 | code editor | Background pattern, overview map | `background-pattern` (grid) fill; `map-overlay` (the GtkSourceMap slider; falls back to `selection`) | P: `Adwaita.xml:94`, `:101`; `gsv/docs/style-reference.md:183-186`; `gsv/gtksourceview/gtksourcemap.c:520-521` | none | C13, C24 | P |
+| GN-SF12† | 4.2 | code editor | Annotations (5.18+) | Warning, error and accent colours of inline annotations, taken from the scheme's `diff:changed-line`, `diff:removed-line`, `diff:added-line` | P: `gsv/gtksourceview/gtksourcestylescheme.c:70-72`, `:754-795`; `gsv/gtksourceview/gtksourceannotation.c:39`, `:392-400`; `Adwaita.xml:157-161`; `Adwaita-dark.xml:160-164` | `defaults.warning_color`, `danger_color`, `success_color` (status colours, not these) | C05, C24 | P |
+| GN-SF13† | 4.2 | code editor | Completion and informative popups | GtkSourceView's own CSS: radius 11, layered shadows, margins, row min-height 28, icon cell 16 + padding 6, the "before" column at opacity 0.65, details pane; informative warning/error fills from `@warning_color` / `@error_color` | P: `gsv/gtksourceview/GtkSourceView.css:1-198` | `popover.*`, `list.*` | C01, C11, C13, C24 | P |
+
+**Rich text / Markdown: not on this platform.** GTK 4.24.1 and libadwaita 1.10.0 have no Markdown
+renderer (`grep -ril markdown` over `G/` and `A/c/` finds only GTK's debug output,
+`gtk/gtkdebug.c:147`). Their rich text is Pango markup in labels, whose tags are fixed attributes
+with no theme look: `<tt>` is "Monospace font", `<big>`/`<small>` relative sizes, `<b>` bold; no
+headings, lists, quotes or code blocks (Pango markup reference, docs.gtk.org/Pango/pango_markup.html,
+Pango 1.58.2, read 2026-10-28). Links in labels are the `link` node, `[link]`'s rows
+(`A/w/_links.scss:34`). The Markdown roles GNOME colours are syntax roles of the code editor above.
+
+### Drop zones and dialog placement (G19, G24)
+
+#### G19 — drop zone under a dragged pane, tab or dock
+
+Covered by: GN-1.127 (AdwTabBar insertion bar), GN-1.132 (drag-hover switch), GN-1.133 (the dragged tab),
+GN-2.35 (tab overview drop target fill and ring), GN-3.51 (drag-hover activation), GN-3.66† (the catch-all
+`:drop(active)` highlight and the widgets that replace it), GN-1.166 (separate boxed list drop target).
+A tab dropped outside any tab bar becomes a new window through `AdwTabView::create-window`, with no drop zone
+drawn ("This can happen after a tab has been dropped on desktop": `A/c/adw-tab-view.c:2795-2807`).
+
+Not in libadwaita or GTK: a pane dragged onto another pane. The only libadwaita sources with a drop target or a
+drop motion controller are the tab widgets, the sidebar and the inline view switcher (`adw-tab.c`,
+`adw-tab-box.c`, `adw-tab-grid.c`, `adw-tab-thumbnail.c`, `adw-sidebar.c`, `adw-inline-view-switcher.c`, by
+grep); the split views have none, and `G/gtkpaned.c` contains no "drop".
+
+GNOME's docking library is **libpanel** (GNOME/libpanel, "IDE-like applications using GTK 4 and libadwaita";
+GNOME Builder uses it). It draws a drop zone of its own, styled from libadwaita's colour variables. Whether it
+is in scope is §6.2's question, as for kirigami-addons; the rows are listed so the rationale can decide.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| GN-SF14† | 4.2 | dock frame (libpanel) | Drop zone over a dock frame (`paneldropcontrols`) | While a page is dragged over a `PanelFrame`, the frame shows a drop overlay: accent fill at 10 %, radius 10, margin 1, `background` and `border` transitions 300 ms; when the drop is over it, accent 30 % and a 1 px inset accent ring. The frame's own `:drop(active)` shadow is switched off, so GN-3.66†'s catch-all does not apply. | P: `LP/stylesheet.css:400-415`; `LP/panel-frame.c:613`, `:656`, `:670` | none | C24, C17, C07, C04, C14 | P |
+| GN-SF15† | 4.2 | dock frame (libpanel) | Drop-position buttons (top, right, bottom, left, centre) | Five buttons in a grid centred on the frame, 6 apart; icons `panel-top-symbolic`, `panel-right-symbolic`, `panel-bottom-symbolic`, `panel-left-symbolic`, `panel-center-symbolic`; the centre one circular, the others radius 11, padding 0; fill accent, glyph accent-foreground at 80 %, shadow `0 3px 5px` black 20 %; under the drop: fill mix(accent, accent-foreground 30 %), glyph accent-foreground. | P: `LP/panel-drop-controls.ui:6-61`; `LP/stylesheet.css:416-429` | none | C24, C13, C01, C07, C19 | P |
+| GN-SF16† | 4.2 | dock frame (libpanel) | Frame-switcher drop indicator | The indicator drawn in a frame switcher where a dragged page would land: accent at 80 %. | P: `LP/stylesheet.css:88-90`; `LP/panel-frame-switcher.c:102-139`, `:782` | none | C24, C17 | P |
+
+#### G24 — where a modal dialog is placed
+
+Covered by: GN-1.218 (floating-sheet margins 30 → 120 / 20 → 120 over 720 → 1440), GN-1.219 (default size),
+GN-1.222 (bottom-sheet look: side margins, flush outlines — but not *when*), GN-2.17 (the bottom sheet's look and
+its top padding 30 → 120), GN-3.72† (the parent dimmed under an attached dialog; its "key's default: to verify"
+is settled in the last row below).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| GN-SF17† | 4.1 | [dialog] | AdwDialog / AdwAlertDialog: floating or bottom sheet (the breakpoint) | With `presentation-mode` `AUTO` (the default) a dialog is a centred floating sheet, and a bottom sheet when the window is at most 450 wide (`max-width: 450px`) or at most 360 high (`max-height: 360px`); it also gets the classes `.narrow` / `.short` per breakpoint, which change the alert's paddings (GN-1.215). The app can force `FLOATING` or `BOTTOM_SHEET`. | P: `A/c/adw-dialog.c:24-25`, `:28-35`, `:451-478`, `:2131-2133` | none | C26, C10 | P |
+| GN-SF18† | 4.1 | [dialog] | AdwDialog floating sheet: position | Centred both ways (`(width − sheet) × 0.5`, `(height − sheet) × 0.5`) in the dialog host, which is the whole `AdwWindow` (its title bar is a hidden gizmo; the header bar is part of the content), inside GN-1.218's margins. | P: `A/c/adw-floating-sheet.c:181-226` (centring `:217-218`); `A/c/adw-window.c:325-331` | none | C26 | P |
+| GN-SF19† | 4.1 | [dialog] | AdwDialog bottom sheet: position | Attached to the bottom edge; not full width (`full-width` false), horizontally centred (`align` 0.5, mirrored in RTL), natural width at least 360; height capped by GN-2.17's top padding; no drag handle. | P: `A/c/adw-dialog.c:511-522`; `A/c/adw-bottom-sheet.c:27-30`, `:588-599`, `:617-630`, `:1125` | none | C26 | P |
+| GN-SF20† | 4.1 | [dialog] | AdwDialog shown as its own window | When the parent window is not an `AdwWindow` / `AdwApplicationWindow`, or is not resizable, the dialog becomes a separate non-resizable window (`.dialog-window`), placed by the compositor (next row). | P: `A/c/adw-dialog.c:2073-2104`, `:613-631` | none | C26 | P |
+| GN-SF21† | 4.1 | [dialog] | Dialog windows: mutter's placement | Under GNOME Shell `attach-modal-dialogs` is true (gnome-shell's override; mutter's own default is false): an attached modal dialog is centred both ways on its parent's frame and kept on screen. A transient dialog that is not attached is centred horizontally on its parent with "twice as much space below as on top" (top at a third of the free height). Applies to GTK's own dialog windows (GtkAlertDialog, the file chooser's window when not the portal's), legacy GtkDialog, and AdwDialog's window fallback. | R: `org.gnome.mutter attach-modal-dialogs` (`M/data/org.gnome.mutter.gschema.xml.in:26-33`; `GS-data/00_org.gnome.shell.gschema.override:1-2`); P: `M/src/core/constraints.c:1249-1294`; `M/src/core/place.c:977-1008` | none | C26, C25 | R, P |
+
+---
+
+## Relabelled controls (2026-10-28)
+
+Pass 2 asked the platforms about 18 controls under a wrong control name (a tagging
+error: GN-2.40–2.46, GN-2.49, K2.7, K2.15–2.17, K2.22, Q2.43, W2-13, W2-14, W2-19,
+W2-25), so this check asked again for this platform. Decisions: 1 a new §4.2 row, 2 a
+new §4.1 row, 3 a row already covers it (the same job, possibly done another way),
+4 the platform has no such thing.
+
+Sources as in the GNOME file (`A/w/`, `A/c/`, `G/`, `G/deprecated/`, GTKgal, ADWgal at libadwaita 1.10.0 / GTK 4.24.1); `G/ui/F:L` is GTK 4.24.1 `gtk/ui/F` (the `G/F:L` rule). `A/c/adw-overlay-split-view.c` and `G/deprecated/gtkassistant.c` were fetched from gitlab.gnome.org at the tags on 2026-10-28.
+
+| Control | Decision 1–4 | Row added, row covering it, or the source showing it is absent |
+|---|---|---|
+| command link button (K2.7) | 3 | GTKgal and ADWgal have no command-link button. The same thing (a clickable title with a description under it) is an activatable AdwActionRow in a boxed list: GN-2.01 (title, dimmed `smaller` subtitle, prefix/suffix), GN-1.165 (boxed list, row hover / pressed), GN-1.158–1.160 (activatable row pressed, selected + hover / pressed, open popup; hover is `list.hover_background`), `A/w/_lists.scss:75-89`. A trailing arrow is an image the app adds, not part of the row |
+| title widget (K2.15) | 3 | No KTitleWidget counterpart in GTKgal or ADWgal; page and section titles are AdwStatusPage (GN-2.13: icon, `.title-1`, description), AdwPreferencesGroup's header (GN-2.10; its title is `.heading`, its description `.body` `.dimmed`, `A/c/adw-preferences-group.ui:20-41`, the roles in GN-1.189), AdwWindowTitle (GN-1.18) and the `.title-1`…`.title-4` classes (GN-1.189). GNOME colours no comment line by message type |
+| side tab bar (K2.16) | 3 | GtkNotebook with tabs on the left or right: GN-1.118 (indicator on the left / right side, `A/w/_notebook.scss:36-58`), GN-1.119 (up / down scroll arrows), GN-1.121 (strip padding, including the `.left` / `.right` rules of `A/w/_notebook.scss:167-210`), GN-1.116, GN-1.117, GN-1.120, GN-1.122, GN-1.123; a vertical page switcher is GtkStackSidebar (GN-2.34). No edge-docked tool-view tab bar: no dock widgets in GTKgal or ADWgal (table A, "dock/panel title bar") |
+| splitter collapser (K2.17) | 4 | GtkPaned's nodes are its two children and the `separator` (`G/gtkpaned.c:92-99`), no button; AdwOverlaySplitView's nodes are the sidebar and content panes only (`A/c/adw-overlay-split-view.c:125-141`). A pane is shown or hidden by a button the app places in a header bar, which is a plain flat button (GN-1.29) |
+| wizard (K2.22) | 1 | GtkAssistant (deprecated 4.10, still shipped: GTKgal "Assistant"). GN-2.51 covers its sidebar only; new 4.2 row: GtkAssistant page frame and navigation buttons. Current GNOME apps build multi-step flows from AdwNavigationView pages (GN-2.18) |
+| drag handle (Q2.43) | 3 | The bottom sheet's drag handle: GN-2.17 (54×6, 25 %, margin 15, radius 99; hidden by `show-drag-handle`). No row-reorder handle widget in GTKgal or ADWgal; reordering draws the drag icon (GN-2.49) and the separate boxed list's drop-target shadow (GN-1.166) |
+| grid view items (W2-13) | 3 | GtkGridView / GtkFlowBox items: GN-1.174 (padding, radius 9, hover / pressed, selected 25 / 32 / 39 %, focus ring); in sidebars GN-1.143; GtkIconView GN-1.280†; selection-mode checks GN-1.62; rubber band GN-1.175; drag icon GN-2.49. GNOME draws no selected-item border and no corner check box |
+| items view (W2-14) | 3 | GtkListView / GtkGridView items: GN-1.158–1.166 (row states, selected + hover / pressed, focus, separators), GN-1.174 (grid items); disabled items use the global disabled opacity (GN-1.123's mechanism, `--disabled-opacity`). No inner selection border in GNOME |
+| repeat button (W2-19) | 3 | GTKgal has no repeat-button class; GTK repeats only inside GtkSpinButton (buttons GN-2.24) and the slider / scrollbar trough: timings GN-3.69† (`G/gtkspinbutton.c:63-67`, `G/gtkrange.c:73-74`) |
+| radio group (W2-25) | 3 | GTKgal has no radio-group widget, only GtkCheckButton in a group, which becomes a `radio` node with the `.grouped` class (`G/gtkcheckbutton.c:207-212`): GN-1.60, GN-1.61, GN-1.63. A headed radio set is an AdwPreferencesGroup (header GN-2.10) of action rows with a radio prefix (GN-2.01); the spacing of free-standing radios is the app's GtkBox spacing |
+
+Tally: 1 — 1 (wizard); 2 — 0; 3 — 8; 4 — 1 (splitter collapser).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| GN-RL01† | 4.2 | wizard | GtkAssistant page frame and navigation buttons (deprecated, still shipped) | Two layouts. Default (`use-header-bar` unset → FALSE): an action area under the page, a box with spacing 6 and margins 6, buttons in the order Close, Cancel, Last, Back, Forward, Apply (those the page type needs), all `.text-button` and sized equal by one size group. With `use-header-bar`: Back and Cancel packed at the header bar's start, the others at its end, vertically centred, the default button made `.suggested-action`; the header bar shows no window buttons. The current page's title is the window title. libadwaita styles only the sidebar (GN-2.51), so the rest is the plain button and header-bar look | published `G/ui/gtkassistant.ui:3-8`, `:30-108`, `:114-122`; `G/deprecated/gtkassistant.c:420-430`, `:440-463`, `:470-481`, `:981`; `A/w/_deprecated.scss:46-94` (only `window.assistant .sidebar`) | `dialog.button_gap_px`, `dialog.button_order` (dialogs only) | C24, C09, C26 | P |
+
+## Fonts and mirroring (2026-10-28)
+
+A completeness check of the map found two gaps no row covered: the emoji font and
+the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
+layout where this file had no general row. The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+
+Not covered by any row (GN-1.193 is features and variations, GN-3.56 rendering). GNOME has no settings
+key for an emoji or fallback font: `org.gnome.desktop.interface` has `font-name`, `document-font-name` and
+`monospace-font-name` (`S/org.gnome.desktop.interface:107`, `:158`, `:165`) and nothing else for fonts.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| GN-FM01† | 4.3 | typography | Emoji font | Pango's itemizer marks emoji runs and asks for the family `emoji`, with a colour font required when the run has a variation selector, and the family `emoji` with colour forbidden for a non-emoji character with a variation selector; the colour wish goes into the fontconfig pattern (`FC_COLOR`). fontconfig resolves `emoji` as on KDE (Noto Color Emoji first). The model has no emoji family. | P: `P/itemize.c:906-937`; `P/pangofc-fontmap.c:2115-2126`; `fc/60-generic.conf:9-47`, `fc/45-generic.conf:8-77`; R: `fc-match emoji` (as on KDE); M: GTK probe, the sample set in a `PangoLayout`, `pango_font_describe` of each run | none (`defaults.font.family`) | C18, C25 | P, R, M |
+| GN-FM02† | 4.3 | typography | Fallback chain per language, and the family list | Pango sorts fontconfig's candidates with the run's language (`FC_LANG`): the context language where it covers the script, else the script's sample language; Han has no sample language, so `PANGO_LANGUAGE` / `LANGUAGE` or the context language decides between Japanese, Chinese and Korean glyphs. Separately, the `font-name` string may itself carry a family list (`"Cantarell,Sans"`), which Pango hands to fontconfig to try in turn; the reader keeps only the first name. | P: `P/itemize.c:834-855`; `P/pangofc-fontmap.c:2142`; `P/pango-language.c:870-905` (the Han rule and the environment variables); `native-theme/src/gnome/mod.rs:194-200` (the reader drops the list); R: the `font-name` key (`S/org.gnome.desktop.interface:107`); `fc-match -s` per language (as on KDE); M: GTK probe, the sample set under each `LANG` | none (`defaults.font.family`) | C18, C25 | P, R, M |
+| GN-FM03† | 4.3 | mirroring | Right-to-left layout (outside the brief: no such row exists) | GTK sets the default text direction from the locale at start-up and every widget has a direction; libadwaita's stylesheet has 81 `:dir()` rules in 18 files (header bar, buttons, checks, menus, lists, expanders, paned, tab view, sidebars, spin button, scrolling, emoji chooser, …), of which GN-1.139, GN-1.284† and GN-SF19† record three. Icon lookup appends `-rtl` / `-ltr` to the icon name by direction, so an icon theme can ship a mirrored variant; the freedesktop loader (`native-theme/src/freedesktop.rs`) has no direction. Cross-check: MAC-X34†, W3-54†, X-SV-3. | R: `gtk_get_locale_direction()` (`G/gtkmain.c:491`, `:704-730`), `gtk_widget_get_direction()` (`G/gtkwidget.c:7647`); P: `A/w/*.scss` `:dir(rtl)` / `:dir(ltr)` rules (count from a search of `src/stylesheet` at 1.10.0); `G/gtkicontheme.c:2173-2202` (direction suffix); M: GTK probe under an RTL locale | none | C26, C19, C25 | R, P, M |

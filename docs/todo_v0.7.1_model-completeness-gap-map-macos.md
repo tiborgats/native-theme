@@ -677,3 +677,124 @@ a = macOS does not draw it, the cell is right; b = macOS draws it and no documen
 | 1714, 1715 | text area `border.padding_*` | b | MAC-I10†. |
 
 Tally over the 63 lines: a 32, b 29, and 2 split by generation (1377, 1378: a on 12–15, b on 26).
+
+## Seed follow-up (2026-10-28)
+
+Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
+map's §5). The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+are the row's capability tags (main map §4.3) and source kinds.
+
+### Code editor and rich text (G12, G27)
+
+**Code editor: not on this platform.** AppKit has no code-editor control and ships no syntax
+scheme: Apple's own WWDC26 session on TextKit builds line numbers and collapsible sections as **app
+code** on a `UITextView`/`NSTextView` subclass ("we added line numbers to a UITextView with just a
+few lines of code"; the numbers are drawn by the app with `number.draw(at:withAttributes:)`), and
+the APIs it introduces ("Starting with our 2027 releases, UITextView and NSTextView now conform to
+NSTextViewportLayoutControllerDelegate") only let the app draw its own (WWDC26-370). The ruler
+(`NSRulerView`) is MAC-N17; the find highlight, the find-indicator bubble and the dimming of
+non-matches are MAC-X15. What AppKit itself draws for a code view is only the invisibles:
+
+| ID | § | Model element | Element | Gen | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|---|
+| MAC-SF01† | 4.1 | `[text_area]` | Invisibles (TextKit 1) | both | `NSLayoutManager.showsInvisibleCharacters` substitutes "visible glyphs for whitespace and other typically invisible characters": which glyph for space, tab, line break and no-break space, and their colour. Whether a TextKit 2 text view (the default since macOS 13, per Apple's TextKit 2 docs, to verify) draws them at all is to verify | P: Apple `appkit/nslayoutmanager/showsinvisiblecharacters` (macOS 10.7+); M: probe render of an `NSTextView` forced to TextKit 1 with the flag on, light and dark | none | C13, C17 | P, M, V |
+
+**Rich text / Markdown.**
+
+| ID | § | Model element | Element | Gen | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|---|
+| MAC-SF02† | 4.2 | rich text view | SwiftUI `Text` with Markdown: which roles it draws | both (macOS 12+) | `Text` styles inline Markdown only: "It doesn't support line breaks, soft breaks, or any style of paragraph- or block-based formatting like lists, block quotes, code blocks, or tables"; so on macOS the list markers, quotes, code blocks, tables and headings of the seed have **no system look**, while emphasis, strong, strikethrough, links and inline code do | P: Apple `swiftui/text/init(_:tablename:bundle:comment:)`; parsing: `foundation/attributedstring/init(markdown:options:baseurl:)-52n3u` (macOS 12.0) | none | C24 | P |
+| MAC-SF03† | 4.2 | rich text view | Inline code in `Text` (`InlinePresentationIntent.code`, "a code voice presentation") | both | The look of code voice: font (monospaced design or a fixed-pitch family), size relative to the run, colour, any fill. Apple states the intent, not its rendering | P: Apple `foundation/inlinepresentationintent/code` (macOS 12.0); M: SwiftUI probe render of `Text("a `code` b")`, light/dark, key/non-key | `defaults.mono_font` (a family, not the inline role) | C18, C24 | P, M |
+| MAC-SF04† | 4.2 | rich text view | Links in `Text` Markdown | both | Link colour (accent/tint or `linkColor`, to verify), underline or none, pressed look; whether it follows `.tint` | M: SwiftUI probe render of `Text("[a](https://example.com)")` with and without `.tint`, key/non-key | `defaults.link_color`, `link.underline_enabled` | C07, C24 | M, V |
+| MAC-SF05† | 4.1 | `[text_area]` | `NSTextView` showing an `AttributedString(markdown:)` | both | Whether AppKit renders the presentation intents (emphasis, strong, code, links) it is given or ignores them; if it renders them, with which fonts and colours. Apple documents only the parsing | P: Apple `foundation/instantiating-attributed-strings-with-markdown-syntax`; M: probe render; V | none | C18 | M, V |
+| MAC-SF06† | 4.2 | rich text view | HTML imported into an attributed string (`NSAttributedString.DocumentType.html`) | both | The default look the importer gives `h1`–`h6`, `code`/`pre`, `blockquote`, list markers, tables and links (WebKit's defaults, applied in process); Apple discourages the synchronous importer. Scope (an app-chosen import path, not a control) is for the rationale | P: Apple `foundation/nsattributedstring/documenttype/html` (macOS 10.0+); M: probe render of a fixed HTML sample | none | C18, C24 | P, M |
+
+macOS 26 adds a rich-text `TextEditor(text: Binding<AttributedString>)` (26.0) whose unstyled runs
+take "the font and/or foreground color inherited from the environment" (Apple
+`swiftui/texteditor/init(text:selection:)`): no role look of its own, no row.
+
+### Drop zones and dialog placement (G19, G24)
+
+#### G19 — drop zone under a dragged pane, tab or dock
+
+Covered by: MAC-L11 (drop-on row and insertion line in lists and outlines), MAC-X21 (drag image, count badge,
+drop-target highlights, spring-loading flash), MAC-W13† (the 15+ drag-to-edge tiling preview; drawn by the
+window server, not the app, so §6.2's scope question), MAC-SP03 (a split-view divider while dragged).
+
+Not on this platform: a pane or dock dragged onto another pane. AppKit has no docking control:
+`NSSplitView` / `NSSplitViewController` resize their arranged panes and offer no drag-to-rearrange (to verify
+against the AppKit class index); SwiftUI's `NavigationSplitView` and `HSplitView` likewise (to verify).
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAC-SF07† | 4.2 | window tab bar | Window tab bar as a drop target | While a window tab, or a whole window, is dragged over another window's tab bar: the insertion feedback (the tabs parting to open a gap, or a highlight; which one is to verify), its motion, and the look of the bar accepting a merge. MAC-W09 lists only the dragged tab's own look. **Gen:** both draw it; 26 to verify. | M: two windows joined with `addTabbedWindow(_:ordered:)`, a programmatic or recorded drag of a third window's tab over the bar, screen recording at the display rate | none (`tab.*` is a tab view's) | C24, C17, C07, C14 | M, V |
+
+#### G24 — where a modal dialog is placed
+
+Covered by: MAC-D01 (alert layout, not its position), MAC-D03 (sheet radius, material, shadow, parent dim; 26's
+floating inset sheet as a look). Neither states *where* the sheet or the alert sits.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAC-SF08† | 4.1 | [dialog] | Sheet: attachment point | Where a sheet (`beginSheet(_:completionHandler:)`, `NSAlert.beginSheetModal(for:)`, the open/save panels as sheets) sits on its window: the documented default attaches the sheet's top edge at the top of the content view ("the default `origin.y` value is the height of the content view and the default `origin.x` value is 0"); whether it then sits below the title bar only or below the toolbar, per `NSWindow.ToolbarStyle` and with a full-size content view, and whether it is centred horizontally, are to measure. The app can move it per window; the HIG says the macOS sheet "floats on top of its parent window". **Gen:** differs: 12–15 attach the sheet to the window's top; 26's floating inset sheet (MAC-D03) has an inset from the top and sides to measure. | P: Apple `appkit/nswindowdelegate/window(_:willpositionsheet:using:)` (discussion, read 2026-10-28); HIG *Sheets* §macOS (read 2026-10-27); R: the delegate's `rect` argument gives the default per window; M: sheet frame vs window frame on the probe window, without toolbar and with each toolbar style, 12–15 and 26 | none | C26, C25 | P, R, M |
+| MAC-SF09† | 4.1 | [dialog] | App-modal alert / panel position on screen | Where an app-modal alert or panel opens when it is not a sheet (`NSAlert.runModal()`, `NSApplication.runModal(for:)`): `NSWindow.center()` places a window "exactly in the center horizontally and somewhat above center vertically", and the same page says `runModal(for:)` invokes it for panels; the "somewhat above" offset is stated by no document; whether `NSAlert.runModal()` goes through `center()`: to verify. **Gen:** to verify on 26. | P: Apple `appkit/nswindow/center()` (read 2026-10-28), `appkit/nsalert/runmodal()`; M: alert window frame vs the screen's visible frame after `runModal` starts (probe, timer-dismissed) | none | C26 | P, M, V |
+| MAC-SF10† | 4.1 | [dialog] | SwiftUI alert, confirmation dialog and sheet on macOS | Whether SwiftUI's `.alert`, `.confirmationDialog` and `.sheet` present as window sheets (and so take the sheet row above) or as separate windows centred like `center()`; `presentationSizing` (15+) for sheets. **Gen:** both; 26 to verify. | P: SwiftUI documentation for the three modifiers (to verify); M: probe with a SwiftUI window | none | C26 | M, V |
+
+---
+
+## Relabelled controls (2026-10-28)
+
+Pass 2 asked the platforms about 18 controls under a wrong control name (a tagging
+error: GN-2.40–2.46, GN-2.49, K2.7, K2.15–2.17, K2.22, Q2.43, W2-13, W2-14, W2-19,
+W2-25), so this check asked again for this platform. Decisions: 1 a new §4.2 row, 2 a
+new §4.1 row, 3 a row already covers it (the same job, possibly done another way),
+4 the platform has no such thing.
+
+Apple pages read 2026-10-28 through their JSON form (`https://developer.apple.com/tutorials/data/documentation/<path>.json`), as the macOS file does; "AppKit catalogue" = the "Views and Controls" topic page the macOS file's Cross-check uses (`appkit/views-and-controls`); HIG pages from the scratchpad `hig/` cache.
+
+| Control | Decision 1–4 | Row added, row covering it, or the source showing it is absent |
+|---|---|---|
+| keyboard shortcut keycap (GN-2.40) | 3 | MAC-MN04 (the menu's key-equivalent column: shortcut text, modifier glyphs, colours per state); the Help-menu search that finds commands is MAC-N33†. macOS draws shortcuts only as menu text: no keycap view in the AppKit catalogue |
+| shortcuts dialog (GN-2.41) | 4 | No view or panel that lists an app's shortcuts in the AppKit catalogue; macOS shows shortcuts beside each menu item (MAC-MN04) and finds commands through Help-menu search (MAC-N33†) |
+| text selection handles (GN-2.42) | 4 | macOS has no touch text selection: the system selection UI `UITextSelectionDisplayInteraction` lists iOS, iPadOS, Mac Catalyst, tvOS and visionOS, not macOS (`uikit/uitextselectiondisplayinteraction`), and the AppKit catalogue has no handle or loupe. What a Mac Catalyst app draws is MAC-X36† |
+| emoji chooser (GN-2.43) | 3 | MAC-N27† (the Character Viewer / emoji picker the OS draws beside a text field) |
+| video play overlay (GN-2.44) | 3 | MAC-N30† (`AVPlayerView` controls: play / pause, the inline bar and the floating controls over the video). Whether `AVPlayerView` also draws a centred play image while paused: to verify in MAC-N30†'s capture |
+| editable label (GN-2.45) | 3 | MAC-I01 (the borderless label field; the field editor inside a table cell), MAC-L13 (cell editing: the field editor's fill and focus ring); renaming from the title bar is MAC-W11† |
+| wrap box (GN-2.46) | 2 | new 4.1 row: Flow layout spacing. Tokens wrapping inside a token field are MAC-N03 |
+| drag icon (GN-2.49) | 3 | MAC-X21 (drag image translucency, item-count badge); the dragged column's image MAC-L15. The multi-item formation (`NSDraggingSession.draggingFormation`, `appkit/nsdraggingsession/draggingformation`) is not named in MAC-X21: it belongs to that row's recording |
+| command link button (K2.7) | 4 | No title-plus-description button: the `NSButton.BezelStyle` cases (`appkit/nsbutton/bezelstyle-swift.enum`, listed in MAC-B01) and the AppKit catalogue have none |
+| title widget (K2.15) | 3 | MAC-TS01 (the title text styles the model lacks: title2, title3, …); a settings section header is MAC-N21. macOS has no title component with an icon and a message-coloured comment (AppKit catalogue) |
+| side tab bar (K2.16) | 3 | MAC-TB03 (`NSTabView.tabPosition` left / right, `tabViewType`). Tool-view toggle strips along a window edge (Xcode's) are app-drawn, not in the AppKit catalogue |
+| splitter collapser (K2.17) | 3 | HIG Sidebars: "in macOS, you can include a show/hide button or add Show Sidebar and Hide Sidebar commands to your app's View menu"; the button is the toolbar item `NSToolbarItem.Identifier.toggleSidebar` (10.11) / `toggleInspector` (14.0) (`appkit/nstoolbaritem/identifier/togglesidebar`, `…/toggleinspector`), drawn as a toolbar item: MAC-TL02. `NSSplitView` draws no button on its divider (MAC-SP01); a pane collapses by dragging (`NSSplitViewItem.canCollapse`) |
+| wizard (K2.22) | 4 | No wizard or assistant class in the AppKit catalogue. HIG Sheets places multi-step flows (Back, Cancel, Done) in a sheet, with button placement stated for iOS and iPadOS only; on macOS such a flow is a sheet (MAC-D03) with push buttons (MAC-B01) |
+| drag handle (Q2.43) | 4 | No reorder grip in AppKit: the reorder control `UITableViewCell.showsReorderControl` lists iOS, iPadOS, Mac Catalyst, tvOS and visionOS, not macOS (`uikit/uitableviewcell/showsreordercontrol`); `NSTableView` rows are dragged by their body, with the drop line of MAC-L11. HIG Sheets, macOS: "a sheet is a cardlike view with rounded corners that floats on top of its parent window" — no grabber |
+| grid view items (W2-13) | 3 | MAC-N13 (`NSCollectionView` item selection highlight); band selection MAC-N31†. AppKit has no check-box corner on items. Doubt: `NSCollectionViewItem.isSelected` states no default drawing, so whether the item draws any selection itself is to verify in MAC-N13 |
+| items view (W2-14) | 3 | MAC-L02 (selection shape and inset of table rows), MAC-L03 (unemphasized selection), MAC-N13 (collection items) |
+| repeat button (W2-19) | 3 | MAC-X12 (button periodic delay, `NSButtonCell.getPeriodicDelay(_:interval:)`; `NSButton.setPeriodicDelay(_:interval:)` "for a continuous button", `appkit/nsbutton/setperiodicdelay(_:interval:)`), MAC-N01 (stepper autorepeat); the button itself is drawn as a push button (MAC-B01) |
+| radio group (W2-25) | 2 | new 4.1 row: Radio group |
+
+Tally: 1 — 0; 2 — 2 (wrap box, radio group); 3 — 11; 4 — 5.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAC-RL01† | 4.1 | `[layout]` | Flow layout spacing | The spacing a flow layout uses when the app sets none: `NSCollectionViewFlowLayout.minimumInteritemSpacing` (between items in a row) and `minimumLineSpacing` (between rows), whose defaults Apple publishes on each property's page; a flow of tags or chips laid out by it draws these gaps. The model has one `widget_gap_px` for every gap. A built-in SwiftUI flow container was not found (custom `Layout`, 13.0): to verify | P: `appkit/nscollectionviewflowlayout/minimuminteritemspacing`, `…/minimumlinespacing` (read 2026-10-28) | `layout.widget_gap_px` · generations: both (the pages are unversioned; 26 to verify) | C26 | P |
+| MAC-RL02† | 4.1 | `[checkbox]` | Radio group | A group of radios: the gap between radios stacked vertically (the default) and placed horizontally (`horizontalRadioGroupLayout()`), the group label's placement beside the column of radios (in a form: MAC-LY02†), per control size. SwiftUI's `RadioGroupPickerStyle` (10.15, "presents the options as a group of radio buttons") draws the group itself; AppKit radios are separate `NSButton`s sharing an action, placed by the app (`NSMatrix`, its `intercellSpacing`, is legacy, "discouraged … in macOS 10.8 and later"). HIG Toggles: "Use consistent spacing when you display radio buttons horizontally" | P: `swiftui/radiogrouppickerstyle`, `swiftui/view/horizontalradiogrouplayout()`, `appkit/nsmatrix` (read 2026-10-28), HIG Toggles "Radio buttons"; M: a SwiftUI host (as MAC-N21) with a vertical and a horizontal radio-group picker per control size, gaps measured on the capture | `checkbox.label_gap_px`, `layout.widget_gap_px` · generations: both (to verify) | C13, C26, C10 | P, M |
+
+## Fonts and mirroring (2026-10-28)
+
+A completeness check of the map found two gaps no row covered: the emoji font and
+the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
+layout where this file had no general row. The source abbreviations are defined in
+`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+
+Not covered by any row (see the top). The two rows differ nowhere between 12–15 and 26 in mechanism:
+the same Core Text API and the same emoji font name serve both; whether a cascade list's members differ
+between versions is what the read returns per version. `NSAdaptiveImageGlyph` (macOS 15.0, "an emoji-like
+image that can appear in attributed text", `CT`) is user content placed in text, not a platform value,
+so it gets no row.
+
+| ID | section | model element | Element | What is missing | Source | Nearest model field | CAPS | SRC |
+|---|---|---|---|---|---|---|---|---|
+| MAC-FM01† | 4.3 | typography | Emoji font | The colour-emoji font text is drawn in: Apple Color Emoji, a system font on macOS (`ASF`), reached through Core Text's fallback, not named by the app. The model has no emoji family, so a connector draws emoji in whatever its toolkit bundles. Both generations (same font name; the glyph set per OS version is the font's). | R: `CTFontCreateForString` / `CTFontCreateForStringWithLanguage` on an emoji string returns the font Core Text substitutes (`CT`); P: `ASF`; M: OS probe, the sample set in an `NSTextField`, the font of each `CTRun` | none (`defaults.font.family` is one name) | C18, C25 | R, P, M |
+| MAC-FM02† | 4.3 | typography | Fallback chain per language | The ordered fallback list for characters the UI font lacks (CJK, Arabic, Hebrew, Indic, Thai, symbols), which depends on the user's preferred languages: Han characters take a Japanese, Simplified Chinese, Traditional Chinese or Korean font by language. The model has one family and no language. Both generations (same API; members per version as read). | R: `CTFontCopyDefaultCascadeListForLanguages(font, languages)` (macOS 10.8), `NSFontDescriptor.AttributeName.cascadeList` (default "the system default cascading list for user's locale") (`CT`); M: OS probe, the sample set under each preferred language (`-AppleLanguages`, to verify as in MAC-X34†) | none (`defaults.font.family`, `defaults.mono_font.family`: one name each) | C18, C25 | R, M |
