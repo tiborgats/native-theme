@@ -42,6 +42,14 @@ platform is stated here: values come from the facts (S17) in the value phase.
   `may_be_absent` (S6.3). `Option` appears only where `None` means something other than "not drawn", stated at
   the field (`max_lines: None` is no limit).
 
+- **Small types.** `PartRef` is a part's name in its widget (`PartRef(Key)`, checked against the widget's parts);
+  `StateFlags` is a set of `StateFlag`; `InputName` is an input's path (`accent`, `accent_ramp.light1`);
+  `CaretShape` is `Bar | Block | Underline`; `SizeClassThreshold` is a width or height in px per axis, the boundary
+  the platform states; `WinUiPlacement` is WinUI's `FlyoutPlacementMode`; `Accent` is a `Color`, or on `windows-11`,
+  `macos-*` and `ios-*` a `Color` with the derived inputs those platforms require (S9.2); `WidgetValue` is the union
+  of the value types widget values use (a keyed component's values are typed by its declaration, S10).
+  `DisabledRoles` and `StatusRoles` are the catalogue's (*Colour roles*).
+
 ## S2. Blocks (R2.1)
 
 ### S2.1 Colour
