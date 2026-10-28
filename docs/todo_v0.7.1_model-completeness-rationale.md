@@ -512,7 +512,7 @@ its source: `alpha(c, a)` multiplies the alpha (GN-1.210 multiplies an alpha alr
 t)` interpolates in sRGB with premultiplied alpha, as CSS `color-mix(in srgb …)` does (libadwaita's most
 frequent form, `color-mix(in srgb, currentColor 7%, transparent)`, is the colour at 7 % alpha only so); KDE's
 colour effects and the `KColorUtils` functions they use, to KDE's code (their behaviour on translucent input
-is checked against KDE's code in the specification); libadwaita's derivation of its standalone accent colours
+is read from KDE's code in the value phase and recorded in the facts); libadwaita's derivation of its standalone accent colours
 in OKLab, to its stylesheet's code; Material's scheme function (material-color-utilities, which defines
 Material's dynamic colour, MAT-X17), over its inputs (R2.6); and, for lengths and durations, multiples of the
 font size, the line height or a token, and products of tokens (Kirigami's grid unit, Q1.62; a width in
@@ -602,7 +602,8 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
   Material state springs; Apple's response and damping fraction convert to it exactly; velocity-dependent
-  curves (Kirigami's, Q3.26) are keyed timings, each defined in its platform's facts (R25.6).
+  curves (Kirigami's, Q3.26) are a closed set of platform curves, each implemented once in native-theme to its cited
+  source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16).
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
@@ -1010,8 +1011,8 @@ transition of kind morph; a loop's keyframes may name shapes.
 **R25.6 — Presentation transitions (extends R9).** Several transitions may run on one event together (a sheet's fade
 with its slide, Q2.40), one may target a single part (a clear button's fade), a slide states its distance, and
 items may be staggered (Q2.14, Q2.15, Q2.52). **Decision:** an event's presentation is a set of transitions, each with
-an optional part, distance and stagger; R9's velocity-dependent curves are keyed timings whose definitions the facts
-cite (the specification's `Timing::Keyed`).
+an optional part, distance and stagger; R9's velocity-dependent curves are platform curves implemented in native-theme
+(the specification's `Timing::Platform`).
 
 **R25.7 — Text rendering (extends R10).** Antialiasing, hinting, subpixel order, LCD filter and gamma or contrast
 (ClearType's, FreeType's through fontconfig, GNOME's `font-antialiasing`, `font-hinting`, `font-rgba-order`, macOS's font

@@ -63,7 +63,9 @@ platform is stated here: values come from the facts (S17) in the value phase.
   Label)`), so a misspelled typed part, or a part paired with the wrong widget, does not compile;
   `StateFlags` is a set of `StateFlag`; `InputName` is an input's path (`accent`, `accent_ramp.light1`);
   `CaretShape` is `Bar | Block | Underline`; `SizeClassThreshold` is `{ horizontal: Value<Px>, vertical: Value<Px> }`, the
-  boundaries the platform states, either may be absent; `WinUiPlacement` is WinUI's `FlyoutPlacementMode`; `Accent` is `{ accent: InputValue, derived: Vec<(InputName, InputValue)> }`
+  class's inclusive lower bound on each axis (either may be absent: that class is not chosen by that axis); a
+  window's class on an axis is the one with the largest bound not above its size there, or the class with no bound
+  where none is; `WinUiPlacement` is WinUI's `FlyoutPlacementMode`; `Accent` is `{ accent: InputValue, derived: Vec<(InputName, InputValue)> }`
   (S9.2); `WidgetValue` is the union of the value types widget values use: a number, integer, length, duration,
   bool, key, enum variant, colour, paint, timing, transition, loop, glyph, icon style, scroll physics,
   `Vec<PresentationTransition>` and a placement (`PlacementStrategy` with its `PlacementParams`); a keyed component's
@@ -136,7 +138,6 @@ ref      := "role." set "." role        typed colour role of a surface set      
                                           scroll_offset, scroll_progress, item_index,
                                           item_count, text, color, screen_width,
                                           screen_height, window_width, window_height, move_distance,
-                                          display_corner_radius.<corner> (top_left, …),
                                           and char_width, font_x_height, font_height (the
                                           part's font, through `Element.metrics`)      (R25.3)
           | "part." field                 another resolved field of the same part      (R25.3)
@@ -151,9 +152,9 @@ call     := name "(" expr { "," expr } ")"
 ```
 
 The reserved words (`base`, `scheme`, `font_size`, `line_height`, `text_scale`, `active`, `true`, `false`) are not
-names. The block tokens parts reference (`TextStyle`, `FocusIndicator`, `IconStyle`) may use `font_size`,
-`line_height` and `part.`: they are evaluated where used, in the referencing part's query (R2.5);
-`ResolvedTheme::tokens()` evaluates them against the style's own font size and refuses `part.` there. An expression
+names. The block tokens parts reference (`TextStyle`, `FocusIndicator`, `IconStyle`) may use `font_size` and
+`line_height`, the style's own: `ResolvedTheme::tokens()` evaluates them against it, and a referencing part's query
+evaluates them where used (R2.5). `part.` is not allowed in tokens (S12). An expression
 nests at most 32 deep, and a chain of references is at most 32 long (S12). `font_size` and `line_height` are lengths; a length is accepted where a font size is expected, as px. Under
 `line_height = auto` the `line_height` operand is the font's own line spacing, `Element.metrics.height` (the part
 declares it, S8).
@@ -208,7 +209,9 @@ colour expression stated on a `Value<Paint>` field, or in `append`, is one `Colo
 | `name_index(text, count, method: NameIndexMethod)` | number | the index a platform's avatar hashes a name to; `NameIndexMethod = Kirigami \| Adwaita` (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3; kirigami-addons' own `nameutils.cpp` is compared with Kirigami's in the value phase and becomes a member if it differs); `TrackingDesign = SfPro \| SfProRounded \| NewYork` |
 | `pick(index, c0, c1, …)` | colour | the colour at `index` (R25.3) |
 
-A function is added to this table only with the platform rule that needs it and its source (R5.4). A platform
+A function is added to this table only with the platform rule that needs it and its source (R5.4). How each KDE
+function treats a translucent input (mixes, keeps or ignores alpha) is read from its source in the value phase and
+recorded in its facts (R5.4). A platform
 that computes a stored colour by composition (KDE's `overlayColors`) gets a function; composition drawn over what
 lies beneath is a paint layer (R5.4, R6). Type checking: every operand and result is typed (colour, length,
 duration, angle, number, font size, text, bool, name); a name operand is checked against the enum or declared key
@@ -290,7 +293,7 @@ A part's outline is its `corners`, unless `PartStyle.shape` names a keyed shape 
 (declared in S10, each defined to its source, R25.5); an `Interpolate` transition of the `Shape` group morphs from one
 shape to the other.
 
-TOML shorthands: `corners_px = <n>` sets all four radii (the curve is stated on its own); `stroke = { width = "<px>", paint = "…" }`
+TOML shorthands: `corners_px = <n>` sets all four radii (the curve is stated on its own); `stroke = { width_px = <n>, paint = "…" }`
 sets all four edges.
 
 ### S2.5 Shadow (R8)
@@ -369,7 +372,8 @@ pub struct Keyframe { pub at: Fraction, pub patch: PartStylePatch }   // `at` a 
 Semantics (R9): a transition starts when a property's resolved value changes; the transition stated by the style
 after the change governs, both directions; a later rule's transition for the same property group wins; appearing
 layers interpolate from zero alpha, layers match by stack position, colours interpolate in premultiplied sRGB;
-a material giving way to a colour crossfades. During a theme change (S4.3) the theme-change token governs. A
+a material giving way to a colour crossfades. A `Geometry` transition also starts when the element's laid-out box
+changes (a thumb moving to a new value), which the connector reports by querying with the new box. During a theme change (S4.3) the theme-change token governs. A
 state-triggered icon animation (WinUI's AnimatedIcon, GtkSvg's states, an SF Symbol effect on a change) is a
 `TransitionKind::Keyed` transition of the `Icon` group; a repeating one is `IconStyle.animation` (R25.12).
 
@@ -389,7 +393,8 @@ pub enum AxisValue { Fixed(f32), FollowsSize }  // SF's and Segoe UI Variable's 
 pub struct TextStyle {
     pub font: Font,
     pub letter_spacing: Value<Px>, pub word_spacing: Value<Px>,      // word spacing: K3.46
-    pub line_height: Value<LineHeight>,       // ADD-A40
+    pub line_height: Value<FontSize>,         // pt or px (scaled with the text-scaling factor), an expression on
+                                              // font_size, or `Auto`: the font's own line spacing (ADD-A40)
 
     pub decoration: Value<Decoration>,                  // may be absent
     pub mnemonic_decoration: Value<Decoration>,         // the mnemonic's underline (ADD-A12)
@@ -400,8 +405,6 @@ pub struct TextStyle {
     pub fill: Value<Paint>,
 }
 pub enum TextCase { Mixed, Upper, Lower, SmallCaps, Capitalize }
-pub enum LineHeight { Size(FontSize), Auto }  // pt or px (scaled with the text-scaling factor), an Expr on font_size,
-                                              // or `Auto`: the font's own line spacing, which the toolkit applies
 pub struct Decoration { pub line: DecorationLine, pub style: DecorationStyle, pub by_word: Value<bool>,
                         pub thickness: Value<Px>, pub offset: Value<Px>, pub paint: Value<Paint> }
 pub enum DecorationLine { Underline, Overline, Strike }
@@ -424,7 +427,7 @@ The text ramp (S4.4) holds the semantic `TextRole` slots and the keyed platform 
 
 ```rust
 pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub rendering_mode: RenderingMode,
-                       pub weight: Value<u16>, pub scale: Value<f32>,
+                       pub weight: Value<u16>, pub scale: Value<Key>,   // SF Symbols' named scales
                        pub axes: Vec<(AxisTag, AxisValue)>,  // Material Symbols' fill, grade, optical size (MAT-X27)
                        pub state_effect: Value<Key>,       // KDE's icon effect for the state the rule selects (K3.60)
                        pub symbol_variants: Vec<Key>,      // SF Symbols' `.fill`, `.circle`, … (R25.8)
@@ -432,9 +435,8 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                                                                        // colours (ADD-A37)
                        pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original }
-pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>, pub stroke_width: Value<Px>,
-                   pub fill: Value<Paint>, pub stroke: Value<Paint>,   // the outline's paint (K1.184†)
-                   pub line_cap: LineCap, pub line_join: LineJoin,      // ADD-A34
+pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>,
+                   pub fill: Value<Paint>, pub stroke: Value<GlyphStroke>,   // absent where the glyph is not stroked
                    pub axes: Vec<(AxisTag, AxisValue)>,  // a symbol font's axes (MAT-X27)
                    pub draw_extent: Value<Fraction>,      // the fraction of the path drawn (Breeze's check mark, ADD-A35)
                    pub mirroring: Mirroring }        // Segoe Fluent's per-glyph mirroring (R11)
@@ -446,6 +448,8 @@ pub enum GlyphSource {
     NamedSystemImage { name: String },                   // a name the platform states for that purpose
     SystemControl { control: SystemControl, replaces: Vec<PartRef> },   // the system's rendering (S15)
 }
+pub struct GlyphStroke { pub paint: Value<Paint>, pub width: Value<Px>, pub cap: LineCap, pub join: LineJoin }
+                                            // a stroked path's outline (K1.184†, ADD-A34)
 pub enum Mirroring { Never, Always, ExceptLanguages(Vec<LanguageTag>),
                      SwapWith(IconRole) }   // under right-to-left the role takes another role's icon
                                             // (KStandardAction's Back/Forward, Prior/Next, K-P4-12†)
@@ -467,7 +471,8 @@ pub struct FocusIndicator { pub kind: FocusKind, pub width: Value<Px>, pub paint
                                                         // `corners`: `FollowPart` (R12's concentric default), or
                                                         // stated where the platform draws otherwise
 pub enum FocusVisibleWhen { Keyboard { timeout: Value<Ms> }, AnyFocus, FocusWithin, Never }   // ADD-A16
-pub enum FocusKind { Ring, FilledRing, Underline, Keyed(Key) }  // Keyed: WinUI's Reveal (W3-20); no indicator:
+pub enum FocusKind { Ring, FilledRing, Underline, Keyed(Key) }   // drawn only while the element has
+                                                                // `FocusVisible` (R12)  // Keyed: WinUI's Reveal (W3-20); no indicator:
                                                                 // the part's `focus` is `Absent`
 ```
 
@@ -511,12 +516,18 @@ in the catalogue is its root part; the root part's bindings apply to all the wid
 widget's element (its states, siblings and scope, S8); the query applies the root part's resolved bindings before
 it evaluates any other part. Parts nest as the catalogue nests them (a window's title inside its title bar); a part's bindings, opacity and
 transform apply to the parts nested in it and their elements. An element part's query sees its widget's variants
-as well as its own (a list row matches the list's `sidebar` variant). A part marked *(element)* in the catalogue (a
+as well as its own (a list row matches the list's `sidebar` variant). An *(element)* part nested in a plain part is queried in the root's
+scope with the plain part's bindings, opacity and transform applied. A part marked *(element)* in the catalogue (a
 caption button, a tab) is an element of
 its own, queried in the scope of the element that contains it (the root part's, or an enclosing *(element)* part's:
 a caption button inside the caption-button group) with its own states, and its sub-parts are queried with it. A block-typed field set to a reference
-holds the referenced token (S2.2). `CursorShape` gains
-`Crosshair` and `WhatsThis` (ADD-A59). Every widget's "when focus becomes visible" value is a
+holds the referenced token (S2.2). `CursorShape` is CSS's
+cursor keywords (CSS Basic UI 4: `Default`, `ContextMenu`, `Help`, `Pointer`, `Progress`, `Wait`, `Cell`,
+`Crosshair`, `Text`, `VerticalText`, `Alias`, `Copy`, `Move`, `NoDrop`, `NotAllowed`, `Grab`, `Grabbing`,
+`AllScroll`, `ColResize`, `RowResize`, `NResize`, `EResize`, `SResize`, `WResize`, `NeResize`, `NwResize`,
+`SeResize`, `SwResize`, `EwResize`, `NsResize`, `NeswResize`, `NwseResize`, `ZoomIn`, `ZoomOut`), which GTK uses by
+name and Qt, WinUI and AppKit map onto, plus `WhatsThis` (Qt's) and `None`; a cursor `Absent` sets none, so the
+window's stays (ADD-A59). Every widget's "when focus becomes visible" value is a
 `focus_visible_when: Value<FocusVisibleWhen>`, whose base each preset states, usually as
 `= token.behavior.focus_visible_when` (a reference, not inheritance, R20; ADD-A16).
 
@@ -576,9 +587,11 @@ by colour-role rules (S7).
 **S3.3 Bindings and scope.** `PartStyle.bindings` bind a surface set or a single role for the element and its
 descendants (the root part's for the whole widget, S2.11). Every role reference resolves against the nearest binding
 of that role in scope (the element's own, then its ancestors' as its `Scope` carries them, S8), else the root's:
-`surface.<role>` against the nearest surface binding, else `Window`; `role.…` against the nearest binding of that
-role, else its value in the colour roles. Walking outward from the element, at each element a `Role` binding of the
-role asked for wins over that element's `Surface` binding, and the first element with either decides. A binding's
+In two steps. (1) `surface.x`: walk outward; the first element with a `Role { Surface(x) }` binding or a
+`Surface(S)` binding decides; a `Surface(S)` answer becomes the lookup `role.S.x`, continued from that element
+outward, and with no binding at all it is `role.window.x`. (2) `role.S.x` (and `role.global.x`, `role.@x`): walk
+outward; the first `Role` binding of exactly that role decides, else the colour roles' value. A `Role { Surface(x) }`
+binding never answers step 2. A binding's
 value is evaluated in the scope outside it (R5.2). Colour-role definitions do not use `surface.`: a set's roles name
 `role.<set>.<role>` explicitly, so a role means the same wherever it is used (S12). `ResolvedTheme::role` returns
 `Option<Color>`, `None` for a role that is not drawn.
@@ -731,9 +744,10 @@ application resolves it, not a mixing of sets.
 …; restated by `Tokens` rules under `ContrastHigh`), `shadow`, `motion`, `color` (KDE's contrast and frame
 contrast), `icon_effect` (KDE's icon-effect amounts, K3.60, Q3.18), `caret`, `shape`, `display` (`corner_radius`, the measured display radius per device model, set by rules
 under `DeviceModel`, R25.11; for a model the preset does not list it is `Absent`, and concentric corners then fall
-back to their stated minimum) (ADD-A44). The outermost container states its corners as `Px(= element.
-display_corner_radius.<corner>)` where the connector supplies it, and the token's value through a rule where it does
-not; the four corners are in the order top-left, top-right, bottom-right, bottom-left.
+back to their stated minimum) (ADD-A44). The display is the root's container: a full-screen container's
+`Radius::Concentric` corners follow the display's radius, which is the connector's `display_corner_radius` where the
+platform reports it, else this token, else none, and then each corner its stated `minimum`. The four corners are in
+the order top-left, top-right, bottom-right, bottom-left.
 
 ### S4.7 Pointer
 
@@ -806,6 +820,9 @@ pub enum ValuesPatch { Typed(WidgetValuesPatch), Component(ComponentValuesPatch)
 // Target::Colors takes Patch::Colors, Tokens takes Tokens, Part takes Part, Values takes Values (S12).
 ```
 
+**Compound fields** (`Sides`, `Axes`, and block fields that are not `Value`s, `FocusIndicator.corners`) patch per
+sub-field (`Sides<Option<Value<Px>>>`), with the same table spelling as a `Fields` patch.
+
 **Merging patches:** a field a later patch sets replaces the earlier value; a map (`Vec<(Key, …)>`, the bindings by
 role or surface, the presentations by event, the transitions by property group, a transition listing several groups
 being split per group first; every `Vec` of pairs) merges by key, the later entry replacing the earlier; any other list (`stops`, `layers`
@@ -828,7 +845,7 @@ its fields may be. `may_be_absent` is about what a platform draws, never about a
 element's content lacks (a dialog given no icon, an icon-only tab's label) is simply not queried by the connector,
 and the catalogue does not list it. A `Style` patch after a `PartPatch::Absent` brings the part back with the fields stated below the
 `Absent`. Likewise `Auto` is allowed only on the length fields the catalogue marks `auto` (sizes, widths, heights,
-gaps), which resolve to `Option<Length>`; every other length resolves to `Option<Px>`.
+gaps, and `TextStyle.line_height`), which resolve to `Option<Length>`; every other length resolves to `Option<Px>`.
 
 **May be absent, in the core's blocks** (the first source; wherever the block appears, because some platform has no
 counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`; `Ripple`'s values; a
@@ -937,7 +954,8 @@ pub enum SharedFlag { Empty, InFill, Today, OtherMonth, Current, Multiline, Fill
                       // *Shared flags* table names the widgets that declare each
 ```
 
-`Selected` is "the current choice among siblings" (a list row, a tab, a segment); `Checked` is "toggled on" (a check
+`Selected` is "the current choice among siblings" (a list row, a tab, a segment, a combo list's chosen value); a
+menu item's keyboard or pointer highlight is `Focused` or `Hover`, never `Selected`; `Checked` is "toggled on" (a check
 box, a toggle button, a menu item's check). A connector sets them by that meaning on every platform. `Shared` flags have
 one name for a portable application: the list is exactly the catalogue's flags that two or
 more platforms draw, and the catalogue says which widgets declare each.
@@ -949,9 +967,11 @@ more platforms draw, and the catalogue says which widgets declare each.
 pub enum ControlSize { ExtraSmall, Mini, Small, Regular, Large, ExtraLarge }
 pub enum Density { Default, Compact, Keyed(Key) }      // Material's density steps keyed
 pub enum SizeClass { Compact, Medium, Expanded, Large, ExtraLarge, Regular }   // closed by the catalogue
-pub struct Breakpoint { pub comparison: Comparison, pub measured: Measured, pub width: Value<Px>,
-                        pub height: Value<Px>, pub variant: VariantRef }   // either size may be absent (R16)
-pub enum Comparison { AtLeast, Below }                 // the platform's own direction, not inverted
+pub struct Breakpoint { pub measured: Measured, pub width: Option<(Comparison, Value<Px>)>,
+                        pub height: Option<(Comparison, Value<Px>)>, pub combine: Combine,
+                        pub variant: VariantRef }      // R16; the platform's own conditions, not inverted
+pub enum Comparison { AtLeast, AtMost, Above, Below }  // ≥, ≤, >, < (AdwDialog: width ≤ or height ≤)
+pub enum Combine { All, Any }                          // both stated sizes must hold, or either
 pub enum Measured { Allocation, Window }               // the size the parent offers the element (libadwaita's
                                                        // breakpoint bin), or the window's: never the element's own
                                                        // laid-out size, so a variant that changes padding does not
@@ -966,7 +986,10 @@ AppKit's four control sizes, five on macOS 26); a preset declares only the slots
 ## S8. Layers, order and resolution (R2.4, R2.5)
 
 ```rust
-pub struct Layer { pub bases: Bases, pub rules: Vec<Rule> }   // an application layer; Layer::from_toml (S1)
+pub struct Layer { pub bases: Bases, pub for_preset: Vec<(PresetId, Bases)>,  // an application layer;
+                   pub rules: Vec<Rule> }             // Layer::from_toml (S1); a preset's own bases apply after the
+                                                      // layer's common bases while that preset is current, and are
+                                                      // validated only then (S11's `[for_preset.<id>]`)
 pub struct Bases { pub colors: SchemeMap<ColorRolesPatch>, pub inputs: InputBases, pub tokens: TokensPatch,
                    pub widgets: WidgetsPatch,              // derive-generated: per widget, parts and values
                    pub components: Vec<(Key, ComponentBase)> }
@@ -987,7 +1010,9 @@ pub struct WindowConditions {                              // a window's conditi
     pub posture: Option<Posture>, pub unit_scale: bool,
 }
 pub struct RootInputs { pub density: Option<Density>, pub size_classes: SizeClasses, pub direction: Direction,
-                        pub language: Option<LanguageTag>, pub window: Size, pub screen: Size }  // the work area
+                        pub language: Option<LanguageTag>, pub window: Size, pub screen: Size,  // the work area
+                        pub display_corner_radius: Option<[Px; 4]> }   // where the platform reports it (Android,
+                                                                       // MAT-W5†); see S4.6
 ```
 
 Typed structs make a condition from the wrong source unrepresentable: a connector cannot state the scheme, nor a
@@ -1011,8 +1036,8 @@ the previous reader layer; `Theme::reader_status()` reports the error.
 `Theme::resolve(&self, window: &mut WindowState, conditions: &WindowConditions) -> Resolution` resolves for it
 (infallible), with `Resolution { theme: ResolvedTheme, change: Change }`, `Change = First | Unchanged | ThemeChange |
 ConditionChange` relative to that window's last resolution, which `WindowState` records (a theme change wins when
-both happened; a flavour switch is a condition change; S4.3). After a theme change a connector rebuilds the scopes it
-kept, whose bound colours are the old resolution's:
+both happened; a flavour switch is a condition change; S4.3). After any change but `Unchanged` a connector rebuilds the
+scopes it kept, whose bound colours are the old resolution's (an inactive window changes roles too):
 
 1. merge bases in order; for colours, the base of the conditions' scheme; for each input, its per-contrast base
    where a contrast condition holds (S9);
@@ -1025,7 +1050,7 @@ preset.
 **Query.** `ResolvedTheme::root_scope(&RootInputs) -> Scope` gives the window's root scope. Every query takes its
 parent's scope and returns its own, so a connector queries top-down, as it draws. A `Scope` holds owned, evaluated
 values only (the ancestor chain, each ancestor's widget, part, variants, states and control size, which context
-selectors match; the bound colours; density, size classes, direction, language; the window's and screen's size), so a scope kept across a re-resolution is still valid, and still means the scope it was made in.
+selectors match; the bound colours; density, size classes, direction, language; the window's and screen's size), so a scope kept across a re-resolution is safe to use but stale; the connector rebuilds it (above).
 Tokens and roles are read in a scope too, for what no part carries (behaviour timings, the caret, text rendering, the
 pointer, the window's background).
 
@@ -1067,8 +1092,7 @@ pub struct ElementData<'a> {                               // R25.3; Default: ze
                                                            // follow: the application's choice (a badge), or the
                                                            // text's colour under a caret (K-P3-11†)
     pub move_distance: Px,                                 // how far a Move presentation moves it (K1.133†)
-    pub display_corner_radius: Option<[Px; 4]>,            // per corner, where the platform reports it (Android,
-}                                                          // MAT-W5†); None: token.params.display.corner_radius
+}
 ```
 
 The operands `element.window_width`, `window_height`, `screen_width` and `screen_height` (Q2.50, Q1.60, K-P3-7†)
@@ -1101,6 +1125,8 @@ pub struct InputBases { pub entries: Vec<(InputName, InputValue)> }
 pub struct InputValue { pub per_scheme: SchemeMap<Value<Color>>,
                         pub per_contrast: Vec<(Contrast, SchemeMap<Value<Color>>)> }
 pub enum Contrast { Increased, High }         // when both conditions hold, High's base applies
+// An input a later layer states replaces the earlier one whole (per_scheme and per_contrast together); where it states
+// no contrast base, its per_scheme value applies under contrast too.
 ```
 
 **S9.1 Declared inputs per preset:** `accent` (all); `accent_ramp` entries (`windows-11`); the AppKit-derived
@@ -1111,8 +1137,10 @@ names, `[General] ColorScheme`) (R25.1).
 
 **S9.2 Setting the accent:** `Theme::set_accent(Accent)` sets the declared accent inputs in the accent layer's bases
 (S8); on `windows-11`, `macos-*` and `ios-*` it requires every declared accent input and otherwise returns
-`Err(AccentInputsMissing)`. On `kde-breeze` it takes the accent alone and also states, in the same layer's colour
-bases, each accent-dependent role as `= kde_accent(<set>, <key>)`, so they follow Plasma's derivation over the
+`Err(AccentInputsMissing)`. On `kde-breeze` it takes the accent alone and, unless a mapping palette applies, also states, in the same layer's
+colour bases, each accent-dependent role as `= kde_accent(<set>, <key>)`; under a mapping palette it sets the
+`accent` input only, and the palette's roles that follow the accent by reference follow it, whatever the order the
+two were set in. Otherwise so they follow Plasma's derivation over the
 scheme inputs (R25.1); the reader itself states the derived values kdeglobals holds.
 
 **S9.3 Readers** state each value under the conditions they read it in: base conditions into the reader layer's
@@ -1124,7 +1152,9 @@ itself, and 1 where a reader reads each text style's size, R10); the query scale
 font-derived lengths, and pixel line heights with it (R10), by the preset's `token.text.scaling`: `Linear` (a
 product); `AndroidNonLinear`, Android 14's `FontScaleConverter`, which scales large sizes less (MAT-X19); or
 `DynamicType`, each text style's size for the reader's or stand-in's `content_size_category`, to Apple's published
-table (the curve `uifm_scaled` uses for lengths). The last two stand in while `material-3` and `ios-*` have no
+table (the curve `uifm_scaled` uses for lengths): a part's font is scaled by the curve of the text role its style
+references (the resolved style records it), a font stated directly by `body`'s; a reader that reads each style's
+size reports the default category. The last two stand in while `material-3` and `ios-*` have no
 reader (R25.15).
 
 ## S10. Declarations (R2.7)
@@ -1186,6 +1216,7 @@ available = true
 data = { indicator = ["width", "height"] }                 # element data a part's values read (S8)
 
 [declare.component.rule_editor]                # parts and their fields: the catalogue's table, generated (S6.3)
+sizes = ["regular"]                            # a component's sizes and densities, as a widget's
 values = { row_gap = "length", presentations = "presentations" }   # what varies per preset: values' types,
 variants = ["@<variant>"]                                           # variants, flags
 flags = ["@<flag>"]
@@ -1220,7 +1251,7 @@ button = "<ms>"
 
 [widgets.button.body]
 fill = "= surface.background"
-corners = "<px>"
+corners_px = <n>
 
 [[rules]]
 when = { conditions = ["scheme:dark"] }
@@ -1237,7 +1268,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 
 | Model | TOML |
 |---|---|
-| `Value::Stated(x)` | the value: `"<colour>"`, `"<n>px"` or a number under a `_px` key, `true`, a table for a block |
+| `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
@@ -1264,19 +1295,23 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - a field is missing (S2.2), or `Absent` where not `may_be_absent` (S6.3);
 - a name is undeclared (S10) or a rule targeting `Colors`/`Tokens` has non-condition selector parts; a rule's patch
   does not match its target (S6.1);
-- a map has a duplicate key; `Auto` is stated on a field the catalogue does not mark `auto`; an expression is stated on a
-  `Value<bool>` or `Value<Key>` field; a paint has no layer or a shadow no layer (S2.3, S2.5); `pick` has no colours;
+- a map has a duplicate key; `Auto` is stated on a field the catalogue does not mark `auto`; a call is stated on a
+  `Value<bool>`, `Value<Key>` or enum field (a reference is allowed); a paint has no layer or a shadow no layer (S2.3, S2.5); `pick` has no colours;
 - an expression mistypes, refers to an unknown name, forms a cycle (through bindings too), or can meet an absent
   operand under any binding and rule it can apply under;
 - an expression names element data its part does not declare, or names `element.width` or `element.height` in a
   part's padding, margin or size limits or in a widget gap (S8), or names a `Concentric` corner, or a focus
   indicator states `FollowPart` on a corner whose two sides have different offsets;
 - an expression nests deeper than 32, or a chain of references is longer than 32;
+- a `Fields` patch can meet an `Absent` or `Auto` block under some combination of the rules before it (checked
+  conservatively), or `base` or `Append` appears in a layer's bases;
+- a layout field (padding, margin, size limits, widget gaps) can read `element.width` or `element.height`, directly
+  or through `part.`, `widget.` or a `Full` corner (transitively);
 - a patch sets a field its part does not have (S2.11);
 - a spring has a mass or stiffness not above zero, a negative damping or a `rest_epsilon` not above zero; a cubic
   Bézier has an x outside `0..=1`; a `Steps` timing has no step;
-- a token or colour-role expression names an operand only an element has (`element.`, `widget.`, `values.`, and
-  `part.`, `font_size`, `line_height` outside the block tokens S2.2 names) or a colour-role definition names
+- a token or colour-role expression names an operand only an element has (`element.`, `widget.`, `values.`,
+  `part.`, and `font_size`, `line_height` outside the block tokens S2.2 names) or a colour-role definition names
   `surface.` (S3.3);
 - a keyed selector name (a variant, flag, condition, container size or event) is declared but no rule selects on it,
   or a declared keyed name no base states (a typo's sign); a `SystemSetting` the preset declares for applications to
@@ -1363,8 +1398,8 @@ published colours (pinned like any source, S17) and skips the picks.
 
 ```rust
 pub enum SystemControl { AppKitCheckbox, AppKitRadio, AppKitDisclosure, AppKitPushDisclosure, AppKitPopUp }
-pub struct ControlImage { pub width: u32, pub height: u32, pub pixels: Vec<[f32; 4]> }  // extended sRGB, straight
-                                                                                       // alpha (S2.1)
+pub struct ControlImage { pub width: u32, pub height: u32, pub pixels: Vec<[f32; 4]>,  // extended sRGB, straight
+                          pub arrow: Option<Rect> }                                     // alpha (S2.1)
 pub struct SystemAppearance { pub scheme: Scheme, pub increased_contrast: bool }   // AppKit's four appearances
 pub fn render_system_control(control: SystemControl, states: StateFlags, size: ControlSize,
                              appearance: SystemAppearance, key_window: bool, scale: f32,
@@ -1373,11 +1408,14 @@ pub fn render_system_control(control: SystemControl, states: StateFlags, size: C
 
 What each image covers: `AppKitCheckbox`, `AppKitRadio`, the box and mark; `AppKitDisclosure`, the triangle;
 `AppKitPushDisclosure`, the bezel and chevron; `AppKitPopUp`, the whole button at `width`, its arrow area being the
-cell's `indicatorRect` (`ControlImage` also carries `arrow: Option<Rect>`). The rendering uses the system's accent,
+cell's `indicatorRect` (`ControlImage.arrow`). The rendering uses the system's accent,
 which the connector records as the accent the theme has (R11).
 
 On macOS's main thread it renders; anywhere else, and off macOS, it returns `None`, so connectors need no `cfg` of
-their own. Cached per (control, states, size, appearance, key, scale). A glyph naming a system control
+their own. Cached per (control, states, size, appearance, key, scale, width). **Open, the maintainer's decision:**
+rendering through AppKit needs `unsafe` objc2 calls, as the SF Symbols loader does under its approved exception
+(`native-theme/src/sficons.rs`, module-scoped, each block with its safety argument); the project allows `unsafe` only
+with the maintainer's approval, so this section stands on that approval. A glyph naming a system control
 (`GlyphSource::SystemControl { control, replaces }`) states the parts the rendering replaces (the checkbox's box and
 mark together, R11). The list of `SystemControl`s is the traceability's rows that need it.
 
@@ -1409,6 +1447,9 @@ impl Theme {
     pub fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError>;   // None: the system's again
     pub fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError>;  // None: removes it
     pub fn reader_status(&self) -> ReaderStatus;
+    pub fn reload_reader(&mut self) -> ReaderStatus;     // re-read the system into the reader layer in place
+                                                          // (a failure keeps the old layer); the application calls it
+                                                          // from its event loop on the watcher's `on_theme_change`
     pub fn system(&self) -> &ReaderState;                 // the conditions the reader reports, for what an
                                                           // application acts on itself (Windows' ShowSounds, W-P3-11†)
     pub fn set_contrast(&mut self, contrast: Option<Contrast>) -> Result<(), LayerError>;  // None: the reader's
@@ -1421,8 +1462,8 @@ impl Palette {
 }
 ```
 
-The watcher (`native-theme/src/watch`) re-reads the reader when the system changes and tells the application, which
-resolves its windows again (S8); `on_theme_change` stays the notification.
+The watcher (`native-theme/src/watch`) tells the application that the system changed; `on_theme_change` stays the
+notification, and the application calls `reload_reader` and resolves its windows again (S8).
 
 ## S17. Facts as data and the gate (R4, R22)
 
