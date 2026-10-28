@@ -1052,7 +1052,8 @@ Three of them refine decisions above: a platform that computes a stored colour b
 `overlayColors`) gets a function, while composition drawn over what lies beneath stays a paint layer (R5.4); the font
 fallbacks are one token, the platform's chain, not a field of every font (R10); and selected items take the `Selection`
 surface set's roles while selected text has its own roles, which a platform that does not distinguish them states as
-references to that set (R12).
+references to that set (R12). One refines R2.4: the application's accent is a setting applied after its layers and a palette,
+derived again on every change of the stack, so the accent shown never depends on the order of the calls.
 
 **R25.15 — Text scaling where no reader reads it (amends R10).** R10 has readers read each text style's size where the
 platform's scaling is not one factor (Dynamic Type, Android's non-linear scaling). Until the iOS and Android readers
