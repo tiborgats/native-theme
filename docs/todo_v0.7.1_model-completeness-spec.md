@@ -28,7 +28,9 @@ platform is stated here: values come from the facts (S17) in the value phase.
 
 - **Names.** Rust types are `UpperCamelCase`, fields `snake_case`, with no unit suffix: the type carries the unit.
   TOML keys are the field names with the unit's suffix added from the type (`_px`, `_ms`, `_deg`), as today's files
-  spell them; the catalogue and the traceability spell fields in this TOML form. Identifiers use American spelling
+  spell them. Paths in expressions, the catalogue and the traceability use the Rust names (`part.min_width`,
+  `token.caret.blink_on`); the catalogue's declarations of scalar widget values show the TOML key
+  (`icon_text_gap_px: Value<Px>`); compound types (`Sides`, `Axes`) take no suffix. Identifiers use American spelling
   (`color`, `center`, `minimize`), as the code does; prose is British.
 - **Units.** `Px(f32)`, logical pixels; `Ms(f32)`, milliseconds; `Deg(f32)`, degrees; `Fraction(f32)`, `0..=1`
   (opacities, amounts); plain `f32` for unitless numbers (scales, factors) and for velocities (px per second, stated
@@ -120,11 +122,11 @@ ref      := "role." set "." role        typed colour role of a surface set      
           | "font_size" | "line_height"   the part's, in logical px after text scaling (R10)
           | "element." data               the element's data (S8): width, height, progress,
                                           scroll_offset, scroll_progress, item_index,
-                                          item_count, text, color, char_width,
-                                          screen_width, screen_height, window_width,
-                                          char_width, font_x_height, font_height (the part's
-                                          font, measured through `Element.metrics`),
-                                          display_corner_radius                        (R25.3)
+                                          item_count, text, color, screen_width,
+                                          screen_height, window_width, window_height,
+                                          display_corner_radius.<corner> (top_left, …),
+                                          and char_width, font_x_height, font_height (the
+                                          part's font, through `Element.metrics`)      (R25.3)
           | "part." field                 another resolved field of the same part      (R25.3)
           | "values." name                the element's widget's resolved value (the spinner's stroke weight,
                                           GN-1.227; a delay button's delay, Q2.3)      (R25.3)
@@ -233,7 +235,9 @@ pub struct Corners { pub top_left: Radius, pub top_right: Radius, pub bottom_rig
 pub enum Radius { Px(Value<Px>), Full, Concentric { minimum: Value<Px> } }
 pub enum CornerCurve { Circular, Continuous }
 pub struct Stroke { pub top: Edge, pub right: Edge, pub bottom: Edge, pub left: Edge,
-                    pub position: StrokePosition }
+                    pub position: StrokePosition,
+                    pub outset: Value<Px> }      // the gap between the box and an `Outside` stroke (iOS's
+                                                 // `strokeOutset`, CD-1); absent elsewhere
 pub struct Edge { pub width: Value<Px>, pub paint: Paint, pub dash: Value<DashPattern>,   // ADD-A32
                   pub snap: PixelSnap }                                                    // ADD-A33
 pub enum DashPattern { Solid, Dotted, Dashed { on: f32, off: f32 } }
@@ -379,7 +383,8 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                        pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original }
 pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>, pub stroke_width: Value<Px>,
-                   pub fill: Value<Paint>, pub stroke: Value<Paint>,   // the outline's paint (K1.184†) pub line_cap: LineCap, pub line_join: LineJoin,      // ADD-A34
+                   pub fill: Value<Paint>, pub stroke: Value<Paint>,   // the outline's paint (K1.184†)
+                   pub line_cap: LineCap, pub line_join: LineJoin,      // ADD-A34
                    pub axes: Vec<(AxisTag, AxisValue)>,  // a symbol font's axes (MAT-X27)
                    pub draw_extent: Value<Fraction>,      // the fraction of the path drawn (Breeze's check mark, ADD-A35)
                    pub mirrors_in_rtl: bool }        // Segoe Fluent's per-glyph mirroring (R25.8)
@@ -449,7 +454,8 @@ So a window title states no shadow, and nothing is invented for it. A widget's f
 in the catalogue is its root part; the root part's bindings apply to all the widget's parts and its descendants
 (R5.2), and the other parts' bindings to themselves and their descendants. Every part of a widget is queried with the
 widget's element (its states, siblings and scope, S8); the query applies the root part's resolved bindings before
-it evaluates any other part. A block-typed field set to a reference
+it evaluates any other part. A part marked *(element)* in the catalogue (a caption button, a tab) is an element of
+its own, queried in the root part's scope with its own states, and its sub-parts are queried with it. A block-typed field set to a reference
 holds the referenced token (S2.2). `CursorShape` gains
 `Crosshair` and `WhatsThis` (ADD-A59). Every widget's "when focus becomes visible" value is a
 `focus_visible_when: Value<FocusVisibleWhen>`, whose base each preset states, usually as
@@ -696,7 +702,7 @@ keyed component list, its parts declared by the preset (S10) (R14).
 
 **S5.2 Window.** `WindowTheme` has the parts the catalogue lists, among them `frame`, `title_bar`, `title`,
 `caption_button` (one part type; each caption button an element whose identity is a typed variant: `close`,
-`minimize`, `maximize`, `restore`, `help`, and keyed ones where one platform has them), and widget values for the
+`minimize`, `maximize`, `restore`, `window_menu`, and keyed ones where one platform has them, KDE's `@help`), and widget values for the
 caption buttons' layout (R13).
 
 ## S6. The derive macro and the model's metadata
@@ -927,7 +933,7 @@ pub struct ElementData<'a> {                                            // R25.3
     pub item_index: u32, pub item_count: u32, pub text: &'a str,
     pub color: Color,                          // an application-chosen colour derived values follow
     pub screen_width: Px, pub screen_height: Px,     // the screen's work area (KMessageBox's limits, K-P3-7†)
-    pub window_width: Px,                            // the window's width (Q2.50)
+    pub window_width: Px, pub window_height: Px,     // the window's size (Q2.50, Q1.60)
     pub display_corner_radius: Option<[Px; 4]>,   // per corner, where the platform reports it (Android, MAT-W5†);
 }                                                 // None: the preset's token.params.display.corner_radius (R25.11)
 ```
@@ -1024,8 +1030,10 @@ sizes = ["regular"]
 data = { indicator = ["width", "height"] }                 # element data a part's values read (S8)
 
 [declare.component.rule_editor]
-parts = ["row", "popup_button", "add_button"]
+parts = ["body", "row"]                        # nested controls are widgets in its context, not parts
 values = { row_gap = "length", presentations = "presentations" }   # each value's type (S1's WidgetValue)
+variants = ["@<variant>"]
+flags = ["@<flag>"]
 ```
 
 Adding a layer rejects any rule, reference or patch naming something undeclared (S12). Which flags form an
@@ -1362,6 +1370,8 @@ lines that cite it.
 | ADD-A74 | `MaterialScheme.contrast_level` | S4.8 |
 | ADD-A75 | `Glyph.stroke` | S2.9 |
 | ADD-A76 | `Condition::UnitScale` | S7.1 |
+| ADD-A77 | `Stroke.outset` | S2.4 |
+| ADD-A78 | `ElementData.window_height` | S8 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

@@ -1,9 +1,11 @@
 # v0.7.1 — Model completeness: Specification, widget catalogue
 
-**Status:** draft, 2026-10-28; merged from eight groups' catalogues and through its first check (the fixes of the
-independent review of 2026-10-28: entry format, availability, flags, exclusive groups, one home per control). Part of
+**Status:** draft, 2026-10-28; merged from eight groups' catalogues, through its first check (entry format,
+availability, flags, exclusive groups, one home per control) and its second (the core's units, per-part fields,
+whole-part absence and scope; one rule for nested controls; container roots; iOS's elevated level as a binding). Part of
 the specification ([`todo_v0.7.1_model-completeness-spec.md`](todo_v0.7.1_model-completeness-spec.md), "S…"; its
-decisions are the rationale's, [`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md),
+decisions are the rationale's,
+[`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md),
 "R…"). The traceability is in `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`.
 
 ## What this is
@@ -31,39 +33,83 @@ Each `### <widget>` section states, in this order:
   drawn inside an element, R14).
 - **Available:** the presets that declare the widget. "Every preset", or "every preset but `x`, `y`": each preset
   named there declares `available = false` (S10), because its platform has no such control, and the query answers
-  `NotAvailable` for it (S8). Preset identifiers: `adwaita`, `kde-breeze` (flavours `widgets`, `kirigami`), `macos-*`
-  (`macos-tahoe` is macOS 26), `windows-11`, `ios-*` (`ios-26` is iOS 26), `material-3`.
-- **Parts:** each part's name and what it is, the root first (its bindings apply to the whole widget, S2.11). Every
-  part is a `PartStyle` (S2.11), so only the fields that matter are named. A part marked *(element)* has its own
-  interaction state and is queried as an element of its own, its ancestor being the widget.
+  `NotAvailable` for it (S8). Where only one of `kde-breeze`'s flavours draws it, the entry says "`kde-breeze`
+  flavour `<f>` only": the other flavour declares `[declare.flavor.<other>.widget.<w>] available = false` (S10).
+  Preset identifiers: `adwaita`, `kde-breeze` (flavours `widgets`, `kirigami`), `macos-*` (`macos-tahoe` is macOS 26),
+  `windows-11`, `ios-*` (`ios-26` is iOS 26), `material-3`.
+- **Parts:** each part's name, what it is, and its fields, written `` `part` — what it is: `field`, `field` ``. The
+  first part is the widget's **root** (S2.11): a container holding the widget's other parts, never absent as a whole
+  and never a repeated element (S6.3; its fields may be `Absent`); its bindings apply to every part of the widget and
+  its descendants (R5.2). Each part's field list is normative (S2.11): the part has exactly the `PartStyle` fields
+  listed, the derive generates that set, and a patch setting another field is refused (S12). A part marked
+  *(element)* has states, siblings and data of its own: it is queried as an element (S8) in the scope the widget's
+  root returns, and the parts named as belonging to it (an item's label, icon or mark) are queried with that element;
+  every other part is queried with the widget's element (S2.11). A part whose expressions read element data declares
+  it (`data = { <part> = [...] }`, S8, S10).
 - **Widget values:** typed values beyond parts (gaps, alignment, order, behaviour, placement, breakpoints), each with
   its type. A presentation-transition list is `presentations: Vec<PresentationTransition>` (S2.7), keyed by event:
   `Appear`, `Disappear` and `Move` are typed, every other event keyed (`@event`, declared, S10). An indicator or thumb
   sliding to its new place is an entry of event `Move` whose step names the part; a value change animated on a part
   is that part's `transitions` (group `Geometry`), not a widget value. A value of type `Placement` is `{ strategy:
-  PlacementStrategy, params: PlacementParams }` (S13). Every widget has `focus_visible_when: FocusVisibleWhen`
-  (S2.11, ADD-A16, its default `token.behavior.focus_visible_when`): an entry lists it only where a row states it.
-  Absence is `Value::Absent` (S2.2): a value that may be absent is a `Value<T>` listed under **may_be_absent**.
+  PlacementStrategy, params: PlacementParams }` (S13). Every widget has `focus_visible_when:
+  Value<FocusVisibleWhen>` (S2.11, ADD-A16), whose base each preset states, usually as
+  `= token.behavior.focus_visible_when` (a reference, not inheritance, R20): an entry lists it only where a row states
+  it. Absence is `Value::Absent` (S2.2): a value that may be absent is a `Value<T>` listed under **may_be_absent**.
+- **Units** (S1): the type carries the unit. A length is `Value<Px>`, a duration `Value<Ms>`, an angle `Value<Deg>`,
+  an opacity or other fraction `Value<Fraction>`, a unitless number (a factor, a velocity) `Value<f32>`, a count
+  `Value<u32>`. A widget value of one of these scalar types is written as its TOML key spells it, the unit's suffix
+  added from the type (`icon_text_gap_px: Value<Px>`, `show_delay_ms: Value<Ms>`, `start_angle_deg: Value<Deg>`;
+  the Rust field is `icon_text_gap`, `show_delay`, `start_angle`), and a reference may leave the suffix out
+  (`values.icon_text_gap` is the same value). A value of a compound type (`Sides<Value<Px>>`, `Axes<Value<Px>>`, a
+  list, a record) carries no suffix: its members carry their units. A `PartStyle` field is named in paths as S2.11
+  names it (`body.min_width`, `part.min_width`); its TOML key adds the suffix the same way (`min_width_px`).
 - **Variants:** a variant is typed when two or more platforms share its meaning anywhere in the catalogue (R15; the
-  typed variants are one `Variant` enum, and a widget declares the ones it has), keyed (`@name`) otherwise. The
-  content variants `icon_only` and `with_icon` are set by the connector from the element's content (ADD-A61).
+  typed variants are one `Variant` enum, and a widget declares the ones it has), keyed (`@name`) otherwise. A typed
+  variant's meaning is the declaring widget's (`inline` is a link inside running text on `link`, a tip inside the
+  content on `teaching_tip`), and a keyed `@k` and a typed `k` are different names. The content variants `icon_only`
+  and `with_icon` are set by the connector from the element's content (ADD-A61).
 - **Sizes and densities** per platform (`ControlSize`, S7.3; Material Expressive's xsmall is `extra_small`).
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
-- **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags); the order
-  of precedence inside a group is a fact of the platform's state model (S10, S17), so every entry ends "precedence:
-  state models (S17)".
-- **may_be_absent** (S6.3): `parts:` whole parts some preset does not draw (its style is `Absent`, the preset lists
-  them in `may_be_absent_parts`, the query answers `NotDrawn`), with the presets; `fields:` part fields; `values:`
-  widget values.
+- **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
+  in the order of precedence the preset's `exclusive` array states (S10); that order is a fact of the platform's
+  state model, which the gate checks (S17), so every entry ends "precedence: state models (S17)".
+- **may_be_absent** (S6.3): `parts:` whole parts some preset does not draw, with the presets: the preset's base, or a
+  rule under a condition, states the part `absent = true` (`PartPatch::Absent`), and the query answers `NotDrawn` for
+  it (an absent part needs no fields); a root part is never listed. `fields:` part fields that may be `Absent`;
+  `values:` widget values that may be `Absent`; each with the presets.
 - **State-model source** per platform: where the gate's combination list comes from (R4, S17).
 - **Today's fields:** how each field of `docs/property-registry.toml` maps into the new parts.
-- **Notes:** where the widget is drawn in another's context, and what the merge took from other groups (every name a
-  note uses is in the lists above).
+- **Notes:** where the widget is drawn in another's context, the nested controls it holds (below), and what the merge
+  took from other groups (every name a note uses is in the lists above).
 
-Names: a widget value is named without its unit suffix where a group wrote none; the field's Rust and TOML name
-carries `_px` or `_ms` where its type is a plain length or duration (S1), so `show_delay` and `show_delay_ms` are one
-field. Identifiers are American (`color`, `center`, `minimize`), prose British (S1).
+Names: identifiers are American (`color`, `center`, `minimize`), prose British (S1). Context selectors match the
+ancestor chain the query's `Scope` carries (S8): an element's ancestors are the elements and parts its connector
+queried above it, top-down.
+
+## Nested controls
+
+One rule places a control drawn inside another widget, the same on every platform (principle 2; the check pass's
+decision):
+
+- When the inner control's kind is a typed widget and it has interaction states of its own on some platform, it is an
+  element of that typed widget, queried in its host's context (S7's `context`): a dialog's responses are `button`
+  elements in `context dialog.action_area`, a combo box's popup is a `menu` in `context combo_box`, a spin box's text
+  is an `input` in `context stepper`. Its kind is what it is to the user, as the cross-check names it (R14), whatever
+  class a toolkit builds it from: a control that also stands alone (a push, tool, close, navigation, overflow, clear or
+  reveal button, a menu, a text field, a check box, a list), drawn in the host with that control's look and restyled
+  by context rules. The display and container widgets the catalogue types (`badge`, `spinner`, `progress_bar`,
+  `avatar`, `chip`, `popover`, `toolbar`) are placed the same way, though some hold no interaction state.
+- Otherwise it is a part of the host, an *(element)* where it has states: a piece that exists only within its host
+  (a slider's thumb, a scroll bar's arrows, a stepper's increment and decrement, a segment, a tab, a menu item, a list
+  row, a breadcrumb's crumbs and separators, a page indicator's dots, a split button's halves), and a surface that
+  holds the host's own parts (a date picker's popup with its header and headline).
+- The element's identity in its host is a variant of its widget, typed where two or more platforms share it (R15):
+  `button` `close`, `previous`, `next`, `overflow`, `add`, `remove`, `done`, `clear_field`, `reveal`, `pane_toggle`
+  and the media identities `play`, `volume`, `full_screen`, `frame_step`. Its look there is that widget's rules in
+  the host's context, so no fact is stated twice (R20); the host's values (when the element shows, where it goes)
+  stay the host's.
+- The core fixes one exception: the window's caption buttons are `window.caption_button` (S5.2).
 
 ## Shared value types
 
@@ -78,7 +124,8 @@ Value types several entries use, defined once (an entry defines the types only i
 | `ButtonLabelPosition` | `IconOnly`, `TextOnly`, `TextBesideIcon`, `TextUnderIcon` (Qt's tool-button style, WinUI's `LabelPosition`, AppKit's toolbar display mode) |
 | `Placement` | `{ strategy: PlacementStrategy, params: PlacementParams }` (S13) |
 | `EdgeSide` | the core's (S2.7): `Top`, `Bottom`, `Start`, `End`, `TowardAnchor` |
-| `WidgetValue` | the core's (S1): a keyed component's value is a `Value<WidgetValue>`: a length, duration, number, bool, `Key` or colour; a component's enumerated value is a `Value<Key>` whose keys its entry lists |
+| `NavButtonsVisibility` | `Always`, `OnHover` (when a widget's previous and next `button` elements show: Windows' FlipView and PipsPager, W2-31, W2-20) |
+| `WidgetValue` | the core's (S1); a keyed component's value is a `Value<WidgetValue>` of the type its declaration names (`values = { <name> = "<type>" }`, S10); a component's enumerated value is a `Value<Key>` whose keys its entry lists |
 
 ## Shared flags
 
@@ -87,7 +134,7 @@ is keyed. The list, with the widgets that declare each:
 
 | Flag | Meaning | Declared by (platforms) |
 |---|---|---|
-| `empty` | the element holds no text or value | `input` (Material, Windows, KDE), `text_area`, `search_field`, `progress_bar` (GNOME: value zero), `date_picker` (Windows: no date chosen), `form` (GNOME's entry row) |
+| `empty` | the element holds no text or value | `input` (Material, Windows, KDE; a search field's text, an `input` in `context search_field`), `text_area`, `progress_bar` (GNOME: value zero), `date_picker` (Windows: no date chosen), `form` (GNOME's entry row) |
 | `in_fill` | a tick or stop indicator inside the value fill | `slider` (KDE, Material) |
 | `today` | the day is today | `calendar` (all six) |
 | `other_month` | a day outside the shown month | `calendar` (GNOME, Windows, KDE, Material, macOS) |
@@ -96,7 +143,7 @@ is keyed. The list, with the widgets that declare each:
 | `filled`, `half` | a rating star filled, or half filled | `rating` (KDE, Windows, macOS) |
 | `preview` | the hover preview of a value | `rating` (KDE, Windows) |
 | `pulling`, `refreshing` | the pull-to-refresh phases | `pull_to_refresh` (iOS, KDE, macOS, Material, Windows) |
-| `placed_above`, `placed_below` | a popup attached above or below its anchor (set by the connector from the placement result) | `menu` (KDE), `autocomplete` (Windows) |
+| `placed_above`, `placed_below` | a popup attached above or below its anchor (set by the connector from the placement result) | `menu` (KDE; Windows' suggestion list, a `menu` in `context autocomplete`) |
 | `route_active` | an output route (AirPlay) is active | `route_button` (macOS, iOS) |
 | `editing` | a row or cell in edit mode | `list` (GNOME, iOS) |
 | `swiped` | a row with its swipe actions revealed | `list` (iOS, KDE) |
@@ -118,7 +165,7 @@ spaces:
 | `!{a}` | none of these states |
 | `variant v`, `variant @k`, `variants {v,w}`, `!variant v`, `w.part[v]` | the element's (or the named ancestor's) variants; `@k` is keyed |
 | `cond c`, `!cond c` | a condition (S7.1, snake_case): `window_inactive`, `contrast_high`, `scheme:dark`, `input:touch`, `idiom:pad`, `flavor:kirigami`, `preset:ios-26`, `system_setting:<key>` (ADD-A04), `container_size(sidebar, small)`, `tiled:top` |
-| `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch` (an ancestor; `AnyAncestor` or `NearestAmong`) |
+| `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch`: an ancestor in the chain the `Scope` carries (S8); `AnyAncestor` or `NearestAmong` |
 | `not_context w.part` | `Selector.not_context` |
 | `pos first`, `pos last`, `pos only`, `pos parity odd`, `prev w{…}`, `next w{…}` | `PositionMatch` (parity: ADD-B06; by part: ADD-B07) |
 | `size s`, `density d`, `h_size_class c`, `v_size_class c` | `SizeMatch` (sizes `extra_small`, `mini`, `small`, `regular`, `large`, `extra_large`; per axis: ADD-A20) |
@@ -151,14 +198,14 @@ and the owning group's name where the kinds are the same.
 | 14 | `placeholder` widget (8) | `redaction`, part `mask` | `placeholder` is the text widgets' part |
 | 15 | `list.rubberband` (4) | `rubber_band.body` in `context list` | group 6 typed `rubber_band` |
 | 16 | `navigation_view.transition_shadow`, `navigation_view.dimming`, `sheet.dimming`, `sidebar.dimming`, `sidebar.transition_shadow` (6); `sheet.grabber`, `drawer.handle` (8) | `edge_shadow`, `scrim`, `sheet.handle`, `sidebar.handle` | one name per part kind: `scrim` as `dialog.scrim` and `role.global.scrim`, `edge_shadow` and `handle` as group 4's sidebar |
-| 17 | `sidebar.body`, `sidebar.divider`, `sidebar.item`, `sidebar.item_icon`, `sidebar.values.icon_gap` (6) | `sidebar.pane`, `sidebar.separator`, `list.row`, `list.leading_icon` (variant `sidebar`), `list.values.leading_gap` | group 4: a sidebar's rows are `list` rows |
-| 18 | `sidebar` variant `rail`, parts `container`, `active_indicator`, `icon`, `label`, `menu_button`, `badge` (7) | typed `compact`; `pane`, `list.row_selection_indicator`, `list.leading_icon`, `list.row` text, `toggle_button`, `badge` in context | group 4's collapsed rail |
+| 17 | `sidebar.body`, `sidebar.divider`, `sidebar.item`, `sidebar.item_icon`, `sidebar.values.icon_gap` (6) | `sidebar.pane`, `sidebar.separator`, `list.row`, `list.leading_icon` (variant `sidebar`), `list.values.leading_gap_px` | group 4: a sidebar's rows are `list` rows |
+| 18 | `sidebar` variant `rail`, parts `container`, `active_indicator`, `icon`, `label`, `menu_button`, `badge` (7) | typed `compact`; `pane`, `list.row_selection_indicator`, `list.leading_icon`, `list.row` text, `button @ variant pane_toggle context sidebar.header` (row 104), `badge` in context | group 4's collapsed rail |
 | 19 | `stack` (8) | `navigation_view` | the page stack (GtkStack) |
 | 20 | `spin_button` (8) | `stepper` | group 6 |
 | 21 | `main_window.dock`, `main_window.values` (8) | `component.dock_widget` | KDE alone: group 7's component |
 | 22 | widget `frame` (6), `group_box` (4) | `group_box` | one widget; `frame` is a part of `window`, `scroll_view`, `calendar` |
 | 23 | context `button_group` (2) | `layout` keyed variant `@linked`, `values.item_gap` | GTK's `.linked` box; no button-group widget |
-| 24 | `checkbox.group_header`, `checkbox.values.row_spacing`, `column_spacing` (7) | `radio_group.header`, `radio_group.values.row_gap`, `column_gap` | group 2 typed `radio_group` (Windows, macOS) |
+| 24 | `checkbox.group_header`, `checkbox.values.row_spacing`, `column_spacing` (7) | `radio_group.header`, `radio_group.values.row_gap_px`, `column_gap` | group 2 typed `radio_group` (Windows, macOS) |
 | 25 | `button` typed `command_link`, parts `title`, `description` (7) | keyed KDE `@command_link`; `label`, `subtitle` | Windows' command link is Win32 (R1.3), so one platform draws it |
 | 26 | `button` variants `paste_control`, `repeat` (7) | `@paste_control` (iOS), `@repeat` (Windows) | one platform each: keyed |
 | 27 | `button` keyed `@help` (2) | typed `help` | macOS and KDE draw it (group 6); the window's caption-button identity `help` is keyed `@help` (KDE alone, row 85) |
@@ -170,7 +217,7 @@ and the owning group's name where the kinds are the same.
 | 33 | `bottom_tab_bar.selection_pill` (4) | `bottom_tab_bar.indicator` | as `tab.indicator`, `segmented_control.indicator` |
 | 34 | `tab.body` (8) | `tab.tab` | group 4's part |
 | 35 | `list.item`, `list.item.fill` (7, 8) | `list.row`; state fills on `list.row_background` | group 4's parts |
-| 36 | `list.body`, `selection_indicator`, `item_selection_visual`, `row_expander`, `branch_arrow`, `multi_select_check_box`, `grid_item`, `grid_item_check_box`, `item_inner_border` (7, 8) | `view`, `row_selection_indicator`, `disclosure`, `selection_check`, `row_background` under the typed `grid`, `selection_check` under `grid`, `row_inner_border` | group 4's parts and variant |
+| 36 | `list.body`, `selection_indicator`, `item_selection_visual`, `row_expander`, `branch_arrow`, `multi_select_check_box`, `grid_item`, `grid_item_check_box`, `item_inner_border` (7, 8) | `view`, `row_selection_indicator`, `disclosure`, `checkbox @ context list.row` (row 107), `row_background` under the typed `grid`, the same `checkbox` under `grid`, `row_inner_border` | group 4's parts and variant |
 | 37 | `list` variants `listbox`, `@alternating` (7, 8) | `@listbox` (Windows), `alternating_rows` | keyed; group 4's typed variant |
 | 38 | `spinner.container`, variants `loading_indicator`, `contained` (7); `spinner.glyph` (8) | `spinner.body`; `@loading_indicator`, `@contained`; `spinner.icon.glyph` | group 3's parts; Material alone: keyed |
 | 39 | `progress_bar` variant `circular` (6) | `spinner` variant `determinate` | group 3 put the determinate circular indicator in `spinner` |
@@ -180,14 +227,14 @@ and the owning group's name where the kinds are the same.
 | 43 | `scrollbar` variant `annotated`, part `scroll_button` (7) | `@annotated`; `arrow_button` | keyed (Windows); group 3's part |
 | 44 | `input.loupe`, `inline_prediction`, `spelling_mark` (8) | `magnifier`, `prediction`, `misspelling` | group 3's |
 | 45 | `text_area.find_indicator` (8) | `text_area.find_match @ {selected}` | group 3: the current match is `{selected}` |
-| 46 | `input.header_inactive` (1), `input.kde_header_inactive` (4), `input.inactive_roles` (8) | `input.inactive.<set>` | KDE's stated Inactive values, one S9 input |
+| 46 | `input.header_inactive` (1), `input.kde_header_inactive` (4), `input.inactive_roles` (8) | `input.inactive.<set>.<role>` | KDE's stated Inactive values, one S9 input per role |
 | 47 | `popover.values.anchor_gap` (3) | `popover.values.placement` (its `gap`) | group 1's placement value |
 | 48 | `toast.values.duration_ms` (8) | `toast.values.durations` | group 6's keyed list |
 | 49 | `combo_box.values.placement` (1) | `combo_box.values.popup_placement` | group 3's |
 | 50 | `component.side_tab_bar` (4) | `component.multi_tab_bar` | group 7's (KMultiTabBar) |
 | 51 | `toolbar_customization` (4), keyed `component.toolbar_editor` (6) | typed `toolbar_editor` | KDE, macOS and iOS draw it |
-| 52 | `component.token_field.token`, `token_menu_arrow`, `values.token_spacing` (7) | `chip` in `context component.token_field`, `chip.menu_arrow`, `component.token_field.values.chip_gap` | a token is a chip (group 7's own note) |
-| 53 | the glass container's merge spacing as `Material.params` (8) | `glass_container.values.merge_gap` | group 7's widget value |
+| 52 | `component.token_field.token`, `token_menu_arrow`, `values.token_spacing` (7) | `chip` in `context component.token_field`, `chip.menu_arrow`, `component.token_field.values.chip_gap_px` | a token is a chip (group 7's own note) |
+| 53 | the glass container's merge spacing as `Material.params` (8) | `glass_container.values.merge_gap_px` | group 7's widget value |
 | 54 | `window.content.fill` with the material `background_extension` (8, MAC-X06) | `background_extension.extension` | group 7's widget |
 | 55 | `token.lengths` (4), `token.kirigami` (2), `token.opacities` (5), `token.colour_effects.frame_contrast` (2) | `token.params.layout`, `token.params.opacity`, `token.params.color.frame_contrast` | one keyed-scalar token mechanism (ADD-A44); identifiers are American (S1) |
 | 56 | value `focus_visible`, `token.behavior.focus_visible`; types `FocusVisiblePolicy`, `FocusVisible`; variants `KeyboardOnly`, `AfterKeyboard`, `WithFullKeyboardAccess`, `Always` (2, 3, 8) | `focus_visible_when`, `token.behavior.focus_visible_when`; `FocusVisibleWhen { Keyboard { timeout_ms }, AnyFocus, FocusWithin, Never }`; Full Keyboard Access is a rule `@ cond full_keyboard_access` | the bare name is the state flag (ADD-A16); every widget has the value (S2.11), so an entry lists it only where a row states it |
@@ -204,7 +251,7 @@ and the owning group's name where the kinds are the same.
 | 67 | `spring_load_delay_ms` (7), `drag_expand_delay_ms` (8), `drag_hover_switch_ms` (6), `drag_hover_expand_delay_ms`, `drag_hover_switch_delay_ms`, `drag_hover_activate_delay_ms` (4) | `drag_hover_delay_ms` | one name: what the hover does follows from the widget |
 | 68 | widget values `*_spacing`, `spacing` (2, 4, 6, 7, 8) | `*_gap`, `gap` | R16's word; `letter_spacing` (a text-style field), the variant `@collapse_spacing` and Kirigami's spacing token keys keep theirs |
 | 69 | conditions written as states, `{reduced_motion}` (8) | `cond reduced_motion` | notation: a condition is not a state flag |
-| 70 | `toolbar.item`, `item_icon`, `item_label`, `item_menu_indicator`, `item_check` (4) | `button` (and `split_button`, `search_field`, `badge`) in `context toolbar.bar`; Qt's QToolButton, WinUI's AppBarButton and AppKit's toolbar bezel the typed `button` variant `tool`; the overflow check glyph `menu.check_indicator` in `context toolbar.overflow_button` | a toolbar's items are the elements they are (one home, the check pass) |
+| 70 | `toolbar.item`, `item_icon`, `item_label`, `item_menu_indicator`, `item_check` (4) | `button` (and `split_button`, `search_field`, `badge`) in `context toolbar.bar`; Qt's QToolButton, WinUI's AppBarButton and AppKit's toolbar bezel the typed `button` variant `tool`; the overflow check glyph `menu.check_indicator` in `context button variant overflow` | a toolbar's items are the elements they are (one home, the check pass) |
 | 71 | `toolbar.values.label_position`, KDE `button` `@text_under` (2, 4) | `button.values.label_position: Value<ButtonLabelPosition>` | one value for the tool-button style |
 | 72 | `toolbar` variant `prominent` on `item` (4) | `button` variant `primary` in `context toolbar.bar` | the item is a button |
 | 73 | `toolbar` variant `raised` (4) | `@raised` | GNOME alone (R15) |
@@ -212,7 +259,7 @@ and the owning group's name where the kinds are the same.
 | 75 | `wrap_box` (6) | `layout` variant `flow`; Material's chip set `layout` `@chip_set` | one flow layout (GN-2.46, GN-P3-24†, MAT-RL01†) |
 | 76 | `list.undershoot`, `toolbar.undershoot` (4) | `scroll_view.edge_effect` in context | one scroll-edge shade (GN-1.156, GN-1.178, GN-3.06) |
 | 77 | `text_area.link`, `rich_text.link` (3, 6) | `link` variant `inline` in `context text_area`, `context rich_text` | one link in running text |
-| 78 | `list.accessory` `@multiselect` (4) | `checkbox` variant `selection` | one multiselect circle (CK-1, L-12) |
+| 78 | `list.accessory` `@multiselect` (4) | `checkbox` variant `selection` in `context list.row` | one multiselect circle (CK-1, L-12); every list's check is a `checkbox` (row 107) |
 | 79 | `card` `activatable` for the Toolkit's SettingsCard (4) | `form.card` | one home for SettingsCard (W1-139, W2-40†) |
 | 80 | `sidebar` `@top`, `sidebar.values.display_mode` (4) | `view_switcher` `@navigation_top`; the sidebar's breakpoints and variants | Windows' top NavigationView is a view switcher (W1-094, W2-11) |
 | 81 | `sidebar` typed `inspector`, values `open_width`, `compact_width` (6) | variant `end`, values `width`, `collapsed_width` | one trailing column (MAC-N19, C-41†) |
@@ -226,11 +273,11 @@ and the owning group's name where the kinds are the same.
 | 89 | status_page `compact`, form `monospace` (6) | `@compact`, `@monospace` | GNOME alone (R15) |
 | 90 | tab `@icon_and_label` (4) | the content variant `with_icon` | the connector sets it from the content (ADD-A61) |
 | 91 | badge `@tab_bar`, `@bar_button`, `@list_row` (6) | `badge` in `context bottom_tab_bar.item`, `context toolbar.bar`, `context list.row` | a context, not a variant (TB-7, C-15) |
-| 92 | `role.@*_elevated` (5) | the background roles restated by colour rules `@ cond elevated` | one home for UIKit's elevated level (D-14) |
+| 92 | `role.@*_elevated` (5) | kept as keyed roles (`role.@system_background_elevated`, …), bound by the roots of `dialog`, `sheet` and `popover` on `ios-*` (the `Dialog` and `Popover` sets and `Binding::Role`); `cond elevated` only for a whole elevated window | R2.3, R5.2: in a sheet or a popover the elevated level is a binding (the second check reverted the first's removal) |
 | 93 | flags `has_text`, `has_value`, `opened_above`, `overlapping`, `@current`, `@editing`, `@swiped`, `@context_menu`, `@sorted`, `@overwrite`, `@composing`, `@placed_above`, `@placed_below`, `@route_active`, `needs_attention`, CamelCase flags | `!{empty}`, `!{empty}`, `placed_above`, `@overlapping`, `current`, `editing`, `swiped`, `context_menu_open`, `sorted`, `overwrite`, `composing`, `placed_above`, `placed_below`, `route_active`, `@needs_attention`, snake_case | the shared flags (S7.2, "Shared flags" below) |
 | 94 | `thumb_move`, `indicator_move`, `appear` (`PresentationTransition` values); `value_transition`, `indicator_transition`, `title_shrink`, `separator_hide`, `page_transition`, `snap`, `bracket_match_animation` (`Transition` values); `Presentations` | `presentations` entries (event `Move` with a part); the moving part's `transitions`; `presentations: Vec<PresentationTransition>` | presentations and property transitions have one place each (S2.7) |
 | 95 | `indeterminate_loop`, `spin` | `loop` | one name for a widget's repeating motion |
-| 96 | `spinner.values.stroke_ratio` (3) | `spinner.values.stroke_width` as an expression over `element.width` | element data (R25.3) |
+| 96 | `spinner.values.stroke_ratio` (3) | `spinner.values.stroke_width_px` as an expression over `element.width` | element data (R25.3) |
 | 97 | `TextSlot`, slot names in CamelCase (5) | `TextRoles` fields in snake_case, each `= token.text.keyed.<key>` | S4.4 |
 | 98 | `LabelPosition` (3, 4) | `ValueLabelPosition` (progress_bar, slider), `ButtonLabelPosition` (button) | one type per meaning |
 | 99 | `input.values.hint_timeout_ms`, `input.values.caret_width` (3, 6) | `input.values.mask_reveal_ms`; the `caret` part's `min_width` (base `= token.caret.width`) | one value per meaning |
@@ -238,13 +285,27 @@ and the owning group's name where the kinds are the same.
 | 101 | `PlacementStrategy::Keyed(…)` (7) | `KCommandBar`, `AppKitContextHelp`, `WinUiKeyTip`, `UiKitContextMenu`, `KirigamiAddonsOnboardingTip`, `KirigamiAddonsSearchPopup` | S13's list is closed and typed |
 | 102 | `token.colour_effects`, `token.material_scheme` (5, 8) | `token.kde`, `token.material` | S4.8 |
 | 103 | `scrollbar.values.overlay`, condition `TransientTouch` (3, 8) | the condition `overlay_scrollbars`; `cond input:touch` | S7.1 |
+| 104 | `dialog.action`, `dialog.close_button`, `banner.close_button`, `toast.action_button`, `toast.close_button`, `sheet.close_button`, `teaching_tip.close_button`, `tab.close_button`, `tab.add_button`, `window.tab_close_button`, `window.new_tab_button`, `chip.remove_button`, `about_dialog.link_button`, `find_bar.nav_button`, `find_bar.options_button`, `find_bar.done_button`, `calendar.nav_button`, `carousel.nav_button`, `carousel.nav_glyph`, `page_indicator.nav_button`, `view_switcher.nav_button`, `view_switcher.overflow_button`, `toolbar.overflow_button`, `sidebar.toggle_button`, `input.clear_button`, `input.reveal_button`, `search_field.clear_button`, `search_field.cancel_button`, `search_field.query_button`, `search_field.bar_close_button`, `search_field.trailing_icon`, `media_controls.button`, `edit_menu.item`, `edit_menu.paging_chevron`, `edit_menu.expand_button`, `shortcuts_dialog.nav_pill`, `shortcuts_dialog.key_sequence_button`, `shortcuts_dialog.clear_button`, `time_picker.accept_button`, `time_picker.dismiss_button`, `toolbar_editor.move_button`, `breadcrumb.places_selector`, the components' close, float, section and action buttons | `button` elements in the host's context, their identity the typed `close`, `previous`, `next`, `overflow`, `add`, `remove`, `done`, `clear_field`, `reveal`, `pane_toggle`, `play`, `volume`, `full_screen`, `frame_step` or a keyed variant (`@query`, `@accept`, `@dismiss`, `@first`, `@last`, `@key_sequence`, `@float`) | Nested controls, the second check: one rule, one structure per kind |
+| 105 | `combo_box.popup`, `item`, `item_mark`, `item_pill`, `values.popup_placement`, `values.max_visible_items`, `values.item_mark_position`, `values.presentations`; `autocomplete.popup`, `item`, `item_label`, `item_icon`, `values.placement`, `values.width`, `values.max_visible_items`; `input.values.suggestion_placement`; `code_editor.completion_popup`, `completion_row`, `completion_icon`, `completion_detail`, `completion_details_pane`, `values.completion_placement`, `values.completion_offset_y`; `breadcrumb.ellipsis_popup`; `edit_menu.secondary_menu`; `date_picker.quick_item` | `menu` in the host's context: `menu.body`, `item`, `check_indicator`, `item_selection_indicator`, `item_label`, `item_icon`, `item_subtitle`, `values.placement` (with its `max_visible_items` and `width`), `values.check_indicator_side`, `values.presentations`; the code editor's completion an `autocomplete` (its `details_pane`) | Nested controls |
+| 106 | `stepper.text`; `search_field.field`, `search_icon`, `placeholder`, `leading_icon`; the components' text fields (`component.token_field.field`, `component.command_bar.search_field`, `component.rule_editor.value_field`) | `input` in the host's context (`input.body`, `input.icon @ variant leading`, `input.placeholder`) | Nested controls |
+| 107 | `list.selection_check`; `chip.avatar`, `search_field.avatar`; `drag_image.count_badge`; `status_page.spinner`, `pull_to_refresh.spinner`; `media_controls.volume_popup`, `code_editor.informative_popup`; `search_field.token`; `shortcuts_dialog.row`, `row_title`, `row_subtitle`, `section_title`, `extender_indicator`, `footer`; `toolbar_editor.available_list`, `current_list`; the components' typed parts (`component.page_view.icon_list`, `search_container`, `component.rule_editor.popup_button`, `component.tabbed_command_bar.tab_row`, `command_bar`, `contextual_tab`, `component.command_bar.results`, `shortcut_cell`) | `checkbox`, `avatar`, `badge`, `spinner`, `progress_bar`, `popover`, `chip`, `list`, `toolbar`, `combo_box`, `view_switcher`, `search_field` elements in the host's context | Nested controls |
+| 108 | `button` variant `split` | `split_button` (KDE's `MenuButtonPopup`, K1.155) | one kind, one widget (the second check) |
+| 109 | `menu.item` variant `split`, part `menu.split_button` | keyed `windows-11` `@split`, `menu.split_chevron` | WinUI alone; no clash with the `split_button` widget |
+| 110 | keyed `button` `@pane_toggle`, `@clear`, `@close`, `@done`; `media_controls` `@play`, `@volume`, `@full_screen`, `@frame_step`; `dialog` `@with_icon`; `dialog` and `sidebar` `@bottom_sheet`; `bottom_tab_bar` `@stacked`, `@inline`; `autocomplete` `@filled`, `@outlined` | typed `pane_toggle`, `clear`, `close`, `done`, `play`, `volume`, `full_screen`, `frame_step`; the content variant `with_icon`; typed `bottom_sheet`; typed `stacked`, `inline`; `input`'s `@filled` | R15: two or more platforms share the meaning; the field's look is the field's |
+| 111 | first parts that were no container round the widget's parts (absent on some preset, repeated, a leaf, or not the outermost box): `link.text`, `radio_group.header`, `scroll_view.frame`, `file_chooser.frame`, `toolbar_editor.available_list`, `carousel.item`, `page_indicator.dot`, `rating.star`, `split_button.primary`, `about_dialog.icon`, `status_page.icon`, `color_picker.plane`, `code_editor.text` (its fill), `rich_text.paragraph`, `chart.plot_area`, `navigation_view.page`, `font_chooser.requester`, `wizard.header`, `autocomplete.popup`, `search_field.field`, the components' first parts | a container root first (`body`; `link.body` moved first; `picker_wheel.container` always drawn, its fields absent) | S2.11, S6.3: a root is never absent and never repeated |
+| 112 | `window.tab_bar`, `tab`, `tab_title`, `tab_separator`; `window` event `Move` of its tabs | `tab` variant `document` in `context window.title_bar` (`tab.bar`, `tab.tab`, `tab.label`, `tab.separator`; `tab`'s events) | one tab strip (should-fix 18) |
+| 113 | `checkbox.values.touch_target`, `radio.values.touch_target` | `checkbox.body.touch_target`, `radio.body.touch_target` | S2.11's field |
+| 114 | a scalar widget value typed `Value<f32>` with no unit suffix (`icon_text_gap: Value<f32>`) | its TOML form and unit type (`icon_text_gap_px: Value<Px>`, `show_delay_ms: Value<Ms>`, `start_angle_deg: Value<Deg>`, `width_fraction: Value<Fraction>`) | S1's units |
+| 115 | `sheet` and `tab` events `@open`, `@close` | `Appear`, `Disappear` | the typed events of an element appearing and disappearing |
+| 116 | `menu_bar.values.height`, `values.submenu_corners`, `sheet.values.max_width`, `sidebar.values.min_width`, `values.max_width`, `rating.values.glyph`, `avatar.values.palette`, `values.initials_size`, `picker_wheel.values.off_center_fade`, `page_indicator.values.follows_scroll`, `chart.values.series_colors`, `shortcuts_dialog.values.row_min_height` | the parts' fields: `menu_bar.bar.min_height`, `menu.body.corners @ context menu_bar`, `sheet.body.max_width`, `sidebar.pane.min_width`, `pane.max_width`, `rating.star.glyph`, `avatar.body.fill` (by `pick` and `name_index`), `avatar.initials.text`, `picker_wheel.item.opacity` and `dot` fields as expressions over the scroll position, `chart.series.fill`, `list.row.min_height @ context shortcuts_dialog` | one value, one home |
+| 117 | `toolbar.handle`, `tab.scroll_button`, `input.autofill_button`, `find_bar` flag `@neutral`, `popover` `@magnifier`, `shortcuts_dialog` flag `@recording` | `toolbar.grip`, `tab.scroll_arrow`, `input.autofill_affordance`, `@warning`, `input.magnifier`, `button`'s `@recording` | one name per part kind and meaning |
 
 ## Where group 6's §4.2 kinds go (its index, reconciled)
 
 | §4.2 kind | Platforms (rows) | Decision |
 |---|---|---|
 | badge | all six | typed `badge` |
-| autocomplete | GNOME, KDE, Material, iOS, Windows (CTK) | typed `autocomplete` |
+| autocomplete | GNOME, KDE, Material, iOS, Windows (CTK), macOS (MAC-CB01, MAC-I06, MAC-P3-7†: the second check) | typed `autocomplete`; its list a `menu` in its context |
 | date picker | macOS, Windows, KDE, Material, iOS | typed `date_picker` |
 | calendar | Windows, KDE, GNOME, iOS (+ Material, macOS inside their date pickers) | typed `calendar` |
 | level indicator/gauge | GNOME, macOS, iOS, Windows (CTK) | typed `level_indicator`; KDE's LCD number and LED are one-platform kinds: keyed components `lcd_number`, `led`; iOS C-31 (determinate circular progress) is drawn inside `spinner` (its typed `determinate`; group 6 wrote `progress_bar`) |
@@ -266,11 +327,11 @@ and the owning group's name where the kinds are the same.
 | page control/pager | Windows, KDE, GNOME, iOS | typed `page_indicator` |
 | preference rows/boxed list | GNOME, KDE, macOS, Windows (CTK) | typed `form`; KDE's list section header and inline view header are drawn inside `list` |
 | sheet/bottom sheet | KDE, GNOME, Material, iOS | typed `sheet` |
-| split button | macOS, Windows, GNOME, Material | typed `split_button` |
+| split button | macOS, Windows, GNOME, Material, KDE (K1.155's `MenuButtonPopup`, kirigami-addons' K-KA-27†) | typed `split_button` |
 | status page/placeholder | macOS, KDE, GNOME, iOS | typed `status_page` |
 | teaching tip | macOS, Windows, iOS, KDE (kirigami-addons' onboarding tip, K-KA-45†) | typed `teaching_tip`; KDE's What's This popup (K2.31†) is the typed `context_help` (below) |
 | text input system UI | all four rows | out (R1.1: an input method's own window, OS-drawn popups) |
-| avatar | Windows, KDE, GNOME | typed `avatar` |
+| avatar | Windows, KDE, GNOME, Material (MAT-L2, MAT-TA5, MAT-N9, MAT-N14: the second check) | typed `avatar` |
 | chart | macOS, KDE, iOS (Swift Charts, KQuickCharts: R1.2) | typed `chart` |
 | chip | Windows (CTK), KDE, Material | typed `chip` |
 | edit menu | KDE, Material, iOS | typed `edit_menu` |
@@ -318,9 +379,11 @@ and the owning group's name where the kinds are the same.
 - **Parts:**
   - `frame` — the window's outer box (the root): `fill` (the decoration's border band: KDE's Frame role, GNOME's
     non-compositing frame), `stroke` (the outline: GNOME's inner outline `Inside`, KDE's outline `Outside`, macOS's
-    outer edge line, the DWM border), `corners` (per corner; `Continuous` on macOS; on iOS the outermost container of
-    `Radius::Concentric`, its radius `= element.display_corner_radius`, which the part declares as its data, measured
-    per `cond idiom:phone` / `cond idiom:pad`: X-CR-4, ADD-B18, R25.11), `shadow` (layers, or an elevation entry;
+    outer edge line, the DWM border), `corners` (per corner; `Continuous` on macOS; on iOS and Android the outermost
+    container of `Radius::Concentric`, each corner's radius the display's radius at that corner,
+    `element.display_corner_radius` (one per corner, S8), which the part declares as its data, else
+    `token.params.display.corner_radius` measured per `cond idiom:phone` / `cond idiom:pad`: X-CR-4, MAT-W5†, ADD-B18,
+    R25.11), `shadow` (layers, or an elevation entry;
     GNOME's outer ring and macOS's inner light rim are layers, the rim `inset`), `padding` (the border band's width
     per side: KDE's border size, GNOME's `.solid-csd`), `transitions` (the activation shadow fade).
   - `content` — the client area: `fill` (the window background, or the platform's material: Mica, Mica Alt, the
@@ -337,7 +400,8 @@ and the owning group's name where the kinds are the same.
   - `title_status` — text the toolkit appends to the title for a window state (macOS's "Edited"): `text`.
   - `title_chevron` — macOS's document-title chevron shown on hover: `glyph`, `opacity`, `transitions`.
   - `caption_buttons` — the group of caption buttons: `padding` (leading inset, vertical position); a rule's context
-    for group hover (macOS shows all three glyphs while the group is hovered).
+    for group hover (macOS shows all three glyphs while the group is hovered). Absent, with the buttons, under the
+    keyed `@no_title_buttons` (GNOME's header bar of an assistant, GN-RL01†).
   - `caption_button` *(element)* — one caption button, its identity a variant (below): `fill` (WinUI's rectangle),
     `min_width`, `min_height`, `padding`, `corners`, `transitions`.
   - `caption_button_glyph` — the glyph and the shape behind it (GNOME's circle, KDE's hover circle, macOS's traffic
@@ -347,33 +411,30 @@ and the owning group's name where the kinds are the same.
   - `window_menu` — the anchor part of the window menu, which is a `menu` element whose ancestor is this part:
     `bindings` (KDE draws it in the window's own decoration palette, K-P4-1†).
   - `resize_zone` *(element)* — one per edge and corner (identity by variant): `cursor`.
-  - `tab_bar`, `tab` *(element)*, `tab_title`, `tab_close_button` *(element)*, `new_tab_button` *(element)*,
-    `tab_separator` — macOS's native window tabs (MAC-W09); `tab_bar` takes the insertion feedback under
-    `{drop_target}` (MAC-SF07†).
   - `launch_screen` — the launch or splash screen the system draws from the application's values: `fill`,
     `bindings`.
   - `launch_icon` — the splash icon: `icon` (size), `fill` (Android's icon background).
 - **Widget values:**
   - `caption_button_layout: CaptionLayout { leading: Vec<CaptionItem>, trailing: Vec<CaptionItem> }`, with
-    `CaptionItem { Button(CaptionButton), Spacer, Icon }` and `CaptionButton { Close, Minimize, Maximize, Restore,
-    WindowMenu, Keyed(Key) }`: which buttons, on which side, in which order (read on GNOME and KDE; mirrored by a
+    `CaptionItem { Button(VariantRef), Spacer, Icon }`, the button named by its identity, a variant of
+    `caption_button` (below): which buttons, on which side, in which order (read on GNOME and KDE; mirrored by a
     `dir rtl` rule, W3-54†).
-  - `caption_button_gap_px: Value<f32>`; `caption_spacer_width_px: Value<f32>`.
-  - `caption_button_capabilities: Vec<(CaptionButton, WindowCapability, WhenMissing)>`, `WindowCapability {
+  - `caption_button_gap_px: Value<Px>`; `caption_spacer_width_px: Value<Px>`.
+  - `caption_button_capabilities: Vec<(VariantRef, WindowCapability, WhenMissing)>`, `WindowCapability {
     Closable, Minimizable, Maximizable, Resizable, Sovereign, ProvidesHelp, Shadeable }`, `WhenMissing { Hide,
     Disable }`: GNOME hides the button that minimises a transient window, Windows greys the button that maximises a
     fixed-size one (W1-148†).
-  - `caption_button_menus: Vec<(CaptionButton, Vec<Key>)>` and `caption_button_menu_placement: Placement`: the menu
+  - `caption_button_menus: Vec<(VariantRef, Vec<Key>)>` and `caption_button_menu_placement: Placement`: the menu
     a caption button opens (macOS's zoom-button tiling menu); its look is `menu` in `context window.caption_button`.
   - `title_alignment: Value<TitleAlignment>`, `TitleAlignment { Start, Center, CenterFullWidth, End }`;
     `CenterFullWidth` centres on the whole bar and falls back to the free side when it meets the buttons (KDE).
-  - `title_margin_px`, `title_bar_box_gap_px`, `title_icon_gap_px`, `title_subtitle_gap_px: Value<f32>`.
+  - `title_margin_px`, `title_bar_box_gap_px`, `title_icon_gap_px`, `title_subtitle_gap_px: Value<Px>`.
   - `title_bar_click_actions: TitleBarActions { double_click: Value<Key>, middle_click: Value<Key>, right_click:
     Value<Key> }` (read).
   - `window_menu_items: Vec<Key>` (the actions in order, with separators, K-P4-1†); `window_menu_placement:
     Placement` (at the pointer; below a button's rectangle, K-P4-1†); `title_menu_placement: Placement` (macOS's
     title pop-up menu).
-  - `resize_band: ResizeBand { outside: Sides<Value<f32>>, inside: Sides<Value<f32>>, corner_px: Value<f32>,
+  - `resize_band: ResizeBand { outside: Sides<Value<Px>>, inside: Sides<Value<Px>>, corner_px: Value<Px>,
     includes_shadow: Value<bool> }`.
   - `full_screen_title_bar_reveal: Value<RevealTrigger>`, `RevealTrigger { Never, PointerAtTopEdge, SwipeFromTop }`.
   - `status_bar_style: Value<StatusBarStyle>`, `StatusBarStyle { Default, LightContent, DarkContent }` (iOS's status
@@ -381,22 +442,24 @@ and the owning group's name where the kinds are the same.
     `navigation_bar_contrast_scrim: Value<bool>` (Android, MAT-W1); `caption_bar_transparent: Value<bool>` (Android
     desktop windowing: the application's opt-in to a transparent caption, which the system then draws over the
     application's own title bar fill, MAT-W4†; the caption itself is the system's, R1.1).
-  - `default_size: (Value<f32>, Value<f32>)` (Kirigami's window, in grid units; `@ka_settings`, K-KA-41†).
-  - `mobile_height_breakpoint_px: Value<f32>` (the header bar treats a lower window as mobile, GN-1.197).
+  - `default_size: Axes<Value<Px>>` (Kirigami's window, in grid units; `@ka_settings`, K-KA-41†).
+  - `mobile_height_breakpoint_px: Value<Px>` (the header bar treats a lower window as mobile, GN-1.197).
   - `keyboard_avoidance: Placement` (strategy `KeyboardAvoid(…)`: what moves when the on-screen keyboard covers the
     focused field, W-P4-3†, MAT-P4-2†).
-  - `attention_flash: AttentionFlash { period_ms: Value<f32>, count: Value<u32> }` (Windows).
-  - `tab_bar_overflow: Value<Key>` (macOS; the keys follow the measurement, MAC-P4-5†).
+  - `attention_flash: AttentionFlash { period_ms: Value<Ms>, count: Value<u32> }` (Windows).
+  - `tab_bar_overflow: Value<Key>` (what macOS's window tab bar does with more tabs than fit; the keys follow the
+    measurement, MAC-P4-5†; the tabs are `tab` elements, below).
   - `presentations: Vec<PresentationTransition>`: keyed events `@title_bar_reveal` (the full-screen reveal),
-    `@launch_exit` (the splash into the first frame), `@predictive_back` (Material's in-app back gesture); `Move`
-    (window tabs parting to open a gap, MAC-SF07†).
+    `@launch_exit` (the splash into the first frame), `@predictive_back` (Material's in-app back gesture).
 - **Variants:**
   - on the window, typed: `dialog` (a dialog's window: GNOME's message window shadow, the close-only caption of
     GNOME and Windows, macOS alerts and panels), `utility` (Windows' tool window, macOS's utility panel: small caption
     and buttons, own radius and shadow; MAC-N16, W1-148†), `transparent_title_bar` (GNOME's `.flat` header bar,
     macOS's `titlebarAppearsTransparent`).
   - on the window, keyed: `adwaita` `@ssd`, `@ssd_frame`, `@default_decoration`, `@standalone`,
-    `@collapse_spacing`, `@inline`, `@devel`; `windows-11` `@tall`, `@collapsed`, `@titlebar_control_expanded`,
+    `@collapse_spacing`, `@inline`, `@devel`, `@no_title_buttons` (the header bar shows no window buttons: GtkAssistant
+    with `use-header-bar`, set by the connector for a `wizard` in `@header_bar` mode, GN-RL01†); `windows-11` `@tall`,
+    `@collapsed`, `@titlebar_control_expanded`,
     `@mica_alt`, `@round_small`, `@compact_overlay`; `macos-*` `@hud` (the HUD panel's material, title bar and close
     button, MAC-N14), `@title_hidden`, `@no_toolbar`, `@toolbar_unified`, `@toolbar_unified_compact`,
     `@toolbar_expanded`, `@toolbar_preference`, `@separator_line`, `@separator_shadow`; `kde-breeze` `@ka_settings`
@@ -411,16 +474,16 @@ and the owning group's name where the kinds are the same.
   macOS's toolbar styles); KDE's button and border sizes are read settings.
 - **Flags:** shared none; keyed `macos-*` `@document_edited` (on the window: the close button's dot and the title's
   "Edited", MAC-W11†); state flags used: hover, pressed, checked (KDE's toggled caption buttons), disabled, scrolled
-  (macOS's separator shown while content scrolls beneath, on `title_bar`), drop_target (on `tab_bar`, MAC-SF07†).
+  (macOS's separator shown while content scrolls beneath, on `title_bar`).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `caption_button` (the caption buttons' rest,
   hover and pressed states; their inactive look is `cond window_inactive`); others none (states combine);
   precedence: state models (S17).
 - **may_be_absent:**
   - parts: `title_bar` (KDE's `HideTitleBar`, full screen, `@title_hidden`), `subtitle` and `title_icon` (where the
     window shows none), `title_status`, `title_chevron` (all but `macos-*`), `window_menu` (`ios-*`, `material-3`),
-    `resize_zone` (`ios-*`, `material-3`; a maximised window), `tab_bar`, `tab`, `tab_title`, `tab_close_button`,
-    `new_tab_button`, `tab_separator` (all but `macos-*`), `launch_screen`, `launch_icon` (`adwaita`, `kde-breeze`,
-    `macos-*`).
+    `resize_zone` (`ios-*`, `material-3`; a maximised window), `caption_buttons`, `caption_button`,
+    `caption_button_glyph` (`ios-*`, `material-3`; `adwaita` under `@no_title_buttons`), `launch_screen`, `launch_icon`
+    (`adwaita`, `kde-breeze`, `macos-*`).
   - fields: `frame.shadow` (maximised, full screen, `cond not_composited`), `frame.stroke`, `frame.padding`,
     `caption_buttons.padding`.
   - values: `resize_band` (`ios-*`, `material-3`; a maximised window), `status_bar_style` (all but `ios-*`,
@@ -461,7 +524,10 @@ and the owning group's name where the kinds are the same.
   - Group 6: MAC-N16's utility panel is the typed `utility` (shorter title bar, small caption buttons, title font).
   - Group 8: `content.fill` with the platform's material; `frame.corners` as the outermost `Radius::Concentric`
     container (X-CR-4). Group 8's caption-button side value (W3-54†) is `caption_button_layout`.
-  - Group 7: the tab bar's drop feedback and the event `Move` (MAC-SF07†).
+  - macOS's native window tabs (MAC-W09) are the `tab` widget, variant `document`, in `context window.title_bar`: the
+    strip `tab.bar`, each tab `tab.tab`, its close button `button @ variant close context tab.tab`, the new-tab button
+    `button @ variant add context tab.bar`; the insertion feedback `tab.bar @ {drop_target}` and the tabs parting
+    (event `Move`, MAC-SF07†), their opening and closing (events `Appear`, `Disappear`, MAC-X32†) are `tab`'s.
   - kirigami-addons: `@ka_settings` sets `default_size`, `content.min_width`, `content.min_height` (K-KA-41†).
 
 ## Overlays
@@ -476,8 +542,10 @@ and the owning group's name where the kinds are the same.
 - **Parts:**
   - `body` — the dialog box (the root; group 7 called it `platter` for the iOS action sheet): `fill` (colour or
     material), `stroke` (GNOME's inner outline, Kirigami's border), `corners`, `shadow`, `padding`, `min_width`,
-    `max_width`, `min_height`, `max_height`, `bindings` (`Surface(Dialog)`; Kirigami's View set; on iOS resolved under
-    `cond elevated`, D-14).
+    `max_width`, `min_height`, `max_height`, `bindings` (`Surface(Dialog)`; Kirigami's View set; on `ios-*` the
+    `Dialog` set, whose background roles the preset states as the elevated values, and a `Binding::Role` from each
+    keyed background role to its elevated twin, `role.@system_background` to `= role.@system_background_elevated` and
+    so on: iOS's elevated level is a binding in a sheet or popover, R2.3, R5.2, D-14).
   - `scrim` — the dimming behind the dialog: `fill` (`= role.global.scrim`, or libadwaita's derivation from the shade
     colour), `transitions`.
   - `header` — the title area: `padding`, `fill` and `bindings` (KDE's Header-filled tools area), `stroke` (the
@@ -487,40 +555,37 @@ and the owning group's name where the kinds are the same.
   - `message` — the body text and content area: `text`, `padding`, `corners` (GNOME's scrolled alert body).
   - `icon` — the hero or standard icon: `icon`, `glyph`, `padding`.
   - `icon_badge` — macOS's caution badge over the application icon of a critical alert: `icon`, `padding`.
-  - `close_button` *(element)* — the header's close button (Kirigami's, its icon changing on hover, Q2.58†,
-    K-KA-17†; Material's full-screen dialog, MAT-N26): `glyph`, `fill`.
-  - `action_area` — the footer or command area: `fill` (WinUI's command area), `stroke` (the line above it: WinUI's
-    separator, Kirigami's and Material's when the content overflows), `padding`, `min_height`.
-  - `action` *(element)* — one response or action button (GNOME's response buttons, iOS's alert actions, Material's
-    text actions, ContentDialog's buttons, KDE's button box): `fill` (and appended state layers), `stroke`, `corners`,
-    `padding`, `min_width`, `max_width`, `min_height`, `text`, `icon`, `transitions`. It is the dialog's own element,
-    not a `button`, because its geometry and roles are the dialog's; a preset whose platform uses its button look
-    states it with the same roles (no model inheritance, R20).
-  - `separator` — the hairlines between action cells (iOS 13–18; the action sheet, C-11).
-  - `cancel_platter` — the action sheet's separate cancel box (C-11).
+  - `action_area` — the footer or command area holding the responses: `fill` (WinUI's command area), `stroke` (the
+    line above it: WinUI's separator, Kirigami's and Material's when the content overflows), `padding`, `min_height`.
+  - `separator` — the hairlines between action cells (iOS 13–18; the action sheet, C-11): `fill` (the line's
+    colour), `min_height` (the line).
+  - `cancel_platter` — the action sheet's separate cancel box (C-11): `fill` (its material), `corners`.
 - **Widget values:**
-  - `title_alignment`, `message_alignment: Value<Alignment>`; `title_message_gap_px`, `message_actions_gap_px:
-    Value<f32>`.
+  - `title_alignment`, `message_alignment: Value<Alignment>`; `title_message_gap_px`,
+    `message_actions_gap_px: Value<Px>`.
   - `action_layout: ActionLayout { row_order: Vec<ActionRole>, stacked_order: Value<StackedOrder>, alignment:
-    Value<Alignment>, equal_widths: Value<bool>, row_gap_px: Value<f32>, column_gap_px: Value<f32>, stack_rule:
+    Value<Alignment>, equal_widths: Value<bool>, row_gap_px: Value<Px>, column_gap_px: Value<Px>, stack_rule:
     StackRule }`; `ActionRole { Accept, Reject, Destructive, Help, Reset, Apply, Other }` (Qt's button roles, which
     KDE's `KdeLayout` orders); `StackedOrder { SameAsRow, Reversed, AcceptFirst }`; `StackRule { Never,
-    WhenOverflowing { horizontal_padding_px: Value<f32> }, ByCount { max_in_row: Value<u32> } }`.
-  - `presentation_breakpoint: Breakpoint { max_width_px: Value<f32>, max_height_px: Value<f32> }`: below it the
-    connector sets the variants `@bottom_sheet`, `narrow`, `@short` (AdwDialog's bottom sheet and breakpoint
-    classes), `full_size` (Material's full-screen dialog; Kirigami's full-window layer under `cond
-    mobile_form_factor`, Q2.58†) or `narrow` (`@ka_message_dialog`, K-KA-19†) (R16).
-  - `window_margin: EdgeMargin { min_px: Value<f32>, max_px: Value<f32>, from_window_px: Value<f32>, to_window_px:
-    Value<f32> }` per axis: the margin to the host's edges, constant (Kirigami, Material) or growing with the window
+    WhenOverflowing { horizontal_padding_px: Value<Px> }, ByCount { max_in_row: Value<u32> } }`.
+  - `presentation_breakpoint: Breakpoint { max_width_px: Value<Px>, max_height_px: Value<Px> }`: below it the
+    connector sets, per preset: `adwaita` `bottom_sheet` below the width and `@short` below the height, with `narrow`
+    below the width (AdwDialog's bottom sheet and breakpoint classes); `material-3` `full_size` (the full-screen
+    dialog); `kde-breeze` `full_size` under `cond mobile_form_factor` (Kirigami's full-window layer, Q2.58†) and
+    `narrow` for `@ka_message_dialog` (K-KA-19†) (R16).
+  - `window_margin: EdgeMargin { min_px: Value<Px>, max_px: Value<Px>, from_window_px: Value<Px>, to_window_px:
+    Value<Px> }` per axis: the margin to the host's edges, constant (Kirigami, Material) or growing with the window
     (AdwDialog's floating sheet); group 7's `screen_edge_margin` (C-11) is this value.
-  - `natural_size: (Value<f32>, Value<f32>)` (AdwDialog's default, Kirigami's MenuDialog and SearchDialog).
+  - `natural_size: Axes<Value<Px>>` (AdwDialog's default, Kirigami's MenuDialog and SearchDialog).
+  - `cancel_platter_gap_px: Value<Px>` (the space between the action sheet's actions and its separate cancel box,
+    C-11).
   - `placement: Placement`; `keyboard_avoidance: Placement` (strategy `KeyboardAvoid(…)`).
   - `presentations: Vec<PresentationTransition>`: events `Appear` (the action sheet's kind `Slide` from the bottom,
     C-11), `Disappear`, keyed `@sheet_attach`, `@sheet_detach`.
   - `button_icons: Value<bool>` (KDE, read); `standard_button_icons: Vec<(ActionRole, Key)>` (icon names, K-KA-19†);
     `type_icons: Vec<(Key, Key)>` (Kirigami's prompt types to icon names, K-KA-19†).
-  - `message_wrap: MessageWrap { wrap_above_px: Value<f32>, min_width_px: Value<f32>, elide_above_px: Value<f32>,
-    scroll_above_px: Value<f32>, item_list_max_width_px: Value<f32>, details_min_lines: Value<u32> }` (KMessageBox,
+  - `message_wrap: MessageWrap { wrap_above_px: Value<Px>, min_width_px: Value<Px>, elide_above_px: Value<Px>,
+    scroll_above_px: Value<Px>, item_list_max_width_px: Value<Px>, details_min_lines: Value<u32> }` (KMessageBox,
     K-P3-7†): the message wraps above `wrap_above_px` (`= min(mul(element.screen_width, <fraction>),
     mul(element.char_width, <count>))`, the count a translated sample line), its label is at least `min_width_px`
     wide (the same form), it is elided above `elide_above_px` (`= mul(element.screen_width, <fraction>)`) and scrolls
@@ -533,34 +598,34 @@ and the owning group's name where the kinds are the same.
     NSAlert, UIAlertController's alert, Material's basic dialog), `separate_window` (a dialog in its own window:
     AdwDialog's fallback, Qt dialogs, Kirigami's native-window popup type and its desktop dialog layer, Q2.58†,
     macOS's app-modal alert), `full_size` (ContentDialog's `FullSizeDesired`, Material's full-screen dialog MAT-N26,
-    Kirigami's full-window dialog layer Q2.58†), `warning`, `info`, `error`, `success` (NSAlert's styles,
+    Kirigami's full-window dialog layer Q2.58†), `bottom_sheet` (presented as a bottom sheet: AdwDialog's bottom
+    sheet; the meaning `sidebar`'s `bottom_sheet` shares on Material), `warning`, `info`, `error`, `success`
+    (NSAlert's styles,
     KMessageBox's standard icons, Kirigami's prompt types), `narrow` (a dialog laid out for a narrow host: AdwDialog's
     `.narrow` breakpoint class, kirigami-addons' message dialog under it, K-KA-19†; set by the connector).
-  - on the dialog, keyed: `adwaita` `@bottom_sheet`, `@short`, `@wide`, `@message_dialog`; `kde-breeze`
+  - on the dialog, keyed: `adwaita` `@short`, `@wide`, `@message_dialog`; `kde-breeze`
     `@question`, `@menu_dialog`, `@search_dialog`, `@flat_footer`,
     `@ka_dialog` (the one surface of every kirigami-addons dialog and popup: corners, View binding, stroke, shadow,
     K-KA-18†), `@ka_form_card_dialog` (K-KA-17†), `@ka_message_dialog` (K-KA-19†), `@ka_list_dialog` (the combo
-    row's list dialog, K-KA-12†); `macos-*` `@sheet`; `ios-*` `@action_sheet` (C-11); `material-3` `@with_icon`.
-  - on `action`: typed `primary` (GNOME's suggested response) and `destructive`; keyed `ios-*` `@cancel`. The
-    default action is the state `default`.
+    row's list dialog, K-KA-12†); `macos-*` `@sheet`; `ios-*` `@action_sheet` (C-11). Material's dialog with a hero
+    icon is the content variant `with_icon` (ADD-A61), which the connector sets from the content.
+  - the responses are `button` elements in `context dialog.action_area`, with `button`'s typed `primary` (GNOME's
+    suggested response) and `destructive` and keyed `ios-*` `@cancel`; the default response is the state `default`.
 - **Sizes and densities:** none; AdwDialog's breakpoint classes are the variants `narrow`, `@short` (R16); the
   accessibility text sizes are the condition `accessibility_text_size` (ADD-A08).
 - **Flags:** shared none; keyed `kde-breeze` `@has_toolbar`, `@scroll_view_content`, `@has_cancel` (the close button
-  shown when a Cancel button exists, K-KA-17†); state flags used: default, hover, pressed, focus_visible, disabled
-  (on `action`), scrolled, overflowing (ADD-A13).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `action` (Button's CommonStates;
-  ContentDialog's `DialogShowingStates`, `DialogSizingStates` and `ButtonsVisibilityStates` are visibility and
-  sizing, held by variants and values, and `DefaultButtonStates` is the state `default`); `material-3`: `[dragged,
-  pressed, focus_visible, hover]` on `action` (state layers); others none (states combine); precedence: state models
-  (S17).
+  shown when a Cancel button exists, K-KA-17†); state flags used: scrolled, overflowing (ADD-A13).
+- **Exclusive groups:** none: the dialog holds no interaction state, and its responses and close button are `button`
+  elements, whose groups are `button`'s (ContentDialog's `DialogShowingStates`, `DialogSizingStates` and
+  `ButtonsVisibilityStates` are visibility and sizing, held by variants and values, and `DefaultButtonStates` is the
+  responses' state `default`); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `scrim` (Qt Widgets dialogs on `kde-breeze`, macOS's app-modal alerts), `header`, `subtitle`, `icon`
-    (where the dialog shows none), `icon_badge` (all but `macos-*`), `close_button` (all but `kde-breeze`,
-    `material-3`), `separator`, `cancel_platter` (all but `ios-*`).
+    (where the dialog shows none), `icon_badge` (all but `macos-*`), `separator`, `cancel_platter` (all but `ios-*`).
   - fields: `action_area.fill`, `action_area.stroke`.
   - values: `presentation_breakpoint` (all but `adwaita`, `kde-breeze`, `material-3`), `message_wrap` (all but
     `kde-breeze`), `button_icons`, `standard_button_icons`, `type_icons` (all but `kde-breeze`), `natural_size`,
-    `keyboard_avoidance`.
+    `keyboard_avoidance`, `cancel_platter_gap_px` (all but `ios-*`).
 - **State-model source:** `windows-11`: ContentDialog's visual state groups (`DialogShowingStates`,
   `DialogSizingStates`, `ButtonsVisibilityStates`, `DefaultButtonStates`; `ContentDialog_themeresources.xaml`) and
   Button's CommonStates; `adwaita`: `_dialogs.scss`, `_message-dialog.scss` (floating, bottom sheet, `.alert`,
@@ -576,11 +641,15 @@ and the owning group's name where the kinds are the same.
   `values.presentations` (event `Appear`); `title_font` → `title.text.font`; `icon_size_px` → `icon.icon.size`;
   `border.*` → `body.stroke`, `body.corners`, `body.padding`, `body.shadow`.
 - **Notes:**
+  - Nested controls: the responses are `button` elements in `context dialog.action_area` (GNOME's response buttons,
+    iOS's alert actions, Material's text actions, ContentDialog's buttons, KDE's button box); the header's close button
+    is `button @ variant close context dialog.header` (Kirigami's, its icon changing on hover, Q2.58†, K-KA-17†;
+    Material's full-screen dialog, MAT-N26); inputs are `input @ context dialog.body variant alert` (DL-9).
   - Group 7: `@action_sheet` (C-11): the actions' box is `body`, the separate cancel box `cancel_platter`, the
-    actions `action`, the hairlines `separator`, with `title` and `message`; on iPad it is a popover (a context, not a
-    part).
+    actions `button` elements there, the hairlines `separator`, with `title` and `message`; on iPad it is a popover (a
+    context, not a part).
   - Group 6: `full_size` covers Kirigami's dialog layer (Q2.58†) and Material's full-screen dialog (MAT-N26):
-    `header`, `title`, `close_button`, `action_area`, the line under the header as `header.stroke`. Kirigami chooses
+    `header`, `title`, the close `button`, `action_area`, the line under the header as `header.stroke`. Kirigami chooses
     an inset dialog, a full-window layer or a separate window by width and form factor: the connector sets
     `full_size` or `separate_window` from `presentation_breakpoint` and `cond mobile_form_factor` (Q2.58†).
     GtkDialog's action area: `action_area.padding`, `values.action_layout.row_gap_px` (GN-2.57†).
@@ -598,15 +667,19 @@ and the owning group's name where the kinds are the same.
   - `body` — the root: `fill` (colour or material: acrylic, `.popover`, glass), `stroke`, `corners`, `shadow` (layers
     or an elevation entry; Material's surface tint is an appended fill layer, R8), `padding`, `min_width`,
     `max_width`, `min_height`, `max_height` (`Auto` where the platform sizes by content), `text` (today's `font`),
-    `bindings` (`Surface(Popover)`; on iOS resolved under `cond elevated`, D-14), `transitions`.
+    `bindings` (`Surface(Popover)`; on `ios-*` the `Popover` set, whose background roles the preset states as the
+    elevated values, with a `Binding::Role` from each keyed background role to its elevated twin, as `dialog.body`:
+    R2.3, R5.2, D-14), `transitions`.
   - `arrow` — the tail: `min_width` (base), `min_height` (height), `corners` (tip rounding), `fill`, `stroke`.
   - `dismiss_overlay` — WinUI's light-dismiss overlay: `fill`.
 - **Widget values:** `placement: Placement` (gap to the anchor, screen-edge margin, arrow side; Q1.16, MAC-I06);
-  `has_arrow: Value<bool>`; `default_size: (Value<f32>, Value<f32>)` (UIKit's size when the application states
+  `has_arrow: Value<bool>`; `default_size: Axes<Value<Px>>` (UIKit's size when the application states
   none); `full_size_content: Value<bool>` (macOS); `presentations: Vec<PresentationTransition>`: events `Appear`,
   `Disappear`.
-- **Variants:** keyed `adwaita` `@osd`, `@magnifier`; `macos-*` `@detached`; `kde-breeze` `@ka_dialog` (the surface
-  of kirigami-addons' popups, K-KA-18†). GNOME's touch-selection bubble is `edit_menu`.
+- **Variants:** keyed `adwaita` `@osd`; `macos-*` `@detached`; `kde-breeze` `@ka_dialog` (the surface
+  of kirigami-addons' popups, K-KA-18†). GNOME's touch-selection bubble is `edit_menu`; its text magnifier (a
+  `.magnifier` popover in GTK,
+  GN-1.184) is `input.magnifier`.
 - **Sizes and densities:** none.
 - **Flags:** none (a popover's content carries the states).
 - **Exclusive groups:** none (the popover holds no interaction state); precedence: state models (S17).
@@ -614,7 +687,7 @@ and the owning group's name where the kinds are the same.
   - parts: `arrow` (`kde-breeze`, `windows-11`, `material-3`), `dismiss_overlay` (all but `windows-11`).
   - fields: `body.shadow` (`cond not_composited`).
   - values: `full_size_content` (all but `macos-*`), `default_size` (all but `ios-*`).
-- **State-model source:** `adwaita`: `_popovers.scss` (`.menu`, `.osd`, `.touch-selection`, `.magnifier`,
+- **State-model source:** `adwaita`: `_popovers.scss` (`.menu`, `.osd`, `.touch-selection`,
   `:backdrop`, HC; `.solid-csd` ancestors); `kde-breeze`: Breeze's `renderMenuFrame` branches (alpha or not), qqc2's
   `Popup.qml`, kirigami-addons' `DialogRoundedBackground.qml`; `macos-*`: `NSPopover.Behavior`, `animates`,
   detached; `ios-*`: `permittedArrowDirections`, `popoverLayoutMargins`; `windows-11`: FlyoutPresenter (no visual
@@ -641,10 +714,10 @@ and the owning group's name where the kinds are the same.
   - `arrow` — Material's caret: `min_width`, `min_height`, `glyph` or `corners`, `fill`.
 - **Widget values:** `show_delay_ms` (today; Kirigami's under `cond flavor:kirigami`, Q1.136, Q1.65, Q1.82),
   `reshow_delay_ms` (browse mode), `browse_timeout_ms`, `hide_delay_ms` (after the pointer leaves, MAT-X25),
-  `keyboard_show_delay_ms: Value<f32>`; `show_on_press: Value<bool>` (tablet mode, touch; with `show_delay_ms` `=
-  token.behavior.long_press_ms` under that condition, Q3.28); `display_time: DisplayTime { base_ms: Value<f32>,
-  per_char_ms: Value<f32>, free_chars: Value<u32> }` (`Absent` for "never times out while hovered");
-  `icon_text_gap_px: Value<f32>`; `placement: Placement`; `presentations: Vec<PresentationTransition>`: events
+  `keyboard_show_delay_ms: Value<Ms>`; `show_on_press: Value<bool>` (tablet mode, touch; with `show_delay_ms` `=
+  token.behavior.long_press_ms` under that condition, Q3.28); `display_time: DisplayTime { base_ms: Value<Ms>,
+  per_char_ms: Value<Ms>, free_chars: Value<u32> }` (`Absent` for "never times out while hovered");
+  `icon_text_gap_px: Value<Px>`; `placement: Placement`; `presentations: Vec<PresentationTransition>`: events
   `Appear`, `Disappear`.
 - **Variants:** typed `rich` (Material's rich tooltip, KDE's KToolTipWidget); keyed `macos-*` `@expansion`.
 - **Sizes and densities:** none.
@@ -674,8 +747,10 @@ and the owning group's name where the kinds are the same.
 *From group 1's catalogue.*
 
 - **Kind:** typed widget: popover menus and context menus (GtkPopoverMenu, QMenu, qqc2 Menu, kirigami-addons'
-  ConvergentContextMenu, NSMenu, UIMenu, MenuFlyout, Material's menu and Compose's text context menu). The menu bar
-  is `menu_bar`; a combo box's list is `combo_box`'s.
+  ConvergentContextMenu, NSMenu, UIMenu, MenuFlyout, Material's menu and Compose's text context menu), and the popup
+  lists that are menus to the user (Nested controls): a combo box's popup (`context combo_box`), a field's
+  suggestion list (`context autocomplete`), an edit menu's overflow (`context edit_menu`), a toolbar's overflow
+  menu. The menu bar is `menu_bar`.
 - **Available:** every preset.
 - **Parts:**
   - `body` — the popup (the root): `fill` (colour, translucency, material: acrylic, KWin blur, glass), `stroke`,
@@ -694,34 +769,41 @@ and the owning group's name where the kinds are the same.
     `min_width`, `min_height`, `padding`. On KDE the indicator is a `checkbox` element in `context menu.item` (K1.69,
     Q1.31).
   - `submenu_arrow` — `glyph`, `opacity`, `min_width` (its box).
-  - `separator` — `fill` or `stroke`, `padding` (insets), `min_height`.
+  - `separator` — `fill` (the line's colour, today's `separator_color`), `padding` (insets), `min_height`.
   - `group_separator` — iOS's thick separator between inline sections: `fill`, `min_height`.
   - `group` — Material Expressive's item group box: `fill`, `corners`, `padding`.
   - `section_header` — KDE's section item, macOS's section header, iOS's menu title, Material Expressive's section
     label: `text`, `stroke` (KDE's line after the text), `padding`, `min_height`.
   - `submenu_header` — GNOME's sliding-submenu header: `glyph` (back arrow), `text`, `padding`.
   - `scroll_arrow` *(element)* — the scroll areas of a menu taller than its space: `glyph`, `fill`, `min_height`.
-  - `split_button` *(element)*, `split_divider` — WinUI's split menu item: the chevron button and the line.
+  - `split_chevron` *(element)* — WinUI's split menu item (`@split`, W1-051): the chevron part pressed apart from
+    the item, a piece of the item, not a `split_button`: `fill` (its own hover and pressed highlight), `glyph` (the
+    chevron), `min_width` (the chevron part's box).
+  - `split_divider` — the line between the item and its chevron part (W1-051): `fill` (the divider's brush),
+    `min_height` (the line).
+  - `item_selection_indicator` — WinUI's selection pill on the selected item of a combo box's list (W1-135), in
+    `context combo_box`: `fill`, `corners`, `min_width`, `min_height`, `transform` (the scale the pill grows from),
+    `transitions` (its scale animation).
   - `found_item_pointer` — the pointer macOS draws at a menu item the Help search found (MAC-N33†): `glyph`, `fill`,
     `transitions`.
   - `dismiss_overlay` — WinUI's light-dismiss overlay: `fill`.
-- **Widget values:** `submenu_open_delay_ms` (W3-41, MAT-X25, MAC-X12), `submenu_close_delay_ms: Value<f32>`;
+- **Widget values:** `submenu_open_delay_ms` (W3-41, MAT-X25, MAC-X12), `submenu_close_delay_ms: Value<Ms>`;
   `submenu_switch: Value<SubmenuSwitch>`, `SubmenuSwitch { Immediate, TimerRestartedOnMotion, CloseTimer,
   SafeTriangle }` (GNOME's timer restarted on motion, KDE's and Windows' close timeout, macOS's triangle);
   `submenu_presentation: Value<SubmenuPresentation>`, `SubmenuPresentation { Cascade, Slide, Inline }`;
-  `submenu_placement: Placement`; `placement: Placement`; `presentations: Vec<PresentationTransition>`: events
+  `submenu_placement: Placement`; `placement: Placement`; `check_indicator_side: Value<Side>` (the check before or
+  after the label: GNOME's combo-box list puts it after, GN-1.234); `presentations: Vec<PresentationTransition>`: events
   `Appear`, `Disappear`, keyed `@submenu_push`, `@submenu_expand`; `show_item_icons: Value<ItemIcons>`, `ItemIcons {
   Always, Never, OnlyWithoutLabel }`; `check_column`, `icon_column: Value<ColumnReservation>`, `ColumnReservation {
   Always, WhenAnyItemNeeds, Never }`; `check_column_width_px`, `icon_column_width_px`, `icon_text_gap_px` (today),
-  `accelerator_gap_px`, `indent_step_px`, `group_gap_px`, `icon_row_gap_px: Value<f32>`; `accelerator_alignment:
+  `accelerator_gap_px`, `indent_step_px`, `group_gap_px`, `icon_row_gap_px: Value<Px>`; `accelerator_alignment:
   Value<Alignment>`; `scrollable: Value<bool>`; `item_order: Value<ItemOrder>`, `ItemOrder { Fixed, NearestFirst,
   Automatic }` (UIKit's element order); `palette_columns: Value<u32>` (per size); `activation_flash: Value<u32>` (the
   number of times the chosen item flashes, MAC-X12).
 - **Variants:**
   - on `item`, typed: `check`, `radio`, `destructive` (iOS, macOS's SwiftUI destructive item), `palette` (macOS's
     palette menu, iOS's `displayAsPalette`), `icon_only` (GNOME's iconic sections, Material Expressive's icon-only
-    menus), `circular` (GNOME's circular iconic items), `split` (WinUI's split menu item, W1-051; the meaning KDE's split tool
-    button shares).
+    menus), `circular` (GNOME's circular iconic items); keyed `windows-11` `@split` (WinUI's split menu item, W1-051).
   - on the menu, typed `horizontal` (Material Expressive's horizontal menu; the orientation many widgets share); keyed:
     `material-3` `@vibrant`, `@text_context` (Compose foundation's own text
     context menu); `ios-*` `@compact` (the context-menu appearance); `kde-breeze` `@ka_bottom_drawer`, `@ka_dialog`
@@ -739,14 +821,16 @@ and the owning group's name where the kinds are the same.
   - parts: `item_subtitle` (`adwaita`, `kde-breeze`, `windows-11`), `item_trailing_icon` (all but `ios-*`,
     `material-3`), `group_separator` (all but `ios-*`), `group` (all but `material-3` flavour `expressive`),
     `submenu_header` (all but `adwaita`), `scroll_arrow` (`adwaita`, `ios-*`, `material-3`, `windows-11`),
-    `split_button`, `split_divider`, `dismiss_overlay` (all but `windows-11`),
+    `split_chevron`, `split_divider`, `item_selection_indicator`, `dismiss_overlay` (all but `windows-11`),
     `found_item_pointer` (all but `macos-*`), `check_indicator` (`kde-breeze`: drawn by `checkbox`).
   - fields: `item.stroke`.
   - values: `palette_columns` (all but `macos-*`, `ios-*`), `item_order` (all but `ios-*`), `indent_step_px`,
     `activation_flash` (all but `macos-*`).
 - **State-model source:** `windows-11`: MenuFlyoutItem's, ToggleMenuFlyoutItem's, RadioMenuFlyoutItem's and
   MenuFlyoutSubItem's visual state groups (CommonStates, CheckStates, PaddingSizeStates, SubMenuOpened;
-  `MenuFlyout_themeresources.xaml`); `adwaita`: `_menus.scss` selectors (`:hover`, `:selected`, `:active`,
+  `MenuFlyout_themeresources.xaml`), ComboBoxItem's in `context combo_box` (`ComboBox_themeresources.xaml`) and the
+  suggestion list's ListViewItem states in `context autocomplete`; `adwaita`: `_menus.scss` selectors (`:hover`,
+  `:selected`, `:active`,
   `:disabled`, `:checked`, HC) and `gtkmodelbutton.c`; `kde-breeze`: Breeze's `drawMenuItemControl` branches
   (`st:5982-6185`), qqc2's `MenuItem.qml`, kirigami-addons' `ConvergentContextMenu.qml`; `material-3`:
   `_md-comp-menu.scss` and the Expressive menu tokens (rest, hover, focus, pressed, selected, disabled); `macos-*`:
@@ -762,10 +846,17 @@ and the owning group's name where the kinds are the same.
   - macOS's Help-menu search field (MAC-N33†) is the `search_field` widget in `context menu.body`; the pointer at a
     found item is `found_item_pointer`.
   - macOS's item badge is the `badge` widget in `context menu.item`.
-  - A toolbar's overflow menu is this widget in `context toolbar.overflow_button`, placed by
-    `toolbar.values.overflow_placement` (W1-102); the overflow check glyph of a checked toggle item is
-    `check_indicator` there (W1-100).
-  - Suggestion menus under a field are `menu.body`, `menu.item` in `context input` (MAC-P3-7†).
+  - A toolbar's overflow menu is this widget in `context button variant overflow` (the overflow button in
+    `context toolbar.bar`), placed by `toolbar.values.overflow_placement` (W1-102); the overflow check glyph of a
+    checked toggle item is `check_indicator` there (W1-100).
+  - A combo box's popup is this widget in `context combo_box` (GNOME's menu-style popover, the qqc2 combo's Menu,
+    macOS's pop-up menu, iOS's menu, Material's exposed drop-down menu, WinUI's and Qt Widgets' popup lists): its rows
+    `item`, the selected row's mark `check_indicator` (after the label on GNOME: `check_indicator_side`, GN-1.234),
+    WinUI's pill `item_selection_indicator`, its placement `values.placement` (W1-136, MAT-P3-9, K1.245, GN-P4-2†,
+    K-P3-5†, MAC-P4-8†), its open and close `values.presentations` (W1-136, Q1.125).
+  - Suggestion lists under a field are this widget in `context autocomplete` (MAC-P3-7†, W2-15, GN-2.56†, K2.29†,
+    MAT-N27, C-38†); a date picker's quick items (Today, Next Week) are `item` elements in `context date_picker`
+    (K2.23†).
   - kirigami-addons' ConvergentContextMenu (K-KA-31†): the desktop look (qqc2 Menu, Q1.23–Q1.32) is the base; the
     connector sets `@ka_bottom_drawer` (the default under `cond mobile_form_factor`) or `@ka_dialog` from the
     application's display mode, and draws the menu's actions as `form` rows in a `sheet`, or in a `dialog`, in
@@ -778,44 +869,54 @@ and the owning group's name where the kinds are the same.
 *From group 2's catalogue.*
 
 - **Kind:** typed widget: all six platforms (push, tool, toggle and menu buttons; toolbar items, §2 of the merge:
-  Qt's QToolButton, WinUI's AppBarButton and AppBarToggleButton, AppKit's toolbar items, iOS's bar button items).
+  Qt's QToolButton, WinUI's AppBarButton and AppBarToggleButton, AppKit's toolbar items, iOS's bar button items), and
+  every button nested in another widget (Nested controls: dialog responses, close, navigation, overflow, clear and
+  reveal buttons, media controls, edit-menu commands).
 - **Available:** every preset.
 - **Parts:**
   - `body` — the bezel or container (the root): `fill` (state layers are appended paint layers, R3), `stroke`,
-    `corners`, `shadow` (layers or an elevation entry), `padding`, `min_width`, `min_height`, `transform`, `focus`,
-    `bindings` (KDE's tool-button colour set, Window when flat and Button when raised, Q1.9).
+    `corners`, `shadow` (layers or an elevation entry), `padding`, `min_width`, `min_height`, `opacity` (today's
+    `disabled_opacity`), `transform`, `focus`, `cursor` (`WhatsThis` on `help`, ADD-A59), `touch_target` (Material's
+    minimum interactive size round small buttons and icon buttons, MAT-X22), `bindings` (KDE's tool-button colour
+    set, Window when flat and Button when raised, Q1.9), `transitions`.
   - `label` — the title text: `text`.
   - `subtitle` — a second text line under the title (iOS `UIButton.Configuration.subtitle`, B-8; KDE's command link
     description, K2.7): `text`.
   - `icon` — the image: `icon` (size, fill per state, rendering mode, weight and scale for SF Symbols), `glyph` (for
     system button types, B-12).
-  - `menu_indicator` — the arrow or chevron of a button that opens a menu (GN-1.40, K1.27, B-18†, MAT-N8; KDE's split
-    sub-control with its separator line, K1.155): `glyph`, `stroke`, `min_width`, `transitions` (the press animation).
-  - `attention_dot` — libadwaita's needs-attention dot (GN-1.41): `fill`, `min_width`, `min_height`.
+  - `menu_indicator` — the arrow or chevron of a button that opens a menu (GN-1.40, K1.27, B-18†, MAT-N8; KDE's
+    inline small and large arrows, K1.155): `glyph`, `min_width`, `transitions` (the press animation).
+  - `attention_dot` — libadwaita's needs-attention dot (GN-1.41): `fill`, `min_width`, `min_height`, `transitions`
+    (its appearance with the flag).
   - `activity_indicator` — the spinner that replaces the image while loading (B-10): `fill` (its motion is the
     `spinner` widget's).
 - **Widget values** (`ButtonValues`):
-  - `icon_text_gap: Value<f32>` — between icon and label (today's `icon_text_gap`; a toolbar's in `context
+  - `icon_text_gap_px: Value<Px>` — between icon and label (today's `icon_text_gap`; a toolbar's in `context
     toolbar.bar`, K1.154, MAC-TL02).
   - `icon_placement: Value<IconPlacement>`, `IconPlacement { Leading, Trailing, Top, Bottom }` — the image beside or
     above the title (B-9 `imagePlacement`, MAC-B09 `imagePosition`).
   - `label_position: Value<ButtonLabelPosition>` — which of icon and text a tool button shows, and how (K1.153 read
     per toolbar kind, W1-099, MAC-TL02, Q1.9, Q1.76), by rules in `context toolbar.bar`.
-  - `subtitle_gap: Value<f32>` — iOS `titlePadding` (B-8).
-  - `menu_indicator_gap: Value<f32>` — between label and indicator (K1.27 `Button_ItemSpacing`).
+  - `subtitle_gap_px: Value<Px>` — iOS `titlePadding` (B-8).
+  - `menu_indicator_gap_px: Value<Px>` — between label and indicator (K1.27 `Button_ItemSpacing`).
   - `menu_trigger: Value<MenuTrigger>`, `MenuTrigger { Primary, LongPress }` — the touch-and-hold variant (B-18†).
   - `shows_icon: Value<bool>` — whether push buttons show icons (K1.28, read from `kdeglobals`).
   - `focus_visible_when` (S2.11's `FocusVisibleWhen`) — when focus becomes visible (K1.21, R17).
-  - `repeat_delay: Value<f32>`, `repeat_interval: Value<f32>` — durations of an auto-repeating button (K-RL07†,
+  - `repeat_delay_ms: Value<Ms>`, `repeat_interval_ms: Value<Ms>` — durations of an auto-repeating button (K-RL07†,
     W2-19, MAC-X12).
-  - `attention_dot_offset: (Value<f32>, Value<f32>)` — from the trailing and top edges (GN-1.41).
+  - `attention_dot_offset: Axes<Value<Px>>` — from the trailing and top edges (GN-1.41).
   - `back_title_fallback: Value<bool>` — UIKit shortens the back title, then replaces it by a generic one (C-2).
   - `back_display_mode: Value<BackDisplayMode>`, `BackDisplayMode { Default, Generic, Minimal }` — UIKit's
     `backButtonDisplayMode` (C-2).
   - `help_tooltip_on_click: Value<bool>` — KDE's ContextualHelpButton shows its tooltip on click (Q2.48).
-  - `hit_extension: Sides<Value<f32>>` — margins that enlarge the hit area beyond the drawn button (K-KA-26†).
+  - `hit_extension: Sides<Value<Px>>` — margins that enlarge the hit area beyond the drawn button (K-KA-26†; a
+    minimum size is `body.touch_target`).
   - `display_mode: Value<PasteDisplayMode>`, `PasteDisplayMode { Icon, Label, IconAndLabel }` — iOS's paste control
     (C-17).
+  - `presentations: Vec<PresentationTransition>` — events `Appear`, `Disappear` (a field's clear button fading in and
+    out, `Instant` on WinUI: `button @ variant clear_field context input`, K1.46, W1-030), `@spring_load` (the flash
+    or blink
+    of a spring-loaded button while a drag hovers it, before it activates: MAC-X21, P3-11†).
 - **Variants:**
   - typed (a meaning two or more platforms share): `primary` (accent-filled: GNOME `.suggested-action`, WinUI
     `AccentButtonStyle`, Material filled, iOS `filled`, macOS `tintProminence` primary; a toolbar's prominent item in
@@ -832,40 +933,58 @@ and the owning group's name where the kinds are the same.
     `changesSelectionAsPrimaryAction`; Material draws its unselected toggle unlike a plain button, MAT-B12), `menu`
     (opens a menu: GtkMenuButton, Qt `HasMenu`/QML menu flag, iOS pull-down, WinUI DropDownButton, Material menu
     button, macOS pull-down; MAC-N29†, W2-18, MAT-N8), `tool` (Qt's QToolButton and qqc2 ToolButton, also outside
-    toolbars, Q1.9; WinUI's AppBarButton and AppBarToggleButton, W1-099, W1-100; AppKit's toolbar bezel, MAC-TL02), `split`
-    (a tool button whose menu part is a separate sub-control with a separator line: KDE's `MenuButtonPopup`, K1.155;
-    the meaning WinUI's split menu item shares, W1-051), and the content variants `icon_only` and `with_icon` (GTK's `.image-button` and `.image-text-button`, Material's
+    toolbars, Q1.9; WinUI's AppBarButton and AppBarToggleButton, W1-099, W1-100; AppKit's toolbar bezel, MAC-TL02),
+    `clear` (the clear glass style: iOS 26's `clearGlass`; the meaning `glass_container`'s `clear` shares, macOS 26),
+    and the content variants `icon_only` and `with_icon` (GTK's `.image-button` and `.image-text-button`, Material's
     leading-icon padding and icon buttons MAT-N4, MAT-N5, C-29, AppKit's image-only padding; text only is the base).
+    KDE's split tool button (`MenuButtonPopup`, K1.155) is the `split_button` widget.
+  - typed identities of a button nested in another widget (Nested controls): `close` (a close or dismiss button:
+    dialog headers K-KA-17† and MAT-N26, banners, toasts, sheets, teaching tips, a search bar GN-2.21, tabs, KDE's dock
+    widget; iOS's system close type), `previous`, `next` (stepping through items or pages: calendars, carousels, page
+    indicators, find bars, Pivot), `overflow` (the more or overflow button of a toolbar, an edit menu or a view
+    switcher: K1.157, Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1, W2-23, W2-11), `add` (a new-tab button: WinUI's TabView,
+    W1-083; macOS's window tabs, MAC-W09), `remove` (a chip's or token's remove button: KDE, Q2.24; Windows, W2-43†),
+    `done` (iOS's done bar item, TB-4; macOS's find bar, MAC-N18), `clear_field` (the button that empties its field:
+    I-2, W1-030, K1.46, MAT-I7; a key sequence's, K-RL02†), `reveal` (a password field's reveal toggle, `checked`
+    while revealed: GN-2.23, W2-16, K1.48), `pane_toggle` (the pane or rail toggle: WinUI's TitleBar and NavigationView,
+    W1-011, W1-095; Material's rail menu button, MAT-N13; GNOME's split-view sidebar toggle), and the media identities
+    `play` (`checked` while playing), `volume`, `full_screen`, `frame_step` (GN-2.54†, W2-35, MAC-N30†, K-KA-35†).
   - keyed, `adwaita`: `@raised`, `@osd`, `@opaque`, `@card`, `@arrow_only` (`.arrow-button`), `@arrow_up`,
     `@arrow_start`, `@arrow_end`, `@arrow_none` (GtkMenuButton's direction; down is the base).
   - keyed, `kde-breeze`: `@highlighted` (QML `Button.highlighted`), `@inline_small`, `@inline_large` (the
-    menu indicator's styles of a tool button, K1.155; its split style is the typed `split`, below), `@command_link` (K2.7: its title `label`, its description
-    `subtitle`, with `icon`; Windows' command link is Win32, R1.3), `@ka_floating` (kirigami-addons' FloatingButton,
-    K-KA-26†).
+    menu indicator's styles of a tool button, K1.155; its split style is `split_button`), `@command_link` (K2.7: its
+    title `label`, its description `subtitle`, with `icon`; Windows' command link is Win32, R1.3), `@ka_floating`
+    (kirigami-addons' FloatingButton, K-KA-26†), `@key_sequence` (KDE's key-sequence button in a shortcuts editor,
+    K-RL02†, K-KA-43†), `@float` (a dock widget's float button, K2.10).
   - keyed, `macos-*`: the bezel styles `@flexible_push`, `@small_square`, `@accessory_bar`, `@accessory_bar_action`,
     `@badge`, `@recessed`, `@round_rect`, `@inline`, `@textured_rounded`, `@shadowless_square` (push is the base;
     borderless is `flat`, circular `circular`, glass `glass`, help `help`, toolbar `tool`; the disclosure bezels are
     `expander`'s, MAC-B01, MAC-EX01); the 26 border shape `@rounded_rectangle` (capsule is `pill`, circle
     `circular`, automatic the base).
   - keyed, `ios-*`: `@gray`, `@borderless`, `@bordered` (with `tinted` / `primary` for `borderedTinted` /
-    `borderedProminent`), `@clear` (with `glass`, and `primary` for the prominent glass styles), the corner styles
-    `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`), the
-    roles `@cancel` and, if verified, `@close_role`, `@confirm_role`; the system types `@close`, `@info`,
-    `@contact_add`; the bar items' `@done` (TB-4) and `@padding_removed` (TB-8); `@indicator_none`,
-    `@indicator_popup` (the pull-down indicator; automatic is the base); `@menu_on_hold`; `@paste_control` (C-17).
+    `borderedProminent`; the glass styles are `glass` and `clear`, with `primary` for the prominent ones), the corner
+    styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
+    the roles `@cancel` and, if verified, `@close_role`, `@confirm_role`; the system types `@info`, `@contact_add` (the
+    close type is the typed `close`); the bar items' `@padding_removed` (TB-8; done is the typed `done`);
+    `@indicator_none`, `@indicator_popup` (the pull-down indicator; automatic is the base); `@menu_on_hold`;
+    `@paste_control` (C-17).
   - keyed, `material-3`: `@elevated`, `@outlined` (container styles; icon buttons too, MAT-N4, MAT-N5), `@square`
-    (the Expressive shape family; round is the base), `@fab`, `@extended_fab`, `@lowered` (MAT-N1, MAT-N2), and the FAB's colour styles
+    (the Expressive shape family, round the base; with `icon_only` the square icon button, MAT-N5, MAT-B10), `@narrow`,
+    `@wide` (the Expressive icon button's narrow and wide leading and trailing spaces, default the base, under `cond
+    flavor:expressive`, MAT-N5), `@fab`, `@extended_fab`, `@lowered` (MAT-N1, MAT-N2), and the FAB's colour styles
     `@secondary`, `@tertiary`, `@surface` (its primary style is the typed `primary`, MAT-N1).
-  - keyed, `windows-11`: `@pane_toggle` (the TitleBar's pane toggle, W1-011), `@repeat` (RepeatButton, W2-19).
+  - keyed, `windows-11`: `@repeat` (RepeatButton, W2-19), `@query` (AutoSuggestBox's query button, W2-15),
+    `@accept`, `@dismiss` (the date and time picker flyouts' accept and dismiss buttons, W2-04).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`, `extra_large` (`NSControl.ControlSize`;
   MAC-B08, MAC-B09, MAC-B11†). `ios-*`: `mini`, `small`, `regular` (UIKit `medium`), `large`
   (`UIButton.Configuration.Size`, B-3). `material-3` flavour `expressive`: `extra_small`, `small`, `regular`
   (medium), `large`, `extra_large` (xlarge) (MAT-B9); `@fab`, `@extended_fab`: `small`, `regular`, `large` (MAT-N1,
   MAT-N2). Others: none. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; the cross-widget density rows decide (`windows-11` W3-39, `macos-*` MAC-X17, `material-3` MAT-X22).
-- **Flags:** shared none; keyed `adwaita` `@needs_attention` (GN-1.41), `ios-*` `@loading` (B-10); state flags used:
-  hover, pressed, focused, focus_visible, disabled, checked, indeterminate (WinUI's toggle), selected (a selected bar
-  item, P3-3†, MAC-TL11†), open, default, drop_target.
+- **Flags:** shared none; keyed `adwaita` `@needs_attention` (GN-1.41), `ios-*` `@loading` (B-10), `kde-breeze`
+  `@recording` (the key-sequence button held pressed while it records, K-RL02†, K-KA-43†); state flags used: hover,
+  pressed, focused, focus_visible, disabled, checked, indeterminate (WinUI's toggle), selected (a selected bar item,
+  P3-3†, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the CommonStates of the Button, ToggleButton,
   AppBarButton, AppBarToggleButton, accent and subtle templates; their Checked* and Indeterminate* states name the
   check state with them, so `checked` and `indeterminate` combine); `material-3`: `[dragged, pressed, focus_visible,
@@ -873,13 +992,14 @@ and the owning group's name where the kinds are the same.
   "pressed wins" is a rule order, not a group); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `subtitle` (all but `ios-*`, `kde-breeze`), `attention_dot` (all but `adwaita`), `activity_indicator`
-    (all but `ios-*`), `menu_indicator` (absent in the base; set by rules under variant `menu` and the `split`,
+    (all but `ios-*`), `menu_indicator` (absent in the base; set by rules under variant `menu` and the
     `@inline_small`, `@inline_large` styles).
-  - fields: `body.focus` (where focus is drawn elsewhere), `body.shadow`.
-  - values: `subtitle_gap`, `menu_trigger`, `back_title_fallback`, `back_display_mode`, `display_mode` (all but
-    `ios-*`), `shows_icon`, `help_tooltip_on_click`, `hit_extension` (all but `kde-breeze`), `repeat_delay`,
-    `repeat_interval` (where no button repeats), `attention_dot_offset` (all but `adwaita`), `label_position` (where
-    no tool button shows a label choice).
+  - fields: `body.focus` (where focus is drawn elsewhere), `body.shadow`, `body.touch_target` (all but
+    `material-3`), `body.cursor` (where the platform sets none).
+  - values: `subtitle_gap_px`, `menu_trigger`, `back_title_fallback`, `back_display_mode`, `display_mode` (all but
+    `ios-*`), `shows_icon`, `help_tooltip_on_click`, `hit_extension` (all but `kde-breeze`), `repeat_delay_ms`,
+    `repeat_interval_ms` (where no button repeats), `attention_dot_offset` (all but `adwaita`), `label_position` (where
+    no tool button shows a label choice), `presentations` (presets that state none).
 - **State-model source:**
   - `adwaita`: libadwaita's selectors in `_buttons.scss`, `_toolbars.scss` (flat by container), `_linked.scss`,
     `_common.scss` (needs-attention); GTK's `:hover`, `:active`, `:checked`, `:disabled`, `:drop(active)`,
@@ -900,7 +1020,7 @@ and the owning group's name where the kinds are the same.
     unselected for toggles) per variant and, Expressive, per size; the FAB and icon-button tokens.
 - **Today's fields:** `background_color` → `body.fill`; `font` → `label.text.font` (its `color` →
   `label.text.fill`); `min_width` → `body.min_width`; `min_height` → `body.min_height`; `icon_text_gap` →
-  `values.icon_text_gap`; `primary_background` → `body.fill @ variant primary` (on `macos-*`: `@ {default}`);
+  `values.icon_text_gap_px`; `primary_background` → `body.fill @ variant primary` (on `macos-*`: `@ {default}`);
   `primary_text_color` → `label.text.fill @ variant primary` (and `icon.icon.fill`); `disabled_opacity` →
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `hover_text_color` → `label.text.fill @
   {hover}`; `active_background` → `body.fill @ {pressed}`; `active_text_color` → `label.text.fill @ {pressed}`;
@@ -914,14 +1034,18 @@ and the owning group's name where the kinds are the same.
     item a `split_button`); their states are `button` rules there (K1.152, W1-099, W1-100, MAC-TL02, TB-6, P3-3†,
     MAC-TL11†); the toolbar's item gaps stay `toolbar`'s values. GNOME's toolbar children are flat by the rule in
     `context nearest {toolbar.bar, popover} = toolbar.bar` (GN-1.151).
-  - `back` and `@pane_toggle` are drawn in `context window.title_bar` or `context toolbar.bar` (GN-1.278†, W1-011,
-    C-2); the back label's push and pop is the toolbar's event `@back_label`.
+  - Nested buttons (Nested controls) are this widget in their host's context, their identity a typed variant above:
+    `back` and `pane_toggle` in `context window.title_bar`, `context toolbar.bar` or `context sidebar.header`
+    (GN-1.278†, W1-011, W1-095, C-2; the back label's push and pop is the toolbar's event `@back_label`); a field's
+    `clear_field` and `reveal` in `context input`; `close` in a dialog's, banner's, toast's, sheet's, teaching tip's or
+    tab's context; the responses in `context dialog.action_area`.
   - Group 6: `circular` covers KDE's RoundButton (Q2.4–Q2.8: a gloss as an appended linear paint layer, the content
     shifted under `{pressed}` / `{checked}` as a transform, the Selection binding under `{focused}`); `help` takes the
     cursor `WhatsThis` (ADD-A59); Material's icon buttons are `icon_only` with `primary`, `tinted` and `@outlined`
     (MAT-N4, MAT-N5, C-29).
   - Material's FAB in the floating toolbar is `button @ variant @fab context any toolbar variant floating`, with its
-    sizes (MAT-N25).
+    sizes (MAT-N25). Material's minimum interactive size round small buttons and icon buttons is
+    `body.touch_target` (MAT-X22).
   - Group 7: `@paste_control` (C-17) with `display_mode`; `@repeat` (W2-19) with `repeat_delay`, `repeat_interval`;
     `@command_link` (K2.7).
   - GNOME's linked buttons select on `context any layout variant @linked` with position rules (GN-1.42; position
@@ -935,11 +1059,14 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME, KDE, macOS, iOS, Windows (standalone links and links in running text); Material
   draws links only in running text (Compose's `TextLinkStyles` in an `AnnotatedString`, MAT-P3-20†).
 - **Available:** every preset; `material-3` only as variant `inline` (`requires_variants`, S10).
-- **Parts:** `text` — the root, the link text: `text` (its text style carries the underline as `decoration`);
-  `body` — the box behind it (a link button's background and borders, W1-144; iOS's pressed highlight box, LK-1;
-  GNOME's link-styled button, GN-1.266): `fill`, `stroke`, `corners`, `padding`; `icon` — the external-link icon
-  after the text (Kirigami `UrlButton`, Q1.136): `icon`.
-- **Widget values:** `icon_text_gap: Value<f32>` (Q1.136); `shows_url_tooltip: Value<bool>` (Q1.136; the tooltip's
+- **Parts:**
+  - `body` — the root, the box round the text (a link button's background and borders, W1-144; iOS's pressed
+    highlight box, LK-1; GNOME's link-styled button, GN-1.266): `fill`, `stroke`, `corners`, `padding`, `focus`
+    (MAC-LK03's ring under Full Keyboard Access), `cursor`, `transitions`.
+  - `text` — the link text: `text` (its text style carries the underline as `decoration`), `focus` (where the
+    platform rings the text: KDE draws focus by weight instead, Q1.135).
+  - `icon` — the external-link icon after the text (Kirigami `UrlButton`, Q1.136): `icon`.
+- **Widget values:** `icon_text_gap_px: Value<Px>` (Q1.136); `shows_url_tooltip: Value<bool>` (Q1.136; the tooltip's
   look and delay are the `tooltip` widget's); `focus_visible_when` (S2.11's `FocusVisibleWhen`; macOS's ring under
   Full Keyboard Access is a rule `@ cond full_keyboard_access`, MAC-LK03).
 - **Variants:** typed `inline` — a link inside running text (GNOME label links, WinUI `Hyperlink`, AppKit
@@ -953,8 +1080,8 @@ and the owning group's name where the kinds are the same.
   (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `icon` (all but `kde-breeze`).
-  - fields: `body.fill`, `body.stroke` (where the platform draws the text only), `text.text.decoration` (no
-    underline in some states, W1-143), `text.focus` (KDE draws focus by weight, Q1.135).
+  - fields: `body.fill`, `body.stroke`, `body.focus` (where the platform draws the text only),
+    `text.text.decoration` (no underline in some states, W1-143), `text.focus` (KDE draws focus by weight, Q1.135).
   - values: `shows_url_tooltip` (all but `kde-breeze`).
 - **State-model source:** `adwaita`: `_links.scss` (`:visited`, `:active`, `:disabled`, `.osd &`, the link-styled
   button); `kde-breeze`: Kirigami `LinkButton.qml`, `UrlButton.qml`, KWidgetsAddons `kurllabel.cpp`; `macos-*`:
@@ -987,24 +1114,30 @@ and the owning group's name where the kinds are the same.
   - `segment` *(element)* — one segment (its own hover, pressed, checked, disabled, focus): `fill`, `stroke`,
     `corners` (concentric with the track, or rounded only at the ends by position), `padding`, `min_width`,
     `min_height`, `shadow`, `opacity`, `focus`, `transitions`.
-  - `label`, `icon` — a segment's text and image: `text`; `icon`.
+  - `label` — a segment's text: `text`, `opacity` (the dimmed label of a disabled group, GN-1.242), `transitions`
+    (kirigami-addons' checked label turning to its checked text style, K-KA-25†).
+  - `icon` — a segment's image: `icon` (its tint per state, MAC-SG10†), `opacity` (the dimmed image of a disabled
+    group, GN-1.242), `transitions` (kirigami-addons' checked icon recolouring, K-KA-25†).
   - `indicator` — the selected thumb drawn as a part of its own (iOS, SG-1; macOS 12–15's raised segment and 26's
     sliding indicator, MAC-SG02, MAC-SG09; the Toolkit's selected item border and pill, W1-138; kirigami-addons'
     sliding pill, K-KA-25†): `fill`, `stroke`, `corners`, `shadow`. It is queried with the states of the checked
     segment it lies under.
   - `separator` *(element)* — the line between two segments, an element whose previous and next siblings are segments
-    (it hides beside a checked one: GN-1.243, SG-3, MAC-SG01; ADD-B07): `fill`, `min_width`.
-  - `check` — Material's check glyph in a selected segment (MAT-SG1): `glyph`.
+    (it hides beside a checked one: GN-1.243, SG-3, MAC-SG01; ADD-B07): `fill`, `min_width`, `padding` (its margins,
+    GN-1.243, GN-1.245), `opacity`, `transitions` (its fade as it hides beside a checked segment, GN-1.243).
+  - `check` — Material's check glyph in a selected segment (MAT-SG1): `glyph`, `transitions` (its show and width
+    animation, MAT-SG1).
   - `menu_indicator` — AppKit's per-segment menu glyph (MAC-SG07): `glyph`.
 - **Widget values:** `segment_width: Value<SegmentWidth>`, `SegmentWidth { Fit, Fill, FillEqually,
   FillProportionally, EqualToWidest }` — `Fit` each its content's width (AdwToggleGroup's default, AppKit `fit`, the
   Toolkit's pivot and button styles), `Fill` content plus an equal share of extra space (AppKit's default `fill`),
   `FillEqually` equal widths across the control (Material, AppKit `fillEqually`, UIKit's default),
   `FillProportionally` (AppKit), `EqualToWidest` (the Toolkit's `EqualPanel`) — GN-P3-25†, MAC-P3-5†, MAT-P3-12†,
-  SG-9†, W-P3-5†; `item_gap: Value<f32>` (W-P3-5†; negative where segments overlap, K-KA-24†); `compression:
+  SG-9†, W-P3-5†; `item_gap_px: Value<Px>` (W-P3-5†; negative where segments overlap, K-KA-24†); `compression:
   Value<Key>` (AppKit `activeCompressionOptions`); `image_scaling: Value<Key>` (AppKit `imageScaling`, MAC-SG10†);
   `indicator_draggable: Value<bool>` (SG-5); `presentations: Vec<PresentationTransition>`: event `Move` with a step
-  on part `indicator` (the indicator sliding to the new segment: SG-5, MAC-SG09, W1-138, K-KA-25†).
+  on part `indicator` (the indicator sliding to the new segment: SG-5, MAC-SG09, W1-138, K-KA-25†), `@spring_load` (a
+  spring-loaded segment's flash or blink while a drag hovers it, MAC-X21, P3-11†).
 - **Variants:** typed `pill` (GNOME `.round`, AppKit `.capsule` and the 26 capsule shape), `momentary` (AppKit
   `momentary` tracking, UIKit `isMomentary`), `flat` (GNOME `.flat`: no track), `vertical` (GNOME `.vertical`),
   `menu` on a segment (AppKit `showsMenuIndicator`), the content variants `icon_only`, `with_icon` (GNOME's minimum
@@ -1027,7 +1160,7 @@ and the owning group's name where the kinds are the same.
   - parts: `indicator` (`adwaita`, `material-3`: the checked segment's own fill), `separator` (`windows-11`,
     `material-3`), `check` (all but `material-3`), `menu_indicator` (all but `macos-*`).
   - fields: `track.fill` (`material-3`, `flat`), `segment.shadow`, `indicator.shadow`.
-  - values: `compression`, `image_scaling` (all but `macos-*`), `indicator_draggable` (all but `ios-*`), `item_gap`
+  - values: `compression`, `image_scaling` (all but `macos-*`), `indicator_draggable` (all but `ios-*`), `item_gap_px`
     (where not drawn).
 - **State-model source:** `adwaita`: `_toggle-group.scss` selectors (`toggle:hover`, `:active`, `:checked`,
   `:disabled`, `.flat`, `.round`, `.osd`, `.vertical`, `prefers-contrast: more`); `kde-breeze`: kirigami-addons'
@@ -1049,32 +1182,37 @@ and the owning group's name where the kinds are the same.
     `segment.corners` rules under `{pressed}` and `{checked}`; the standard group's pressed width as `segment.min_width`
     under `{pressed}`, an expression over `base`, with a spring `Geometry` transition.
   - kirigami-addons: `@ka_segmented_button` (K-KA-24†: joined segments, outer corners only by position, a hard shadow
-    layer hidden while pressed); `@ka_radio_selector` (K-KA-25†: the sliding `indicator` pill, the checked label
-    bold).
+    layer hidden while pressed); `@ka_radio_selector` (K-KA-25†: the sliding `indicator` pill, the checked label's
+    own text style).
 
 ### switch
 
 *From group 2's catalogue.*
 
 - **Kind:** typed widget: all six platforms (KDE's is Kirigami's: qqc2-desktop-style `SwitchIndicator`).
-- **Available:** every preset; `kde-breeze` flavour `kirigami` only (Qt Widgets has no switch; the facts settle the
-  flavour `widgets`).
+- **Available:** every preset; `kde-breeze` flavour `kirigami` only (Qt Widgets has no switch: the flavour `widgets`
+  declares `available = false`).
 - **Parts:**
   - `body` — the whole control with its label (the root): `padding`, `min_width` (Q1.103, W1-124).
-  - `track` — `fill`, `stroke`, `corners`, `focus` (GN-1.206, MAT-SW9), `opacity` (applied to the thumb and glyphs it
-    contains).
+  - `track` — the track: `fill`, `stroke`, `corners`, `min_width`, `min_height` (today's `track_width`,
+    `track_height`), `focus` (GN-1.206, MAT-SW9), `opacity` (applied to the thumb and glyphs it contains),
+    `transitions` (the track colour's cross-fade, SW-5, MAT-SW8).
   - `thumb` — the knob or handle: `fill`, `stroke` (the rim), `shadow` (layers or an elevation entry), `corners`,
     `min_width`, `min_height` (a capsule where width and height differ, SW-3, MAC-SW01; growing or stretching by
     state), `transform` (iOS 26's lens), `transitions`.
   - `track_fill` — KDE's highlight overlay from the track's start to the thumb's trailing edge (Q1.100): `fill`.
   - `on_glyph`, `off_glyph` — the status shapes on the track (GNOME `switch-on/off-symbolic`, iOS's "I" and "O",
     macOS under differentiate without colour): `glyph`.
-  - `thumb_icon` — Material's check or close icon on the handle (MAT-SW3): `icon`.
-  - `state_layer` — Material's halo (MAT-SW4): `fill`, `min_width`, `min_height`.
-  - `label` — the switch's label text (SW-7, Q1.103): `text`; `state_label` — WinUI's On/Off content text: `text`;
-    `header` — WinUI's header (W1-124): `text`, `padding`.
-- **Widget values:** `track_inset: Value<f32>` (Kirigami's track inset, an expression on the grid unit, Q1.99;
-  ADD-A56); `label_gap: Value<f32>`; `pre_content_margin`, `post_content_margin: Value<f32>` (WinUI, W1-124);
+  - `thumb_icon` — Material's check or close icon on the handle (MAT-SW3): `icon`, `opacity` (the disabled icon's
+    opacity, MAT-SW3), `transitions` (MAT-SW8's icon transitions).
+  - `state_layer` — Material's halo (MAT-SW4): `fill`, `corners` (its shape), `opacity` (per state, MAT-SW4),
+    `min_width`, `min_height`.
+  - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
+    Q1.103).
+  - `state_label` — WinUI's On/Off content text: `text`.
+  - `header` — WinUI's header (W1-124): `text`, `padding`.
+- **Widget values:** `track_inset_px: Value<Px>` (Kirigami's track inset, an expression on the grid unit, Q1.99;
+  ADD-A56); `label_gap_px: Value<Px>`; `pre_content_margin_px`, `post_content_margin_px: Value<Px>` (WinUI, W1-124);
   `presentations: Vec<PresentationTransition>`: event `Move` with a step on part `thumb` (the thumb sliding between
   off and on: GN-1.203, SW-5, Q1.102, MAT-SW8, W1-123).
 - **Variants:** typed none; keyed `material-3` `@icons` (the switch with handle icons).
@@ -1088,7 +1226,7 @@ and the owning group's name where the kinds are the same.
     conditions that show them), `thumb_icon` (all but `material-3`), `state_layer` (all but `material-3`),
     `state_label`, `header` (all but `windows-11`), `label` (where the switch has none).
   - fields: `thumb.shadow`, `thumb.stroke` (where not drawn).
-  - values: `track_inset` (all but `kde-breeze`), `pre_content_margin`, `post_content_margin` (all but
+  - values: `track_inset_px` (all but `kde-breeze`), `pre_content_margin_px`, `post_content_margin_px` (all but
     `windows-11`).
 - **State-model source:** `adwaita`: `_switch.scss` selectors and `gtkswitch.c` (status shapes, slide);
   `kde-breeze`: qqc2-desktop-style `SwitchIndicator.qml` / `Switch.qml` states (flavour `kirigami`); `macos-*`:
@@ -1112,7 +1250,7 @@ and the owning group's name where the kinds are the same.
   - Group 4: KDE's switch delegate in `context list.row` (Q1.83); GNOME's in toolbars by the container rule
     (GN-1.152).
   - Group 8: iOS's On/Off Labels are `on_glyph`, `off_glyph` under `cond on_off_labels` (X-A11-6).
-  - kirigami-addons: in `context form.row variant @ka_form_card`, its padding zero and its own label dropped
+  - kirigami-addons: in `context form variant @ka_form_card`, its padding zero and its own label dropped
     (K-KA-8†).
 
 ### checkbox
@@ -1123,18 +1261,21 @@ and the owning group's name where the kinds are the same.
   (`UICellAccessory.multiselect`: CK-1, CK-2†, L-12), which is the `selection` variant.
 - **Available:** every preset; `ios-*` only as variant `selection` (`requires_variants = ["selection"]`, S10).
 - **Parts:**
-  - `body` — the whole control with its label (the root): `padding`, `corners`, `min_height`, `min_width` (W1-040),
-    `opacity`, `focus` (where the platform rings indicator and label together, GN-1.61).
+  - `body` — the whole control with its label (the root): `fill` (today's `background_color`), `padding`, `corners`,
+    `min_height`, `min_width` (W1-040), `opacity`, `focus` (where the platform rings indicator and label together,
+    GN-1.61), `touch_target` (Material's minimum interactive size, MAT-C9, MAT-X22).
   - `box` — the indicator: `fill`, `stroke`, `corners`, `shadow` (KDE's hover ring and macOS 12–15's bevel are inset
     layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`.
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
     `QPainterPath`, Segoe Fluent code points, AppKit's whole-control rendering, iOS's named symbol), `opacity` and
-    `transform` for its entrance.
-  - `label` — the text: `text`, `focus` (where Kirigami rings the label, Q1.21).
-  - `state_layer` — Material's halo (MAT-C2): `fill`, `min_width`, `min_height`.
-- **Widget values:** `label_gap: Value<f32>`; `indicator_cell: Value<f32>` (the cell the drawn box is centred in,
-  K1.53); `touch_target: Value<f32>` (MAT-C9); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's
-  selection column sliding in when edit mode starts, CK-2†).
+    `transform` for its entrance, `transitions` (that entrance).
+  - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
+    rings the label, Q1.21).
+  - `state_layer` — Material's halo (MAT-C2): `fill`, `corners` (its shape), `opacity` (per state, MAT-C2),
+    `min_width`, `min_height`.
+- **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
+  in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
+  edit mode starts, CK-2†).
 - **Variants:** typed `selection` (the round check of a list in selection mode: GNOME `.selection-mode`, iOS's list
   multiselect circle: CK-1, CK-2†, L-12), `warning` (KDE's neutral highlight); keyed `adwaita` `@text_button` (GTK sets
   `.text-button` on a labelled check; the connector sets it from the content).
@@ -1147,8 +1288,9 @@ and the owning group's name where the kinds are the same.
   focus_visible, hover]` (state layers, MAT-C2); others none (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `mark` (every preset: absent by rule while unchecked).
-  - fields: `body.focus`, `box.focus`, `label.focus` (each where the platform rings another part), `box.shadow`.
-  - values: `indicator_cell` (all but `kde-breeze`), `touch_target` (all but `material-3`).
+  - fields: `body.fill` (where the platform fills nothing), `body.focus`, `box.focus`, `label.focus` (each where the
+    platform rings another part), `box.shadow`, `body.touch_target` (all but `material-3`).
+  - values: `indicator_cell_px` (all but `kde-breeze`).
 - **State-model source:** `adwaita`: `_checks.scss` (`check`, `radio`, `checkbutton`, `:checked`, `:indeterminate`,
   `:hover`, `:active`, `:disabled`, `.selection-mode`, `prefers-contrast: more`); `kde-breeze`: Breeze's
   `Helper::renderCheckBox` (`hp:831-981`) and `Style` `CE_CheckBox`; flavour `kirigami`: qqc2 `CheckBox.qml`,
@@ -1158,20 +1300,22 @@ and the owning group's name where the kinds are the same.
   tokens (selected, unselected, indeterminate × enabled, hover, focus, pressed, disabled × error).
 - **Today's fields:** `background_color` → `body.fill`; `font` → `label.text.font`; `indicator_color` →
   `mark.glyph.fill`; `indicator_width` → `box.min_width`, `box.min_height` (on `kde-breeze` the cell:
-  `values.indicator_cell`, K1.53); `check_mark_stroke_width` → `mark.glyph.stroke_width`; `label_gap` →
-  `values.label_gap`; `checked_background` → `box.fill @ {checked}`; `disabled_opacity` → `body.opacity @
+  `values.indicator_cell_px`, K1.53); `check_mark_stroke_width` → `mark.glyph.stroke_width`; `label_gap` →
+  `values.label_gap_px`; `checked_background` → `box.fill @ {checked}`; `disabled_opacity` → `body.opacity @
   {disabled}`; `hover_background` → `box.fill @ {hover}`; `disabled_background` → `box.fill @ {disabled}`;
   `disabled_text_color` → `label.text.fill @ {disabled}`; `unchecked_background` → `box.fill`;
   `unchecked_border_color` → `box.stroke`; `border.color`, `border.line_width` → `box.stroke`;
   `border.corner_radius` → `box.corners`; `border.padding_*` → `body.padding`; `border.shadow_enabled` →
   `box.shadow`; `radio_indicator_width`, `radio_dot_diameter` → `radio` (below).
 - **Notes:**
-  - iOS's multiselect circle is this widget, variant `selection`, in `context list.row` (L-12, CK-1); `list` has no
-    multiselect accessory.
+  - Every list's multi-select check is this widget in `context list.row` (Nested controls): iOS's multiselect circle
+    and GNOME's selection mode, variant `selection` (L-12, CK-1); WinUI's presenter check box (W1-109) and grid-item
+    corner check box (W2-13, W2-14, its corner `list.values.check_box_placement`), the tree's (W2-12) and
+    kirigami-addons' (K-KA-46†), plain; `list` has no check part.
   - Group 1: KDE draws the menu's check as a `checkbox` element in `context menu.item` (K1.69, Q1.31).
   - Group 4: KDE's check delegate in `context list.row` (Q1.83).
   - Group 6: KDE's checkable group title is a `checkbox` in `context group_box` (K2.8).
-  - kirigami-addons: in `context form.row variant @ka_form_card` (K-KA-8†) and
+  - kirigami-addons: in `context form variant @ka_form_card` (K-KA-8†) and
     `context list.row variant @ka_rounded` (K-KA-38†).
 
 ### radio
@@ -1181,13 +1325,20 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME, KDE, macOS, Windows, Material; iOS has none. Split from today's `checkbox` because
   the platforms state its colours and geometry apart (W1-043, MAT-C1) and its parts differ.
 - **Available:** every preset but `ios-*` (`available = false`: no such control).
-- **Parts:** `body` — the whole control (the root): `padding`, `corners` (GNOME rounds a grouped one fully, GN-1.63),
-  `opacity`, `focus`; `ring` — the outer circle: `fill`, `stroke`, `corners`, `shadow`, `min_width`, `min_height`,
-  `focus`; `dot` — the inner dot: `glyph` or `fill`, `min_width`, `min_height` (growing by state, W1-041), `stroke`,
-  `transform` (for its entrance); `label` — `text`, `focus`; `state_layer` — Material's halo: `fill`, `min_width`,
-  `min_height`.
-- **Widget values:** `label_gap: Value<f32>`; `touch_target: Value<f32>` (as `checkbox`).
-- **Variants:** none from these rows.
+- **Parts:**
+  - `body` — the whole control (the root): `padding`, `corners` (GNOME rounds a grouped one fully, GN-1.63),
+    `opacity`, `focus`, `touch_target` (as `checkbox`).
+  - `ring` — the outer circle: `fill`, `stroke`, `corners`, `shadow` (KDE's hover ring, K1.52), `min_width`,
+    `min_height`, `focus`, `transitions` (the hover ring fading in, K1.52).
+  - `dot` — the inner dot: `glyph` or `fill` with `corners` (its round outline when drawn as a fill), `min_width`,
+    `min_height` (growing by state, W1-041), `stroke`, `transform` (for its entrance), `transitions` (its scale
+    animation, W1-041).
+  - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
+  - `state_layer` — Material's halo (MAT-C2): `fill`, `corners` (its shape), `opacity` (per state, MAT-C2),
+    `min_width`, `min_height`.
+- **Widget values:** `label_gap_px: Value<Px>`.
+- **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
+  `checkbox`'s `warning`).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. Others none.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates; CheckStates is
@@ -1195,8 +1346,7 @@ and the owning group's name where the kinds are the same.
   (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `dot` (every preset: absent by rule while unchecked).
-  - fields: `ring.focus`, `body.focus`, `label.focus` (as `checkbox`).
-  - values: `touch_target` (all but `material-3`).
+  - fields: `ring.focus`, `body.focus`, `label.focus` (as `checkbox`), `body.touch_target` (all but `material-3`).
 - **State-model source:** as `checkbox`, with Breeze's `renderRadioButton` (`hp:995-1075`), AppKit's radio `NSButton`
   and the whole-control rendering (`SystemControl::AppKitRadio`), WinUI's RadioButton template, and Material's radio
   tokens.
@@ -1214,9 +1364,11 @@ and the owning group's name where the kinds are the same.
   inside the radio (`RadioGroupPickerStyle`, MAC-RL02†, a cross-check row), so two platforms (R14).
 - **Available:** every preset but `adwaita`, `kde-breeze`, `ios-*`, `material-3` (`available = false`: no such
   control).
-- **Parts:** `header` — the group's label (the root; W2-25's header colour, disabled colour and margin; MAC-RL02†'s
-  label beside the column): `text`, `padding`.
-- **Widget values:** `row_gap: Value<f32>`, `column_gap: Value<f32>` (W2-25), `header_gap: Value<f32>`,
+- **Parts:**
+  - `body` — the group's box (the root), holding the header and the radios: `padding`, `bindings`.
+  - `header` — the group's label (W2-25's header colour, disabled colour and margin; MAC-RL02†'s label beside the
+    column): `text`, `padding`.
+- **Widget values:** `row_gap_px: Value<Px>`, `column_gap_px: Value<Px>` (W2-25), `header_gap_px: Value<Px>`,
   `header_placement: Value<HeaderPlacement>`, `HeaderPlacement { Above, Leading }`.
 - **Variants:** typed `horizontal` (`macos-*`: `horizontalRadioGroupLayout()`; the orientation many widgets share).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. Others none.
@@ -1231,6 +1383,7 @@ and the owning group's name where the kinds are the same.
 - **Today's fields:** none (the nearest were `checkbox`'s `label_gap` and `layout`'s `widget_gap`).
 - **Notes:** Group 7 had placed Windows' `RadioButtons` (W2-25) header colour, disabled colour, padding, `row_gap`
   and `column_gap` on `checkbox`.
+
 ## Fields
 
 ### input
@@ -1243,65 +1396,74 @@ and the owning group's name where the kinds are the same.
   navigation bar are its typed `editable_label` (GN-2.45, RL-2†).
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the field's box: fill, per-side stroke (WinUI's thicker accent bottom edge, Material's filled-field
-    active indicator as the bottom edge), corners, shadow (macOS's inner edge shading and 26 outer ring; GNOME's inset
-    drop-target and high-contrast rings), padding, size limits, focus indicator, bindings (GNOME's error, warning and
-    success classes rebind the accent for the subtree), transitions (the editable label's title-to-field change,
-    RL-2†).
-  - `text` — the entered text (text style); transitions (RL-2†).
-  - `placeholder` — the placeholder text.
-  - `prefix`, `suffix` — Material's prefix and suffix text.
-  - `floating_label` — Material's label: inside at rest, floated onto the outline (transform) when focused or
-    populated.
-  - `header` — WinUI's header label above the field.
-  - `supporting_text` — text under the field: Material's supporting (helper) text, WinUI's description.
-  - `counter` — Material's trailing character counter; kirigami-addons' "n/max" counter under a form field (K-KA-9†).
-  - `icon` — **element**, an icon or inline action inside the field (GNOME's primary and secondary icons, iOS's
-    overlay views, Kirigami's search icon and ActionTextField actions, Material's leading and trailing icons).
-  - `clear_button` — **element**, the clear button (glyph or icon, fill and stroke per state; Material, Windows, KDE,
-    iOS: I-2, W1-030, K1.46).
-  - `reveal_button` — **element**, the password-reveal toggle, its icon per checked state (GNOME's peek icon GN-2.23,
-    Windows W2-16, KDE K1.48).
-  - `caps_lock_indicator` — the caps-lock glyph in a secure field (macOS, MAC-X14; GNOME, GN-2.23).
-  - `autofill_button` — the AutoFill / strong-password affordance inside the field (macOS, iOS).
-  - `writing_tools_affordance` — macOS's Writing Tools affordance (MAC-P3-8†).
-  - `progress` — GNOME's entry progress line (its progress fraction).
-  - `caret` — the line caret's paint and width: its minimum width is the caret's width, based on `token.caret.width`,
-    with rules under KDE's tablet mode (Q1.14); its shape and blink come from the caret token (R12, ADD-A24).
-  - `block_caret` — the block caret (overwrite mode, Qt's input mask): fill and the character's text fill (GNOME
-    GN-1.49, KDE K1.47†).
-  - `drop_caret` — the insertion point drawn while a text drag hovers the field (P3-9†).
-  - `floating_caret` — iOS's floating (trackpad-mode) ghost caret (X-CA-3).
-  - `caret_accessory` — iOS's caret accessories: the dictation and language indicators (X-CA-3).
-  - `dictation_effect` — macOS's dictation effect at the caret (MAC-X14).
-  - `selection` — the selected-text highlight: fill and selected text fill.
-  - `preedit` — **element**, the IME composition text (GN-1.281†, K3.48†).
-  - `misspelling` — the spell-check mark (text decoration).
-  - `grammar_mark` — macOS's grammar mark (text decoration, MAC-X28).
-  - `correction` — iOS's autocorrection mark (and bubble), Material's suggestion underline.
-  - `prediction` — inline prediction ghost text (iOS 17+, macOS 14+).
-  - `selection_handle` — **element**, a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
-    WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42); the insertion handle is rotated by a transform rule
-    (GN-2.42).
-  - `magnifier` — the touch text magnifier (GNOME's GtkText, Material).
-  - `strength_meter` — kirigami-addons' password strength meter: its segments' track (K-KA-11†).
-  - `strength_meter_fill` — the meter's fill, grown with the entropy (K-KA-11†).
-- **Widget values:** `icon_text_gap: Value<f32>` (GN-1.43, MAT-I7, Q1.18); `leading_inset`,
-  `trailing_inset: Value<f32>` (I-3); `affix_gap: Value<f32>` (prefix and suffix to text, MAT-I8);
-  `floating_label_gap: Value<f32>` (label to text, populated, MAT-I3); `notch_padding: Value<f32>` (the gap cut into
-  the outline round the floated label, which the toolkit cuts at layout, MAT-I4); `header_gap`,
-  `supporting_text_gap: Value<f32>` (W1-031, W1-150, MAT-I5); `clear_button_visibility: Value<ShowWhen>` (I-2, W1-030,
-  K1.46; WinUI's ButtonStates); `reveal_button_visibility: Value<ShowWhen>` (K1.48); `mask_character: Vec<char>` (a
-  preference list: the first the font covers; K1.48, MAC-I03, I-9, MAT-I19, GN-2.58†, W2-16);
-  `mask_reveal_ms: Value<f32>` (how long the last typed character shows; GNOME's password hint timeout; K1.48, I-9,
-  MAT-I19, GN-2.23); `peek_while_pressed: Value<bool>` (W2-16); `focus_visible_when` (`FocusVisibleWhen`, S2.11;
-  GN-1.50); `min_font_size: Value<f32>` (the shrink-to-fit floor, I-7); `default_width: Value<f32>` (implicit width,
-  Q1.12); `magnifier_zoom: Value<f32>` (a factor), `magnifier_offset: Value<f32>` (above the caret or touch point)
-  (GN-P3-26, MAT-I17); `search_delay: Value<f32>` (a duration: Kirigami's search field debounce, Q1.17);
-  `suggestion_placement: Placement` (macOS's suggestion menus, MAC-P3-7); `context_menu_items: Vec<Key>` (the text
-  context menu's items in order, GN-P4-8†); `strength_meter_gap: Value<f32>` (between the meter's segments, K-KA-11†);
-  `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear` with the step's part `clear_button` (the
-  clear button's fade in and out; `Instant` on WinUI; K1.46, W1-030).
+  - `body` — the field's box (the root): `fill`, `stroke` (per side: WinUI's thicker accent bottom edge, Material's
+    filled-field active indicator as the bottom edge), `corners`, `shadow` (macOS's inner edge shading and 26 outer
+    ring; GNOME's inset drop-target and high-contrast rings), `padding`, `min_width`, `min_height`, `max_width`,
+    `opacity` (today's `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes
+    rebind the accent for the subtree), `transitions` (the editable label's title-to-field change, RL-2†).
+  - `text` — the entered text: `text`, `transitions` (RL-2†).
+  - `placeholder` — the placeholder text: `text`, `transitions` (macOS's centred search placeholder moving to the
+    leading edge on focus, MAC-N02).
+  - `prefix`, `suffix` — Material's prefix and suffix text: `text`.
+  - `floating_label` — Material's label: inside at rest, floated onto the outline when focused or populated: `text`,
+    `padding` (the space below it, MAT-I3), `opacity` (its disabled opacity, MAT-I3), `transform`, `transitions`.
+  - `header` — WinUI's header label above the field: `text`, `padding`.
+  - `supporting_text` — text under the field (Material's supporting text, WinUI's description): `text`, `padding`,
+    `opacity` (its disabled opacity, MAT-I5).
+  - `counter` — Material's trailing character counter; kirigami-addons' "n/max" counter under a form field
+    (K-KA-9†): `text`.
+  - `icon` *(element)* — an icon or inline action inside the field, its side a variant (GNOME's primary and
+    secondary icons, iOS's overlay views, Kirigami's search icon and ActionTextField actions, Material's leading and
+    trailing icons, a search field's magnifier): `icon`, `fill`, `padding`, `opacity`, `cursor`, `transitions`.
+  - `caps_lock_indicator` — the caps-lock glyph in a secure field (macOS, MAC-X14; GNOME, GN-2.23): `glyph`,
+    `padding`, `opacity` (GNOME draws it dimmed, more opaque in high contrast, GN-2.23).
+  - `autofill_affordance` — the AutoFill and strong-password affordance inside the field (macOS, iOS): `icon`,
+    `fill`, `corners`, `padding`.
+  - `writing_tools_affordance` — macOS's Writing Tools affordance (MAC-P3-8†): `icon`, `fill`, `opacity`,
+    `transitions`.
+  - `progress` — GNOME's entry progress line, its extent the progress fraction the connector draws: `fill`,
+    `corners`, `min_height`.
+  - `caret` — the line caret: `fill` (base `= token.caret.color`), `min_width` (the caret's width, base
+    `= token.caret.width`, with rules under KDE's tablet mode, Q1.14), `min_height` (its height against the line,
+    X-CA-1), `corners`; its shape and blink come from the caret token (R12, ADD-A24).
+  - `block_caret` — the block caret (overwrite mode, Qt's input mask): `fill`, `text` (the covered character's fill;
+    GNOME GN-1.49, KDE K1.47†).
+  - `drop_caret` — the insertion point drawn while a text drag hovers the field (P3-9†): `fill`, `min_width`.
+  - `floating_caret` — iOS's floating (trackpad-mode) ghost caret (X-CA-3): `fill`, `opacity`, `corners`.
+  - `caret_accessory` — iOS's caret accessories, the dictation and language indicators (X-CA-3): `icon`, `padding`.
+  - `dictation_effect` — macOS's dictation effect at the caret (MAC-X14): `fill`, `transitions`.
+  - `selection` — the selected-text highlight: `fill`, `text` (the selected text's fill).
+  - `preedit` *(element)* — the IME composition text (GN-1.281†, K3.48†): `text` (its decoration), `fill`.
+  - `misspelling` — the spell-check mark: `text` (its decoration).
+  - `grammar_mark` — macOS's grammar mark (MAC-X28): `text` (its decoration).
+  - `correction` — iOS's autocorrection mark and bubble, Material's suggestion underline: `text` (its decoration),
+    `fill`, `corners`.
+  - `prediction` — inline prediction ghost text (iOS 17+, macOS 14+): `text`.
+  - `selection_handle` *(element)* — a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
+    WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42): `fill`, `glyph`, `corners` (GNOME's circle with
+    one square corner, GN-2.42), `padding` (GN-2.42), `min_width`, `min_height`, `transform` (the insertion handle
+    rotated by a rule, GN-2.42), `touch_target`.
+  - `magnifier` — the touch text magnifier (GNOME's GtkText, Material): `fill`, `stroke`, `corners`, `shadow`,
+    `min_width`, `min_height`.
+  - `strength_meter` — kirigami-addons' password strength meter, its segments' track (K-KA-11†): `fill`, `corners`,
+    `min_height`.
+  - `strength_meter_fill` — the meter's fill, grown in proportion to the entropy: `fill`, `corners`; its extent is
+    `element.progress`, which it declares (`data = { strength_meter_fill = ["progress"] }`, ADD-B12, K-KA-11†).
+- **Widget values:** `icon_text_gap_px: Value<Px>` (GN-1.43, MAT-I7, Q1.18); `leading_inset_px`,
+  `trailing_inset_px: Value<Px>` (I-3); `affix_gap_px: Value<Px>` (prefix and suffix to text, MAT-I8);
+  `floating_label_gap_px: Value<Px>` (label to text, populated, MAT-I3); `notch_padding_px: Value<Px>` (the gap cut
+  into the outline round the floated label, which the toolkit cuts at layout, MAT-I4); `header_gap_px`,
+  `supporting_text_gap_px: Value<Px>` (W1-031, W1-150, MAT-I5); `clear_button_visibility: Value<ShowWhen>` (when the
+  field shows its `clear_field` button: I-2, W1-030, K1.46; WinUI's ButtonStates); `reveal_button_visibility:
+  Value<ShowWhen>` (its `reveal` button, K1.48); `mask_character: Vec<char>` (a preference list: the first the font
+  covers; K1.48, MAC-I03, I-9, MAT-I19, GN-2.58†, W2-16); `mask_reveal_ms: Value<Ms>` (how long the last typed
+  character shows; GNOME's password hint timeout; K1.48, I-9, MAT-I19, GN-2.23); `peek_while_pressed: Value<bool>`
+  (W2-16); `focus_visible_when` (`Value<FocusVisibleWhen>`, S2.11; GN-1.50); `min_font_size: Value<FontSize>` (the
+  shrink-to-fit floor, I-7); `default_width_px: Value<Px>` (implicit width, Q1.12); `magnifier_zoom: Value<f32>` (a
+  factor), `magnifier_offset_px: Value<Px>` (above the caret or touch point) (GN-P3-26, MAT-I17); `search_delay_ms:
+  Value<Ms>` (Kirigami's search field debounce, Q1.17); `context_menu_items: Vec<Key>` (the text context menu's items
+  in order, GN-P4-8†); `strength_meter_segments: Value<u32>` (the meter's segment count, K-KA-11†);
+  `strength_meter_gap_px: Value<Px>` (between the meter's segments, K-KA-11†).
 - **Variants:** typed `flat` (no frame: GNOME's flat entry, KDE frameless, macOS borderless, iOS `none`), `line` (a
   plain line frame: iOS's line style, macOS bordered-not-bezeled), `secure` (password field, all six; GN-2.23, W2-16),
   `warning` (GNOME's warning class, KDE's neutral highlight), `error`, `success` (GNOME's error and success classes;
@@ -1319,19 +1481,30 @@ and the owning group's name where the kinds are the same.
   `overwrite` (the block caret: GNOME GN-1.49, KDE K1.47†), `composing` (an input-method composition: GNOME GN-1.281†,
   KDE K3.48†); keyed `kde-breeze` `@quality_bad`, `@quality_poor`, `@quality_weak`, `@quality_good`,
   `@quality_excellent` (the strength meter's quality, K-KA-11†), `@at_limit` (the counter at its limit, K-KA-9†);
-  state flags used: hover, pressed (icons, buttons), focused, focus_within, focus_visible, disabled, read_only,
-  invalid, autofilled, drop_target, checked (the reveal toggle).
+  state flags used: hover, pressed (on `icon`), focused, focus_within, focus_visible, disabled, read_only, invalid,
+  autofilled, drop_target.
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` (TextBox CommonStates; its ButtonStates are the
-  clear button's visibility value, not a group); others none (states combine; kirigami-addons sets one quality flag at
+  `clear_field` button's visibility value, not a group); others none (states combine; kirigami-addons sets one quality
+  flag at
   a time, K-KA-11†); precedence: state models (S17).
-- **may_be_absent:** parts (each drawn only by the platforms its description names): `prefix`, `suffix`,
-  `floating_label`, `header`, `supporting_text`, `counter`, `reveal_button`, `caps_lock_indicator`, `autofill_button`,
-  `writing_tools_affordance`, `progress`, `block_caret`, `drop_caret`, `floating_caret`, `caret_accessory`,
-  `dictation_effect`, `grammar_mark`, `correction`, `prediction`, `selection_handle`, `magnifier`, `strength_meter`,
-  `strength_meter_fill`; fields: `body.shadow`, `body.focus`; values: `notch_padding`, `floating_label_gap`,
-  `affix_gap`, `header_gap`, `supporting_text_gap`, `reveal_button_visibility`, `mask_reveal_ms` (none shown),
-  `peek_while_pressed`, `min_font_size`, `default_width`, `magnifier_zoom`, `magnifier_offset`, `search_delay`,
-  `suggestion_placement`, `context_menu_items`, `strength_meter_gap`.
+- **may_be_absent:**
+  - parts: `prefix`, `suffix`, `floating_label`, `supporting_text` (`supporting_text` drawn by `material-3` and
+    `windows-11`; the others by `material-3` only), `counter` (all but `material-3`, `kde-breeze`), `header` (all but
+    `windows-11`), `caps_lock_indicator` (all but `macos-*`, `adwaita`), `autofill_affordance` (all but `macos-*`,
+    `ios-*`), `writing_tools_affordance`, `dictation_effect`, `grammar_mark` (all but `macos-*`; `grammar_mark` also
+    where no checker runs), `progress` (all but `adwaita`), `block_caret` (all but `adwaita`, `kde-breeze`),
+    `drop_caret` (all but `ios-*`), `floating_caret`, `caret_accessory` (all but `ios-*`), `correction` (all but
+    `ios-*`, `material-3`), `prediction` (all but `ios-*`, `macos-*`), `selection_handle` (`macos-*`; `windows-11`,
+    `kde-breeze` and `adwaita` outside touch input, by rules `@ !cond input:touch`), `magnifier` (all but `adwaita`,
+    `material-3`), `strength_meter`, `strength_meter_fill` (all but `kde-breeze`), `icon` (where the field shows none),
+    `preedit` (where no composition runs).
+  - fields: `body.shadow`, `body.focus`, `body.cursor`.
+  - values: `notch_padding_px`, `floating_label_gap_px`, `affix_gap_px` (all but `material-3`), `header_gap_px` (all
+    but `windows-11`), `supporting_text_gap_px` (all but `material-3`, `windows-11`), `reveal_button_visibility` (all
+    but `kde-breeze`), `mask_reveal_ms` (none shown), `peek_while_pressed` (all but `windows-11`), `min_font_size` (all
+    but `ios-*`), `default_width_px` (all but `kde-breeze`), `magnifier_zoom`, `magnifier_offset_px` (all but `adwaita`,
+    `material-3`), `search_delay_ms` (all but `kde-breeze`), `context_menu_items` (all but `adwaita`),
+    `strength_meter_segments`, `strength_meter_gap_px` (all but `kde-breeze`).
 - **State-model source:**
   - `windows-11`: the TextBox template's visual state groups (`CommonStyles/TextBox_themeresources.xaml`:
     CommonStates, ButtonStates).
@@ -1357,11 +1530,15 @@ and the owning group's name where the kinds are the same.
   `disabled_background`, `disabled_text_color` → `body.fill`, `text.text.fill @ {disabled}`; `border.*` →
   `body.stroke`, `body.corners`, `body.padding`; `shadow_enabled` → `body.shadow`.
 - **Notes:** inputs in context: `input @ context dialog.body variant alert` (DL-9) and `variant @search_dialog`
-  (Q1.118); the in-place cell editor `input @ context list.cell {editing}` (K-RL05†, MAC-L13, GN-1.279†); the search
-  delay is selected `@ context any search_field` (Q1.17); a combo box's editable text is an input
-  `@ context any combo_box`. Provenance: group 6 wrote the password field as `password` and its hint timeout as a
-  value of its own, merged into `mask_reveal_ms`; today's caret width is the `caret` part's minimum width; the Writing
-  Tools affordance is group 3's (rename row 12).
+  (Q1.118); the in-place cell editor `input @ context list.cell {editing}` (K-RL05†, MAC-L13, GN-1.279†); a search
+  field's text `input @ context any search_field` (its bezel, placeholder, magnifier `icon` and search delay, Q1.15–
+  Q1.17); a combo box's editable text `input @ context any combo_box`; a spin box's text `input @ context stepper`.
+  Nested controls: the clear button is `button @ variant clear_field context input` and the password reveal toggle
+  `button @ variant reveal context input` (GN-2.23, W2-16, K1.48; their visibility the values above, their fade the
+  `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). Provenance: group
+  6 wrote the password field as `password` and its hint timeout as a value of its own, merged into `mask_reveal_ms`;
+  today's caret width is the `caret` part's minimum width; the Writing Tools affordance is group 3's (rename row
+  12).
 
 ### text_area
 
@@ -1371,51 +1548,75 @@ and the owning group's name where the kinds are the same.
   WinUI's multi-line TextBox, Material's textarea field).
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the frame and fill: stroke, corners, padding (the fixed frame inset), shadow.
-  - `text`, `placeholder`, `caret`, `block_caret`, `preedit`, `misspelling`, `correction`, `prediction`,
-    `selection_handle`, `magnifier` — as on input (each stated on this widget's own parts, R20).
-  - `selection` — the selected-text highlight, one element per selected range (P4-13).
-  - `drop_caret` — the insertion point UIKit draws while a text drag hovers the view (P3-9†).
-  - `gutter` — GtkTextView's border windows (gutters).
-  - `find_match` — **element**, a find-and-replace match; the current match is selected (macOS's find indicator,
-    MAC-X15).
-  - `highlight` — **element**, an application text highlight (iOS 18's highlight styles).
-  - `invisible` — **element**, the substitute glyph TextKit 1 draws for an invisible character.
-  - `writing_tools_glow` — the Writing Tools glow over rewritten text (MAC-X28, TA-4, C-33).
-- **Widget values:** `document_margin: Sides<Value<f32>>` (the inset inside the document, which scrolls with the text:
+  - `body` — the frame and fill (the root): `fill`, `stroke`, `corners`, `padding` (the fixed frame inset), `shadow`,
+    `min_width`, `min_height`, `opacity`, `focus`, `cursor`, `bindings`.
+  - `text` — the entered text, as on `input` (each part below stated on this widget's own parts, R20): `text`.
+  - `placeholder` — as on `input`: `text`.
+  - `caret` — as on `input`: `fill`, `min_width`, `min_height`, `corners`.
+  - `block_caret` — as on `input`: `fill`, `text`.
+  - `preedit` *(element)* — as on `input`: `text`, `fill`.
+  - `misspelling` — as on `input`: `text`.
+  - `correction` — as on `input`: `text`, `fill`, `corners`.
+  - `prediction` — as on `input`: `text`.
+  - `selection_handle` *(element)* — as on `input`: `fill`, `glyph`, `corners`, `padding`, `min_width`, `min_height`,
+    `transform`, `touch_target`.
+  - `magnifier` — as on `input` (GtkTextView's, GN-P3-26†): `fill`, `stroke`, `corners`, `shadow`, `min_width`,
+    `min_height`.
+  - `selection` *(element)* — the selected-text highlight, one element per selected range (P4-13): `fill`, `text`
+    (the selected text's fill), `corners`.
+  - `drop_caret` — the insertion point UIKit draws while a text drag hovers the view (P3-9†): `fill`, `min_width`.
+  - `gutter` — GtkTextView's border windows (gutters): `fill`, `stroke`, `padding`.
+  - `find_match` *(element)* — a find-and-replace match; the current match is selected (macOS's find indicator,
+    MAC-X15): `fill`, `stroke`, `corners`, `shadow`, `text`, `transform`.
+  - `find_dimming` — the dimming NSTextFinder draws over the text that does not match during an incremental find
+    (MAC-X15): `fill`, `transitions`.
+  - `highlight` *(element)* — an application text highlight (iOS 18's highlight styles): `fill`, `text`, `corners`.
+  - `invisible` *(element)* — the substitute glyph TextKit 1 draws for an invisible character: `glyph`.
+  - `writing_tools_glow` — the Writing Tools glow over rewritten text (MAC-X28, TA-4, C-33): `fill`, `shadow`,
+    `transitions`.
+- **Widget values:** `document_margin: Sides<Value<Px>>` (the inset inside the document, which scrolls with the text:
   Qt's documentMargin, Apple's textContainerInset; the body's padding is the fixed frame inset; K-P4-9, P3-1,
-  MAC-I10); `line_padding: Value<f32>` (Apple's lineFragmentPadding at each line's start and end; P3-1, MAC-I10);
-  `scrollbar_inset: Sides<Value<f32>>` (WinUI's inner scroll bar, W1-036); `default_width`,
-  `default_height: Value<f32>` (Q1.12); `min_rows: Value<u32>` (MAT-I16); `resize: Value<Resize>` with
+  MAC-I10); `line_padding_px: Value<Px>` (Apple's lineFragmentPadding at each line's start and end; P3-1, MAC-I10);
+  `scrollbar_inset: Sides<Value<Px>>` (WinUI's inner scroll bar, W1-036); `default_width_px`,
+  `default_height_px: Value<Px>` (Q1.12); `min_rows: Value<u32>` (MAT-I16); `resize: Value<Resize>` with
   `Resize { None, Vertical, Both }` (MAT-I16); `empty_ranges_draw_carets: Value<bool>` (P4-13);
   `intent_styles: Vec<(Key, TextStyle)>` (how the text view renders Foundation's presentation intents, keyed by
-  intent; empty where it renders none; SF-5, MAC-SF05); `magnifier_zoom`, `magnifier_offset: Value<f32>` (as on input;
-  GN-P3-26, MAT-I17); `context_menu_items: Vec<Key>` (GN-P4-8†).
+  intent; empty where it renders none; SF-5, MAC-SF05); `magnifier_zoom: Value<f32>`, `magnifier_offset_px: Value<Px>`
+  (as on input;
+  GN-P3-26, MAT-I17); `context_menu_items: Vec<Key>` (GN-P4-8†); `presentations: Vec<PresentationTransition>`: keyed
+  event `@find_indicator` (the find indicator's bounce on the current match, a step on part `find_match`, MAC-X15).
 - **Variants:** typed `flat` (no frame: macOS's scroll view with no border, iOS `none`), `line` (macOS's line border;
   input's `line`); typed on `invisible` `space`, `tab`, `line_break`, `no_break_space`. Keyed: `adwaita` `@inline`
   (the inline text view, GN-1.54); `macos-*` `@bezel`, `@groove`; `ios-*` `@rounded_rect` (iOS 17's rounded rect);
   `ios-*` on `highlight` one key per highlight style (declared by the preset).
 - **Sizes and densities:** none (`macos-*`: control sizes do not apply to NSTextView).
 - **Flags:** shared `empty` (as on input), `overwrite` (the overwrite caret: GNOME, KDE; ADD-A23), `composing` (GNOME
-  GN-1.281†, KDE K3.48†); state flags used: hover, focused, focus_within, focus_visible, disabled, read_only,
+  GN-1.281†, KDE K3.48†); keyed `macos-*` `@incremental_find` (an incremental find runs: `find_dimming` drawn,
+  MAC-X15); state flags used: hover, focused, focus_within, focus_visible, disabled, read_only,
   drop_target, selected (the current find match).
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` (TextBox CommonStates: the multi-line box is a
   TextBox); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `gutter` (all but `adwaita`), `find_match`, `highlight`, `invisible`, `block_caret`,
-  `drop_caret`, `correction`, `prediction`, `selection_handle`, `magnifier`, `writing_tools_glow` (each where the
-  platform draws none, as on input); fields: `body.shadow`; values: `document_margin`, `line_padding`,
-  `scrollbar_inset`, `default_width`, `default_height`, `min_rows`, `resize`, `intent_styles`, `magnifier_zoom`,
-  `magnifier_offset`, `context_menu_items`.
+- **may_be_absent:** parts: `gutter` (all but `adwaita`), `find_dimming` (all but `macos-*`; absent by rule
+  outside `{@incremental_find}`), `highlight` (all but `ios-*`), `invisible` (all but `macos-*`, `ios-*`),
+  `writing_tools_glow` (all but `macos-*`, `ios-*`), `block_caret` (all but `adwaita`, `kde-breeze`), `drop_caret`
+  (all but `ios-*`), `correction` (all but `ios-*`, `material-3`), `prediction` (all but `ios-*`, `macos-*`),
+  `selection_handle` (`macos-*`; elsewhere outside touch input), `magnifier` (all but `adwaita`, `material-3`),
+  `find_match` (where the platform draws no matches), `preedit` (where no composition runs); fields: `body.shadow`,
+  `body.fill` (`flat`), `body.focus`, `body.cursor`; values: `document_margin`, `line_padding_px`, `scrollbar_inset`,
+  `default_width_px`, `default_height_px`, `min_rows`, `resize`, `intent_styles`, `magnifier_zoom`,
+  `magnifier_offset_px`, `context_menu_items`, `presentations` (each where the platform states none).
 - **State-model source:** `windows-11` as input; `adwaita` `_views.scss` (the text view, its border nodes, inline,
   drop); `kde-breeze` the QTextEdit frame branches and qqc2 `TextArea.qml`; `material-3` the textarea form of the
   text-field tokens; `macos-*` NSTextView (editable, selectable, first responder, window key) inside NSScrollView (its
   border type); `ios-*` UITextView (editable, `borderStyle`, `UIFindInteraction` states, `textHighlightAttributes`).
 - **Today's fields:** `border.*` → `body.stroke`, `body.corners`, `body.padding` (the fixed frame inset; the scrolling
-  part moves to `document_margin`), `body.shadow`. Everything today read from `input` is stated on `text_area`'s own
+  part moves to `document_margin`), `body.shadow`; the background → `body.fill`. Everything today read from `input` is
+  stated on `text_area`'s own
   parts (no model inheritance, R20).
 - **Notes:** links in running text are `link @ variant inline context text_area` (the former link part goes); the
   enclosing NSScrollView's border is `scroll_view.frame`, selected by the same variants where the text view is in one;
-  the current find match is `text_area.find_match @ {selected}` (MAC-X15). Provenance: the glow is group 3's (rename row 12);
+  the current find match is `text_area.find_match @ {selected}` (MAC-X15). Provenance: the glow is group 3's (rename
+  row 12);
   group 8 proposed `drop_caret` (P3-9†); group 1 the overwrite caret's flag (ADD-A23) and the
   context menu items (GN-P4-8†).
 
@@ -1427,26 +1628,25 @@ and the owning group's name where the kinds are the same.
   WinUI ComboBox, Material's select.
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the trigger box: fill, stroke per state, corners, shadow (Breeze's button shadow on the non-flat,
-    non-editable combo), padding, size limits, focus indicator, bindings (Kirigami: Button set, View set when
-    editable).
-  - `label` — the current value's text.
-  - `placeholder` — WinUI's placeholder text.
-  - `icon` — a leading icon (Material).
-  - `arrow` — **element**, the indicator glyph (single or double chevron; on macOS the AppKit rendering, the system
-    control AppKitPopUp), its fill per state, its rotation when open.
-  - `arrow_area` — macOS's accent-filled arrow area of the pop-up, NSComboBox's separate arrow button.
-  - `header` — WinUI's header text.
-  - `floating_label`, `supporting_text` — Material's select field parts (as on input).
-  - `popup` — the drop-down surface: fill (a material on WinUI), stroke, corners, shadow, padding, size limits.
-  - `item` — **element**, a row of the popup, with its own states.
-  - `item_mark` — the selected item's check mark glyph (GNOME after the label, iOS).
-  - `item_pill` — WinUI's selection pill on the selected item.
-- **Widget values:** `label_arrow_gap: Value<f32>` (GN-1.233); `item_mark_position: Value<Side>` (GN-1.234);
-  `header_gap`, `supporting_text_gap: Value<f32>` (W1-137, MAT-CB1); `max_visible_items: Value<u32>` (W1-133,
-  MAC-CB04); `popup_placement: Placement` (the popup's width against the field, alignment, height limit; W1-136,
-  MAT-P3-9, K1.245, GN-P4-2†, K-P3-5†, MAC-P4-8†); `presentations: Vec<PresentationTransition>`: events `Appear`,
-  `Disappear` (WinUI's split open from the selected item, KDE Quick's menu fade; W1-136, Q1.125).
+  - `body` — the trigger box (the root): `fill`, `stroke` (per state), `corners`, `shadow` (Breeze's button shadow on
+    the non-flat, non-editable combo), `padding`, `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
+    Button set, View set when editable), `transitions`.
+  - `label` — the current value's text: `text`.
+  - `placeholder` — WinUI's placeholder text: `text`.
+  - `icon` — a leading icon (Material): `icon`, `opacity` (its disabled opacity, as on input: MAT-CB1, MAT-I7).
+  - `arrow` *(element)* — the indicator glyph (single or double chevron; on macOS the AppKit rendering, the system
+    control `AppKitPopUp`): `glyph` (its fill per state), `transform` (its rotation when open), `transitions` (WinUI's
+    animated chevron, W1-132).
+  - `arrow_area` — macOS's accent-filled arrow area of the pop-up, NSComboBox's separate arrow button: `fill`,
+    `stroke`, `corners`, `min_width`.
+  - `header` — WinUI's header text: `text`, `padding`.
+  - `floating_label` — Material's select field label (as on input, MAT-CB1): `text`, `padding`, `opacity`,
+    `transform`, `transitions`.
+  - `supporting_text` — Material's select supporting text (as on input, MAT-CB1): `text`, `padding`, `opacity`.
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233); `header_gap_px`, `supporting_text_gap_px:
+  Value<Px>` (W1-137, MAT-CB1). The popup is a `menu` in `context combo_box` (Nested controls): its placement, the
+  number of rows it shows (the placement's `max_visible_items`, W1-133, MAC-CB04), its open and close presentations,
+  the check's side and WinUI's pill are `menu`'s values and parts there.
 - **Variants:** typed `editable` (KDE, macOS's NSComboBox, WinUI, Material's editable menu, GTK's combo with entry),
   `flat` (GNOME's flat drop-down, KDE frameless, macOS borderless), `pull_down` (macOS's pull-down, iOS's menu button
   that does not change selection), `warning` (KDE's neutral highlight; input's `warning`). Keyed: `adwaita`
@@ -1454,17 +1654,16 @@ and the owning group's name where the kinds are the same.
   K-KA-12†); `material-3` `@filled`; `ios-*` the keyed button configurations `button` declares (CB-2).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3`: density (keyed). Others:
   none.
-- **Flags:** none of its own; state flags used: hover, pressed, focused, focus_visible, disabled, open; on `item`:
-  hover, pressed, selected, disabled; on `popup`: focus_within, opened_by_touch.
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ComboBox CommonStates, and ComboBoxItem
-  CommonStates on `item`, whose selected states combine `selected` with the group), `[focus_visible, focused]`
+- **Flags:** none of its own; state flags used: hover, pressed, focused, focus_visible, disabled, open (the popup
+  shown).
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ComboBox CommonStates; ComboBoxItem's are
+  `menu`'s in context), `[focus_visible, focused]`
   (FocusStates); its DropDownStates are the flag `open`, its InputModeStates the conditions `cond input:touch` and
   `cond input:game_controller`, its EditableModeStates the variant `editable`; others none (states combine);
   precedence: state models (S17).
-- **may_be_absent:** parts: `placeholder`, `header`, `item_pill` (all but `windows-11`), `icon`, `floating_label`,
-  `supporting_text` (all but `material-3`), `arrow_area` (all but `macos-*`), `item_mark` (all but `adwaita`,
-  `ios-*`); fields: `body.shadow`; values: `item_mark_position`, `header_gap`, `supporting_text_gap`,
-  `max_visible_items`.
+- **may_be_absent:** parts: `placeholder`, `header` (all but `windows-11`), `icon`, `floating_label`,
+  `supporting_text` (all but `material-3`), `arrow_area` (all but `macos-*`); fields: `body.shadow`; values:
+  `header_gap_px`, `supporting_text_gap_px` (all but `windows-11`, `material-3`).
 - **State-model source:** `windows-11` the ComboBox and ComboBoxItem visual state groups
   (`ComboBox/ComboBox_themeresources.xaml`); `adwaita` `_dropdowns.scss`, `_buttons.scss` (the trigger is a toggle
   button, checked while open), `_deprecated.scss`; `kde-breeze` `breezestyle.cpp` combo-box branches (editable, frame,
@@ -1478,12 +1677,12 @@ and the owning group's name where the kinds are the same.
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `disabled_background`,
   `disabled_text_color` → `body.fill`, `label.text.fill @ {disabled}`; `border.*` → `body.stroke`, `body.corners`,
   `body.padding`, `body.shadow`.
-- **Notes:** where a platform's popup is its menu (GNOME's menu-style popover, the qqc2 combo's Menu, macOS's pop-up
-  menu, iOS's menu, Material's menu) the preset states `popup`, `item` and `item_mark` with the facts of that menu;
-  the gate checks both against the same facts (R20: no model inheritance). The editable combo's text is an input
-  `@ context any combo_box`; GNOME's search entry in the popup is an input `@ context any combo_box.popup`; the form
-  combo row is `combo_box @ context form.row` (K-KA-12†). Provenance: group 1 wrote the popup's placement as a value
-  named `placement` (GN-P4-2†, K-P3-5†, MAC-P4-8†).
+- **Notes:** Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
+  popover and GtkDropDown's list, the qqc2 combo's Menu and QComboBox's list, macOS's pop-up menu, iOS's menu,
+  Material's exposed drop-down menu, WinUI's ComboBox popup: W1-133–W1-136, GN-1.234, MAC-CB04); the editable combo's
+  text is an `input` in `context any combo_box`; GNOME's search entry in the popup is a `search_field` in `context menu`
+  within `context any combo_box`; the form combo row is `combo_box @ context form.row` (K-KA-12†). Provenance: group 1
+  wrote the popup's placement as a value named `placement` (GN-P4-2†, K-P3-5†, MAC-P4-8†), now `menu`'s in context.
 
 ### slider
 
@@ -1494,30 +1693,41 @@ and the owning group's name where the kinds are the same.
   typed variants (GNOME GN-2.53†, Windows W2-05).
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the widget box: padding round the track, container fill per state (WinUI), opacity (GTK's disabled
-    filter).
-  - `track` — the inactive track (trough).
-  - `fill` — the active track (value fill, GTK's highlight); transitions (Geometry: the animated value change, SL-9).
-  - `fill_level` — GTK's second trough showing the fill level.
-  - `disabled_range` — the track outside iOS 26's enabled range.
-  - `thumb` — **element**, the handle (two under the range variant): shape by corners and size, transform (GNOME's
-    teardrop rotation, iOS 26's growing lens), shadow (a rim ring as a spread layer; K3.4), stroke, focus indicator,
-    transitions (Geometry: the animated value change, SL-9).
-  - `thumb_inner` — WinUI's inner accent dot.
-  - `halo` — Material's state-layer halo round the handle.
-  - `tick` — **element**, a tick mark (its fill depends on whether it lies within the fill).
-  - `stop_indicator` — **element**, Material's stop dot.
-  - `value_label` — GTK's drawn value label.
-  - `value_indicator` — the value bubble shown while dragging (Material's value indicator, WinUI's thumb tooltip).
-  - `header` — WinUI's header.
-  - `minimum_image`, `maximum_image` — iOS's minimum- and maximum-value images.
-  - `inset_icon` — Material Expressive's icon inside the track.
-- **Widget values:** `tick_gap: Value<f32>` (ticks to track; GN-1.100, K1.103, MAC-SL04, SL-6);
-  `draw_ticks: Value<bool>` (Breeze's option, read; K1.103); `value_label_gap: Value<f32>` (GN-1.102);
-  `value_label_position: Value<ValueLabelPosition>` (GN-1.102, GN-1.107); `value_indicator_gap: Value<f32>` (MAT-S6);
-  `value_indicator_placement: Placement` (W1-073); `thumb_track_gap: Value<f32>` (Material's handle–track gap,
-  MAT-S2); `stop_indicator_gap: Value<f32>` (MAT-S4); `image_gap: Value<f32>` (SL-5); `header_gap: Value<f32>`
-  (W1-072); `snap_to_ticks: Value<bool>` (SL-9); `repeat_delay`, `repeat_interval: Value<f32>` (the trough's and keys'
+  - `body` — the widget box: `padding` (round the track; WinUI's pre- and post-content margins, W1-072), `fill`
+    (container fill per state, WinUI, W1-074), `opacity` (GTK's disabled filter; today's `disabled_opacity`),
+    `min_width`, `min_height` (WinUI's control height, W1-072; across the axis under `vertical`).
+  - `track` — the inactive track (trough): `fill`, `stroke` (GTK's high-contrast inset border, GN-1.108), `corners`
+    (SL-4, K1.104, MAC-SL03, MAT-S3, W1-069), `min_height`, `max_height`, `min_width`, `max_width` (its thickness
+    across the axis, today's `track_height_px`: the height when horizontal, the width under `vertical`),
+    `transitions` (GTK's trough motion, GN-1.106).
+  - `fill` — the active track (value fill, GTK's highlight): `fill`, `corners` (the fill's ends, MAC-SL03, MAT-S3),
+    `min_height`, `max_height`, `min_width`, `max_width` (its thickness, as the track's), `transitions` (Geometry: the
+    animated value change, SL-9; GN-1.106).
+  - `fill_level` — GTK's second trough showing the fill level (GN-1.103): `fill`, `corners`.
+  - `disabled_range` — the track outside iOS 26's enabled range (SL-7): `fill`.
+  - `thumb` *(element)* — the handle (two under the range variant): `fill`, `corners`, `min_width`, `min_height` (its
+    shape by corners and size: MAT-S1, SL-2, MAC-SL01), `transform` (GNOME's teardrop rotation, iOS 26's growing
+    lens), `shadow` (a rim ring as a spread layer; K3.4), `stroke` (GN-1.96, K1.100, MAT-S10), `focus` (GN-1.104,
+    K1.106), `transitions` (Geometry: the animated value change, SL-9; KDE's hover and focus fades, K1.106).
+  - `thumb_inner` — WinUI's inner accent dot: `fill` (per state), `corners`, `min_width`, `min_height` (W1-067),
+    `transform`, `transitions` (its scale per state and that scale's animation, W1-068).
+  - `halo` — Material's state-layer halo round the handle (MAT-S7): `fill`, `min_width`, `min_height`.
+  - `tick` *(element)* — a tick mark (its fill depends on whether it lies within the fill): `fill`, `corners` (a line
+    or a dot, MAC-SL04, MAT-S5), `min_width`, `min_height` (today's `tick_mark_length_px`; GN-1.100, SL-6).
+  - `stop_indicator` *(element)* — Material's stop dot (MAT-S4): `fill`, `corners`, `min_width`, `min_height`.
+  - `value_label` — GTK's drawn value label (GN-1.102): `text`, `opacity` (dimmed).
+  - `value_indicator` — the value bubble shown while dragging (Material's value indicator, WinUI's thumb tooltip):
+    `fill`, `corners`, `min_height`, `text` (MAT-S6, W1-073).
+  - `header` — WinUI's header (W1-072): `text`.
+  - `minimum_image`, `maximum_image` — iOS's minimum- and maximum-value images (SL-5): `icon`.
+  - `inset_icon` — Material Expressive's icon inside the track (MAT-S11): `icon`, `padding`.
+- **Widget values:** `tick_gap_px: Value<Px>` (ticks to track; GN-1.100, K1.103, MAC-SL04, SL-6);
+  `draw_ticks: Value<bool>` (Breeze's option, read; K1.103); `value_label_gap_px: Value<Px>` (GN-1.102);
+  `value_label_position: Value<ValueLabelPosition>` (GN-1.102, GN-1.107); `value_indicator_gap_px: Value<Px>` (MAT-S6);
+  `value_indicator_placement: Placement` (W1-073); `thumb_track_gap_px: Value<Px>` (Material's handle–track gap,
+  MAT-S2); `stop_indicator_gap_px: Value<Px>` (MAT-S4); `image_gap_px: Value<Px>` (SL-5); `header_gap_px: Value<Px>`
+  (W1-072); `snap_to_ticks: Value<bool>` (SL-9); `repeat_delay_ms`, `repeat_interval_ms: Value<Ms>` (the trough's and
+  keys'
   page repeat: K3.76†, K-P3-17†, GN-3.69†, MAC-X12); `trough_click: Value<TroughClick>` with
   `TroughClick { Page, JumpToPosition }` (GN-P4-5†, R17); `presentations: Vec<PresentationTransition>`: events
   `Appear`, `Disappear` with the step's part `value_indicator` (its show and hide; a rule `@ cond reduced_motion`;
@@ -1528,8 +1738,9 @@ and the owning group's name where the kinds are the same.
   KDE, WinUI's tick placement), `hue`, `alpha`, `value` (the colour editors' sliders, `@ context color_picker`: GNOME
   GN-2.53†, Windows W2-05), `warning` (KDE's neutral highlight, K1.100, K1.105; input's `warning`). Keyed:
   `windows-11` `@ticks_inline`; `ios-*` `@thumbless`.
-- **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3`: `extra_small`, `small`,
-  `regular`, `large`, `extra_large` (Expressive's five sizes, xsmall to xlarge, S7.3). Others: none.
+- **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3` flavour `expressive`:
+  `extra_small`, `small`, `regular`, `large`, `extra_large` (Expressive's five sizes, xsmall to xlarge, S7.3). Others:
+  none.
 - **Flags:** shared `in_fill` (a tick or stop indicator inside the value fill: K1.103, MAT-S4, MAT-S5); keyed
   `material-3` `@overlapping` (a range thumb overlapping the other, MAT-S10), `adwaita` `@fine_tune` (also on
   scrollbar), `windows-11` `@focus_engaged` (FocusEngagementStates); state flags used: hover, pressed, focused,
@@ -1540,9 +1751,10 @@ and the owning group's name where the kinds are the same.
 - **may_be_absent:** parts: `fill_level`, `value_label` (all but `adwaita`), `disabled_range`, `minimum_image`,
   `maximum_image` (all but `ios-*`), `thumb_inner`, `header` (all but `windows-11`), `halo`, `stop_indicator`,
   `inset_icon` (all but `material-3`), `value_indicator` (all but `material-3`, `windows-11`); `thumb` under
-  `@thumbless`; fields: `thumb.stroke`, `thumb.shadow`; values: `value_label_gap`, `value_label_position`,
-  `value_indicator_gap`, `value_indicator_placement`, `thumb_track_gap`, `stop_indicator_gap`, `image_gap`,
-  `header_gap`, `draw_ticks`, `repeat_delay`, `repeat_interval`, `trough_click`.
+  `@thumbless`; fields: `track.stroke` (all but `adwaita`, which draws it under `cond contrast_high`), `thumb.stroke`,
+  `thumb.shadow`; values: `value_label_gap_px`, `value_label_position`,
+  `value_indicator_gap_px`, `value_indicator_placement`, `thumb_track_gap_px`, `stop_indicator_gap_px`, `image_gap_px`,
+  `header_gap_px`, `draw_ticks`, `repeat_delay_ms`, `repeat_interval_ms`, `trough_click`.
 - **State-model source:** `windows-11` Slider visual states (`CommonStyles/Slider_themeresources.xaml`); `adwaita`
   `_scale.scss` (hover, active, disabled, marks before and after, fine tune, vertical, high contrast); `kde-breeze`
   `breezestyle.cpp` slider branches and `breezehelper.cpp` handle rendering (mouse over, pressed, focus, neutral),
@@ -1555,7 +1767,8 @@ and the owning group's name where the kinds are the same.
   `disabled_opacity` → `body.opacity @ {disabled}`; `thumb_hover_color` → `thumb.fill @ {hover}` (or
   `thumb.fill @ context any slider {hover}` where the whole slider's hover drives it, GTK); `disabled_fill_color`,
   `disabled_track_color`, `disabled_thumb_color` → `fill.fill`, `track.fill`, `thumb.fill @ {disabled}`.
-- **Notes:** provenance: group 6 wrote the colour sliders as keyed variants in the colour picker (GN-2.53†, W2-05);
+- **Notes:** WinUI's thumb tooltip is `tooltip @ context slider` (W1-073: the tooltip's style reused; Nested
+  controls). Provenance: group 6 wrote the colour sliders as keyed variants in the colour picker (GN-2.53†, W2-05);
   group 8 the thumb's shadow (K3.4) and the trough repeat (K3.76†, K-P3-17†, MAC-X12), one name with the repeat
   values; group 1 the trough click (GN-P4-5†, R17); the value change is the thumb's and fill's transitions (SL-9), not
   a widget value.
@@ -1572,25 +1785,28 @@ and the owning group's name where the kinds are the same.
   Material's circular progress indicator and its Expressive loading indicator (MAT-N24).
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the element's box: size limits, opacity (disabled); the container of Material's contained loading
-    indicator (its colour, size and shape, MAT-N24).
-  - `track` — the full circle under the arc (AdwSpinner, Material, WinUI's background ring).
-  - `indicator` — the arc (indeterminate) or the value arc or pie (determinate); its fill paints the stroke; its
-    transitions (Geometry) animate a determinate value change (MAT-SN6); its shape is a keyed shape of the preset's
-    shape library under Material's loading indicator, morphing by interpolating transitions of the shape property
-    group (MAT-X12, R25.5).
-  - `spoke` — a spoke (iOS) or fin (macOS); its fill is the leading spoke's colour.
+  - `body` — the element's box: `min_width`, `min_height` (its size limits; today's `min_diameter_px`), `opacity`
+    (disabled, GN-1.231); the container of Material's contained loading indicator: `fill`, `corners` (its colour
+    and shape), `padding` (its size round the indicator) (MAT-N24).
+  - `track` — the full circle under the arc (AdwSpinner, Material, WinUI's background ring): `fill` (GN-1.226,
+    MAT-SN1, W1-130).
+  - `indicator` — the arc (indeterminate) or the value arc or pie (determinate): `fill` (it paints the stroke),
+    `transitions` (Geometry: a determinate value change, MAT-SN6), `shape` (a keyed shape of the preset's shape
+    library under Material's loading indicator, morphing by interpolating transitions of the shape property group,
+    MAT-X12, R25.5).
+  - `spoke` — a spoke (iOS) or fin (macOS): `fill` (the leading spoke's colour).
   - `icon` — the rotated or animated icon (KDE's process-working icon, GtkSpinner's animated SVG and its
-    reduced-motion replacement) as a glyph.
-- **Widget values:** `diameter: Value<f32>` (the default size; today's `diameter_px`, Q1.120);
-  `stroke_width: Value<f32>` (today's `stroke_width_px`, MAT-SN1, MAT-SN3, Q1.121; on `adwaita` an expression over the
+    reduced-motion replacement) as a glyph: `glyph`.
+- **Widget values:** `diameter_px: Value<Px>` (the default size; today's `diameter_px`, Q1.120);
+  `stroke_width_px: Value<Px>` (today's `stroke_width_px`, MAT-SN1, MAT-SN3, Q1.121; on `adwaita` an expression over the
   element's size, `= mul(element.width, <fraction>)`, with the indicator's data declared,
-  `data = { indicator = ["width", "height"] }`, GN-1.227); `stroke_weight: Value<u16>` (the icon weight GTK scales the
-  stroke by; GN-1.227, GN-1.232); `track_stroke_width: Value<f32>` (MAT-SN3); `indicator_track_gap: Value<f32>`
+  `data = { indicator = ["width", "height", "progress"] }`, GN-1.227; `progress` is the determinate value, a pull
+  to refresh's pull progress among them, ADD-B12); `stroke_weight: Value<u16>` (the icon weight GTK scales the
+  stroke by; GN-1.227, GN-1.232); `track_stroke_width_px: Value<Px>` (MAT-SN3); `indicator_track_gap_px: Value<Px>`
   (MAT-SN1, MAT-SN3); `cap: Value<LineCap>` (ADD-A34; GN-1.227, MAT-SN4, SP-1a, MAC-SN01); `spoke_count: Value<u32>`
-  (SP-1a, MAC-SN01); `spoke_inner_radius`, `spoke_length`, `spoke_width: Value<f32>` (SP-1a, MAC-SN01);
-  `spoke_opacity_ramp: Vec<Value<f32>>` (per spoke behind the leading one; SP-1a, MAC-SN01); `wave_amplitude`,
-  `wavelength: Value<f32>` (under `@wavy`, MAT-SN2); `loop: Value<Loop>` (S2.7: the indeterminate motion: arc
+  (SP-1a, MAC-SN01); `spoke_inner_radius_px`, `spoke_length_px`, `spoke_width_px: Value<Px>` (SP-1a, MAC-SN01);
+  `spoke_opacity_ramp: Vec<Value<Fraction>>` (per spoke behind the leading one; SP-1a, MAC-SN01); `wave_amplitude_px`,
+  `wavelength_px: Value<Px>` (under `@wavy`, MAT-SN2); `loop: Value<Loop>` (S2.7: the indeterminate motion: arc
   extension and contraction, rotation, steps, the four-colour cycle, the loading indicator's keyframes naming shapes
   (MAT-X12, R25.5), KDE's rotating icon; a rule `@ cond animations_off` stops it; GN-1.229, MAT-SN5, MAT-SN6, SP-2a,
   MAC-SN02, K1.230, Q1.119, Q1.120, W1-130, GN-P3-19†); `presentations: Vec<PresentationTransition>`: events `Appear`,
@@ -1607,8 +1823,9 @@ and the owning group's name where the kinds are the same.
   (S17).
 - **may_be_absent:** parts: `track` (all but `adwaita`, `material-3`, `windows-11`), `spoke` (all but `macos-*`,
   `ios-*`), `icon` (all but `kde-breeze`, `adwaita`; `ios-*` draws none, SP-4a), `indicator` (`kde-breeze` draws
-  neither arc nor spokes); values: `stroke_weight`, `track_stroke_width`, `indicator_track_gap`, `spoke_count`,
-  `spoke_inner_radius`, `spoke_length`, `spoke_width`, `spoke_opacity_ramp`, `wave_amplitude`, `wavelength`.
+  neither arc nor spokes); values: `stroke_weight`, `track_stroke_width_px`, `indicator_track_gap_px`, `spoke_count`,
+  `spoke_inner_radius_px`, `spoke_length_px`, `spoke_width_px`, `spoke_opacity_ramp`, `wave_amplitude_px`,
+  `wavelength_px`.
 - **State-model source:** `windows-11` `ProgressRing/ProgressRing.xaml` states; `adwaita` `adw-spinner-paintable.c`,
   `_spinner.scss`, `gtkspinner.c` (reduced motion); `kde-breeze` `kbusyindicatorwidget.cpp`, qqc2 `BusyIndicator.qml`
   (running, visible); `material-3` the circular progress-indicator tokens (determinate, indeterminate, Expressive
@@ -1618,7 +1835,9 @@ and the owning group's name where the kinds are the same.
   `stroke_width_px` → `stroke_width`; `fill_color` → `indicator.fill` (arc), `spoke.fill` (spokes) or
   `icon.glyph.fill` (icon), per platform. The animated-icon model (today's spinning animated icon) becomes `loop` over
   the `icon` part's glyph.
-- **Notes:** GtkSvg's process-working icon is this spinner's `loop` (GN-P3-19†); GtkSvg's state animations on other
+- **Notes:** in context: a status page's spinner (GN-1.232) and a pull to refresh's progress and busy indicator
+  (`variant determinate` while pulling, Q2.54†, Q1.121, C-10) are this widget in their host's context. GtkSvg's
+  process-working icon is this spinner's `loop` (GN-P3-19†); GtkSvg's state animations on other
   icons are their part's icon transitions (`PropertyGroup::Icon`, `TransitionKind::Keyed`, R25.12). Provenance: group
   7 wrote the loading indicator as a widget of its own with a container part (here `body`) and a loop of path
   keyframes (ADD-B03), replaced by the shape mechanism (R25.5); group 6 proposed iOS's determinate circular progress
@@ -1634,21 +1853,28 @@ and the owning group's name where the kinds are the same.
   linear progress indicator).
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the element's box: padding (Kirigami's vertical insets), size limits.
-  - `track` — the trough.
-  - `indicator` — the value fill, and the moving indicator when indeterminate; its transitions (Geometry) animate a
-    value change (PB-3, MAC-P04, W1-078, MAT-P6).
-  - `secondary_indicator` — the second moving indicator of an indeterminate bar (WinUI, Material).
-  - `stop_indicator` — Material's end dot.
-  - `buffer` — Material's buffer (secondary progress) bar.
-  - `buffer_dots` — the dots of Material's buffer track.
-  - `label` — a title label (SwiftUI's label).
-  - `value_label` — the value text (GTK's shown text, KDE's percentage, SwiftUI's current value label).
-- **Widget values:** `min_indicator_length: Value<f32>` (the least fill a non-zero value shows, K1.114);
-  `indicator_track_gap: Value<f32>` (MAT-P2); `stop_indicator_gap: Value<f32>` (MAT-P3); `wave_amplitude`,
-  `wavelength: Value<f32>` (under `@wavy`, MAT-P1); `pulse_block_fraction`, `pulse_step: Value<f32>` (GTK's pulse
+  - `body` — the element's box: `padding` (Kirigami's vertical insets, Q1.49), `min_width`, `min_height` (its size
+    limits; today's `min_width_px`; GTK's vertical bar, GN-1.111).
+  - `track` — the trough: `fill`, `stroke` (today's frame; the high-contrast borders GN-1.115, W1-079; MAC-P05†),
+    `corners` (GN-1.109, W1-077, MAC-P02), `shadow` (today's `shadow_enabled`), `min_height`, `max_height`,
+    `min_width`, `max_width` (its thickness across the axis, today's `track_height_px`: the height when horizontal,
+    the width under `vertical`, GN-1.111).
+  - `indicator` — the value fill, and the moving indicator when indeterminate: `fill` (KDE's busy stripes, K1.110),
+    `stroke` (KDE's outline of the fill, K1.111), `corners` (PB-2, GN-1.109, MAC-P02, MAT-P5), `min_height`,
+    `max_height`, `min_width`, `max_width` (its own thickness, W1-077, MAT-P4), `transitions` (Geometry: a value
+    change, PB-3, MAC-P04, W1-078, MAT-P6).
+  - `secondary_indicator` — the second moving indicator of an indeterminate bar (WinUI, Material): `fill`, `corners`.
+  - `stop_indicator` — Material's end dot (MAT-P3): `fill`, `corners`, `min_width`, `min_height`.
+  - `buffer` — Material's buffer (secondary progress) bar (MAT-P7): `fill`, `corners`.
+  - `buffer_dots` — the dots of Material's buffer track (MAT-P7): `fill`.
+  - `label` — a title label (SwiftUI's label, PB-4†): `text`.
+  - `value_label` — the value text (GTK's shown text, KDE's percentage, SwiftUI's current value label): `text`
+    (K1.113, PB-4†), `opacity` (GTK's dimmed text, GN-1.110).
+- **Widget values:** `min_indicator_length_px: Value<Px>` (the least fill a non-zero value shows, K1.114);
+  `indicator_track_gap_px: Value<Px>` (MAT-P2); `stop_indicator_gap_px: Value<Px>` (MAT-P3); `wave_amplitude_px`,
+  `wavelength_px: Value<Px>` (under `@wavy`, MAT-P1); `pulse_block_fraction`, `pulse_step: Value<Fraction>` (GTK's pulse
   block and step, GN-1.113); `loop: Value<Loop>` (the indeterminate motion; GN-1.113, K1.110, MAC-P01, W1-075,
-  MAT-P6); `label_position: Value<ValueLabelPosition>` (K1.115, PB-4, MAC-P3-4, K1.113); `label_gap: Value<f32>`,
+  MAT-P6); `label_position: Value<ValueLabelPosition>` (K1.115, PB-4, MAC-P3-4, K1.113); `label_gap_px: Value<Px>`,
   `label_alignment: Value<Alignment>` (K1.113, PB-4, MAC-P3-4).
 - **Variants:** typed `vertical` (GNOME, Material, WinUI). Keyed: `adwaita` `@osd`; `kde-breeze` `@capacity`,
   `@capacity_inline`; `ios-*` `@bar`; `material-3` `@wavy`, `@thick`, `@four_color`.
@@ -1659,9 +1885,11 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `windows-11`: `[@error, @paused]` (ProgressBar's error and paused states; `indeterminate`
   combines with them); others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `secondary_indicator` (all but `windows-11`, `material-3`), `stop_indicator`, `buffer`,
-  `buffer_dots` (all but `material-3`), `label`, `value_label` (where the platform draws none); fields:
-  `track.stroke`, `track.shadow`; values: `min_indicator_length`, `indicator_track_gap`, `stop_indicator_gap`,
-  `wave_amplitude`, `wavelength`, `pulse_block_fraction`, `pulse_step`, `label_position`, `label_gap`,
+  `buffer_dots` (all but `material-3`), `label` (all but `macos-*`, `ios-*`: SwiftUI's label), `value_label` (all but
+  `adwaita`, `kde-breeze`, `macos-*`, `ios-*`; elsewhere by rule where no text is shown); fields:
+  `indicator.stroke` (all but `kde-breeze`, K1.111), `track.stroke`, `track.shadow`; values:
+  `min_indicator_length_px`, `indicator_track_gap_px`, `stop_indicator_gap_px`,
+  `wave_amplitude_px`, `wavelength_px`, `pulse_block_fraction`, `pulse_step`, `label_position`, `label_gap_px`,
   `label_alignment`.
 - **State-model source:** `windows-11` `ProgressBar/ProgressBar.xaml` states; `adwaita` `_progress-bar.scss` (osd,
   vertical, shown text, empty) and `gtkprogressbar.c` (pulse); `kde-breeze` `breezestyle.cpp` progress-bar branches
@@ -1684,22 +1912,27 @@ and the owning group's name where the kinds are the same.
   WinUI ScrollBar, Compose's non-interactive scrollbar); iOS and Material draw a non-interactive indicator.
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the bar's box: thickness, padding (the trough's margins and the indicator's inset from the view's edges).
-  - `track` — the trough: fill (WinUI's acrylic), per-side stroke (the content-side separator line, KDE and legacy
-    macOS), corners, padding (the thumb's inset).
-  - `thumb` — **element**, the knob or indicator: fill, stroke (outline, knob-style border), corners, size limits,
-    opacity.
-  - `arrow_button` — **element**, an arrow button (KDE's optional ones, WinUI's, the annotated bar's scroll buttons
-    W2-28): its glyph, fill, stroke, pressed scale.
-  - `annotation_labels` — the labelled rail of WinUI's annotated scroll bar (W2-28).
-  - `annotation_tooltip` — its hover tooltip: min height, max width (W2-28).
-- **Widget values:** `auto_hide_delay: Value<f32>` (a duration: WinUI's contract delay, the overlay scroller's hide
+  - `body` — the bar's box: `min_width`, `min_height` (its thickness: today's `groove_width_px`; MAC-S07, W1-060),
+    `padding` (the trough's margins and the indicator's inset from the view's edges: GN-1.85, SB-2, MAT-SC3†),
+    `transitions` (its expansion and contraction, W1-060, W1-064).
+  - `track` — the trough: `fill` (WinUI's acrylic), `stroke` (per side: the content-side separator line, KDE and
+    legacy macOS), `corners`, `padding` (the thumb's inset), `opacity`, `transitions` (the trough appearing and
+    fading: GN-1.87, GN-1.90, K1.95).
+  - `thumb` *(element)* — the knob or indicator: `fill`, `stroke` (outline, knob-style border), `corners`,
+    `min_width`, `min_height` (today's `thumb_width_px`, `min_thumb_length_px`), `opacity` (GN-1.89, K1.91, Q1.41),
+    `transitions` (its size and colour changes: GN-1.90, K1.95, Q1.40, W1-064, MAC-S01).
+  - `arrow_button` *(element)* — an arrow button (KDE's optional ones, WinUI's, the annotated bar's scroll buttons
+    W2-28): `glyph`, `fill`, `stroke`, `transform` (the pressed scale), `transitions` (that scale's animation,
+    W1-061), `min_width`, `min_height` (KDE's button length, K1.94), `padding` (WinUI's margins, W1-061).
+  - `annotation_labels` — the labelled rail of WinUI's annotated scroll bar (W2-28): `text`, `min_width`.
+- **Widget values:** `auto_hide_delay_ms: Value<Ms>` (a duration: WinUI's contract delay, the overlay scroller's hide
   delay and Material's scroll-indicator fade delay; GN-1.91, SB-3, MAT-SC1, MAT-SC3, Q1.41, W1-064, MAC-X12, MAT-X25);
-  `hide_after_leave: Value<f32>` (a duration, GN-1.91); `always_visible: Value<bool>` (MAT-SC3);
-  `thumb_max_fraction: Value<f32>` (of the viewport, MAT-SC3); `overscroll_shrink: Value<bool>` (the thumb shortens by
+  `hide_after_leave_ms: Value<Ms>` (a duration, GN-1.91); `always_visible: Value<bool>` (MAT-SC3);
+  `thumb_max_fraction: Value<Fraction>` (of the viewport, MAT-SC3); `overscroll_shrink: Value<bool>` (the thumb
+  shortens by
   the overshoot; SB-7, MAC-P3-3, K-P4-13); `arrow_buttons_start`, `arrow_buttons_end: Value<ArrowButtons>` with
   `ArrowButtons { None, Single, Double }` (read on KDE, K1.94); `trough_click: Value<TroughClick>` (as on slider; read
-  on KDE and macOS; K-RV1, MAC-P3-2, Q1.39, W-P4-16, GN-P4-5†); `repeat_delay`, `repeat_interval: Value<f32>` (the
+  on KDE and macOS; K-RV1, MAC-P3-2, Q1.39, W-P4-16, GN-P4-5†); `repeat_delay_ms`, `repeat_interval_ms: Value<Ms>` (the
   arrows' and trough's repeat; Q1.42, MAC-P3-2, W-P4-16, MAC-X12, K-P3-17†, GN-3.69†);
   `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear` (fade out, slide in), `@flash` (iOS's
   flash on appearance) (GN-1.91, SB-3, MAT-SC1, MAT-SC3, Q1.41, MAT-X25).
@@ -1713,10 +1946,11 @@ and the owning group's name where the kinds are the same.
   ScrollingIndicatorStates are the condition `cond input:touch` with the auto-hide values, its ConsciousStates the
   bar's `{hover}` (expanded, after `auto_hide_delay`; the states without animation are transitions
   `@ cond animations_off`); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `arrow_button` (where the platform draws none or KDE's setting hides them),
-  `annotation_labels`, `annotation_tooltip` (all but `windows-11`); fields: `track.stroke`, `thumb.stroke`,
-  `track.fill` (indicators without a track); values: `hide_after_leave`, `always_visible`, `thumb_max_fraction`,
-  `arrow_buttons_start`, `arrow_buttons_end`, `repeat_delay`, `repeat_interval`.
+- **may_be_absent:** parts: `arrow_button` (`adwaita`, `macos-*`, `ios-*`, `material-3`; `kde-breeze` where its read
+  setting hides them, K1.94),
+  `annotation_labels` (all but `windows-11`); fields: `track.stroke`, `thumb.stroke`,
+  `track.fill` (indicators without a track); values: `hide_after_leave_ms`, `always_visible`, `thumb_max_fraction`,
+  `arrow_buttons_start`, `arrow_buttons_end`, `repeat_delay_ms`, `repeat_interval_ms`.
 - **State-model source:** `windows-11` `CommonStyles/ScrollBar_themeresources.xaml` visual states and
   `AnnotatedScrollBar` (W2-28); `adwaita` `_scrolling.scss` (overlay indicator, hovering, fine tune, hover, active,
   disabled, high contrast) and `gtkscrolledwindow.c` (timings); `kde-breeze` `breezestyle.cpp` scroll-bar branches
@@ -1729,7 +1963,9 @@ and the owning group's name where the kinds are the same.
   (horizontal) and `body.min_width @ variant vertical`; `thumb_width_px` → `thumb.min_height` and
   `thumb.min_width @ variant vertical`; `min_thumb_length_px` → `thumb.min_width` and
   `thumb.min_height @ variant vertical`; `overlay_mode` → the condition `cond overlay_scrollbars` (ADD-A11).
-- **Notes:** conditions the rules use: `cond overlay_scrollbars` (ADD-A11), `cond input:touch` (Kirigami's transient
+- **Notes:** the annotated bar's hover tooltip is `tooltip @ context scrollbar` (its min height and max width,
+  W2-28; Nested controls). Conditions the rules use: `cond overlay_scrollbars` (ADD-A11), `cond input:touch`
+  (Kirigami's transient
   touch overlay, WinUI's touch indicator), the contrast conditions, `cond flavor:kirigami`. The corner square and the
   view frame belong to `scroll_view`. Provenance: group 7 wrote the annotated bar's scroll buttons as a part of their
   own (here `arrow_button`); group 8 the hide delay (MAC-X12) and the repeat values; group 1 the trough click
@@ -1747,23 +1983,30 @@ and the owning group's name where the kinds are the same.
   its `edge_effect`: two or more platforms, so typed (R14).
 - **Available:** every preset.
 - **Parts:**
-  - `frame` — border and background: KDE's framed background, NSScrollView's border type.
-  - `corner` — the square where two bars meet.
-  - `edge_effect` — the shade or material at a scrolled edge: GTK's undershoot (a shade line over a short gradient)
-    and overshoot gradients (GN-3.06), Apple 26's soft or hard edge (a material paint with blur and a fade mask: a
-    linear gradient over a blur).
-- **Widget values:** `scrollbar_margin: Sides<Value<f32>>` (WinUI, W1-065); `edge_effect_height: Value<f32>` (C-18,
+  - `body` — the scrolling container round the viewport (the root): `padding`, `bindings`.
+  - `frame` — border and background: KDE's framed background, NSScrollView's border type: `fill`, `stroke`, `corners`.
+  - `corner` — the square where two bars meet: `fill`, `transitions` (WinUI's expand and contract timing, W1-065).
+  - `edge_effect` — the shade or material at a scrolled edge, drawn while content lies under it (`{scrolled}`):
+    GTK's undershoot (a shade line over a short gradient, with its high-contrast border, GN-3.06), Apple 26's soft or
+    hard edge (a material paint with blur and a fade mask: a linear gradient over a blur): `fill`, `stroke`.
+  - `overshoot` — GTK's overshoot gradients, drawn while the user scrolls past an edge (`{@overshoot}`, GN-3.06):
+    `fill`, `transitions`. Android's stretch and glow are `token.behavior.scroll.overscroll_effect`.
+- **Widget values:** `scrollbar_margin: Sides<Value<Px>>` (WinUI, W1-065); `edge_effect_height_px: Value<Px>` (C-18,
   MAC-X05); `edge_effect_edges: Vec<EdgeSide>` (the edges that draw it: `Top`, `Bottom`, `Start`, `End`; C-18,
   MAC-X05).
 - **Variants:** typed `flat`, `line` (as on text_area; input's `line`); typed on `edge_effect` `soft_edge`,
   `hard_edge` (UIKit's and AppKit's styles; their automatic style is the application's choice, not a look; C-18,
   MAC-X05). Keyed: `kde-breeze` `@framed` (Kirigami's framed background style hint); `macos-*` `@bezel`, `@groove`.
 - **Sizes and densities:** none.
-- **Flags:** none of its own; state flags used: focus_within (KDE's thumb follows the view's focus, K1.92), scrolled
-  (the edge effect drawn once content lies under the edge, GN-1.156).
+- **Flags:** keyed `adwaita` `@overshoot` (the user scrolls past an edge; set by the connector, GN-3.06); state flags
+  used: focus_within (KDE's thumb follows the view's focus, K1.92), scrolled (the edge effect drawn once content lies
+  under the edge, GN-1.156).
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `frame`, `corner` (where the platform draws none), `edge_effect` (`windows-11`,
-  `kde-breeze`, `material-3` draw none); values: `scrollbar_margin`, `edge_effect_height`, `edge_effect_edges`.
+- **may_be_absent:** parts: `frame`, `corner` (`adwaita`, `ios-*`, `material-3`: drawn by KDE, macOS and Windows,
+  Q1.43, MAC-I08, K1.96, MAC-S06, W1-065), `edge_effect` (`windows-11`,
+  `kde-breeze`, `material-3` draw none; elsewhere absent by rule outside `{scrolled}`), `overshoot` (all but
+  `adwaita`; absent by rule outside `{@overshoot}`); fields: `edge_effect.stroke` (outside `cond contrast_high`);
+  values: `scrollbar_margin`, `edge_effect_height_px`, `edge_effect_edges`.
 - **State-model source:** `kde-breeze` the frame and corner branches of `breezestyle.cpp`, qqc2 `ScrollView.qml`;
   `macos-*` NSScrollView (border type, scroller style) and AppKit's scroll edge effect styles; `windows-11`
   `CommonStyles/ScrollViewer_themeresources.xaml` and `ScrollView_themeresources.xaml`; `adwaita` the undershoot and
@@ -1790,87 +2033,98 @@ and the owning group's name where the kinds are the same.
   W2-13, W2-14, W2-33, W2-29, W-P4-11†) are this widget by the same test.
 - **Available:** every preset.
 - **Parts:**
-  - `view` — the list's own surface: fill (binds the View surface set), frame stroke (MAC-L16, MAT-L13), corners and
-    shadow when the whole list is a card (GNOME's boxed list), padding; its disabled fill (GN-1.176).
-  - `section` — the platter that holds one section's rows (iOS inset-grouped, L-2): fill, corners, stroke, shadow.
-  - `row` — **element**, one item: padding, min height (Auto where content-sized, L-9), the primary text, opacity
-    (per-item disabled fade, W1-112), transform (reorder scale, W1-110), transitions; its focus indicator lives on
-    `row_background`.
+  - `view` — the list's own surface: `fill` (its disabled fill, GN-1.176), `bindings` (it binds the View surface
+    set), `stroke` (the frame, MAC-L16, MAT-L13), `corners`, `shadow` (when the whole list is a card: GNOME's boxed
+    list), `padding`.
+  - `section` — the platter that holds one section's rows (iOS inset-grouped, L-2): `fill`, `corners`, `stroke`,
+    `shadow`.
+  - `row` *(element)* — one item: `padding`, `min_height` (Auto where content-sized, L-9), `text` (the primary text),
+    `opacity` (per-item disabled fade, W1-112), `transform` (reorder scale, W1-110), `transitions`; its focus
+    indicator lives on `row_background`.
   - `row_background` — the shape drawn for the row's states inside the row (GNOME's whole-row fill, KDE's inset
-    bubble, macOS's inset selection, WinUI's rounded backplate, Material's container and Expressive shapes): fill,
-    stroke (KDE's outline, K1.171), corners (per corner, so merged selections round only the ends, MAC-L02), shadow
-    (separate boxed-list cards, dragged elevation), focus indicator, transitions (the deselection fade L-11,
-    GN-1.165's row transitions).
-  - `row_inner_border` — WinUI's inner selection border of a grid item (W2-13, W2-14).
+    bubble, macOS's inset selection, WinUI's rounded backplate, Material's container and Expressive shapes): `fill`,
+    `stroke` (KDE's outline, K1.171; kirigami-addons' focused border, K-KA-38†), `corners` (per corner, so merged
+    selections round only the ends, MAC-L02; per state, MAT-L8), `shadow` (separate boxed-list cards, dragged
+    elevation), `focus` (K1.175), `transitions` (the deselection fade L-11, GN-1.165's row transitions).
+  - `row_inner_border` — WinUI's inner selection border of a grid item (W2-13, W2-14): `stroke`.
   - `row_selection_indicator` — WinUI's selection pill (W1-107; W1-089 in the sidebar variant; the tree's, W2-12):
-    fill, corners, size limits, transitions.
-  - `row_separator` — the line between rows (GN-1.162, L-3, MAT-L6, boxed-list separators GN-1.165).
-  - `column_separator` — the vertical line between cells (GN-1.169, MAC-L06, the column browser MAC-N08).
-  - `column_resize_handle` — the column browser's resize handle (MAC-N08).
-  - `cell` — **element** in a multi-column row: padding, corners (KDE rounds the selection on a row's first and last
-    cells only, by position among cells, K1.170), fill (KDE paints the selection per cell; a shaded sort column,
-    K1.183), stroke (GNOME's editable-cell focus and editing outlines, GN-1.172; kirigami-addons' current cell,
-    K-KA-37†).
-  - `header` — the header row: fill, bottom stroke (the header's bottom line), min height.
-  - `header_section` — **element**, a column header button: fill, text, padding, transitions (hover fade), opacity and
-    transform while dragged (MAC-L15, GN-1.171), cursor and stroke while dragged or a drop target (K-KA-36†).
-  - `header_separator` — the line between header sections (K1.178, MAC-L05, GN-1.169).
-  - `header_corner` — the corner piece beside the header above the vertical scroll bar (K1.178, MAC-L18†).
-  - `sort_indicator` — glyph in a sorted header section (GN-1.168, K1.179, MAC-L05's ascending and descending named
-    images, MAT-L12, L-22†).
-  - `section_header` — **element**, a section's heading or group row (GN-1.163, L-4, MAC-L09, MAC-SB03, SD-4, MAT-SB4,
-    W1-093, Q1.63, Kirigami's list section header Q2.41): text, fill (sticky plain header, group-row material),
-    padding, min height.
-  - `section_header_line` — the line filling the rest of Kirigami's list section header (Q2.41).
-  - `inline_header` — Kirigami's inline view header (and footer) with its tint and separator (Q2.42).
-  - `section_footer` — a section's footer text (L-5).
-  - `footer` — a table's footer bar (MAT-L12): fill, min height, text.
-  - `disclosure` — **element**, a tree row's expander arrow, an expandable item's chevron or the column browser's
-    branch arrow (GN-1.173, K1.176, MAC-L10, MAC-N08, L-21†, Q1.85, MAT-L9, W1-093, W2-12): glyph, fill and corners
-    (Material's chevron container), transform (rotation) with its transition.
-  - `branch_line` — tree branch lines (K1.176, Q1.85, GN-1.279†, W2-12).
+    `fill`, `corners`, `min_width`, `min_height`, `transitions`.
+  - `row_separator` — the line between rows (GN-1.162, L-3, MAT-L6, boxed-list separators GN-1.165): `stroke`.
+  - `column_separator` — the vertical line between cells (GN-1.169, MAC-L06, the column browser MAC-N08): `stroke`.
+  - `column_resize_handle` — the column browser's resize handle (MAC-N08): `glyph`.
+  - `cell` *(element)* — one cell in a multi-column row: `padding`, `corners` (KDE rounds the selection on a row's
+    first and last cells only, by position among cells, K1.170), `fill` (KDE paints the selection per cell; a shaded
+    sort column, K1.183), `stroke` (GNOME's editable-cell focus and editing outlines, GN-1.172; kirigami-addons'
+    current cell, K-KA-37†).
+  - `header` — the header row: `fill`, `stroke` (the header's bottom line), `min_height`.
+  - `header_section` *(element)* — a column header button: `fill`, `text`, `padding`, `transitions` (hover fade),
+    `opacity`, `transform` (while dragged, MAC-L15, GN-1.171), `cursor`, `stroke` (while dragged or a drop target,
+    K-KA-36†).
+  - `header_separator` — the line between header sections (K1.178, MAC-L05, GN-1.169): `stroke`.
+  - `header_corner` — the corner piece beside the header above the vertical scroll bar (K1.178, MAC-L18†): `fill`,
+    `stroke` (its separators, MAC-L18†).
+  - `sort_indicator` — the glyph in a sorted header section (GN-1.168, K1.179, MAC-L05's ascending and descending
+    named images, MAT-L12, L-22†): `glyph`, `transform`, `transitions` (kirigami-addons' rotation for descending,
+    K-KA-36†).
+  - `section_header` *(element)* — a section's heading or group row (GN-1.163, L-4, MAC-L09, MAC-SB03, SD-4, MAT-SB4,
+    W1-093, Q1.63, Kirigami's list section header Q2.41): `text`, `fill` (sticky plain header, group-row material),
+    `padding`, `min_height`, `icon` (Kirigami's optional icon, Q1.63, Q2.41).
+  - `section_header_line` — the line filling the rest of Kirigami's list section header (Q2.41): `stroke`.
+  - `inline_header` — Kirigami's inline view header (and footer) with its tint and separator (Q2.42): `fill`,
+    `stroke`, `padding`, `text`.
+  - `section_footer` — a section's footer text (L-5): `text`.
+  - `footer` — a table's footer bar (MAT-L12): `fill`, `min_height`, `text`.
+  - `disclosure` *(element)* — a tree row's expander arrow, an expandable item's chevron or the column browser's
+    branch arrow (GN-1.173, K1.176, MAC-L10, MAC-N08, L-21†, Q1.85, MAT-L9, W1-093, W2-12): `glyph`, `fill`,
+    `corners` (Material's chevron container), `transform` (rotation), `transitions` (the rotation's and K-KA-40†'s
+    recolouring).
+  - `branch_line` — tree branch lines (K1.176, Q1.85, GN-1.279†, W2-12): `stroke`.
   - `leading_icon` — the row's leading image, icon or avatar (L-8, SD-5, MAT-L2, Q1.80, Q1.87, K1.181, MAC-SB01,
-    MAC-SB02): icon style, size, corners.
-  - `secondary_text` — subtitle, supporting or value text (L-7, MAT-L1, Q1.87, MAC-L04).
-  - `trailing_text` — trailing supporting text or a value cell's trailing value (MAT-L1, L-7, MAT-SB5).
-  - `overline_text` — Material's overline (MAT-L1).
-  - `trailing_icon` — Material's trailing icon (MAT-L3).
-  - `accessory` — **element**, a system accessory with a keyed identity carried as a variant (L-12): glyph, fill,
-    size.
-  - `selection_check` — the multi-select check the list draws itself: WinUI's presenter check box (W1-109), the grid
-    item's corner check box (W2-13, W2-14), the tree's (W2-12), kirigami-addons' (K-KA-46†): fill, stroke, corners,
-    glyph.
-  - `unread_indicator` — kirigami-addons' unread mark on an indicator row (K-KA-39†): fill, min width, padding.
-  - `swipe_area` — the area a swipe reveals (Q1.89, L-13): fill, shadow at its edges.
-  - `swipe_action` — **element**, an action button there (L-13, MAC-L12, MAT-L11, Q1.88, W2-29): fill, text, icon,
-    corners, transitions.
-  - `swipe_handle` — Kirigami's handle that opens the actions (Q1.88).
-  - `drop_indicator` — the insertion line (and its end circle) between rows (MAC-L11, K1.182, GN-1.279†, W1-110):
-    stroke, glyph (the end circle), corners.
-  - `placeholder` — the not-yet-loaded item (W-RV-2†): fill, size limits.
-  - `section_index` — **element**, iOS's A–Z index (L-15): text, fill; its tracking background is its pressed fill.
-- **Widget values:** `row_background_inset: Sides<Value<f32>>` (rules by position: K1.170's larger first-row top;
-  K-KA-38†, K-KA-39†); `row_gap: Value<f32>` (GN-1.166, Q1.79, MAT-L6, MAT-L8); `intercell_gap: Axes<Value<f32>>`
-  (MAC-L07); `row_separator_inset: Sides<Value<f32>>` and `row_separator_aligns_to_text: Value<bool>` (L-3);
+    MAC-SB02): `icon` (its style and size), `corners`, `min_width`, `min_height` (an image's or video's reserved
+    size, L-8, MAT-L2).
+  - `secondary_text` — subtitle, supporting or value text (L-7, MAT-L1, Q1.87, MAC-L04): `text`.
+  - `trailing_text` — trailing supporting text or a value cell's trailing value (MAT-L1, L-7, MAT-SB5): `text`.
+  - `overline_text` — Material's overline (MAT-L1): `text`.
+  - `trailing_icon` — Material's trailing icon (MAT-L3): `icon`.
+  - `accessory` *(element)* — a system accessory with a keyed identity carried as a variant (L-12): `glyph` (with its
+    size), `fill`; its side is `values.accessory_placement`.
+  - `unread_indicator` — kirigami-addons' unread mark on an indicator row (K-KA-39†): `fill`, `min_width`, `padding`.
+  - `swipe_area` — the area a swipe reveals (Q1.89, L-13): `fill`, `shadow` (at its edges).
+  - `swipe_action` *(element)* — an action button there (L-13, MAC-L12, MAT-L11, Q1.88, W2-29): `fill`, `text`,
+    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `transitions`.
+  - `swipe_handle` — Kirigami's handle that opens the actions (Q1.88): `icon`.
+  - `drop_indicator` — the insertion line (and its end circle) between rows (MAC-L11, K1.182, GN-1.279†, W1-110), or
+    the drop zone's area where the platform fills one (Material's drop-zone colour, MAT-L10): `stroke`, `glyph` (the
+    end circle), `corners`, `fill`.
+  - `placeholder` — the not-yet-loaded item (W-RV-2†): `fill`, `min_width`, `min_height`.
+  - `section_index` *(element)* — iOS's A–Z index (L-15): `text`, `fill` (its tracking background is its pressed
+    fill).
+- **Widget values:** `row_background_inset: Sides<Value<Px>>` (rules by position: K1.170's larger first-row top;
+  K-KA-38†, K-KA-39†; a sidebar's selected row, MAC-SB04); `row_gap_px: Value<Px>` (GN-1.166, Q1.79, MAT-L6, MAT-L8);
+  `intercell_gap: Axes<Value<Px>>`
+  (MAC-L07); `row_separator_inset: Sides<Value<Px>>` and `row_separator_aligns_to_text: Value<bool>` (L-3);
   `section_separators: SectionSeparators` with `SectionSeparators { top: Value<bool>, bottom: Value<bool> }` (L-3);
-  `section_inset: Sides<Value<f32>>` (L-2, MAC-L01, MAC-SB04, SD-2); `indent_per_level: Value<f32>` (GN-1.173, K1.176,
+  `section_inset: Sides<Value<Px>>` (L-2, MAC-L01, SD-2); `indent_per_level_px: Value<Px>` (GN-1.173, K1.176,
   MAC-L10, L-21†, Q1.85, W2-12); `indent_includes_disclosure: Value<bool>` (GN-1.279†, K-KA-40†);
-  `separators_follow_indent: Value<bool>` (L-21†); `disclosure_gap: Value<f32>`; `leading_gap: Value<f32>` (MAT-L7,
-  Q1.87, L-7, W1-092); `secondary_text_gap: Value<f32>` (L-7); `trailing_gap: Value<f32>`;
+  `separators_follow_indent: Value<bool>` (L-21†); `disclosure_gap_px: Value<Px>`; `leading_gap_px: Value<Px>` (MAT-L7,
+  Q1.87, L-7, W1-092); `secondary_text_gap_px: Value<Px>` (L-7); `trailing_gap_px: Value<Px>`;
   `secondary_text_stacks: Value<bool>` (the accessibility-size layout, a rule under the large text sizes, L-19);
-  `section_headers_sticky: Value<bool>` (L-4); `filler_rows: Value<bool>`, `filler_row_height: Value<f32>` (L-17);
-  `header_fills_trailing: Value<bool>` (Q1.86); `header_item_gap: Value<f32>` (K1.179);
+  `section_headers_sticky: Value<bool>` (L-4); `filler_rows: Value<bool>`, `filler_row_height_px: Value<Px>` (L-17);
+  `header_fills_trailing: Value<bool>` (Q1.86); `header_item_gap_px: Value<Px>` (K1.179);
   `header_text_alignment: Value<Alignment>` (MAC-L05); `sort_indicator_inverted: Value<bool>` (read; K1.179);
-  `column_min_width: Value<f32>` (K-KA-36†); `check_box_placement: Value<Key>` (the grid item's check box corner, keys
-  declared by the preset; W2-14); `focus_visible_when` (`FocusVisibleWhen`, S2.11; Q1.78, K1.175, MAC-L14);
-  `swipe_full_expansion: Value<bool>` (L-13); `reorder_hint_offset: Value<f32>` (W1-110);
-  `drag_hover_delay_ms: Value<f32>` (a dragged item hovering a collapsed row expands it; GN-1.279†, W-P4-11†);
-  `typeahead_hide_ms: Value<f32>` (GN-1.279†'s interactive search); `elided_tooltip: Value<bool>` (an elided row shows
+  `column_min_width_px: Value<Px>` (K-KA-36†); `check_box_placement: Value<Key>` (the grid item's check box corner, keys
+  declared by the preset; W2-14); `accessory_placement: Vec<(Key, Side)>` (each accessory identity's side, leading or
+  trailing: `UICellAccessory.Placement`, L-12); `focus_visible_when` (`FocusVisibleWhen`, S2.11; Q1.78, K1.175,
+  MAC-L14);
+  `swipe_full_expansion: Value<bool>` (L-13); `reorder_hint_offset_px: Value<Px>` (W1-110);
+  `drag_hover_delay_ms: Value<Ms>` (a dragged item hovering a collapsed row expands it; GN-1.279†, W-P4-11†);
+  `typeahead_hide_ms: Value<Ms>` (GN-1.279†'s interactive search); `elided_tooltip: Value<bool>` (an elided row shows
   its full text in a tooltip after the tooltip's own show delay, by press and hold `@ cond tablet_mode`; Q1.82,
   K-KA-36†); `presentations: Vec<PresentationTransition>`: events `@insert`, `@delete`, `@reload`, `@reorder`,
   `@edit_mode`, `@expand`, `@collapse`, `@swipe`, `@reveal` (the swipe actions' reveal, W2-29), `@drag_lift`,
-  `@placeholder_fade` (W-RV-2†), and `Move` with the step's part `row_selection_indicator` (WinUI's pill sliding to
-  the selected row, W1-090) (L-14, L-16, W1-113, K1.185†, Q1.84, Q1.89).
+  `@placeholder_fade` (W-RV-2†), `@spring_load` (a spring-loaded row's flash or blink while a drag hovers it, MAC-X21,
+  P3-11†), and `Move` with the step's part `row_selection_indicator` (WinUI's pill sliding to the selected row,
+  W1-090) (L-14, L-16, W1-113, K1.185†, Q1.84, Q1.89).
 - **Variants:** typed `plain` (iOS plain, macOS plain), `inset` (iOS inset-grouped, macOS inset, GNOME's boxed list),
   `separated` (GNOME's separate boxed list, Material Expressive's segmented list), `sidebar` (iOS sidebar, macOS
   source list, GNOME's navigation sidebar and AdwSidebar, WinUI NavigationView items, Material drawer items, KDE
@@ -1883,7 +2137,8 @@ and the owning group's name where the kinds are the same.
   `@stack_sidebar` (GtkStackSidebar's rows, GN-2.34), `@new_bookmark`, `@drop_placeholder` (the file chooser's places
   rows, GN-P3-22†); `kde-breeze` `@column_view` (QColumnView, K1.184†), `@with_subtitle` (Q1.87), `@ka_rounded`
   (K-KA-38†, K-KA-39†, K-KA-46†), `@ka_table` (K-KA-36†, K-KA-37†), `@ka_tree` (K-KA-40†), `@ka_indicator` (K-KA-39†),
-  `@bold` (K-KA-39†), `@check`, `@radio` (rows holding a check box or radio, K-KA-38†); `ios-*` `@grouped`,
+  `@emphasized` (the subtitle item's emphasised form, K-KA-39†), `@check`, `@radio` (rows holding a check box or
+  radio, K-KA-38†); `ios-*` `@grouped`,
   `@sidebar_plain`, `@prominent_header`, `@extra_prominent_header` (on `section_header`), `@value_cell`,
   `@subtitle_cell`, `@accompanied_sidebar_cell`, and on `accessory` the identities `@disclosure_indicator`,
   `@checkmark`, `@detail`, `@delete`, `@insert`, `@reorder`, `@outline_disclosure`, `@label`, `@popup_menu` (L-12,
@@ -1897,7 +2152,8 @@ and the owning group's name where the kinds are the same.
 - **Flags:** shared `editing` (row, cell; GN-1.172, L-10, L-14), `swiped` (row; L-10, Q1.84), `context_menu_open`
   (row: the row whose popup or context menu is open, GN-1.160, MAC-L19†; kept apart from `open`, which a tree row uses
   for expanded), `sorted`, `descending` (header_section; K1.177, MAC-L18†, K-KA-36†), `current` (row, cell; K-KA-37†,
-  K-KA-38†), `placeholder` (row: a not-yet-loaded item, W-RV-2†); keyed `kde-breeze` `@sort_column` (cell; K1.183), `@hidden_place` (row; KDE's hidden places, K1.142†),
+  K-KA-38†), `placeholder` (row: a not-yet-loaded item, W-RV-2†); keyed `kde-breeze` `@sort_column` (cell; K1.183),
+  `@hidden_place` (row; KDE's hidden places, K1.142†),
   `@expandable` (row: an item with children in a Kirigami drawer, Q1.62, Q1.66), `@unread` (row; K-KA-39†); `adwaita`
   `@needs_attention` (GtkStackSidebar's row dot, GN-2.34); `windows-11`
   `@reorder_target` (W1-110), `@pre_threshold`, `@post_threshold` (swipe_action; W2-29); state flags used: hover,
@@ -1905,13 +2161,20 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ListViewItemPresenter's common states; `selected`
   combines with them); `material-3`: `[dragged, pressed, focus_visible, hover]` (one state layer at a time); others
   none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts (each drawn only by the platforms its description names): `section`, `row_inner_border`,
-  `row_selection_indicator`, `column_separator`, `column_resize_handle`, `header_corner`, `footer`, `branch_line`,
-  `overline_text`, `trailing_icon`, `accessory`, `selection_check`, `section_header_line`, `inline_header`,
-  `unread_indicator`, `swipe_handle`, `placeholder`, `section_index`, `section_footer`; `row_separator` (`kde-breeze`;
-  `ios-*` under the variant `sidebar`); fields: `row_background.stroke`, `row_background.shadow`; values:
-  `filler_rows`, `filler_row_height`, `check_box_placement`, `column_min_width`, `reorder_hint_offset`,
-  `typeahead_hide_ms`.
+- **may_be_absent:** parts: `section`, `accessory`, `section_index`, `section_footer` (all but `ios-*`: L-2, L-12,
+  L-15, L-5), `row_inner_border`, `row_selection_indicator`, `placeholder` (all but `windows-11`: W2-13, W1-107,
+  W-RV-2†), `column_separator` (all but `adwaita`, `macos-*`, `kde-breeze`: GN-1.169, MAC-L06, KDE's table grid),
+  `column_resize_handle` (all but `macos-*`, MAC-N08), `header_corner` (all but `kde-breeze`, `macos-*`: K1.178,
+  MAC-L18†), `footer`, `overline_text`, `trailing_icon` (all but `material-3`: MAT-L12, MAT-L1, MAT-L3), `branch_line`
+  (all but `kde-breeze`, `adwaita`, `windows-11`: K1.176, GN-1.279†, W2-12), `section_header_line`, `inline_header`,
+  `unread_indicator`, `swipe_handle` (all but `kde-breeze`: Q2.41, Q2.42, K-KA-39†, Q1.88); every one of them, and
+  `header`, `header_section`, `sort_indicator`, `disclosure`, `swipe_area`, `swipe_action`, `drop_indicator`, also by
+  rule where the list's variant or state shows none; `row_separator` (`kde-breeze`; `ios-*` under the variant
+  `sidebar`); fields: `view.shadow`, `section.stroke`, `section.shadow`, `cell.stroke`, `header_section.stroke`,
+  `header_section.cursor` (each where the platform draws none: the boxed list, iOS's sections, GNOME's cell outlines,
+  kirigami-addons' header drag), `row_background.stroke`, `row_background.shadow`; values:
+  `filler_rows`, `filler_row_height_px`, `check_box_placement`, `accessory_placement`, `column_min_width_px`,
+  `reorder_hint_offset_px`, `typeahead_hide_ms`.
 - **State-model source:** `adwaita`: libadwaita selectors in `_lists.scss`, `_column-view.scss`, `_views.scss`,
   `_sidebars.scss`, `_deprecated.scss` (tree and icon views); `kde-breeze`: Breeze's item-view panel, header and
   branch branches (`st:4751-4900`, `st:6808-6900`, `st:5229-5299`) and qqc2's `DefaultListItemBackground.qml` and
@@ -1933,7 +2196,10 @@ and the owning group's name where the kinds are the same.
   `view.corners`, `view.shadow` (from `shadow_enabled`), `row.padding` (its padding, which presets used for the row).
 - **Notes:** in context: the marquee selection rectangle is `rubber_band @ context list` (GN-1.175, GN-1.280†); the
   dragged row's image and count are `drag_image @ context list` (K-RL06†, W1-110); a menu's rows are
-  `list.row @ context menu.body` (GN-1.79); iOS's multiselect circle is `checkbox @ variant selection` (CK-1, CK-2†);
+  `list.row @ context menu.body` (GN-1.79); the multi-select check is a `checkbox` in `context list.row` (iOS's
+  circle and GNOME's selection mode `variant selection`, CK-1, CK-2†; WinUI's presenter check box W1-109, the grid
+  items' W2-13, W2-14, the tree's W2-12, kirigami-addons' K-KA-46†); an avatar in a row is `avatar @ context list.row`
+  (MAT-L2);
   KDE's container styles `@places`, `@side_panel`, `@global`, `@context` are the sidebar's variants, matched as
   `list.row @ context sidebar.pane variant @places`; the badge on a row is `badge @ context list.row`; GNOME's column
   view undershoot is `scroll_view.edge_effect @ context list variant table` (GN-1.178); drop-target rules on
@@ -1952,49 +2218,55 @@ and the owning group's name where the kinds are the same.
   UITabBar is the app-level bottom tab bar, a different kind: its rows go to `bottom_tab_bar`.
 - **Available:** every preset but `ios-*` (`available = false`: no such control; UITabBar is `bottom_tab_bar`).
 - **Parts:**
-  - `bar` — **element**, the strip: fill (paint with material: Mica Alt, W1-088), stroke (its base line or rule on the
-    page side: GN-1.116, K1.127, MAT-TB5, GN-1.125's shade line), padding (GN-1.121, W1-085), min height, corners and
-    shadow.
-  - `tab` — **element**, one tab: fill, stroke (W1-086's gradient border on the sides and top; GN-1.135's
-    high-contrast inset border), corners (K1.121 on the bar side only), padding, min and max width and height,
-    opacity, shadow (dragged, GN-1.133), transitions (hover fade K1.132; GN-1.131's background transition; X-MO-6).
-  - `label` — text (font, elision: none on KDE and Material, fade at the edges on GNOME GN-1.129), and the focus
-    indicator of kind Underline where focus is a line under the label (K1.129).
-  - `icon` — icon style per state (W1-081, K1.130, MAT-TB4).
-  - `close_button` — **element** (GN-1.120, GN-1.130, K1.124, W1-082): fill, glyph, corners, size limits, opacity,
-    transitions.
-  - `add_button` — **element** (W1-083).
-  - `scroll_button` — **element**, overflow arrows (GN-1.119, K1.125, W1-083): fill, glyph, padding.
-  - `separator` — the line between tabs (GN-1.126, K1.123, W1-084, MAC-TB06†); hidden beside a selected or hovered tab
-    by position rules on the previous and next sibling (ADD-B07).
+  - `bar` — the strip (the root): `fill` (paint with material: Mica Alt, W1-088), `stroke` (its base line or rule on
+    the page side: GN-1.116, K1.127, MAT-TB5, GN-1.125's shade line), `padding` (GN-1.121, W1-085), `min_height`
+    (GN-1.125), `corners`, `shadow`.
+  - `tab` *(element)* — one tab: `fill`, `stroke` (W1-086's gradient border on the sides and top; GN-1.135's
+    high-contrast inset border), `corners` (K1.121 on the bar side only), `padding`, `min_width`, `max_width`,
+    `min_height`, `max_height` (W1-085, GN-1.129), `opacity`, `shadow` (dragged, GN-1.133), `transitions` (hover fade
+    K1.132; GN-1.131's background transition; X-MO-6).
+  - `label` — the tab's label: `text` (font, elision: none on KDE and Material, fade at the edges on GNOME
+    GN-1.129), `focus` (the focus indicator of kind Underline where focus is a line under the label, K1.129).
+  - `icon` — the tab's icon: `icon` (its style per state, W1-081, K1.130, MAT-TB4).
+  - `scroll_arrow` *(element)* — overflow arrows (GN-1.119, K1.125, W1-083): `fill`, `glyph`, `padding`, `min_width`
+    (WinUI's scroll-button width, W1-083).
+  - `separator` — the line between tabs (GN-1.126, K1.123, W1-084, MAC-TB06†): `stroke`, `padding` (its insets,
+    GN-1.126), `opacity`, `transitions` (its fade, GN-1.126); hidden beside a selected or hovered tab by position
+    rules on the previous and next sibling (ADD-B07).
   - `indicator` — the selected tab's indicator (today's active indicator; GNOME's notebook bar, also on hover
-    GN-1.117; KDE's strip K1.120; Material's MAT-TB1, MAT-TB2): fill, corners, size limits.
-  - `attention_indicator` — GNOME's attention line (GN-1.128).
-  - `drop_indicator` — the bar a drop would land at (GN-1.127).
-  - `overflow_edge` — KDE's tear indicator where tabs are cut off (K1.126).
-  - `pane` — the page the bar belongs to (K1.128, MAC-TB01, GN-1.122, W1-088): fill, stroke, corners (cut where the
-    bar touches, by a rule under the bar's position), padding.
-- **Widget values:** `tab_gap: Value<f32>` (negative where tabs overlap: Q1.50, K-P3-4†);
-  `alignment: Value<Alignment>` (`Start`, `Center`; K1.131, read); `bar_pane_overlap: Value<f32>` (MAC-TB02);
-  `width_mode: Value<TabWidthMode>` with `TabWidthMode { Equal, SizeToContent, Compact }` (W1-085); `base_width`,
-  `pinned_width: Value<f32>` (AdwTabBar's widths, GN-1.129); `expanding: Value<bool>` (K1.123);
+    GN-1.117; KDE's strip K1.120; Material's MAT-TB1, MAT-TB2): `fill`, `corners`, `min_width`, `min_height` (its
+    thickness and length; today's `active_indicator_width_px`).
+  - `attention_indicator` — GNOME's attention line (GN-1.128): `fill`, `min_height` (its thickness), `min_width`,
+    `max_width` (the bounds of its width), `transform` (its offset below the tab).
+  - `drop_indicator` — the bar a drop would land at (GN-1.127): `fill`, `min_width` (its thickness), `padding` (its
+    margins).
+  - `overflow_edge` — KDE's tear indicator where tabs are cut off (K1.126): `stroke`.
+  - `pane` — the page the bar belongs to (K1.128, MAC-TB01, GN-1.122, W1-088): `fill`, `stroke`, `corners` (cut
+    where the bar touches, by a rule under the bar's position), `padding`.
+- **Widget values:** `tab_gap_px: Value<Px>` (negative where tabs overlap: Q1.50, K-P3-4†);
+  `alignment: Value<Alignment>` (`Start`, `Center`; K1.131, read); `bar_pane_overlap_px: Value<Px>` (MAC-TB02);
+  `width_mode: Value<TabWidthMode>` with `TabWidthMode { Equal, SizeToContent, Compact }` (W1-085); `base_width_px`,
+  `pinned_width_px: Value<Px>` (AdwTabBar's widths, GN-1.129); `expanding: Value<bool>` (K1.123);
   `indicator_edge: Value<EdgeSide>` (`Top`, `Bottom`, `Start`, `End`; rules by the bar's position variant; today's
   `active_indicator_side`); `indicator_length: Value<IndicatorLength>` with `IndicatorLength { Label, Tab }`
-  (MAT-TB2); `attention_width_fraction: Value<f32>` (GN-1.128); `outward_corner_radius: Value<f32>` (today's
+  (MAT-TB2); `attention_width_fraction: Value<Fraction>` (GN-1.128); `outward_corner_radius_px: Value<Px>` (today's
   `active_outward_corner_radius_px`, `@ {selected}`); `close_button_shown: Value<CloseButtonShown>` with
   `CloseButtonShown { Always, OnHover, SelectedOrHover }` (W1-082), the padding change as rules on the tab's padding
   `@ variant closable`; `overflow: Value<TabOverflow>` with `TabOverflow { Scroll, ScrollButtons }` (K-P3-4†,
   MAT-P4-6†, GN-1.119); `scroll_to_selected: Value<ScrollToSelected>` with
-  `ScrollToSelected { Center, VisibleWithMargin }` (MAT-P4-6†, K-P3-4†); `scroll_margin: Value<f32>`;
-  `drag_hover_delay_ms: Value<f32>` (a drag hovering a tab switches to it; GN-1.132, K1.133†); `focus_visible_when`
-  (`FocusVisibleWhen`, S2.11; Q1.51); `icon_text_gap: Value<f32>` (K1.130, MAT-TB4);
-  `separator_inset: Sides<Value<f32>>` (W1-084); `presentations: Vec<PresentationTransition>`: events `@open`,
-  `@close`, `@reorder`, `@scroll`, `@resize` (GN-1.131), `Move` (a moved tab sliding to its place, K1.133†; with the
-  step's part `indicator`, the indicator sliding between tabs, MAT-TB6), `@attention` (GN-1.128), `@drag`, `@tear_out`
-  (W1-087, W-SF09†).
-- **Variants:** typed on `bar` `top`, `bottom`, `left`, `right` (bar position: GNOME's notebook, KDE, macOS); typed on
-  `tab` and `bar` `document` (browser-style strip: AdwTabBar, KDE's document mode, WinUI TabView; pane-attached is the
-  default), `closable` (GNOME, KDE, Windows); typed content variant `with_icon` (set by the connector, ADD-A61:
+  `ScrollToSelected { Center, VisibleWithMargin }` (MAT-P4-6†, K-P3-4†); `scroll_margin_px: Value<Px>`;
+  `drag_hover_delay_ms: Value<Ms>` (a drag hovering a tab switches to it; GN-1.132, K1.133†); `focus_visible_when`
+  (`FocusVisibleWhen`, S2.11; Q1.51); `icon_text_gap_px: Value<Px>` (K1.130, MAT-TB4);
+  `separator_inset: Sides<Value<Px>>` (W1-084); `presentations: Vec<PresentationTransition>`: events `Appear`,
+  `Disappear` (a tab opening and closing: GN-1.131; macOS's window tabs, MAC-X32†), `@reorder`, `@scroll`, `@resize`
+  (GN-1.131), `Move` (a moved tab sliding to its place, K1.133†; tabs parting to open a gap for a dragged one,
+  MAC-SF07†; with the step's part `indicator`, the indicator sliding between tabs, MAT-TB6), `@attention` (GN-1.128),
+  `@drag`, `@tear_out` (W1-087, W-SF09†), `@spring_load` (a tab a drag hovers switching to it, P3-11†, MAC-X21).
+- **Variants:** typed on `bar` `top`, `bottom`, `left`, `right` (bar position: GNOME's notebook, KDE, macOS; absolute
+  positions, as GtkNotebook, QTabWidget and NSTabView name them, so a platform that mirrors them in RTL states it by
+  `dir rtl` rules); typed on `tab` and `bar` `document` (browser-style strip: AdwTabBar, KDE's document mode, WinUI
+  TabView, macOS's window tabs in `context window.title_bar`, MAC-W09; pane-attached is the default), `closable`
+  (GNOME, KDE, Windows); typed content variant `with_icon` (set by the connector, ADD-A61:
   Material's icon-and-label tabs, MAT-TB4). Keyed: `adwaita` `@inline`, `@shrunk` (AdwTabBar), `@pinned`; `kde-breeze`
   `@static` (K1.123); `macos-*` `@border_none`, `@border_line`, `@border_bezel`, `@no_tabs` (MAC-TB03); `material-3`
   `@secondary` (MAT-TB1), `@scrollable` (MAT-TB7).
@@ -2004,11 +2276,12 @@ and the owning group's name where the kinds are the same.
   focus_within (AdwTabBar's focus on the tab box child, GN-1.134), disabled, dragged, drop_target (on `bar`).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (TabViewItem CommonStates; `selected` combines with
   them); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `add_button` (all but `windows-11`), `attention_indicator`, `drop_indicator` (all but
-  `adwaita`), `overflow_edge` (all but `kde-breeze`), `indicator` (`macos-*`, `windows-11` draw none), `scroll_button`
-  (`material-3`; qqc2 under `kde-breeze` flavour `kirigami`), `pane` (document strips); fields: `label.focus`,
-  `tab.separator.stroke` (macOS's selected neighbours, GNOME's notebook); values: `base_width`, `pinned_width`,
-  `attention_width_fraction`, `bar_pane_overlap`, `outward_corner_radius`, `scroll_margin`.
+- **may_be_absent:** parts: `attention_indicator`, `drop_indicator` (all but `adwaita`), `overflow_edge` (all but
+  `kde-breeze`), `indicator` (`macos-*`, `windows-11` draw none), `scroll_arrow` (`material-3`; qqc2 under `kde-breeze`
+  flavour `kirigami`), `pane` (document strips); fields: `bar.shadow`, `bar.corners`, `tab.shadow` (presets that draw
+  none), `label.focus`,
+  `tab.separator.stroke` (macOS's selected neighbours, GNOME's notebook); values: `base_width_px`, `pinned_width_px`,
+  `attention_width_fraction`, `bar_pane_overlap_px`, `outward_corner_radius_px`, `scroll_margin_px`.
 - **State-model source:** `adwaita`: `_notebook.scss`, `_tab-view.scss` selectors and `adw-tab.c`; `kde-breeze`:
   Breeze's tab-shape branches (`hp:1299-1430`, `st:7021-7200`) and qqc2 `TabButton.qml`; `macos-*`: NSTabView
   (pressed, selected, key and non-key window, control size, tab position, border type); `material-3`: primary and
@@ -2022,7 +2295,10 @@ and the owning group's name where the kinds are the same.
   `outward_corner_radius`; `hover_background` → `tab.tab.fill @ {hover}`; `hover_text_color` →
   `label.text.fill @ {hover}`; `font` → `label.text`; `border` → `tab.tab.stroke`, `tab.tab.corners`,
   `tab.tab.padding`, `tab.tab.shadow`.
-- **Notes:** provenance: iOS's UITabBar and the navigation bars of KDE, Material and SwiftUI are the `bottom_tab_bar`
+- **Notes:** Nested controls: a tab's close button is `button @ variant close context tab.tab` (GN-1.120, GN-1.130,
+  K1.124, W1-082; shown per `close_button_shown`), the new-tab button `button @ variant add context tab.bar` (W1-083;
+  macOS's window tabs, MAC-W09). Provenance: iOS's UITabBar and the navigation bars of KDE, Material and SwiftUI are
+  the `bottom_tab_bar`
   widget (group 6 had proposed a tab variant); group 8 wrote the tab part as `body` (X-MO-6); Material's
   icon-and-label tabs were a keyed variant, now the content variant `with_icon`.
 
@@ -2039,31 +2315,33 @@ and the owning group's name where the kinds are the same.
   Its rows are `list` rows with variant `sidebar`.
 - **Available:** every preset.
 - **Parts:**
-  - `pane` — **element**: fill (paint: material on macOS, iOS, WinUI's overlay acrylic), stroke (the inner edge only,
-    flipping with the end variant and the direction, GN-1.139; the full frame under KDE's option, K1.140), corners
-    (per corner: Material rounds the end corners only, MAT-SB7; floating glass, SD-6, MAC-SB06), shadow, padding, min
-    and max width, bindings (the surface set it draws on: Kirigami's colour set by modality, Q1.53; GNOME's sidebar
-    set), opacity and transitions (GN-1.136's backdrop transition); the Material rail's container (MAT-N13).
-  - `separator` — Kirigami's segmented inner-edge separator drawn apart beside the global toolbar (Q1.55): stroke,
-    inset by the separator inset value.
-  - `edge_shadow` — the gradient strip at a modal drawer's edge (Q1.56): fill (linear gradient), size limits,
-    transitions.
-  - `scrim` — the dim over the covered content (Q1.57, MAT-SB6, SD-9†): fill, transitions.
-  - `handle` — **element**, the floating drawer handle (Q1.61, Q3.31): fill, corners, shadow, icon, size limits,
-    padding.
+  - `pane` — the side pane (the root); the Material rail's container (MAT-N13): `fill` (paint: material
+    on macOS, iOS, WinUI's overlay acrylic), `stroke` (the inner edge only, flipping with the end variant and the
+    direction, GN-1.139; the full frame under KDE's option, K1.140), `corners` (per corner: Material rounds the end
+    corners only, MAT-SB7; floating glass, SD-6, MAC-SB06), `shadow`, `padding`, `min_width`, `max_width`,
+    `bindings` (the surface set it draws on: Kirigami's colour set by modality, Q1.53; GNOME's sidebar set),
+    `opacity`, `transitions` (GN-1.136's backdrop transition).
+  - `separator` — Kirigami's segmented inner-edge separator drawn apart beside the global toolbar (Q1.55): `stroke`
+    (inset by the separator inset value), `transitions` (its margins animate, Q1.55).
+  - `edge_shadow` — the gradient strip at a modal drawer's edge (Q1.56): `fill` (linear gradient), `min_width`,
+    `min_height`, `transitions`.
+  - `scrim` — the dim over the covered content (Q1.57, MAT-SB6, SD-9†): `fill`, `opacity` (MAT-SB6's scrim
+    opacity), `transitions`.
+  - `handle` *(element)* — the floating drawer handle (Q1.61, Q3.31): `fill`, `corners`, `shadow`, `icon`,
+    `min_width`, `min_height`, `padding`, `transitions` (its bottom offset animates, Q1.61).
   - `header` — the pane's header area (Q1.63, Q1.66's header toolbar, W1-095's pane toggle, back and search area):
-    text (title level), icon, padding, min height.
-  - `toggle_button` — **element**, the pane toggle (hamburger) and back buttons (W1-095, GNOME's sidebar toggle in
-    split views, the Material rail's menu button MAT-N13): size limits, glyph.
-  - `content` — the content area beside the pane (W1-097): fill, stroke, corners (rounded where it meets the pane).
-  - `capacity_bar` — the per-device usage bar in a places panel (K1.142†): track fill, fill, corners, min height.
-- **Widget values:** `width`, `min_width`, `max_width: Value<f32>` (with `width_fraction`: GN-1.147, SD-10†,
-  MAC-SB09†, Q1.60, MAT-SB7, W1-094, K-KA-41†; the inspector's open width, MAC-N19, C-41†);
-  `width_fraction: Value<f32>`; `collapsed_width: Value<f32>` (Q1.59, W1-094; the inspector's compact width, MAC-N19,
-  C-41†); `display_mode_breakpoints: Vec<(Key, Value<f32>)>` (the widget's own breakpoints, R16: W-P4-19†'s compact
-  and expanded thresholds; iOS's arrangement per app size, P4-16†); `resize_grip_width: Value<f32>` (Q1.60);
-  `floating_inset: Sides<Value<f32>>` (the floating sidebar's inset from the window edges, SD-6, MAC-SB06);
-  `separator_inset: Sides<Value<f32>>` (Q1.55); `drag_hover_delay_ms: Value<f32>` (a drag hovering a sidebar row
+    `text` (title level), `icon`, `padding`, `min_height`.
+  - `content` — the content area beside the pane (W1-097): `fill`, `stroke`, `corners` (rounded where it meets the
+    pane).
+- **Widget values:** `width_px: Value<Px>` (the pane's natural width; its limits are `pane.min_width` and
+  `pane.max_width`, with `width_fraction`: GN-1.147, SD-10†, MAC-SB09†, Q1.60, MAT-SB7, W1-094, K-KA-41†; the
+  inspector's open width, MAC-N19, C-41†); `width_fraction: Value<Fraction>` (the largest share of the window the pane
+  takes; under `@edge_top` and `@edge_bottom` the pane's height and the window's height, Q1.60);
+  `collapsed_width_px: Value<Px>` (Q1.59, W1-094; the inspector's compact width, MAC-N19,
+  C-41†); `display_mode_breakpoints: Vec<(Key, Value<Px>)>` (the widget's own breakpoints, R16: W-P4-19†'s compact
+  and expanded thresholds; iOS's arrangement per app size, P4-16†); `resize_grip_width_px: Value<Px>` (Q1.60);
+  `floating_inset: Sides<Value<Px>>` (the floating sidebar's inset from the window edges, SD-6, MAC-SB06);
+  `separator_inset: Sides<Value<Px>>` (Q1.55); `drag_hover_delay_ms: Value<Ms>` (a drag hovering a sidebar row
   activates it, GN-1.145); `presentations: Vec<PresentationTransition>`: events `@open`, `@close`, `@collapse`,
   `@expand`, `@morph_to_tab_bar` (SD-7), `@submenu_push`, `@submenu_pop` (Q1.64), `@labels_fade` (Q1.59),
   `@handle_slide` (Q1.61), `@scrim_fade` (MAT-SB9, Q1.57), `@snap_back` (Q1.58).
@@ -2074,17 +2352,17 @@ and the owning group's name where the kinds are the same.
   drawers, WinUI's right pane, the trailing inspector column of macOS MAC-N19 and iOS C-41†). Keyed: `adwaita`
   `@secondary` (middle pane, GN-1.137); `kde-breeze` `@global`, `@context`, `@places` (KIO), `@side_panel` (Qt's side
   panel view), `@edge_top`, `@edge_bottom` (drawers on the top or bottom edge, Q1.60); `windows-11` `@left_minimal`;
-  `ios-*` `@displace`; `material-3` `@bottom_sheet` (MAT-SB7's bottom-sheet drawer shape), `@expanded`, `@modal` (the
-  rail's expanded and modal forms, MAT-N13).
+  `ios-*` `@displace`; `material-3` `@expanded`, `@modal` (the rail's expanded and modal forms, MAT-N13). Typed
+  `bottom_sheet` (MAT-SB7's bottom-sheet drawer; the meaning `dialog`'s `bottom_sheet` shares on GNOME).
 - **Sizes and densities:** `macos-*`: the sidebar size is the condition `cond container_size(sidebar, small)` (and
   medium, large) (R2.3), selecting `list` rules (MAC-SB01); others none.
 - **Flags:** none of its own; state flags used: open (shown), focus_within (KDE's focused-view edge colour, K1.140),
   drop_target (drag-hover activation).
 - **Exclusive groups:** none (the pane has no common-state group; rows follow `list`); precedence: state models (S17).
-- **may_be_absent:** parts: `separator` (all but `kde-breeze`), `edge_shadow` (all but `kde-breeze`), `scrim`,
-  `handle` (all but `kde-breeze`), `header`, `toggle_button`, `content`, `capacity_bar` (all but `kde-breeze`) (each
-  drawn only by the platforms its description names); fields: `pane.stroke` (floating, modal), `pane.shadow`; values:
-  `width_fraction`, `collapsed_width`, `display_mode_breakpoints`, `resize_grip_width`, `floating_inset`,
+- **may_be_absent:** parts: `separator`, `edge_shadow`, `handle` (all but `kde-breeze`), `scrim` (all
+  but `kde-breeze`, `material-3`, `ios-*`, and outside `variant overlay`), `header` (all but `kde-breeze`,
+  `windows-11`), `content` (all but `windows-11`); fields: `pane.stroke` (floating, modal), `pane.shadow`; values:
+  `width_fraction`, `collapsed_width_px`, `display_mode_breakpoints`, `resize_grip_width_px`, `floating_inset`,
   `separator_inset`, `drag_hover_delay_ms`.
 - **State-model source:** `adwaita`: `_sidebars.scss` selectors and the split views' properties
   (`adw-navigation-split-view.c`, `adw-overlay-split-view.c`); `kde-breeze`: Kirigami's `OverlayDrawer.qml`,
@@ -2098,9 +2376,13 @@ and the owning group's name where the kinds are the same.
   `list.row.text.fill @ {selected} variant sidebar`; `hover_background` →
   `list.row_background.fill @ {hover} variant sidebar`; `border` → `pane.stroke`, `pane.corners`, `pane.padding`,
   `pane.shadow`.
-- **Notes:** in context: the banner is `banner @ context sidebar.pane` (GN-1.146); the Material rail's items are list
+- **Notes:** in context: the banner is `banner @ context sidebar.pane` (GN-1.146); a places panel's per-device
+  usage bar is `progress_bar @ variant @capacity context sidebar.pane` (K1.142†); the Material rail's items are list
   rows (`list.row_selection_indicator`, `list.leading_icon`, the row's text) and its badge
-  `badge @ context sidebar.pane` (MAT-N13); GtkStackSidebar's rows are `list @ variant @stack_sidebar` (GN-2.34); the
+  `badge @ context sidebar.pane` (MAT-N13); the pane toggle (hamburger) and back buttons are `button @ variant
+  pane_toggle context sidebar.header` and `button @ variant back context sidebar.header` (W1-095, GNOME's split-view
+  sidebar toggle, the Material rail's menu button MAT-N13); GtkStackSidebar's rows are `list @ variant @stack_sidebar`
+  (GN-2.34); the
   file chooser's places rows are `list @ context any file_chooser` with `@new_bookmark`, `@drop_placeholder`
   (GN-P3-22†); the connector sets the display variants (`compact`, `overlay`, `@left_minimal`, `@displace`) from
   `display_mode_breakpoints` and the size class (R16, P4-16†, W-P4-19†). Windows' top NavigationView is
@@ -2121,32 +2403,39 @@ and the owning group's name where the kinds are the same.
   they are traced here.
 - **Available:** every preset.
 - **Parts:**
-  - `bar` — **element**: fill (paint, material: MAC-TL09, TB-1; transparent at the scroll edge by the scrolled state,
-    the navigation bar's scroll-edge appearance C-1), stroke (one edge: KDE's bottom line, K1.151; iOS's top or bottom
-    hairline, TB-2, C-1; GNOME's border line, GN-1.154; GtkActionBar's top shade line, GN-1.157, GN-2.20), shadow
-    (raised bars, GN-1.153; on-scroll elevation, MAT-TA1; the floating bar's, K-KA-28†, MAT-N25), corners and padding
-    (the osd bar, GN-1.149; the floating bar), min height (per variant: large title, compact, with search or prompt,
-    C-1, TB-3, W1-103), bindings (KDE's Header set by position, Q1.68, Q1.71), transitions.
-  - `item_group` — **element**, items sharing one background (TB-5, MAC-TL03; 26's glass capsules): fill (material),
-    corners, shadow, padding.
+  - `bar` — the bar (the root): `fill` (paint, material: MAC-TL09, TB-1; transparent at the scroll edge
+    by the scrolled state, the navigation bar's scroll-edge appearance C-1), `stroke` (one edge: KDE's bottom line,
+    K1.151; iOS's top or bottom hairline, TB-2, C-1; GNOME's border line, GN-1.154; GtkActionBar's top shade line,
+    GN-1.157, GN-2.20), `shadow` (raised bars, GN-1.153; on-scroll elevation, MAT-TA1; the floating bar's, K-KA-28†,
+    MAT-N25; animating between the expanded and collapsed elevations, MAT-P4-7†), `corners`, `padding` (the osd bar,
+    GN-1.149; the floating bar), `min_height` (per variant: large title, compact, with search or prompt, C-1, TB-3,
+    W1-103), `min_width` (the vertical floating toolbar, MAT-N25), `bindings` (KDE's Header set by position, Q1.68,
+    Q1.71), `transitions` (MAT-TA1's on-scroll change; the header's resize, Q1.74).
+  - `item_group` *(element)* — items sharing one background (TB-5, MAC-TL03; 26's glass capsules): `fill`
+    (material), `corners`, `shadow`, `padding`, `min_height` (the capsule's, MAC-TL03).
   - `separator` — the line between items (K1.156, Q1.70, W1-101, Q1.73's leading separator, MAC-TL08's tracking
-    separator): stroke, corners.
-  - `handle` — KDE's drag handle (K1.156).
-  - `overflow_button` — **element** (K1.157, Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1): glyph, fill, size limits.
-  - `title` — the bar's title (Q1.72, MAT-TA3, MAT-TA7, C-1): text, padding.
-  - `subtitle` — the subtitle (MAT-TA4, C-1).
-  - `large_title` — iOS's large title (Large Title, emphasized) and its large subtitle (C-1).
-  - `prompt` — iOS's prompt text above the title (C-1).
-  - `title_menu_chevron` — the chevron of iOS's title menu (C-1, C-28).
-  - `document_header` — iOS's document-properties header in the title menu (C-28).
+    separator): `stroke`, `corners`, `padding` (W1-101's margin), `min_height` (its length, Q1.70).
+  - `grip` — KDE's drag grip, two lines (K1.156): `glyph`, `min_width`, `min_height` (the handle's width and extent).
+  - `title` — the bar's title (Q1.72, MAT-TA3, MAT-TA7, C-1): `text`, `padding`.
+  - `subtitle` — the subtitle (MAT-TA4, C-1): `text`.
+  - `large_title` — iOS's large title (Large Title, emphasized) (C-1): `text`, `opacity`,
+    `transform` (its opacity and transform follow the scroll offset while it collapses: `data = { large_title =
+    ["scroll_offset"], bar = ["scroll_offset"] }`, ADD-B13, C-1).
+  - `large_subtitle` — the large title's subtitle (C-1): `text`, `opacity`, `transform` (with the large title).
+  - `prompt` — iOS's prompt text above the title (C-1): `text`.
+  - `title_menu_chevron` — the chevron of iOS's title menu (C-1, C-28): `glyph`.
+  - `document_header` — iOS's document-properties header in the title menu (C-28): `text`, `icon`.
   - `leading_content`, `trailing_content` — the content Material's floating toolbar reveals and hides on expand and
-    collapse (MAT-P4-7†).
-- **Widget values:** `item_gap: Value<f32>` (today; GN-1.157); `group_gap: Value<f32>` (TB-5, MAC-TL03);
-  `fixed_space_width: Value<f32>`, `flexible_space_min_width: Value<f32>` (TB-8, MAC-TL10†);
+    collapse (MAT-P4-7†): `padding`.
+- **Widget values:** `item_gap_px: Value<Px>` (today; GN-1.157); `group_gap_px: Value<Px>` (TB-5, MAC-TL03);
+  `fixed_space_width_px: Value<Px>`, `flexible_space_min_width_px: Value<Px>` (TB-8, MAC-TL10†);
   `title_alignment: Value<Alignment>` (MAT-TA3); `collapse_on_scroll: Value<bool>` (MAT-TA3; the large title's
-  collapse, C-1); `items_flat_by_default: Value<bool>` (Q1.76); `tooltip_shows_shortcut: Value<bool>` (Q1.76);
+  collapse, C-1); `floating_inset: Sides<Value<Px>>` (the floating toolbar's external padding from the window's
+  edges, MAT-N25); `items_flat_by_default: Value<bool>` (Q1.76); `tooltip_shows_shortcut: Value<bool>` (Q1.76);
   `overflow_placement: Placement` (below, or above for a footer; Q1.75, W1-102);
-  `presentations: Vec<PresentationTransition>`: events `@open`, `@close` (W1-104), `@items_change` (P3-4†),
+  `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear` (the bar shown and hidden: Material's
+  floating toolbar, MAT-N25), `Move` (the bars re-laid out when a toolbar moves or a dock opens a gap, K3.38†),
+  `@open`, `@close` (WinUI's command bar opening, W1-104), `@items_change` (P3-4†),
   `@height_change`, `@separator_fade` (Q1.74), `@search_expand` (MAC-TL07), `@scroll_state` (MAT-TA1), `@customize`
   (P4-10†, MAC-P3-6†), `@expand`, `@collapse` (Material's floating toolbar, MAT-P4-7†), `@reveal` (AdwToolbarView's
   bars, GN-P3-5†), `@hide_on_swipe` (iOS's bars, P4-3†), `@back_label` (the back button's label transition on push and
@@ -2165,13 +2454,17 @@ and the owning group's name where the kinds are the same.
   W1-103).
 - **Sizes and densities:** `ios-*`: the compact height `@ v_size_class compact` (TB-3, ADD-A20); others by variant.
 - **Flags:** none of its own; state flags used: scrolled (on `bar`: TB-1, MAT-TA1, C-1), open (W1-103's open command
-  bar), and on `overflow_button` hover, pressed, focus_visible, disabled.
+  bar).
 - **Exclusive groups:** none: the bar's states combine; its items are `button` elements whose groups are `button`'s
   (AppBarButton's CommonStates on `windows-11`); precedence: state models (S17).
-- **may_be_absent:** parts (each drawn only by the platforms its description names): `item_group`, `handle`, `title`,
-  `subtitle`, `large_title`, `prompt`, `title_menu_chevron`, `document_header`, `leading_content`, `trailing_content`;
-  fields: `bar.shadow`, `bar.stroke` (on some edges); values: `group_gap`, `fixed_space_width`,
-  `flexible_space_min_width`, `title_alignment`, `collapse_on_scroll`.
+- **may_be_absent:** parts: `item_group` (all but `ios-*`, `macos-*`), `grip` (all but `kde-breeze`), `title` (where
+  the bar shows none), `subtitle` (all but `material-3`, `ios-*`), `large_title`, `large_subtitle`, `prompt`,
+  `title_menu_chevron`,
+  `document_header` (all but `ios-*`), `leading_content`, `trailing_content` (all but `material-3`); fields:
+  `bar.shadow`, `bar.stroke` (on some edges); values: `group_gap_px`, `fixed_space_width_px`,
+  `flexible_space_min_width_px`
+  (all but `ios-*`, `macos-*`), `title_alignment`, `collapse_on_scroll` (all but `material-3`, `ios-*`),
+  `floating_inset` (all but `material-3`).
 - **State-model source:** `adwaita`: `_toolbars.scss` selectors (toolbars, action bar, raised and revealed bars);
   `kde-breeze`: Breeze's tool-button and toolbar branches (`st:4577-4624`, `st:5162-5227`, `st:5526-5685`) and qqc2
   and Kirigami toolbar QML (position, flat, display), kirigami-addons' `FloatingToolBar.qml`; `macos-*`: NSToolbar's
@@ -2193,9 +2486,11 @@ and the owning group's name where the kinds are the same.
   MAC-TL04); iOS's done and padding-removed items and KDE's menu-indicator styles (K1.155) are keyed button variants;
   iOS's back button is `button @ variant back context toolbar.bar` (C-2); the FAB in Material's floating toolbar is a
   button `@ context toolbar variant floating` (MAT-N25). The icon–label gap and the label position are button values
-  in context (`button.values.icon_text_gap`, K1.154, MAC-TL02; `button.values.label_position`, K1.153 read per toolbar
-  kind, W1-099, MAC-TL02, Q1.76). The overflow menu is `menu @ context toolbar.overflow_button` (W1-102), its checked
-  item's glyph `menu.check_indicator @ context toolbar.overflow_button` (W1-100). The scroll-edge shade under a bar is
+  in context (`button.values.icon_text_gap_px`, K1.154, MAC-TL02; `button.values.label_position`, K1.153 read per
+  toolbar
+  kind, W1-099, MAC-TL02, Q1.76). The overflow button is `button @ variant overflow context toolbar.bar` (K1.157,
+  Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1), its menu `menu @ context button variant overflow` (W1-102), its checked
+  item's glyph `menu.check_indicator` there (W1-100). The scroll-edge shade under a bar is
   `scroll_view.edge_effect` (GN-1.156). A card's footer is `toolbar @ variant bottom context card.body` (Q1.132).
   Provenance: group 4 had item parts (item, its icon, label, menu indicator and overflow check) and a label-position
   value here; group 6 the bottom bar, Material's docked, floating and vibrant toolbars and iOS's navigation bar
@@ -2210,11 +2505,11 @@ and the owning group's name where the kinds are the same.
   bar (GtkActionBar, AdwToolbarView's bottom bar) is `toolbar @ variant bottom` (GN-1.157, GN-2.20); WinUI has none
   (the Win32 status bar belongs to a Win32 preset, R1.3).
 - **Available:** every preset but `adwaita`, `windows-11`, `ios-*`, `material-3` (`available = false`: no such
-  control).
+  control); `kde-breeze` flavour `widgets` only (QStatusBar).
 - **Parts:**
-  - `bar` — fill, stroke (the top line only: K1.160, MAC-ST01), padding, min height (the content border's height,
-    MAC-ST01), text.
-  - `item` — an item's text and padding.
+  - `bar` — the bar (the root): `fill`, `stroke` (the top line only: K1.160, MAC-ST01), `corners`, `shadow`,
+    `padding`, `min_height` (the content border's height, MAC-ST01), `text`.
+  - `item` — an item: `text`, `padding`.
 - **Widget values:** none (KDE's and macOS's rows state no value beyond the parts).
 - **Variants:** keyed `kde-breeze` `@main_window` (the top line is drawn only for a QMainWindow's status bar, K1.160).
 - **Sizes and densities:** none.
@@ -2227,7 +2522,7 @@ and the owning group's name where the kinds are the same.
   `bar.corners` (from `corner_radius`), `bar.shadow` (from `shadow_enabled`).
 - **Notes:** `bar.min_height` is Auto where the bar is content-sized. Provenance: group 4 also listed GNOME's bottom
   bar here, with its spacing as an item gap (GN-1.157); it is one widget with the toolbar's bottom bar, the spacing
-  `toolbar.values.item_gap @ variant bottom`.
+  `toolbar.values.item_gap_px @ variant bottom`.
 
 ### splitter
 
@@ -2238,11 +2533,13 @@ and the owning group's name where the kinds are the same.
   sizers).
 - **Available:** every preset.
 - **Parts:**
-  - `divider` — **element**: fill, stroke (GNOME's two lines on either side of the wide handle), min width or height
-    (its thickness), bindings (Kirigami's Header set, Q1.93), cursor, transitions.
-  - `grip` — the grip, dimple or drag handle on the divider (MAC-SP02, MAT-SP1, W1-157†, SP-2): fill, glyph, corners,
-    size limits, padding, shadow.
-- **Widget values:** `hit_extension: Value<f32>` (Q1.92, Q1.93; a rule `@ {hover}`).
+  - `divider` — the divider (the root): `fill`, `stroke` (GNOME's two lines on either side of the wide
+    handle), `min_width`, `min_height` (its thickness, by orientation), `bindings` (Kirigami's Header set, Q1.93),
+    `cursor`, `transitions`.
+  - `grip` — the grip, dimple or drag handle on the divider (MAC-SP02, MAT-SP1, W1-157†, SP-2): `fill`, `glyph`,
+    `corners`, `min_width`, `min_height`, `padding`, `shadow`.
+- **Widget values:** `hit_extension: Sides<Value<Px>>` (the hit area beyond the drawn divider, per side, as
+  `button`'s: Q1.92, Q1.93; a rule `@ {hover}`).
 - **Variants:** typed `wide` (GNOME's wide handle, macOS's thick and pane splitter), `sidebar` (the split beside a
   floating sidebar: no divider on macOS 26 and iOS 26, MAC-SP04, SP-1). Keyed: `macos-*` `@thin`, `@thick`,
   `@pane_splitter`; `kde-breeze` `@dock`, `@column_view`.
@@ -2267,9 +2564,10 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget, every platform.
 - **Available:** every preset.
 - **Parts:**
-  - `line` — the line's stroke (conventions: the top edge horizontal, the left edge vertical; position centred where
-    the platform centres it on a half pixel, K1.201; pixel snapping, K-P3-20†, ADD-A33), min size (GNOME's spacer).
-- **Widget values:** `inset: Sides<Value<f32>>` (start and end insets per container and orientation, by rules with
+  - `line` — the line (the root): `stroke` (conventions: the top edge horizontal, the left edge vertical; position
+    centred where the platform centres it on a half pixel, K1.201; pixel snapping, K-P3-20†, ADD-A33), `min_width`,
+    `min_height` (GNOME's spacer, GN-1.188), `bindings` (the surface set its stroke draws from, Q1.95).
+- **Widget values:** `inset: Sides<Value<Px>>` (start and end insets per container and orientation, by rules with
   `context`: GN-1.187, W1-119, MAT-D1).
 - **Variants:** typed `horizontal`, `vertical`. Keyed: `adwaita` `@spacer` (no line, GN-1.188); `kde-breeze` `@light`
   (Q1.95); `ios-*` `@opaque` (SE-2); `material-3` `@inset`, `@inset_start`, `@inset_end` (MAT-D1).
@@ -2291,17 +2589,19 @@ and the owning group's name where the kinds are the same.
   configurations, CD-1), Material (filled, elevated, outlined cards), Windows (card surfaces and their fills, W1-139).
   macOS's NSBox is the group box, where its rows are traced; Windows' clickable SettingsCard is `form.card` (W1-139,
   W2-40†).
-- **Available:** every preset but `macos-*` (`available = false`: NSBox is `group_box`).
+- **Available:** every preset but `macos-*` (`available = false`: NSBox is `group_box`); `kde-breeze` flavour
+  `kirigami` only (Kirigami's Card: Qt Widgets draws none).
 - **Parts:**
-  - `body` — **element**: fill, stroke (position outside on iOS, CD-1), corners, shadow (layers or an elevation entry;
-    KDE's lift layer is a zero-blur shadow layer, Q1.128), padding, focus indicator, bindings (the Card surface set;
-    Kirigami's View set, Q1.129), transitions.
-  - `icon` — Material's card icon (MAT-CA3).
-  - `banner` — Kirigami's banner image area (Q1.131): padding, min size.
-  - `banner_band` — the band behind the banner title: fill, height relative to the title.
-  - `banner_title` — text and icon.
-- **Widget values:** `section_gap: Value<f32>` (between header, content and footer, Q1.130);
-  `background_inset: Sides<Value<f32>>` (iOS's background insets, CD-1); `banner_band_height_factor: Value<f32>`
+  - `body` — the card (the root): `fill`, `stroke` (position outside on iOS, CD-1), `corners`, `shadow`
+    (layers or an elevation entry; KDE's lift layer is a zero-blur shadow layer, Q1.128), `padding`, `focus`,
+    `bindings` (the Card surface set; Kirigami's View set, Q1.129), `opacity` (the disabled card, MAT-CA2),
+    `transitions`.
+  - `icon` — Material's card icon (MAT-CA3): `icon`.
+  - `banner` — Kirigami's banner image area (Q1.131): `padding`, `min_width`, `min_height`.
+  - `banner_band` — the band behind the banner title, its height relative to the title's (Q1.131): `fill`.
+  - `banner_title` — the banner's title (Q1.131): `text`, `icon`.
+- **Widget values:** `section_gap_px: Value<Px>` (between header, content and footer, Q1.130);
+  `background_inset: Sides<Value<Px>>` (iOS's background insets, CD-1); `banner_band_height_factor: Value<f32>`
   (Q1.131).
 - **Variants:** typed `activatable` (GNOME's activatable card, Kirigami's clickable cards, Material's interactive
   cards). Keyed: `adwaita` `@osd`; `kde-breeze` `@banner`; `material-3` `@filled`, `@elevated`, `@outlined` (the
@@ -2313,7 +2613,7 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `material-3`: `[dragged, pressed, focus_visible, hover]` (MAT-CA2's state layers); others none
   (states combine; Windows' card surfaces have no states); precedence: state models (S17).
 - **may_be_absent:** parts: `icon` (all but `material-3`), `banner`, `banner_band`, `banner_title` (all but
-  `kde-breeze`); fields: `body.shadow` (the OSD card, the outlined card); values: `section_gap`, `background_inset`,
+  `kde-breeze`); fields: `body.shadow` (the OSD card, the outlined card); values: `section_gap_px`, `background_inset`,
   `banner_band_height_factor`.
 - **State-model source:** `adwaita` `_misc.scss` card selectors; `kde-breeze` Kirigami's `DefaultCardBackground.qml`;
   `ios-*` the background configuration updated for the cell's state; `material-3` card tokens (filled, elevated,
@@ -2331,15 +2631,19 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME (AdwExpanderRow, GtkExpander), KDE (KCollapsibleGroupBox), macOS (the disclosure and
   push-disclosure buttons, SwiftUI's DisclosureGroup), iOS (the outline disclosure), Windows (Expander). Material's
   expandable list item is a `list` row with a `disclosure` (MAT-L9, MAT-EX1).
-- **Available:** every preset but `material-3` (`available = false`: its expandable item is a list row).
+- **Available:** every preset but `material-3` (`available = false`: its expandable item is a list row); `kde-breeze`
+  flavour `widgets` only (KCollapsibleGroupBox).
 - **Parts:**
-  - `header` — **element**: fill, stroke, corners (GN-1.261), padding, min height, text, focus indicator, shadow.
-  - `arrow` — **element**: glyph (source per platform; on macOS the system control rendering of the disclosure bezel,
-    S15, MAC-B01), fill and corners (WinUI's chevron button), opacity, transform (rotation per state) with its
-    transitions (X-MO-6).
-  - `content` — the disclosed area: fill (GN-1.260, W1-141), stroke, corners, padding.
-- **Widget values:** `arrow_side: Value<Side>` (today); `arrow_gap: Value<f32>` (today); `content_indent: Value<f32>`
-  (today); `drag_hover_delay_ms: Value<f32>` (a drag hovering the header expands it, GN-1.262);
+  - `body` — the expander (the root), holding the header and the content: `padding`, `bindings`.
+  - `header` *(element)* — the header: `fill`, `stroke`, `corners` (GN-1.261), `padding`, `min_height`, `text`,
+    `focus`, `shadow`.
+  - `arrow` *(element)* — the disclosure arrow: `glyph` (source per platform; on macOS the system control rendering of
+    the disclosure bezel, S15, MAC-B01), `fill`, `corners` (WinUI's chevron button), `opacity`, `transform` (rotation
+    per state), `transitions` (X-MO-6).
+  - `content` — the disclosed area: `fill` (GN-1.260, W1-141), `stroke`, `corners`, `padding`.
+- **Widget values:** `arrow_side: Value<Side>` (today); `arrow_gap_px: Value<Px>` (today);
+  `content_indent_px: Value<Px>`
+  (today); `drag_hover_delay_ms: Value<Ms>` (a drag hovering the header expands it, GN-1.262);
   `presentations: Vec<PresentationTransition>`: events `@expand`, `@collapse` (the content's reveal: GN-1.259, K1.251,
   W1-142, EX-2, K3.37).
 - **Variants:** keyed: `adwaita` `@row` (AdwExpanderRow against the plain GtkExpander); `macos-*` `@push_disclosure`
@@ -2374,18 +2678,22 @@ and the owning group's name where the kinds are the same.
   container element so that size-class rules apply (R16); today's top-level `layout` table. Every platform. The flow
   layout absorbs GNOME's wrap box (GN-2.46) and Material's chip set (MAT-RL01†).
 - **Available:** every preset.
-- **Parts:** none (a layout draws nothing).
-- **Widget values:** `widget_gap`, `container_margin`, `window_margin`, `section_gap: Value<f32>` (today's);
-  `label_gap: Value<f32>` (label to control, per size: MAC-LY01, W1-146); `button_gap: Value<f32>` (MAC-LY01, W1-146);
-  `header_gap: Value<f32>` (control to header, W1-146); `surface_text_margin: Value<f32>` (W1-146); `item_gap`,
-  `line_gap: Value<f32>` (flow layouts: GN-2.46, GN-P3-24†, RL-3†, MAC-RL01†, W-P4-9†, MAT-RL01†; `item_gap` negative
-  under `@linked`, GN-1.42); `flow_max_per_line: Value<u32>` (GN-P3-24†); `max_content_width`,
-  `tightening_threshold: Value<f32>` (AdwClamp, GN-1.195; iOS's readable width, LY-2);
+- **Parts:**
+  - `body` — the container's box (the root; a layout draws nothing, but every element names a part, S8): `bindings`
+    (a box may bind a surface set for its children).
+- **Widget values:** `widget_gap_px`, `container_margin_px`, `window_margin_px`, `section_gap_px: Value<Px>` (today's);
+  `label_gap_px: Value<Px>` (label to control, per size: MAC-LY01, W1-146); `button_gap_px: Value<Px>` (MAC-LY01,
+  W1-146);
+  `header_gap_px: Value<Px>` (control to header, W1-146); `surface_text_margin_px: Value<Px>` (W1-146); `item_gap_px`,
+  `line_gap_px: Value<Px>` (flow layouts: GN-2.46, GN-P3-24†, RL-3†, MAC-RL01†, W-P4-9†, MAT-RL01†; `item_gap` negative
+  under `@linked`, GN-1.42); `flow_max_per_line: Value<u32>` (GN-P3-24†); `max_content_width_px`,
+  `tightening_threshold_px: Value<Px>` (AdwClamp, GN-1.195; iOS's readable width, LY-2);
   `form_label_alignment: Value<Alignment>` (K1.210, MAC-LY02†); `form_baseline_alignment: Value<bool>` (label to
   control on one baseline, MAC-LY02†); `form_field_growth: Value<bool>` (fields grow, K1.210);
-  `form_wraps: Value<bool>` (rows wrap, K1.210); `pane_gap: Value<f32>` (MAT-LA1, MAT-SP3); `max_panes_horizontal`,
-  `max_panes_vertical: Value<u32>`, `pane_width`, `pane_height: Value<f32>`, `avoids_hinge: Value<bool>` (MAT-P3-13†);
-  `column_width`, `column_min_width`, `column_max_width: Value<f32>` (Kirigami's ColumnView, Q1.93, Q1.94;
+  `form_wraps: Value<bool>` (rows wrap, K1.210); `pane_gap_px: Value<Px>` (MAT-LA1, MAT-SP3); `max_panes_horizontal`,
+  `max_panes_vertical: Value<u32>`, `pane_width_px`, `pane_height_px: Value<Px>`, `avoids_hinge: Value<bool>`
+  (MAT-P3-13†);
+  `column_width_px`, `column_min_width_px`, `column_max_width_px: Value<Px>` (Kirigami's ColumnView, Q1.93, Q1.94;
   CardsLayout, Q1.133; kirigami-addons' settings window, K-KA-41†); `max_columns: Value<u32>` (Q1.133);
   `presentations: Vec<PresentationTransition>`: events `@column_scroll` (Q1.94). Lengths that scale with text are
   expressions (ADD-A55).
@@ -2403,7 +2711,8 @@ and the owning group's name where the kinds are the same.
 - **Today's fields:** the four keep their names as widget values.
 - **Notes:** in context: GNOME's wrap box is `layout.values.{item_gap,line_gap} @ variant flow` (GN-2.46); Material's
   chip set is `layout.values.{item_gap,line_gap} @ variant @chip_set` with `chip` children (MAT-RL01†, a rule); a
-  linked box's buttons are `button @ context layout variant @linked` (GN-1.42). Provenance: GNOME's wrap box and Material's chip set
+  linked box's buttons are `button @ context layout variant @linked` (GN-1.42). Provenance: GNOME's wrap box and
+  Material's chip set
   are this widget (rename row 75); group 2 wrote the linked box as a button-group context.
 
 ## Typed widgets the model lacks today (alphabetical)
@@ -2417,29 +2726,36 @@ and the owning group's name where the kinds are the same.
   window is a `dialog` element.
 - **Available:** every preset but `windows-11`, `ios-*`, `material-3` (`available = false`: no about dialog the
   toolkit draws; Windows' `ShellAbout` is out, R1.1).
-- **Parts:** `icon` — the application icon (size, GNOME's drop shadow); `name` — the application name (text);
-  `version` — the version line (GNOME's pill: accent text, padding, corners; plain text elsewhere); `description`
-  — the short description (text); `section_title` — a credits or legal section's heading; `credits` — the credits
-  text (macOS's credits text view); `copyright` — the copyright line; `person_name` — a person's name in the
-  credits (KDE DemiBold); `person_task` — the person's task line (KDE's dimmed text); `link_button` *(element)* —
-  an icon-only or text link button (KDE's `internet-services-symbolic` and mail buttons, K-P3-8†; the link rows of
-  K-KA-44†).
-- **Widget values:** `icon_size: Value<f32>` (GN-2.39, K-P3-8†, Q2.57†, MAC-N32†); `icon_max_width_fraction:
-  Value<f32>` (the icon at most this fraction of the width: Q2.57†, K-KA-44†); `margins: Sides<Value<f32>>`
-  (GN-2.39, K-KA-44†); `gap: Value<f32>` (GN-2.39's spacing, MAC-N32†'s gaps); `subpage_margins:
-  Sides<Value<f32>>` (GN-2.39); `width: Value<f32>` (macOS's panel, MAC-N32†); `release_gap: Value<f32>` (the
+- **Parts:**
+  - `body` — the dialog's content box (the root): `padding` (its margins), `bindings`.
+  - `icon` — the application icon: `icon` (its size: GN-2.39, K-P3-8†, Q2.57†, MAC-N32†), `shadow` (GNOME's drop
+    shadow).
+  - `name` — the application name: `text`.
+  - `version` — the version line: `text`, `fill`, `padding`, `corners` (GNOME's pill: accent text, padding, corners;
+    plain text elsewhere).
+  - `description` — the short description: `text`.
+  - `section_title` — a credits or legal section's heading: `text`, `padding`.
+  - `credits` — the credits text (macOS's credits text view): `text`.
+  - `copyright` — the copyright line: `text`.
+  - `person_name` — a person's name in the credits (KDE's in its own text style, K-P3-8†): `text`.
+  - `person_task` — the person's task line (KDE's dimmed text): `text`, `opacity`.
+- **Widget values:** `icon_max_width_fraction: Value<Fraction>` (the icon at most this fraction of the width: Q2.57†,
+  K-KA-44†); `margins: Sides<Value<Px>>`
+  (GN-2.39, K-KA-44†); `gap_px: Value<Px>` (GN-2.39's spacing, MAC-N32†'s gaps); `subpage_margins: Sides<Value<Px>>`
+  (GN-2.39); `width_px: Value<Px>` (macOS's panel, MAC-N32†); `release_gap_px: Value<Px>` (the
   space between releases in kirigami-addons' release history, K-KA-44†).
 - **Variants:** keyed `kde-breeze` `@ka_about` (kirigami-addons' AboutPage, K-KA-44†). KDE's two forms are the
   flavour condition, not variants: `cond flavor:widgets` (KAboutApplicationDialog with tabs, K-P3-8†) and
   `cond flavor:kirigami` (the About page on form cards, Q2.57†, K-KA-44†).
 - **Sizes and densities:** none (no row states sizes).
-- **Flags:** none of its own; state flags used: hover, pressed, focus_visible, disabled (on `link_button`).
+- **Flags:** none of its own (its link buttons are `button` elements with their own states).
 - **Exclusive groups:** none (the presets that draw it, GNOME, KDE and macOS, combine states); precedence: state
   models (S17).
-- **may_be_absent:** parts: `link_button`, `section_title`, `person_name`, `person_task` (`macos-*`: the panel's
-  credits are one text view, MAC-N32†); fields: none (GNOME's version pill is `version`'s corners and padding,
+- **may_be_absent:** parts: `section_title`, `person_name`, `person_task` (`macos-*`: the panel's credits are one
+  text view, MAC-N32†), `credits` (all but `macos-*`); fields: none (GNOME's version pill is `version`'s corners and
+  padding,
   which a preset drawing plain text states without a pill); values: `icon_max_width_fraction` (`adwaita`,
-  `macos-*`), `subpage_margins` (`kde-breeze`, `macos-*`), `width` (`adwaita`, `kde-breeze`), `release_gap`
+  `macos-*`), `subpage_margins` (`kde-breeze`, `macos-*`), `width_px` (`adwaita`, `kde-breeze`), `release_gap_px`
   (`adwaita`, `macos-*`).
 - **State-model source:** GNOME `_misc.scss`, `adw-about-dialog.ui`; KDE `kaboutapplicationdialog.cpp`,
   `kabstractaboutdialog_p.cpp`, `AboutItem.qml`, kirigami-addons `AboutPage`; macOS
@@ -2448,64 +2764,80 @@ and the owning group's name where the kinds are the same.
 - **Notes:** in `cond flavor:kirigami` the page's sections are `form` elements in `context about_dialog` (Q2.57†;
   K-KA-44†'s link rows are `form` variant `@ka_info_card`), the authors' pictures `avatar` elements, the "What's
   new" badge a `badge`; K-KA-44†'s release history is a `dialog` (keyed `@ka_dialog`) in `context about_dialog`.
-  In `cond flavor:widgets` the pages are `tab` elements and the Close button a `button` (K-P3-8†).
+  In `cond flavor:widgets` the pages are `tab` elements and the Close button a `button` (K-P3-8†). Nested controls: the
+  icon-only link and mail buttons are `button @ variant icon_only context about_dialog` (KDE's
+  `internet-services-symbolic` and mail buttons, K-P3-8†); K-KA-44†'s link rows are `form` rows.
 
 ### autocomplete
 
 *From group 6's catalogue.*
 
-- **Kind:** typed widget: GNOME's GtkEntryCompletion popup (GN-2.56†), KDE's KCompletionBox (K2.29†) and
-  kirigami-addons' path completion (K-KA-13†), Material's autocomplete (MAT-N27), iOS's search suggestions
-  (C-38†), Windows' AutoSuggestBox list (W2-15) and RichSuggestBox (W-P3-17†). The field is an `input` element
-  whose ancestor is the autocomplete (rules select `context any autocomplete`).
-- **Available:** every preset but `macos-*` (`available = false`: no row lists a completion popup).
-- **Parts:** `popup` — the list's container (fill, stroke, corners squared on the side touching the field, shadow:
-  W2-15, GN-2.56†, K2.29†); `item` *(element)* — one suggestion; `item_label` — its text; `item_icon` — its icon
-  (C-38†, MAT-N27, W2-15); `token` — a chosen suggestion inserted into rich text (fill, text: W-P3-17†).
-- **Widget values:** `placement: Placement` (`GtkPopover` GN-2.56†, `QtCompletionBox` K2.29† and K-KA-13†,
-  `MaterialMenu` MAT-N27, `WinUiAutoSuggest` W2-15 and W-P3-17†); `width: Value<AutocompleteWidth>`,
-  `AutocompleteWidth { Field, Content }` (as wide as the field: GN-2.56†, K2.29†, K-KA-13†); `max_visible_items:
-  Value<u32>` (GN-2.56†, K2.29†, K-KA-13†); `filter_delay_ms: Value<f32>` (GN-2.56†); `mode:
-  Value<AutocompleteMode>`, `AutocompleteMode { Popup, Inline, PopupAndInline }` (a popup, the completion appended
-  as selected text, or both: K2.29†); `trigger_prefix: Value<String>` (W-P3-17†); `hover_selects: Value<bool>`
-  (GN-2.56†).
-- **Variants:** keyed `material-3` `@filled`, `@outlined` (MAT-N27; they select the field's look through
-  context); `ios-*` `@menu` (the inline bar placement), `@list` (the stacked placement) (C-38†).
+- **Kind:** typed widget: the completion attached to a field. GNOME's GtkEntryCompletion popup (GN-2.56†), KDE's
+  KCompletionBox (K2.29†) and kirigami-addons' path completion (K-KA-13†), Material's autocomplete (MAT-N27), iOS's
+  search suggestions (C-38†), Windows' AutoSuggestBox list (W2-15) and RichSuggestBox (W-P3-17†), macOS's
+  `NSComboBox` completion (MAC-CB01), `NSTextView` completions (MAC-I06, MAC-X15) and text-field and search
+  suggestion menus (MAC-P3-7†), and the code editors' completion (GN-SF13†, K-P3-13†). One tree on every platform:
+  the field is the ancestor, so an `autocomplete` element is a child of the `input` (or `search_field`, `code_editor`)
+  it completes, and its popup list is a `menu` in `context autocomplete` (Nested controls).
+- **Available:** every preset.
+- **Parts:**
+  - `body` — the completion's host (the root): `bindings`, `padding` (the list's inset from the field); it draws
+    nothing of its own, its list being the `menu`.
+  - `token` — a chosen suggestion inserted into rich text (W-P3-17†): `fill`, `text`, `corners`, `padding`.
+  - `details_pane` — the code editors' details pane beside the list (GN-SF13†, K-P3-13†): `fill`, `stroke`,
+    `corners`, `padding`, `text`.
+- **Widget values:** `filter_delay_ms: Value<Ms>` (GN-2.56†); `mode: Value<AutocompleteMode>`, `AutocompleteMode {
+  Popup, Inline, PopupAndInline }` (a popup, the completion appended as selected text, or both: K2.29†);
+  `trigger_prefix: Value<String>` (W-P3-17†); `hover_selects: Value<bool>` (GN-2.56†). The list's placement is
+  `menu.values.placement` in `context autocomplete` (`GtkPopover` GN-2.56†, `QtCompletionBox` K2.29† and K-KA-13†,
+  `MaterialMenu` MAT-N27, `WinUiAutoSuggest` W2-15 and W-P3-17†, `AppKitComboList` MAC-CB01, `AppKitMenu` MAC-P3-7†,
+  `KTextEditorCompletion` K-P3-13†), with its width (the field's: `AnchorWidth`, GN-2.56†, K2.29†, K-KA-13†) and its
+  row limit (`max_visible_items`) among the placement's parameters.
+- **Variants:** keyed `ios-*` `@menu` (the inline bar placement), `@list` (the stacked placement) (C-38†). Material's
+  filled and outlined fields (MAT-N27) are the field's own (`input @filled`).
 - **Sizes and densities:** none (no row states sizes).
-- **Flags:** shared `placed_above`, `placed_below` (Windows: set by the connector from the placement result, so the
-  attached corners square off on the side touching the field, W2-15); state flags used on `item`: hover, pressed,
-  selected, disabled, focus_visible.
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the suggestion list's ListViewItem
-  CommonStates; `selected` combines); `material-3`: `[pressed, focus_visible, hover]` (the menu items' state
-  layers); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `token` (all but `windows-11`), `item_icon` (`adwaita`, `kde-breeze`); fields: none;
-  values: `trigger_prefix` (all but `windows-11`), `filter_delay_ms` (all but `adwaita`), `mode` (all but
-  `kde-breeze`).
+- **Flags:** none of its own; the list's rows carry `menu`'s states, and `placed_above`, `placed_below` are `menu`'s
+  (Windows: the attached corners square off on the side touching the field, W2-15).
+- **Exclusive groups:** none (the completion holds no interaction state; the suggestion rows' groups are `menu`'s:
+  the ListViewItem CommonStates on `windows-11`, the menu items' state layers on `material-3`); precedence: state
+  models (S17).
+- **may_be_absent:** parts: `token` (all but `windows-11`), `details_pane` (all but `adwaita`, `kde-breeze`, and
+  outside `context code_editor`); fields: `body.padding`; values: `trigger_prefix` (all but `windows-11`),
+  `filter_delay_ms` (all but `adwaita`), `mode` (all but `kde-breeze`), `hover_selects` (all but `adwaita`).
 - **State-model source:** GNOME `gtkentrycompletion.c` and the GtkTreeView row selectors; KDE `kcompletionbox.cpp`
   (Breeze item-view branches), kirigami-addons `FormPathCompletion.qml`; Material autocomplete token files; iOS
   `UISearchSuggestionItem`; Windows the ListViewItem visual states of the AutoSuggestBox and RichSuggestBox
-  templates.
+  templates; macOS `NSComboBox`, `NSTextView.complete(_:)` and `NSTextField.suggestionsDelegate` (measured,
+  MAC-CB01, MAC-I06, MAC-P3-7†); the code editors' completion widgets (GN-SF13†, K-P3-13†).
 - **Today's fields:** none.
-- **Notes:** kirigami-addons' file row (K-KA-13†) opens this widget in `context form.row` (`@ka_form_card`), its
-  popup on the K-KA-18† surface and its rows `list` rows (`@ka_rounded`); a wrong path shows a `banner` there.
+- **Notes:** the list is `menu` in `context autocomplete`: its rows `menu.item`, their icons `menu.item_icon`, their
+  text `menu.item_label` and detail columns `menu.item_subtitle` (C-38†, MAT-N27, W2-15; macOS's
+  `selectedControlColor` highlight, MAC-X15). kirigami-addons' file row (K-KA-13†) opens this widget in
+  `context form.row` (the form's `@ka_form_card`), its list on the K-KA-18† surface; a wrong path shows a `banner`
+  there.
 
 ### avatar
 
 *From group 6's catalogue.*
 
 - **Kind:** typed widget: GNOME's AdwAvatar (GN-2.14), KDE's Kirigami Avatar (Q2.28, Q2.29) and kirigami-addons'
-  Avatar and AvatarButton (K-KA-33†), Windows' PersonPicture (W2-24).
-- **Available:** every preset but `macos-*`, `ios-*`, `material-3` (`available = false`: no avatar control in
-  their rows).
-- **Parts:** `body` — the circle: fill (the palette colour, libadwaita's gradient), stroke (Kirigami's ring,
-  PersonPicture's stroke), padding, focus (AvatarButton's focus circle), cursor (AvatarButton's pointing hand),
-  bindings (AvatarButton's Button set); `initials` — the initials text (GNOME bold, `@contrasted` white);
-  `fallback_icon` — the icon shown without a name or image (Kirigami's `user`, PersonPicture's default glyph);
-  `image` — the picture, clipped to the body's shape.
-- **Widget values:** `default_size: Value<f32>` (Q2.28, W2-24); `palette: Vec<Value<Paint>>` (libadwaita's gradient
-  pairs, GN-2.14; Kirigami's and kirigami-addons' colours, Q2.28, K-KA-33†; the choice per element by hashing the
-  name: ADD-B14); `initials_size: Value<f32>` (follows the avatar's own size: an expression on element data,
-  ADD-B11; GN-2.14, K-KA-33†); `fallback_icon_inset: Value<f32>` (Q2.29).
+  Avatar and AvatarButton (K-KA-33†), Windows' PersonPicture (W2-24), Material's avatars in list items, the top app
+  bar, input chips and the search bar (MAT-L2, MAT-TA5, MAT-N9, MAT-N14; the Material cross-check).
+- **Available:** every preset but `macos-*`, `ios-*` (`available = false`: no avatar control in their rows);
+  `kde-breeze` flavour `kirigami` only (Qt Widgets draws none).
+- **Parts:**
+  - `body` — the circle (the root): `fill` (the colour or libadwaita's gradient picked by hashing the name: its
+    colours `= pick(name_index(element.text, <count>, <method>), <c0>, …)`, a gradient's stops each a `pick`;
+    ADD-B14, GN-2.14, Q2.28, K-KA-33†; the body declares `data = { body = ["text", "width"] }`), `stroke`
+    (Kirigami's ring, PersonPicture's stroke), `corners`, `padding`, `focus` (AvatarButton's focus circle), `cursor`
+    (AvatarButton's pointing hand), `bindings` (AvatarButton's Button set), `min_width`, `min_height`.
+  - `initials` — the initials text: `text` (its own text style; its size follows the avatar's, an expression on
+    `element.width`, ADD-B11; under `@contrasted` its own fill).
+  - `fallback_icon` — the icon shown without a name or image (Kirigami's `user`, PersonPicture's default glyph):
+    `icon`, `padding`.
+  - `image` — the picture, clipped to the body's shape: `corners`, `opacity`.
+- **Widget values:** `default_size_px: Value<Px>` (Q2.28, W2-24, MAT-L2); `fallback_icon_inset_px: Value<Px>`
+  (Q2.29).
 - **Variants:** keyed `adwaita` `@contrasted` (GN-2.14); `kde-breeze` `@ka_avatar` (kirigami-addons' Avatar),
   `@button` (AvatarButton) (K-KA-33†).
 - **Sizes and densities:** none (the size is the element's own; `default_size` where it states none).
@@ -2518,7 +2850,9 @@ and the owning group's name where the kinds are the same.
   `Avatar.qml`, `AvatarButton.qml`; Windows the PersonPicture template.
 - **Today's fields:** none.
 - **Notes:** PersonPicture's badge (number, glyph or image: W2-24) is a `badge` element in `context avatar`; the
-  avatar appears in `context about_dialog` (Q2.57†, K-KA-44†). Windows' group form has no row, so no variant.
+  avatar appears in `context about_dialog` (Q2.57†, K-KA-44†), `context list.row` (MAT-L2), `context toolbar.bar`
+  (MAT-TA5), `context chip` (MAT-N9's input chip) and `context search_field` (MAT-N14). Windows' group form has no
+  row, so no variant.
 
 ### background_extension
 
@@ -2528,9 +2862,10 @@ and the owning group's name where the kinds are the same.
   (MAC-X06): content mirrored and blurred under a floating sidebar or inspector.
 - **Available:** `macos-tahoe`, `ios-26` only (every other preset `available = false`: the view is new in 26,
   C-19, MAC-X06).
-- **Parts:** `extension` — the mirrored and blurred content: a `Material` paint (identity `background_extension`)
-  over a transformed copy of the neighbouring content; the part carries the blur and tint, and the mirroring is a
-  widget value.
+- **Parts:**
+  - `extension` — the mirrored and blurred content (the root): `fill` (a `Material` paint, identity
+    `background_extension`, over a transformed copy of the neighbouring content; the part carries the blur and tint,
+    and the mirroring is a widget value), `bindings`.
 - **Widget values:** `mirrors_content: Value<bool>` (C-19, MAC-X06).
 - **Variants:** none (the rows state none).
 - **Sizes and densities:** none.
@@ -2550,12 +2885,14 @@ and the owning group's name where the kinds are the same.
   Kirigami Badge (Q2.25–Q2.27), macOS's badge bezel style, SwiftUI `.badge` and toolbar badges (MAC-N11,
   MAC-TL05), Material's badge (MAT-N10), Windows' InfoBadge (W2-08), iOS's tab-bar, bar-button and list-row badges
   (C-15, T-7, TB-7).
-- **Available:** every preset.
-- **Parts:** `body` — the dot or the pill: fill, stroke, corners, padding, minimum size; `label` — the count or
-  string (font, colour); `icon` — Windows' icon form, Kirigami's icon (Q2.27).
-- **Widget values:** `anchor_offset_x: Value<f32>`, `anchor_offset_y: Value<f32>` (the placement on its anchor icon
+- **Available:** every preset; `kde-breeze` flavour `kirigami` only (Kirigami's Badge).
+- **Parts:**
+  - `body` — the dot or the pill (the root): `fill`, `stroke`, `corners`, `padding`, `min_width`, `min_height`.
+  - `label` — the count or string: `text`.
+  - `icon` — Windows' icon form, Kirigami's icon (Q2.27): `icon`.
+- **Widget values:** `anchor_offset_x_px: Value<Px>`, `anchor_offset_y_px: Value<Px>` (the placement on its anchor icon
   or item: MAT-N10, GN-2.37, C-15); `anchor_corner: Value<BadgeAnchor>`, `BadgeAnchor { TopEnd, TopStart,
-  TrailingInline }` (C-15's list-row badge is trailing inline); `cutout: Value<f32>` (the gap libadwaita's
+  TrailingInline }` (C-15's list-row badge is trailing inline); `cutout_px: Value<Px>` (the gap libadwaita's
   indicator bin masks out of the anchor around the badge, GN-2.36); `max_count: Value<u32>` (where a count is
   capped).
 - **Variants:** typed form `dot` (GN-2.36, MAT-N10, W2-08, C-15), `count` (GN-2.36, MAT-N10, W2-08, C-15), `icon`
@@ -2570,7 +2907,7 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** none (InfoBadge has no visual state groups: one style per form and severity, W2-08; the
   others draw no states); precedence: state models (S17).
 - **may_be_absent:** parts: `icon` (`adwaita`, `macos-*`, `material-3`, `ios-*`); fields: `body.stroke` (all but
-  `kde-breeze`); values: `cutout` (all but `adwaita`), `max_count` (presets that cap no count).
+  `kde-breeze`); values: `cutout_px` (all but `adwaita`), `max_count` (presets that cap no count).
 - **State-model source:** GNOME `_view-switcher.scss` and `_buttons.scss` (`.needs-attention`, the tab button);
   KDE `kirigami/src/controls/Badge.qml` types; macOS `NSButton.BezelStyle.badge`, `NSItemBadge` and SwiftUI
   `.badge`; Material `_md-comp-badge.scss`; Windows `InfoBadge` styles (no visual state groups: one style per form
@@ -2582,7 +2919,8 @@ and the owning group's name where the kinds are the same.
 - **Notes:** the badge is placed in context, not by keyed variants: on a tab-bar item `context
   bottom_tab_bar.item` (T-7, C-15), on a toolbar or bar button `context toolbar.bar` (TB-7, MAC-TL05, C-15), on a
   list row `context list.row` (C-15's SwiftUI `.badge`), on a menu item `context menu.item` (menu's own badge part
-  goes), on an avatar `context avatar` (W2-24); a dragged list row's count is `drag_image.count_badge` (W1-110).
+  goes), on an avatar `context avatar` (W2-24), on a dragged image `context drag_image` (the drag count: MAC-X21,
+  C-24, W1-110).
   Kirigami's text colour follows its background (`kirigami_badge_text`, ADD-A53; Q2.26).
 
 ### banner
@@ -2593,17 +2931,27 @@ and the owning group's name where the kinds are the same.
   (GN-2.31), KDE's KMessageWidget (K2.13, K3.37), Kirigami's InlineMessage (Q2.16–Q2.21), kirigami-addons'
   FormInlineMessage (K-KA-10†) and Banner (K-KA-29†), Material's banner (MAT-N23), Windows' InfoBar (W2-07).
 - **Available:** every preset but `macos-*`, `ios-*` (`available = false`: no in-window message bar in their rows).
-- **Parts:** `body` — fill, stroke (KDE's inline border), corners, padding; `icon` — the severity icon (size, fill);
-  `icon_backplate` — Windows' fill behind the icon; `title`; `message`; `close_button` *(element)*; `action_area`
-  — the action buttons' container; `divider` — Material's divider; `edge_line` — the line on the inner edge (KDE's
-  header and footer positions, K2.13, K-KA-29†; GtkInfoBar's shade line, GN-2.31); `image` — Material's rich
-  banner image.
+- **Parts:**
+  - `body` — the root: `fill`, `stroke` (KDE's inline border; Kirigami's border in the type colour, Q2.16; W2-07's
+    border), `corners` (per position, Q2.18; Material's shape, MAT-N23), `shadow` (Material's elevation, MAT-N23),
+    `padding` (GN-2.11, GN-2.31, Q2.19, W2-07), `min_height` (W2-07).
+  - `icon` — the severity icon: `icon` (size and colour; recoloured to the type colour, K-KA-10†), `glyph` (Windows'
+    severity glyph on its backplate, W2-07).
+  - `icon_backplate` — Windows' fill behind the icon: `fill`.
+  - `title`, `message` — the title and the message text: `text`, `opacity` (GNOME's dimmed content under
+    `cond window_inactive`, GN-2.11).
+  - `action_area` — the action buttons' container: `opacity` (GNOME's dimmed buttons under `cond window_inactive`,
+    GN-2.11).
+  - `divider` — Material's divider: `stroke`.
+  - `edge_line` — the line on the inner edge (KDE's header and footer positions, K2.13, K-KA-29†; GtkInfoBar's shade
+    line, GN-2.31): `stroke`.
+  - `image` — Material's rich banner image: `corners`, `min_width`, `min_height` (its size and shape, MAT-N23).
 - **Widget values:** `presentations: Vec<PresentationTransition>`: events `@reveal`, `@conceal` (GNOME's
   slide-down, GN-2.11; KDE's height and opacity over the timeline, K2.13, K3.37; Kirigami's height, opacity and
   content opacity, Q2.21; K-KA-29† states none); `actions_wrap: Value<ActionsWrap>`, `ActionsWrap { Inline, Below,
   BelowWhenNotFitting }` (KDE moves the actions below the text when they do not fit, K2.13; Windows' horizontal
-  and vertical layouts, W2-07); `content_gap: Value<f32>` (GN-2.11, K-KA-10†, K-KA-29†); `action_gap: Value<f32>`
-  (GN-2.11, MAT-N23); `heights: Vec<(Key, Value<f32>)>` (per line count and form factor, MAT-N23);
+  and vertical layouts, W2-07); `content_gap_px: Value<Px>` (GN-2.11, K-KA-10†, K-KA-29†); `action_gap_px: Value<Px>`
+  (GN-2.11, MAT-N23); `heights: Vec<(Key, Value<Px>)>` (per line count and form factor, MAT-N23);
   `inner_corner_factor: Value<f32>` (KDE's inner radius as a fraction of the outer, an expression on the body's
   corners, K2.13).
 - **Variants:** typed severity `info`, `success`, `warning`, `error` (GN-2.31, K2.13, Q2.16, K-KA-10†, K-KA-29†,
@@ -2612,12 +2960,14 @@ and the owning group's name where the kinds are the same.
   `@ka_banner` (K-KA-29†); `material-3` `@basic`, `@rich`, `@vibrant` (MAT-N23).
 - **Sizes and densities:** none (Material's heights per line count are `heights`).
 - **Flags:** shared `multiline` (KDE's top-aligned icon, K-KA-10†, K-KA-29†; Material's two-line heights,
-  MAT-N23); state flags used: hover, pressed (GtkInfoBar's action buttons, GN-2.31), focus_visible, disabled (on
-  `close_button`).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the CommonStates of its close and action
-  buttons); others none (states combine); precedence: state models (S17).
+  MAT-N23); state flags used: none other (its action and close buttons are `button` elements with their own states,
+  GN-2.31).
+- **Exclusive groups:** none (its close and action buttons are `button` elements, whose groups, the CommonStates on
+  `windows-11`, are `button`'s); precedence: state models (S17).
 - **may_be_absent:** parts: `icon_backplate` (all but `windows-11`), `divider`, `image` (all but `material-3`),
-  `edge_line` (`windows-11`, `material-3`), `icon` (`adwaita`); fields: `body.stroke` (`adwaita`, `material-3`);
+  `edge_line` (`windows-11`, `material-3`), `icon` (`adwaita`); fields: `body.shadow` (all but `material-3`),
+  `icon.glyph` (all but `windows-11`), `body.min_height` (presets that state none), `body.stroke` (`adwaita`,
+  `material-3`);
   values: `heights` (all but `material-3`), `inner_corner_factor` (all but `kde-breeze`), `presentations`
   (`windows-11`, `material-3`: no row states one).
 - **State-model source:** GNOME `_toolbars.scss` (`banner`), `_sidebars.scss`, `_deprecated.scss` (`infobar`);
@@ -2627,7 +2977,9 @@ and the owning group's name where the kinds are the same.
   K-KA-10†, K-KA-29†) become references to `role.global.status.*` (and KDE's `role.<set>.background_active`,
   `role.<set>.background_negative`, `role.<set>.background_neutral`, `role.<set>.background_positive`,
   K-KA-29†) in this widget's rules.
-- **Notes:** GNOME's backdrop fill and dimmed content are rules under `cond window_inactive` (GN-2.11); the
+- **Notes:** Nested controls: its actions are `button` elements in `context banner.action_area`, its close button
+  `button @ variant close context banner` (W2-07, K2.13, MAT-N23). GNOME's backdrop fill and dimmed content are rules
+  under `cond window_inactive` (GN-2.11); the
   sidebar banner is this widget in `context sidebar.pane` (GN-1.146); kirigami-addons' field status is
   `@ka_inline_message` in `context form.row` (K-KA-10†, K-KA-13†); group 8 brought the presentations (K3.37).
 
@@ -2645,25 +2997,31 @@ and the owning group's name where the kinds are the same.
   GNOME's view-switcher bar and Windows' NavigationView are `view_switcher` and `sidebar`); `kde-breeze` flavour
   `kirigami` only; `macos-*` from macOS 15 (MAC-N23).
 - **Parts:**
-  - `bar` *(element)* — fill (paint with material; transparent at the scroll edge by `scrolled`, T-1), stroke (the
-    top hairline, one edge), corners, shadow and inset of the floating capsule (iOS 26, T-9), min height (by size
-    class: T-14, ADD-A20), padding.
-  - `item` *(element)* — one destination: fill, stroke, corners, padding, focus indicator (Q2.36), transitions
-    (Q2.35); per-state colours (normal, selected, disabled, focused: T-3, MAT-N12).
-  - `item_icon` — icon style per state (the selected symbol variant: `item_icon.icon.symbol_variants`,
-    ADD-A37).
-  - `item_label` — text per state (weight under `{selected}`, elision).
-  - `indicator` — the selected item's indicator (Material's active indicator, MAT-N12; iOS 26's glass lens, T-8).
-  - `drop_indicator` — where a dragged tab would land (T-17†).
-- **Widget values:** `floating_inset: Sides<Value<f32>>` (T-9); `item_gap: Value<f32>`, `item_width: Value<f32>`,
+  - `bar` — the bar (the root): `fill` (paint with material; transparent at the scroll edge by `scrolled`, T-1),
+    `stroke`
+    (the top hairline, one edge), `corners`, `shadow` (the floating capsule's, its inset being `floating_inset`,
+    iOS 26, T-9), `min_height` (by size class: T-14, ADD-A20), `padding`.
+  - `item` *(element)* — one destination: `fill`, `stroke`, `corners`, `padding`, `min_height` (Q2.34), `focus`
+    (Q2.36), `bindings` (Kirigami's Window set, Q2.34), `transitions` (Q2.35); per-state colours (normal, selected,
+    disabled, focused: T-3, MAT-N12).
+  - `item_icon` — `icon` per state (the selected symbol variant: `item_icon.icon.symbol_variants`, ADD-A37).
+  - `item_label` — `text` per state (weight under `{selected}`, elision).
+  - `indicator` — the selected item's indicator (Material's active indicator, MAT-N12; iOS 26's glass lens, T-8):
+    `fill`, `corners`, `min_width`, `min_height`.
+  - `drop_indicator` — where a dragged tab would land (T-17†): `fill`, `min_width`, `min_height`.
+- **Widget values:** `floating_inset: Sides<Value<Px>>` (T-9); `item_gap_px: Value<Px>`, `item_width_px: Value<Px>`,
   `item_positioning: Value<Key>` (the keys of `UITabBar.ItemPositioning`, T-3); `max_items: Value<u32>` (P3-2†, by
-  size class); `max_content_width: Value<f32>`, `equal_width_items: Value<bool>` (Q2.33); `presentations:
+  size class); `max_content_width_px: Value<Px>`, `equal_width_items: Value<bool>` (Q2.33); `presentations:
   Vec<PresentationTransition>`: events `Move` with part `indicator` (the selection slide, Morph: T-8, MAT-N12),
   `@selection_change` (T-15), `Appear`, `Disappear` (the bar shown and hidden, `setTabBarHidden(_:animated:)`,
-  T-15), `@minimize` (T-10), `@customize` (T-17†, P3-2†), `@to_sidebar` (iPad's tab bar becoming a sidebar, C-22);
+  T-15), `@minimize` (T-10), `@customize` (T-17†, P3-2†), `@to_sidebar` (iPad's tab bar becoming a sidebar, C-22),
+  `@spring_load` (an item a drag hovers switching to it, P3-11†);
   `focus_visible_when` (type `FocusVisibleWhen`; Q2.36, ADD-A16).
-- **Variants:** typed `floating` (iOS 26's capsule, T-9); keyed `ios-*` `@stacked`, `@inline`, `@compact_inline`
-  (item layouts, T-3), `@search` (T-11), `@prominent` (T-16), `@more` (P3-2†), `@tab_sidebar` (iPadOS's top bar,
+- **Variants:** typed `floating` (iOS 26's capsule, T-9); typed item layouts `stacked` (the icon above the label: iOS's
+  stacked items, T-3; Material Expressive's vertical items, MAT-N12) and `inline` (the icon beside the label: iOS's
+  inline items, T-3; Material Expressive's horizontal items, MAT-N12; Material's under `cond flavor:expressive`);
+  keyed `ios-*` `@compact_inline` (T-3), `@search` (T-11), `@prominent` (T-16), `@more` (P3-2†), `@tab_sidebar`
+  (iPadOS's top bar,
   T-13); `macos-*` `@sidebar_adaptable` (MAC-N23).
 - **Sizes and densities:** none; the bar's height follows the size class (`v_size_class compact`, T-14).
 - **Flags:** shared `minimized` (iOS, T-10); state flags used: hover, pressed, selected, checked (Kirigami's
@@ -2673,7 +3031,7 @@ and the owning group's name where the kinds are the same.
 - **may_be_absent:** parts: `indicator` (`ios-*` before 26: iOS 13–18 draw none), `drop_indicator` (`kde-breeze`,
   `material-3`); fields: `bar.stroke` (under `variant floating`), `bar.shadow` (presets whose bar is flat:
   `kde-breeze`, `ios-*` before 26); values: `floating_inset` (all but `ios-26`), `max_items` (all but `ios-*`),
-  `max_content_width`, `equal_width_items` (all but `kde-breeze`).
+  `max_content_width_px`, `equal_width_items` (all but `kde-breeze`).
 - **State-model source:** iOS `UITabBarItemAppearance` (normal, selected, disabled, focused) per layout appearance
   (stacked, inline, compact inline), `UITabBarController.Mode`, `tabBarMinimizeBehavior`; KDE Kirigami
   `NavigationTabBar.qml` and `NavigationTabButton.qml` (hover, pressed, checked, focus); Material the
@@ -2692,35 +3050,45 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's GtkPathBar (GN-2.52†), KDE's KUrlNavigator (K2.27†, K-P4-11†) and Kirigami's
   breadcrumb (Q2.44), macOS's `NSPathControl` (MAC-N07), Windows' BreadcrumbBar (W2-10).
 - **Available:** every preset but `ios-*`, `material-3` (`available = false`: no path control in their rows).
-- **Parts:** `bar` — the strip (fill, padding); `crumb` *(element)* — one path component (KDE's flat button panel
-  on hover, drag-over or open popup); `crumb_label` — its text (the current crumb bold on KDE; KDE's fade-out of
-  clipped names); `crumb_icon` — its icon (GNOME's root, home, desktop and recent icons, MAC-N07's component icons);
-  `separator` *(element: KDE's arrows are hovered and open a menu)* — the chevron between crumbs (glyph, padding);
-  `ellipsis` *(element: Windows' overflow item)*; `ellipsis_popup` — the overflow flyout (fill per state, W2-10);
-  `placeholder` — macOS's placeholder (MAC-N07); `places_selector` *(element, KDE)*; `bottom_separator` —
-  Kirigami's Header-set line (Q2.44).
-- **Widget values:** `separator_padding: Sides<Value<f32>>` (W2-10); `presentations: Vec<PresentationTransition>`:
+- **Parts:**
+  - `bar` — the strip (the root): `fill`, `padding`.
+  - `crumb` *(element)* — one path component (KDE's flat button panel on hover, drag-over or open popup; GNOME's
+    path-bar buttons, toggle buttons linked by position rules, GN-2.52†): `fill`, `stroke`, `corners` (Q2.44),
+    `padding` (K2.27†, GN-2.52†), `focus` (W2-10).
+  - `crumb_label` — its text: `text` (the current crumb's own text style under `current`; KDE's fade-out of clipped
+    names), `opacity` (Kirigami's non-current crumbs, Q2.44), `padding` (GN-2.52†).
+  - `crumb_icon` — its icon (GNOME's root, home, desktop and recent icons, MAC-N07's component icons): `icon`.
+  - `separator` *(element: KDE's arrows are hovered and open a menu)* — the chevron between crumbs: `glyph`,
+    `padding` (W2-10).
+  - `ellipsis` *(element: Windows' overflow item, a crumb showing an ellipsis)*: `glyph`, `padding`, `focus`.
+  - `placeholder` — macOS's placeholder (MAC-N07): `text`.
+  - `bottom_separator` — Kirigami's Header-set line (Q2.44): `stroke`, `padding` (its top and bottom margins),
+    `bindings` (the Header set).
+- **Widget values:** `presentations: Vec<PresentationTransition>`:
   event `@scroll` (Kirigami's scroll to the current crumb, Q2.44); `editable: Value<bool>` (KDE's editable-path
-  mode, whose field is an `input` in context, K2.27†); `drag_hover_delay_ms: Value<f32>` (a drag resting on a
+  mode, whose field is an `input` in context, K2.27†); `drag_hover_delay_ms: Value<Ms>` (a drag resting on a
   crumb's arrow opens its sub-folder menu after this delay, K-P4-11†).
 - **Variants:** keyed `macos-*` `@standard`, `@pop_up` (MAC-N07).
 - **Sizes and densities:** none (no row states sizes).
-- **Flags:** shared `current` (the last crumb: KDE's bold label, K2.27†, Q2.44; Windows' current-item colour,
+- **Flags:** shared `current` (the last crumb: KDE's label, K2.27†, Q2.44; Windows' current-item colour,
   W2-10; macOS, MAC-N07); keyed `kde-breeze` `@navigator_active` (the navigator of the focused view, K2.27†); state
   flags used: hover, pressed, focus_visible, disabled, open (a crumb's popup shown), drop_target (dragged over,
   K2.27†, K-P4-11†), checked (GNOME's current folder button, GN-2.52†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (BreadcrumbBarItem CommonStates; `current`
   combines); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `ellipsis`, `ellipsis_popup` (all but `windows-11`), `places_selector` (all but
-  `kde-breeze`), `placeholder` (all but `macos-*`), `crumb_icon` (`windows-11`), `bottom_separator` (all but
-  `kde-breeze`); values: `editable`, `drag_hover_delay_ms` (all but `kde-breeze`).
+- **may_be_absent:** parts: `ellipsis` (all but `windows-11`), `placeholder` (all but `macos-*`), `crumb_icon`
+  (`windows-11`), `separator` (`adwaita`: GtkPathBar links its buttons without separators), `bottom_separator` (all
+  but `kde-breeze`); values: `editable`, `drag_hover_delay_ms` (all but `kde-breeze`).
 - **State-model source:** GNOME `gtkpathbar.c` and the button selectors; KDE `kurlnavigatorbutton*.cpp`,
   `kurlnavigatorbuttonbase.cpp` and `BreadcrumbControl.qml`; macOS `NSPathControl.Style`; Windows
   BreadcrumbBarItem visual states.
 - **Today's fields:** none (W2-10's stand-in `link.*` stays `link`'s).
-- **Notes:** GNOME's path bar is a row of toggle `button` elements in a `layout` (`@linked`, GN-1.42) in
-  `context breadcrumb`, raised as ordinary buttons (GN-2.52†); KDE's sub-folder menus are `menu` elements in
-  context. Group 8 had named the drag delay `submenu_open_delay_ms` (K-P4-11†).
+- **Notes:** a crumb is the path control's own piece on every platform (Nested controls): GNOME's path-bar toggle
+  buttons are `crumb` elements, their facts GtkPathBar's button selectors and their joined corners `pos` rules
+  (GN-2.52†). Nested controls: KDE's places selector is `button @ variant menu context breadcrumb` (KUrlNavigator's,
+  K2.27†); the ellipsis's overflow flyout (W2-10) and KDE's sub-folder menus are `menu` elements in
+  `context breadcrumb`; the editable path's field an `input` there (K2.27†). Group 8 had named the drag delay
+  `submenu_open_delay_ms` (K-P4-11†).
 
 ### calendar
 
@@ -2731,18 +3099,31 @@ and the owning group's name where the kinds are the same.
   K-KA-21†), Windows' CalendarView (W2-02), Material's date-picker grid (MAT-N16), macOS's `NSDatePicker` graphical
   style (MAC-N04).
 - **Available:** every preset; `ios-*` from iOS 14 (C-6).
-- **Parts:** `frame` — the outer border (GN-2.25); `header` — the month header (bottom line, GN-2.25); `nav_button`
-  *(element)* — previous and next; `title` *(element: Windows' month-year header button, iOS's month-year toggle)*;
-  `weekday_label` — the weekday header (KDE bold; non-working days' header colour, K2.23†); `week_number`;
-  `day` *(element)* — a day cell (fill, corners, stroke); `day_label` — its number (tabular figures, GN-2.25);
-  `today_marker` — GNOME's underline, Material's outline; `decoration` — iOS's dot, image or custom decoration;
-  `range_band` — Material's range selection band; `year` *(element: Material's year cells, Windows' year and
-  decade items, K-KA-21†'s year view)*; `month` *(element: Windows' month items, K-KA-21†'s month view)*;
-  `clock_face`, `clock_hand` — macOS's clockAndCalendar style; `time_row` — iOS's time row.
-- **Widget values:** `cell_gap: Value<f32>`; `grid_padding: Sides<Value<f32>>` (GN-2.25); `presentations:
+- **Parts:**
+  - `frame` — the outer border (the root, GN-2.25): `fill`, `stroke`, `padding`.
+  - `header` — the month header, which holds the navigation and title buttons: `stroke` (its bottom line, GN-2.25),
+    `padding`.
+  - `title` — the month and year text where it is not a button: `text`.
+  - `weekday_label` — the weekday header: `text` (its own text style; non-working days' header colour, K2.23†),
+    `fill` (on `Window`, K2.23†), `stroke` (the line under the header, K2.23†), `opacity` (K-KA-21†).
+  - `week_number` — `text`.
+  - `day` *(element)* — a day cell: `fill`, `corners`, `stroke`, `padding` (GN-2.25, W2-02), `min_width`,
+    `min_height` (Material's cell size, MAT-N16), `opacity` (other-month days: K-KA-21†, MAT-N16), `focus` (GN-2.25,
+    K-KA-21†).
+  - `day_label` — its number: `text` (tabular figures, GN-2.25; Windows' blackout strikethrough, W2-02).
+  - `today_marker` — GNOME's underline, Material's outline: `stroke`, `corners`.
+  - `decoration` — iOS's dot, image or custom decoration (C-6): `fill`, `corners`, `icon`, `min_width`, `min_height`.
+  - `range_band` — Material's range selection band: `fill`, `min_height`.
+  - `year` *(element: Material's year cells, Windows' year and decade items, K-KA-21†'s year view)*: `fill`, `stroke`,
+    `corners`, `text`, `min_width`, `min_height` (MAT-N16), `opacity` (years outside the decade, K-KA-21†), `focus`.
+  - `month` *(element: Windows' month items, K-KA-21†'s month view)*: `fill`, `stroke`, `corners`, `text`, `focus`.
+  - `clock_face` — macOS's clockAndCalendar style: `fill`, `stroke`.
+  - `clock_hand` — macOS's clockAndCalendar style: `stroke`.
+  - `time_row` — iOS's time row: `text`, `padding`.
+- **Widget values:** `cell_gap_px: Value<Px>`; `grid_padding: Sides<Value<Px>>` (GN-2.25); `presentations:
   Vec<PresentationTransition>`: event `@view_switch` (Windows' zoom between the day, month and year views, W2-02;
   kirigami-addons' view switch, K-KA-20†); `first_weekday_from_locale: Value<bool>`; `scroll_physics:
-  ScrollPhysics` (kirigami-addons' endless views: deceleration, snap to a page, K-KA-20†).
+  ScrollPhysics` (a plain value, S4.2's: kirigami-addons' endless views, deceleration, snap to a page, K-KA-20†).
 - **Variants:** keyed `ios-*` `@wheels` (the month-year wheel, C-6); `windows-11` `@month_view`, `@year_view`,
   `@decade_view` (W2-02); `kde-breeze` `@ka_date_popup` (K-KA-20†, K-KA-21†).
 - **Sizes and densities:** `macos-*`: the control sizes AppKit draws the graphical style in (MAC-N04; which: value
@@ -2752,7 +3133,7 @@ and the owning group's name where the kinds are the same.
   `ios-*` `@out_of_range` (C-6), `windows-11` `@blackout` (W2-02's strikethrough), `adwaita` `@marked` (GNOME's
   checked day, GN-2.25), `kde-breeze` `@non_working_day`, `@observance_day` (K2.23†), `@other_decade` (K-KA-21†),
   `material-3` `@range_start`, `@range_end`, `@in_range` (MAT-N16); state flags used: hover, pressed, selected,
-  disabled (KDE's out-of-range days, K2.23†, K-KA-21†), focus_visible.
+  disabled (KDE's out-of-range days, K2.23†, K-KA-21†), focus_visible, on `day`, `year`, `month`.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (CalendarView items; `selected`, `today`,
   `other_month` and `@blackout` combine, as the template's selected-hover, selected-pressed and selected-disabled
   states show); `material-3`: `[pressed, focus_visible, hover]` (the date cells' state layers); others none
@@ -2760,13 +3141,19 @@ and the owning group's name where the kinds are the same.
 - **may_be_absent:** parts: `week_number` (all but `kde-breeze`), `decoration`, `time_row` (all but `ios-*`),
   `range_band` (all but `material-3`), `clock_face`, `clock_hand` (all but `macos-*`), `today_marker`
   (`kde-breeze`, `windows-11`: today is the day's fill or text, K2.23†, K-KA-21†, W2-02), `month` (`adwaita`,
-  `ios-*`, `material-3`, `macos-*`), `year` (`adwaita`, `ios-*`, `macos-*`); values: `scroll_physics` (all but
+  `ios-*`, `material-3`, `macos-*`), `year` (`adwaita`, `ios-*`, `macos-*`); fields: `weekday_label.fill`,
+  `weekday_label.stroke`,
+  `weekday_label.opacity` (all but `kde-breeze`), `header.stroke` (presets that draw no line); values:
+  `scroll_physics` (all but
   `kde-breeze`), `grid_padding` (presets that state none).
 - **State-model source:** GNOME `_calendar.scss` selectors; KDE `KDateTable` and Breeze `PE_PanelItemViewItem`,
   kirigami-addons `DatePicker.qml`, `DatePickerDelegate.qml`; Windows `CalendarView` item states; Material
   date-picker tokens; iOS `UICalendarView` and `UIControl.State`; macOS `NSDatePicker` graphical style.
 - **Today's fields:** none.
-- **Notes:** a date picker's grid is this widget in `context date_picker`: Material's (MAT-N16), macOS's
+- **Notes:** Nested controls: the previous and next buttons are `button @ variant previous / next context
+  calendar.header`, and Windows' month-year header button and iOS's month-year toggle `button @ context
+  calendar.header` (W2-02, C-6). A date picker's grid is this widget in `context
+  date_picker`: Material's (MAT-N16), macOS's
   clockAndCalendar (`context any date_picker variant inline`, MAC-N04), and MAC-N04's calendar overlay
   (`presentsCalendarOverlay`), which is a `calendar` in `context date_picker.popup`, placed by
   `date_picker.values.placement`. kirigami-addons' day, month and year switch is a `segmented_control`
@@ -2780,30 +3167,37 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's AdwCarousel (GN-2.38), Material's carousel (MAT-N18), Windows' FlipView (W2-31),
   iOS's `UIPageViewController` (C-48†). Its indicator is a `page_indicator` in context.
 - **Available:** every preset but `kde-breeze`, `macos-*` (`available = false`: no carousel in their rows).
-- **Parts:** `item` *(element: Material's item container with state layers, Windows' item background)* — fill,
-  stroke, corners, shape, transitions (the page settle: a `Geometry` transition with a spring timing, GNOME's page
-  spring GN-2.38, Material's item settle MAT-N18); `nav_button` *(element: Windows' next and previous, shown on
-  hover, scaled on press)*; `nav_glyph` — their glyph.
-- **Widget values:** `item_gap: Value<f32>` (MAT-N18); `scroll_timeout_ms: Value<f32>` (GN-2.38);
-  `nav_buttons_visibility: Value<NavButtonsVisibility>`, `NavButtonsVisibility { Always, OnHover }` (W2-31);
-  `presentations: Vec<PresentationTransition>`: event `@page_curl` (iOS's curl transition, C-48†);
-  `inter_page_gap: Value<f32>` (C-48†'s `interPageSpacing`).
+- **Parts:**
+  - `body` — the carousel's viewport (the root): `padding`, `corners`, `bindings`.
+  - `item` *(element: Material's item container with state layers, Windows' item background)* — `fill`, `stroke`,
+    `corners`, `shape`, `shadow` (Material's item elevation, MAT-N18), `min_width`, `max_width` (Material's mask
+    changing across its keylines with the scroll position: expressions over `element.scroll_progress`, which it
+    declares, ADD-B13, MAT-N18), `transitions` (the page settle: a `Geometry` transition with a spring timing,
+    GNOME's page spring GN-2.38, Material's item settle MAT-N18).
+- **Widget values:** `item_gap_px: Value<Px>` (MAT-N18); `scroll_timeout_ms: Value<Ms>` (GN-2.38);
+  `nav_buttons_visibility: Value<NavButtonsVisibility>` (when its previous and next buttons show, W2-31);
+  `presentations: Vec<PresentationTransition>`: event `@page_change` (the page turn: under `@page_curl` a keyed
+  presentation kind `page_curl` with its parameters, the back of the page and its shading among them, ADD-A26, the
+  curl following the drag through `element.progress`, ADD-B12; under `@scroll` a `Slide`; C-48†);
+  `inter_page_gap_px: Value<Px>` (C-48†'s `interPageSpacing`, under `@scroll`).
 - **Variants:** keyed `material-3` `@multi_browse`, `@hero`, `@uncontained` where its tokens state them (MAT-N18);
-  `ios-*` `@page_curl`, `@scroll` (C-48†).
+  `ios-*` `@page_curl`, `@scroll` (C-48†), `@spine_min`, `@spine_mid`, `@spine_max` (the curl's spine,
+  `UIPageViewController.SpineLocation`, C-48†).
 - **Sizes and densities:** none (no row states sizes).
-- **Flags:** none of its own; state flags used: hover, pressed and focus_visible
-  (Material's item state layers, MAT-N18), disabled (Windows' buttons, W2-31).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the FlipView buttons' CommonStates);
-  `material-3`: `[pressed, focus_visible, hover]` (the item's state layers); others none (states combine);
-  precedence: state models (S17).
-- **may_be_absent:** parts: `nav_button`, `nav_glyph` (all but `windows-11`); fields: `item.fill` (`adwaita`,
-  `ios-*`); values: `scroll_timeout_ms` (all but `adwaita`), `nav_buttons_visibility` (all but `windows-11`),
-  `inter_page_gap`, `presentations` (all but `ios-*`), `item_gap` (presets that state none).
+- **Flags:** none of its own; state flags used: hover, pressed, focus_visible, from Material's item state layers
+  (MAT-N18).
+- **Exclusive groups:** `material-3`: `[pressed, focus_visible, hover]` (the item's state layers); others none (states
+  combine; the FlipView buttons' CommonStates on `windows-11` are `button`'s); precedence: state models (S17).
+- **may_be_absent:** fields: `item.stroke`, `item.shadow` (all but `material-3`), `item.fill` (`adwaita`, `ios-*`);
+  values: `scroll_timeout_ms` (all but `adwaita`), `nav_buttons_visibility` (all but `windows-11`),
+  `inter_page_gap_px`, `presentations` (all but `ios-*`), `item_gap_px` (presets that state none).
 - **State-model source:** GNOME `adw-carousel.c`; Material carousel-item tokens; Windows FlipView button states;
   iOS `UIPageViewController.TransitionStyle`.
 - **Today's fields:** none.
-- **Notes:** Material's masked shape change while scrolling is driven by the scroll position (ADD-B13). GNOME's
-  indicator dots and lines are `page_indicator` elements in `context carousel` (GN-2.38). Group 6's
+- **Notes:** Nested controls: Windows' previous and next buttons are `button @ variant previous / next context
+  carousel` (shown on hover, scaled on press, W2-31). Material's masked shape change while scrolling is driven by the
+  scroll position (ADD-B13). GNOME's indicator dots and lines are `page_indicator` elements in `context carousel`
+  (GN-2.38). Group 6's
   `page_transition` value is the item's `transitions`.
 
 ### chart
@@ -2813,36 +3207,54 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: Swift Charts on iOS (C-45†) and macOS (MAC-N37†), KDE's KQuickCharts controls
   (K-P3-10†).
 - **Available:** every preset but `adwaita`, `windows-11`, `material-3` (`available = false`: no chart in their
-  rows); `macos-*` from macOS 13 (MAC-N37†), `ios-*` from iOS 16 (C-45†).
-- **Parts:** `plot_area` — the background and insets; `grid_line_major`, `grid_line_minor` — grid lines (stroke);
-  `axis_tick`; `axis_label` — value labels (font, colour); `legend`; `legend_swatch` — a series' colour mark;
-  `legend_label`; `series` — a series' mark (its colour per series index: ADD-B15); `selection_mark` — Swift
-  Charts' selection mark.
-- **Widget values:** `series_colors: Vec<Value<Color>>` (Swift Charts' default order, C-45†, MAC-N37†; KDE's
-  derivation from the highlight colour, `kqc_series_color`, ADD-A53, ADD-A57, K-P3-10†); `plot_insets:
-  Sides<Value<f32>>` (C-45†); `labels_per_axis: Value<u32>` (K-P3-10†); `legend_gap: Value<f32>` (K-P3-10†);
-  `default_size: Value<f32>` (KQuickCharts' pie control, K-P3-10†).
+  rows); `macos-*` from macOS 13 (MAC-N37†), `ios-*` from iOS 16 (C-45†); `kde-breeze` flavour `kirigami` only
+  (KQuickCharts).
+- **Parts:**
+  - `body` — the chart (the root): `fill` (KDE's View background, K-P3-10†), `padding`, `bindings`.
+  - `plot_area` — the plotting area: `padding` (its insets, C-45†).
+  - `grid_line_major`, `grid_line_minor` — grid lines: `stroke`.
+  - `axis_tick` — `stroke` (C-45†).
+  - `axis_label` — value labels: `text` (font, colour).
+  - `legend` — `text` (the legend font, C-45†, MAC-N37†), `padding` (K-P3-10†).
+  - `legend_swatch` *(element)* — a series' colour mark, its colour as the series': `fill`, `min_width` (K-P3-10†).
+  - `legend_label` — `text`.
+  - `series` *(element)* — a series' mark: `fill` per series, `= pick(element.item_index, <c0>, …)` in Swift Charts'
+    default order (C-45†, MAC-N37†) or `= kqc_series_color(<seed>, element.item_count, element.item_index)` from the
+    highlight colour on KDE (ADD-A57, ADD-B15, K-P3-10†), the part declaring `data = { series = ["item_index",
+    "item_count"], legend_swatch = ["item_index", "item_count"] }`.
+  - `selection_mark` — Swift Charts' selection mark: `stroke`.
+- **Widget values:** `grid_lines: ChartGridLines { horizontal: GridLineCounts, vertical: GridLineCounts }`,
+  `GridLineCounts { major_frequency: Value<u32>, minor_frequency: Value<u32>, major_count: Value<u32>, minor_count:
+  Value<u32> }` (KQuickCharts' grid: every n-th value line, or n lines, major and minor, K-P3-10†; Swift Charts'
+  `AxisMarks` defaults, C-45†); `labels_per_axis: Value<u32>` (K-P3-10†); `legend_gap_px: Value<Px>` (K-P3-10†);
+  `default_size_px: Value<Px>` (KQuickCharts' pie control, K-P3-10†).
 - **Variants:** keyed `kde-breeze` `@line`, `@pie` (K-P3-10†).
 - **Sizes and densities:** none.
 - **Flags:** none (the rows state no interaction states; Swift Charts' selection is the `selection_mark` part).
 - **Exclusive groups:** none; precedence: state models (S17).
 - **may_be_absent:** parts: `selection_mark` (`kde-breeze`); fields: `grid_line_minor.stroke` (`macos-*`, `ios-*`
-  where Swift Charts draws none); values: `labels_per_axis`, `default_size` (`macos-*`, `ios-*`).
+  where Swift Charts draws none); values: `labels_per_axis`, `default_size_px` (`macos-*`, `ios-*`), `grid_lines`
+  (members a platform does not state).
 - **State-model source:** Swift Charts `AxisMarks` defaults; KQuickCharts controls (`KirigamiTheme.qml`,
   `ColorGradientSource`).
 - **Today's fields:** none.
+- **Notes:** none (the rows place no other widget in a chart's context).
 
 ### chip
 
 *From group 6's catalogue.*
 
 - **Kind:** typed widget: KDE's Kirigami Chip (Q2.22–Q2.24), Material's chips (MAT-N9), Windows' Toolkit
-  TokenizingTextBox tokens (W2-43†), macOS's `NSTokenField` tokens (MAC-N03).
-- **Available:** every preset but `adwaita`, `ios-*` (`available = false`: no chip in their rows).
-- **Parts:** `body` — fill, stroke, corners, padding, shadow (Material's elevated chips); `label`; `leading_icon`;
-  `trailing_icon`; `avatar` — Material's input-chip avatar; `remove_button` *(element)* — KDE's
-  `edit-delete-remove`, Windows' remove button (W2-43†); `menu_arrow` — the token's menu arrow (MAC-N03).
-- **Widget values:** `icon_text_gap: Value<f32>` (Q2.24); `padding_without_icon: Sides<Value<f32>>` (KDE's extra
+  TokenizingTextBox tokens (W2-43†), macOS's `NSTokenField` tokens (MAC-N03), iOS's search tokens (C-3).
+- **Available:** every preset but `adwaita` (`available = false`: no chip in its rows); `kde-breeze` flavour
+  `kirigami` only (Kirigami's Chip).
+- **Parts:**
+  - `body` — the root: `fill`, `stroke`, `corners`, `padding`, `shadow` (Material's elevated chips), `min_height`
+    (MAT-N9), `opacity` (Material's disabled chips, MAT-N9), `focus` (MAT-N9).
+  - `label` — `text`.
+  - `leading_icon`, `trailing_icon` — `icon`.
+  - `menu_arrow` — the token's menu arrow (MAC-N03): `glyph`.
+- **Widget values:** `icon_text_gap_px: Value<Px>` (Q2.24); `padding_without_icon: Sides<Value<Px>>` (KDE's extra
   padding when there is no icon, Q2.24).
 - **Variants:** keyed `material-3` `@elevated` (against flat), `@assist`, `@filter`, `@input`, `@suggestion`
   (MAT-N9); `kde-breeze` `@interactive`, `@closable` (Q2.24); `macos-*` `@default`, `@rounded`, `@squared`,
@@ -2855,14 +3267,16 @@ and the owning group's name where the kinds are the same.
   `selected` combines, as its selected-pointer-over and selected-pressed states show, W2-43†); `material-3`:
   `[dragged, pressed, focus_visible, hover]` (the chips' state layers); others none (states combine); precedence:
   state models (S17).
-- **may_be_absent:** parts: `avatar` (all but `material-3`), `trailing_icon` (`kde-breeze`), `leading_icon`
-  (`windows-11`), `menu_arrow` (all but `macos-*`); fields: `body.shadow` (all but `material-3`); values:
+- **may_be_absent:** parts: `trailing_icon` (`kde-breeze`), `leading_icon` (`windows-11`), `menu_arrow` (all but
+  `macos-*`); fields: `body.shadow` (all but `material-3`); values:
   `padding_without_icon` (all but `kde-breeze`).
 - **State-model source:** KDE `DefaultChipBackground.qml`, `Chip.qml`; Material chip tokens; Windows
   `TokenizingTextBoxItem.Token.xaml` states; macOS `NSTokenField.TokenStyle`.
 - **Today's fields:** none.
-- **Notes:** macOS's tokens are chips in `context component.token_field` (group 7's MAC-N03; rename row 52).
-  Material's chip set is a `layout` (`@chip_set`) holding chips.
+- **Notes:** macOS's tokens are chips in `context component.token_field` (group 7's MAC-N03; rename row 52); iOS's
+  search tokens are chips in `context search_field` (C-3). Material's chip set is a `layout` (`@chip_set`) holding
+  chips. Nested controls: the remove button is `button @ variant remove context chip` (KDE's `edit-delete-remove`,
+  Q2.24; Windows' remove button, W2-43†); Material's input-chip avatar is `avatar @ context chip` (MAT-N9).
 
 ### code_editor
 
@@ -2871,27 +3285,48 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GtkSourceView and KTextEditor, both in by R1.2 (GN-SF01†–GN-SF13†, GN-P3-27†,
   K-SF01†–K-SF11†, K-P3-11†–K-P3-14†).
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no code
-  editor of the platform).
-- **Parts:** `text` — the editor's fill and normal text (GN-SF02†, K-SF02†); `selection` — with a rule for
-  `!{focused}`, GtkSourceView's unfocused selection (GN-SF02†); `caret` *(element)* — the caret (colour from the
-  text under it, K-P3-11†; base `= token.caret.color`); also GNOME's bidirectional secondary caret (variant
-  `@bidi_secondary`, below); `extra_caret` — KDE's multiple cursors (K-P3-11†); `current_line` (GN-SF04†,
-  K-SF03†); `gutter` (GN-SF05†, K-SF04†); `line_number`; `current_line_number`; `gutter_separator`; `fold_marker`
-  (K-SF04†); `mark` *(element)* — a line mark (K-SF04†); `modified_line_marker`, `saved_line_marker` (K-SF05†);
-  `whitespace_mark` — the invisibles (GN-SF06†, K-SF06†); `indentation_guide` (K-SF06†); `bracket_match` —
-  transitions (KDE's optional bracket animation, K-SF07†); `bracket_mismatch` (GN-SF07†); `search_match`,
-  `replace_match` (GN-SF08†, K-SF08†, K2.30†); `right_margin`, `right_margin_area` (GN-SF09†, K-SF09†);
-  `dynamic_wrap_indicator` (K-SF09†); `background_pattern` (GN-SF11†); `syntax_span` — a syntax role's text
-  (GN-SF10†, K-SF10†), whose text colour is bound as the foreground for the caret over it (`bindings`, K-P3-11†);
-  `misspelled_word` (GN-P3-27†, K-SF11†); `template_field`, `template_placeholder` *(element)* (K-SF11†);
-  `inline_annotation` (GN-SF12†); `annotation_border` (K-P3-14†); `minimap`, `minimap_slider`, `minimap_fade`
-  (GN-SF11†, K-P3-12†); `scroll_mark` (K-P3-12†); `completion_popup`, `completion_row` *(element)*,
-  `completion_icon`, `completion_detail`, `completion_details_pane` (GN-SF13†, K-P3-13†); `informative_popup`
-  (GN-SF13†).
-- **Widget values:** `gutter_padding: Sides<Value<f32>>` (GN-SF05†); `right_margin_column: Value<u32>`
-  (GN-SF09†); `minimap_width: Value<f32>` (K-P3-12†); `completion_placement: Placement` (`KTextEditorCompletion`
-  K-P3-13†, `GtkPopover` GN-SF13†); `completion_offset_y: Value<f32>` (an expression on the line height,
-  K-P3-13†); `whitespace_mark_size: Value<f32>` (K-SF06†).
+  editor of the platform); `kde-breeze` flavour `widgets` only (KTextEditor).
+- **Parts:**
+  - `body` — the editor's view (the root): `fill` (the editor's background, GN-SF02†, K-SF02†), `padding`,
+    `bindings`.
+  - `text` — the normal text (GN-SF02†, K-SF02†): `text`.
+  - `selection` — with a rule for `!{focused}`, GtkSourceView's unfocused selection (GN-SF02†): `fill`, `text`.
+  - `caret` *(element)* — the caret (colour from the text under it, K-P3-11†; base `= token.caret.color`); also
+    GNOME's bidirectional secondary caret (variant `@bidi_secondary`, below): `fill`, `min_width`, `min_height` (the
+    line, and Vi mode's block, underline and half block, K-P3-11†).
+  - `extra_caret` — KDE's multiple cursors (K-P3-11†): `fill`, `min_width`, `min_height`.
+  - `current_line` (GN-SF04†, K-SF03†) — `fill`.
+  - `gutter` (GN-SF05†, K-SF04†) — `fill`.
+  - `line_number` — `text`.
+  - `current_line_number` — `text`, `fill` (GN-SF05†).
+  - `gutter_separator` — `stroke` (K-SF04†'s separator, GN-SF05†'s border).
+  - `fold_marker` (K-SF04†) — `glyph` (the marker), `fill` (the range highlight).
+  - `mark` *(element)* — a line mark (K-SF04†): `fill`.
+  - `modified_line_marker`, `saved_line_marker` (K-SF05†) — `fill`.
+  - `whitespace_mark` — the invisibles (GN-SF06†, K-SF06†): `glyph`.
+  - `indentation_guide` (K-SF06†) — `stroke`.
+  - `bracket_match` — `fill`, `text` (GN-SF07†, K-SF07†), `transitions` (KDE's optional bracket animation, K-SF07†).
+  - `bracket_mismatch` (GN-SF07†) — `fill`, `text`.
+  - `search_match`, `replace_match` (GN-SF08†, K-SF08†, K2.30†) — `fill`, `text`.
+  - `right_margin` (GN-SF09†, K-SF09†) — `stroke`.
+  - `right_margin_area` (GN-SF09†) — `fill`.
+  - `dynamic_wrap_indicator` (K-SF09†) — `fill`.
+  - `background_pattern` (GN-SF11†) — `fill`.
+  - `syntax_span` — a syntax role's text (GN-SF10†, K-SF10†): `text`, `fill` (the optional background), `bindings`
+    (its text colour bound as the foreground for the caret over it, K-P3-11†).
+  - `misspelled_word` (GN-P3-27†, K-SF11†) — `text` (the underline).
+  - `template_field` (K-SF11†) — `fill`.
+  - `template_placeholder` *(element)* (K-SF11†) — `fill`.
+  - `inline_annotation` (GN-SF12†) — `text`.
+  - `annotation_border` (K-P3-14†) — `padding` (the text inset), `stroke` (the outline round a hovered run).
+  - `minimap` (GN-SF11†, K-P3-12†) — `fill`, `stroke` (the line along its edge).
+  - `minimap_slider` (GN-SF11†, K-P3-12†) — `fill`, `stroke`.
+  - `minimap_fade` (K-P3-12†) — `fill`.
+  - `scroll_mark` (K-P3-12†) — `fill`, `min_height`.
+- **Widget values:** `gutter_padding: Sides<Value<Px>>` (GN-SF05†); `right_margin_column: Value<u32>`
+  (GN-SF09†); `minimap_width_px: Value<Px>` (K-P3-12†); `whitespace_mark_size_px: Value<Px>` (K-SF06†). The completion's
+  placement (`KTextEditorCompletion` K-P3-13†, its vertical offset an expression on the line height, `GtkPopover`
+  GN-SF13†) is `menu.values.placement` in `context autocomplete` here.
 - **Variants:** keyed `adwaita` `@classic` (GtkSourceView's `classic` scheme, the default when the application sets
   none, beside the Adwaita and Adwaita-dark bases: GN-SF01†, R25.11, ADD-A64). `syntax_span` takes one variant
   per syntax role: typed where both platforms name the role, `comment`, `string`, `function`, `constant`,
@@ -2916,16 +3351,18 @@ and the owning group's name where the kinds are the same.
 - **may_be_absent:** parts: `extra_caret`, `fold_marker`, `mark`, `modified_line_marker`, `saved_line_marker`,
   `indentation_guide`, `replace_match`, `dynamic_wrap_indicator`, `template_field`, `template_placeholder`,
   `annotation_border`, `minimap_fade`, `scroll_mark`, `bracket_mismatch` (`adwaita`: Adwaita's schemes state no
-  mismatch style, GN-SF07†), `background_pattern`, `inline_annotation`, `informative_popup` (`kde-breeze`);
-  values: `minimap_width`, `completion_offset_y`, `whitespace_mark_size` (`adwaita`), `gutter_padding`
-  (`kde-breeze`).
+  mismatch style, GN-SF07†), `background_pattern`, `inline_annotation` (`kde-breeze`); values: `minimap_width_px`,
+  `whitespace_mark_size_px` (`adwaita`), `gutter_padding` (`kde-breeze`).
 - **State-model source:** GtkSourceView's style-scheme reference (`style-reference.md`), the Adwaita schemes,
   `GtkSourceView.css`; KTextEditor's `kateconfig.cpp` colour list, `katerenderer.cpp`, `kateviewhelpers.cpp` and
   the Breeze editor themes.
 - **Today's fields:** none. The stand-ins today's `input` fields `caret_color`, `background_color` and
   `defaults.text_selection_background` (GN-SF02†, GN-SF03†, K-SF02†, K-P3-11†) are the scheme's values here, not
   those fields.
-- **Notes:** KDE's reader reports which KSyntaxHighlighting theme draws (K-SF01†). GNOME's `selection` is a
+- **Notes:** Nested controls: the completion is an `autocomplete` in `context code_editor` (GN-SF13†, K-P3-13†): its
+  rows `menu.item` with `item_icon`, `item_label` and the detail columns `item_subtitle`, its details pane
+  `autocomplete.details_pane`; GtkSourceView's informative popup is a `popover` in `context code_editor` (GN-SF13†).
+  KDE's reader reports which KSyntaxHighlighting theme draws (K-SF01†). GNOME's `selection` is a
   reference to the `text_area` selection where the Adwaita schemes state none (GN-SF02†). The bidi secondary
   caret has one home, the `caret` element with `@bidi_secondary`; there is no separate part. Group 6's
   `bracket_match_animation` is `bracket_match.transitions` (K-SF07†).
@@ -2939,12 +3376,17 @@ and the owning group's name where the kinds are the same.
   `UIColorWell` (C-8).
 - **Available:** every preset but `material-3` (`available = false`: no colour button in its rows); `ios-*` from
   iOS 14 (C-8).
-- **Parts:** `body` *(element)* — the button (padding, frame); `swatch` — the colour (corners, min size);
-  `swatch_ring` — GNOME's light-swatch ring, macOS's active ring, iOS's multicolour ring; `checkerboard` — under a
-  translucent colour (W2-42†); `chevron` — macOS's minimal style, Windows' drop-down chevron (glyph per state);
-  `expand_button` *(element, macOS's expanded style)*.
-- **Widget values:** `swatch_inset: Sides<Value<f32>>` (K2.20); `swatch_min_width: Value<f32>`,
-  `swatch_min_height: Value<f32>` (W2-42†); `swatch_gap: Value<f32>` (the space before the row's arrow, K-KA-14†).
+- **Parts:**
+  - `body` — the button (the root): `fill`, `stroke`, `corners` (its frame: K2.20, GN-2.27), `padding` (GN-2.27,
+    W2-42†), `focus`.
+  - `swatch` — the colour: `corners`, `min_width`, `min_height` (W2-42†), `stroke` (W2-42†'s preview border).
+  - `swatch_ring` — GNOME's light-swatch ring, macOS's active ring, iOS's multicolour ring: `stroke`, `corners`
+    (GNOME's overlay radius, GN-2.27).
+  - `checkerboard` — under a translucent colour (W2-42†): `fill`.
+  - `chevron` — macOS's minimal style, Windows' drop-down chevron: `glyph` (per state).
+  - `expand_button` *(element, macOS's expanded style)*: `fill`, `glyph`.
+- **Widget values:** `swatch_inset: Sides<Value<Px>>` (K2.20); `swatch_gap_px: Value<Px>` (the space before the row's
+  arrow, K-KA-14†).
 - **Variants:** keyed `macos-*` `@default`, `@minimal`, `@expanded` (MAC-N05).
 - **Sizes and densities:** `macos-*`: the control sizes (MAC-N05; which: value phase).
 - **Flags:** keyed `adwaita` `@light_color` (GNOME's `.light`, set when the colour is light, GN-2.27); `macos-*`
@@ -2953,13 +3395,13 @@ and the owning group's name where the kinds are the same.
   others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `chevron` (`adwaita`, `kde-breeze`, `ios-*`), `expand_button` (all but `macos-*`),
   `swatch_ring` (`kde-breeze`, `windows-11`), `checkerboard` (presets whose button draws none: value phase;
-  W2-42† draws one); values: `swatch_gap` (all but `kde-breeze`), `swatch_min_width`, `swatch_min_height`
-  (presets that state none).
+  W2-42† draws one); values: `swatch_gap_px` (all but `kde-breeze`); fields: `swatch.stroke` (`kde-breeze`: K-KA-14†
+  draws no border).
 - **State-model source:** GNOME `_buttons.scss` (the `button` node with class `.color`); KDE Breeze push-button
   branches, kirigami-addons `FormColorDelegate.qml`; macOS `NSColorWell.Style`; Windows ColorPickerButton states;
   iOS `UIColorWell` and `UIControl.State`.
 - **Today's fields:** none.
-- **Notes:** kirigami-addons' colour row puts this widget in `context form.row` (`@ka_form_card`, K-KA-14†).
+- **Notes:** kirigami-addons' colour row puts this widget in `context form.row` (the form's `@ka_form_card`, K-KA-14†).
   Windows' button opens a `color_picker` in a flyout (W2-42†); iOS's well opens the system colour sheet (C-8).
 
 ### color_picker
@@ -2969,13 +3411,20 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's GtkColorChooserWidget editor (GN-2.53†) and its swatches (GN-2.27), KDE's
   QColorDialog through the KDE platform theme and KColorCombo (K2.25†), Windows' ColorPicker (W2-05).
 - **Available:** every preset but `macos-*`, `ios-*`, `material-3` (`available = false`: no colour picker the
-  toolkit draws in their rows).
-- **Parts:** `plane` — the saturation and value field (Windows' box or ring spectrum; cursor crosshair, ADD-A59);
-  `crosshair` *(element: focused against unfocused, GN-2.53†)*; `value_strip` — KDE's value strip (K2.25†);
-  `checkerboard` — under translucent colours; `preview` — Windows' previous and current colours, GNOME's sample;
-  `swatch` *(element: the chooser's swatches, KDE's colour wells)* — corners (GNOME's per-edge radii are
-  `swatch.corners` under `pos` rules, GN-2.27), focus; `swatch_ring` — GNOME's drop-target and high-contrast ring.
-- **Widget values:** `grid_gap: Value<f32>` (GN-2.53†); `plane_min_size: Value<f32>` (GN-2.53†).
+  toolkit draws in their rows); `kde-breeze` flavour `widgets` only (QColorDialog, KColorCombo).
+- **Parts:**
+  - `body` — the picker (the root): `padding`, `bindings`.
+  - `plane` — the saturation and value field (Windows' box or ring spectrum): `stroke` (W2-05), `focus` (GNOME's
+    plane focus ring, GN-2.53†), `cursor` (crosshair, ADD-A59), `min_width`, `min_height` (GN-2.53†).
+  - `crosshair` *(element: focused against unfocused, GN-2.53†)* — `stroke` (GNOME's bands and lines, KDE's cross,
+    Windows' selection ellipse), `min_width`, `min_height`.
+  - `value_strip` — KDE's value strip (K2.25†): `stroke`.
+  - `checkerboard` — under translucent colours: `fill`.
+  - `preview` — Windows' previous and current colours, GNOME's sample: `corners`.
+  - `swatch` *(element: the chooser's swatches, KDE's colour wells)* — `corners` (GNOME's per-edge radii are
+    `swatch.corners` under `pos` rules, GN-2.27), `stroke` (KDE's well frame, K2.25†), `focus`.
+  - `swatch_ring` — GNOME's drop-target and high-contrast ring: `stroke`.
+- **Widget values:** `grid_gap_px: Value<Px>` (GN-2.53†).
 - **Variants:** keyed `windows-11` `@box`, `@ring` (the spectrum's shape, W2-05); `kde-breeze` `@qt_dialog`
   (K2.25†).
 - **Sizes and densities:** none.
@@ -2984,12 +3433,13 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** none (W2-05 states no visual-state groups for the spectrum; GNOME's and KDE's states
   combine); precedence: state models (S17).
 - **may_be_absent:** parts: `value_strip` (`adwaita`, `windows-11`), `swatch` (`windows-11`), `swatch_ring`
-  (`kde-breeze`, `windows-11`); values: `plane_min_size` (presets that state none).
+  (`kde-breeze`, `windows-11`); fields: `plane.min_width`, `plane.min_height` (presets that state none).
 - **State-model source:** GNOME `gtkcolorplane.c`, `gtkcolorscale.c`, `_color-chooser.scss`; KDE
   `qcolordialog.cpp` frames; Windows ColorPicker and ColorSpectrum states.
 - **Today's fields:** none.
 - **Notes:** the hue, alpha and value sliders are `slider` elements in `context color_picker` with the typed slider
-  variants `hue`, `alpha`, `value` (GN-2.53†, W2-05); the eyedropper is a `button`; hex and channel fields are
+  variants `hue`, `alpha`, `value` (GN-2.53†, W2-05); the eyedropper is a `button` (`circular` on GNOME, GN-2.53†)
+  in `context color_picker`; hex and channel fields are
   `input` elements, KDE's channel spin boxes `stepper` elements; GNOME's numeric-entry popups are `popover`
   (`@osd`) in context (GN-2.53†).
 
@@ -3001,10 +3451,13 @@ and the owning group's name where the kinds are the same.
   This popup (QWhatsThis: Shift+F1, the title-bar help button; K2.31†) and macOS's context-sensitive help window
   (`NSHelpManager`, MAC-P4-11†).
 - **Available:** every preset but `adwaita`, `windows-11`, `ios-*`, `material-3` (`available = false`: no
-  context-help window in their rows; Windows' help button is Win32, R1.3).
-- **Parts:** `body` — the popup: fill (KDE's `ToolTipBase`), stroke (KDE's frame in the tooltip text colour),
-  shadow, corners, padding (KDE's text inset, macOS's margins); `inner_frame` — KDE's second frame line inside the
-  first, in the shade role `Dark` (K3.53, K2.31†); `text` — the help text (font and colour; KDE's rich text).
+  context-help window in their rows; Windows' help button is Win32, R1.3); `kde-breeze` flavour `widgets` only
+  (QWhatsThis).
+- **Parts:**
+  - `body` — the popup: `fill` (KDE's `ToolTipBase`), `stroke` (KDE's frame in the tooltip text colour), `shadow`,
+    `corners`, `padding` (KDE's text inset, macOS's margins), `bindings` (KDE's tooltip roles, K2.31†).
+  - `inner_frame` — KDE's second frame line inside the first, in the shade role `Dark` (K3.53, K2.31†): `stroke`.
+  - `text` — the help text (font and colour; KDE's rich text): `text`.
 - **Widget values:** `placement: Placement` (`QtWhatsThis`: by the pointer, K2.31†; `AppKitContextHelp`: at or near
   the given point, MAC-P4-11†, ADD-A21); `mode_cursor: Value<CursorShape>` (the pointer while help mode is active:
   `WhatsThis`, ADD-A59; MAC-P4-11†'s `isContextHelpModeActive`).
@@ -3019,7 +3472,8 @@ and the owning group's name where the kinds are the same.
 - **Today's fields:** none (`tooltip.*` is the nearest, not the same window).
 - **Notes:** included under R1.1 as a toolkit's own equivalent of a tooltip (the application sets only the text;
   a toolkit that draws its own windows draws this one). It holds
-  macOS's context-help window and K2.31†, which `teaching_tip` no longer lists (rename row 83). Help mode is entered by `button`
+  macOS's context-help window and K2.31†, which `teaching_tip` no longer lists (rename row 83). Help mode is entered
+  by `button`
   variant `help` (MAC-N10) or the caption button `@help` (KDE).
 
 ### date_picker
@@ -3031,15 +3485,24 @@ and the owning group's name where the kinds are the same.
   (K-KA-20†, K-KA-22†), Material's date picker (MAT-N16), iOS's compact picker (C-5). The month grid it opens is a
   `calendar` element (its ancestor is the date picker).
 - **Available:** every preset but `adwaita` (`available = false`: no date picker in GNOME's rows).
-- **Parts:** `field` *(element: the button, pill or combo showing the date)* — fill (focused fill, W2-03; iOS's
-  pill, C-5), stroke, padding; `field_label` — the date text (accent on iOS, C-5); `placeholder` — the text without
-  a date; `glyph` — Windows' calendar glyph (per state, W2-03); `segment` *(element: a day, month or year part of
-  a text-field date, selected while edited)*; `segment_separator` — Windows' spacer lines, kirigami-addons'
-  separator between the halves (K-KA-22†); `popup` — the flyout, popover, menu or docked container (shadow,
-  padding, min width); `header` — the control's header label (W2-03) and Material's header; `headline`,
-  `supporting_text`, `divider` — Material's; `quick_item` *(element: KDE's word items Today, Next Week …)*.
+- **Parts:**
+  - `field` — the button, pill or combo showing the date (the root, the picker's own trigger): `fill` (focused fill,
+    W2-03; iOS's pill, C-5), `stroke` (W2-04), `corners` (iOS's pill, C-5), `padding`, `min_width`, `max_width`
+    (W2-04).
+  - `field_label` — the date text (accent on iOS, C-5): `text`.
+  - `placeholder` — the text without a date: `text`.
+  - `glyph` — Windows' calendar glyph (W2-03): `glyph` (per state).
+  - `segment` *(element: a day, month or year part of a text-field date, selected while edited)* — `fill`, `text`
+    (W2-04, MAC-N04).
+  - `segment_separator` — Windows' spacer lines, kirigami-addons' separator between the halves (K-KA-22†): `stroke`,
+    `opacity`, `padding` (its inset, K-KA-22†).
+  - `popup` — the flyout, popover, menu or docked container: `fill`, `corners` (MAT-N16), `shadow`, `padding`,
+    `min_width`, `min_height` (MAT-N16).
+  - `header` — the control's header label (W2-03) and Material's header: `text`.
+  - `headline`, `supporting_text` — Material's: `text`.
+  - `divider` — Material's: `stroke`.
 - **Widget values:** `placement: Placement` (the popup against the field: W2-03's flyout, K2.23†'s menu, C-5's
-  popover, MAC-N04's calendar overlay; strategies: value phase); `popup_gap: Value<f32>`; `presentations:
+  popover, MAC-N04's calendar overlay; strategies: value phase); `popup_gap_px: Value<Px>`; `presentations:
   Vec<PresentationTransition>`: events `Appear`, `Disappear` (the popup's: W2-04's open animation, K-KA-20†'s
   fade).
 - **Variants:** typed `text_field` (macOS textField, KDE QDateEdit without popup, Windows DatePicker field),
@@ -3053,16 +3516,17 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (CommonStates); others none (states combine);
   precedence: state models (S17).
 - **may_be_absent:** parts: `glyph` (all but `windows-11`), `segment`, `segment_separator` (`ios-*`,
-  `material-3`), `quick_item` (all but `kde-breeze`), `headline`, `supporting_text`, `divider` (all but
-  `material-3`), `header` (all but `windows-11`, `material-3`); values: `popup_gap` (presets that state none).
+  `material-3`), `headline`, `supporting_text`, `divider` (all but
+  `material-3`), `header` (all but `windows-11`, `material-3`); values: `popup_gap_px` (presets that state none).
 - **State-model source:** macOS `NSDatePicker.Style` × control states; Windows CalendarDatePicker and DatePicker
   visual state groups; KDE Breeze `CC_ComboBox` and menu branches (`kdatecombobox.cpp`), kirigami-addons
   `FormDateTimeDelegate.qml`, `DatePopup.qml`; Material date-picker token files; iOS `UIDatePickerStyle`.
 - **Today's fields:** none (W2-03 and C-5 point at `combo_box.*`, which keeps its own).
 - **Notes:** MAC-N04's calendar overlay (`presentsCalendarOverlay`) is a `calendar` in `context date_picker.popup`,
   placed by this widget's `placement`. W2-04's looping selectors are `picker_wheel` elements in `context any
-  date_picker`; macOS's stepper is a `stepper` in context (MAC-N04); K2.23†'s popup holds a `menu`. kirigami-addons'
-  date and time row (K-KA-22†) puts the field, drawn flat, in `context form.row` (`@ka_form_card`); its popup
+  date_picker`; macOS's stepper is a `stepper` in context (MAC-N04); K2.23†'s popup holds a `menu`, whose word items
+  (Today, Next Week …) are `menu.item` elements in `context date_picker`. kirigami-addons'
+  date and time row (K-KA-22†) puts the field, drawn flat, in `context form.row` (the form's `@ka_form_card`); its popup
   (K-KA-20†) is a modal dialog whose scrim is the `dialog` scrim in `context date_picker`.
 
 ### dial
@@ -3072,19 +3536,26 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: KDE's QDial and QQC2 Dial (K2.5, Q2.2), macOS's circular slider (MAC-N15).
 - **Available:** every preset but `adwaita`, `windows-11`, `ios-*`, `material-3` (`available = false`: no dial in
   their rows).
-- **Parts:** `groove` — the ring (K2.5); `value_arc` — the value (KDE's highlight arc); `handle` *(element)* — the
-  slider handle with its shadow (K2.5); `knob_dot` — macOS's knob dot (MAC-N15); `tick` — macOS's ticks.
-- **Widget values:** `thickness: Value<f32>` (K2.5); `start_angle_deg: Value<f32>`, `end_angle_deg: Value<f32>`;
-  `default_size: Value<f32>` (Q2.2).
+- **Parts:**
+  - `body` — the dial's box (the root): `padding`, `bindings`.
+  - `groove` — the ring (K2.5): `stroke`.
+  - `value_arc` — the value (KDE's highlight arc): `stroke`.
+  - `handle` *(element)* — the slider handle with its shadow (K2.5): `fill`, `stroke`, `corners`, `shadow`,
+    `min_width`, `min_height`, `focus`.
+  - `knob_dot` — macOS's knob dot (MAC-N15): `fill`, `min_width`, `min_height`.
+  - `tick` — macOS's ticks: `fill`, `min_width`, `min_height`.
+- **Widget values:** `thickness_px: Value<Px>` (K2.5); `start_angle_deg: Value<Deg>`, `end_angle_deg: Value<Deg>`;
+  `default_size_px: Value<Px>` (Q2.2).
 - **Variants:** keyed `macos-*` `@circular_slider` (the slider type that draws it, MAC-N15).
 - **Sizes and densities:** `macos-*`: the control sizes (MAC-N15).
 - **Flags:** none of its own; state flags used: hover (on `handle`, K2.5), pressed, focus_visible, disabled.
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `value_arc` (`macos-*`), `knob_dot`, `tick` (`kde-breeze`); fields: `handle.shadow`
-  (`macos-*`); values: `default_size` (`macos-*`).
+  (`macos-*`); values: `default_size_px` (`macos-*`).
 - **State-model source:** KDE Breeze `CC_Dial` branches (`st:8144-8217`) and the QML Dial; macOS `NSSlider`
   circular type × control states.
 - **Today's fields:** none.
+- **Notes:** none (the rows place no other widget in a dial's context).
 
 ### drag_image
 
@@ -3094,13 +3565,16 @@ and the owning group's name where the kinds are the same.
   (K-RL06†), GNOME (GN-2.49), Material (MAT-P4-8†: the shadow is the application's image; the window manager
   animates the outcome).
 - **Available:** every preset.
-- **Parts:** `image` — the dragged image's window: foreground colour (GNOME's window fg, icon and text fill,
-  GN-2.49), opacity (translucency: MAC-X21, W3-49†, K-RL06†); `lift_preview` — iOS's lift: transform (scale),
-  shadow, corners (C-24); `count_badge` — the drag-count badge, with text (MAC-X21, C-24; Windows' multi-drag
-  count, W1-110); `caption` — Windows' `DragUIOverride` caption (W3-49†); `glyph` — Windows' drop glyph (copy,
-  move, link; W3-49†); `drop_badge` — the drop-operation feedback per operation (P3-10†); `drop_description` —
-  Windows' shell drop-description label (W3-49†).
-- **Widget values:** `lift_delay_ms: Value<f32>` (C-24); `hotspot: Value<Key>` (where the pointer holds the image;
+- **Parts:**
+  - `image` — the dragged image's window (the root): `fill` (W1-110's drag fill), `text`, `icon` (GNOME's window
+    foreground as icon and text fill, GN-2.49), `opacity` (translucency: MAC-X21, W3-49†, K-RL06†, W1-110),
+    `bindings` (GNOME's window colours, GN-2.49).
+  - `lift_preview` — iOS's lift (C-24): `transform` (scale), `shadow`, `corners`.
+  - `caption` — Windows' `DragUIOverride` caption (W3-49†): `text`.
+  - `glyph` — Windows' drop glyph (copy, move, link; W3-49†): `glyph`.
+  - `drop_badge` — the drop-operation feedback per operation (P3-10†): `fill`, `glyph`.
+  - `drop_description` — Windows' shell drop-description label (W3-49†): `text`.
+- **Widget values:** `lift_delay_ms: Value<Ms>` (C-24); `hotspot: Value<Key>` (where the pointer holds the image;
   key `press_point`, K-RL06†); `presentations: Vec<PresentationTransition>`: events `@lift`, `@drop`, `@cancel`
   (C-24; MAT-P4-8†'s cancelled drag shrinks and fades), `@drop_not_consumed` (MAT-P4-8†: the shadow flies back
   while fading).
@@ -3110,9 +3584,10 @@ and the owning group's name where the kinds are the same.
   MAT-P4-8†); state flags used: none on the image itself; the source element takes `dragged` (K-RL06†, W1-110) and
   the target `drop_target` (MAC-X21, C-24, W3-49†).
 - **Exclusive groups:** none; precedence: state models (S17).
-- **may_be_absent:** parts: `lift_preview` (all but `ios-*`), `count_badge` (`adwaita`, `kde-breeze`,
-  `material-3`), `caption`, `glyph`, `drop_description` (all but `windows-11`), `drop_badge` (all but `ios-*`;
-  Material draws none, MAT-P4-8†); values: `lift_delay_ms` (all but `ios-*`), `hotspot` (presets that state none).
+- **may_be_absent:** parts: `lift_preview` (all but `ios-*`), `caption`, `glyph`, `drop_description` (all but
+  `windows-11`), `drop_badge` (all but `ios-*`;
+  Material draws none, MAT-P4-8†); fields: `image.fill` (all but `windows-11`, W1-110); values: `lift_delay_ms` (all
+  but `ios-*`), `hotspot` (presets that state none).
 - **State-model source:** UIKit `UIDragInteraction`, `UIDragPreviewParameters`, `UIDropOperation` (iOS); AppKit
   `NSDraggingSession` (macOS); WinUI `DragUIOverride` and the shell's `DROPDESCRIPTION` (Windows);
   `qabstractitemview.cpp` (KDE); libadwaita's `dnd` node (GNOME); Android `DragState` (Material).
@@ -3120,7 +3595,8 @@ and the owning group's name where the kinds are the same.
 - **Notes:** owned by the cross-cutting group (MAC-X21, W3-49†) and the list group (K-RL06†). Group 8's
   `drag_preview` is this widget (rename row 13: its `body` is `image`). A list's drag image (K-RL06†, W1-110) is
   `image.opacity` and `values.hotspot` in `context list`; the drop target's highlight is `role.global.drop_highlight`;
-  the drag cursors per operation are `token.pointer.drag_cursors` (P3-10†).
+  the drag cursors per operation are `token.pointer.drag_cursors` (P3-10†). The drag-count badge is
+  `badge @ context drag_image` (MAC-X21, C-24; Windows' multi-drag count, W1-110: one badge, rename row 100).
 
 ### edit_menu
 
@@ -3128,34 +3604,37 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: iOS's edit menu (C-14), KDE's touch text actions (Q2.53†), Android's floating text
   toolbar (MAT-N30†), Windows' CommandBarFlyout (W2-23), GNOME's touch-selection bubble (GN-1.286†, GN-1.184).
-- **Available:** every preset but `macos-*` (`available = false`: no edit menu in its rows).
-- **Parts:** `body` — fill or material, stroke, corners (joined to the secondary menu, W2-23), shadow; `item`
-  *(element)*; `item_label`; `item_icon`; `divider`; `paging_chevron` *(element)* (C-14); `arrow` — towards the
-  selection (C-14); `primary_commands` — Windows' row of commands (W2-23); `secondary_menu` — Windows' overflow
-  container joined to the row, holding `menu` items (W2-23); `expand_button` *(element)* — Windows' more button
-  (W2-23).
+- **Available:** every preset but `macos-*` (`available = false`: no edit menu in its rows); `kde-breeze` flavour
+  `kirigami` only (Kirigami's touch text actions).
+- **Parts:**
+  - `body` — the root: `fill` (colour or material), `stroke`, `corners` (joined to the secondary menu, W2-23),
+    `shadow`, `padding` (GNOME's content margin, GN-1.286†).
+  - `divider` — the line between commands: `stroke`.
+  - `arrow` — towards the selection (C-14): `fill`, `min_width`, `min_height`.
+  - `primary_commands` — the row of commands (Windows', W2-23): `padding`.
 - **Widget values:** `placement: Placement` (above the selection start, below its end without room:
   `UiKitEditMenu` C-14, `KirigamiTextActions` Q2.53†, `AndroidTextToolbar` MAT-N30†, `GtkPopover` with
-  `anchor_grow` GN-1.286†, `WinUiFlyout` W2-23); `gap_to_selection: Value<f32>` (Q2.53†); `presentations:
+  `anchor_grow` GN-1.286†, `WinUiFlyout` W2-23); `gap_to_selection_px: Value<Px>` (Q2.53†); `presentations:
   Vec<PresentationTransition>`: events `Appear`, `@expand`, `@collapse` (W2-23).
 - **Variants:** typed `horizontal`, `vertical` (iOS's compact and pointer styles, C-14; Android's overflow list,
   MAT-N30†); keyed `ios-*` `@compact` (C-14).
 - **Sizes and densities:** none.
-- **Flags:** none of its own; state flags used: hover, pressed, disabled, checked (W2-23's checked commands),
-  focus_visible, open (on `expand_button`: the secondary menu shown).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the primary commands' CommonStates; `checked`
-  combines); others none (states combine; Android's toolbar is the system's, not M3 tokens, MAT-N30†); precedence:
-  state models (S17).
-- **may_be_absent:** parts: `item_label` (`kde-breeze`: icon only), `arrow` (`kde-breeze`, `material-3`,
-  `windows-11`), `paging_chevron` (`kde-breeze`, `adwaita`), `primary_commands`, `secondary_menu`,
-  `expand_button` (all but `windows-11`); values: `presentations` (presets that state none).
+- **Flags:** keyed `windows-11` `@expanded` (the secondary menu shown: the joined corners, W2-23); state flags used:
+  none other (its commands are `button` elements with their own states).
+- **Exclusive groups:** none (the commands are `button` elements, whose groups, the CommonStates on `windows-11`, are
+  `button`'s; Android's toolbar is the system's, not M3 tokens, MAT-N30†); precedence: state models (S17).
+- **may_be_absent:** parts: `arrow` (`kde-breeze`, `material-3`, `windows-11`), `primary_commands` (all but
+  `windows-11`), `divider` (where the platform draws none); values: `presentations` (presets that state none).
 - **State-model source:** iOS `UIEditMenuInteraction`; KDE `MobileTextActionsToolBarImpl.qml` (ToolButton
   states); Android floating `ActionMode` (measured); Windows `CommandBarFlyout` visual states; GNOME `gtktext.c`
   and `_popovers.scss`.
 - **Today's fields:** none.
-- **Notes:** Windows' joined corners are rules on `body` and `secondary_menu` while `expand_button` is `{open}`
-  (W2-23). GNOME's bubble is an OSD popover whose buttons are `button` elements in a `layout` (`@linked`) in
-  `context edit_menu` (GN-1.286†, GN-1.184); KDE's are ToolButtons, `button` variant `tool` in context (Q2.53†).
+- **Notes:** Nested controls: the commands are `button` elements in `context edit_menu` on every platform (iOS's
+  items, C-14; GNOME's bubble buttons in a `layout` `@linked`, GN-1.286†, GN-1.184; KDE's ToolButtons, `button`
+  variant `tool`, Q2.53†; Android's floating toolbar items, MAT-N30†; Windows' AppBarButtons, `tool`, W2-23; KDE's
+  icon-only, Q2.53†); iOS's paging chevrons `button @ variant previous / next context edit_menu` (C-14); Windows'
+  more button `button @ variant overflow context edit_menu`, its secondary menu a `menu` in `context edit_menu`
+  (W2-23). Windows' joined corners are rules on `body` and `menu.body @ context edit_menu {@expanded}` (W2-23).
 
 ### file_chooser
 
@@ -3165,9 +3644,13 @@ and the owning group's name where the kinds are the same.
   Its places list is a `sidebar`, its path bar a `breadcrumb`, its file view a `list`, its buttons `button`s, all
   in its context.
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: their
-  choosers are the system's, out by R1.1, as are GNOME's portal chooser and Windows' Common Item Dialog).
-- **Parts:** `frame` — GNOME's line below the chooser (GN-P3-23†); `preview_pane` — KDE's preview (K2.26†).
-- **Widget values:** `gap: Value<f32>`; `icon_size_slider: Value<bool>` (KDE: a `slider` in context, K2.26†).
+  choosers are the system's, out by R1.1, as are GNOME's portal chooser and Windows' Common Item Dialog);
+  `kde-breeze` flavour `widgets` only (KFileWidget).
+- **Parts:**
+  - `body` — the chooser (the root): `padding`, `bindings`
+  - `frame` — GNOME's line below the chooser, outside its box (GN-P3-23†): `stroke`
+  - `preview_pane` — KDE's preview (K2.26†): `fill`
+- **Widget values:** `gap_px: Value<Px>`; `icon_size_slider: Value<bool>` (KDE: a `slider` in context, K2.26†).
 - **Variants:** none (its rows' variants are the `sidebar`'s and `list`'s in context).
 - **Sizes and densities:** none.
 - **Flags:** none (its elements are other widgets', each with its own states).
@@ -3189,24 +3672,31 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: iOS's `UIFindInteraction` (C-25), KDE's KTextEditor search bar (K2.30†), macOS's
   `NSTextFinder` bar (MAC-N18). Its pattern field is an `input` in context.
 - **Available:** every preset but `adwaita`, `windows-11`, `material-3` (`available = false`: no find bar in their
-  rows; GNOME's GtkSearchBar is `search_field`, as K2.30†'s cross-check places it).
-- **Parts:** `bar` — the bar (fill, padding); `result_count` — the match count (C-25); `nav_button` *(element)* —
-  previous and next; `options_button` *(element)* — the options menu (C-25); `done_button` *(element)* — Done
-  (MAC-N18); `status_label` — KDE's "Not found" in the negative text role (K2.30†).
+  rows; GNOME's GtkSearchBar is `search_field`, as K2.30†'s cross-check places it); `kde-breeze` flavour `widgets`
+  only (KTextEditor's search bar).
+- **Parts:**
+  - `bar` — the bar (the root): `fill`, `padding`
+  - `result_count` — the match count (C-25): `text`
+  - `status_label` — KDE's "Not found" in the negative text role (K2.30†): `text`
 - **Widget values:** `bar_position: Value<FindBarPosition>`, `FindBarPosition { AboveKeyboard, Top, Bottom }` (iOS
   above the keyboard, C-25; the top or bottom of the scroll view, MAC-N18's `findBarPosition`).
 - **Variants:** none (the rows state none).
 - **Sizes and densities:** none.
-- **Flags:** keyed `kde-breeze` `@match`, `@no_match`, `@neutral` (the field's background and the status text by
-  the search result, K2.30†); state flags used: hover, pressed, focus_visible, disabled (its buttons).
+- **Flags:** keyed `kde-breeze` `@match`, `@no_match`, `@warning` (the search result, set by the connector: a match,
+  also after wrapping; none; a neutral result, KColorScheme's `NeutralBackground`, the meaning typed `warning` has
+  elsewhere: the field's background and the status text follow it, K2.30†); state flags used: none other (its
+  buttons are `button` elements).
 - **Exclusive groups:** none (states combine; the connector sets one search-result flag at a time); precedence:
   state models (S17).
-- **may_be_absent:** parts: `result_count`, `done_button` (`kde-breeze`), `status_label` (`ios-*`, `macos-*`),
-  `options_button` (`kde-breeze`, `macos-*`); values: `bar_position` (`kde-breeze`).
+- **may_be_absent:** parts: `result_count` (`kde-breeze`), `status_label` (`ios-*`, `macos-*`); values:
+  `bar_position` (`kde-breeze`).
 - **State-model source:** iOS `UIFindInteraction`; KDE `katesearchbar.cpp`; macOS `NSTextFinder`.
 - **Today's fields:** none.
-- **Notes:** KDE's result colours are `input` rules in `context find_bar` under its flags (`{@match}` and so on;
-  K2.30†). The highlights in the text are `code_editor.search_match` and the global `role.global.find_highlight`
+- **Notes:** Nested controls: the pattern field is an `input` in `context find_bar`, KDE's result colours its rules
+  under the bar's flags (`input @ context find_bar {@match}` and so on, K2.30†); the previous and next buttons are
+  `button @ variant previous / next context find_bar`, iOS's options button `button @ variant menu context
+  find_bar` (C-25), macOS's Done `button @ variant done context
+  find_bar` (MAC-N18). The highlights in the text are `code_editor.search_match` and the global `role.global.find_highlight`
   (C-25, K-SF08†).
 
 ### font_chooser
@@ -3216,12 +3706,20 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's GtkFontDialogButton (GN-2.28) and GtkFontChooserWidget (GN-P3-20†), KDE's
   KFontRequester and KFontChooser (K2.28†).
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no font
-  chooser the toolkit draws; Win32's `ChooseFont` is out, R1.1; macOS's font panel is MAC-N25's row).
-- **Parts:** `requester` *(element: GNOME's font dialog button, KDE's KFontRequester label and button)*;
-  `requester_label` — the font's name (GNOME's bold inner label; KDE's in that font); `requester_separator` —
-  GNOME's hidden separator (GN-2.28); `family_row_label` — a family row's name, drawn in its own face (GN-P3-20†);
-  `preview` — the preview text (K2.28†, GN-P3-20†); `filter_title` — the "Filter by" title (GN-P3-20†).
-- **Widget values:** `grid_gap: Value<f32>` (GN-P3-20†); `row_margins: Sides<Value<f32>>` (GN-P3-20†);
+  chooser the toolkit draws; Win32's `ChooseFont` is out, R1.1; macOS's font panel is MAC-N25's row); `kde-breeze`
+  flavour `widgets` only (KFontRequester, KFontChooser).
+- **Parts:**
+  - `body` — the chooser (the root): `padding`, `bindings`
+  - `requester` *(element: GNOME's font dialog button, KDE's KFontRequester label and button)* — GNOME's `.font`
+    button node
+    (GN-2.28), KDE's sunken styled panel with its frame forced (K2.28†), with their states and focus indicator:
+    `fill`, `stroke`, `corners`, `padding`, `focus`
+  - `requester_label` — the font's name (GNOME's inner label in its own text style; KDE's in that font): `text`
+  - `requester_separator` — GNOME's hidden separator (GN-2.28): `fill`
+  - `family_row_label` — a family row's name, drawn in its own face (GN-P3-20†): `text`
+  - `preview` — the preview text (K2.28†, GN-P3-20†): `text`
+  - `filter_title` — the "Filter by" title (GN-P3-20†): `text`
+- **Widget values:** `grid_gap_px: Value<Px>` (GN-P3-20†); `row_margins: Sides<Value<Px>>` (GN-P3-20†);
   `preview_min_lines: Value<u32>` (K2.28†).
 - **Variants:** keyed `kde-breeze` `@sunken_label` (the requester's styled panel, K2.28†).
 - **Sizes and densities:** none.
@@ -3246,31 +3744,60 @@ and the owning group's name where the kinds are the same.
   SettingsExpander (W2-40†) and the clickable card (W1-139). A boxed list's rounding and row hover stay `list`'s
   (GN-1.165); a row's switch, entry, combo and buttons are those widgets' elements in context.
 - **Available:** every preset but `ios-*`, `material-3` (`available = false`: no form in their rows); `macos-*`
-  from macOS 13 (MAC-N21).
-- **Parts:** `page` — the form's page (kirigami-addons' page fill, K-KA-6†); `group_title`; `group_description`;
-  `section_title`; `field_label`; `card` — the boxed group's background (Kirigami's cards, kirigami-addons'
-  card with its border and shadow, SwiftUI's section card, Windows' settings card: fill, stroke, padding, min size
-  per state, W2-40†, W1-139); `row` *(element)*; `row_title` — transitions (AdwEntryRow's title shrinking to a
-  caption, GN-2.04); `row_subtitle`; `row_prefix`; `row_suffix`; `row_icon`; `row_edit_icon` (AdwEntryRow;
-  kirigami-addons' mobile rows, K-KA-9†); `row_indicator`; `row_arrow` (combo row, action entry, expander,
-  K-KA-7†); `row_separator` — transitions (Kirigami's separator hidden beside a hovered entry, Q2.56†, K-KA-4†).
-- **Widget values:** `group_gap: Value<f32>`; `page_margins: Sides<Value<f32>>`; `page_gap: Value<f32>`;
-  `row_gap: Value<f32>`; `column_gap: Value<f32>` (GN-2.01, GN-2.10, Q2.45); `label_alignment: Value<Alignment>`
-  (Q2.45, Q2.47; restated under `@collapsed`); `narrow_max_width: Value<f32>` (Q2.45, Q2.56†); `collapse:
+  from macOS 13 (MAC-N21); `kde-breeze` flavour `kirigami` only (Kirigami's FormLayout and Forms, kirigami-addons'
+  form cards; Qt Widgets' form layout is `layout` variant `form`, K1.210).
+- **Parts:**
+  - `page` — the form's page (the root; kirigami-addons' page fill, K-KA-6†): `fill`, `padding` (the page's margins,
+    GN-2.10), `bindings`
+  - `group_title` — a group's title (Q2.55†; kirigami-addons' title in the View set with its own insets, K-KA-5†;
+    GNOME's single-line header height, GN-2.10): `text`, `padding`, `min_height`, `bindings`
+  - `group_description`: `text`
+  - `section_title` — a section title (Q2.47): `text`
+  - `field_label` — a field's label (Q2.47; kirigami-addons' label above the field, K-KA-9†): `text`
+  - `card` — the boxed group's background (Kirigami's cards, kirigami-addons' card with its border and shadow in the
+    View set, Q1.129, K-KA-1†, SwiftUI's section card, Windows' settings card: fill, stroke, padding and min sizes
+    per state, W2-40†, W1-139; the outer corners rounded by position rules): `fill`, `stroke`, `corners`, `shadow`,
+    `padding`, `min_width`, `min_height`, `bindings`
+  - `row` *(element)* — a row (GN-2.01, GN-2.08; Q2.55†, K-KA-3†; the expander items' top line, W2-40†): `fill`,
+    `stroke`, `corners`, `padding`, `min_width`, `min_height`, `focus`, `transitions` (the hover and pressed fills
+    and their fade, Q2.55†, K-KA-2†, GN-1.165; the first and last rows' outer corners; GNOME's focus ring, GN-2.03,
+    GN-1.165)
+  - `row_title` — the row's title (wrapped, then elided, K-KA-3†; dimmed in property rows, GN-2.02): `text`,
+    `opacity`, `transitions` (AdwEntryRow's title shrinking to a caption, GN-2.04)
+  - `row_subtitle` — the row's subtitle, dimmed (GN-2.01, Q2.55†, K-KA-15†): `text`, `opacity`
+  - `row_prefix`, `row_suffix` — the boxes of leading and trailing items (GN-2.01, K-KA-3†): `padding`
+  - `row_icon` — the row's icon (K-KA-3†; GNOME's icon margin and disabled icon, GN-2.01; Windows' header icon with
+    its largest size and margin, a disabled bitmap icon dimmed, W2-40†): `icon`, `padding`, `max_width`,
+    `max_height`, `opacity`
+  - `row_edit_icon` — the edit icon in its box (AdwEntryRow, GN-2.03; kirigami-addons' mobile rows, K-KA-9†):
+    `icon`, `padding`, `min_width`, `min_height`
+  - `row_indicator` — AdwEntryRow's indicator in its box, dimmed (GN-2.03): `icon`, `opacity`, `padding`,
+    `min_width`, `min_height`
+  - `row_arrow` — the trailing arrow (combo row, action entry, expander, GN-2.06, Q2.56†, K-KA-7†; Windows' action
+    icon with its margin, W2-40†): `icon`, `padding`
+  - `row_separator` — the line between rows (GN-1.165; Kirigami's separator, dimmed, Q2.56†, K-KA-4†): `fill`,
+    `opacity`, `min_height`, `padding` (its insets, Q2.56†, K-KA-4†), `transitions` (Kirigami's separator hidden
+    beside a hovered entry and its insets animating, Q2.56†, K-KA-4†)
+- **Widget values:** `group_gap_px: Value<Px>`; `page_gap_px: Value<Px>`;
+  `row_gap_px: Value<Px>`; `column_gap_px: Value<Px>` (GN-2.01, GN-2.10, Q2.45); `label_alignment: Value<Alignment>`
+  (Q2.45, Q2.47; restated under `@collapsed`); `narrow_max_width_px: Value<Px>` (Q2.45, Q2.56†); `collapse:
   Value<FormCollapse>`, `FormCollapse { WhenWideDoesNotFit, AtThresholds }` (KDE collapses when the wide layout
   does not fit, Q2.45, Q2.56†; Windows' wrap thresholds, W2-40†; GNOME's preferences-dialog thresholds, GN-2.10);
-  `collapse_thresholds: Vec<(Key, Value<f32>)>` (W2-40†, GN-2.10); `card_max_width: Value<f32>` (the widget's own
-  breakpoint, R16, K-KA-1†); `icon_text_gap: Value<f32>` (K-KA-3†); `leading_gap: Value<f32>`, `trailing_gap:
-  Value<f32>` (K-KA-3†, K-KA-8†); `row_separator_inset: Value<f32>` (Q2.56†, K-KA-4†); `arrow_gap: Value<f32>`
-  (K-KA-7†); `field_label_gap: Value<f32>` (K-KA-9†); `grid_columns: Value<u32>`, `grid_min_cell_width:
-  Value<f32>`, `grid_gap: Value<f32>` (K-KA-15†); `presentations: Vec<PresentationTransition>`: events `@expand`,
+  `collapse_thresholds: Vec<(Key, Value<Px>)>` (W2-40†, GN-2.10); `card_max_width_px: Value<Px>` (the widget's own
+  breakpoint, R16, K-KA-1†); `icon_text_gap_px: Value<Px>` (K-KA-3†); `leading_gap_px: Value<Px>`,
+  `trailing_gap_px: Value<Px>` (K-KA-3†, K-KA-8†); `arrow_gap_px: Value<Px>`
+  (K-KA-7†); `field_label_gap_px: Value<Px>` (K-KA-9†); `grid_columns: Value<u32>`,
+  `grid_min_cell_width_px: Value<Px>`, `grid_gap_px: Value<Px>` (K-KA-15†);
+  `presentations: Vec<PresentationTransition>`: events `@expand`,
   `@collapse` (an expander row's height and opacity, K-KA-7†).
 - **Variants:** typed row kinds `action`, `entry`, `combo`, `switch`, `button`, `expander`, `spin`, `property`
   (GN-2.01–GN-2.10, Q2.56†, K-KA-3†); typed `primary`, `destructive` (button rows, GN-2.08); typed `warning`,
   `error`, `success` (GNOME's entry rows' `.warning`, `.error`, `.success`; KDE's neutral highlight is `warning`);
-  keyed `adwaita` `@monospace` (property and entry rows); typed `flat` (Kirigami Forms' flat style, no card: Q2.56†; the meaning
-  `button`'s `flat` shares); keyed `kde-breeze` `@cards` (Kirigami Forms' card style, Q2.55†), `@collapsed` (set by the connector from `collapse`, R16; Q2.45, Q2.56†), `@ka_form_card`
-  (K-KA-1†–K-KA-9†), `@width_limited` (set by the connector from `card_max_width`, R16; K-KA-1†), `@ka_info_card`
+  keyed `adwaita` `@monospace` (property and entry rows); typed `flat` (Kirigami Forms' flat style, no card: Q2.56†;
+  the meaning `button`'s `flat` shares); keyed `kde-breeze` `@cards` (Kirigami Forms' card style, Q2.55†),
+  `@collapsed` (set by the connector from `collapse`, R16; Q2.45, Q2.56†), `@ka_form_card` (on the form: a
+  kirigami-addons FormCard page, whose rows and nested controls match `context form variant @ka_form_card`,
+  K-KA-1†–K-KA-9†), `@width_limited` (set by the connector from `card_max_width`, R16; K-KA-1†), `@ka_info_card`
   (K-KA-15†), `@date_time` (K-KA-22†), `@icon_row` (K-KA-14†), `@check`, `@radio` (K-KA-3†, K-KA-8†), `@link`
   (K-KA-7†); `windows-11` `@right`, `@right_wrapped`, `@right_wrapped_no_icon`, `@left` (the content
   layouts, W2-40†), and its vertical layout the typed `vertical` (orientation).
@@ -3285,9 +3812,12 @@ and the owning group's name where the kinds are the same.
   others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `row_edit_icon` (all but `adwaita`, `kde-breeze`), `row_indicator` (all but
   `adwaita`), `field_label` (`adwaita`, `macos-*`); fields: `page.fill` (all but `kde-breeze`),
-  `form.card.fill`, `form.card.stroke`, `form.card.shadow` (`kde-breeze` under `flat`: no card); values:
-  `card_max_width`, `icon_text_gap`, `leading_gap`, `trailing_gap`, `arrow_gap`, `field_label_gap`,
-  `grid_columns`, `grid_min_cell_width`, `grid_gap`, `narrow_max_width`, `presentations` (all but `kde-breeze`),
+  `form.card.fill`, `form.card.stroke`, `form.card.shadow` (`kde-breeze` under `flat`: no card), `row.focus`
+  (`kde-breeze` under `@ka_form_card`: K-KA-2† draws no focus ring), `row_separator.padding` (all but `kde-breeze`);
+  values:
+  `card_max_width_px`, `icon_text_gap_px`, `leading_gap_px`, `trailing_gap_px`, `arrow_gap_px`, `field_label_gap_px`,
+  `grid_columns`, `grid_min_cell_width_px`, `grid_gap_px`, `narrow_max_width_px`, `presentations` (all but
+  `kde-breeze`),
   `collapse_thresholds` (`kde-breeze`, `macos-*`).
 - **State-model source:** GNOME `_lists.scss`, `_preferences.scss`, `adw-entry-row.c`; KDE `FormLayout.qml`,
   `forms/cards/*.qml`, `forms/flat/*.qml`, kirigami-addons `formcard/*.qml`; macOS SwiftUI `GroupedFormStyle`;
@@ -3309,10 +3839,12 @@ and the owning group's name where the kinds are the same.
   `NSGlassEffectContainerView` (MAC-X04): nearby glass elements merging into one. Owned jointly with group 8
   (MAC-X04).
 - **Available:** `macos-tahoe`, `ios-26` only (every other preset `available = false`: Liquid Glass is new in 26).
-- **Parts:** `surface` — a `Material` paint with identity `glass` (tint, X-MT-6; interactivity a material
-  parameter), transitions (the interactive glass's press response and the morph between merged elements,
-  X-MT-8, X-MT-9).
-- **Widget values:** `merge_gap: Value<f32>` (the distance within which neighbouring glass elements merge: C-20,
+- **Parts:**
+  - `surface` — the root: a `Material` paint with identity `glass` (tint, X-MT-6; interactivity a material
+    parameter), its corners (MAC-X04) and the press response's scale (X-MT-8): `fill`, `corners`, `transform`,
+    `bindings`, `transitions` (the interactive glass's press response and the morph between merged elements,
+    X-MT-8, X-MT-9)
+- **Widget values:** `merge_gap_px: Value<Px>` (the distance within which neighbouring glass elements merge: C-20,
   X-MT-9, MAC-X04).
 - **Variants:** typed `regular`, `clear` (C-20, X-MT-5, MAC-X04).
 - **Sizes and densities:** none.
@@ -3333,9 +3865,12 @@ and the owning group's name where the kinds are the same.
   (C-32), KDE's QGroupBox (K2.8, K1.211), framed panel and scroll area (K2.21) and QQC2 Frame and GroupBox (Q2.12,
   Q2.13), macOS's `NSBox` (MAC-BX01, MAC-BX02) and image-view frames (MAC-N12).
 - **Available:** every preset but `windows-11`, `material-3` (`available = false`: no titled frame in their rows).
-- **Parts:** `body` — fill (KDE's frame background, iOS's surface), stroke, corners, padding; `title` — text,
-  margin; `focus_line` — KDE's faded line under a focused title (K2.8).
-- **Widget values:** `title_margin: Value<f32>` (GN-2.32, K1.211, MAC-BX01's title-to-border gap);
+- **Parts:**
+  - `body` — the frame (the root; KDE's frame background and its hover and focus outline, K2.8, K2.21; iOS's
+    surface, C-32): `fill`, `stroke`, `corners`, `padding`
+  - `title` — the title (GN-2.32, K2.8, Q2.13, MAC-BX01): `text`
+  - `focus_line` — KDE's faded line under a focused title (K2.8): `fill`
+- **Widget values:** `title_margin_px: Value<Px>` (GN-2.32, K1.211, MAC-BX01's title-to-border gap);
   `title_position: Value<GroupBoxTitlePosition>`, `GroupBoxTitlePosition { None, AboveTop, AtTop, BelowTop,
   AboveBottom, AtBottom, BelowBottom }` (MAC-BX01; KDE's title above the content, Q2.13).
 - **Variants:** typed `flat` (KDE's flat QGroupBox, K2.8; GNOME's `.flat`, GN-2.32); keyed `kde-breeze` `@box`,
@@ -3363,10 +3898,14 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: macOS's ImageKit crop tool (MAC-P4-12†), Windows' Toolkit ImageCropper (W-RV-1†).
 - **Available:** every preset but `adwaita`, `kde-breeze`, `ios-*`, `material-3` (`available = false`: no image
   cropper in their rows).
-- **Parts:** `frame` — fill, stroke (W-RV-1†); `mask` — the shade outside the crop; `outline` — the crop
-  rectangle's outline; `overlay` — Windows' overlay path; `thumb` *(element)* — a handle (fill per state, stroke,
-  corners, focus).
-- **Widget values:** `padding: Sides<Value<f32>>` (W-RV-1†).
+- **Parts:**
+  - `frame` — the root (W-RV-1†): `fill`, `stroke`, `corners`, `padding`
+  - `mask` — the shade outside the crop (W-RV-1†): `fill`
+  - `outline` — the crop rectangle's outline (MAC-P4-12†): `stroke`
+  - `overlay` — Windows' overlay path (W-RV-1†): `fill`
+  - `thumb` *(element)* — a handle (W-RV-1†; fill per state, the system focus visual): `fill`, `stroke`,
+    `corners`, `min_width`, `min_height`, `focus`
+- **Widget values:** none (the frame's padding is `frame.padding`, W-RV-1†).
 - **Variants:** typed `corner`, `edge` on `thumb` (Windows' primary and secondary thumb styles, W-RV-1†;
   ImageKit's handles, measured, MAC-P4-12†).
 - **Sizes and densities:** none.
@@ -3374,7 +3913,7 @@ and the owning group's name where the kinds are the same.
   (W-RV-1†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (each thumb's CommonStates, W-RV-1†); others
   none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `overlay` (`macos-*` until its render: MAC-P4-12† names none); values: `padding`
+- **may_be_absent:** parts: `overlay` (`macos-*` until its render: MAC-P4-12† names none); fields: `frame.padding`
   (`macos-*`).
 - **State-model source:** ImageKit `IKImageView` crop tool (measured); Windows `ImageCropperThumb.xaml`.
 - **Today's fields:** none.
@@ -3387,8 +3926,13 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: Windows' InkToolbar (W2-36), iOS's PencilKit tool picker (C-40†).
 - **Available:** every preset but `adwaita`, `kde-breeze`, `macos-*`, `material-3` (`available = false`: no ink
   toolbar; `PKToolPicker` does not show in Mac apps, C-40†).
-- **Parts:** `bar` — fill, corners, shadow (C-40†); `tool_button` *(element)*; `palette` — the pen colour flyout;
-  `palette_swatch` *(element)*; `stroke_width_selector`; `ruler`.
+- **Parts:**
+  - `bar` — the toolbar (the root; C-40†): `fill`, `corners`, `shadow`, `padding`
+  - `tool_button` *(element)* — a tool (its selected state, C-40†; W2-36): `fill`, `icon`
+  - `palette` — the pen colour flyout (W2-36): `fill`, `corners`, `shadow`
+  - `palette_swatch` *(element)* — a pen colour (W2-36): `stroke`, `corners`
+  - `stroke_width_selector` — (W2-36): `fill`
+  - `ruler` — (W2-36): `fill`, `stroke`
 - **Widget values:** `palette_placement: Placement` (the pen colour flyout, `WinUiFlyout`, W2-36).
 - **Variants:** none (the rows state none).
 - **Sizes and densities:** none.
@@ -3411,11 +3955,14 @@ and the owning group's name where the kinds are the same.
   `KCommandBar` keys (K-RL01†). Windows, macOS, iOS and Material draw shortcuts as text (cross-check, all 3). The
   input listed GN-2.40 as one platform's component; the KDE row, filed as "command bar", is the second.
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: they draw
-  shortcuts as text).
-- **Parts:** `label` — the container of keys and separators (focus indicator); `key` — the cap: fill, stroke (the
-  inset line), corners, padding, min width, text style; `separator` — the text between keys ("+" or ", ").
-- **Widget values:** `key_gap: Value<f32>` (the label's spacing between caps), `key_horizontal_margin:
-  Value<f32>` (K-RL01†).
+  shortcuts as text); `kde-breeze` flavour `widgets` only (KCommandBar's keys; the Quick command bar shows text,
+  K-KA-42†).
+- **Parts:**
+  - `label` — the container of keys and separators (the root; its focus indicator, GN-2.40): `padding`, `focus`
+  - `key` — the cap (GN-2.40; KDE's key with its downward copy as its shadow, its height the font's line spacing,
+    K-RL01†): `fill`, `stroke` (the inset line), `corners`, `shadow`, `padding`, `min_width`, `min_height`, `text`
+  - `separator` — the text between keys ("+" or ", "; the row's text colour, K-RL01†): `text`
+- **Widget values:** `key_gap_px: Value<Px>` (the label's spacing between caps).
 - **Variants:** keyed `adwaita` `@legacy` (GTK's deprecated shortcut label: other padding, other focus offset);
   `kde-breeze` `@on_selected` (separators take the selected row's text colour, K-RL01†).
 - **Sizes and densities:** none.
@@ -3425,7 +3972,8 @@ and the owning group's name where the kinds are the same.
 - **State-model source:** libadwaita selectors by file (`_shortcuts-dialog.scss:34-57`,
   `_deprecated.scss:344-364`); KCommandBar's paint code (`kcommandbar.cpp:299-387`).
 - **Today's fields:** none.
-- **Notes:** KDE's Quick command bar shows shortcuts as plain text, not keycaps (K-KA-42†).
+- **Notes:** KDE's Quick command bar shows shortcuts as plain text, not keycaps (K-KA-42†). GNOME's shortcuts
+  dialog draws its shortcuts as this widget in `context shortcuts_dialog` (GN-2.40, GN-2.41).
 
 ### level_indicator
 
@@ -3435,14 +3983,23 @@ and the owning group's name where the kinds are the same.
   (MAC-N22), iOS's `Gauge` (C-30), Windows' Toolkit RadialGauge (W2-41†).
 - **Available:** every preset but `kde-breeze`, `material-3` (`available = false`: KDE's LCD number and LED are
   keyed components, W2-41†'s cross-check; Material has none); `ios-*` from iOS 16 (C-30).
-- **Parts:** `track` — the empty trough (GNOME's high-contrast border); `fill` — the value; `block` — a discrete
-  segment; `tick` — tick marks (MAC-N06); `scale_tick` — Windows' scale ticks; `needle` — Windows' needle and its
-  border; `value_label`, `unit_label` — Windows' value and unit text; `scale_arc`, `trail_arc` — Windows' scale
-  and value arcs; `cap` — iOS's end caps (C-30).
-- **Widget values:** `block_gap: Value<f32>`, `block_min_length: Value<f32>` (GN-2.26); `thickness: Value<f32>`
-  (C-30, W2-41†); `start_angle_deg: Value<f32>`, `end_angle_deg: Value<f32>` (circular, W2-41†); `thresholds:
-  Vec<(Key, Value<f32>)>` (where low, high, full or warning, critical begin, stated by the platform's defaults:
-  GtkLevelBar's offsets, `NSLevelIndicator`'s warning and critical values).
+- **Parts:**
+  - `track` — the empty trough (the root; GNOME's high-contrast border, GN-2.26; the disabled look, the whole
+    control's opacity, W2-41†): `fill`, `stroke`, `corners`, `padding`, `opacity`
+  - `fill` — the value (GN-2.26, C-30): `fill`, `corners`
+  - `block` — a discrete segment (GN-2.26, MAC-N06): `fill`, `corners`
+  - `tick` — tick marks (MAC-N06): `fill`
+  - `scale_tick` — Windows' scale ticks (W2-41†): `fill`
+  - `needle` — Windows' needle and its border, with its size (W2-41†): `fill`, `stroke`, `min_width`, `min_height`
+  - `value_label`, `unit_label` — Windows' value and unit text (W2-41†): `text`
+  - `scale_arc`, `trail_arc` — Windows' scale and value arcs (W2-41†): `stroke`
+  - `cap` — iOS's end caps (C-30): `fill`
+- **Widget values:** `block_gap_px: Value<Px>`, `block_min_length_px: Value<Px>` (GN-2.26); `thickness_px: Value<Px>`
+  (C-30, W2-41†); `start_angle_deg: Value<Deg>`, `end_angle_deg: Value<Deg>` (circular, W2-41†);
+  `thresholds: Vec<(Key, Value<f32>)>` (where low, high, full or warning, critical begin, stated by the platform's
+  defaults:
+  GtkLevelBar's offsets, `NSLevelIndicator`'s warning and critical values); `tick_spacing: Value<f32>` (RadialGauge's
+  tick interval, in the gauge's value units, W2-41†).
 - **Variants:** typed `continuous`, `discrete` (GNOME, macOS), `linear`, `circular` (iOS, macOS SwiftUI, Windows'
   radial gauge), `vertical` (GNOME; macOS's orientation); keyed `macos-*` `@relevancy` (MAC-N06), `ios-*`
   `@accessory`, `@capacity` (C-30).
@@ -3453,13 +4010,16 @@ and the owning group's name where the kinds are the same.
   are the single flag `disabled`); precedence: state models (S17).
 - **may_be_absent:** parts: `needle`, `scale_arc`, `trail_arc`, `scale_tick` (all but `windows-11`), `unit_label`,
   `value_label` (`adwaita`; `macos-*` and `ios-*` where their gauges draw none: value phase, MAC-N22, C-30),
-  `block` (`ios-*`, `windows-11`), `tick` (`adwaita`, `ios-*`), `cap` (all but `ios-*`); values: `block_gap`,
-  `block_min_length` (`ios-*`, `windows-11`), `start_angle_deg`, `end_angle_deg` (`adwaita`).
+  `block` (`ios-*`, `windows-11`), `tick` (`adwaita`, `ios-*`), `cap` (all but `ios-*`); values: `block_gap_px`,
+  `block_min_length_px` (`ios-*`, `windows-11`), `start_angle_deg`, `end_angle_deg` (`adwaita`).
 - **State-model source:** GNOME `_level-bar.scss`; macOS `NSLevelIndicator.Style`; iOS and macOS SwiftUI
   `GaugeStyle`; Windows `RadialGauge.xaml` states (Normal, Disabled).
 - **Today's fields:** none (MAC-N06's stand-in, today's `progress_bar` field `fill_color`, stays `progress_bar`'s).
-- **Notes:** MAC-N06's rating style (stars and placeholders) is the `rating` widget. GNOME's high-contrast trough is
+- **Notes:** MAC-N06's rating style (stars and placeholders) is the `rating` widget. iOS's `@capacity` is a gauge's
+  capacity style; KDE's KCapacityBar is a bar, `progress_bar` `@capacity`: two kinds by R14's cross-check. GNOME's
+  high-contrast trough is
   a rule under `cond contrast_high` (GN-2.26).
+
 ### media_controls
 
 *From group 6's catalogue.*
@@ -3467,37 +4027,42 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's GtkMediaControls in GtkVideo with its GtkScaleButton (GN-2.54†) and the OSD play
   image (GN-2.44), Windows' MediaTransportControls (W2-35), iOS's AVKit playback controls (C-42†), macOS's
   `AVPlayerView` controls (MAC-N30†), KDE's video controls in kirigami-addons' album viewer (K-KA-35†).
-- **Available:** every preset but `material-3` (`available = false`: no such control). `kde-breeze` draws it only as
-  kirigami-addons' `@ka_album` (`requires_variants = ["@ka_album"]`, K-KA-35†).
-- **Parts:** `bar` — the controls bar: fill or material, opacity, corners, stroke, shadow, bindings (GNOME's `.osd`
-  bar binds the Osd set, GN-2.54†; AVKit's bar material, C-42†, MAC-N30†; Windows' transport bar, W2-35;
-  kirigami-addons' bar, K-KA-35†); `button` *(element: play, pause, full screen, volume, frame step …, its identity a
-  keyed variant)*; `time_label` (position and duration text in tabular figures, GN-2.54†; Windows' time text, W2-35);
-  `volume_popup` (the volume button's popup holding the vertical `slider`: GNOME's `.scale-popup`, GN-2.54†; Windows'
-  volume flyout, W2-35; kirigami-addons' popup, K-KA-35†); `play_overlay` (the image centred over the video: GNOME's
-  OSD play image, GN-2.44; kirigami-addons' download button with a `large` icon, K-KA-35†).
-- **Widget values:** `auto_hide_ms: Value<f32>` (the bar hidden after the pointer stops: GN-2.54†, MAC-N30†, K-KA-35†;
-  Windows' fade-out timing, W2-35); `volume_popup_hide_delay_ms: Value<f32>` (K-KA-35†); `gap: Value<f32>` (the bar's
+- **Available:** every preset but `material-3` (`available = false`: no such control). `kde-breeze` flavour
+  `kirigami` only, and there only as kirigami-addons' `@ka_album` (`requires_variants = ["@ka_album"]`, K-KA-35†).
+- **Parts:**
+  - `bar` — the controls bar (the root; GNOME's `.osd` bar binds the Osd set, GN-2.54†; AVKit's bar material,
+    C-42†, MAC-N30†; Windows' transport bar, W2-35; kirigami-addons' bar, K-KA-35†): `fill` (fill or material),
+    `opacity`, `corners`, `stroke`, `shadow`, `bindings`
+  - `time_label` — position and duration text in tabular figures (GN-2.54†; Windows' time text, W2-35): `text`
+  - `play_overlay` — the image centred over the video (GNOME's OSD play image, GN-2.44; kirigami-addons' download
+    button with a `large` icon, K-KA-35†): `fill`, `corners`, `min_width`, `min_height`, `icon`
+- **Widget values:** `auto_hide_ms: Value<Ms>` (the bar hidden after the pointer stops: GN-2.54†, MAC-N30†, K-KA-35†;
+  Windows' fade-out timing, W2-35); `volume_popup_hide_delay_ms: Value<Ms>` (K-KA-35†); `gap_px: Value<Px>` (the bar's
   box spacing, GN-2.54†); `presentations: Vec<PresentationTransition>`: events `@show`, `@hide` (GNOME's crossfade
   reveal, GN-2.54†; Windows' fade-out, W2-35; AVKit's fade, C-42†).
 - **Variants:** keyed `macos-*` `@inline`, `@floating`, `@minimal` (`AVPlayerViewControlsStyle`, MAC-N30†);
-  `kde-breeze` `@ka_album` (K-KA-35†); the identity of a `button`, keyed on every preset that draws it: `@play`,
-  `@volume`, `@full_screen`, `@frame_step` (GN-2.54†, W2-35, MAC-N30†, K-KA-35†).
+  `kde-breeze` `@ka_album` (K-KA-35†). The buttons' identities are `button`'s typed `play`, `volume`, `full_screen`,
+  `frame_step` (GN-2.54†, W2-35, MAC-N30†, K-KA-35†).
 - **Sizes and densities:** none (no row states a size).
-- **Flags:** none of its own (an active output route is `route_button`'s `route_active`); state flags used: hover,
-  pressed, disabled (on `button`).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `button` (CommonStates); others none (states
-  combine); precedence: state models (S17).
-- **may_be_absent:** parts: `volume_popup` (`ios-*`); `play_overlay` (`windows-11`, `macos-*`, `ios-*`: no row draws
-  one). values: `volume_popup_hide_delay_ms` (every preset but `kde-breeze`); `gap` (every preset but `adwaita`).
+- **Flags:** none of its own (an active output route is `route_button`'s `route_active`; the buttons are `button`
+  elements with their own states).
+- **Exclusive groups:** none (the buttons' CommonStates on `windows-11` are `button`'s); precedence: state models
+  (S17).
+- **may_be_absent:** parts: `play_overlay` (`windows-11`, `macos-*`, `ios-*`: no row draws one). values:
+  `volume_popup_hide_delay_ms` (every preset but `kde-breeze`); `gap_px` (every preset but `adwaita`).
 - **State-model source:** GNOME `gtkmediacontrols.ui`, `gtkvideo.c`, `gtkscalebutton.ui`; Windows
   MediaTransportControls visual states; iOS `AVPlayerViewController` and macOS `AVPlayerView` control styles (AVKit);
   KDE kirigami-addons `VideoMaximizeDelegate.qml`.
 - **Today's fields:** none.
-- **Notes:** the seek bar is a `slider` in `context media_controls`, the volume scale a `slider` variant `vertical` in
-  `context media_controls.volume_popup` (K-KA-35†). The output-route button (iOS's AirPlay button, C-42†; Windows'
-  cast button, W-P4-18†) is a `route_button` in `context media_controls`. Group 7 proposed `play_overlay` (GN-2.44) and the
-  cast button (W-P4-18†, now `route_button`, rename row 82); the kirigami-addons rows added `@ka_album` and the volume popup's delay
+- **Notes:** Nested controls: the buttons are `button` elements in `context media_controls.bar`, their identities
+  `play`, `volume`, `full_screen`, `frame_step` (GN-2.54†, W2-35, MAC-N30†, K-KA-35†); the volume button's popup is a
+  `popover` in `context media_controls` (GNOME's `.scale-popup`, GN-2.54†; Windows' volume flyout, W2-35;
+  kirigami-addons' popup, K-KA-35†) holding the volume scale, a `slider` variant `vertical`; the seek bar is a
+  `slider` in `context media_controls`. The output-route button (iOS's AirPlay button, C-42†; Windows'
+  cast button, W-P4-18†) is a `route_button` in `context media_controls`. Group 7 proposed `play_overlay` (GN-2.44)
+  and the
+  cast button (W-P4-18†, now `route_button`, rename row 82); the kirigami-addons rows added `@ka_album` and the volume
+  popup's delay
   (K-KA-35†).
 
 ### menu_bar
@@ -3508,17 +4073,25 @@ and the owning group's name where the kinds are the same.
   Q2.10), macOS's menu bar and status items (MAC-N20) with SwiftUI's `MenuBarExtra` window (MAC-N34†), Windows'
   MenuBar (W2-22), iPadOS's menu bar (C-37†).
 - **Available:** every preset but `material-3` (`available = false`: no such control). iPadOS draws it from 26 only
-  (C-37†), so the `ios-*` presets before `ios-26` declare it unavailable; on `ios-26` it is iPad's (`cond idiom:pad`).
-- **Parts:** `bar` — fill, stroke, padding, bindings (GNOME's bottom line, GN-2.30; KDE's Header set in the tools area
-  and its inactive group, K2.1, Q2.9; macOS's wallpaper-tinted translucent bar, transparent on 26, MAC-N20; Windows'
-  `MenuBarBackground`, W2-22; iPadOS's fill or material, C-37†); `item` *(element: a top-level title; padding,
-  min_width, min_height, corners, fill and stroke per state, transitions: KDE's highlight fade, Q2.10)*; `item_label`
-  (its text; KDE's highlighted text while hovered, Q2.10); `app_name` (macOS's bold application menu title, MAC-N20);
-  `status_item` *(element: a macOS status item; its icon size, MAC-N20)*; `extra_window` (SwiftUI `MenuBarExtra`'s
-  window: material, corners, shadow, MAC-N34†); `focus_line` (KDE's weak-focus line, K2.1).
-- **Widget values:** `height: Value<f32>` (macOS's bar height, MAC-N20; `MenuBarHeight`, W2-22; Kirigami's item
-  height, Q2.9); `item_gap: Value<f32>`; `status_item_gap: Value<f32>` (MAC-N20); `submenu_corners: Corners` (GNOME's
-  submenu popovers, GN-2.30); `extra_window_gap: Value<f32>` (MAC-N34†); `presentations: Vec<PresentationTransition>`:
+  (C-37†), so the `ios-*` presets before `ios-26` declare it unavailable; `ios-26` declares it, and on a phone, where
+  the system shows no menu bar, rules `@ cond idiom:phone` state `bar`'s fields `Absent` and its other parts absent.
+- **Parts:**
+  - `bar` — the bar (the root; GNOME's bottom line, GN-2.30; KDE's Header set in the tools area and its inactive
+    group, K2.1, Q2.9; macOS's wallpaper-tinted translucent bar, transparent on 26, MAC-N20; Windows'
+    `MenuBarBackground`, W2-22; iPadOS's fill or material, C-37†; the bar's height, MAC-N20, W2-22): `fill`,
+    `stroke`, `padding`, `min_height`, `bindings`
+  - `item` *(element: a top-level title)* — fill and stroke per state (GN-2.30, K2.1, W2-22): `fill`, `stroke`,
+    `corners`, `padding`, `min_width`, `min_height` (Kirigami's item height, Q2.9), `transitions` (KDE's highlight
+    fade, Q2.10)
+  - `item_label` — its text (KDE's highlighted text while hovered, Q2.10): `text`
+  - `app_name` — macOS's application menu title in its own text style (MAC-N20): `text`
+  - `status_item` *(element: a macOS status item)* — its icon size (MAC-N20): `icon`
+  - `extra_window` — SwiftUI `MenuBarExtra`'s window (material, MAC-N34†): `fill`, `corners`, `shadow`
+  - `focus_line` — KDE's weak-focus line (K2.1): `fill`
+- **Widget values:** `item_gap_px: Value<Px>`; `status_item_gap_px: Value<Px>` (MAC-N20);
+  `extra_window_gap_px: Value<Px>`
+  (MAC-N34†); the bar's height is `bar.min_height` (macOS's, MAC-N20; `MenuBarHeight`, W2-22) and Kirigami's item
+  height `item.min_height` (Q2.9); `presentations: Vec<PresentationTransition>`:
   event `Appear` (iPadOS's hidden bar revealed at the top edge, C-37†).
 - **Variants:** keyed `kde-breeze` `@quick` (the Kirigami MenuBar where it differs from QMenuBar, Q2.9, Q2.10).
 - **Sizes and densities:** none. macOS's "Menu bar size" accessibility setting is the condition
@@ -3528,14 +4101,15 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `item` (CommonStates), `open` (W2-22's selected,
   the menu open) combining; others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `app_name`, `status_item`, `extra_window` (every preset but `macos-*`); `focus_line`
-  (every preset but `kde-breeze`). values: `status_item_gap`, `extra_window_gap` (every preset but `macos-*`);
-  `submenu_corners` (every preset but `adwaita`).
+  (every preset but `kde-breeze`); `item`, `item_label` (`ios-26` under `cond idiom:phone`); fields: `bar.fill`,
+  `bar.stroke`, `bar.padding` (`ios-26` under `cond idiom:phone`). values: `status_item_gap_px`, `extra_window_gap_px`
+  (every preset but `macos-*`).
 - **State-model source:** GNOME `_menus.scss` (`menubar > item`); KDE Breeze `CE_MenuBarItem` branches and
   `MenuBarItem.qml`; macOS menu-bar title states (normal, highlighted) and appearance; Windows `MenuBarItem` visual
   states; iPadOS `UIMainMenuSystem`.
 - **Today's fields:** none (today's `menu.*` are the open menus' and stay there).
 - **Notes:** the open menus are `menu` elements; their corners under a menu bar are `menu`'s rules
-  `@ context menu_bar` (K1.64).
+  `@ context menu_bar` (K1.64; GNOME's submenu popovers, GN-2.30).
 
 ### navigation_view
 
@@ -3544,16 +4118,24 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: the stack that pushes and pops pages. GNOME's AdwNavigationView (GN-2.18) and GtkStack
   (GN-3.22), KDE's StackView (Q2.14) and Kirigami's PageRow layers (Q2.15); iOS's navigation push and pop (X-MO-3) and
   macOS's `NSPageController` page transitions (MAC-P3-10†) are its presentations.
-- **Available:** every preset but `windows-11`, `material-3` (`available = false`: no row lists a page stack's look).
-- **Parts:** `page` (the page that moves: its transform and opacity during a transition); `edge_shadow` (the shade
-  beside a page sliding over another: GN-2.18, GN-3.05; macOS's shadow under the top page, to verify, MAC-P3-10†;
-  iOS's edge shadow, X-MO-3); `scrim` (the dim over the page beneath: GN-2.18, GN-3.04; iOS's dim, X-MO-3).
+- **Available:** every preset but `windows-11`, `material-3` (`available = false`: no row lists a page stack's look);
+  `kde-breeze` flavour `kirigami` only (StackView, PageRow).
+- **Parts:**
+  - `body` — the stack's viewport, which clips the moving pages (the root): `bindings`
+  - `page` *(element: each page, the one that moves and the one it uncovers)* — during a transition: `transform`,
+    `opacity`
+  - `edge_shadow` — the shade beside a page sliding over another (GN-2.18, GN-3.05; macOS's shadow under the top
+    page, to verify, MAC-P3-10†; iOS's edge shadow, X-MO-3), fading with the transition: `fill`, `min_width`,
+    `opacity`
+  - `scrim` — the dim over the page beneath (GN-2.18, GN-3.04; iOS's dim, X-MO-3), fading with the transition:
+    `fill`, `opacity`
 - **Widget values:** `presentations: Vec<PresentationTransition>`: keyed events `@push`, `@pop`, `@replace` (GNOME's
   spring, GN-2.18; GtkStack's transitions, GN-3.22; StackView's slide and fade, Q2.14; iOS's push with the parallax of
   the covered view and the title cross-fade, X-MO-3; macOS's page-controller styles, MAC-P3-10†), `@layer_push`,
-  `@layer_pop` (Kirigami's layers, Q2.15); the steps of one event run together (ADD-B10, ADD-A25, ADD-A26);
+  `@layer_pop`, `@layer_replace` (Kirigami's layers, Q2.15); the steps of one event run together (ADD-B10, ADD-A25,
+  ADD-A26);
   `swipe_back: Value<bool>` (the swipe-back gesture, GN-2.18); `swipe_duration_min_ms`,
-  `swipe_duration_max_ms: Value<f32>` (the swipe's animation bounds, GN-2.18).
+  `swipe_duration_max_ms: Value<Ms>` (the swipe's animation bounds, GN-2.18).
 - **Variants:** keyed `kde-breeze` `@layer` (PageRow layers, Q2.15); `macos-*` `@stack_history`, `@stack_book`,
   `@horizontal_strip` (`NSPageController.TransitionStyle`, MAC-P3-10†).
 - **Sizes and densities:** none (no row states a size).
@@ -3574,31 +4156,42 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: GNOME's AdwCarouselIndicatorDots and AdwCarouselIndicatorLines (GN-2.38, GN-2.55†), iOS's
   UIPageControl (C-9), KDE's PageIndicator (Q2.11), Windows' PipsPager (W2-20) and PagerControl (W2-21).
-- **Available:** every preset but `macos-*`, `material-3` (`available = false`: no such control).
-- **Parts:** `dot` *(element; the current page is `selected`: size, opacity, fill, transitions: GNOME's linear
-  indicator animation, GN-2.38; KDE's opacity animation, Q2.11)*; `line` (GNOME's line indicator, GN-2.55†); `platter`
-  (iOS's translucent background while interacting, C-9); `progress` (iOS's timer fill of the current indicator, C-9);
-  `nav_button` *(element: Windows' previous, next, first and last buttons, W2-20, W2-21)*; `page_button` *(element:
-  PagerControl's number panel, W2-21)*; `selection_indicator` (PagerControl's, W2-21).
-- **Widget values:** `dot_gap: Value<f32>`; `max_visible: Value<u32>` (W2-20);
-  `nav_buttons_visibility: Value<NavButtonVisibility>`, `NavButtonVisibility { Always, OnHover }` (PipsPager's buttons
-  shown on hover, W2-20); `follows_scroll: Value<bool>` (GNOME interpolates size and opacity with the scroll position,
-  ADD-B13, GN-2.55†); `edge_dots_shrink: Value<bool>` (iOS's shrinking edge dots when overflowing, C-9).
+- **Available:** every preset but `macos-*`, `material-3` (`available = false`: no such control); `kde-breeze`
+  flavour `kirigami` only (QQC2's PageIndicator).
+- **Parts:**
+  - `body` — the indicator's box (the root: its padding the dots' and lines' margins, GN-2.55†, Q2.11): `padding`
+  - `dot` *(element; the current page is `selected`)* — a dot (its size per state, GN-2.55†, Q2.11, W2-20; iOS's
+    current indicator elongating, C-9): `fill`, `opacity`, `corners`, `min_width`, `min_height`, `transitions`
+    (GNOME's linear indicator animation, GN-2.38; KDE's opacity animation, Q2.11; GNOME's size and opacity
+    interpolated with the scroll position, as expressions over `element.scroll_progress`, `element.item_index` and
+    `element.item_count`, which it declares, `data = { dot = ["scroll_progress", "item_index", "item_count"], line =
+    ["scroll_progress", "item_index", "item_count"] }`, ADD-B13, GN-2.55†)
+  - `line` *(element: GNOME's line indicator, GN-2.55†)* — its thickness, length and opacity, interpolated as the
+    dots are (GN-2.38): `fill`, `opacity`, `min_width`, `min_height`, `transitions`
+  - `platter` — iOS's translucent rounded background while interacting (C-9): `fill`, `corners`
+  - `progress` — iOS's timer fill of the current indicator (C-9): `fill`
+  - `page_button` *(element: PagerControl's number panel, W2-21)* — its width and states: `fill`, `text`, `min_width`
+  - `selection_indicator` — PagerControl's (W2-21): `fill`
+- **Widget values:** `dot_gap_px: Value<Px>` (C-9; the line form's own gap a rule `@ variant @lines`, GN-2.55†);
+  `max_visible: Value<u32>` (W2-20); `nav_buttons_visibility: Value<NavButtonsVisibility>` (PipsPager's buttons shown
+  on hover, W2-20); `edge_dots_shrink: Value<bool>` (iOS's shrinking edge dots when overflowing, C-9).
 - **Variants:** typed `vertical` (iOS's vertical direction, C-9; Windows' orientation, W2-20); keyed `adwaita`
   `@lines` (GN-2.55†); `ios-*` `@automatic`, `@prominent`, `@minimal` (background styles, C-9); `windows-11`
   `@button_panel`, `@combo_box`, `@number_box` (PagerControl's display modes, W2-21).
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** keyed `@scrubbing` (`ios-*`, C-9); state flags used: selected, hover, pressed (KDE's pressed opacity,
   Q2.11), disabled.
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `dot`, `nav_button` and `page_button`
-  (CommonStates), `selected` combining; others none (states combine); precedence: state models (S17).
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `dot` and `page_button` (CommonStates),
+  `selected` combining; others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `line` (every preset but `adwaita`); `platter`, `progress` (every preset but `ios-*`);
-  `nav_button`, `page_button`, `selection_indicator` (every preset but `windows-11`). values: `max_visible`,
-  `nav_buttons_visibility` (every preset but `windows-11`); `follows_scroll` (every preset but `adwaita`);
-  `edge_dots_shrink` (every preset but `ios-*`).
+  `page_button`, `selection_indicator` (every preset but `windows-11`). values: `max_visible`,
+  `nav_buttons_visibility` (every preset but `windows-11`); `edge_dots_shrink` (every preset but `ios-*`).
 - **State-model source:** GNOME `adw-carousel-indicator-dots.c`, `adw-carousel-indicator-lines.c`; iOS
   `UIPageControl`; KDE `PageIndicator.qml`; Windows PipsPager and PagerControl visual states.
 - **Today's fields:** none.
+- **Notes:** Nested controls: Windows' previous, next, first and last buttons are `button @ variant previous / next
+  context page_indicator` and `button @ variant @first / @last context page_indicator` (keyed `windows-11`, W2-20,
+  W2-21).
 
 ### picker_wheel
 
@@ -3608,25 +4201,30 @@ and the owning group's name where the kinds are the same.
   (MAT-N31†), Windows' looping selectors in the date and time picker flyouts (W2-04), the tumblers of kirigami-addons'
   time popup (K-KA-23†).
 - **Available:** every preset but `adwaita`, `macos-*` (`available = false`: no such control; macOS's pickers are
-  textual and graphical only, MAT-N31†'s cross-check). `kde-breeze` draws it in kirigami-addons' time popup
-  (K-KA-23†).
-- **Parts:** `container` (Material's container: fill per state, shape, MAT-N31†); `item` *(element; the centred item
-  is `selected`: text, fill, opacity and text style by the distance from the centre, ADD-B13; its `transitions` carry
-  the snap to the centre, group `Geometry` with a spring, C-7, MAT-N31†; its focus, Material's focus ring, MAT-N31†)*;
-  `selection_band` (fill, corners, insets: iOS's band, C-7; Windows' highlight band, W2-04; kirigami-addons' highlight
-  border, K-KA-23†).
-- **Widget values:** `item_height: Value<f32>` (C-7, W2-04); `visible_items: Value<u32>` (C-7, MAT-N31†, K-KA-23†);
-  `curvature: Value<f32>` (iOS's perspective curvature, C-7); `off_center_fade: Value<f32>` (iOS's fading of
-  off-centre rows, C-7; kirigami-addons' opacity by displacement, K-KA-23†); `component_gap: Value<f32>` (C-7);
-  `momentum: Value<ScrollPhysics>` (C-7).
+  textual and graphical only, MAT-N31†'s cross-check). `kde-breeze` flavour `kirigami` only, in kirigami-addons'
+  time popup (K-KA-23†).
+- **Parts:**
+  - `container` — the root, always drawn: Material's container, fill per state, its shape by corners and its
+    height (MAT-N31†); its fields `Absent` on the other presets: `fill`, `corners`, `min_height`, `padding`
+  - `item` *(element; the centred item is `selected`)* — `text`, `fill`, `opacity` (the text style's size, line
+    height and tracking and the opacity by the distance from the centre, as expressions over
+    `element.scroll_progress` and `element.item_index`, which it declares, ADD-B13: iOS's fading of off-centre
+    rows, C-7, kirigami-addons' opacity by displacement, K-KA-23†, Material's text interpolated between two ramp
+    roles, MAT-N31†), `padding` (Windows' item padding, W2-04), `focus` (Material's focus ring, MAT-N31†),
+    `transitions` (the snap to the centre, group `Geometry` with a spring, C-7, MAT-N31†)
+  - `selection_band` — the band (iOS's band, C-7; Windows' highlight band with its height, W2-04; kirigami-addons'
+    highlight border, thicker with keyboard focus, K-KA-23†): `fill`, `stroke`, `corners`, `min_height`
+- **Widget values:** `item_height_px: Value<Px>` (C-7, W2-04); `visible_items: Value<u32>` (C-7, MAT-N31†, K-KA-23†);
+  `curvature: Value<f32>` (iOS's perspective curvature, C-7); `component_gap_px: Value<Px>` (C-7); `momentum:
+  ScrollPhysics` (a plain value, S4.2's, C-7).
 - **Variants:** none (no row names a style).
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** none of its own; state flags used: selected (the centred item), disabled (Material's disabled colours),
   focus_visible: Material's focus ring (MAT-N31†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `item` (the looping selector item's
   CommonStates), `selected` combining; others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `container` (every preset but `material-3`). values: `curvature` (every preset but
-  `ios-*`).
+- **may_be_absent:** fields: `container.fill`, `container.corners`, `container.min_height` (every preset but
+  `material-3`). values: `curvature` (every preset but `ios-*`).
 - **State-model source:** iOS `UIPickerView`; Material `ScrollField.kt`; Windows `LoopingSelector` visual states; KDE
   kirigami-addons `TimePicker.qml` (its Tumbler from Qt's fallback style, to verify, K-KA-23†).
 - **Today's fields:** none.
@@ -3643,14 +4241,15 @@ and the owning group's name where the kinds are the same.
   RefreshContainer and RefreshVisualizer (W2-26).
 - **Available:** every preset but `adwaita`, `macos-*` (`available = false`: GNOME has no such control; macOS draws it
   from 27, MAC-N24, which no `macos-*` preset covers yet). `kde-breeze` flavour `kirigami` only (Q2.54†).
-- **Parts:** `indicator` (the container: fill, size, shadow: Material's container colour, size and elevation, MAT-N28;
-  Windows' circle and colours, W2-26); `spinner` (the pull-progress arc or spokes: KDE's arc swept by the pull
-  progress with its stroke, Q2.54†, Q1.121; iOS's spokes appearing as the pull progresses, C-10; its values read the
-  pull progress `element.progress`, ADD-B12, declared `data = { spinner = ["progress"] }`; while refreshing, a
-  `spinner` element in its context); `arrow` (Windows' arrow glyph, W2-26); `title` (iOS's attributed title, C-10);
-  `strip` (Kirigami's strip above the content, Q2.54†).
-- **Widget values:** `trigger_distance: Value<f32>` (C-10, MAT-N28, W2-26); `refresh_delay_ms: Value<f32>` (Q2.54†);
-  `content_shift: Value<f32>` (the content moved down while refreshing, Q2.54†); `loop: Value<Loop>` (Windows' spin
+- **Parts:**
+  - `indicator` — the container (the root: Material's container colour, size and elevation, MAT-N28; Windows'
+    circle and colours, W2-26; the arc inset in its box, Q2.54†): `fill`, `corners`, `shadow`, `padding`,
+    `min_width`, `min_height`
+  - `arrow` — Windows' arrow glyph (W2-26): `glyph`
+  - `title` — iOS's attributed title (C-10): `text`
+  - `strip` — Kirigami's strip above the content, with its height (Q2.54†): `min_height`
+- **Widget values:** `trigger_distance_px: Value<Px>` (C-10, MAT-N28, W2-26); `refresh_delay_ms: Value<Ms>` (Q2.54†);
+  `content_shift_px: Value<Px>` (the content moved down while refreshing, Q2.54†); `loop: Value<Loop>` (Windows' spin
   animation, W2-26); `progress_sweep: Value<ProgressSweep>`, `ProgressSweep { Arc, Spokes }` (KDE's arc swept by the
   pull progress, Q2.54†; iOS's spokes by the pull progress, C-10); `presentations: Vec<PresentationTransition>`:
   events `@collapse` (iOS's collapse after `endRefreshing`, C-10; Material's motion, MAT-N28), `@content_shift` (KDE's
@@ -3660,12 +4259,16 @@ and the owning group's name where the kinds are the same.
 - **Flags:** shared `pulling`, `refreshing` (every preset that draws it); state flags used: none other.
 - **Exclusive groups:** none (the connector sets one phase at a time); precedence: state models (S17).
 - **may_be_absent:** parts: `arrow` (every preset but `windows-11`); `title` (every preset but `ios-*`); `strip`
-  (every preset but `kde-breeze`). values: `refresh_delay_ms`, `content_shift` (every preset but `kde-breeze`); `loop`
+  (every preset but `kde-breeze`). values: `refresh_delay_ms`, `content_shift_px` (every preset but `kde-breeze`);
+  `loop`
   (every preset but `windows-11`: the others spin the `spinner` element).
 - **State-model source:** iOS `UIRefreshControl`; KDE `PullDownIndicator.qml`, `ScrollablePage.qml`; macOS
   `NSScrollView` refresh controller (27); Material Compose `PullToRefresh` states; Windows `RefreshVisualizerState`.
 - **Today's fields:** none.
-- **Notes:** while refreshing, Kirigami's BusyIndicator spins as a `spinner` in `context pull_to_refresh` (Q2.54†).
+- **Notes:** Nested controls: the pull-progress arc or spokes are a `spinner` in `context pull_to_refresh`, variant
+  `determinate` while `{pulling}`, its progress the pull progress (`element.progress`, ADD-B12; KDE's arc with its
+  stroke, Q2.54†, Q1.121; iOS's spokes appearing as the pull progresses, C-10, as `progress_sweep` says), and
+  indeterminate while `{refreshing}` (Kirigami's BusyIndicator, Q2.54†).
 
 ### rating
 
@@ -3673,11 +4276,15 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: KDE's KRatingWidget (K2.19), Windows' RatingControl (W2-06), macOS's `NSLevelIndicator`
   rating style (MAC-N06).
-- **Available:** every preset but `adwaita`, `ios-*`, `material-3` (`available = false`: no such control).
-- **Parts:** `star` *(element: one star; its `glyph` and fill per flag and state; Windows' hover preview scale, to
-  verify, W2-06)*; `caption` (Windows' caption text, W2-06).
-- **Widget values:** `item_gap: Value<f32>` (W2-06); `half_steps: Value<bool>` (K2.19); `glyph: Value<Glyph>` (the
-  star's glyph source: Windows' font glyph and its size for rendering, W2-06; KDE's star icon, K2.19).
+- **Available:** every preset but `adwaita`, `ios-*`, `material-3` (`available = false`: no such control);
+  `kde-breeze` flavour `widgets` only (KRatingWidget).
+- **Parts:**
+  - `body` — the row of stars (the root): `padding`, `focus`
+  - `star` *(element: one star)* — the star's source, Windows' font glyph and its size for rendering (W2-06), KDE's
+    star icon (K2.19), with its fill per flag and state: `glyph`, `transform` (Windows' hover preview scale, to
+    verify, W2-06)
+  - `caption` — Windows' caption text (W2-06): `text`
+- **Widget values:** `item_gap_px: Value<Px>` (W2-06); `half_steps: Value<bool>` (K2.19).
 - **Variants:** none (no row names a style).
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** shared `filled`, `half` (KDE, Windows, macOS), `preview` (the hover preview: KDE, Windows); shared
@@ -3690,6 +4297,7 @@ and the owning group's name where the kinds are the same.
 - **State-model source:** KDE `kratingwidget.cpp`; Windows RatingControl visual states; macOS
   `NSLevelIndicator.Style.rating`.
 - **Today's fields:** none.
+- **Notes:** none (the rows place no other widget in a rating's context).
 
 ### redaction
 
@@ -3702,8 +4310,10 @@ and the owning group's name where the kinds are the same.
   element's context.
 - **Available:** every preset but `adwaita`, `kde-breeze`, `windows-11`, `material-3` (`available = false`: no such
   control). SwiftUI draws it from macOS 11 and iOS 14 (MAC-P4-13†, P4-18†).
-- **Parts:** `mask` — the shape that replaces text and images, keeping their size: fill per scheme, corners, the shape
-  per line of text, transitions (an animation, if the platform draws one).
+- **Parts:**
+  - `mask` — the root: the shape that replaces text and images, keeping their size (fill per scheme, a shape per
+    line of text, MAC-P4-13†, P4-18†): `fill`, `corners`, `bindings`, `transitions` (an animation, if the platform
+    draws one)
 - **Widget values:** none (the rows state none; the mask's look is the part's).
 - **Variants:** none (the rows name the placeholder reason only).
 - **Sizes and densities:** none (the mask takes the redacted content's size).
@@ -3712,6 +4322,7 @@ and the owning group's name where the kinds are the same.
 - **may_be_absent:** fields: `mask.transitions` (no animation, where the platform draws none).
 - **State-model source:** SwiftUI `RedactionReasons` (placeholder) on macOS and iOS, measured.
 - **Today's fields:** none.
+- **Notes:** the redacted element carries `redacted` (ADD-A14); this widget is queried in its context.
 
 ### rich_text
 
@@ -3722,15 +4333,26 @@ and the owning group's name where the kinds are the same.
   `AnnotatedString.fromHtml` (MAT-P3-20†).
 - **Available:** every preset but `adwaita`, `windows-11` (`available = false`: no row lists one; Windows'
   MarkdownTextBlock is Toolkit Labs, out by R1.2).
-- **Parts:** `paragraph`; `heading_1` … `heading_6` (K-SF12†, K-P4-14†, MAT-P3-20†); `emphasis`; `strong`;
-  `strikethrough`; `subscript`; `superscript`; `inline_code` (font, fill, K-SF13†, MAC-SF03†, SF-3†); `code_block`;
-  `preformatted`; `block_quote` (K-SF14†); `list_marker` (its glyph, K-SF15†); `task_box` (K-SF15†); `table`;
-  `table_cell`; `table_header_cell` (K-SF16†); `rule` (the horizontal rule, K-SF17†); `definition_term`;
-  `definition_description` (K-P4-14†).
-- **Widget values:** `block_margins: Vec<(Key, Sides<Value<f32>>)>` (keyed by part name: each block part's margins, as
-  Qt's HTML and Markdown defaults state them, K-SF14†, K-SF17†, K-P4-14†); `list_indent_per_level: Value<f32>`;
-  `list_marker_gap: Value<f32>` (K-SF15†); `list_marker_kinds: Vec<Key>` (per nesting level, K-SF15†);
-  `quote_indent_per_level: Value<f32>` (K-SF14†).
+- **Parts:**
+  - `body` — the text's box (the root): `padding`, `bindings`
+  - `paragraph`, `heading_1` … `heading_6` (the headings: K-SF12†, K-P4-14†, MAT-P3-20†): `text`
+  - `emphasis`, `strong`, `strikethrough`, `subscript`, `superscript`: `text`
+  - `inline_code` (K-SF13†, MAC-SF03†, SF-3†): `text`, `fill`
+  - `code_block` (K-SF13†): `text`, `fill`
+  - `preformatted` (K-P4-14†): `text`
+  - `block_quote` (K-SF14†: no fill, no bar): `fill`, `stroke`
+  - `list_marker` — its glyph (K-SF15†): `glyph`
+  - `task_box` — the square and its cross when checked (K-SF15†): `stroke`, `glyph`
+  - `table` — the table's collapsed border (K-SF16†): `stroke`
+  - `table_cell` — a cell with its padding and border (K-SF16†): `padding`, `stroke`, `text`
+  - `table_header_cell` — a header cell, its text centred and heavier (K-SF16†, K-P4-14†): `padding`, `stroke`,
+    `text`
+  - `rule` — the horizontal rule (K-SF17†): `stroke`
+  - `definition_term`, `definition_description` (K-P4-14†): `text`
+- **Widget values:** `block_margins: Vec<(Key, Sides<Value<Px>>)>` (keyed by part name: each block part's margins, as
+  Qt's HTML and Markdown defaults state them, K-SF14†, K-SF17†, K-P4-14†); `list_indent_per_level_px: Value<Px>`;
+  `list_marker_gap_px: Value<Px>` (K-SF15†); `list_marker_kinds: Vec<Key>` (per nesting level, K-SF15†);
+  `quote_indent_per_level_px: Value<Px>` (K-SF14†).
 - **Variants:** typed `markdown` (KDE's Markdown importer, SwiftUI `Text` Markdown), `html` (Qt's HTML parser, Apple's
   HTML import, Compose `AnnotatedString.fromHtml`).
 - **Sizes and densities:** none (the text follows the text ramp).
@@ -3760,9 +4382,12 @@ and the owning group's name where the kinds are the same.
   the system's (macOS's device popover and the Picture in Picture window: out, R1.1) or, on Windows, the keyed
   `component.casting_picker`.
 - **Available:** every preset but `adwaita`, `kde-breeze`, `material-3` (`available = false`: no such control).
-- **Parts:** `body` *(element: the button; fill per state, macOS's `routePickerButtonColor(for:)`, MAC-P3-9†; its
-  border when `bordered`; Windows' AppBarButton look, W-P4-18†)*; `glyph` (the route glyph: AVKit's system image,
-  MAC-P3-9†; iOS's `tintColor` and `activeTintColor`, C-42†; Windows' Segoe glyph, W-P4-18†).
+- **Parts:**
+  - `body` — the button, the root: `fill` (per state, macOS's `routePickerButtonColor(for:)`, MAC-P3-9†; Windows'
+    AppBarButton look, W-P4-18†), `stroke` (its border when `bordered`, MAC-P3-9†), `corners`, `padding` (the glyph's
+    inset).
+  - `glyph` — the route glyph: `glyph` (AVKit's system image, MAC-P3-9†; iOS's `tintColor` and `activeTintColor`,
+    C-42†; Windows' Segoe glyph, W-P4-18†).
 - **Widget values:** `bordered: Value<bool>` (`isRoutePickerButtonBordered`, MAC-P3-9†).
 - **Variants:** none (no row names a style).
 - **Sizes and densities:** none (no row states a size; AVKit's view is sized by the application).
@@ -3787,8 +4412,11 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: iOS's UIBandSelectionInteraction (C-47†), KDE's QRubberBand (K2.12) and its dock drop zone
   (K-SF18†), macOS's marquee in Finder and `NSCollectionView` (MAC-N31†), GNOME's `rubberband` node in lists and icon
   views (GN-1.175, GN-1.280†).
-- **Available:** every preset but `windows-11`, `material-3` (`available = false`: no row lists one).
-- **Parts:** `body` — fill, stroke, corners.
+- **Available:** every preset but `windows-11`, `material-3` (`available = false`: no row lists one); `kde-breeze`
+  flavour `widgets` only (QRubberBand).
+- **Parts:**
+  - `body` — the band, the root: `fill`, `stroke`, `corners`, `bindings` (the selection roles of the view it is drawn
+    over, K2.12, GN-1.175).
 - **Widget values:** `presentations: Vec<PresentationTransition>`: event `Disappear` (iOS's fade, C-47†).
 - **Variants:** keyed `kde-breeze` `@filled` (set by the connector where the band's parent is a QGraphicsView, which
   the model has no widget for; inside a list or a main window the `context` rules fill it, K2.12).
@@ -3811,10 +4439,13 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: KDE's KRuler (K2.32†), macOS's `NSRulerView` (MAC-N17).
 - **Available:** every preset but `adwaita`, `windows-11`, `ios-*`, `material-3` (`available = false`: no such
-  control).
-- **Parts:** `body` (the ruler's fill); `tick` (one mark: its stroke, its length per level from `tick_lengths`);
-  `label` (K2.32†'s labels); `marker` *(element: macOS's markers, KDE's pointer triangle filled with the background)*.
-- **Widget values:** `thickness: Value<f32>`; `tick_lengths: Vec<(Key, Value<f32>)>` (keys `end`, `big`, `medium`,
+  control); `kde-breeze` flavour `widgets` only (KRuler).
+- **Parts:**
+  - `body` — the ruler, the root: `fill`, `bindings` (the widget's colour roles its marks and pointer take, K2.32†).
+  - `tick` — one mark: `stroke` (its length per level from `tick_lengths`).
+  - `label` — K2.32†'s labels: `text`.
+  - `marker` *(element)* — macOS's markers, KDE's pointer triangle filled with the background: `glyph`.
+- **Widget values:** `thickness_px: Value<Px>`; `tick_lengths: Vec<(Key, Value<Px>)>` (keys `end`, `big`, `medium`,
   `little`, `base`, K2.32†).
 - **Variants:** none (no row names a style).
 - **Sizes and densities:** none (no row states a size).
@@ -3823,6 +4454,7 @@ and the owning group's name where the kinds are the same.
 - **may_be_absent:** none (both presets draw every part; KDE's pointer is the application's option, K2.32†).
 - **State-model source:** KDE `kruler.cpp`; macOS `NSRulerView` (measured).
 - **Today's fields:** none.
+- **Notes:** none (the rows place no other widget in a ruler's context).
 
 ### search_field
 
@@ -3831,44 +4463,55 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's GtkSearchBar and GtkSearchEntry (GN-2.21, GN-2.22), iOS's UISearchBar and
   UISearchTextField (C-3), macOS's `NSSearchField` (MAC-N02) and toolbar search item (MAC-TL07), Material's search bar
   and search view (MAT-N14, MAT-N15) and the app bar's embedded search (MAT-TA6), Windows' AutoSuggestBox (W2-15),
-  KDE's Kirigami SearchField (Q1.15–Q1.17) and kirigami-addons' SearchPopupField (K-KA-32†). Its text is an `input`
-  element in its context.
-- **Available:** every preset.
-- **Parts:** `field` (the bezel or container); `search_icon`; `placeholder`; `clear_button` *(element)*;
-  `cancel_button` *(element: iOS's, C-3)*; `query_button` *(element: Windows', W2-15)*; `recents_indicator` (macOS's,
-  MAC-N02); `leading_icon`, `trailing_icon`, `avatar` (Material's, MAT-N14); `supporting_text` (MAT-N14); `token`
-  *(element: iOS's search tokens, C-3)*; `bar` (GNOME's search bar, GN-2.21; Material's search bar container,
-  MAT-N14); `bar_close_button` *(element: GN-2.21)*; `view` (Material's search view, MAT-N15; kirigami-addons' popup
-  surface, K-KA-32†); `view_header` (MAT-N15); `view_divider` (MAT-N15; kirigami-addons' separator under the field,
-  K-KA-32†).
+  KDE's Kirigami SearchField (Q1.15–Q1.17) and kirigami-addons' SearchPopupField (K-KA-32†). Its field is an `input`
+  element in its context: the bezel, text, placeholder and magnifier are the input's (Nested controls).
+- **Available:** every preset; `kde-breeze` flavour `kirigami` only (Kirigami's SearchField; Qt Widgets' search
+  fields are line edits, `input`).
+- **Parts:**
+  - `body` — the search field's outer box, the root: `padding`, `bindings`.
+  - `bar` — GNOME's search bar, GN-2.21; Material's search bar container, MAT-N14: `fill` (GNOME's header-bar fill;
+    Material's container, its on-scroll fill in an app bar, MAT-TA6), `stroke` (GNOME's bottom shade line), `corners`,
+    `min_height`, `shadow`, `padding`.
+  - `recents_indicator` — macOS's, MAC-N02: `glyph`.
+  - `supporting_text` — MAT-N14: `text`.
+  - `view` — Material's search view, MAT-N15; kirigami-addons' popup surface, K-KA-32†: `fill`, `stroke`, `corners`,
+    `shadow`, `bindings` (kirigami-addons' View set, K-KA-18†, K-KA-32†).
+  - `view_header` — MAT-N15: `min_height`.
+  - `view_divider` — MAT-N15; kirigami-addons' separator under the field, K-KA-32†: `fill`, `min_height`.
 - **Widget values:** `placeholder_alignment: Value<Alignment>` (macOS's centred placeholder, which moves to the
   leading edge on focus, MAC-N02; the move is the `placeholder`'s `transitions`); `view_placement: Placement`
   (kirigami-addons' popup, strategy `KirigamiAddonsSearchPopup`, K-KA-32†); `auto_search_min_chars: Value<u32>`
   (kirigami-addons' `autoAccept`, K-KA-32†); `presentations: Vec<PresentationTransition>`: events `@cancel_appear`,
   `@cancel_disappear` (iOS's cancel button, C-3), `@bar_reveal` (GNOME's search bar, a revealer, GN-3.22),
-  `@view_open` (Material's search view, MAT-N15; kirigami-addons' popup growing from the field, K-KA-32†), `@expand`
-  (macOS's toolbar search item expanding from a button into a field, MAC-TL07).
+  `@view_open`, `@view_close` (Material's search view, MAT-N15; kirigami-addons' popup growing from the field and
+  back, K-KA-32†), `@expand` (macOS's toolbar search item expanding from a button into a field, MAC-TL07).
 - **Variants:** typed `flat` (GNOME's flat search bar, GN-2.21; `button`'s meaning); keyed `adwaita` `@inline`,
   `@shrunk` (the search bar, GN-2.21); `ios-*` `@default`,
   `@prominent`, `@minimal` (`searchBarStyle`, C-3); `material-3` `@docked`, `@full_screen` (the view, MAT-N15),
   `@contained` (Expressive, MAT-N14); `kde-breeze` `@ka_search_popup` (K-KA-32†).
 - **Sizes and densities:** `macos-*`: its control sizes (MAC-N02).
-- **Flags:** shared `empty` (no text: the clear button hidden); state flags used: focused, hover, pressed, disabled.
-- **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` on `field` (the text box's CommonStates),
-  `[disabled, pressed, hover]` on `query_button` and `clear_button` (CommonStates); the clear button's visibility is
-  not a group (it follows `empty`); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `cancel_button`, `token` (every preset but `ios-*`); `query_button` (every preset but
-  `windows-11`); `recents_indicator` (every preset but `macos-*`); `leading_icon`, `trailing_icon`, `avatar`,
-  `supporting_text`, `view_header` (every preset but `material-3`); `view`, `view_divider` (every preset but
-  `material-3`, `kde-breeze`); `bar`, `bar_close_button` (`macos-*`, `windows-11`, `ios-*`, `kde-breeze`). values:
-  `view_placement`, `auto_search_min_chars` (every preset but `kde-breeze`).
+- **Flags:** none of its own (the text's `empty` is the `input`'s, which hides the clear button); state flags used:
+  focus_within, disabled.
+- **Exclusive groups:** none of its own: the field's `[disabled, focused, hover]` (the text box's CommonStates on
+  `windows-11`) is `input`'s, the buttons' `[disabled, pressed, hover]` `button`'s; precedence: state models (S17).
+- **may_be_absent:** parts: `recents_indicator` (every preset but `macos-*`); `supporting_text`, `view_header` (every
+  preset but `material-3`); `view`, `view_divider` (every preset but `material-3`, `kde-breeze`); `bar` (`macos-*`,
+  `windows-11`, `ios-*`, `kde-breeze`). values: `view_placement`, `auto_search_min_chars` (every preset but
+  `kde-breeze`).
 - **State-model source:** GNOME `_toolbars.scss` (`searchbar`), `_entries.scss`; iOS `UISearchBar`,
   `UISearchTextField`, `UISearchBar.Style`; macOS `NSSearchField` cell states; Material search-bar and search-view
   tokens; Windows AutoSuggestBox visual states; KDE Kirigami `SearchField` and kirigami-addons `SearchPopupField.qml`.
 - **Today's fields:** none (`input.*`, the stand-in, stays `input`'s).
 - **Notes:** in a toolbar (MAT-TA6, MAC-TL07; iOS 26's glass capsule in a toolbar or the tab bar, C-3) its rules are
-  `@ context toolbar.bar`. Its suggestion list is an `autocomplete` element in context (W2-15). KDE's field metrics
-  are `input` rules `@ context any search_field` (Q1.15–Q1.17); a search field in a form row (GN-2.06) or a sidebar
+  `@ context toolbar.bar`. Nested controls: the field is an `input` in `context any search_field` (its bezel
+  `input.body`, its text, its `placeholder`, the magnifier `input.icon @ variant leading`, Material's leading icon
+  likewise, MAT-N14; KDE's field metrics, Q1.15–Q1.17); the clear button `button @ variant clear_field` there; iOS's
+  cancel button `button @ variant @cancel context search_field` (C-3); Windows' query button `button @ variant @query
+  context search_field` (W2-15); Material's trailing icon buttons `button @ variant icon_only context search_field`
+  and its avatar `avatar @ context search_field` (MAT-N14); GNOME's search-bar close button `button @ variant close
+  context search_field.bar` (GN-2.21); iOS's search tokens `chip @ context search_field` (C-3). One tree with
+  `autocomplete`: the suggestion list is an `autocomplete` in the field's context (W2-15, C-38†); a search field in a
+  form row (GN-2.06) or a sidebar
   header (K-KA-41†) is placed by context.
 
 ### sheet
@@ -3880,22 +4523,35 @@ and the owning group's name where the kinds are the same.
   K-SF23†) and kirigami-addons' BottomDrawer (K-KA-30†, K-KA-31†), Material's bottom, side and floating sheets
   (MAT-N19–MAT-N21, MAT-SF03†).
 - **Available:** every preset but `macos-*`, `windows-11` (`available = false`: no such control; macOS's sheet is
-  `dialog` variant `@sheet`, MAC-D03).
-- **Parts:** `body` (fill, corners, shadow, max_width, bindings; transitions on corners and shadow, GN-2.17); `handle`
-  (the grabber: GN-2.17, C-12, Q2.39, MAT-N19, K-KA-30†); `header`; `title`; `header_separator`; `footer`;
-  `footer_separator` (Q2.38); `scrim` (the dim: GN-2.17, GN-3.04, Q2.38, X-SC-1, MAT-X23); `bottom_bar`
-  (AdwBottomSheet's always-visible bar, GN-2.17); `divider` (Material's side sheet, MAT-N20); `close_button`
-  *(element: Material's side sheet, MAT-N20)*.
-- **Widget values:** `detents: Vec<(Key, Value<f32>)>` (iOS's medium and large, C-12); `undimmed_up_to: Value<Key>`
-  (iOS's largest undimmed detent, C-12); `max_width: Value<f32>` (Material's wide windows, MAT-SF03†);
-  `min_top_inset: Value<f32>` (KDE's top floor, Q2.40, K-SF23†); `anchor: Value<SheetAnchor>`,
+  `dialog` variant `@sheet`, MAC-D03); `kde-breeze` flavour `kirigami` only (OverlaySheet, BottomDrawer).
+- **Parts:**
+  - `body` — the root: `fill`, `stroke` (GNOME's inner outline, GN-2.17), `corners`, `shadow`, `padding` (the content
+    padded by the bottom safe area, K-KA-30†), `max_width` (Material's on wide windows, MAT-SF03†), `max_height`
+    (kirigami-addons' share of the window's height, K-KA-30†), `bindings` (on `ios-*` the `Dialog` set with the
+    elevated values and the `Binding::Role` entries of `dialog.body`, R2.3, R5.2, D-14), `transitions` (on corners and
+    shadow, GN-2.17).
+  - `handle` — the grabber (GN-2.17, C-12, Q2.39, MAT-N19, K-KA-30†): `fill`, `corners`, `opacity` (Q2.39, MAT-N19,
+    K-KA-30†), `min_width`, `min_height`, `padding` (its margins and C-12's offset), `focus` (MAT-N19).
+  - `header` — `fill`, `corners` (kirigami-addons' header strip, K-KA-30†), `padding` (Q2.38), `bindings`
+    (kirigami-addons' Window set, K-KA-30†).
+  - `title` — `text` (Q2.38's heading; Material's side-sheet headline, MAT-N20).
+  - `header_separator` — Q2.38, K-KA-30†: `fill`, `min_height`.
+  - `footer` — `padding` (Q2.38).
+  - `footer_separator` — Q2.38: `fill`, `min_height`.
+  - `scrim` — the dim (GN-2.17, GN-3.04, Q2.38, X-SC-1, MAT-X23): `fill`, `opacity` (per detent, C-12, X-SC-1),
+    `transitions` (Q2.38).
+  - `bottom_bar` — AdwBottomSheet's always-visible bar, GN-2.17: `fill`, `shadow`.
+  - `divider` — Material's side sheet, MAT-N20: `fill`, `min_width`.
+- **Widget values:** `detents: Vec<(Key, Value<Px>)>` (iOS's medium and large, C-12); `undimmed_up_to: Value<Key>`
+  (iOS's largest undimmed detent, C-12); `min_top_inset_px: Value<Px>` (KDE's top floor, Q2.40, K-SF23†);
+  `anchor: Value<SheetAnchor>`,
   `SheetAnchor { BottomCenter, Center, Side }` (bottom-centred: GNOME, Material, iOS in compact width; centred: KDE's
   OverlaySheet, iOS in regular width; side: Material's side sheet), restated by rules `@ h_size_class c` and
-  `@ v_size_class c` (SF-7†, ADD-A20); `swipe_to_close: Value<f32>` (the swipe threshold, Q2.40; iOS's interactive
+  `@ v_size_class c` (SF-7†, ADD-A20); `swipe_to_close_px: Value<Px>` (the swipe threshold, Q2.40; iOS's interactive
   dismiss, C-12); `keyboard_avoidance: Placement` (where a sheet goes when the keyboard appears, strategy
   `KeyboardAvoid(…)`, P3-6†, to verify); `presenter_transform: Transform`, `presenter_corners: Corners` (iOS 13–18's
-  stacked-card effect on the presenter, C-12); `top_padding_range: (Value<f32>, Value<f32>)` (GNOME's top padding by
-  the window's height, GN-2.17); `presentations: Vec<PresentationTransition>`: events `@open`, `@close` (springs:
+  stacked-card effect on the presenter, C-12); `top_padding_range: (Value<Px>, Value<Px>)` (GNOME's top padding by
+  the window's height, GN-2.17); `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear` (springs:
   GNOME, iOS; KDE's opacity and translation, Q2.40; per modal style, X-MO-4; Material's drag motion, MAT-N19),
   `@settle` (Material's settle, MAT-N19; iOS's detent changes, X-MO-4), `@bottom_bar_reveal` (GN-2.17).
 - **Variants:** typed `bottom` (GNOME, iOS, Material, kirigami-addons' BottomDrawer), `floating` (Material's floating
@@ -3907,18 +4563,20 @@ and the owning group's name where the kinds are the same.
   (Material's wide windows, MAT-SF03†; iOS's compact height, SF-7†); Kirigami's drag handle shows under
   `cond mobile_form_factor` (Q2.39, Q3.31); `cond reduced_motion` restates `presentations` (GNOME's crossfade,
   GN-3.25).
-- **Flags:** shared `minimized` (Material's minimised shape, MAT-N19); state flags used: hover, pressed (the side
-  sheet's actions, MAT-N20), focus_visible: the handle's focus indicator (MAT-N19).
-- **Exclusive groups:** `material-3`: `[dragged, pressed, focus_visible, hover]` on `handle` and `close_button` (state
-  layers, MAT-N19, MAT-N20); others none (states combine); precedence: state models (S17).
+- **Flags:** shared `minimized` (Material's minimised shape, MAT-N19); state flags used: hover, pressed, dragged,
+  focus_visible, on `handle`: its focus indicator, MAT-N19.
+- **Exclusive groups:** `material-3`: `[dragged, pressed, focus_visible, hover]` on `handle` (state layers, MAT-N19;
+  the side sheet's close button's are `button`'s, MAT-N20); others none (states combine); precedence: state models
+  (S17).
 - **may_be_absent:** parts: `handle` (`kde-breeze` outside `cond mobile_form_factor`, Q2.39; `ios-*` with the grabber
-  hidden, C-12); `bottom_bar` (every preset but `adwaita`); `divider`, `close_button` (every preset but `material-3`).
+  hidden, C-12); `bottom_bar` (every preset but `adwaita`); `divider` (every preset but `material-3`).
   values: `presenter_transform`, `presenter_corners`, `undimmed_up_to`, `keyboard_avoidance` (every preset but
-  `ios-*`); `top_padding_range` (every preset but `adwaita`).
+  `ios-*`); `top_padding_range` (every preset but `adwaita`); fields: `body.stroke` (all but `adwaita`).
 - **State-model source:** GNOME `_bottom-sheet.scss`, `adw-bottom-sheet.c`; iOS `UISheetPresentationController`; KDE
   `OverlaySheet.qml`, kirigami-addons `BottomDrawer.qml`; Material sheet tokens and `ModalBottomSheet.kt`.
 - **Today's fields:** none (`dialog.*` stand-ins stay `dialog`'s).
-- **Notes:** group 1 traced iOS's placement per size class and with the keyboard here (SF-7†, SF-8†, P3-6†); group 8
+- **Notes:** Nested controls: Material's side-sheet close button is `button @ variant close context sheet`
+  (MAT-N20). Group 1 traced iOS's placement per size class and with the keyboard here (SF-7†, SF-8†, P3-6†); group 8
   wrote `grabber` (Q3.31) and `dimming` (X-SC-1, MAT-X23), and the presentations per modal style (X-MO-4).
   kirigami-addons' convergent context menu shows its mobile form as this bottom drawer (K-KA-31†).
 
@@ -3930,38 +4588,54 @@ and the owning group's name where the kinds are the same.
   and kirigami-addons' ShortcutsEditor (K-KA-43†).
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no such
   control).
-- **Parts:** `nav_pill` *(element: GN-2.41)*; `section_title`; `row`; `row_title`; `row_subtitle` (GNOME's dimmed
-  caption, GN-2.41); `key_sequence_button` *(element: KDE's key-sequence widget, K-RL02†; the Quick recorder,
-  K-KA-43†)*; `clear_button` *(element: K-RL02†, K-KA-43†)*; `extender_indicator` (the in-row extender's arrow,
-  K-RL02†); `footer` (kirigami-addons' Save and Reset toolbar, K-KA-43†).
-- **Widget values:** `page_gap: Value<f32>` (GN-2.41); `row_min_height: Value<f32>` (GN-2.41);
-  `natural_size: Value<f32>` (kirigami-addons' square dialog layer, K-KA-43†).
+- **Parts:**
+  - `body` — the dialog's content, the root: `padding`, `bindings`.
+- **Widget values:** `page_gap_px: Value<Px>` (GN-2.41); `natural_size: Axes<Value<Px>>` (kirigami-addons' square
+  dialog layer, K-KA-43†).
 - **Variants:** keyed `kde-breeze` `@ka_quick` (K-KA-43†).
 - **Sizes and densities:** none (no row states a size).
-- **Flags:** keyed `@recording` (`kde-breeze`: the key-sequence button held pressed while it records, K-RL02†,
-  K-KA-43†); state flags used: open (the in-row editor open: the extender indicator points down, K-RL02†), pressed,
-  hover, checked (the Quick recorder's checkable button, K-KA-43†).
+- **Flags:** none of its own (the recording key-sequence button's `@recording` is `button`'s; the rows' open
+  editor is `list`'s `open`; the navigation pills are `button` elements); state flags used: none.
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `nav_pill` (`kde-breeze`); `key_sequence_button`, `clear_button`, `extender_indicator`,
-  `footer` (`adwaita`). values: `natural_size` (`adwaita`).
+- **may_be_absent:** values: `natural_size` (`adwaita`).
 - **State-model source:** GNOME `_shortcuts-dialog.scss`; KDE `kshortcutseditordelegate.cpp`,
   `kkeysequencewidget.cpp`, `kextendableitemdelegate.cpp` and Breeze's button branches; kirigami-addons
   `ShortcutsEditor.qml`, `KeySequenceItem.qml`.
 - **Today's fields:** none.
+- **Notes:** Nested controls: GNOME's navigation pill buttons are `button @ variant pill context shortcuts_dialog`
+  (GN-2.41); the shortcuts are `list` rows in `context shortcuts_dialog` (a section's title
+  `list.section_header`, a row's title its text and its dimmed caption `list.secondary_text`, its minimum height
+  `list.row.min_height` there, GN-2.41; KDE's in-row extender's arrow `list.disclosure`, open while the editor shows,
+  K-RL02†); GNOME's shortcut labels `keycap` elements there (GN-2.41); KDE's key-sequence widget and the Quick
+  recorder `button @ variant @key_sequence` (K-RL02†, K-KA-43†) and their clear buttons `button @ variant
+  clear_field`; kirigami-addons' Save and Reset bar `toolbar @ variant bottom context shortcuts_dialog`
+  (K-KA-43†).
 
 ### split_button
 
 *From group 6's catalogue.*
 
 - **Kind:** typed widget: GNOME's AdwSplitButton (GN-2.29), macOS's `NSComboButton` style `.split` (MAC-N28†),
-  Material Expressive's split button (MAT-N7), Windows' SplitButton and ToggleSplitButton (W2-17), kirigami-addons'
-  DoubleFloatingButton (K-KA-27†).
+  Material Expressive's split button (MAT-N7), Windows' SplitButton and ToggleSplitButton (W2-17), KDE's tool button
+  with a separate menu sub-control (`MenuButtonPopup`, K1.155, flavour `widgets`) and kirigami-addons'
+  DoubleFloatingButton (K-KA-27†, flavour `kirigami`).
 - **Available:** every preset but `ios-*` (`available = false`: no such control). macOS draws it from 13
   (`NSComboButton`; SwiftUI's split `Menu` from 12, to verify, MAC-N28†).
-- **Parts:** `primary` *(element)*; `secondary` *(element: the arrow part)*; `primary_label`; `primary_icon`; `arrow`
-  (its rotation while `open`, Material: `arrow.transform` with its `transitions`, MAT-N7); `divider` (GN-2.29, W2-17).
-- **Widget values:** `part_gap: Value<f32>` (negative where the parts overlap, GN-2.29; Material's between-space,
-  MAT-N7); `divider_margin: Value<f32>` (GN-2.29).
+- **Parts:**
+  - `body` — the whole control, the root: `padding`, `corners`, `shadow` (kirigami-addons' shared shadow, K-KA-27†),
+    `focus`, `bindings`.
+  - `primary` *(element)*, `secondary` *(element: the arrow part; KDE's menu sub-control, K1.155)* — the two halves:
+    `fill`, `stroke` (W2-17), `corners` (the inner corners per state, Material, MAT-N7; GNOME's joined inner corners,
+    GN-2.29), `padding` (GN-2.29; Material's leading and trailing spaces, MAT-N7), `min_width`, `min_height` (W2-17's
+    part sizes), `transitions` (kirigami-addons' state-colour change, K-KA-27†).
+  - `primary_label` — `text`.
+  - `primary_icon` — `icon`.
+  - `arrow` — `glyph` (KDE's arrow colour by state, K1.155; Material's trailing icon size, MAT-N7), `transform` (its
+    rotation while `open`, Material, MAT-N7), `transitions` (that rotation's).
+  - `divider` — GN-2.29, W2-17; KDE's separator line, K1.155: `fill`, `min_width`, `padding` (its margins, GN-2.29),
+    `opacity` (GNOME's flat divider, hidden on hover and focus, GN-2.29).
+- **Widget values:** `part_gap_px: Value<Px>` (negative where the parts overlap, GN-2.29; Material's between-space,
+  MAT-N7); `divider_margin_px: Value<Px>` (GN-2.29).
 - **Variants:** typed `primary` (GNOME's suggested look; Windows' accent style), `destructive` (GN-2.29), `flat`
   (GN-2.29), `toggle` (Windows' ToggleSplitButton: button's `toggle` meaning, R15; its state `checked`, W2-17); keyed
   `adwaita` `@opaque` (GN-2.29); `kde-breeze` `@ka_double_floating` (K-KA-27†).
@@ -3972,9 +4646,12 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` per part (CommonStates), `checked` combining
   (`toggle`); `material-3`: `[dragged, pressed, focus_visible, hover]`; others none (states combine); precedence:
   state models (S17).
-- **may_be_absent:** parts: none stated by the rows. values: `divider_margin` (every preset but `adwaita`).
+- **may_be_absent:** parts: `divider` (`material-3`: its `part_gap_px` stands for it, MAT-N7), `primary_icon` (where the
+  primary half shows none). values: `divider_margin_px` (every preset but `adwaita`); fields: `body.shadow` (all but
+  `kde-breeze`, K-KA-27†).
 - **State-model source:** GNOME `_buttons.scss` (`splitbutton`); macOS `NSComboButton.Style.split`; Material
-  split-button tokens; Windows SplitButton visual states; kirigami-addons `DoubleFloatingButton.qml`.
+  split-button tokens; Windows SplitButton visual states; KDE Breeze's tool-button branches for `MenuButtonPopup`
+  (`st:4431-4470`, `st:4992-5056`, K1.155); kirigami-addons `DoubleFloatingButton.qml`.
 - **Today's fields:** none.
 - **Notes:** the inner corners follow the state (Material: rest, hovered, pressed, selected: `primary.corners`,
   `secondary.corners` rules); GNOME hides the divider on hover and focus under `variant flat` (`divider.opacity`
@@ -3987,12 +4664,16 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: GNOME's AdwStatusPage (GN-2.13, its spinner GN-1.232), iOS's
   UIContentUnavailableConfiguration (C-16), KDE's Kirigami PlaceholderMessage and LoadingPlaceholder (Q2.30–Q2.32) and
   kirigami-addons' card placeholder (K-KA-16†), macOS's `ContentUnavailableView` (MAC-N35†).
-- **Available:** every preset but `windows-11`, `material-3` (`available = false`: no such control).
-- **Parts:** `icon` (size, opacity, weight: GN-2.13, Q2.30, C-16); `title`; `description`; `action_area`; `spinner`
-  (GNOME's spinner variant, GN-1.232; KDE's LoadingPlaceholder progress bar, Q2.32: a `spinner` or `progress_bar`
-  element in context).
-- **Widget values:** `margins: Sides<Value<f32>>` (GN-2.13); `icon_to_title`, `title_to_description`,
-  `description_to_actions: Value<f32>` (GN-2.13; iOS's paddings, C-16; Q2.30); `max_width: Value<f32>` (Q2.32);
+- **Available:** every preset but `windows-11`, `material-3` (`available = false`: no such control); `kde-breeze`
+  flavour `kirigami` only (PlaceholderMessage, LoadingPlaceholder).
+- **Parts:**
+  - `body` — the page's content box, the root: `fill` (C-16's background), `padding`, `bindings`.
+  - `icon` — `icon` (size, weight: GN-2.13, Q2.30, C-16), `opacity` (GN-2.13; Q2.31; K-KA-16†).
+  - `title` — `text`, `opacity` (Q2.31, K-KA-16†).
+  - `description` — `text`, `opacity` (Q2.31, K-KA-16†).
+  - `action_area` — the actions' box: `padding`.
+- **Widget values:** `margins: Sides<Value<Px>>` (GN-2.13); `icon_to_title_px`, `title_to_description_px`,
+  `description_to_actions_px: Value<Px>` (GN-2.13; iOS's paddings, C-16; Q2.30); `max_width_px: Value<Px>` (Q2.32);
   `alignment: Value<Alignment>` (C-16).
 - **Variants:** typed `loading` (GNOME's spinner variant, iOS's `.loading()`, KDE's LoadingPlaceholder), `search`
   (iOS's `.search()`, macOS's search variant); keyed `adwaita` `@compact` (GN-2.13); `kde-breeze` `@informational`,
@@ -4000,13 +4681,15 @@ and the owning group's name where the kinds are the same.
 - **Sizes and densities:** none (GNOME's `@compact` is a variant).
 - **Flags:** none (no interaction states; its actions are `button` elements).
 - **Exclusive groups:** none (no interaction states); precedence: state models (S17).
-- **may_be_absent:** parts: `spinner` (outside `variant loading`). values: `max_width` (every preset but
-  `kde-breeze`).
+- **may_be_absent:** parts: `action_area` (where the page shows no actions). values: `max_width_px` (every preset but
+  `kde-breeze`); fields: `body.fill` (presets whose page has no background, K-KA-16†).
 - **State-model source:** GNOME `_misc.scss` (`statuspage`); iOS `UIContentUnavailableConfiguration`; KDE
   `PlaceholderMessage.qml`, `LoadingPlaceholder.qml`, kirigami-addons `FormPlaceholderMessageDelegate.qml`; macOS
   `ContentUnavailableView`.
 - **Today's fields:** none (`text_scale.display`, GN-2.13's stand-in, becomes a text-ramp reference).
-- **Notes:** group 3 placed the status-page spinner (GN-1.232) and the busy indicator (Q1.121) in its context.
+- **Notes:** Nested controls: under `variant loading` the busy indicator is a `spinner` in `context status_page`
+  (GNOME's, GN-1.232; Q1.121) or KDE's LoadingPlaceholder progress bar a `progress_bar` there (Q2.32); the actions are
+  `button` elements in `context status_page.action_area`.
 
 ### stepper
 
@@ -4014,17 +4697,29 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: GNOME's AdwSpinRow and GtkSpinButton (GN-2.05, GN-2.24), iOS's UIStepper (C-4), KDE's spin
   box (K2.3, Q2.1), macOS's `NSStepper` (MAC-N01), Windows' NumberBox (W2-01). Where the platform pairs it with a text
-  field (spin box), the text is part of the stepper.
+  field (spin box), the text is an `input` in `context stepper` (Nested controls); the increment and decrement are
+  the stepper's own pieces.
 - **Available:** every preset but `material-3` (`available = false`: no such control).
-- **Parts:** `body`; `text`; `increment` *(element)*; `decrement` *(element)*; `increment_glyph`; `decrement_glyph`;
-  `separator` (between the buttons, or between the text and the buttons); `popup` (Windows' compact spin popup: fill,
-  stroke, shadow, W2-01); `header` (Windows' header label, W2-01).
+- **Parts:**
+  - `body` — the root: `fill` (C-4's body; macOS 26's translucent body, MAC-N01), `stroke` (GNOME's entry frame,
+    GN-2.24; KDE's line-edit frame, K2.3), `corners` (C-4), `padding` (Q2.1), `min_width`, `min_height` (C-4; macOS's
+    control sizes, MAC-N01), `bindings` (Q2.1's View set).
+  - `increment` *(element)*, `decrement` *(element)* — the two halves: `fill` (per state, C-4, W2-01), `stroke`
+    (W2-01), `corners` (GNOME's end radii, GN-2.24; AdwSpinRow's circular buttons, GN-2.05), `padding` (GN-2.05's
+    margins), `min_width`, `min_height` (GN-2.24, GN-2.05; KDE's arrow column, K2.3).
+  - `increment_glyph`, `decrement_glyph` — `glyph` (C-4, MAC-N01, W2-01; KDE's arrow colour per state, K2.3),
+    `transitions` (KDE's animated arrow hover, K2.3).
+  - `separator` — between the buttons, or between the text and the buttons (GN-2.24, C-4, MAC-N01): `fill`,
+    `min_width`, `min_height` (its thickness across the buttons' layout).
+  - `popup` — Windows' compact spin popup, W2-01: `fill`, `stroke`, `shadow`.
+  - `header` — Windows' header label, W2-01: `text`.
 - **Widget values:** `button_layout: Value<StepperButtonLayout>`,
   `StepperButtonLayout { EndColumn, BothEnds, AboveAndBelow, SideBySide }` (a column at the end, both ends, stacked
-  above and below, segments side by side); `repeat_delay`, `repeat_interval: Value<f32>` (durations: C-4, MAC-N01,
-  GN-3.69†, K3.76†); `key_repeat_interval: Value<f32>` (the interval while an arrow key is held, K3.76†; absent on
-  the presets that repeat keys at `repeat_interval`); `field_gap: Value<f32>` (macOS's field-to-stepper gap, MAC-N01); `popup_offset_x`,
-  `popup_offset_y: Value<f32>` (W2-01); `invalid_input: Value<InvalidInput>`, `InvalidInput { Revert, Keep }` (W2-01).
+  above and below, segments side by side); `repeat_delay_ms`, `repeat_interval_ms: Value<Ms>` (durations: C-4, MAC-N01,
+  GN-3.69†, K3.76†); `key_repeat_interval_ms: Value<Ms>` (the interval while an arrow key is held, K3.76†; absent on
+  the presets that repeat keys at `repeat_interval`); `field_gap_px: Value<Px>` (macOS's field-to-stepper gap,
+  MAC-N01); `popup_offset_x_px`,
+  `popup_offset_y_px: Value<Px>` (W2-01); `invalid_input: Value<InvalidInput>`, `InvalidInput { Revert, Keep }` (W2-01).
 - **Variants:** typed `vertical` (orientation: GNOME's vertical spin button, GN-2.24; Windows' popup is not this);
   typed `flat` (KDE's frameless spin box, K2.3); keyed `adwaita` `@row` (AdwSpinRow's circular buttons, GN-2.05);
   `windows-11`
@@ -4035,15 +4730,18 @@ and the owning group's name where the kinds are the same.
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` on `body` (the text box's CommonStates),
   `[disabled, pressed, hover]` on `increment` and `decrement` (the spin buttons' CommonStates); others none (states
   combine); precedence: state models (S17).
-- **may_be_absent:** parts: `text` (`ios-*`, `macos-*`: the stepper alone); `popup`, `header` (every preset but
-  `windows-11`); `separator` (where a preset draws none). values: `popup_offset_x`, `popup_offset_y`, `invalid_input`
-  (every preset but `windows-11`); `field_gap` (every preset but `macos-*`); `key_repeat_interval` (every preset but
-  `kde-breeze`).
+- **may_be_absent:** parts: `popup`, `header` (every preset but `windows-11`); `separator` (where a preset draws
+  none). values: `popup_offset_x_px`, `popup_offset_y_px`, `invalid_input`
+  (every preset but `windows-11`); `field_gap_px` (every preset but `macos-*`); `key_repeat_interval_ms` (every preset
+  but
+  `kde-breeze`); fields: `increment.stroke`, `decrement.stroke` (all but `windows-11`).
 - **State-model source:** GNOME `_spin-button.scss`, `gtkspinbutton.c`; iOS `UIStepper` + `UIControl.State`; KDE
   Breeze `CC_SpinBox` branches (per-arrow hover) and `SpinBox.qml`; macOS `NSStepper` cell states and sizes; Windows
   NumberBox and its spin-button visual states.
 - **Today's fields:** none.
-- **Notes:** KDE repeats faster from the keyboard than from the mouse (K3.76†); S7.1's `InputKind` has no keyboard
+- **Notes:** the spin box's text is `input @ context stepper` (GNOME's spin button text, KDE's line edit, WinUI's
+  text box; `ios-*` and `macos-*` draw the stepper alone, and a text field beside one is an ordinary `input`).
+  KDE repeats faster from the keyboard than from the mouse (K3.76†); S7.1's `InputKind` has no keyboard
   case to select that interval. Group 8 wrote `spin_button` (GN-3.69†, K3.76†).
 
 ### teaching_tip
@@ -4053,30 +4751,42 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: iOS's TipKit tips (C-36†), macOS's TipKit tips (MAC-N36†), Windows' TeachingTip (W2-09),
   kirigami-addons' onboarding tour (K-KA-45†).
 - **Available:** every preset but `adwaita`, `material-3` (`available = false`: no such control). TipKit is iOS 17+
-  and macOS 14+ (C-36†, MAC-N36†); `kde-breeze` draws it as kirigami-addons' `@ka_onboarding` (K-KA-45†).
-- **Parts:** `body` (fill or material, stroke, corners, shadow, padding, bindings: kirigami-addons' Tooltip set,
-  K-KA-45†); `tail` (Windows' tail, W2-09; the popover tip's arrow, C-36†, MAC-N36†); `top_highlight` (W2-09); `hero`
-  (W2-09); `image` (C-36†, MAC-N36†); `title`; `subtitle` (W2-09); `message`; `close_button` *(element)*;
-  `action_area`; `target_frame` (kirigami-addons' frame round the current control, moving and resizing to the next
-  through its `transitions`, K-KA-45†); `backdrop` (kirigami-addons' blur over everything else, K-KA-45†).
+  and macOS 14+ (C-36†, MAC-N36†); `kde-breeze` flavour `kirigami` only, and there only as kirigami-addons'
+  `@ka_onboarding` (`requires_variants = ["@ka_onboarding"]`, K-KA-45†).
+- **Parts:**
+  - `body` — the root: `fill` (fill or material), `stroke`, `corners`, `shadow`, `padding`, `min_height`
+    (kirigami-addons' tip, K-KA-45†), `bindings` (kirigami-addons' Tooltip set, K-KA-45†).
+  - `tail` — Windows' tail, W2-09; the popover tip's arrow, C-36†, MAC-N36†: `fill`, `stroke`.
+  - `top_highlight` — W2-09: `fill`.
+  - `hero` — W2-09: `padding`.
+  - `image` — C-36†, MAC-N36†: `icon`.
+  - `title` — `text`.
+  - `subtitle` — W2-09: `text`.
+  - `message` — `text`.
+  - `action_area` — the actions' box: `padding`.
+  - `target_frame` — kirigami-addons' frame round the current control, K-KA-45†: `stroke`, `transitions` (moving and
+    resizing to the next control).
+  - `backdrop` — kirigami-addons' blur over everything else, K-KA-45†: `fill`.
 - **Widget values:** `placement: Placement` (Windows' tail placement, strategy `WinUiTeachingTip`, W2-09;
-  kirigami-addons' tip, strategy `KirigamiAddonsOnboardingTip`, K-KA-45†); `min_width`, `max_width: Value<f32>`
-  (W2-09); `tail_size`, `tail_margin: Value<f32>` (W2-09); `light_dismiss: Value<bool>` (W2-09);
+  kirigami-addons' tip, strategy `KirigamiAddonsOnboardingTip`, K-KA-45†); `min_width_px`, `max_width_px: Value<Px>`
+  (W2-09); `tail_size_px`, `tail_margin_px: Value<Px>` (W2-09); `light_dismiss: Value<bool>` (W2-09);
   `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear`, `@expand`, `@contract` (Windows' expand
   and contract animation, W2-09).
 - **Variants:** typed `inline`, `popover` (TipKit's inline and popover tips, iOS and macOS); keyed `windows-11`
   `@alternate_close`, `@hero_bottom` (W2-09); `kde-breeze` `@ka_onboarding` (K-KA-45†).
 - **Sizes and densities:** none (no row states a size).
-- **Flags:** none of its own; state flags used: hover, pressed (on `close_button`).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `close_button` (CommonStates); others none
-  (states combine); precedence: state models (S17).
+- **Flags:** none of its own (its close and action buttons are `button` elements).
+- **Exclusive groups:** none (the close button's CommonStates on `windows-11` are `button`'s); precedence: state
+  models (S17).
 - **may_be_absent:** parts: `tail` (under `variant inline`; `kde-breeze`); `top_highlight`, `hero`, `subtitle` (every
   preset but `windows-11`); `title`, `image` (`kde-breeze`); `target_frame`, `backdrop` (every preset but
-  `kde-breeze`). values: `light_dismiss`, `tail_size`, `tail_margin` (every preset but `windows-11`).
+  `kde-breeze`). values: `light_dismiss`, `tail_size_px`, `tail_margin_px` (every preset but `windows-11`).
 - **State-model source:** iOS and macOS TipKit `TipView` styles; Windows TeachingTip visual states; KDE
   kirigami-addons `OnboardToolTip.qml`, `OnboardingOverlay.qml`, `OnboardingEffect.qml`.
 - **Today's fields:** none.
-- **Notes:** KDE's What's This popup (K2.31†) is `context_help`, not this widget.
+- **Notes:** Nested controls: the close button is `button @ variant close context teaching_tip` (W2-09; its
+  alternate placement `@alternate_close`), the actions `button` elements in `context teaching_tip.action_area`. KDE's
+  What's This popup (K2.31†) is `context_help`, not this widget.
 
 ### time_picker
 
@@ -4085,11 +4795,26 @@ and the owning group's name where the kinds are the same.
 - **Kind:** typed widget: KDE's KTimeComboBox (K2.24†) and kirigami-addons' time popup (K-KA-23†), Material's time
   picker and time input (MAT-N17), Windows' TimePicker (W2-04).
 - **Available:** every preset but `adwaita`, `macos-*`, `ios-*` (`available = false`: no row lists one).
-- **Parts:** `field` *(element)*; `field_segment`; `segment_separator` (W2-04's spacer lines); `header`; `flyout`;
-  `highlight_band`; `accept_button`, `dismiss_button` *(elements)* (W2-04); `dial`; `dial_selector`; `dial_track`;
-  `dial_center`; `dial_label`; `selector_cell` *(element)*; `period_selector` *(element)*; `headline` (MAT-N17);
-  `time_separator` (Material's separator, MAT-N17; kirigami-addons' ":", K-KA-23†).
-- **Widget values:** `field_min_width`, `field_max_width: Value<f32>` (W2-04); `item_height: Value<f32>` (W2-04);
+- **Parts:**
+  - `field` — the root, the picker's own trigger: `fill`, `stroke`, `text` (per state, W2-04), `focus` (W2-04),
+    `padding`.
+  - `field_segment` — one segment of the trigger (W2-04): `text`, `padding`.
+  - `segment_separator` — W2-04's spacer lines: `fill`, `min_width`.
+  - `header` — W2-04: `text`.
+  - `flyout` — the picker's own popup, holding its parts: `fill`, `stroke`, `corners`, `shadow`.
+  - `highlight_band` — W2-04: `fill`, `text`, `min_height`.
+  - `dial` — MAT-N17's clock dial: `fill`, `corners`, `min_width`, `min_height`.
+  - `dial_selector` — the selector handle, MAT-N17: `fill`, `corners`, `min_width`, `min_height`.
+  - `dial_track` — the selector track, MAT-N17: `fill`, `min_width`.
+  - `dial_center` — the selector centre, MAT-N17: `fill`, `corners`, `min_width`, `min_height`.
+  - `dial_label` — MAT-N17's dial labels: `text`.
+  - `selector_cell` *(element)* — MAT-N17's time selector cells and time input fields: `fill`, `stroke` (the input
+    field's outline), `corners`, `min_width`, `min_height`, `text`.
+  - `period_selector` *(element)* — MAT-N17's AM/PM selector: `fill`, `stroke`, `corners`, `min_width`, `min_height`,
+    `text`.
+  - `headline` — MAT-N17: `text`.
+  - `time_separator` — Material's separator, MAT-N17; kirigami-addons' ":", K-KA-23†: `text`.
+- **Widget values:** `field_min_width_px`, `field_max_width_px: Value<Px>` (W2-04); `item_height_px: Value<Px>` (W2-04);
   `invalid_entry: Value<bool>` (an invalid entry answered with a message box, K2.24†, K1.224†);
   `presentations: Vec<PresentationTransition>`: event `@open` (the flyout's open animation, W2-04).
 - **Variants:** typed `vertical`, `horizontal` (Material's orientations, MAT-N17); keyed `material-3` `@dial`, `@input`
@@ -4098,18 +4823,19 @@ and the owning group's name where the kinds are the same.
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** none of its own; state flags used: selected (`selector_cell`, `period_selector`), hover, pressed,
   focused, disabled.
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `field` (CommonStates); `material-3`:
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on the root `field` (CommonStates); `material-3`:
   `[dragged, pressed, focus_visible, hover]` on `selector_cell` and `period_selector` (state layers); others none
   (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `dial`, `dial_selector`, `dial_track`, `dial_center`, `dial_label`, `selector_cell`,
-  `period_selector`, `headline` (every preset but `material-3`); `flyout`, `highlight_band`, `accept_button`,
-  `dismiss_button` (every preset but `windows-11`). values: `invalid_entry` (every preset but `kde-breeze`);
-  `field_min_width`, `field_max_width`, `item_height` (every preset but `windows-11`).
+  `period_selector`, `headline` (every preset but `material-3`); `flyout`, `highlight_band` (every preset but
+  `windows-11`). values: `invalid_entry` (every preset but `kde-breeze`);
+  `field_min_width_px`, `field_max_width_px`, `item_height_px` (every preset but `windows-11`).
 - **State-model source:** KDE `ktimecombobox.cpp`, kirigami-addons `TimePicker.qml`, `TimePopup.qml`; Material
   time-picker tokens; Windows TimePicker and DateTimePickerFlyout visual states.
 - **Today's fields:** none.
 - **Notes:** the looping selectors (W2-04) and kirigami-addons' tumblers (K-KA-23†) are `picker_wheel` elements in
-  `context time_picker`; kirigami-addons' popup is a `dialog` (K-KA-23†).
+  `context time_picker`; kirigami-addons' popup is a `dialog` (K-KA-23†). Nested controls: the flyout's accept and
+  dismiss buttons are `button @ variant @accept / @dismiss context time_picker` (W2-04).
 
 ### toast
 
@@ -4117,29 +4843,38 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: GNOME's AdwToast (GN-2.12) and the legacy in-app notification (GN-2.50), KDE's Kirigami
   PassiveNotification (Q2.49–Q2.52), Material's snackbar (MAT-N22, MAT-X25).
-- **Available:** every preset but `macos-*`, `windows-11`, `ios-*` (`available = false`: no such control).
-- **Parts:** `body` (fill, corners, shadow, padding, opacity, bindings: the Osd set on GNOME, GN-3.09; the
-  Complementary set on KDE, Q2.49); `title` (the message); `action_button` *(element)*; `close_button` *(element:
-  Material's close icon, MAT-N22)*.
-- **Widget values:** `durations: Vec<(Key, Value<f32>)>` (GNOME's `default`, GN-2.12; KDE's `short`, `default`,
-  `long`, Q2.51; Material's `short`, `long`, MAT-N22, MAT-X25); `natural_width: Value<f32>` (GN-2.12);
-  `max_width: Value<f32>` (Q2.50); `margins: Sides<Value<f32>>` (GN-2.12, Q2.50); `stack_gap: Value<f32>`;
-  `content_gap: Value<f32>` (between the text and the action, Q2.50); `stack_max_height: Value<f32>` (Q2.50); `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear`
+- **Available:** every preset but `macos-*`, `windows-11`, `ios-*` (`available = false`: no such control);
+  `kde-breeze` flavour `kirigami` only (PassiveNotification).
+- **Parts:**
+  - `body` — the root: `fill`, `stroke` (GNOME's outline under `cond contrast_high`, GN-2.12), `corners`, `shadow`,
+    `padding`, `min_height` (Material's one- and two-line heights, MAT-N22), `opacity`, `bindings` (the Osd set on
+    GNOME, GN-3.09, with a `Binding::Role` of `accent_standalone` to its dark-scheme derivation, GN-2.12; the
+    Complementary set on KDE, Q2.49).
+  - `title` — the message: `text`.
+- **Widget values:** `durations: Vec<(Key, Value<Ms>)>` (GNOME's `default`, GN-2.12; KDE's `short`, `default`,
+  `long`, Q2.51; Material's `short`, `long`, MAT-N22, MAT-X25); `natural_width_px: Value<Px>` (GN-2.12);
+  `max_width_px: Value<Px>` (Q2.50); `margins: Sides<Value<Px>>` (GN-2.12, Q2.50); `stack_gap_px: Value<Px>` (between
+  stacked toasts, Q2.50); `content_gap_px: Value<Px>` (between the text and the action: GNOME's spacing, GN-2.12;
+  Q2.50); `stack_max_height_px: Value<Px>` (Q2.50); `presentations: Vec<PresentationTransition>`: events `Appear`,
+  `Disappear`
   (GNOME's show and hide with a scale, GN-2.12; KDE's add and remove, Q2.52; Material's enter and exit, MAT-N22),
   `@replace` (GN-2.12), `@displace` (KDE's displaced notifications, Q2.52).
 - **Variants:** keyed `adwaita` `@app_notification` (the legacy in-app notification, GN-2.50).
 - **Sizes and densities:** none; `cond contrast_high` adds GNOME's outline (GN-2.12).
-- **Flags:** shared `multiline` (Material's two-line height, MAT-N22); state flags used: hover, pressed,
-  focus_visible: the actions' state layers (MAT-N22).
-- **Exclusive groups:** `material-3`: `[dragged, pressed, focus_visible, hover]` on `action_button` and `close_button`
-  (state layers, MAT-N22); others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `close_button` (`adwaita`, `kde-breeze`). fields: `body.shadow` (where a preset draws
-  none); `body.stroke` (`adwaita` outside `cond contrast_high`). values: `natural_width` (every preset but `adwaita`);
-  `stack_gap`, `content_gap`, `stack_max_height` (every preset but `kde-breeze`).
+- **Flags:** shared `multiline` (Material's two-line height, MAT-N22); state flags used: none other (its action and
+  close buttons are `button` elements, with Material's state layers, MAT-N22).
+- **Exclusive groups:** none (the buttons' state layers on `material-3` are `button`'s); precedence: state models
+  (S17).
+- **may_be_absent:** fields: `body.shadow` (where a preset draws none); `body.stroke` (`adwaita` outside
+  `cond contrast_high`). values: `natural_width_px` (every preset but `adwaita`); `stack_gap_px`,
+  `stack_max_height_px` (every
+  preset but `kde-breeze`); `content_gap_px` (every preset but `kde-breeze`, `adwaita`).
 - **State-model source:** GNOME `_misc.scss` (`toast`), `adw-toast-overlay.c`; KDE `PassiveNotificationsManager.qml`;
   Material snackbar tokens and `SnackbarHost.kt`.
 - **Today's fields:** none.
-- **Notes:** group 8 placed `body` (GN-3.09) and the durations (W3-41, MAT-X25; it wrote `duration_ms`) here. W3-41's
+- **Notes:** Nested controls: the action is `button @ context toast.body`, Material's close icon `button @ variant
+  close context
+  toast` (MAT-N22). Group 8 placed `body` (GN-3.09) and the durations (W3-41, MAT-X25; it wrote `duration_ms`) here. W3-41's
   Windows message duration is a reader read; `windows-11` declares no toast, so that read has no `toast` to state.
 
 ### toolbar_editor
@@ -4151,9 +4886,10 @@ and the owning group's name where the kinds are the same.
   navigation-bar items, P4-10†). Group 6 listed it as KDE's keyed component `toolbar_editor` and group 4 traced the
   macOS and iOS rows to `toolbar_customization`; three platforms draw it, so it is typed (R14) under group 6's name.
 - **Available:** every preset but `adwaita`, `windows-11`, `material-3` (`available = false`: no such control;
-  Windows' Customize Toolbar dialog is Win32, R1.3). iPadOS draws it from 16 (P4-10†).
-- **Parts:** `available_list`, `current_list` (KDE's two lists; `list` elements in context, K-P4-10†); `move_button`
-  *(element: the four buttons between them; `button` elements in context, K-P4-10†)*.
+  Windows' Customize Toolbar dialog is Win32, R1.3). iPadOS draws it from 16 (P4-10†). `kde-breeze` flavour `widgets`
+  only (KEditToolBar).
+- **Parts:**
+  - `body` — the editor, the root: `padding`, `bindings`.
 - **Widget values:** `presentations: Vec<PresentationTransition>`: events `@customize` (the editor running: the items
   parting while one is dragged in, MAC-P3-6†, P4-10†), `@items_change` (the re-layout when items are added, removed or
   moved to the overflow, MAC-P3-6†, P4-10†).
@@ -4161,13 +4897,14 @@ and the owning group's name where the kinds are the same.
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** none of its own; state flags used: dragged, drop_target (the macOS and iOS palette, below).
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `available_list`, `current_list`, `move_button` (`macos-*`, `ios-*`: they customise in
-  place).
+- **may_be_absent:** fields: `body.padding` (`macos-*`, `ios-*`: they customise in place).
 - **State-model source:** KDE `kedittoolbar.cpp`, `ktoolbar.cpp` with Breeze's item-view and button branches; AppKit's
   customization palette (`NSToolbar.allowsUserCustomization`, MAC-P3-6†, measured); UIKit's customisable
   navigation-bar items (`UINavigationItem.customizationIdentifier`, P4-10†, measured).
 - **Today's fields:** none.
-- **Notes:** the macOS and iOS item palette and its drop feedback are the toolbar's own elements:
+- **Notes:** Nested controls: KDE's two lists are `list` elements in `context toolbar_editor`, the four move buttons
+  between them `button @ variant icon_only context toolbar_editor` (K-P4-10†). The macOS and iOS item palette and its
+  drop feedback are the toolbar's own elements:
   `button.* @ {dragged} context toolbar.bar` and `toolbar.bar.* @ {drop_target}` (MAC-P3-6†, P4-10†). The toolbar's
   context menu is a `menu` (K-P4-10†).
 
@@ -4180,30 +4917,40 @@ and the owning group's name where the kinds are the same.
   (W2-32) and the NavigationView in Top mode (W2-11, W1-094's Top display mode).
 - **Available:** every preset but `kde-breeze`, `macos-*`, `ios-*`, `material-3` (`available = false`: no row lists
   one).
-- **Parts:** `bar` (GNOME's bar padding, GN-2.15; the top NavigationView's pane fill and height, W2-11); `item`
-  *(element)*; `item_icon`; `item_label`; `indicator` (SelectorBar's selection pill, W2-27; Pivot's underline, W2-32;
-  the top NavigationView's bottom selection indicator, W2-11); `nav_button` *(element: Pivot's, W2-32)*;
-  `overflow_button` *(element: the top NavigationView's "More", W2-11)*; `item_separator` (W2-11).
-- **Widget values:** `item_gap: Value<f32>`; `item_min_width: Vec<(Key, Value<f32>)>` (per keyed policy: GNOME's
-  minimum natural widths, GN-2.15; text buttons' minimum width, GN-2.33); `drag_hover_delay_ms: Value<f32>` (GNOME's
-  drag-hover switch, GN-2.15, and expand, GN-2.16); `breakpoints: Vec<(Key, Value<f32>)>` (libadwaita's preferences
+- **Parts:**
+  - `bar` — the root: `fill` (the top NavigationView's pane fill, W2-11), `padding` (GNOME's bar padding, GN-2.15),
+    `min_height` (the top NavigationView's pane height, W2-11).
+  - `item` *(element)* — `fill`, `stroke` (per state, W2-27), `padding` (GN-2.15's narrow and wide buttons; W2-27;
+    Pivot's header margins, W2-32), `min_height` (GN-2.15).
+  - `item_icon` — `icon`.
+  - `item_label` — `text` (GN-2.15's narrow labels; Pivot's header font, W2-32; the contextual tab's accent text,
+    W-RV-3†), `padding` (GN-2.16).
+  - `indicator` — SelectorBar's selection pill, W2-27; Pivot's underline, W2-32; the top NavigationView's bottom
+    selection indicator, W2-11: `fill`, `corners`, `min_width`, `min_height`.
+  - `item_separator` — W2-11: `fill`, `min_width`.
+- **Widget values:** `item_gap_px: Value<Px>`; `item_min_width: Vec<(Key, Value<Px>)>` (per keyed policy: GNOME's
+  minimum natural widths, GN-2.15; text buttons' minimum width, GN-2.33); `drag_hover_delay_ms: Value<Ms>` (GNOME's
+  drag-hover switch, GN-2.15, and expand, GN-2.16); `breakpoints: Vec<(Key, Value<Px>)>` (libadwaita's preferences
   thresholds, GN-1.197; the connector sets `narrow` or `@wide` from them);
   `presentations: Vec<PresentationTransition>`: events `@bar_reveal` (GN-2.15), `Move` with `part: indicator`
   (SelectorBar's pill slide, W2-27; Pivot's header slide, W2-32).
-- **Variants:** typed `narrow` (set by the connector from `breakpoints`, as `dialog`'s); keyed `adwaita` `@wide` (likewise), `@title`, `@bar`,
+- **Variants:** typed `narrow` (set by the connector from `breakpoints`, as `dialog`'s); keyed `adwaita` `@wide`
+  (likewise), `@title`, `@bar`,
   `@sidebar`, `@inline`, `@stack` (GN-2.15, GN-2.16, GN-2.33); `windows-11` `@selector_bar` (W2-27), `@pivot` (W2-32),
-  `@navigation_top` (W2-11, W1-094).
+  `@navigation_top` (W2-11, W1-094), on `item` `@contextual` (a tabbed command bar's contextual tab, W-RV-3†).
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** keyed `@needs_attention` (`adwaita`: the needs-attention dot, a `badge` in context, GN-2.33); state flags
   used: selected, hover, pressed, disabled.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `item` (CommonStates), `selected` combining;
   others none (states combine); precedence: state models (S17).
-- **may_be_absent:** parts: `indicator`, `nav_button`, `overflow_button`, `item_separator` (`adwaita`). values:
-  `breakpoints`, `drag_hover_delay_ms` (every preset but `adwaita`).
+- **may_be_absent:** parts: `indicator`, `item_separator` (`adwaita`). values:
+  `breakpoints`, `drag_hover_delay_ms` (every preset but `adwaita`); fields: `bar.fill` (all but `windows-11`).
 - **State-model source:** GNOME `_view-switcher.scss`, `_toggle-group.scss`, `_buttons.scss` (`stackswitcher`);
   Windows SelectorBarItem, PivotHeaderItem, NavigationViewItem (top) visual states.
 - **Today's fields:** none (`segmented_control.*`, `tab.*` stand-ins stay theirs).
-- **Notes:** counters are `badge` elements in context (GN-2.15). Windows' top NavigationView is this widget's
+- **Notes:** counters are `badge` elements in context (GN-2.15). Nested controls: Pivot's header buttons are `button
+  @ variant previous / next context view_switcher` (W2-32), the top NavigationView's "More" `button @ variant
+  overflow context view_switcher` (W2-11). Windows' top NavigationView is this widget's
   `@navigation_top`; `sidebar` keeps the left display modes. Group 4 added `breakpoints` (GN-1.197).
 
 ### wizard
@@ -4212,13 +4959,23 @@ and the owning group's name where the kinds are the same.
 
 - **Kind:** typed widget: GNOME's GtkAssistant (GN-RL01†, GN-2.51), KDE's QWizard in its classic style (K2.22).
 - **Available:** every preset but `macos-*`, `windows-11`, `ios-*`, `material-3` (`available = false`: no such
-  control; Windows' Aero wizard is Win32, R1.3).
-- **Parts:** `header`; `title`; `subtitle`; `banner`; `step_list` (GNOME's sidebar, GN-2.51); `step` *(element:
-  GN-2.51)*; `page_frame`; `action_area` (GN-RL01†).
+  control; Windows' Aero wizard is Win32, R1.3); `kde-breeze` flavour `widgets` only (QWizard).
+- **Parts:**
+  - `body` — the wizard's content, the root: `padding`, `bindings`.
+  - `header` — the title and subtitle area, K2.22: `padding`.
+  - `title` — `text`.
+  - `subtitle` — `text`.
+  - `banner` — K2.22: `fill`.
+  - `step_list` — GNOME's sidebar, GN-2.51: `fill`, `bindings` (its sidebar colours).
+  - `step` *(element: GN-2.51)* — `fill` (the highlighted step), `corners`, `padding`, `text`.
+  - `page_frame` — `padding`.
+  - `action_area` — GN-RL01†: `padding` (its margins).
 - **Widget values:** `button_order: Vec<Key>` (GtkAssistant's `close`, `cancel`, `last`, `back`, `forward`, `apply`,
-  GN-RL01†); `button_gap: Value<f32>`; `buttons_equal_width: Value<bool>` (GN-RL01†);
+  GN-RL01†); `button_gap_px: Value<Px>`; `buttons_equal_width: Value<bool>` (GN-RL01†);
   `button_placement: Value<WizardButtonPlacement>`, `WizardButtonPlacement { ActionArea, HeaderBar }` (GN-RL01†).
-- **Variants:** keyed `adwaita` `@header_bar` (GN-RL01†); `kde-breeze` `@classic` (K2.22).
+- **Variants:** keyed `adwaita` `@header_bar` (the buttons packed in the header bar, Back and Cancel at its start and
+  the others at its end; the connector sets the window's `@no_title_buttons`, GN-RL01†); `kde-breeze` `@classic`
+  (K2.22).
 - **Sizes and densities:** none (no row states a size).
 - **Flags:** shared `current` (the highlighted step, GN-2.51); state flags used: none other.
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
@@ -4226,12 +4983,17 @@ and the owning group's name where the kinds are the same.
 - **State-model source:** GNOME `gtkassistant.ui`, `gtkassistant.c`, `_deprecated.scss`; KDE `qwizard.cpp` classic
   style.
 - **Today's fields:** none.
+- **Notes:** Nested controls: the navigation buttons are `button` elements in `context wizard.action_area` (the
+  default layout) or in `context window.title_bar` under `@header_bar`, the default one `button @ variant primary
+  context any wizard variant @header_bar` (GN-RL01†).
 
 ## Keyed components
 
 One-platform kinds (R14, S5.1): a `Component` the preset declares (S10), with its `key`, its `parts` and its
-`values`, each value a `Value<WidgetValue>` (a length, duration, number, bool, `Key` or colour). Group 6 wrote its
-components as table rows, group 7 as sections; both are kept, by platform. Group 6's `toolbar_editor` is a typed
+`values`, each value a `Value<WidgetValue>` of the type its declaration names (`values = { <name> = "<type>" }`,
+S10). A component follows the entry format's rules for parts (its first part a container root, each part's fields
+listed) and the nested-control rule (a control of a typed kind inside it is that widget in `context
+component.<key>`). Group 6 wrote its components as table rows, group 7 as sections; both are kept, by platform. Group 6's `toolbar_editor` is a typed
 widget after the merge (three platforms draw it), and so are `route_button` and `context_help` (rename rows 82,
 83).
 
@@ -4241,8 +5003,8 @@ widget after the merge (three platforms draw it), and so are `route_button` and 
 
 | Component | Platform | Parts | Values | Rows |
 |---|---|---|---|---|
-| `emoji_chooser` | GNOME | `section_button`, `cell`, `completion_row` | — | GN-2.43 |
-| `tab_overview` | GNOME | `grid`, `thumbnail`, `thumbnail_close_button`, `attention_dot`, `new_tab_button`, `drop_target` | `grid_gap: Value<f32>`, `columns_min`, `columns_max: Value<f32>` (numbers), `thumbnail_width_min`, `thumbnail_width_max: Value<f32>`, `presentations: Vec<PresentationTransition>` (events `@open`, `@close`, `@reorder`, `@thumbnail_fade`) | GN-2.35 |
+| `emoji_chooser` | GNOME | `body` (the root: `fill`, `padding`, `bindings`), `cell` (*(element)*: `fill`, `corners`, `text`), `completion_row` (*(element)*: `fill`, `text`, `padding`); its section buttons are `button` elements in `context component.emoji_chooser` | — | GN-2.43 |
+| `tab_overview` | GNOME | `grid` (the root: `fill`, `padding`), `thumbnail` (*(element)*: `fill`, `corners`, `shadow`, `stroke`, `padding` (its margin), `transitions`), `attention_dot` (`fill`, `corners`, `shadow`, `min_width`, `min_height`), `drop_target` (`fill`, `stroke`, `corners`); a thumbnail's close button is `button @ variant close context component.tab_overview`, the new-tab button `button @ variant add` there | `grid_gap_px: Value<Px>`, `columns_min`, `columns_max: Value<u32>` (numbers), `thumbnail_width_min_px`, `thumbnail_width_max_px: Value<Px>`, `presentations: Vec<PresentationTransition>` (events `@open`, `@close`, `@reorder`, `@thumbnail_fade`) | GN-2.35 |
 
 #### component.dock_frame_drop (gnome)
 
@@ -4252,15 +5014,17 @@ widget after the merge (three platforms draw it), and so are `route_button` and 
   dock frame (cross-check: macOS, iOS, KDE, Windows, Material all 3, "G19: KDDockWidgets' artwork is that library's
   own", KDE's QMainWindow gap indicator K-SF18† is Qt Widgets' and is another row).
 - **Parts:**
-  - `frame`: the `PanelFrame` itself while a drop is over it (its own `:drop(active)` shadow is switched off here, so
-    GN-3.66†'s catch-all rule does not apply: a rule `@ {drop_target}` states its `shadow` `Absent`);
-  - `drop_overlay`: the overlay shown over the frame while a page is dragged over it (fill, margin as padding-free
-    inset, corners, stroke ring inside `@ {drop_target}`); an element (states: drop_target);
-  - `drop_position_button`: one of five buttons, element, its identity a keyed variant `@top`, `@right`, `@bottom`,
-    `@left`, `@center` (the centre one circular, the others with a corner radius: rules by identity); carries a glyph
-    (`ThemeIcon` per identity) and a shadow; states: drop_target (the button under the drop);
-  - `switcher_indicator`: the insertion mark in a frame switcher where the dragged page would land.
-- **Widget values:** `button_gap: Value<f32>` (the gap in the grid of five buttons, which sit centred on the frame).
+  - `frame` — the `PanelFrame` itself while a drop is over it: `shadow` (its own `:drop(active)` shadow is switched
+    off here, so GN-3.66†'s catch-all rule does not apply: a rule `@ {drop_target}` states its `shadow` `Absent`),
+    `padding` (the drop overlay's margin from the frame's edge, GN-SF14†).
+  - `drop_overlay` *(element; states: drop_target)* — the overlay shown over the frame while a page is dragged over it:
+    `fill`, `corners`, `stroke` (the ring inside `@ {drop_target}`), `transitions`.
+  - `drop_position_button` *(element; states: drop_target, the button under the drop)* — one of five buttons, its
+    identity a keyed variant `@top`, `@right`, `@bottom`, `@left`, `@center`: `fill`, `corners` (the centre one
+    circular, the others with a corner radius: rules by identity), `padding`, `glyph` (`ThemeIcon` per identity),
+    `shadow`.
+  - `switcher_indicator` — the insertion mark in a frame switcher where the dragged page would land: `fill`.
+- **Widget values:** `button_gap_px: Value<Px>` (the gap in the grid of five buttons, which sit centred on the frame).
 - **Variants:** none typed; keyed: the identities of `drop_position_button`, `@top`, `@right`, `@bottom`, `@left`,
   `@center`. **Sizes/densities:** none.
 - **Flags:** state flag `drop_target`. No widget-specific flag. **Exclusive groups:** none.
@@ -4278,14 +5042,15 @@ widget after the merge (three platforms draw it), and so are `route_button` and 
 
 | Component | Platform | Parts | Values | Rows |
 |---|---|---|---|---|
-| `lcd_number` | KDE | `frame`, `segment` (keyed variants `@outline`, `@filled`, `@flat`) | — | K2.6 |
-| `led` | KDE | `body` (keyed variants `@round`, `@rectangular`, `@raised`, `@sunken`, `@flat`; flag `@on`) | — | K2.18 |
-| `page_view` | KDE | `icon_list`, `title_header`, `header_separator`, `search_container` | `margins: Value<f32>` | K2.14 |
-| `delay_button` | KDE | `body`, `progress_overlay` (its fill follows the progress through its `transitions`) | — | Q2.3 |
+| `lcd_number` | KDE | `frame` (the root: `stroke`, `bindings` (the palette colours its digits take)), `segment` (keyed variants `@outline`, `@filled`, `@flat`: `fill`, `stroke`) | — | K2.6 |
+| `led` | KDE | `body` (the root; keyed variants `@round`, `@rectangular`, `@raised`, `@sunken`, `@flat`; flag `@on`: `fill`, `stroke`, `corners`, `bindings`) | — | K2.18 |
+| `page_view` | KDE | `body` (the root: `padding`, `bindings`), `title_header` (`text`, `padding`, `fill`), `header_separator` (`stroke`); its icon list is a `list` and its search field a `search_field` in `context component.page_view` | `margins_px: Value<Px>` | K2.14 |
+| `delay_button` | KDE | `body` (the root, the button: `fill`, `stroke`, `corners`, `padding`, `focus`, `text`), `progress_overlay` (`fill`, `corners`, `opacity`, `transitions`; `data = { progress_overlay = ["progress"] }`) | `delay_ms: Value<Ms>` (the delay before the button activates, QML DelayButton's `delay`: the platform's default, which an application layer restates) | Q2.3 |
 
-The delay button's fill transition (Q2.3) runs for the button's delay times the remaining progress while pressed and
-a fraction of the progress while released: an expression over `element.progress` (ADD-B12) and the button's delay,
-which no element datum carries.
+The delay button's fill transition (Q2.3) runs for the delay times the remaining progress while pressed, and a
+fraction of the progress while released: `progress_overlay.transitions` with the duration `= mul(values.delay,
+sub(1, element.progress))` under `{pressed}` and `= mul(values.delay, mul(<fraction>, element.progress))` under
+`!{pressed}` (S2.2's `values.<name>`, ADD-B12; the fraction is the source's, value phase).
 
 #### component.tool_box (kde)
 
@@ -4293,12 +5058,18 @@ which no element datum carries.
 
 - **Kind:** keyed component (QToolBox; Qt Widgets). Row K2.9. Cross-check: GNOME 3 (expanders are the nearest),
   Windows 3, macOS 3, iOS 3, Material 3.
-- **Parts:** `page_button` (the tab row of one page; element; states hover, selected via `checked`, pressed, disabled,
-  focus_visible), `page_icon` (icon style), `page_label` (text style), `selected_outline` (the tab-shaped outline in
-  the focus colour: the stroke of `page_button` `@ {checked}` with per-corner radii, its `Corners`), `hover_outline`
-  (the same `@ {hover}`), `page_area` (the content frame of the open page).
-- **Widget values:** `item_gap: Value<f32>` (`ToolBox_TabItemSpacing`), `tab_margin_width: Value<f32>`
-  (`ToolBox_TabMarginWidth`), `tab_min_width: Value<f32>` (`ToolBox_TabMinWidth`, also `page_button.min_width`).
+- **Parts:**
+  - `body` — the root, the box holding the pages: `padding`, `bindings`.
+  - `page_button` *(element; states hover, selected via `checked`, pressed, disabled, focus_visible)* — the tab row of
+    one page: `min_width` (`ToolBox_TabMinWidth`).
+  - `page_icon` — `icon`.
+  - `page_label` — `text`.
+  - `selected_outline` — the tab-shaped outline in the focus colour, drawn on `page_button` `@ {checked}`: `stroke`,
+    `corners` (per-corner radii).
+  - `hover_outline` — the same `@ {hover}`: `stroke`, `corners`, `transitions` (the hover fade).
+  - `page_area` — the content frame of the open page: `padding`.
+- **Widget values:** `item_gap_px: Value<Px>` (`ToolBox_TabItemSpacing`), `tab_margin_width_px: Value<Px>`
+  (`ToolBox_TabMarginWidth`), `tab_min_width_px: Value<Px>` (`ToolBox_TabMinWidth`, also `page_button.min_width`).
 - **Variants/sizes:** none. **Flags:** state flags only. **Exclusive groups:** none (Breeze's branches combine
   states).
 - **Transitions:** the hover fade is a property transition on the outline stroke (`breezetoolboxengine.cpp`), its
@@ -4314,10 +5085,13 @@ which no element datum carries.
 
 - **Kind:** keyed component (QDockWidget title; Qt Widgets). Row K2.10. Cross-check: only inspector/utility panel
   names it (K2.10 is KDE's tool panel); GNOME, macOS, iOS, Material and Windows 3.
-- **Parts:** `title_bar` (container; optional frame), `title` (text, elided at the end: `Elision::End`),
-  `float_button`, `close_button` (elements; frameless glyph buttons; glyph `ThemeIcon`/standard pixmap
-  `SP_DockWidgetCloseButton`; states hover, pressed, disabled), `separator` (line under the title), `frame` (the
-  optional frame around a docked widget: `DockWidgetDrawFrame`).
+- **Parts:**
+  - `title_bar` — the root, a container: `padding`.
+  - `title` — `text` (elided at the end: `Elision::End`).
+  - `separator` — the line under the title: `fill`, `min_height`.
+  - `frame` — the optional frame around a docked widget (`DockWidgetDrawFrame`): `stroke`. The float and close buttons
+    (frameless glyph buttons; glyph `ThemeIcon` or the standard pixmap `SP_DockWidgetCloseButton`; states hover,
+    pressed, disabled) are `button @ variant @float / close context component.dock_widget`.
 - **Widget values:** `draws_frame: Value<bool>`, set by the reader from `breezerc [Style] DockWidgetDrawFrame`
   (`reader:kde:breezerc.Style.DockWidgetDrawFrame`); `frame` is `Absent` when false.
   `presentations: Vec<PresentationTransition>`: event `@gap_open` (the main window's dock layout sliding a gap open
@@ -4333,11 +5107,16 @@ which no element datum carries.
 *From group 7.*
 
 - **Kind:** keyed component (QMdiSubWindow; Qt Widgets). Row K2.11. Windows has no MDI control (3).
-- **Parts:** `frame` (outline; the inactive outline `@ !{@active}`), `title_bar` (top-rounded corners; fill from the
-  `[WM]` colour group), `title` (text), `caption_button` (one part type, element, its identity a keyed variant
-  `@minimize`, `@maximize`, `@restore`, `@close` as for the window, R13), `active_separator` (the line under the
-  active title bar in the highlight colour), `shadow` (the MDI window shadow, a shadow of `frame`).
-- **Widget values:** `title_margin_width: Value<f32>` (`TitleBar_MarginWidth`).
+- **Parts:**
+  - `frame` — the root: `stroke` (the outline; the inactive outline `@ !{@active}`), `bindings` (the `[WM]` colour
+    group, K2.11).
+  - `title_bar` — `fill` (from the `[WM]` colour group), `corners` (top-rounded).
+  - `title` — `text`.
+  - `caption_button` *(element)* — one part type, its identity a keyed variant `@minimize`, `@maximize`, `@restore`,
+    `@close` as for the window, R13: `glyph`.
+  - `active_separator` — the line under the active title bar in the highlight colour: `fill`, `min_height`.
+  - `shadow` — the MDI window shadow, a shadow of `frame`: `shadow`.
+- **Widget values:** `title_margin_width_px: Value<Px>` (`TitleBar_MarginWidth`).
 - **Variants/sizes:** keyed: the identities of `caption_button`, `@minimize`, `@maximize`, `@restore`, `@close`.
   **Flags:** `@active` (the sub-window is the active one: per element, so it is a widget flag and not the window
   condition). **Exclusive groups:** none.
@@ -4352,8 +5131,11 @@ which no element datum carries.
 
 - **Kind:** keyed component (KTitleWidget, KWidgetsAddons; R1.2 in). Row K2.15. Cross-check: GNOME 3 (AdwStatusPage
   and group headers are different), Windows 3, macOS 3, iOS 4, Material 4.
-- **Parts:** `container`, `icon` (icon style), `title` (text style, one per level), `comment` (text, coloured by
-  message type).
+- **Parts:**
+  - `container` — the root: `padding`.
+  - `icon` — `icon`.
+  - `title` — `text` (one per level).
+  - `comment` — `text` (coloured by message type).
 - **Widget values:** none (alignment of icon and text is the layout, `layout.*`).
 - **Variants:** keyed text level `@level_1` .. per the keyed text styles of K1.270 (the declared levels); keyed
   message type `@info`, `@positive`, `@warning`, `@error`, `@plain` for `comment` (the colour is a rule per variant
@@ -4368,9 +5150,14 @@ which no element datum carries.
 
 - **Kind:** keyed component (KMultiTabBar, KWidgetsAddons; R1.2 in). Row K2.16. Cross-check: GNOME 3 (GtkNotebook with
   side tabs is the typed tab), macOS 3, iOS 3, Windows 4, Material 4.
-- **Parts:** `bar`, `tab_button` (element; vertical or horizontal; states hover, pressed, checked, disabled),
-  `tab_icon`, `tab_label`, `separator` (the line on the content side of the bar).
-- **Widget values:** `item_gap: Value<f32>`.
+- **Parts:**
+  - `bar` — the root: `padding`.
+  - `tab_button` *(element; vertical or horizontal; states hover, pressed, checked, disabled)* — `fill`, `padding`.
+  - `tab_icon` — `icon`.
+  - `tab_label` — `text`.
+  - `separator` — the line on the content side of the bar: `fill`, `min_width`, `min_height` (its thickness across
+    the bar's edge).
+- **Widget values:** `item_gap_px: Value<Px>`.
 - **Variants:** keyed bar edge `@left`, `@right`, `@top`, `@bottom` (the `KMultiTabBar::Position` values; the list is
   confirmed against `kmultitabbar.cpp` in the value phase: K2.16 marks its source lines "to verify").
 - **Sizes/flags:** state flags only. **Exclusive groups:** none (Breeze's branches combine states).
@@ -4384,7 +5171,10 @@ which no element datum carries.
 
 - **Kind:** keyed component (KSplitterCollapserButton). Row K2.17. Cross-check: GNOME 4, Windows 4, Material 4; macOS
   and iOS 3 (a toolbar item / a display-mode button elsewhere, other rows).
-- **Parts:** `button` (the overlay button; element; states hover, pressed), `arrow` (glyph; direction by variant).
+- **Parts:**
+  - `button` *(element; states hover, pressed)* — the overlay button, the root: `fill`, `padding`, `opacity` (its
+    fade, K2.17).
+  - `arrow` — `glyph` (direction by variant).
 - **Widget values:** `presentations: Vec<PresentationTransition>`: events `Appear` and `Disappear`, kind `Fade` (the
   `QTimeLine` duration of K2.17; whether the speed factor scales it is read from the source).
 - **Variants:** keyed side `@left`, `@right`, `@top`, `@bottom` (arrow direction).
@@ -4398,13 +5188,14 @@ which no element datum carries.
 
 - **Kind:** keyed component (Kirigami `ListItemDragHandle`). Row Q2.43. Cross-check: GNOME 3, iOS 3, Material 3 (their
   grippers are sheet handles and reorder accessories, other rows), macOS 4, Windows 4.
-- **Parts:** `handle` (element; icon `handle-sort` in an `IconStyle` of size `= token.icon_sizes.keyed.small_medium`
-  (Kirigami's `smallMedium`); opacity reduced at rest and full `@ {hover}` and `@ {pressed}`: a rule on `opacity`).
-  The dragged row moves; no part draws it.
+- **Parts:**
+  - `handle` — the root, the element: `icon` (the `handle-sort` theme icon; its size one of Kirigami's icon-size
+    tokens, value phase), `opacity` (reduced at rest, full `@ {hover}` and `@ {pressed}`), `cursor`, `padding`. The
+    dragged row moves; no part draws it.
 - **Widget values:** `presentations: Vec<PresentationTransition>`: event `@drop` (the drop animation), kind
-  `Translate`, duration `= mul(token.motion.durations.long, token.motion.speed_factor)`, timing `CubicBezier` of Qt's
-  InOutQuad; `autoscroll_step: Value<f32>` (one grid unit, `= token.params.layout.grid_unit`);
-  `autoscroll_interval_ms: Value<f32>`.
+  `Translate`, its duration a Kirigami motion token scaled by `token.motion.speed_factor` and its timing a Qt easing
+  curve (value phase); `autoscroll_step_px: Value<Px>` (an expression on Kirigami's grid unit,
+  `token.params.layout`); `autoscroll_interval_ms: Value<Ms>`.
 - **Variants/sizes:** none. **Flags:** state flags hover, pressed, dragged. **Exclusive groups:** none.
 - **may_be_absent:** none. Declared in the `kirigami` flavour only.
 - **State-model source:** Kirigami's QML states (`ListItemDragHandle.qml:130-131`, `:159-165`, `:233-263`).
@@ -4417,16 +5208,19 @@ which no element datum carries.
 - **Kind:** keyed component (KCommandBar, KConfigWidgets; R1.2 in). Row K-RL01†. Cross-check: Windows 3 (`CommandBar`
   there is the toolbar), macOS 2 (Help-menu search, other row), iOS, GNOME, Material: no palette. Its keycaps are the
   typed `keycap`.
-- **Parts:** `frame` (sunken styled-panel frame, frame forced on; the drop shadow is its `shadow`, a `ShadowLayer`
-  coloured by the palette's `Dark` role, `role.@shade_dark`), `search_field` (the frameless search field: an element
-  of the typed `input` variant `flat`, with a leading `search` icon and a clear button), `results` (the tree of
-  actions: an element of the typed `list` with tree parts), `shortcut_cell` (the cell holding the keycaps); `key` and
-  `separator` are the `keycap` widget's parts.
+- **Parts:**
+  - `frame` — the root: sunken styled-panel frame, frame forced on: `fill`, `stroke`, `padding`, `min_width`,
+    `min_height`, `shadow` (the drop shadow, a `ShadowLayer` coloured by the palette's `Dark` role,
+    `role.@shade_dark`). Nested controls: the frameless search field is `input @ variant flat context
+    component.command_bar` (its leading `search` icon `input.icon @ variant leading`, its clear button `button @
+    variant clear_field`); the tree of actions a `list` there, the cell holding the keycaps `list.cell`; the keys
+    `keycap` elements.
 - **Widget values:** `preferred_width_divisor: Value<f32>` (the space's width divided by this),
-  `preferred_height_divisor: Value<f32>`, `min_width`/`min_height` (on `frame`), `top_offset: Value<f32>`,
-  `keycap_hmargin_extra: Value<f32>` (added per side to the focus frame margin: the source's constant, value phase;
+  `preferred_height_divisor: Value<f32>`, `top_offset_px: Value<Px>` (the frame's size limits are `frame.min_width`,
+  `frame.min_height`),
+  `keycap_hmargin_extra_px: Value<Px>` (added per side to the focus frame margin: the source's constant, value phase;
   ADD-A44); `placement: Placement` (strategy `KCommandBar`: top-centre of the window's content space, ADD-A21).
-- **Variants/sizes/flags:** none. States of `results` rows: state flags (hover, selected).
+- **Variants/sizes/flags:** none (the action rows' states are `list`'s: hover, selected).
 - **may_be_absent:** none.
 - **State-model source:** the widget's code (`kcommandbar.cpp:158-168`, `:299-387`, `:417-440`, `:473-476`,
   `:572-605`, `:712-731`).
@@ -4438,17 +5232,21 @@ which no element datum carries.
 
 - **Kind:** keyed component (KCharSelect, KWidgetsAddons; R1.2 in). Row K-RL04†. Cross-check: macOS 2 and iOS 3 (the
   Character Viewer and the keyboard are system-drawn, R1.1), Windows 3, GNOME 3.
-- **Parts:** `table` (the view; fill from the `View` surface's background), `cell` (one character, centred; element;
-  states hover, selected, focus_visible; its size by the expressions below, its data declared
-  `data = { cell = ["char_width"] }`); the missing-glyph cell is `cell` under the widget flag `@glyph_missing`.
+- **Parts:**
+  - `table` — the root, the view: `fill` (from the `View` surface's background), `bindings`.
+  - `cell` *(element; states hover, selected, focus_visible)* — one character, centred: `fill`, `text`, `focus`,
+    `min_width`, `min_height` (its size by the expressions below, its data declared `data = { cell = ["char_width",
+    "font_x_height", "font_height"] }`, measured through the toolkit's font metrics, S8); the missing-glyph cell is
+    `cell` under the widget flag `@glyph_missing`.
 - **Widget values:** none of its own: the cell's size is `cell.min_width` and `cell.min_height`, expressions of
   `kcharselect.cpp:255-310`. Width:
-  `= add(max(max(min(element.char_width, mul(<x-height>, <max factor>)), mul(<x-height>, <min factor>)), <font height>), mul(2, <text margin>))`,
-  with `element.char_width` the widest printable glyph of the table as the toolkit measures it and the text margin the
-  style's focus-frame margin plus the source's constant (`token.params.layout`). Height (outside Windows):
-  `= max(mul(<x-height>, <factor>), max(<minimum>, add(<font height>, <constant>)))`. The factors and constants are
-  the source's, value phase. The font's x-height and its height (ascent plus descent; `line_height` is the line
-  spacing) have no operand in S2.2.
+  `= add(max(max(min(element.char_width, mul(element.font_x_height, <max factor>)), mul(element.font_x_height, <min factor>)), element.font_height), mul(2, <text margin>))`,
+  with `element.char_width` the widest printable glyph of the table as the toolkit measures it,
+  `element.font_x_height` the font's x-height, `element.font_height` its height (ascent plus descent; `line_height`
+  is the line spacing), and the text margin the style's focus-frame margin plus the source's constant
+  (`token.params.layout`). Height (outside Windows):
+  `= max(mul(element.font_x_height, <factor>), max(<minimum>, add(element.font_height, <constant>)))`. The factors and
+  constants are the source's, value phase.
 - **Variants/sizes:** none. **Flags:** `@glyph_missing` (the font lacks the glyph or the cell is empty: the cell is
   filled with the `Button` surface's background, else the `View`'s). **Exclusive groups:** none.
 - **may_be_absent:** none.
@@ -4461,13 +5259,20 @@ which no element datum carries.
 
 - **Kind:** keyed component (kirigami-addons' `AlbumMaximizeComponent`, R1.2 in; K-KA-34†): a full-window media viewer
   above everything, on its own overlay layer. No other platform's file lists an in-application media viewer.
-- **Parts:** `scrim` (the dim behind it), `header` (the header bar in the alternate background), `header_separator`,
-  `title` (bold), `subtitle`, `close_button` (element), `footer` (the caption footer, height-limited),
-  `footer_separator`, `image` (the shown image with its inset; its zoom and rotation animate through its
-  `transitions`, group `Transform`). Its actions are `button` elements; previous and next are `button` variant
-  `@ka_floating` in context; the loading indicator a `spinner` in context; video controls the `media_controls` variant
-  `@ka_album` (K-KA-35†).
-- **Widget values:** `image_inset: Value<f32>`.
+- **Parts:**
+  - `body` — the root: the viewer's layer: `bindings`.
+  - `scrim` — the dim behind it: `fill`.
+  - `header` — the header bar in the alternate background: `fill`, `padding`.
+  - `header_separator` — `fill`, `min_height`.
+  - `title` — its own text style: `text`.
+  - `subtitle` — `text`.
+  - `footer` — the caption footer, height-limited: `fill`, `padding`, `max_height`.
+  - `footer_separator` — `fill`, `min_height`.
+  - `image` — the shown image with its inset: `transform`, `transitions` (its zoom and rotation animate, group
+    `Transform`). Its close button is `button @ variant close context component.album_viewer`, its actions `button`
+    elements; previous and next are `button` variant `@ka_floating` in context; the loading indicator a `spinner` in
+    context; video controls the `media_controls` variant `@ka_album` (K-KA-35†).
+- **Widget values:** `image_inset_px: Value<Px>`.
 - **Variants, sizes, flags, exclusive groups:** none.
 - **may_be_absent:** `subtitle`, `footer`, `footer_separator`.
 - **State-model source:** the component's QML as K-KA-34† cites it (`ka/components/AbstractMaximizeComponent.qml`,
@@ -4482,15 +5287,16 @@ which no element datum carries.
 
 - **Kind:** keyed component (`NSTokenField`). Row MAC-N03. Cross-check: macOS "chip 2" (tokens are input chips), iOS
   2/3 (not supported), Material 2 (input chips, app layout), KDE 3 (Kirigami chips), GNOME 3.
-- **Parts:** `field` (the text field part: an element of the typed `input` for the frame, text and caret), the tokens:
-  `chip` elements in context (fill, stroke, corners, text; states hover, pressed, selected (accent fill), disabled;
-  the menu arrow at the token's trailing edge is `chip.menu_arrow`; the merge, after group 7's own note that a token
-  is a chip).
-- **Widget values:** `chip_gap: Value<f32>`.
+- **Parts:**
+  - `body` — the root: `padding`, `bindings`. Nested controls: the text field is `input @ context
+    component.token_field` (its frame, text and caret); the tokens are `chip` elements there (fill, stroke, corners,
+    text; states hover, pressed, selected (accent fill), disabled; the menu arrow at the token's trailing edge is
+    `chip.menu_arrow`; the merge, after group 7's own note that a token is a chip).
+- **Widget values:** `chip_gap_px: Value<Px>`.
 - **Variants:** keyed token style, on the `chip` elements, `@default`, `@rounded`, `@squared`, `@plain_squared`
   (`NSTokenField.TokenStyle`). **Sizes:** `ControlSize` (mini .. large), AppKit's `NSControl.ControlSize`. **Flags:**
   state flags only. **Exclusive groups:** none.
-- **may_be_absent:** `chip.menu_arrow`.
+- **may_be_absent:** none of its own (`chip.menu_arrow` is `chip`'s).
 - **State-model source:** AppKit's control states and enums (`NSTokenField.TokenStyle`), appearances (R4).
 - **Today's fields:** none. (A token is a chip: it is the typed `chip`, as the merge decided.)
 
@@ -4500,11 +5306,13 @@ which no element datum carries.
 
 - **Kind:** keyed component (`NSRuleEditor`, `NSPredicateEditor`). Row MAC-N09. Cross-check: all other platforms 3
   (macOS table only).
-- **Parts:** `row` (element; alternating stripe fills by position), `popup_button` (the criteria menus: an element of
-  the typed `combo_box`, its base pop-up look), `value_field` (an element of the typed `input`), `add_button`,
-  `remove_button` (the round plus and minus buttons: elements of the typed `button`, variant `circular`),
-  `nested_row_area` (the indented area of nested rows).
-- **Widget values:** `indent_per_level: Value<f32>`.
+- **Parts:**
+  - `body` — the root: `fill`, `stroke`, `padding`. Nested controls: the criteria menus are `combo_box` elements
+    (their base pop-up look), the value field an `input`, the round plus and minus buttons `button @ variant
+    circular`, each in `context component.rule_editor`.
+  - `row` *(element)* — a criteria row, with alternating stripe fills by position: `fill`, `padding`, `min_height`.
+  - `nested_row_area` — the indented area of nested rows: `fill`, `padding`.
+- **Widget values:** `indent_per_level_px: Value<Px>`.
 - **Variants:** none. **Sizes:** `ControlSize` (NSRuleEditor rows follow row-height styles; per AppKit enum).
   **Flags:** state flags only. **Exclusive groups:** none.
 - **may_be_absent:** none (the last row's remove button is disabled, not absent).
@@ -4520,8 +5328,10 @@ which no element datum carries.
 
 - **Kind:** keyed component (WinUI `SemanticZoom`). Row W2-34. Cross-check: all other platforms 3, iOS 2 maps the word
   "zoom" to the window zoom button (another row).
-- **Parts:** `zoom_out_button` (element; fill, stroke, glyph, font size; states hover, pressed, disabled by WinUI
-  visual states), `zoom_out_glyph` (glyph).
+- **Parts:**
+  - `body` — the root, the zoomable view's box: `bindings`.
+  - `zoom_out_button` *(element)* — the view's own zoom-out control; states hover, pressed, disabled by WinUI visual
+    states (W2-34): `fill`, `stroke`, `glyph`, `text` (its font size).
 - **Widget values:** `presentations: Vec<PresentationTransition>`: event `@zoom` (zoom in and out between the views),
   its kind the template's animation as a `PresentationKind` (`Keyed { … }` with a declared key where it is none of the
   typed kinds).
@@ -4536,7 +5346,10 @@ which no element datum carries.
 
 - **Kind:** keyed component (WinUI `KeyTip`, access-key badge). Row W2-37. Cross-check: GNOME, KDE, macOS, iOS,
   Material 3 (all underline mnemonics or draw none).
-- **Parts:** `badge` (fill, stroke, corners, padding, text style, foreground), `text`.
+- **Parts:**
+  - `badge` — the root, the access-key badge (W2-37): `fill`, `stroke` (its paint and thickness), `corners`,
+    `padding`, `text` (text style, foreground).
+  - `text` — the badge's key letters: `text`.
 - **Widget values:** `placement: Placement` (strategy `WinUiKeyTip`, the placement offset in its parameters, ADD-A21).
 - **Variants/sizes/flags:** none. High contrast and theme dictionaries are rules under the conditions.
 - **Appear/Disappear:** presentation transitions are not stated by W2-37; none.
@@ -4550,15 +5363,19 @@ which no element datum carries.
 
 - **Kind:** keyed component (CTK `TabbedCommandBar`; R1.2 in). Row W-RV-3†. Other platforms: no ribbon (all 3 or
   absent).
-- **Parts:** `tab_row` (a NavigationView in Top mode: a `view_switcher` element variant `@navigation_top`, whose look
-  is W2-11), `content_border` (fill, stroke, corners, thickness; under `cond contrast_high` the window colour and a
-  transparent stroke), `command_bar` (an element of the typed `toolbar`; its buttons label to the right of their
-  icons, `button.values.label_position` in context), `element_container` (margin), `contextual_tab` (text colour in
-  accent; element; states rest, hover, pressed, disabled, selected, `{selected,hover}`, `{selected,pressed}`).
+- **Parts:**
+  - `body` — the root: `padding`, `bindings`. Nested controls: the tab row is a `view_switcher` variant
+    `@navigation_top` in `context component.tabbed_command_bar` (its look W2-11; a contextual tab its `item` under
+    the keyed `@contextual`, text colour in accent; states rest, hover, pressed, disabled, selected,
+    `{selected,hover}`, `{selected,pressed}`); the command panel a `toolbar` there (its buttons label to the right of
+    their icons, `button.values.label_position` in context).
+  - `content_border` — the border holding the tab's command bar: `fill`, `stroke` (its thickness is the stroke's
+    width), `corners`; under `cond contrast_high` the window colour and a transparent stroke.
+  - `element_container` — each command bar's element container: `padding` (its margin, W-RV-3†).
 - **Widget values:** `presentations: Vec<PresentationTransition>`: event `@tab_change`, kind `Keyed { key: pop_in }`
   (WinUI's `PopInThemeAnimation` on the content).
-- **Variants:** keyed `@contextual` (contextual tab). **Sizes/flags:** none. **Exclusive groups:** `contextual_tab`:
-  `[disabled, pressed, hover]` (CommonStates), `selected` combining.
+- **Variants:** none of its own (the contextual tab is `view_switcher`'s keyed `@contextual`). **Sizes/flags:** none.
+  **Exclusive groups:** none of its own (the tab items' `[disabled, pressed, hover]` are `view_switcher`'s).
 - **may_be_absent:** none.
 - **State-model source:** WinUI visual states by template (`TabbedCommandBarItem.xaml:9-24`, `:83-89`).
 - **Today's fields:** `toolbar.*`, `tab.*` (neither has a tab row joined to a command panel).
@@ -4570,8 +5387,13 @@ which no element datum carries.
 - **Kind:** keyed component (`CastingDevicePicker`; the application sets its `Appearance`, the system draws the list:
   R1.1 "configures for the system to draw"). Row W-P4-18†. The button that opens it is the typed `route_button`. The
   list is Windows' alone (macOS's device popover is the system's, R1.1), so it stays keyed.
-- **Parts:** `picker` (flyout surface), `title`, `item` (element; states hover, selected); the selected item is `item`
-  `@ {selected}`.
+- **Parts:**
+  - `picker` — the root, the flyout surface (W-P4-18†: fill, radius, shadow to measure; the appearance's background):
+    `fill`, `corners`, `shadow`, `padding` (the list's inset).
+  - `title` — the picker's title (the appearance's foreground): `text`.
+  - `item` *(element)* — a casting device; states hover, selected; the selected item is `item` `@ {selected}`
+    (W-P4-18†: item height to measure; the appearance's background, foreground and their selected twins): `fill`,
+    `text`, `min_height`.
 - **Widget values:** `placement: Placement` (strategy `WinUiFlyout(…)`: `Show(Rect, Placement)`); the six appearance
   colours are bases of the parts (accent, background, foreground and their selected twins).
 - **Variants/sizes/flags:** none. **may_be_absent:** `title`.
@@ -4587,8 +5409,11 @@ which no element datum carries.
 
 - **Kind:** keyed component (UIKit `UIContextMenuInteraction` preview). Row C-13. Cross-check: macOS 3, Windows 3, KDE
   3, GNOME 3, Material 3.
-- **Parts:** `preview` (the lifted view: `transform` scale, `corners` clipping path, `shadow`), `dim` (the blur and
-  dim over everything else: a `Material` paint of the platform plus a tint layer).
+- **Parts:**
+  - `body` — the presentation over the window (the root): `bindings`.
+  - `preview` — the lifted view: `transform` (scale), `corners` (clipping path), `shadow`.
+  - `dim` — the blur and dim over everything else: `fill` (a `Material` paint of the platform plus a tint layer),
+    `opacity` (it fades in on `@lift` and out on `@dismiss`).
 - **Widget values:** `presentations: Vec<PresentationTransition>`: events `@lift` and `@dismiss` (kinds `Scale`,
   `Fade`; timing a `Spring`); `placement: Placement` (strategy `UiKitContextMenu`: the menu next to the preview,
   ADD-A21).
@@ -4604,9 +5429,11 @@ which no element datum carries.
 
 - **Kind:** keyed component (`UITabAccessory`, iOS 26). Row C-21. Cross-check: GNOME 1 (AdwBottomSheet's bottom bar is
   a bottom-sheet part, another row), macOS 3, others 3.
-- **Parts:** `accessory` (the capsule: a `Material` paint, `Corners::Full`, shadow), `content` (the app's view area,
-  padding).
-- **Widget values:** `height: Value<f32>`, insets as `accessory.padding`;
+- **Parts:**
+  - `accessory` — the root, the capsule: `fill` (a `Material` paint), `corners` (`Corners::Full`), `shadow`, `padding`
+    (its insets, C-21).
+  - `content` — the app's view area: `padding`.
+- **Widget values:** `height_px: Value<Px>`, insets as `accessory.padding`;
   `presentations: Vec<PresentationTransition>`: event `@environment_change` (kind `Morph`).
 - **Variants:** keyed `@inline`, `@expanded` (`UITabAccessory.Environment`, to confirm in the value phase).
   **Sizes/flags:** none.
@@ -4620,7 +5447,8 @@ which no element datum carries.
 
 - **Kind:** keyed component. The keyboard itself is drawn only by the system (out, R1.1); the application's part is
   what it configures: the appearance and the input accessory it draws. Row C-23.
-- **Parts:** `input_accessory` (the keyboard toolbar: fill or material; padding), nothing for the keys.
+- **Parts:**
+  - `input_accessory` — the root, the keyboard toolbar: `fill` (colour or material), `padding`. Nothing for the keys.
 - **Widget values:** `appearance: Value<Key>` (keys `default`, `light`, `dark`, `follows_scheme`:
   `UIKeyboardAppearance`, set by the application so that the keyboard matches the theme);
   `presentations: Vec<PresentationTransition>`: events `@show` and `@hide` (kind `Slide`; duration and timing are the
@@ -4636,9 +5464,15 @@ which no element datum carries.
 
 - **Kind:** keyed component (`UIDocumentViewController.LaunchOptions`, iOS 18+). Row C-44†. Cross-check: GNOME (status
   page), Windows, KDE 3.
-- **Parts:** `background`, `title`, `subtitle`, `primary_action`, `secondary_action` (elements of the typed `button`,
-  with variants), `foreground_accessory`, `background_accessory`, `browser` (the document browser frame it opens).
-- **Widget values:** none stated. **Variants/sizes/flags:** none. **may_be_absent:** the accessories, the browser.
+- **Parts:**
+  - `background` — the root: `fill`, `padding`. Nested controls: the primary and secondary actions are `button`
+    elements (with variants) in `context component.document_launch_view`.
+  - `title`, `subtitle` — the launch screen's title and subtitle: `text`.
+  - `foreground_accessory`, `background_accessory` — the accessory views: `icon`, `padding`.
+  - `browser` — the document browser frame it opens: `fill`, `corners`.
+- **Widget values:** none stated. **Variants/sizes/flags:** none. **may_be_absent:** parts: `foreground_accessory`,
+  `background_accessory`, `browser` (where the application's
+  configuration sets none).
 - **State-model source:** UIKit configuration objects and control states; 26 to verify (row).
 - **Today's fields:** none. Reader: `readers (R18)`.
 
@@ -4647,8 +5481,11 @@ which no element datum carries.
 *From group 7.*
 
 - **Kind:** keyed component (HealthKitUI `HKActivityRingView`). Row C-46†.
-- **Parts:** `ring` (element-free; stroked arc; keyed identity by variant), `track` (the background ring).
-- **Widget values:** `ring_gap: Value<f32>`; the ring width is `ring.stroke` width; `ring_progress` is data, not
+- **Parts:**
+  - `body` — the root, the rings' box: `padding`.
+  - `ring` *(element)* — a stroked arc, its identity a keyed variant: `stroke` (its paint flat or a gradient, C-46†).
+  - `track` — the background ring: `stroke`.
+- **Widget values:** `ring_gap_px: Value<Px>`; the ring width is `ring.stroke` width; `ring_progress` is data, not
   theme.
 - **Variants:** keyed `@move`, `@exercise`, `@stand` (three rings with an Apple Watch paired, the Move ring only
   without one: the data decides which are drawn, so none is `may_be_absent`).
@@ -4662,7 +5499,7 @@ which no element datum carries.
 
 | Component | Platform | Parts | Values | Rows |
 |---|---|---|---|---|
-| `fab_menu` | Material | `close_button`, `item`, `item_label`, `item_icon` | `item_gap: Value<f32>`, `presentations: Vec<PresentationTransition>` (events `@open`, `@close`, kind `Morph`) | MAT-N3 |
+| `fab_menu` | Material | `body` (the root: `padding`), `item` *(element)* (a menu item: `fill`, `corners`, `padding`, `shadow`, `min_height` (its height, MAT-N3), `transitions`), `item_label` (`text`), `item_icon` (`icon`); its close button is `button @ variant close context component.fab_menu` | `item_gap_px: Value<Px>`, `presentations: Vec<PresentationTransition>` (events `@open`, `@close`, kind `Morph`) | MAT-N3 |
 
 ## Colour roles and text ramp
 
@@ -4672,10 +5509,12 @@ which no element datum carries.
 
 1. A **typed surface set** exists when a platform states a background and a foreground for a region that parts bind
    (`Binding::Surface`, S3.3): KDE's seven sets (Q3.1), libadwaita's window, view, header bar, sidebar, secondary
-   sidebar, card, dialog, popover and OSD. A set is declared by the preset (ADD-A48); `Window` always.
+   sidebar, card, dialog, popover and OSD. A set is declared by the preset (ADD-A48); `Window` and `Selection` by
+   every preset (S3: selected items take the `Selection` set's roles).
 2. A **global role** is one the platform states once for the whole theme (accent, status, scrim, highlights).
-3. A **keyed role** is every other colour the platform names: a ladder (Material's, WinUI's tiers, Apple's label, fill and
-   background hierarchies, the system palette). Keyed roles are declared in `[declare] colour_roles` and referenced as
+3. A **keyed role** is every other colour the platform names: a ladder (Material's, WinUI's tiers, Apple's label, fill
+and
+   background hierarchies, the system palette). Keyed roles are declared in `[declare] color_roles` and referenced as
    `role.@key`.
 4. A role never repeats another: where a platform has no separate value, the preset states an expression
    (`= role.window.foreground`), so a toolkit follows the platform and the gate checks the reference (R20).
@@ -4693,10 +5532,10 @@ which no element datum carries.
 | `Sidebar` | sidebars, source lists | libadwaita `sidebar_*` [GN-1.138]; other platforms when they state one |
 | `SecondarySidebar` | libadwaita's second sidebar | libadwaita `secondary_sidebar_*` [GN-1.137] |
 | `Card` | cards, boxed lists | libadwaita `card_*` [GN-1.255]; WinUI card fills when stated as a set |
-| `Popover` | popovers, menus, flyouts | libadwaita `popover_*` [GN-1.182] |
-| `Dialog` | dialogs and sheets | libadwaita `dialog_*`; iOS elevated sheet via binding (R5.2) |
+| `Popover` | popovers, menus, flyouts | libadwaita `popover_*` [GN-1.182]; on `ios-*` the elevated backgrounds, bound by a popover's root (R5.2, D-14) |
+| `Dialog` | dialogs and sheets | libadwaita `dialog_*`; on `ios-*` the elevated backgrounds, bound by a dialog's or sheet's root (R5.2, D-14) |
 | `Tooltip` | tooltips | KDE Tooltip (Q3.1); Kirigami swaps it for `Complementary` (Q1.37) |
-| `Selection` | the selected item: list/menu selection, KDE Selection set | KDE Selection (Q3.1); every platform's list selection |
+| `Selection` | the selected item: list/menu selection, KDE Selection set | every preset (S3); KDE Selection (Q3.1), every platform's list selection |
 | `Complementary` | KDE's inverse-scheme set: passive notifications, tooltips in Kirigami | KDE only [K3.54, Q3.1] |
 | `Osd` | libadwaita `.osd`: toasts, OSD toolbars and their accent overrides | libadwaita [GN-3.09, GN-3.17] |
 
@@ -4709,8 +5548,8 @@ reference through, an undeclared set is a resolution error (S12). Per platform:
 | Platform | Sets declared (from the rows named) |
 |---|---|
 | `kde-breeze` | Window, View, Button, Selection, Tooltip, Complementary, Header (all seven, each with Active, Inactive and Disabled groups) [K3.54, Q3.1] |
-| `adwaita` | Window, View, Header, Sidebar, SecondarySidebar, Card, Dialog, Popover, Osd (+ Selection if the value phase finds a stated selection pair) [libadwaita `_colors.scss`, GN-3.09] |
-| `windows-11`, `macos-*`, `ios-*`, `material-3` | Window and every set whose background and foreground the platform's facts state for a region; the value phase declares them from the facts. Ladders go to keyed roles (below), they are not sets |
+| `adwaita` | Window, View, Header, Sidebar, SecondarySidebar, Card, Dialog, Popover, Osd, Selection (its pair the selected rows' colours libadwaita states, as references where they are another role's) [libadwaita `_colors.scss`, GN-3.09] |
+| `windows-11`, `macos-*`, `ios-*`, `material-3` | Window, Selection and every set whose background and foreground the platform's facts state for a region; the value phase declares them from the facts (on `ios-*` `Dialog` and `Popover` among them, for the elevated level, D-14). Ladders go to keyed roles (below), they are not sets |
 
 #### role record
 
@@ -4731,16 +5570,20 @@ reference through, an undeclared set is a resolution error (S12). Per platform:
 | `disabled` | `DisabledRoles`: a record whose every field may be absent (the record itself is always there) | each field may_be_absent | R5.1 |
 
 S3's further fields (ADD-A48): `background_active`, `background_link`, `background_visited`,
-`background_negative`, `background_neutral`, `background_positive` (KDE's six computed status backgrounds, tinted from the
+`background_negative`, `background_neutral`, `background_positive` (KDE's six computed status backgrounds, tinted from
+the
 set's foreground roles) [K3.52]; `shade_darker` (libadwaita's `headerbar_darker_shade_color`) [GN-1.15]. All
 may_be_absent.
 
-`DisabledRoles` has the same colour fields as `SurfaceRoles` except `disabled`; every field may_be_absent. On KDE each is
+`DisabledRoles` has the same colour fields as `SurfaceRoles` except `disabled`; every field may_be_absent. On KDE each
+is
 the KColorScheme disabled effect applied to the active value (`kde_intensity`, `kde_color`, `kde_contrast` with
-`token.kde.disabled`, S4.8) [K3.50]; on a platform that dims by opacity (libadwaita) the record stays absent and the parts'
+`token.kde.disabled`, S4.8) [K3.50]; on a platform that dims by opacity (libadwaita) the record stays absent and the
+parts'
 `{disabled}` rules set `opacity` from `token.params.opacity` instead [GN-1.271, GN-1.272].
 
-The inactive group is no record field: it is a colour-role rule `@ cond window_inactive` on the active field (libadwaita's
+The inactive group is no record field: it is a colour-role rule `@ cond window_inactive` on the active field
+(libadwaita's
 `*_backdrop_color`, KDE's `[Colors:*][Inactive]` inputs and effects, AppKit's unemphasised colours) [K3.51, GN-1.136,
 S3.2].
 
@@ -4769,7 +5612,7 @@ text from selected items states these roles as references to the `Selection` set
 
 #### keyed roles per platform
 
-Keyed roles are declared in `[declare] colour_roles`; the names are snake_case of the platform's own. Families, with the
+Keyed roles are declared in `[declare] color_roles`; the names are snake_case of the platform's own. Families, with the
 rows that need them (the member lists are the facts', the value phase states them):
 
 **GNOME (`adwaita`).** `thumbnail_background`, `thumbnail_foreground`, `overview_background`, `overview_foreground`
@@ -4787,32 +5630,46 @@ keyed, not per set: KDE computes them from Window.
 `system_brown`, `system_gray` (and the four already named, stated as `system_red`, `system_orange`, `system_green`,
 `system_blue`) [MAC-DF03]; `under_page_background`, `text_background` (against `View.background` =
 `controlBackgroundColor`), `selected_control`, `selected_control_secondary`, `selected_control_text` [MAC-DF04,
-MAC-DF05]; `highlight` (the separate highlight setting, an input, S9.1) [MAC-DF05]. The accent-derived colours are inputs
+MAC-DF05]; `highlight` (the separate highlight setting, an input, S9.1) [MAC-DF05]. The accent-derived colours are
+inputs
 (R2.6).
 
 **iOS (`ios-*`).** Label hierarchy: `label_tertiary`, `label_quaternary` (tertiary no longer conflated with disabled
-text: `role.window.disabled.foreground` states disabled separately) [D-9, X-CO-5]; fills `system_fill`, `system_fill_secondary`,
+text: `role.window.disabled.foreground` states disabled separately) [D-9, X-CO-5]; fills `system_fill`,
+`system_fill_secondary`,
 `system_fill_tertiary`, `system_fill_quaternary` [D-10]; backgrounds `system_background`, `system_background_secondary`,
 `system_background_tertiary`, `system_grouped_background`, `system_grouped_background_secondary`,
-`system_grouped_background_tertiary` [D-11]; their elevated level is no keyed role: colour rules `@ cond elevated`
-(S7.1) restate these roles, and a sheet, popover or other elevated presentation is resolved under `Elevated` [D-14];
+`system_grouped_background_tertiary` [D-11]; their elevated level, keyed too: `system_background_elevated`,
+`system_background_secondary_elevated`, `system_background_tertiary_elevated`,
+`system_grouped_background_elevated`, `system_grouped_background_secondary_elevated`,
+`system_grouped_background_tertiary_elevated` [D-14]. In a sheet, a popover or an alert the elevated level is a
+binding (R2.3, R5.2): the root of `dialog`, `sheet` and `popover` binds the `Dialog` or `Popover` set, whose
+backgrounds the preset states as the elevated values, and a `Binding::Role` from each keyed background role to its
+elevated twin (`role.@system_background` to `= role.@system_background_elevated`, and so on); colour rules
+`@ cond elevated` (S7.1) restate the backgrounds only where the whole window is elevated (multitasking);
 `separator_opaque`
-(the translucent separator is `border`) [D-12]; `placeholder` [X-CO-2]; the system palette `system_red`, `system_orange`,
+(the translucent separator is `border`) [D-12]; `placeholder` [X-CO-2]; the system palette `system_red`,
+`system_orange`,
 `system_yellow`, `system_green`, `system_mint`, `system_teal`, `system_cyan`, `system_blue`, `system_indigo`,
 `system_purple`, `system_pink`, `system_brown`, `system_gray`, `system_gray2` .. `system_gray6` [D-13]. Tint-dependent
 roles are inputs (R2.6); increased-contrast variants are colour-role rules under `ContrastIncreased` [D-15].
 
 **Windows (`windows-11`).** The WinUI tiers, one keyed role per brush of `Common_themeresources_any.xaml`, in the
-families the rows name: text tiers (`text_tertiary`, `text_inverse`, text on accent: secondary, disabled, selected) and accent
+families the rows name: text tiers (`text_tertiary`, `text_inverse`, text on accent: secondary, disabled, selected)
+and accent
 text/fill tiers [W3-12, W3-13, W3-14, W3-46]; stroke tiers (control, strong, card, surface, divider, on-accent) [W3-15];
 fill tiers (control, strong, subtle, control-alt, on-image, solid background base..senary, base-alt) [W3-16]; status
-backgrounds and neutral [W3-17, W3-18]; the eight high-contrast system colours [W3-35]. These rows belong to the
+backgrounds and neutral [W3-17, W3-18]; the layer fills, the content and commanding layers over the backdrop
+(`layer_fill_default`, `layer_fill_alt`, `layer_on_acrylic_fill_default`, `layer_on_accent_acrylic_fill_default`,
+`layer_on_mica_base_alt_*`, one per brush the facts list) [W3-09]; the eight high-contrast system colours [W3-35].
+These rows belong to the
 crosscutting group; this file only fixes that they are keyed.
 
 **Material (`material-3`).** All fifty `md.sys.color` roles of `latest/_md-sys-color.scss:20-206`, in snake_case:
 primary, secondary, tertiary and error with their `on_`, `_container` and `on_..._container` forms; the fixed family
 (`primary_fixed`, `primary_fixed_dim`, `on_primary_fixed`, `on_primary_fixed_variant`, and the same for secondary and
-tertiary); `background`, `on_background`, `surface`, `on_surface`, `surface_variant`, `on_surface_variant`, `surface_dim`,
+tertiary); `background`, `on_background`, `surface`, `on_surface`, `surface_variant`, `on_surface_variant`,
+`surface_dim`,
 `surface_bright`, `surface_container_lowest`, `_low`, `surface_container`, `_high`, `_highest`; `outline`,
 `outline_variant`; `inverse_surface`, `inverse_on_surface`, `inverse_primary`; `surface_tint`; `shadow`, `scrim`
 [MAT-X1]. The typed record's fields and the global roles reference them (`accent = role.@primary`; the scheme function
@@ -4850,26 +5707,34 @@ is a stated fact, never a toolkit default.
 | `monospace` | monospace text, today's `mono_font` | `monospaced` | `monospace` | `monospace` (the `monospace-font-name` setting) | `fixed` | `monospace` |
 | `numeric` | tabular figures | `body_monospaced_digits` (D-8) | `body` = | `numeric` | `default` = | `body_medium` = |
 
-The assignment of KDE's levels follows Kirigami's own use (Q1.5: dialog and page title level 1, sheet header level 2, form
-section level 3, drawer section level 4, list section header level 5 bold). The Material "expressive/baseline"
-alternatives are a `Flavour` rule on the token (S7.1); the emphasised set exists only in Expressive [MAT-TS4]. Every
+The assignment of KDE's levels follows Kirigami's own use (Q1.5: dialog and page title level 1, sheet header level 2,
+form
+section level 3, drawer section level 4, list section header level 5 in its primary type). The Material
+"expressive/baseline" alternatives are a flavour rule on the token (`cond flavor:expressive`, S7.1); the emphasised
+set exists only in Expressive [MAT-TS4]. Every
 cell above is a proposal bound by the facts: the value phase may change a style name only with a cited reason.
 
 #### keyed text styles per platform
 
-A keyed text style is a `TextStyle` (S2.8) the preset declares in `[declare] text_styles`. Each platform lists **all** of
+A keyed text style is a `TextStyle` (S2.8) the preset declares in `[declare] text_styles`. Each platform lists **all**
+of
 its own named styles, so nothing the platform draws is lost whether or not a slot references it.
 
 **Apple.** The eleven text styles, snake_case: `large_title`, `title_1`, `title_2`, `title_3`, `headline`,
 `subheadline`, `body`, `callout`, `footnote`, `caption_1`, `caption_2` [MAC-TS01, TS-1]; for each, the emphasised-weight
-form `<style>_emphasized` (the HIG's "emphasized" column; Bold Text uses it) [D-7, MAC-TS01]; for each, the tight and loose
+form `<style>_emphasized` (the HIG's "emphasized" column; Bold Text uses it) [D-7, MAC-TS01]; for each, the tight and
+loose
 leading forms `<style>_tight`, `<style>_loose` (font-descriptor traits; they differ in `line_height` only) [D-6,
-MAC-TS03]; iOS adds `extra_large_title`, `extra_large_title_2` (iOS 17) [TS-4]; the named AppKit fonts `label`, `message`,
-`palette`, `menu_bar`, `control_content` and `small_system` [MAC-TS02]; `monospaced`, `body_monospaced_digits` (below). Per style: `letter_spacing` is
-`sf_tracking(font_size, design)` (ADD-A54) [D-1]; `font.axes` carries `opsz` as `FollowsSize` [D-2]; `font.width` and the
+MAC-TS03]; iOS adds `extra_large_title`, `extra_large_title_2` (iOS 17) [TS-4]; the named AppKit fonts `label`,
+`message`,
+`palette`, `menu_bar`, `control_content` and `small_system` [MAC-TS02]; `monospaced`, `body_monospaced_digits`
+(below). Per style: `letter_spacing` is
+`sf_tracking(font_size, design)` (ADD-A54) [D-1]; `font.axes` carries `opsz` as `FollowsSize` [D-2]; `font.width` and
+the
 family carry the system design and width [D-3]; `font.features` carries monospaced digits where a style uses them [D-8];
 `line_height` is each style's own [D-4]; `monospaced` is the system's monospaced font (macOS `monospacedSystemFont`,
-its iOS equivalent) and `body_monospaced_digits` is `body` with monospaced digits in `font.features` [D-8]. The Dynamic Type tables (size per content-size category, non-linear) are read by
+its iOS equivalent) and `body_monospaced_digits` is `body` with monospaced digits in `font.features` [D-8]. The
+Dynamic Type tables (size per content-size category, non-linear) are read by
 the iOS reader, the preset states the default category [D-5, TS-2, R10]; Bold Text is the `BoldText` condition (a token
 rule on `font.weight`) [TS-3].
 
@@ -4878,23 +5743,27 @@ rule on `font.weight`) [TS-3].
 
 **GNOME.** libadwaita's classes: `title_1`, `title_2`, `title_3`, `title_4`, `heading`, `body`, `caption_heading`,
 `caption`, `document`, `monospace`, `numeric` [GN-1.189]. `document` takes its family and size from
-`document-font-name` [GN-1.191]; `numeric` carries the `tnum` feature [GN-1.192]; `font.axes` and `font.features` receive
+`document-font-name` [GN-1.191]; `numeric` carries the `tnum` feature [GN-1.192]; `font.axes` and `font.features`
+receive
 the Pango `@axis=` and `#feature=` segments of the font settings [GN-1.193]; `line_height` of `body`, `caption` and
 `document` is a multiple of the font size [GN-1.190]. The relative label sizes the stylesheet states are keyed styles
-whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subtitles, progress text), `narrow_switcher_label`,
+whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subtitles, progress text),
+`narrow_switcher_label`,
 `badge_label`, `tab_counter` [GN-1.194].
 
-**KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size (KTitleWidget's levels 1-4
+**KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size (KTitleWidget's
+levels 1-4
 state the same factors, so one style serves both and its fact cites both sources) [Q1.3, K1.270]; the types per level:
-`heading_<n>_primary` (DemiBold weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
+`heading_<n>_primary` (the primary type's weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
 `smallest_readable`, a full font (family, style, size) read from `smallestReadableFont`, also Kirigami's `smallFont`
-[K1.271, Q1.2]; the Breeze-derived fonts `flat_group_title` (bold, one point larger than the group box font),
-`command_link_title` (bold), `menu_section` (bold) [K1.272], whose size uses `add` (ADD-A56); the read fonts
+[K1.271, Q1.2]; the Breeze-derived fonts `flat_group_title`, `command_link_title`, `menu_section` (each derived from
+another font, its weight and size by Breeze's rule) [K1.272], whose size uses `add` (ADD-A56); the read fonts
 `default`, `fixed`, `menu`, `toolbar`, `taskbar` (kdeglobals `[General]` `font`, `fixed`, `menuFont`, `toolBarFont`,
 `taskbarFont`, each with its extras: K3.46, K3.47), which the `body`, `callout`, `label`, `numeric` and `monospace`
 slots and the menu and tool-button parts refer to.
 
-**Material.** The fifteen baseline styles, `display_large` .. `label_small` (five groups of large, medium, small: display,
+**Material.** The fifteen baseline styles, `display_large` .. `label_small` (five groups of large, medium, small:
+display,
 headline, title, body, label) [MAT-TS1], and the fifteen Expressive emphasised styles `<style>_emphasized` [MAT-TS4].
 Per style: `letter_spacing` [MAT-TS2]; `font.family` the brand or plain typeface, with its weight name [MAT-TS3];
 `font.axes` for `crsv`, `fill`, `grad`, `hexp`, `opsz`, `rond`, `slnt`, `wdth`, `wght` [MAT-TS5]; `monospace`, the
@@ -4902,16 +5771,22 @@ platform default monospace typeface (MAT-X36†).
 
 #### tokens carried by these rows
 
-- **Opacities.** `token.params.opacity: Vec<(Key, Value<f32>)>` (ADD-A44): `disabled` (today's `disabled_opacity`), `strong_disabled`,
+- **Opacities.** `token.params.opacity` (ADD-A44; a group of unit `fraction`, S4.6): `disabled` (today's
+  `disabled_opacity`), `strong_disabled`,
   `dim`, `dimmer`. libadwaita's high-contrast values are Tokens rules under `ContrastHigh` [GN-1.271, GN-1.273]. Parts
   refer to `token.params.opacity.<key>` in `opacity` or in `alpha(...)`.
-- **Icon sizes.** `IconSizeTokens` (S4.5, ADD-A43): the five typed contexts of today (`toolbar`, `small`, `large`, `dialog`,
-  `panel`, each a `Value<IconStyle>`, may_be_absent) and `keyed: Vec<(Key, IconStyle)>`, so a context also carries weight, scale and rendering mode
+- **Icon sizes.** `IconSizeTokens` (S4.5, ADD-A43): the five typed contexts of today (`toolbar`, `small`, `large`,
+  `dialog`,
+  `panel`, each a `Value<IconStyle>`, may_be_absent) and `keyed: Vec<(Key, IconStyle)>`, so a context also carries
+  weight, scale and rendering mode
   [D-19, MAC-IC02]. Kirigami: `small`, `small_medium`, `medium`, `large`, `huge`, `enormous`, `for_labels`
-  (`kirigami_label_icon_size(line_height)`, ADD-A53) [Q1.1]. macOS: `button`, `list_row`, `tab`, `toolbar` (a rule per toolbar
-  size mode), `status_item`, `sidebar` (rules under `cond container_size(sidebar, small)` / `medium` / `large`) [MAC-IC01]. The
+  (`kirigami_label_icon_size(line_height)`, ADD-A53) [Q1.1]. macOS: `button`, `list_row`, `tab`, `toolbar` (a rule per
+  toolbar
+  size mode), `status_item`, `sidebar` (rules under `cond container_size(sidebar, small)` / `medium` / `large`)
+  [MAC-IC01]. The
   alert icon size is a measured value of `dialog` [MAC-IC04].
-- **Focus.** iOS's keyboard halo (shape follows the view's rounded rect and curve; position inside, outside or automatic) is
+- **Focus.** iOS's keyboard halo (shape follows the view's rounded rect and curve; position inside, outside or
+  automatic) is
   `token.focus` with `corners.curve = Continuous` and `offset` [D-18].
 
 #### today's fields
@@ -4960,7 +5835,7 @@ platform default monospace typeface (MAT-X36†).
 Token keys are the platform's own names, declared by the preset (S10). A key marked "(none)" below means the
 platform has no such ramp and parts state the value themselves.
 
-**token.motion.durations** (`Vec<(Key, Value<f32>)>`, S4.1). A scaled duration is `= mul(token.motion.durations.x,
+**token.motion.durations** (`Vec<(Key, Value<Ms>)>`, S4.1). A scaled duration is `= mul(token.motion.durations.x,
 token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 
 | Platform | Keys (one per duration the platform states) | Rows |
@@ -4975,10 +5850,12 @@ token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 **token.motion.timings** (`Vec<(Key, Timing)>`): cubic Béziers, springs (`Timing::Spring`), `Timing::Keyed` where a
 platform's curve is its own (Kirigami's velocity-based curves). Keys per platform: libadwaita's easing curves and
 default timed-animation easing and spring parameters per animation (GN-3.19, GN-3.20); Kirigami's curves in use
-(Q3.26); Qt's `InOutSine` default (K3.37); WinUI's entering, exiting and control key spline (W3-31); UIKit's default
+(Q3.26); Qt's default easing curve for its timelines (K3.37); WinUI's entering, exiting and control key spline
+(W3-31); UIKit's default
 spring (X-MO-2) and AppKit's media-timing curves (MAC-X11); Material's easing and spring tokens (MAT-X13).
 
-**token.motion.speed_factor** (`Value<f32>`): read on KDE (K3.30, K3.90, Q3.24); a constant elsewhere (the platform has no
+**token.motion.speed_factor** (`Value<f32>`): read on KDE (K3.30, K3.90, Q3.24); a constant elsewhere (the platform
+has no
 speed setting; the value phase states it). Rules set it
 to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3.25, W3-37, W3-52†, MAT-X20).
 
@@ -5025,7 +5902,8 @@ labels, K3.21; Material's inner offset, MAT-X10; WinUI's per-control margin, W3-
 K3.20–K3.24, Q3.30, W3-19, W3-20, MAC-X13, X-FO-1, MAT-X10.
 
 **token.caret** (S4.2): colour, width, shape, blink on and off times, blink timeout, blink style, secondary colour,
-`hides_while_selecting`. "No blink" is `blink_on_ms` and `blink_off_ms` `Absent` (both `may_be_absent`). Rows:
+`hides_while_selecting`. "No blink" is `blink_on` and `blink_off` `Absent` (TOML `blink_on_ms`, `blink_off_ms`; both
+`may_be_absent`). Rows:
 GN-3.32–GN-3.38, GN-3.73†, K3.41–K3.43, W3-24, W-P3-9†, MAC-X12, MAC-X14, X-CA-1, X-CA-2, P3-9†, MAT-X25. The caret
 is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 
@@ -5067,7 +5945,7 @@ sets it, K3.91, R25.2):
   menu sizes (W3-40, with the `opened_by_touch` flag for the element) and Kirigami's transient touch.
 - `flavor:baseline` and `flavor:expressive` carry the Material look choice (MAT-P3-19†, MAT-X13).
 
-The conditions these rows added to S7.1 (ADD-A04 … ADD-A11), each with its source and the rows:
+The conditions these rows added to S7.1 (ADD-A04 … ADD-A11, ADD-A76), each with its source and the rows:
 
 | Condition | Meaning, source | Rows |
 |---|---|---|
@@ -5077,6 +5955,8 @@ The conditions these rows added to S7.1 (ADD-A04 … ADD-A11), each with its sou
 | `AccessibilityTextSize` | the content size category is an accessibility category; layouts change axis | X-DT-3, X-A11-10 |
 | `Idiom` | `Phone`, `Pad` (the idiom axis beside the size class) | X-SV-1 |
 | `TintDimmed` | the window or scene is covered by a modal presentation; iOS dims the tint | X-CO-3 |
+| `OverlayScrollbars` | the system shows overlay scroll bars (today's scroll-bar field `overlay_mode`): GNOME's overlay scrolling, macOS's overlay scroller style, Windows' auto-hiding scroll bars | GN-1.85, MAC-S01, W1-152† |
+| `UnitScale` | the device pixel ratio is 1: Qt Quick's text rendering picks its engine by it | Q3.32 |
 | `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions`: Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†); KDE `ui_effects` (K-P3-24†); macOS `wallpaper_tinting` (MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) | W3-53†, K-P3-24†, MAC-X27, MAC-X31†, X-MT-11 |
 
 Conditions the rows do not need: a "colour filters" or "invert" condition (system-applied, R1.1: K3.93, W3-56†,
@@ -5113,7 +5993,8 @@ reader until the platform-support milestone; the milestone implements these, the
 - kdeglobals `[KDE] AnimationDurationFactor`: K3.30, K3.90, Q3.24; plasmarc `[Units] longDuration`: Q3.24.
 - breezerc `[Style] AnimationsEnabled`, `AnimationSteps`, `AnimationsDuration`, `StackedWidgetTransitionsEnabled`:
   K3.31.
-- kdeglobals `[ColorEffects:Disabled]` (six keys: intensity, colour, contrast effect and amount), `[ColorEffects:Inactive]`
+- kdeglobals `[ColorEffects:Disabled]` (six keys: intensity, colour, contrast effect and amount),
+  `[ColorEffects:Inactive]`
   including `ChangeSelectionColor` and `Enable`, and the `[Colors:*][Inactive]` subgroups: K3.40, K3.50, K3.51.
 - kdeglobals `[Colors:*]` (all seven sets, the keys the reader flattens today): Q3.1, K3.54.
 - kdeglobals `[KDE] contrast` (unread today) and `frameContrast` (the factor kept, not only finished colours):
