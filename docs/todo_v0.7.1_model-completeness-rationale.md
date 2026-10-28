@@ -10,7 +10,7 @@ maps every row of the map to them (R24).
 
 The maintainer's rule (2026-10-27): native-theme covers **everything a platform draws visibly**; a
 value no document states is measured on the platform; no gap is closed by a toolkit's default. The
-map lists 2,292 rows of what the six platforms draw that the model cannot express. This document
+map lists 2,339 rows of what the six platforms draw that the model cannot express. This document
 decides how the model expresses them: the model, its presets and its readers. The connectors move to
 the new model in the same release (R21); their own milestones (ROADMAP.md, *Later — the connectors*)
 follow. Values are collected after the specification, because what to measure depends on the shape

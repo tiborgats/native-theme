@@ -85,7 +85,7 @@ It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 ## v0.7.1 — Model completeness: what native-theme does not carry
 
 native-theme is to carry everything a platform draws visibly. It does not yet:
-the gap map lists, in 2,292 rows, what the six platforms draw that the model
+the gap map lists, in 2,339 rows, what the six platforms draw that the model
 cannot express. Among it: layered shadows (the model has a shadow colour and a
 per-widget `shadow_enabled`, so every connector keeps its toolkit's own
 shadow shape), translucent materials, motion, states and their combinations,
