@@ -462,7 +462,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-08 | `badge.{body,label,icon}.* @ variant dot / variant count / variant icon` | rule |
 | W2-08 | `badge.{body.fill,label.text.fill,icon.icon.fill} @ variant attention / variant info / variant success / variant warning / variant error` | rule |
 | W2-08 | `badge.body.{min_width,min_height,padding,corners}; badge.label.text` | field |
-| W2-09 | `teaching_tip.{tail.fill,tail.stroke,tail.min_width,tail.min_height,tail.margin,top_highlight.fill,hero.padding,body.stroke,body.shadow,body.min_width,body.max_width}; teaching_tip.values.light_dismiss` | field |
+| W2-09 | `teaching_tip.{arrow.fill,arrow.stroke,arrow.min_width,arrow.min_height,arrow.margin,top_highlight.fill,hero.padding,body.stroke,body.shadow,body.min_width,body.max_width}; teaching_tip.values.light_dismiss` | field |
 | W2-09 | `teaching_tip.hero.padding @ variant @hero_bottom` | rule |
 | W2-09 | `teaching_tip.{title,subtitle}.text.fill` | field |
 | W2-09 | `button.{body.min_width,body.min_height,icon.glyph} @ variant close context teaching_tip.body / variant close context teaching_tip.body variant @alternate_close` | rule |
@@ -835,8 +835,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-RV-1† | `image_cropper.thumb.{min_width,min_height,corners,stroke,fill} @ variant corner / variant edge` | rule |
 | W-RV-1† | `image_cropper.thumb.fill @ {hover} / {pressed} / {disabled}` | rule |
 | W-RV-1† | `image_cropper.thumb.focus @ {focus_visible}` | rule |
-| W-RV-2† | `list.row_background.fill, list.row.min_height @ {placeholder} / {placeholder} variant grid` (the not-yet-loaded row's parts, styled by the flag) | rule |
-| W-RV-2† | `list.row_background.fill @ {placeholder} cond contrast_high` | rule |
+| W-RV-2† | `list.row_background.fill, list.row.min_height @ {redacted} / {redacted} variant grid` (the not-yet-loaded row's parts, styled by the state flag `redacted`, the one flag for content shown as a placeholder while it loads, ADD-A14) | rule |
+| W-RV-2† | `list.row_background.fill @ {redacted} cond contrast_high` | rule |
 | W-RV-2† | `list.values.presentations (event @placeholder_fade)` | field |
 | W-RV-3† | `component.tabbed_command_bar.content_border.{fill,stroke,corners}` | component |
 | W-RV-3† | `component.tabbed_command_bar.content_border.{fill,stroke} @ cond contrast_high (the window colour, a transparent stroke)` | rule |

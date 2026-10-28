@@ -288,7 +288,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-12 | `menu.values.palette_columns @ size small / size regular` | rule |
 | MN-13 | `menu.accelerator.text` | field |
 | MN-14 | `menu.values.presentations events Appear, Disappear` | field |
-| MN-15 | `menu.item.min_height (= derivation from line_height)` | field |
+| MN-15 | `menu.item.min_height (= a derivation from the label's line height, widget.item_label.line_height: the item has no font of its own, S2.2)` | field |
 | MN-15 | - | readers (R18) |
 | MN-16 | `menu.* @ variant @compact` | rule |
 | MN-17† | `menu.item.{corners,padding}` | field |
@@ -665,8 +665,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-13 | `component.context_menu_preview.preview.shadow` | component |
 | C-13 | `component.context_menu_preview.scrim.fill` | component |
 | C-13 | `UiKitContextMenu` (`component.context_menu_preview.values.placement`) | placement |
-| C-13 | `component.context_menu_preview.values.presentations event Appear` (the lift) | component |
-| C-13 | `component.context_menu_preview.values.presentations event Disappear` (the dismissal) | component |
+| C-13 | `component.context_menu_preview.values.presentations event Appear` (the lift: a Scale step on part preview, a Fade step on part scrim) | component |
+| C-13 | `component.context_menu_preview.values.presentations event Disappear` (the dismissal: the same parts' steps) | component |
 | C-13 | - | readers (R18) |
 | C-14 | `edit_menu.body.{fill,corners}, edit_menu.divider.stroke, edit_menu.arrow.fill / the same @ variant vertical` (the horizontal bar the base) | rule |
 | C-14 | `button.label.text @ context edit_menu` (the item font) | rule |
@@ -741,7 +741,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-33 | `text_area.writing_tools_glow` | field |
 | C-33 | - (the Writing Tools panel) | out (R1.1) |
 | C-36† | `teaching_tip.body.{fill,corners}, teaching_tip.image.icon, teaching_tip.title.text, teaching_tip.message.text @ variant inline / variant popover` | rule |
-| C-36† | `teaching_tip.tail.fill, teaching_tip.body.fill @ variant popover` (the popover tip's arrow and material) | rule |
+| C-36† | `teaching_tip.arrow.fill, teaching_tip.body.fill @ variant popover` (the popover tip's arrow and material) | rule |
 | C-36† | `button.* @ context teaching_tip.action_area` (its buttons) | rule |
 | C-36† | `UiKitPopover` (`teaching_tip.values.placement`) | placement |
 | C-36† | - | readers (R18) |
@@ -762,6 +762,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-41† | `sidebar.pane.{fill,stroke}, sidebar.values.width @ variant end` (the inspector column; the divider is the pane's inner edge) | rule |
 | C-41† | `sidebar.pane.{fill,corners,shadow} @ variants {end,floating}` (26's floating glass) | rule |
 | C-41† | `sidebar.values.presentations events Appear, Disappear @ variant end` | rule |
+| C-41† | `sidebar.pane @ variant end h_size_class compact` (`drawn_as = { widget = "sheet" }`: in a compact width the inspector presents as a sheet; the sheet's variants and look are measured in the value phase) | rule |
 | C-41† | - | readers (R18) |
 | C-42† | `media_controls.bar.fill` (the material bar) | field |
 | C-42† | `button.* @ context media_controls.bar` (its buttons, identities `play`, `volume`, `full_screen`, `frame_step`) | rule |
@@ -784,8 +785,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-45† | `chart.series.fill = pick(element.item_index, …)` (the default series colour order; ADD-B15) | field |
 | C-45† | `chart.values.grid_lines` (`AxisMarks`' defaults) | field |
 | C-45† | - | readers (R18) |
-| C-46† | `component.activity_rings.ring.stroke @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient, and its width) | component |
-| C-46† | `component.activity_rings.track.stroke` | component |
+| C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.ring_width_px`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
+| C-46† | `component.activity_rings.track.fill` | component |
 | C-46† | `component.activity_rings.values.ring_gap` | component |
 | C-46† | - | readers (R18) |
 | C-47† | `rubber_band.body.{fill,stroke,corners}, rubber_band.values.presentations event Disappear` | field |
@@ -898,7 +899,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-CO-5 | `role.window.foreground, role.window.foreground_inactive, role.@label_tertiary, role.@label_quaternary` (the label colour's four prominence levels); other colours' prominence `= uikit_prominence(<colour>, <prominence>)` (ADD-A90) | role |
 | X-CO-5 | `reader:ios:UIColor.Prominence withProminence` | readers (R18) |
 | X-CA-1 | `token.caret.width` (the caret's shape is the caret parts' fields, below; S4.2) | token |
-| X-CA-1 | `input.caret.{corners,min_height}, text_area.caret.{corners,min_height}` (the end rounding; the height against the line; caret part ADD-A24) | field |
+| X-CA-1 | `input.caret.{corners,min_height}, text_area.caret.{corners,min_height}` (the end rounding; the height against the line, over `widget.text.line_height`, the text part's font, S2.2; caret part ADD-A24) | field |
 | X-CA-1 | `reader:ios:UITextInput caretRect` | readers (R18) |
 | X-CA-2 | `token.caret.{blink_on,blink_off,blink_style,solid_while_typing}` (the pause while typing, ADD-A85; the non-blinking preference: `blink_off` zero, never off, by a Tokens rule under its setting, to verify) | token |
 | X-CA-3 | `input.caret_accessory.{icon,padding}` (dictation, language indicator) | field |
@@ -988,6 +989,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SF-7† | `sheet.values.anchor @ h_size_class compact / h_size_class regular / v_size_class compact / v_size_class regular` (ADD-A20) | rule |
 | SF-7† | `sheet.scrim.fill @ variant @page / variant @form` (the dimming layer; the form sheet's glass layer on 26) | rule |
 | SF-7† | `sheet.values.anchor, sheet.body.corners @ variant @edge_attached v_size_class compact` (attached to the bottom edge) | rule |
+| SF-7† | `sheet.values.anchor (full_screen) @ variant @page v_size_class compact / variant @form v_size_class compact` (compact height: full screen, unless the application asks for the edge-attached form, `@edge_attached`) | rule |
+| SF-7† | `sheet.values.edge_attached_width @ variant @edge_attached / variants {@edge_attached,@width_follows_content}` (the container's safe-area width, or the content's preferred width where the application asks, `widthFollowsPreferredContentSizeWhenEdgeAttached`) | rule |
+| SF-7† | `sheet.values.anchor, sheet.body.{fill,corners,shadow} @ variant @placement_center / variant @placement_leading / variant @placement_trailing` (`ios-26`: iOS 27's `preferredPlacement`, set by the connector from the application's choice; where a leading or trailing sheet goes and how it looks is measured in the value phase) | rule |
 | SF-7† | - | readers (R18) |
 | SF-8† | `sheet.body.{max_width,max_height,corners} @ variant @form` (the automatic style's mapping on iOS 18) | rule |
 | SF-8† | - (the page sheet as the automatic style before iOS 18) | newest (R1.5) |

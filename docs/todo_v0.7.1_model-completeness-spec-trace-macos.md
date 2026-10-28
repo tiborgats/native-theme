@@ -228,9 +228,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-TB06† | `tab.bar.stroke, tab.separator.stroke, tab.tab.fill @ {selected}, tab.label.text.fill @ {selected}` | rule |
 | MAC-TB06† | `tab.separator.stroke @ prev tab.tab{selected} / next tab.tab{selected} (absent beside the selected tab)` | rule |
 | MAC-TB07† | `tab.label.text.elision, tab.values.overflow` | field |
-| MAC-SB01 | `list.row.min_height, list.leading_icon.icon.size, list.row.text @ variant sidebar cond container_size(sidebar, small) / container_size(sidebar, medium) / container_size(sidebar, large)` | rule |
+| MAC-SB01 | `list.row.min_height, list.leading_icon.icon.size, list.row.text @ variant sidebar cond container_size:sidebar:small / container_size:sidebar:medium / container_size:sidebar:large` | rule |
 | MAC-SB01 | `reader:macos:effectiveRowSizeStyle, rowHeight, NSTableViewDefaultSizeMode` | reader |
-| MAC-SB01 | `cond container_size(sidebar)` | condition |
+| MAC-SB01 | `cond container_size:sidebar:<key>` | condition |
 | MAC-SB02 | `list.leading_icon.icon.fill @ variant sidebar / variant sidebar {selected} / variant sidebar {selected} context list.view !{focus_within} / variant sidebar {selected} cond window_inactive` | rule |
 | MAC-SB03 | `list.section_header.{text,min_height} @ variant sidebar` | rule |
 | MAC-SB03 | `list.disclosure @ context list.section_header {hover} variant sidebar` | rule |
@@ -472,7 +472,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-IC01 | `token.icons.sizes.toolbar` | token |
 | MAC-IC01 | `token.icons.sizes.keyed.status_item` | token |
 | MAC-IC01 | `token.icons.sizes.keyed.sidebar` | token |
-| MAC-IC01 | `token.icons.sizes.keyed.sidebar @ cond container_size(sidebar, small) / container_size(sidebar, medium) / container_size(sidebar, large)` | rule |
+| MAC-IC01 | `token.icons.sizes.keyed.sidebar @ cond container_size:sidebar:small / container_size:sidebar:medium / container_size:sidebar:large` | rule |
 | MAC-IC01 | `button.icon.icon.size @ variant tool size small context toolbar.bar (NSToolbar sizeMode .small)` | rule |
 | MAC-IC02 | `token.icons.sizes.keyed.*.weight` | token |
 | MAC-IC02 | `token.icons.sizes.keyed.*.scale` | token |
@@ -617,7 +617,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N20 | `menu_bar.app_name.text` | field |
 | MAC-N20 | `menu_bar.item.fill, menu_bar.item_label.text.fill @ {open}` | rule |
 | MAC-N20 | `menu_bar.status_item.icon.size, menu_bar.values.status_item_gap` | field |
-| MAC-N20 | `menu_bar.item_label.text, menu_bar.app_name.text, menu_bar.bar.min_height @ cond container_size(menu_bar, large)` | rule |
+| MAC-N20 | `menu_bar.item_label.text, menu_bar.app_name.text, menu_bar.bar.min_height @ cond container_size:menu_bar:large` | rule |
 | MAC-N20 | `reader:macos:NSStatusBar.system.thickness, NSMenu.menuBarHeight, menuBarFontOfSize:` | reader |
 | MAC-N21 | `form.card.{fill,corners,padding}, form.row_separator.{stroke,padding}, form.row.min_height, form.group_title.text, form.group_description.text` | field |
 | MAC-N22 | `level_indicator.* @ variant circular` (the linear gauge is the base) | rule |
@@ -625,7 +625,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N24 | `pull_to_refresh.indicator` | field |
 | MAC-N24 | `spinner.* @ context pull_to_refresh` | rule |
 | MAC-N25 | - | out (R1.1) |
-| MAC-N26 | - | out (R1.1) |
+| MAC-N26 | `component.touch_bar.bar.{fill,padding}, component.touch_bar.item.{fill,corners,padding,min_width,min_height,text,icon}, component.touch_bar.values.item_gap_px` (the application's `NSTouchBar` items, which AppKit draws in its process: what it configures, R1.1) | component |
+| MAC-N26 | `component.touch_bar.scrubber.{fill,corners,padding}, component.touch_bar.scrubber_item.{fill,corners,text,icon}, component.touch_bar.scrubber_selection.{fill,stroke,corners}, component.touch_bar.values.scrubber_item_gap_px` (`NSScrubber`) | component |
 | MAC-N27† | - | out (R1.1) |
 | MAC-N28† | `split_button.primary.{fill,stroke,corners}, split_button.secondary.{fill,stroke,corners}, split_button.divider.stroke, split_button.arrow.glyph` | field |
 | MAC-N28† | `split_button.primary.fill, split_button.secondary.fill @ {pressed} / {disabled}` | rule |
@@ -635,7 +636,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N29† | `combo_box.{body,arrow} @ variant pull_down {pressed} / variant pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
 | MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |
-| MAC-N30† | `media_controls.bar.{fill,corners,shadow} @ variant @inline / @floating / @minimal` | rule |
+| MAC-N30† | `media_controls.bar.{fill,corners,shadow} @ variant @inline / floating / @minimal` | rule |
 | MAC-N30† | `button.* @ variant play / volume / full_screen / frame_step context media_controls.bar` | rule |
 | MAC-N30† | `button.* @ context media_controls.bar (the sharing button)` | rule |
 | MAC-N30† | `slider.* @ context media_controls (the scrubber)` | rule |
@@ -649,13 +650,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N33† | `menu.item, menu.item_label.text (its results, help topics among them)` | field |
 | MAC-N33† | `menu.found_item_pointer.{glyph,fill,transitions}` | field |
 | MAC-N34† | `menu_bar.extra_window.fill (material), menu_bar.extra_window.corners, menu_bar.extra_window.shadow, menu_bar.values.extra_window_gap` | field |
+| MAC-N34† | `menu_bar.extra_window.{fill,corners,shadow} @ variant @expanded_interface` (`macos-tahoe`: macOS 27's `NSStatusItemExpandedInterfaceSession`; what it draws is measured in the value phase) | rule |
 | MAC-N35† | `status_page.icon.icon, status_page.title.text, status_page.description.text` | field |
 | MAC-N35† | `status_page.values.{icon_to_title,title_to_description,description_to_actions}` | field |
 | MAC-N35† | `button.* @ context status_page.action_area` | rule |
 | MAC-N35† | `status_page.* @ variant search` | rule |
 | MAC-N36† | `teaching_tip.body.{fill,corners}, teaching_tip.image.icon, teaching_tip.title.text, teaching_tip.message.text` | field |
 | MAC-N36† | `teaching_tip.* @ variant inline / popover` | rule |
-| MAC-N36† | `teaching_tip.tail.{fill,stroke} @ variant popover` | rule |
+| MAC-N36† | `teaching_tip.arrow.{fill,stroke} @ variant popover` | rule |
 | MAC-N36† | `button.* @ variant close context teaching_tip` | rule |
 | MAC-N36† | `button.* @ context teaching_tip.action_area` | rule |
 | MAC-N36† | `teaching_tip.values.placement (AppKitPopover)` | placement |

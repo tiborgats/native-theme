@@ -84,7 +84,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.23 | `- (mutter's frames drawn with the GTK 4 theme when libadwaita is not loaded, GN-P3-17†)` | preset (R1.3) |
 | GN-1.278† | `button.{body,icon} @ variant back context window.title_bar` | rule |
 | GN-1.278† | `button.values.menu_trigger @ variant back context window.title_bar` (`LongPressOrSecondaryClick`) | rule |
-| GN-1.278† | `menu.values.{placement,has_arrow} @ context button variant back` (the navigation menu, start-aligned, `has_arrow` false) | placement |
+| GN-1.278† | `menu.values.placement @ context button variant back` (the navigation menu, start-aligned) | placement |
+| GN-1.278† | `menu.arrow (absent = true) @ context button variant back` (the navigation menu has no arrow) | rule |
 | GN-1.282† | `window.values.resize_band` (outside: the CSS border plus the shadow's extent, at least a minimum, over `widget.frame.padding` and `shadow_extent(widget.frame.shadow, <side>)` (ADD-A90); corner_px `= max(<minimum>, widget.frame.corners.<corner>)`; includes_shadow; ADD-A80) | field |
 | GN-1.282† | `window.values.resize_band @ cond maximized / cond full_screen / cond tiled:top / cond tiled:right / cond tiled:bottom / cond tiled:left (Absent)` | rule |
 | GN-1.282† | `window.resize_zone.cursor @ variant top / variant right / variant bottom / variant left / variant top_left / variant top_right / variant bottom_right / variant bottom_left` | rule |
@@ -227,7 +228,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.82 | `tooltip.values.reshow_delay_ms` | field |
 | GN-1.82 | `tooltip.values.browse_timeout_ms` | field |
 | GN-1.83 | `tooltip.values.placement (GtkTooltip; anchor_grow)` | placement |
-| GN-1.283† | `tooltip.body.max_width (= mul(element.char_width, <n>), the data declared on body; ADD-B17)` | field |
+| GN-1.283† | `tooltip.body.max_width (= mul(widget.label.char_width, <n>): the label's font, body having none, S2.2; the data declared on body; ADD-B17)` | field |
 | GN-1.84 | `scrollbar.thumb.corners; scrollbar.track.corners` | field |
 | GN-1.85 | `scrollbar.thumb.{min_width,min_height} @ cond overlay_scrollbars not_context scrollbar.body {hover}` | rule |
 | GN-1.85 | `scrollbar.body.padding @ cond overlay_scrollbars !{hover}` | rule |
@@ -422,7 +423,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.179 | `popover.body.shadow (three layers)` | field |
 | GN-1.180 | `popover.arrow.{min_width,min_height,fill,stroke}` | field |
 | GN-1.180 | `popover.arrow.stroke @ cond contrast_high` | rule |
-| GN-1.180 | `popover.values.has_arrow` | field |
+| GN-1.180 | `popover.arrow` (drawn on `adwaita`; `has-arrow` turned off is the application's choice, so such a popover does not query the part, S6.3) | field |
 | GN-1.181 | `popover.values.placement (GtkPopover gap_px)` | placement |
 | GN-1.182 | `role.popover.shade` | role |
 | GN-1.183 | `cond not_composited (ADD-A01)` | condition |
@@ -617,8 +618,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.276 | `role.@overview_background` | role |
 | GN-1.276 | `role.@overview_foreground` | role |
 | GN-2.01 | `form.row.{min_height,padding} @ variant action (the header's height and margins)` | rule |
-| GN-2.01 | `form.values.column_gap_px, form.values.row_gap_px @ variant action (the header's spacing; the title-subtitle spacing)` | rule |
-| GN-2.01 | `form.row_prefix.padding, form.row_suffix.padding @ variant action / variant action dir rtl (the title box's margins, the prefixes' and suffixes' spacing)` | rule |
+| GN-2.01 | `form.values.leading_gap_px, form.values.trailing_gap_px, form.values.title_subtitle_gap_px @ variant action (the header's spacing between the prefix, title and suffix boxes; the title-subtitle spacing)` | rule |
+| GN-2.01 | `form.row_title_box.margin @ variant action / variant action dir rtl (the title box's margins); form.values.affix_gap_px @ variant action (the spacing between the prefixes and between the suffixes)` | rule |
 | GN-2.01 | `form.row_subtitle.{text,opacity} @ variant action` | rule |
 | GN-2.01 | `form.row_icon.padding @ variant action / variant action dir rtl; form.row_icon.opacity @ {disabled} variant action` | rule |
 | GN-2.02 | `form.row_title.{text,opacity} @ variant property` | rule |
@@ -679,7 +680,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.17 | `sheet.bottom_bar.{fill,shadow}` | field |
 | GN-2.17 | `sheet.body.transitions (Corners, Shadow)` | field |
 | GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show, @bottom_bar_hide; sheet.values.top_padding_range` | field |
-| GN-2.18 | `navigation_view.values.presentations events @push, @pop (spring), navigation_view.page.{transform,opacity}, navigation_view.edge_shadow.{fill,min_width,opacity}, navigation_view.scrim.{fill,opacity}, navigation_view.values.swipe_back, navigation_view.values.swipe_duration_min_ms, navigation_view.values.swipe_duration_max_ms` | field |
+| GN-2.18 | `navigation_view.values.presentations events @push, @pop (spring), navigation_view.incoming_page.{transform,opacity}, navigation_view.outgoing_page.{transform,opacity}, navigation_view.edge_shadow.{fill,min_width,opacity}, navigation_view.scrim.{fill,opacity}, navigation_view.values.swipe_back, navigation_view.values.swipe_duration_min_ms, navigation_view.values.swipe_duration_max_ms` | field |
 | GN-2.18 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
 | GN-2.19 | `sidebar.scrim.{fill,opacity}, sidebar.edge_shadow.fill, sidebar.pane.bindings @ variant overlay` | rule |
 | GN-2.19 | `sidebar.values.presentations events Appear, Disappear (spring)` | field |
@@ -838,6 +839,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.09 | `role.osd.* (SurfaceSet::Osd)` | role |
 | GN-3.09 | `toast.body.bindings Surface(Osd)` | field |
 | GN-3.09 | `toast.body.fill` | field |
+| GN-3.09 | `PartStyle.bindings Role(role.global.status.destructive.standalone, role.global.status.success.standalone, role.global.status.warning.standalone, role.global.status.error.standalone; each = adw_standalone(role.global.status.<s>.fill, dark)) on every part that binds Surface(Osd)` (`.osd` restates the status standalones with the dark formula, `_common.scss:43-55`; the accent's are GN-3.17's) | field |
+| GN-3.09 | `scrollbar.thumb.stroke @ cond overlay_scrollbars context any (surface Osd)` (`.osd`'s scrollbar outline colour, `_common.scss:47`; ContextMatch.surface, ADD-A68) | rule |
 | GN-3.11 | `declare.widget.*.variants (S10, stacked style classes)` | field |
 | GN-3.11 | `Selector.variants SetMatch (S7)` | rule |
 | GN-3.12 | `role.global.status.* (fill, foreground, standalone)` | role |
@@ -890,7 +893,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.34 | `token.caret.blink_timeout_ms` | token |
 | GN-3.34 | `reader:gnome:org.gnome.desktop.interface caret blink timeout` | reader |
 | GN-3.35 | `token.caret.blink_style Fade (ADD-A24)` | token |
-| GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(mul(line_height, token.params.caret.<aspect_ratio>), <length>), ADD-A44)` | field |
+| GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(mul(widget.text.line_height, token.params.caret.<aspect_ratio>), <length>): the text part's line, the caret having no font, S2.2; ADD-A44)` | field |
 | GN-3.37 | `token.caret.secondary (the secondary caret's colour; the base of every caret part's secondary caret, ADD-A24)` | token |
 | GN-3.37 | `input.secondary_caret.fill, text_area.secondary_caret.fill (= token.caret.secondary), input.secondary_caret.{min_width,min_height}, text_area.secondary_caret.{min_width,min_height}` (GTK's split cursor) | field |
 | GN-3.38 | `token.caret.shown_in_read_only (ADD-A70)` | token |
@@ -999,7 +1002,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-SF21† | - | out (R1.1) |
 | GN-RL01† | `wizard.action_area.padding, wizard.values.button_order, wizard.values.button_gap_px, wizard.values.buttons_equal_width` | field |
 | GN-RL01† | `wizard.action_area @ variant @header_bar` (`absent = true`: the buttons packed in the header bar, `button @ context window.title_bar`) | rule |
-| GN-RL01† | `button @ context wizard.action_area (text buttons); button.body.fill @ variant primary context any wizard (the default button)` | rule |
+| GN-RL01† | `button @ context wizard.action_area (text buttons); button.body.fill @ variant primary context wizard.action_area / variant primary context window.title_bar (the default button, in the action area or, under @header_bar, in the title bar)` | rule |
 | GN-RL01† | `window.caption_buttons @ variant @no_title_buttons (absent; the connector sets it for a wizard in its header-bar mode)` | rule |
 | GN-FM01† | `token.text.fallbacks.emoji_family (ADD-A41)` | token |
 | GN-FM01† | `reader:gnome:fontconfig emoji family (fc-match emoji)` | reader |
@@ -1013,7 +1016,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-2† | - | out (R1.1) |
 | GN-P3-3† | `window.values.window_menu_items (GTK's fallback)` | field |
 | GN-P3-3† | `window.values.window_menu_placement (GtkPopover at the pointer)` | placement |
-| GN-P3-3† | `menu.{body,item}, menu.values.has_arrow @ context window.window_menu` (GTK's arrowless popover menu) | rule |
+| GN-P3-3† | `menu.{body,item}, menu.arrow (absent = true) @ context window.window_menu` (GTK's arrowless popover menu) | rule |
 | GN-P3-3† | `window.values.title_bar_click_actions` | field |
 | GN-P3-3† | `reader:gnome:org.gnome.desktop.wm.preferences action-right-click-titlebar` | reader |
 | GN-P3-3† | - (the window menu GNOME Shell draws) | out (R1.1) |
@@ -1063,7 +1066,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-1† | - | out (R1.1) |
 | GN-P4-2† | `popover.values.placement (GtkPopover)` | placement |
 | GN-P4-2† | `menu.values.placement (GtkPopover)` | placement |
-| GN-P4-2† | `combo_box.values.popup_placement; menu.values.has_arrow @ context combo_box` (GtkPopover; width AtLeastAnchor, start-aligned; `has_arrow` false); `menu.arrow` where a popover menu draws its arrow | placement |
+| GN-P4-2† | `combo_box.values.popup_placement` (GtkPopover; width AtLeastAnchor, start-aligned); `menu.arrow` where a popover menu draws its arrow | placement |
+| GN-P4-2† | `menu.arrow (absent = true) @ context combo_box` (the drop-down's arrowless list) | rule |
 | GN-P4-2† | `button.values.menu_placement` (GtkPopover; side Below, centred, flip Y, slide X: the menu button's default direction, down) | placement |
 | GN-P4-2† | `button.values.menu_placement @ variant @arrow_up / variant @arrow_start / variant @arrow_end (the menu button's direction)` | placement |
 | GN-P4-3† | - | out (R1.1) |
@@ -1077,6 +1081,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-6† | `menu.values.submenu_placement (GtkPopover nested: end side, top-aligned)` | placement |
 | GN-P4-7† | `checkbox.mark.glyph (GlyphSource::Path from check.svg)` | field |
 | GN-P4-7† | `radio.dot.glyph (GlyphSource::Path from bullet.svg)` | field |
-| GN-P4-8† | `menu.values.{placement,has_arrow} @ context input / context text_area` (GtkPopover, point anchor; `has_arrow` false) | placement |
+| GN-P4-8† | `menu.values.placement @ context input / context text_area` (GtkPopover, point anchor) | placement |
+| GN-P4-8† | `menu.arrow (absent = true) @ context input / context text_area` (the arrowless text context menu) | rule |
 | GN-P4-8† | `input.values.context_menu_items, text_area.values.context_menu_items` | field |
 | GN-P4-9† | - | out (R1.1) |

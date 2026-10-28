@@ -514,7 +514,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N23 | `button @ variant close context banner.body; button.label.text.fill @ context banner.action_area (the actions)` | rule |
 | MAT-N24 | `spinner.indicator.fill, spinner.body.{min_width,min_height} @ variant @loading_indicator (the active indicator's colour and size)` | rule |
 | MAT-N24 | `spinner.body.{fill,corners,padding} @ variants {@loading_indicator,@contained} (the container's colour, shape and space round the indicator)` | rule |
-| MAT-N24 | `spinner.indicator.shape (a keyed shape, ADD-B03); spinner.values.loop @ variant @loading_indicator (keyframes naming shapes, with their timing, R25.5)` | rule |
+| MAT-N24 | `spinner.indicator.shape (a ShapeKind::Material shape, S2.4, ADD-B03, ADD-A99); spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape, with their timing, R25.5)` | rule |
 | MAT-N25 | `toolbar.bar.{fill,min_height,corners,shadow,padding}, toolbar.values.item_gap @ variant @docked / variant floating / variants {floating,@vibrant}` | rule |
 | MAT-N25 | `toolbar.bar.{min_width,min_height} @ variants {floating,vertical} (the floating toolbar's height and width per orientation, R25.14); toolbar.values.floating_inset @ variant floating` | rule |
 | MAT-N25 | `button.{body.fill,icon.icon.fill,label.text.fill} @ {hover} / {focus_visible} / {pressed} / {disabled}, each context toolbar.bar variant floating / context toolbar.bar variants {floating,@vibrant} / context toolbar.bar variant @docked` | rule |
@@ -562,10 +562,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |
 | MAT-X11 | `token.params.shape.<scale step> (none … extra_extra_large, ADD-A44)` | token |
 | MAT-X11 | `PartStyle.corners per-corner Radius (the -top, -start, -end families) and Radius::Full (half the smaller side)` | field |
-| MAT-X12 | `PartStyle.shape @ {pressed} / {selected} / {checked} (a keyed shape of the preset's declared shapes; icon buttons, FAB menu; R25.5, ADD-B03)` | rule |
-| MAT-X12 | `PartStyle.transitions (Shape, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked}` | rule |
-| MAT-X12 | `declare.shapes (Material's shape library, each to its source; R25.5)` | field |
-| MAT-X12 | `spinner.values.loop @ variant @loading_indicator (keyframes naming shapes)` | rule |
+| MAT-X12 | `button.body.shape @ {pressed} / {selected} / {checked} cond flavor:expressive` (a `ShapeKind::Material` shape in place of the corners' outline; buttons and icon buttons; R25.5, ADD-B03, ADD-A99) | rule |
+| MAT-X12 | `button.body.transitions (Shape, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the morph between the shapes, `native_theme::shapes::morph`, S2.4) | rule |
+| MAT-X12 | `ShapeKind::Material(MaterialShape)` (Material's shapes implemented once in code to `androidx.graphics.shapes` and `MaterialShapes.kt` at a pinned commit, with `native_theme::shapes::outline` and `morph`; S2.4, R25.5, ADD-A99) | field |
+| MAT-X12 | `spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape)` | rule |
 | MAT-X13 | `token.motion.durations.<duration key>` | token |
 | MAT-X13 | `token.motion.timings.<easing or spring key> (cubic Béziers, Timing::Spring)` | token |
 | MAT-X13 | `declare.flavors baseline, expressive` | field |
@@ -576,7 +576,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X16 | `token.text.roles.*` | token |
 | MAT-X17 | `input.accent (the seed, S9.1)` | input |
 | MAT-X17 | `token.material.variant (the scheme variant the user chose)` | token |
-| MAT-X17 | `role.@<m3 role> = m3_role(<role>, input.accent, token.material.variant, token.material.spec_version, token.material.contrast_level, scheme) (S2.2)` | role |
+| MAT-X17 | `role.@<m3 role> = m3_role(<role>)` (it reads `input.accent`, `token.material.{variant,spec_version,contrast_level}` and the colours' scheme itself, S2.2) | role |
 | MAT-X17 | `reader:android:dynamic colour scheme roles and variant` | readers (R18) |
 | MAT-X18 | `cond contrast_increased (medium)` | condition |
 | MAT-X18 | `cond contrast_high (high)` | condition |

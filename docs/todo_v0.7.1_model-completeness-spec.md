@@ -145,7 +145,12 @@ ref      := "role." set "." role        typed colour role of a surface set      
                                           widest glyph), font_x_height, font_height (the
                                           part's own font, through `Element.metrics`; a
                                           part without text measures another part's font as
-                                          `widget.<part>.char_width`, …)              (R25.3)
+                                          `widget.<part>.char_width`, `.max_char_width`,
+                                          `.font_x_height`, `.font_height`, `.font_size`,
+                                          `.line_height`)                              (R25.3)
+          | "body_line_height"            the `body` text role's line spacing, through
+                                          `Element.metrics` (Kirigami's label-sized icons
+                                          under a user font, Q1.1); part expressions only
           | "part." field                 another resolved field of the same part      (R25.3)
           | "widget." part "." field      a resolved field of another part of the same widget (a band
                                           following the frame's shadow, GN-1.282†; a label following its
@@ -660,7 +665,7 @@ the unit their declaration names (S10).
 
 ```rust
 pub struct Caret { pub color: Value<Color>, pub width: Value<Px>,   // its shape: the caret parts' rules
-                   pub blink_on: Value<Ms>, pub blink_off: Value<Ms>, pub blink_timeout: Value<Ms>,
+                   pub blink_on: Value<Ms>, pub blink_off: Value<Ms>, pub blink_timeout: Option<Value<Ms>>,   // None: the blink never stops
                    pub blink_style: BlinkStyle,                                         // ADD-A24
                    pub secondary: Value<Color>,          // the bidirectional secondary caret; may be absent
                    pub shown_in_read_only: Value<bool>,
@@ -1276,7 +1281,8 @@ sizes = ["regular"]
 available = true
 
 [declare.widget.spinner]
-data = { indicator = ["width", "height"] }                 # element data a part's values read (S8)
+data = { indicator = ["width", "height"] }                 # element data a part's values read (S8); another
+                                                           # part's metric: ["widget.label.char_width"]
 
 [declare.component.rule_editor]                # parts and their fields: the catalogue's table, generated (S6.3)
 sizes = ["regular"]                            # a component's sizes and densities, as a widget's
@@ -1717,6 +1723,7 @@ lines that cite it.
 | ADD-A97 | `PartPatch::DrawnAs`, `Styled::DrawnAs`, `RuleBody`, `Keyframe.part`/`timing`, `Glyph.draw_start`, `FontMetrics::line_spacing` | S6.1, S8, S2.7, S2.9 |
 | ADD-A98 | `SharedFlag::DropCopy`/`DropMove`, `FontMetrics::max_char_width`, `DrawnAs.part`, the concentric container | S7.2, S8, S6.1, S2.4 |
 | ADD-A99 | `ShapeKind` in code, `GlyphSource::Path.view_box`, `TextStyle.scaling_role`, closed connector inputs, the concentric helpers, `WinUiFlyoutFull` | S2.4, S2.9, S2.8, S1, S13 |
+| ADD-A100 | `Caret.blink_timeout` as `Option`, `body_line_height`, another part's font metrics | S4.2, S2.2, S10 |
 | ADD-A96 | `Comparison`, `Measured`, `OverlayBottomCenter`, two-edge fade, touchpad velocity samples, `Theme::system`, decoration patterns | S7.3, S13, S2.8, S4.2, S16 |
 | ADD-A95 | `Radius::FollowPart`, `Breakpoint`, `sizes_by_variant`, touchpad inertia, `Theme::set_contrast`, `WindowState` | S2.4, S7.3, S10, S4.2, S16, S8 |
 | ADD-A89 | `FadeUnder` | S2.8 |
