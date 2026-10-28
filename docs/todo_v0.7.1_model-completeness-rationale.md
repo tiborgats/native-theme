@@ -46,6 +46,7 @@ Each decision gives the options, their arguments for and against, and the choice
 | R22 | The documents that follow | — |
 | R23 | A value a toolkit cannot draw | — |
 | R24 | Traceability | — |
+| R25 | Decisions the specification's work required | C05, C10, C11, C14, C18, C19, C26, C27 |
 
 - **Part:** a named piece of a widget (a button's body, label, icon; a switch's track and thumb).
 - **Widget:** a typed set of parts plus widget-level values; one per control kind the model types.
@@ -154,10 +155,10 @@ Microsoft, Apple, Google's Material team) and released as stable.
 - *Every library any platform application uses.* Against: a third-party library carries its vendor's
   look (KDDockWidgets draws KDAB's own drop arrows; the seed follow-up, G19).
 
-**Decision:** the test. In: GtkSourceView, libpanel, kirigami-addons, KTextEditor, KSyntaxHighlighting,
+**Decision:** the test. In: GtkSourceView, libspelling, libpanel, kirigami-addons, KTextEditor, KSyntaxHighlighting,
 KQuickCharts, the Windows Community Toolkit, Swift Charts. Out: the Toolkit Labs (experimental; its
-`MarkdownTextBlock` rows wait for a Toolkit release) and KDDockWidgets. kirigami-addons has no rows yet:
-its survey is the specification's first step.
+`MarkdownTextBlock` rows wait for a Toolkit release) and KDDockWidgets. kirigami-addons was surveyed
+during the specification (the KDE map's *kirigami-addons* section, K-KA-1† … K-KA-47†).
 
 **R1.3 — Other toolkits on a platform** (GTK 3 applications on GNOME; WPF and Win32 controls on
 Windows). A platform preset describes the platform's current native toolkit; the others are candidate
@@ -359,12 +360,12 @@ input's base for it. The inputs:
   refuses it. On the `macos-*` presets the accent, the colours AppKit derives from it by a derivation Apple
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
   separate highlight colour setting; on the `ios-*` presets the tint-dependent roles likewise. On
-  `kde-breeze` the roles Plasma sets from the accent: the reader reads the accent and the scheme Plasma
-  writes from it, and until the specification reads Plasma's own derivation (its source file is to be
-  found; the map has no row for it) those roles are inputs as on macOS; once read, the derivation is a
-  function (R5.4) and the KDE reader supplies only the accent.
+  `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
+  applied and writes them into kdeglobals, so the reader reads them as stated values, and an application or
+  palette changing the accent gets them by the same derivation, a function (R25.1).
 - **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles whose base is
-  the active value and which the reader, or a palette from a KDE port, replaces where the scheme states one;
+  the active value and which the reader, or a palette from a KDE port, replaces where kdeglobals or the
+  scheme states one (what Plasma 6.8 writes there is its own substitute, R25.1);
   KDE's inactive effects apply over them, as `kcolorscheme.cpp:381` applies them over a stated value (R5.1).
 - **Material's seed, scheme variant and specification version:** the seed is the accent input; the scheme
   variant (tonal spot, … , and the variant Material also calls "expressive", unrelated to the flavour) and
@@ -842,31 +843,38 @@ motion, materials and states its project never defined, which principle 3 forbid
   the platform is the project's look on that platform. Against: a project without a port for a platform has no
   palette there.
 
-**Decision:** the fourth. A palette is an application layer (R2.4) of colour-role bases, input bases and the colour
-tokens its port states (KDE's effect parameters), and of rules only where its port states a condition; it is marked as
-replacing the reader's colour scheme, and "palette" names it in the API and documents, so that "preset" keeps meaning a
-whole platform theme. A palette:
+**What the survey found** (2026-10-28, the specification's first step): of the ten projects, only Catppuccin
+(a maintained KDE colour scheme for each of its 4 flavours × 14 accents) and Dracula (a KDE colour scheme, dark only, and
+a whole GTK theme without libadwaita's colour names) publish platform ports, and only for KDE; Gruvbox, Nord, One Dark,
+Solarized and Tokyo Night publish none, and no project publishes one for Windows 11, macOS, Material 3 or iOS. The fourth
+option would leave palettes on KDE only and drop five projects.
 
-- is offered on a platform only where its project publishes a port for it; which ports exist is the specification's
-  survey, and today's community presets keep only what a port states;
-- is one port file: Catppuccin's Mocha with its Mauve accent is one palette, as its port is one file;
-- replaces the reader's colour scheme, the effect parameters and the user's accent included (a KDE port's `.colors`
-  file states its own colour effects, accent and Inactive values, which become the palette's): the reader's colour
-  values are not applied, so a user's own scheme cannot leak into it, and the user's accent is not mixed into a scheme
-  whose port chose its own (a combination neither the port nor the platform states); the reader's other values still
-  apply, and the platform's condition rules (KDE's inactive effects) apply over the palette as over the user's scheme;
-- is suspended while either contrast condition holds, unless its port states colours for that condition, because the
-  preset's contrast colours are then the user's choice (R2.4); on KDE, which has no contrast condition, a high-contrast
-  colour scheme is a scheme like any other, and applying a palette replaces it, as applying any palette replaces the
-  user's scheme: that is the application's choice to offer;
-- leaves to the platform what its port leaves (its derivations follow the palette's colours: a libadwaita hover is the
-  foreground at an opacity, whatever the foreground is);
-- states which colour schemes it has; applying it under a scheme it lacks is refused by the API (a dark-only palette
-  does not invent a light one); an application that wants a dark-only palette in a light system sets the colour scheme
-  to dark itself (R2.3), and when the system's scheme changes under an applied palette the API reports that the palette
-  no longer applies, and the theme is then the preset with the reader's values, rather than a mix of the palette with
-  the other scheme;
-- carries no icon set unless its port does (today's `icon_set = "lucide"` goes).
+**Decision (the maintainer's, 2026-10-28):** a fifth option, which the survey made necessary. Every community scheme
+stays, as a palette on every platform. A palette is **native-theme's own mapping** of the project's published colours
+onto the colour roles, documented and labelled as native-theme's (neither a platform fact nor the project's), the same
+on every platform; where a project publishes a port for a platform, that port is the palette there instead, converted
+mechanically. Principle 3 concerns platform values: a palette is a decoration an application chooses, not a platform's
+look, and its mapping is stated as native-theme's choice, never presented as a fact. The mapping:
+
+- maps each role it covers to a colour the project publishes (Catppuccin's `Surface0`, Dracula's `Background`), or to a
+  derivation of those by the model's functions; where a project's guide gives a range ("Overlay 2 20% - 30% Opacity"),
+  the mapping records the value it picks and labels it as its pick;
+- leaves every role it does not cover to the platform's value and derivation (a libadwaita hover is the foreground at an
+  opacity, whatever the foreground is);
+- is one palette per variant the project publishes (Catppuccin's Mocha with its Mauve accent is one); it offers only the
+  schemes the project defines (Catppuccin Latte is light, the other three flavours dark; Dracula dark), and today's
+  invented light variants of the dark flavours go;
+- is an application layer (R2.4) of colour-role bases, input bases and colour tokens, marked as replacing the reader's
+  colour scheme: the reader's colour values (its scheme, its effect parameters, the user's accent) are not applied, and
+  the platform's condition rules (KDE's inactive effects) apply over it;
+- is suspended while either contrast condition holds, unless its project states colours for it (R2.4);
+- is refused by the API under a scheme it lacks; an application that wants a dark-only palette in a light system sets
+  the colour scheme itself (R2.3); when the system's scheme changes under it, the API reports that it no longer applies
+  and the theme is the preset with the reader's values;
+- carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one).
+
+The facts gate checks a palette's colours against the project's published colours; its labelled picks are recorded as
+such and not compared with any platform.
 
 ### R20 — Value kinds, and no model inheritance
 
@@ -939,6 +947,87 @@ pointer rows are excluded, and the cross-check and pass decision tables are deci
 every row maps to at least one target. This proves the model carries everything the map found; what the map, a survey,
 did not find is caught by R4's gate, whose lists come from the platforms' own state models.
 
+### R25 — Decisions the specification's work required (2026-10-28)
+
+Writing the widget catalogue and mapping every row found mechanisms no decision above carried, and facts that
+refine decisions above. Each is decided here, with the decision it extends.
+
+**R25.1 — Plasma's accent (extends R2.6).** Plasma derives every accent-dependent colour once, when the accent or the
+scheme is applied (`plasma-workspace/kcms/colors/colorsapplicator.cpp`, `applyScheme()`, at v6.8.2), and writes the
+results into kdeglobals; no application derives at run time. So the KDE reader reads the results, and on `kde-breeze`
+the accent is the only accent input: when an application or a palette changes it, the model applies Plasma's own
+derivation, a function `kde_accent(scheme, accent)` implemented to `applyScheme()` (the accent copied into
+`ForegroundActive` and the decoration roles of every colour set, the link colour adjusted for contrast, the selection a 0.7 blend over the
+view background, the text on it black or white by KDE's contrast measure, and the scheme file's `TintFactor` and
+accent-coloured title bar options, which become tokens of the preset). Its `scheme` is the scheme file kdeglobals
+names (`[General] ColorScheme`, found as `color-schemes/<name>.colors`), which the reader reads, since kdeglobals
+holds only the derived values. KDE's stated Inactive values (R2.6) are, in kdeglobals, Plasma's: since
+Plasma 6.8.0, `applyScheme()` writes `[Colors:Header][Inactive]` as a copy of the scheme's active `[Colors:Window]`
+(tinted when the scheme tints), not the scheme's own Header Inactive values; the inactive input roles stay, filled
+from what kdeglobals holds.
+
+**R25.2 — KDE and contrast (confirms R2.3).** One KDE row (K2.23†, the date picker) has code that drops
+hard-coded colours under a high-contrast preference. Plasma reports none (the KDE portal's appearance keys are
+`color-scheme`, `accent-color` and `reduced-motion`, the KDE map's C23 summary), so R2.3 stands: on KDE the contrast
+condition is high only when an application sets it, and that branch is a rule under it.
+
+**R25.3 — Element data (extends R2.5, R5.4).** Some values depend on data only the element has: its laid-out size (a
+spinner's stroke as a fraction of its radius, GN-1.227; initials sized to an avatar, GN-2.14), its progress (a
+duration that follows progress, Q2.3), its scroll position (values that follow scrolling rather than time: a carousel,
+a navigation bar collapsing, GN-2.55†, MAT-N18, C-1), its index and count among items (a chart series' colour,
+K-P3-10†, C-45†), and a text whose hash picks a colour (an avatar's colour from its name, GN-2.14, Q2.28). Options:
+leave them to the connector (against: the platform's rule would be lost), or a typed set of **element data** the
+connector supplies in the query (size, progress, scroll offset and progress, index and count, a text), which
+expressions may name, with the functions the platforms use over them (`pick(hash(text), list)` to the platform's own
+hash and list, cited). **Decision:** element data in the query; the connector re-queries when it changes, as for a
+state.
+
+**R25.4 — Pattern paint (extends R6).** Some fills are patterns no gradient makes: a colour well's transparency
+checkerboard (GN-2.53†, W2-42†), Qt's dense brush patterns (K-SF09†), a code editor's background grid (GN-SF11†),
+libadwaita's developer-build stripes (GN-1.10). **Decision:** a paint layer kind for patterns, a closed set each
+defined to its platform's source (checkerboard, Qt's brush patterns, grid, stripes), plus repeating gradients (Breeze's
+busy stripes); never an image drawn by native-theme.
+
+**R25.5 — Shapes beyond corners (extends R7).** Material Expressive draws polygon shapes (its shape library: cookie,
+clover, …) and morphs between them (MAT-N24, MAT-X12), which corners cannot express.
+**Decision:** a part's shape is its corners or a keyed shape from the platform's shape library, defined to the
+platform's source (`androidx.graphics.shapes` and Material's shape definitions, cited), and a shape change is a
+transition of kind morph; a loop's keyframes may name shapes.
+
+**R25.6 — Presentation transitions (extends R9).** Several transitions may run on one event together (a sheet's fade
+with its slide, Q2.40), one may target a single part (a clear button's fade), a slide states its distance, and
+items may be staggered (Q2.14, Q2.15, Q2.52). **Decision:** an event's presentation is a set of transitions, each with
+an optional part, distance and stagger; R9's velocity-dependent curves are keyed timings whose definitions the facts
+cite (the specification's `Timing::Keyed`).
+
+**R25.7 — Text rendering (extends R10).** Antialiasing, hinting, subpixel order, LCD filter and gamma or contrast
+(ClearType's, FreeType's through fontconfig, GNOME's `font-antialiasing`, `font-hinting`, `font-rgba-order`, macOS's font
+smoothing) are visible and user-set. **Decision:** a text-rendering token the readers read and toolkits apply where
+they can (R23).
+
+**R25.8 — Icon variants (extends R11).** SF Symbols have variants (`.fill`, `.circle`) and localized and right-to-left
+forms; GTK looks up `-rtl` and `-ltr` icon names. **Decision:** an icon style names a symbol variant, and icon lookup
+takes the element's language and direction.
+
+**R25.9 — Selectors (extends R2.3).** The rows need: position counted among siblings of any kind or of a stated kind
+(GTK's `.linked` groups buttons and entries together, against R2.3's "of the same widget kind"), parity (Breeze's alternate
+rows, Q1.77), siblings matched by part (separators beside a selected tab, KDE's per-cell rounding), and a context
+matched by variant alone, whatever the ancestor's widget (libadwaita's `.osd &`). **Decision:** all four, in the
+position and context parts of the selector; R2.3's "of the same widget kind" becomes "of the kind the rule states, any
+kind by default".
+
+**R25.10 — Sizes (extends R15, R16).** Material Expressive has five button and slider sizes; `ControlSize` gains
+`ExtraSmall`, and each preset's facts say which of its sizes fills which slot. Size classes have two axes, horizontal and
+vertical, as iOS's do.
+
+**R25.11 — Scope details (extends R1.1, R1.2).** libspelling (GN-P3-27†) passes R1.2's test and is in. The
+`adwaita` preset carries GtkSourceView's Adwaita and Adwaita-dark schemes, which GNOME Text Editor sets, and
+`classic`, GtkSourceView's default for an application that sets none (GN-SF01†), as a keyed variant. A display's own corner radius is the windowing system's
+(R1.1, out); concentric corners use the container's radius, which the toolkit has.
+
+**R25.12 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
+convention would halve those rules but adds a second way to state geometry, so it is not adopted.
+
 ## 4. What the specification decides
 
 The names and types of every field; the colour roles' surface sets, role record and keyed roles; the text ramp's slots;
@@ -948,8 +1037,9 @@ references, inputs and value kinds; the derive macro's changes; the resolution a
 connector builds; the placement strategies; the derivation functions with their sources; the theme-change token's
 fields; the transition kinds and their kind-specific values (the ripple's); which controls AppKit renders whole and the
 rendering's API; the facts' data format and the gate's test; the conversion of today's inheritance rules into the
-presets; and the mapping of every row (R24). Its first steps are the kirigami-addons survey (R1.2), the survey of the
-community projects' platform ports (R19), and reading Plasma's accent derivation (R2.6).
+presets; and the mapping of every row (R24). Its first steps, the kirigami-addons survey (R1.2), the survey of the
+community projects' platform ports (R19) and reading Plasma's accent derivation (R2.6), are done; what they and
+the catalogue required is R25.
 
 ## 5. Check record
 
@@ -968,6 +1058,7 @@ community projects' platform ports (R19), and reading Plasma's accent derivation
 | independent 7 | 15 resolved, 7 partly | 2 serious, 11 should fix, 9 minor | consolidated into this text: the theme-change token's three kinds and its trigger; `material-3` as Material's current token set for both flavours; tablet mode against opened-by-touch; the speed factor's scope; text scaling before font-derived lengths; the element defined; tiling per edge; the whole-control rendering's needs; the ripple's values on the transition and its origin from the toolkit; Material contrast by one route; material crossfades and layer interpolation; KDE's accent inputs; glossary, index, and R2 split by concern |
 
 | independent 8 | 12 resolved, 4 mostly, 6 partly | 3 serious, 6 should fix, 16 minor | re-resolution on every reader value, and which changes are theme changes; inputs per scheme and contrast condition; transient touch input; transitions on value changes; group opacity; `material-3`'s platform and reference order; the AppKit rendering's cache and absence; springs at factor zero; Plasma's accent; the consolidation's losses restored |
+| specification's work, 2026-10-28 | — | the maintainer's palette decision; 12 mechanisms or facts from the catalogue and the source readings | R19 rewritten (own labelled mapping); R25 added; R1.2 gains libspelling; R2.6's KDE accent and Inactive bullets follow Plasma's `applyScheme()` |
 
 Each check's full report and the worked cases it walked through (a destructive toggle button in a header bar; a WinUI
 toggle switch under high contrast in a compact container; a KDE list row with a palette, inactive, under the Kirigami
