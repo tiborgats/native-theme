@@ -237,14 +237,16 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ {hover} / {pressed} / {disabled} variant close context tab.tab` | rule |
 | W1-082 | `button.{body.fill,icon.glyph.fill,body.stroke} @ variant close context tab.tab {selected} / variant close context tab.tab {hover} / variant close context tab.tab {pressed}` | rule |
 | W1-082 | `tab.values.close_button_shown` | field |
-| W1-082 | `tab.tab.padding @ variant closable` (CloseIconStates: the padding with and without the button); `button.body.margin @ variant close context tab.tab` (`TabViewItemHeaderCloseMargin`: the gap to the label) | rule |
+| W1-082 | `tab.tab.padding @ variant closable` (CloseIconStates: the padding with and without the button) | rule |
+| W1-082 | `button.body.margin @ variant close context tab.tab` (`TabViewItemHeaderCloseMargin`: the gap to the label) | rule |
 | W1-083 | `button.{body.min_width,body.min_height,icon.glyph,body.fill} @ variant add context tab.bar` | rule |
 | W1-083 | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} variant add context tab.bar` | rule |
 | W1-083 | `tab.scroll_arrow.{min_width,glyph,fill,padding}` | field |
 | W1-083 | `tab.scroll_arrow.{fill,glyph.fill} @ {hover} / {pressed} / {disabled}` | rule |
 | W1-084 | `tab.separator.stroke; tab.values.separator_inset` | field |
 | W1-084 | `tab.separator.opacity @ prev tab.tab {selected} / next tab.tab {selected} (hidden beside the selected tab, ADD-B07)` | rule |
-| W1-085 | `tab.tab.max_width; tab.label @ !{selected} variant @width_compact` (`absent = true`: TabWidthMode's Compact, the application's choice as the keyed variants `@width_equal`, `@width_size_to_content`, `@width_compact`) | rule |
+| W1-085 | `tab.tab.max_width` | field |
+| W1-085 | `tab.values.equal_widths @ variant @width_equal` (true: every tab the same width up to `max_width`) `/ variant @width_size_to_content` (false: each tab sized by its content); `tab.label @ !{selected} variant @width_compact` (`absent = true`: Compact); TabWidthMode is the application's choice, the keyed variants `@width_equal`, `@width_size_to_content`, `@width_compact` | rule |
 | W1-085 | `tab.label.text.font.size` | field |
 | W1-085 | `tab.bar.padding` | field |
 | W1-086 | `tab.tab.stroke @ {selected} (linear gradient paint, sides and top)` | rule |
@@ -261,14 +263,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-092 | `list.{row.min_height,row.padding,row_background.corners,leading_icon.min_width,leading_icon.min_height} @ variant sidebar (row height, icon box, its margin)` | rule |
 | W1-092 | `list.values.{row_background_inset,leading_gap} @ variant sidebar (the item margin, the icon to text gap)` | rule |
 | W1-093 | `list.section_header.text @ variant sidebar` | rule |
-| W1-093 | `separator.{line.stroke,values.inset} @ context sidebar.pane (the colour, height and margin)` | rule |
+| W1-093 | `separator.line.{stroke,margin} @ context sidebar.pane (the colour, height and margin)` | rule |
 | W1-093 | `list.disclosure.glyph @ variant sidebar` | rule |
 | W1-093 | `list.values.disclosure_gap @ variant sidebar (the chevron margin)` | rule |
 | W1-093 | `list.disclosure.transform @ {open} variant sidebar` | rule |
 | W1-093 | `list.disclosure.transitions (Transform: the rotation)` | field |
 | W1-094 | `sidebar.values.width, sidebar.values.collapsed_width` | field |
 | W1-094 | `sidebar.* @ variant compact / variant @left_minimal (LeftCompact, LeftMinimal; Left is the base)` | rule |
-| W1-094 | `sidebar.values.breakpoints` | field |
+| W1-094 | `sidebar.values.breakpoints` (the display modes by width: W-P4-19†'s) | field |
 | W1-094 | `view_switcher.* @ variant @navigation_top (Top)` | rule |
 | W1-095 | `button.{body.min_width,body.min_height,icon.glyph} @ variant pane_toggle context sidebar.header / variant back context sidebar.header` | rule |
 | W1-095 | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} variant pane_toggle context sidebar.header` | rule |
@@ -318,7 +320,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-116 | `popover.dismiss_overlay.fill; menu.dismiss_overlay.fill @ context combo_box` (the light-dismiss overlay, its colour per control: the combo box's own brush on its popup's) | rule |
 | W1-117 | `popover.body.{min_width,max_width,min_height,max_height}` | field |
 | W1-119 | `menu.separator.padding; toolbar.separator.margin (the menu's and the command bar's own separators)` | field |
-| W1-119 | `separator.values.inset @ context sidebar.pane` | rule |
+| W1-119 | `separator.line.margin @ context sidebar.pane` (the navigation pane's separator insets) | rule |
 | W1-157† | `splitter.divider.fill` | field |
 | W1-157† | `splitter.divider.fill @ {hover} / {pressed} / {disabled}` | rule |
 | W1-157† | `splitter.grip.{fill,glyph,min_width,min_height,corners,padding}` | field |
@@ -329,7 +331,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-121 | `switch.thumb.fill @ {hover} / {checked,hover}` | rule |
 | W1-122 | `switch.thumb.{min_width,min_height} @ {hover} / {checked,hover}` | rule |
 | W1-123 | `switch.thumb.transitions (Geometry)` | field |
-| W1-123 | `switch.values.presentations (event @thumb_move, part thumb; measured)` | field |
+| W1-123 | `switch.thumb.transitions (Geometry: the slide; measured)` | field |
 | W1-123 | `token.motion.durations.control_faster, token.motion.timings.control_fast_out_slow_in` | token |
 | W1-124 | `switch.state_label.text` | field |
 | W1-124 | `switch.state_label.text.fill @ {disabled}` | rule |
@@ -355,7 +357,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
 | W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
-| W1-133 | `combo_box.values.popup_placement (its max_visible_items)` | rule |
+| W1-133 | `combo_box.values.popup_placement (its max_visible_items)` | placement |
 | W1-134 | `menu.{item.fill,item.stroke,item_label.text.fill} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {selected,disabled} / {disabled} context combo_box` | rule |
 | W1-134 | `menu.item.fill @ {selected} !{focused} context combo_box (selected, unfocused)` | rule |
 | W1-134 | `menu.item.padding @ cond input:touch context combo_box / cond input:game_controller context combo_box` | rule |
@@ -499,7 +501,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-15 | `button.{body.padding,icon.glyph} @ variant @query context search_field.body` | rule |
 | W2-15 | `button.* @ variant clear_field context input.body (its clear button)` | rule |
 | W2-15 | `menu.body.{fill,stroke,shadow,max_height} @ context autocomplete` | rule |
-| W2-15 | `menu.item.fill @ {hover} / {pressed} / {selected} context autocomplete` | rule |
+| W2-15 | `menu.item.fill @ {hover} / {pressed} / {focused} context autocomplete` (the suggestion list's selected item is the keyboard-highlighted suggestion: `focused`, S7.2) | rule |
 | W2-15 | `menu.body.corners @ {placed_above} context autocomplete / {placed_below} context autocomplete (square where attached)` | rule |
 | W2-15 | `WinUiAutoSuggest (autocomplete.values.placement)` | placement |
 | W2-15 | `button.icon.transitions @ variant @query context search_field.body` (the row's chevron animation; which glyph animates is the gap map's to verify) | rule |
@@ -523,7 +525,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-20 | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} variant next context page_indicator.body` | rule |
 | W2-20 | `page_indicator.dot.{min_width,min_height} @ variant vertical` | rule |
 | W2-20 | `page_indicator.values.{nav_buttons_visibility,max_visible}` | field |
-| W2-21 | `page_indicator.selection_indicator.fill` | field
+| W2-21 | `page_indicator.selection_indicator.fill` | field |
 | W2-21 | `button.{body.fill,body.min_width,label.text} @ variant @page_number context page_indicator` (PagerControl's number buttons) | rule |
 | W2-21 | `button.{body.fill,label.text} @ {hover} / {pressed} / {selected} / {disabled} variant @page_number context page_indicator` | rule |
 | W2-21 | `button.* @ variant previous context page_indicator.body / variant next context page_indicator.body / variant @first context page_indicator.body / variant @last context page_indicator.body` | rule |
@@ -587,7 +589,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-35 | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} context media_controls.bar` | rule |
 | W2-35 | `popover.* @ context media_controls.bar (the volume flyout)` | rule |
 | W2-35 | `slider.* @ context any media_controls (the seek slider and the volume slider)` | rule |
-| W2-36 | `ink_toolbar.{bar.fill,palette.fill,palette.corners,palette.shadow,palette_swatch.stroke,stroke_width_selector.fill,ruler.fill,ruler.stroke}` | field
+| W2-36 | `ink_toolbar.{bar.fill,palette.fill,palette.corners,palette.shadow,palette_swatch.stroke,stroke_width_selector.fill,ruler.fill,ruler.stroke}` | field |
 | W2-36 | `button.{body.fill,icon.icon} @ variant tool context ink_toolbar` (the tool buttons, Nested controls) | rule |
 | W2-36 | `button.body.fill @ {selected} / {hover} / {pressed} variant tool context ink_toolbar` | rule |
 | W2-36 | `ink_toolbar.values.palette_placement` | field |
@@ -598,8 +600,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.row_title.text.fill @ context form.card {hover} / context form.card {pressed} / context form.card {disabled}` | rule |
 | W2-40† | `form.card.{stroke,padding,min_width,min_height}; form.row_subtitle.text; form.row_icon.{icon,max_width,max_height,padding}; form.row_arrow.{icon,padding}` | field |
 | W2-40† | `form.values.column_gap (the header to content spacing)` | field |
-| W2-40† | `form.* @ variant @right / variant @right_wrapped / variant @right_wrapped_no_icon / variant @left / variant vertical` | rule |
-| W2-40† | `form.values.{collapse,breakpoints} (the wrap thresholds setting `collapsed`)` | field |
+| W2-40† | `form.* @ variant @right / variant collapsed / variant @right_wrapped_no_icon / variant @left / variant vertical` (RightWrapped is `collapsed`) | rule |
+| W2-40† | `form.values.{collapse,breakpoints} (AtBreakpoints; measured Allocation, width Below the wrap threshold setting `collapsed` and Below the no-icon threshold setting `@right_wrapped_no_icon`, under `@right`)` | field |
 | W2-40† | `form.row_icon.opacity @ {disabled} variant bitmap_icon` (the bitmap header icon dimmed; a glyph icon is recoloured, W3-51†) | rule |
 | W2-40† | `form.{row.padding,row.stroke,row_arrow.icon} @ variant expander / variant action (the expander's header and items, their top border, the chevron button, the clickable items)` | rule |
 | W2-41† | `level_indicator.{track.fill,fill.fill,tick.fill,needle.fill,needle.stroke,needle.min_width,needle.min_height,value_label.text,unit_label.text} @ variant circular / cond contrast_high variant circular` (the scale arc is `track`, the trail arc `fill`: one structure with iOS's circular gauge); `level_indicator.tick.fill @ variant @scale` (the scale ticks) | rule |
@@ -745,7 +747,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-37 | `reader:windows:UISettings.AnimationsEnabled, SPI_GETCLIENTAREAANIMATION` | reader |
 | W3-38 | `Material.fallback @ cond reduced_transparency per material` | rule |
 | W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled, registry EnableTransparency` | reader |
-| W3-39 | `declare.widget.*.densities (compact)` | field |
+| W3-39 | `declare.widget.{input,text_area,combo_box,list,date_picker,time_picker,picker_wheel}.densities (compact)` (each entry's *Sizes and densities*) | field |
 | W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` | rule |
 | W3-39 | `list.row.min_height @ variant sidebar density compact (the nav item height)` | rule |
 | W3-39 | `picker_wheel.item.padding @ density compact context date_picker.popup / density compact context time_picker.popup (the picker flyouts)` | rule |
@@ -757,7 +759,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-41 | `token.behavior.{double_click_time,hover_open_delay,drag_threshold,scroll_lines_per_step,key_repeat_delay}` | token |
 | W3-41 | `menu.values.submenu_open_delay_ms` | field |
 | W3-41 | - (`UISettings.MessageDuration`: how long the system's notifications stay, which the shell draws; WinUI has no timed message control) | out (R1.1) |
-| W3-41 | `reader:windows:GetDoubleClickTime, UISettings.DoubleClickTime, SPI_GETMOUSEHOVERTIME, SPI_GETMENUSHOWDELAY, SM_CXDRAG, SM_CYDRAG, SPI_GETWHEELSCROLLLINES, UISettings.MessageDuration, SPI_GETKEYBOARDDELAY` | reader |
+| W3-41 | `reader:windows:GetDoubleClickTime, UISettings.DoubleClickTime, SPI_GETMOUSEHOVERTIME, SPI_GETMENUSHOWDELAY, SM_CXDRAG, SM_CYDRAG, SPI_GETWHEELSCROLLLINES, SPI_GETKEYBOARDDELAY` | reader |
 | W3-43 | - | preset (R1.3) |
 | W3-44 | `window.title_bar.fill @ cond scheme:dark` | rule |
 | W3-44 | `window.frame.stroke @ cond scheme:dark` | rule |
@@ -795,7 +797,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P3-1† | - (the snap overlay, the Snap bar and the shared edge of snapped windows: drawn by the shell) | out (R1.1) |
 | W-P3-2† | `window.title_bar (absent) @ cond full_screen` | rule |
 | W-P3-2† | `window.values.full_screen_title_bar_reveal (SwipeFromTop)` | field |
-| W-P3-2† | `window.values.presentations (event @title_bar_reveal)` | field |
+| W-P3-2† | `window.values.presentations (event @title_bar_show)` | field |
 | W-P3-2† | `window.{frame.corners,title_bar.min_height,values.default_size} @ variant @compact_overlay` | rule |
 | W-P3-2† | `window.caption_button.{min_width,min_height} @ context window.frame variant @compact_overlay` | rule |
 | W-P3-2† | - (entering and leaving each presenter: the system's window animation) | out (R1.1) |
@@ -860,7 +862,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-10† | - | preset (R1.3) |
 | W-P4-11† | `list.values.drag_hover_delay_ms` | field |
 | W-P4-12† | `token.icons.mirroring (S2.9; the "Mirrored" code points as the right-to-left forms)` | token |
-| W-P4-12† | `GlyphSource per direction (ADD-B05, R25.8)` | field |
+| W-P4-12† | `Element.direction` (icon lookup by the element's direction, S2.9, S8; ADD-B05: the "Mirrored" code point as the right-to-left form) | field |
 | W-P4-13† | - | preset (R1.3) |
 | W-P4-14† | - | out (R1.1) |
 | W-P4-15† | - | out (R1.1) |
@@ -878,5 +880,5 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P4-18† | `button.{body.fill,icon.glyph} @ variant route context media_controls.bar (the CastButton)` | rule |
 | W-P4-18† | `button.{body.fill,icon.glyph.fill} @ {hover} / {pressed} / {disabled} variant route context media_controls.bar` | rule |
 | W-P4-18† | `reader:windows:DevicePickerAppearance getters` | reader |
-| W-P4-19† | `sidebar.values.breakpoints` | field |
-| W-P4-19† | `layout.values.{max_panes_horizontal,max_panes_vertical,pane_width,pane_height,breakpoints} @ variant pane` (TwoPaneView; `breakpoints` its own wide and tall thresholds, setting `@two_pane_wide`, `@two_pane_tall`, R16) | rule |
+| W-P4-19† | `sidebar.values.breakpoints` (NavigationView: measured Allocation, `compact` with width Below the expanded threshold, `@left_minimal` with width Below the compact threshold, its rules after `compact`'s; `NavigationView.cpp:1428-1458`) | field |
+| W-P4-19† | `layout.values.{max_panes_horizontal,max_panes_vertical,pane_width,pane_height,breakpoints} @ variant pane` (TwoPaneView; `breakpoints` its wide and tall thresholds: measured Allocation, width Above setting `@two_pane_wide`, height Above setting `@two_pane_tall`, the wide rules after the tall ones, `TwoPaneView.cpp:103-150`; R16) | rule |

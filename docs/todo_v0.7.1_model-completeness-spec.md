@@ -344,8 +344,6 @@ pub enum TransitionKind {
              opacity: Value<Fraction>, fade: Value<Ms>, min_press: Value<Ms>,
              touch_delay: Value<Ms> },    // MAT-X9, MAT-X25
     FocusMove,                                // the indicator travelling between elements (ADD-A19)
-    Keyframes(Vec<Keyframe>),                 // runs once on the change (Material's focus ring growing then
-                                              // settling, MAT-X10)
     Keyed { key: Key, params: Vec<(Key, Value<Scalar>)> },   // SF Symbols' content transitions and effects,
 }                                             // WinUI's AnimatedIcon states; values measured (ADD-A27, R25.12)
 pub struct PresentationTransition {          // one event's presentation: its steps run together (R25.6)
@@ -372,8 +370,9 @@ pub struct Keyframe { pub at: Fraction, pub patch: PartStylePatch }   // `at` a 
 Semantics (R9): a transition starts when a property's resolved value changes; the transition stated by the style
 after the change governs, both directions; a later rule's transition for the same property group wins; appearing
 layers interpolate from zero alpha, layers match by stack position, colours interpolate in premultiplied sRGB;
-a material giving way to a colour crossfades. A `Geometry` transition also starts when the element's laid-out box
-changes (a thumb moving to a new value), which the connector reports by querying with the new box. During a theme change (S4.3) the theme-change token governs. A
+a material giving way to a colour crossfades. A `Geometry` transition also starts when an element's or a part's laid-out box
+changes (a switch's thumb moving to its new end), which the connector reports by querying that element, or the part
+with its element, with the new box in `ElementData`. During a theme change (S4.3) the theme-change token governs. A
 state-triggered icon animation (WinUI's AnimatedIcon, GtkSvg's states, an SF Symbol effect on a change) is a
 `TransitionKind::Keyed` transition of the `Icon` group; a repeating one is `IconStyle.animation` (R25.12).
 
@@ -839,7 +838,8 @@ path), at three levels: a
 field of a part (`button.body.shadow`), a whole part (`slider.ticks`: some platform draws no ticks), and a whole
 widget (a preset declares it `available = false`, S10). A whole part is made absent by a base or a rule
 (`PartPatch::Absent`, TOML `absent = true`), so it may be absent under a condition only (a title bar in full
-screen); the query then answers `NotDrawn`. An unavailable widget and an absent part need no fields. A widget's root
+screen); the query then answers `NotDrawn`. An unavailable widget and an absent part need no fields. A compound widget value listed `may_be_absent` (a `Placement`, a record of `Value`s) allows each of its `Value`
+members to be absent. A widget's root
 part is never absent as a whole and is never a repeated element (the catalogue gives such widgets a container root);
 its fields may be. `may_be_absent` is about what a platform draws, never about an element's content: a part the
 element's content lacks (a dialog given no icon, an icon-only tab's label) is simply not queried by the connector,
@@ -1639,7 +1639,7 @@ lines that cite it.
 | ADD-A78 | the window's and the screen's size as operands, from `RootInputs` | S8 |
 | ADD-A79 | `PartStyle.margin` | S2.11 |
 | ADD-A80 | `widget.<part>.<field>` references | S2.2 |
-| ADD-A81 | `TransitionKind::Keyframes` | S2.7 |
+| ADD-A81 | (withdrawn: its row, MAT-X10's focus-ring animation, is `reference (R1.6)`) | — |
 | ADD-A82 | `FocusIndicator.dash`, `FocusKind::Keyed` | S2.10 |
 | ADD-A83 | `Condition::Freeform`, `Posture`, `DeviceModel` | S7.1 |
 | ADD-A84 | `ContextMatch.sizes` | S7 |
@@ -1672,7 +1672,7 @@ lines that cite it.
 | ADD-B15 | A series index and count as operands | S2.2, S8 (R25.3) |
 | ADD-B16 | An application-chosen colour that derived values follow | S2.2, S8 (R25.3) |
 | ADD-B17 | Character-width operand `char_width` | S2.2, S8 (R25.3) |
-| ADD-B18 | the display's corner radius as element data | S8 (R25.11) |
+| ADD-B18 | the display's corner radius, the root's container (`RootInputs`) | S4.6, S8 (R25.11) |
 | CONTRA-1 | R2.3 "KDE has no contrast setting" against K2.23† | R25.2 |
 | CONTRA-2 | R9 velocity curves as a timing kind of their own | R9, R25.6 |
 | CONTRA-3 | R2.3 position among the same widget kind against GTK's `.linked` | R2.3, R25.9 |

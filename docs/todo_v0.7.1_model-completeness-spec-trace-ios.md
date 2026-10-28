@@ -177,7 +177,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | W-4 | - | readers (R18) |
 | W-5 | `window.values.status_bar_style` | field |
 | W-5 | `window.values.status_bar_style @ cond scheme:dark` | rule |
-| W-6 | `window.frame.corners` (the outermost container the `Concentric` corners derive from: each corner `Radius::Px(= element.display_corner_radius.<corner>)` where the connector supplies it, the part declaring the data, else `= token.params.display.corner_radius`; S4.6, ADD-B18, R25.11) | field |
+| W-6 | `window.frame.corners` (`Radius::Concentric` per corner, each with its stated minimum, following the display, the root's container: `RootInputs.display_corner_radius` where the platform reports it, else `token.params.display.corner_radius`, else none; S4.6, S8, R25.11) | field |
 | W-6 | `token.params.display.corner_radius @ cond device_model:<key>` (measured per device model, the map's M-r; an unlisted model's radius `Absent`, S4.6, R25.11, ADD-A83) | rule |
 | W-7 | - | out (R1.1) |
 | W-9 | - | out (R1.1) |
@@ -379,7 +379,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SD-6 | `sidebar.pane.fill @ variant floating` (the glass material) | rule |
 | SD-6 | `sidebar.values.floating_inset` | field |
 | SD-6 | `background_extension.extension.fill @ context sidebar.pane variant floating` (the content extending beneath) | rule |
-| SD-7 | `sidebar.values.presentations events Appear, Disappear, @morph_to_tab_bar` | field |
+| SD-7 | `sidebar.values.presentations events Appear, Disappear, @tab_sidebar_morph` | field |
 | SD-8 | `list.row.min_height @ variant sidebar` | rule |
 | SD-9† | `sidebar.pane.shadow @ variant overlay / variant @displace` | rule |
 | SD-9† | `sidebar.scrim.{fill,opacity} @ variant overlay / variant @displace` (the dim of the covered column) | rule |
@@ -425,7 +425,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | L-7 | `reader:ios:UIListContentConfiguration cell, subtitleCell, valueCell` | readers (R18) |
 | L-8 | `list.leading_icon.{min_width,min_height,icon,corners}` (the reserved size, tint, corner) | field |
 | L-8 | `reader:ios:imageProperties` | readers (R18) |
-| L-9 | `list.row.min_height (Auto with a minimum; = uifm_scaled, ADD-A55)` | field |
+| L-9 | `list.row.min_height (= uifm_scaled(<minimum>, <text role>), ADD-A55; the row grows with its content past it)` | field |
 | L-10 | `list.row_background.fill @ {pressed} / {selected} / {focus_visible} / {selected,focus_visible} / {selected,editing} / {editing} / {swiped} / {open} / {dragged} / {drop_target}` (highlighted, selected, focused, selected and focused, selected in multi-select, editing, swiped, expanded, lifted, drop target) | rule |
 | L-10 | `list.row.text.fill, list.leading_icon.icon.fill @ {selected} / {focus_visible} / {selected,focus_visible}` (the content's colours on the fill) | rule |
 | L-10 | `list.row.transform, list.row_background.shadow @ {dragged}` (the lifted row) | rule |
@@ -493,7 +493,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SW-4 | `switch.on_glyph.glyph, switch.off_glyph.glyph @ cond on_off_labels` | rule |
 | SW-4 | `cond on_off_labels (ADD-A05)` | condition |
 | SW-4 | `reader:ios:isOnOffSwitchLabelsEnabled` | readers (R18) |
-| SW-5 | `switch.values.presentations event @thumb_move` (step `part: thumb`, a `Spring` timing) | field |
+| SW-5 | `switch.thumb.transitions` (group `Geometry`: the thumb's slide, a `Spring` timing) | field |
 | SW-5 | `switch.track.transitions (Fill)` | field |
 | SW-6 | `switch.track.stroke @ !{checked} cond contrast_increased` | rule |
 | SW-7 | `switch.label.text` | field |
@@ -535,7 +535,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant @borderless / variant @bordered / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
-| CB-3 | `menu.check_indicator.glyph @ {checked} context combo_box` (the checkmark on the current item) | rule |
+| CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
 | SG-1 | `segmented_control.track.padding (the indicator's inset)` | field |
@@ -591,7 +591,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-2 | `button.values.back_title_fallback @ variant back` | rule |
 | C-2 | `button.values.back_display_mode @ variant back` | rule |
 | C-2 | `button.body.fill @ {pressed} variant back context toolbar.bar` | rule |
-| C-2 | `toolbar.values.presentations event @title_change` (its step on the back `button`'s `label`) | field |
+| C-2 | `button.values.presentations @ variant back context toolbar.bar` (event `@title_change`, its step on `label`); `toolbar.values.presentations event @title_change` (the title's cross-fade) | rule |
 | C-2 | - | readers (R18) |
 | C-3 | `input.body.{fill,corners,min_height}, input.placeholder.text @ context search_field.body / context search_field.body variant @prominent / context search_field.body variant @minimal` (the field per `searchBarStyle`, the default style the base); `search_field.bar.fill / search_field.bar.fill @ variant @prominent` (the bar background those styles draw; none under `@minimal`) | rule |
 | C-3 | `input.icon.icon @ variant leading context any search_field` (the magnifier glyph and colour) | rule |
@@ -683,7 +683,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-16 | `status_page.* @ variant loading / variant search` (the `.loading()` and `.search()` presets; under `loading` a `spinner` in `context status_page`) | rule |
 | C-16 | - | readers (R18) |
 | C-17 | `button.body.fill @ variant @paste_control` | rule |
-| C-17 | `button.label.text.fill @ variant @paste_control` | rule |
+| C-17 | `button.{label.text.fill,icon.icon.fill} @ variant @paste_control` (the base foreground on the label and on the glyph the icon display modes show) | rule |
 | C-17 | `button.body.corners @ variant @paste_control` | rule |
 | C-17 | `button.values.display_mode @ variant @paste_control` | rule |
 | C-17 | - | readers (R18) |
@@ -708,7 +708,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-21 | - | readers (R18) |
 | C-22 | `bottom_tab_bar.bar.{fill,corners} @ variant @tab_sidebar` (the bar's shape) | rule |
 | C-22 | `button.icon.glyph @ variant pane_toggle context bottom_tab_bar.bar` (the toggle button) | rule |
-| C-22 | `bottom_tab_bar.values.presentations event @to_sidebar` (the morph) | field |
+| C-22 | `bottom_tab_bar.values.presentations event @tab_sidebar_morph` (the morph) | field |
 | C-22 | - | readers (R18) |
 | C-23 | `component.keyboard.values.appearance` | component |
 | C-23 | `component.keyboard.input_accessory.fill` | component |
@@ -752,7 +752,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-37† | - (the window controls in the bar, which the system draws, W-1) | out (R1.1) |
 | C-37† | - | readers (R18) |
 | C-38† | `menu.body.fill, menu.item.fill, menu.item_icon.icon, menu.item_label.text @ context autocomplete.body variant @menu / context autocomplete.body variant @list` | rule |
-| C-38† | `menu.item.fill @ {selected} context autocomplete` (the highlight) | rule |
+| C-38† | `menu.item.fill @ {focused} context autocomplete / {hover} context autocomplete` (the highlighted suggestion: `focused` or `hover`, never `selected`, S7.2) | rule |
 | C-38† | `autocomplete.values.placement (UiKitMenu)` | placement |
 | C-38† | - | readers (R18) |
 | C-40† | `ink_toolbar.bar.{fill,corners,shadow} @ cond scheme:light / cond scheme:dark` | rule |
@@ -832,7 +832,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-CR-2 | `Radius::Concentric (S2.4)` | field |
 | X-CR-2 | `reader:ios:UICornerConfiguration, effectiveRadius(corner:)` | readers (R18) |
 | X-CR-3 | `Corners per-corner Radius` | field |
-| X-CR-4 | `window.frame.corners (the outermost container for Concentric)` | field |
+| X-CR-4 | `window.frame.corners (Concentric, following the display, the root's container, S4.6)` | field |
 | X-CR-4 | `token.params.display.corner_radius @ cond device_model:<key>` (per device model; an unlisted model's `Absent`, S4.6, R25.11, ADD-A83) | rule |
 | X-MO-1 | `token.motion.durations.*` | token |
 | X-MO-1 | `token.motion.timings.*` | token |
@@ -840,7 +840,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-2 | `token.motion.timings.spring_default (Timing::Spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |
-| X-MO-3 | `toolbar.values.presentations event @title_change` (the back label's transition and the title's cross-fade, one step each) | field |
+| X-MO-3 | `toolbar.values.presentations event @title_change` (the title's cross-fade); `button.values.presentations @ variant back context toolbar.bar` (event `@title_change`: the back label's transition) | rule |
 | X-MO-3 | `toolbar.large_title.{opacity,transform}` as expressions on `element.scroll_offset` (the large-title collapse, ADD-B13) | field |
 | X-MO-3 | `token.motion.durations.navigation / token.motion.timings.navigation` | token |
 | X-MO-4 | `sheet.values.presentations events Appear, Disappear @ variant @cover_vertical / variant @cross_dissolve / variant @flip_horizontal / variant @partial_curl / variant @zoom` (per modal style: kinds `Slide`, `Fade`, `Scale`; keyed kinds for the flip and the partial curl, ADD-A26) | rule |
@@ -850,7 +850,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-5 | `dialog.values.presentations events Appear, Disappear` | field |
 | X-MO-5 | `dialog.values.presentations event Appear @ variant @action_sheet` | rule |
 | X-MO-5 | `component.context_menu_preview.values.presentations events Appear, Disappear` (the lift and dismissal) | component |
-| X-MO-6 | `switch.values.presentations event @thumb_move; switch.track.transitions` (the toggle) | field |
+| X-MO-6 | `switch.thumb.transitions (Geometry: the slide); switch.track.transitions` (the toggle) | field |
 | X-MO-6 | `segmented_control.values.presentations event @indicator_move` (the thumb) | field |
 | X-MO-6 | `slider.fill.transitions, slider.thumb.transitions` (the value) | field |
 | X-MO-6 | `page_indicator.dot.transitions` (the scrub) | field |
@@ -873,7 +873,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-DT-2 | `text_scale` and `uifm_scaled` (ADD-A55) in the bases of `list.row.min_height`, `button.body.min_height`, `toolbar.bar.min_height`, the parts' `padding` and `token.icons.sizes.*`; a bar's clamp a `min(…)` (ADD-A56) | field |
 | X-DT-2 | `reader:ios:UIFontMetrics scaled values` | readers (R18) |
 | X-DT-3 | `cond accessibility_text_size (ADD-A08)` | condition |
-| X-DT-3 | `widget layout rules @ cond accessibility_text_size (axis changes)` | rule |
+| X-DT-3 | `list.values.secondary_text_stacks @ cond accessibility_text_size; dialog.values.action_layout.stack_rule @ cond accessibility_text_size` (the layouts that stack at accessibility sizes: L-19, DL-6; the alert's width, DL-13†) | rule |
 | X-DT-3 | `reader:ios:isAccessibilityCategory` | readers (R18) |
 | X-DT-4 | `cond bold_text` | condition |
 | X-DT-4 | `Font.weight rules @ cond bold_text` | rule |
@@ -957,7 +957,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-A11-6 | `switch.on_glyph.glyph, switch.off_glyph.glyph` | field |
 | X-A11-6 | `reader:ios:isOnOffSwitchLabelsEnabled` | readers (R18) |
 | X-A11-7 | `cond differentiate_without_color` | condition |
-| X-A11-7 | `PartStyle rules @ cond differentiate_without_color` | rule |
+| X-A11-7 | `<widget>.<part> rules @ cond differentiate_without_color` (one per control the measurement finds changing; which ones the row leaves to verify) | rule |
 | X-A11-7 | `reader:ios:shouldDifferentiateWithoutColor` | readers (R18) |
 | X-A11-8 | - | out (R1.1) |
 | X-A11-9 | `cond prefer_cross_fade (ADD-A07)` | condition |
@@ -967,8 +967,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-IC-1 | `IconStyle.rendering_mode (S2.9)` | field |
 | X-IC-2 | `IconStyle.weight / scale per context` | field |
 | X-IC-3 | `IconStyle.size = font_size derivation (text-style relative)` | field |
-| X-IC-4 | `PartStyle.icon.symbol_variants @ {selected} / {disabled} / …` (`.fill`, `.circle`, `.slash` per state; R25.8) | rule |
-| X-IC-4 | `element.progress` on the icon's part (the variable value; R25.3, ADD-B12) | field |
+| X-IC-4 | `PartStyle.icon.symbol_variants @ {selected} / {disabled} / …` (`.fill`, `.circle`, `.slash` per state; R25.8; the symbol's variable value is content the application passes to the symbol renderer, no theme value) | rule |
 | X-IC-5 | `IconRole additions for UIKit-drawn glyphs (the icon-role list)` | field |
 | X-IC-6 | `<part>.transitions` (`PropertyGroup::Icon`, `TransitionKind::Keyed`: bounce, replace, appear, disappear, draw_on, draw_off, scale; R25.12, ADD-A27) | field |
 | X-IC-6 | `IconStyle.animation` (a `Loop`: pulse, variable color, breathe, rotate, wiggle while a state holds; R25.12) | field |
@@ -1056,7 +1055,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P4-13† | `text_area.selection (one element per range); text_area.caret` | field |
 | P4-13† | `text_area.values.empty_ranges_draw_carets` | field |
 | P4-14† | `menu.values.{submenu_switch,submenu_close_delay_ms}` | field |
-| P4-16† | `sidebar.values.breakpoints` (the arrangement per app width; the breakpoints set: tiled, variant `overlay`, variant `@displace`; R16) | field |
+| P4-16† | `sidebar.values.breakpoints` (the arrangement per app width, measured Window; the breakpoints set: tiled, variant `overlay`, variant `@displace`; their comparisons and widths to verify; R16) | field |
 | P4-16† | `sidebar.* @ h_size_class compact / h_size_class regular` (ADD-A20) | rule |
 | P4-16† | `sidebar.values.presentations events @collapse, @expand` | field |
 | P4-16† | `reader:ios:UISplitViewController.displayMode, isCollapsed` | readers (R18) |
