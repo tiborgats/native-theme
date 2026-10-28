@@ -141,10 +141,12 @@ out of the on-screen keyboard's way, which the toolkit does (Appendix B's kind K
 while typing, which the toolkit asks for (R17); Win32's global effect switches, which a toolkit honours
 (W3-53†). Out: the on-screen keyboard itself, notification banners, home-screen widgets, Live
 Activities, Control Center, a shell's tiling preview and Snap layouts, an input method's own candidate
-window, system dialogs a toolkit only invokes (the print dialog, GNOME's portal file dialog drawn by
-Files), and what the windowing system applies to every toolkit without its involvement (the display
+window, system dialogs a toolkit only invokes, which another process draws (GNOME's print and app-chooser dialogs,
+shown through the portal by xdg-desktop-portal-gnome, GN-P4-3†; the portal file dialog drawn by Files), and what the windowing system applies to every toolkit without its involvement (the display
 scale and safe-area insets the windowing library reports, whole-screen colour filters and Smart Invert;
-Appendix B's kinds K17, K23 and K27, and X-A11-8). Each row of the map and each kind of its Appendix B
+Appendix B's kinds K17, K23 and K27, and X-A11-8). A dialog the toolkit draws in the application's process (Qt's
+`QPrintDialog` and `QPageSetupDialog`, KIO's Open With dialog, K-P3-9†) is in: it is built of the toolkit's widgets,
+and what it draws of its own (the page setup's page preview) is carried as any part is. Each row of the map and each kind of its Appendix B
 gets its verdict by this test in the specification's traceability (R24).
 
 **R1.2 — Libraries beside the toolkit.** Test: maintained by the platform's own project (GNOME, KDE,
@@ -367,10 +369,15 @@ input's base for it. The inputs:
   which is a scheme file. A palette that is native-theme's mapping (R19) has no scheme inputs: it states its
   accent-dependent roles itself, following the accent by reference where they follow it, and is refused where it
   leaves one to the preset's derivation over Breeze's inputs, which would mix the two schemes.
-- **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles whose base is
-  the active value and which the reader, or a palette from a KDE port, replaces where kdeglobals or the
-  scheme states one (what Plasma 6.8 writes there is its own substitute, R25.1);
-  KDE's inactive effects apply over them, as `kcolorscheme.cpp:381` applies them over a stated value (R5.1).
+- **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles. The preset states
+  each as Plasma's derivation over Breeze's scheme inputs (`kde_accent(…, inactive)`, R25.1: what `applyScheme()`
+  writes for a set whose scheme states an Inactive group, Plasma 6.8 writing Header's, untinted, as a copy of Window's, and the
+  set's active value for one that states none, as KColorScheme reads it); the reader, or a palette from a KDE port,
+  replaces them with what kdeglobals or the port's scheme states. A mapping palette has no scheme, so it states them
+  itself (the project's colours, or each its set's active value, which is how KColorScheme reads a scheme without an
+  Inactive group), and is refused where it leaves one to the preset's derivation over Breeze's inputs, which would
+  show Breeze's colours in an inactive window under the palette's. KDE's inactive effects apply over them, as
+  `kcolorscheme.cpp:381` applies them over a stated value (R5.1).
 - **Material's seed, scheme variant and specification version:** the seed is the accent input; the scheme
   variant (tonal spot, … , and the variant Material also calls "expressive", unrelated to the flavour) and
   the specification version are tokens of the preset; the contrast level comes from the contrast conditions
@@ -863,7 +870,7 @@ motion, materials and states its project never defined, which principle 3 forbid
   the platform is the project's look on that platform. Against: a project without a port for a platform has no
   palette there.
 
-**What the survey found** (2026-10-28, the specification's first step): of the ten projects, only Catppuccin
+**What the survey found** (2026-10-28, the specification's first step): of the seven projects (ten presets), only Catppuccin
 (a maintained KDE colour scheme for each of its 4 flavours × 14 accents) and Dracula (a KDE colour scheme, dark only, and
 a whole GTK theme without libadwaita's colour names) publish platform ports, and only for KDE; Gruvbox, Nord, One Dark,
 Solarized and Tokyo Night publish none, and no project publishes one for Windows 11, macOS, Material 3 or iOS. The fourth
@@ -1113,6 +1120,16 @@ Amended in place after the specification's ninth check:
   inputs; a KDE port palette carries scheme inputs, so the derivation applies over it; a mapping palette states those
   roles itself and is refused where it leaves one to the preset.
 - R25.1: the same, in Plasma's accent decision.
+
+Amended in place after the specification's tenth check:
+
+- R1.1: "system dialogs a toolkit only invokes" are those another process draws (GNOME's print and app-chooser
+  dialogs through the portal, the portal file dialog drawn by Files); a dialog the toolkit draws in the application's
+  process (Qt's `QPrintDialog`) is in, built of the toolkit's widgets.
+- R2.6: KDE's inactive input roles are stated in the preset as Plasma's derivation, replaced by the reader or a KDE
+  port, and stated by a mapping palette itself (refused where it leaves one to the preset), as the accent-dependent
+  roles are; their base is no longer "the active value".
+- R19: "of the ten projects" corrected to the seven projects behind the ten community presets.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
