@@ -1040,6 +1040,11 @@ kind; one that repeats while a state holds is a loop. A third route (an "effect"
 **R25.13 — Details inside decided mechanisms.** The catalogue also needed conditions, flags, placement strategies,
 functions, block fields and token fields inside the mechanisms above; the specification lists them with their rows in
 its additions register (S22), and each function there is implemented to the platform source it names (R5.4).
+Three of them refine decisions above: a platform that computes a stored colour by composition (KDE's
+`overlayColors`) gets a function, while composition drawn over what lies beneath stays a paint layer (R5.4); the font
+fallbacks are one token, the platform's chain, not a field of every font (R10); and selected items take the `Selection`
+surface set's roles while selected text has its own roles, which a platform that does not distinguish them states as
+references to that set (R12).
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
