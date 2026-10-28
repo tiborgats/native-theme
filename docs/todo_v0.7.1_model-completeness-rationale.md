@@ -23,14 +23,14 @@ Each decision gives the options, their arguments for and against, and the choice
 | § | Decision | Map capabilities |
 |---|---|---|
 | R1 | Scope: what the system draws, libraries, other toolkits, SwiftUI, versions, flavours | — |
-| R2 | The model's shape: blocks, parts and widgets, rules, order, resolution and query, inputs, declarations, validation | all |
+| R2 | The model's shape: blocks, parts and widgets, rules and conditions (theme, window, accessibility, touch), order, resolution and query, inputs, declarations, validation | all; C06, C23 here |
 | R3 | State flags | C07, C08 |
 | R4 | The facts gate | — |
 | R5 | Colours: roles, bindings, translucency, derivations, representation | C04, C05, C08, C28 |
-| R6 | Paint: layers, gradients, materials | C03, C27 |
+| R6 | Paint: layers, gradients, materials | C03, C08, C27 |
 | R7 | Corners and stroke | C11, C12 |
 | R8 | Shadows and elevation | C01, C02 |
-| R9 | Motion and transforms | C08, C14 |
+| R9 | Motion and transforms; theme changes | C08, C14 |
 | R10 | Typography | C18 |
 | R11 | Icons and glyphs | C13, C19 |
 | R12 | Focus, caret, selection | C15, C16, C17 |
@@ -54,8 +54,9 @@ Each decision gives the options, their arguments for and against, and the choice
 - **Base:** a value as stated before any rule applies.
 - **Rule:** a typed selector and a typed patch; the one mechanism that changes values (R2.3).
 - **Condition:** a selector part that holds for a whole window or theme (R2.3).
-- **Colour role:** a named colour of the model (R5.1). **Token:** a named non-colour value a preset
-  states once for many parts (motion, elevation, text ramp, icon sizes, behaviour).
+- **Colour role:** a named colour of the model (R5.1). **Token:** any other named value a preset states
+  once for many parts (motion, elevation, text ramp, icon sizes, behaviour, KDE's colour-effect
+  parameters).
 - **Input:** a value from outside the preset that derived values follow (the user's accent, the
   scheme's stated Inactive values, Material's seed; R2.6).
 - **Binding:** an element setting a colour role for itself and its descendants (R5.2).
@@ -188,13 +189,14 @@ in places (the focus indicator, K3.20 against Q3.30); Material 3 has its baselin
 - *One preset with a flavour,* a condition the application chooses (R2.3), the default stated.
 
 **Decision:** flavours. `kde-breeze`: `widgets` (default; most KDE applications) and `kirigami`;
-`material-3`: `baseline` (default) and `expressive`. `material-3` describes Material 3 as Google's
-current token set states it (material-web's `tokens/versions/latest/`, at a pinned commit, which holds
-the baseline and the Expressive tokens; it agrees with Compose Material 3 on Android, for example on the
-pressed state layer's opacity, 0.1, where the older `v0_192/` set says 0.12, which the map's MAT-X8
-records as web against Compose). Where the tokens are silent, material-web's components are the
-reference; where material-web has no such component, Compose's, cited at a pinned commit, experimental
-or not, because for some Expressive behaviour it is Google's only implementation.
+`material-3`: `baseline` (default) and `expressive`. `material-3` describes the Material 3 design system
+as Google currently publishes it, the look Android's own Material 3 (Compose) draws: its token set
+`tokens/versions/latest/` in material-web, at a pinned commit, which holds the baseline and the
+Expressive tokens and agrees with Compose (the pressed state layer's opacity is 0.1 in both, where the
+older `v0_192/` set says 0.12, which the map's MAT-X8 records as web against Compose). Where the tokens are
+silent, Compose Material 3 is the reference, cited at a pinned commit, experimental or not (for some
+Expressive behaviour it is Google's only implementation); material-web's components, built on the older
+token set, only where Compose has no such component.
 
 ### R2 — The model's shape
 
@@ -245,7 +247,8 @@ A value of any block may be a **reference** to a token or a colour role; referen
 (R5.4).
 
 **R2.2 — Parts, widgets, presets.** A **part style** combines the blocks: fill, stroke, corners, shadow,
-opacity, transform, text style, icon style or glyph, focus indicator, padding per side, size limits,
+opacity and transform (both applied to the element and its descendants as one group, as CSS's `opacity` and
+`filter: opacity()` are: libadwaita dims an inactive window's tabs by half that way), text style, icon style or glyph, focus indicator, padding per side, size limits,
 cursor (R17), the bindings it sets (R5.2), and its property transitions (R9). A **widget** is a typed set
 of named parts plus widget-level values (gaps between its parts, alignment, placement, presentation
 transitions, behaviour). A **preset** is its declarations (R2.7); its tokens (motion, the speed factor,
@@ -262,8 +265,9 @@ may also be negated (*not* these); the rule matches when every stated part holds
   - from the system, by the reader: increased contrast, high contrast, reduced transparency, reduced
     motion, animations off (GNOME has both settings, `reduced-motion` and `enable-animations`; KDE's
     speed factor 0 sets animations off, so the factor and the condition are not two routes to one job),
-    bold text, button shapes, differentiate without colour, tablet mode (KDE, K3.83, Q3.31), battery
-    saver (Windows turns Acrylic off under it, W3-07), the user settings that choose a size for one kind
+    bold text, button shapes, differentiate without colour, tablet mode (KDE, K3.83, Q3.31), the
+    mobile form factor where a platform styles by it (Kirigami's `isMobile`, which turns menu hover off
+    on Plasma Mobile), battery saver (Windows turns Acrylic off under it, W3-07), the user settings that choose a size for one kind
     of container (macOS's sidebar icon size, small, medium, large, MAC-SB01, for source lists at the
     default row size; a list stating its own row size style has that as a variant, MAC-L08), and the
     colour scheme (light, dark), which the application may set instead, as `SystemTheme::pick` lets it
@@ -277,14 +281,19 @@ may also be negated (*not* these); the rule matches when every stated part holds
     macOS, not key), and, on macOS, not main and application inactive (MAC-X16); window maximised, full
     screen, or tiled with the edges it is tiled to (Breeze, GTK and xdg-shell track tiling per edge);
     iOS's elevated level where it holds for the whole window (multitasking; in a sheet or a popover it is
-    a binding, R5.2);
+    a binding, R5.2); transient touch input (the last input was touch, live and application-wide:
+    Kirigami's `hasTransientTouchInput` widens menu padding from 4 to 8 while it holds, Q1.28), the
+    window-wide counterpart of the per-element "opened by touch" flag (R3); a game controller as the
+    input (WinUI pads for it, W1-134) is a value of the same input-kind condition;
   - from the application: flavour (R1.6) and preset (an application's rule for one preset only, so that
     rules naming one preset's keyed names do not fail on another).
 - *Context,* the element's ancestors: any ancestor of the named kind, or the nearest ancestor among a
   stated set of kinds ("nearest of {header bar, popover} is a header bar": flat in a header bar, raised
   again in a popover opened from it), each matched by widget, part, variants and states.
-- *Position* among the element's siblings: first, last, only; and the previous and the next sibling's
-  widget, variants and states, for the separators that hide beside a hovered or selected neighbour
+- *Position* among the element's siblings of the same widget kind (a separator between tabs is not a
+  tab): first, last, only, which follow from absent previous or next siblings of that kind; and the
+  previous and the next sibling's widget, variants and states (libadwaita's lone tab is a rule for
+  "only", where its stylesheet uses a `.single-tab` class), for the separators that hide beside a hovered or selected neighbour
   (MAC-SG01, Q2.56†) and the shared glass capsules of grouped bar items (MAC-X07, TB-5).
 - *Variants:* a set the element must have and a set it must not (libadwaita's
   `:not(.raised):not(.destructive-action)`).
@@ -316,8 +325,10 @@ colour stated after the preset's inactive-window rule would erase the inactive l
 **Decision:** one order. Where an application overrides the platform's accessibility look, it does what the
 platform lets it do; a palette is suspended under the contrast conditions (R19).
 
-**R2.5 — Resolution and query.** **Resolution** runs per window and again when a condition, an input
-(R2.6) or an application layer changes; its result is cached. It applies the colour-role and token rules
+**R2.5 — Resolution and query.** **Resolution** runs per window and again when anything it reads changes:
+a condition, an input (R2.6), any value a reader supplies (a scheme, a font, the text-scaling factor, the
+speed factor), a palette or application layer, or the preset; its result is cached. Every such change but
+a condition's is a theme change (R9); a change of conditions is one only where R9 says so. It applies the colour-role and token rules
 whose conditions hold, in order, which chooses each role's and token's expression; and for each part and
 widget it keeps the base and the list of rules whose conditions hold, still in stated order. Expressions are
 evaluated where they are used, in the query, not where they are defined: a role or token derived from the
@@ -327,8 +338,8 @@ layer that fails validation (R2.8) is refused when it is added, with the error r
 and the theme stays as it was.
 
 A **query** asks for one part's style, or one widget's values, for one element. Its input is the element's
-widget, part, variants, size and states, its own density and direction where it states them, its ancestor
-chain (each ancestor's widget, part, variants and states, and the bindings, density, size class and
+widget, part, variants, size and states, its own density and direction where it states them, its position
+among its siblings (R2.3), its ancestor chain (each ancestor's widget, part, variants and states, and the bindings, density, size class and
 direction it passes down), and its previous and next siblings' widget, variants and states. iced and egui
 hold no such tree, so their connectors build one (R23). The query applies the kept rules in order, skipping
 those whose context, position, variants, size, direction or states do not match, and evaluates derivations
@@ -336,7 +347,10 @@ last, because a derivation can refer to the value beneath it in this very query.
 rules early would put them before element rules stated ahead of them.
 
 **R2.6 — Inputs.** An input is a value from outside the preset that derived values follow; a preset
-declares its inputs (R2.7) with a base, and an input is set only in bases. The inputs:
+declares its inputs (R2.7). An input is set only in bases, and has a base per colour scheme and, where the
+platform states a different value, per contrast condition: macOS's and iOS's accent-dependent colours have
+Increase Contrast variants (MAC-X22, D-15), which the reader reads under that condition and sets as the
+input's base for it. The inputs:
 
 - **The accent.** On most platforms the accent role. On `material-3` the seed colour (the roles follow by
   Material's scheme function, R5.4). On `windows-11` the accent and its ramp (AccentLight1–3,
@@ -345,11 +359,13 @@ declares its inputs (R2.7) with a base, and an input is set only in bases. The i
   refuses it. On the `macos-*` presets the accent, the colours AppKit derives from it by a derivation Apple
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
   separate highlight colour setting; on the `ios-*` presets the tint-dependent roles likewise. On
-  `kde-breeze` the roles Plasma sets from the accent, until the specification reads Plasma's own derivation
-  and states it (the source file is to be found; the map has no row for it).
+  `kde-breeze` the roles Plasma sets from the accent: the reader reads the accent and the scheme Plasma
+  writes from it, and until the specification reads Plasma's own derivation (its source file is to be
+  found; the map has no row for it) those roles are inputs as on macOS; once read, the derivation is a
+  function (R5.4) and the KDE reader supplies only the accent.
 - **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles whose base is
   the active value and which the reader, or a palette from a KDE port, replaces where the scheme states one;
-  KDE's inactive effects apply over them (R5.1).
+  KDE's inactive effects apply over them, as `kcolorscheme.cpp:381` applies them over a stated value (R5.1).
 - **Material's seed, scheme variant and specification version:** the seed is the accent input; the scheme
   variant (tonal spot, … , and the variant Material also calls "expressive", unrelated to the flavour) and
   the specification version are tokens of the preset; the contrast level comes from the contrast conditions
@@ -423,7 +439,8 @@ so the preset must state {checked, hover}.
   (`NSButton.BezelStyle`, `NSControl.ControlSize`, `UIButton.Configuration`), each measured by the probe.
   The map is a survey; the platforms' state models are the list.
 - **Derivations:** where a platform states a derivation, the fact is the derivation. The gate resolves each
-  preset twice, with its own inputs and with perturbed ones (another accent, foreground and background), and
+  preset twice, with its own inputs and base colours and with perturbed ones (another accent, foreground and
+  background), and
   compares both with the facts evaluated the same way, so a literal stated where the platform derives fails.
   On macOS the reader reads the system's colours under the user's accent, so the facts there are
   measurements under each appearance; iOS's are measured under each appearance and the default tint until
@@ -497,8 +514,9 @@ colour effects and the `KColorUtils` functions they use, to KDE's code (their be
 is checked against KDE's code in the specification); libadwaita's derivation of its standalone accent colours
 in OKLab, to its stylesheet's code; Material's scheme function (material-color-utilities, which defines
 Material's dynamic colour, MAT-X17), over its inputs (R2.6); and, for lengths and durations, multiples of the
-font size, the line height or a token (Kirigami's grid unit, Q1.62; a width in characters, GN-1.283†; a
-duration times the speed factor, R9). A platform whose arithmetic differs gets its own function; a function is
+font size, the line height or a token, and products of tokens (Kirigami's grid unit, Q1.62; a width in
+characters, GN-1.283†; a duration times the speed factor, and Kirigami's `longDuration` times it, Q3.24;
+R9). A platform whose arithmetic differs gets its own function; a function is
 added only when a platform's rule needs it. Composition over the value beneath is a paint layer appended over
 `base` (R6), not a colour function. Evaluation follows dependencies; a cycle is an error at resolution.
 
@@ -585,8 +603,10 @@ MAT-X13–MAT-X15, X-MO-1).
   Material state springs; Apple's response and damping fraction convert to it exactly; velocity-dependent
   curves (Kirigami's, Q3.26) are a timing kind of their own.
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
-  it, per property group, with duration, delay and timing. When an element's matched rules change, the
-  transition of the style after the change governs, in both directions, as in CSS and GTK
+  it, per property group, with duration, delay and timing. A transition starts when a property's resolved
+  value changes, for an element whose matched rules changed or whose values changed beneath them (an
+  input), except during a theme change, which the theme-change token governs; the transition of the style
+  after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`); where several rules state one for the same property, the later in stated order
   wins. XAML's alternative, a transition per (from, to) pair of states, was weighed: CSS's form expresses a
   direction-dependent motion by putting it on the style entered, and no WinUI row needs a pair. A paint layer
@@ -601,8 +621,8 @@ MAT-X13–MAT-X15, X-MO-1).
   and the rest. `dialog.entrance` becomes one of them.
 - **Ripple:** a property transition of the pressed state layer whose origin is the point pressed, which the
   toolkit has from the press itself: the layer grows from it, with the radius, durations and opacities Material
-  states (MAT-X9) as the transition's kind-specific values; its fade on release is the rest style's transition
-  for that layer, as the style entered governs.
+  states (MAT-X9) as the transition's kind-specific values; its fade on release is the transition of the
+  style entered, {hover} if the pointer is still on the control, as the style entered governs.
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
   indeterminate progress).
 - **Scroll physics:** deceleration, overscroll and its spring, snapping, distance per wheel step (GN-3.24,
@@ -610,14 +630,18 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Tokens and the speed factor:** the platform's published durations and curves, referred to by parts; a global
   speed factor (KDE's `AnimationDurationFactor`, K3.30) read by the reader. Which durations the factor scales is
   the platform's, so each scaled duration is stated as a derivation, a token times the factor (Breeze's
-  animations are its factor times 100 ms), and an unscaled one as a plain duration (Qt's own 250 ms tab move is
-  not scaled).
+  animations are its factor times 100 ms while `AnimationDurationFactor` is set, and breezerc's
+  `AnimationsDuration` otherwise, both of which the reader reads), and an unscaled one as a plain duration
+  (Qt's own 250 ms tab move is not scaled). At a factor of zero a spring jumps to its end, as a curve does.
 - **Theme changes:** what the platform does when the colour scheme, the accent or another input, a contrast
   setting, a palette or the preset changes (Appendix B's kind K57; GN-3.23, W-P3-16†) is the theme-change
   token: one of a crossfade of the window with its duration; property transitions suspended for a duration
   (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
-  `:298-300`, with no crossfade); or instant (an instant switch with property transitions as usual). Other
-  condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
+  `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
+  `AdwAnimation`, still runs, `adw-tab.c:857-862`, and the preset states which transitions a suspension
+  reaches; a transition already running when the suspension starts finishes); or instant (an instant switch
+  with property transitions as usual). Each preset's kind is a fact, measured where no source states it
+  (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
   transitions run as stated (Breeze's decoration shadow, K1.17; Mica's fade, W3-10).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
@@ -632,7 +656,9 @@ an emoji family and a per-language fallback map (MAC-FM01†, W-FM01†, K-FM01�
 gains letter spacing (tracking, which SF Pro states per size, D-1), its own line height per text role and style
 (today only `defaults` and the four text-scale entries have one), **decoration** (a line's kind, thickness, offset
 and paint: the spell-check and IME underlines, mnemonic underlines, a link's underline; K1.49†, W1-151†,
-GN-1.281†), and **elision and wrapping** (where a platform truncates, at the end or the middle, or wraps).
+GN-1.281†), and **elision and wrapping** (where a platform truncates, at the end or the middle, fades the text out under
+another part, as AdwTab fades its title under its close button with a mask whose strength follows the
+button's opacity, GN-1.129, or wraps).
 
 **Text roles:** today four `text_scale` entries besides the body font; macOS and iOS have eleven styles, Material
 fifteen and fifteen emphasized (MAT-TS4), WinUI eight, libadwaita about nine.
@@ -645,7 +671,8 @@ fifteen and fifteen emphasized (MAT-TS4), WinUI eight, libadwaita about nine.
 **Decision:** the third (principle 4). **Text scaling:** the text-scaling factor the reader reads (as today's
 `text_scaling_factor`; 1 where the platform scales text another way, as KDE does on Wayland by the font size
 itself, read) multiplies font sizes when a query evaluates them, before any length derived from the font, as
-platforms that derive metrics from the font do (Kirigami's grid unit grows with it). Dynamic Type and Android's
+platforms that derive metrics from the font do (Kirigami's grid unit grows with it); a line height stated in
+pixels is scaled with it, one stated as a multiple of the font size follows the scaled font. Dynamic Type and Android's
 non-linear font scaling (MAT-X19) are not a single factor: those platforms' readers read each style's size
 (R18), and a preset states the default size category's values.
 
@@ -669,8 +696,10 @@ named triangles are generic left- and right-facing images, which Apple says to u
 look). For MAC-C06, MAC-CB01, MAC-EX02 and MAC-L10 the part's look is therefore the control as AppKit draws it
 (`NSButton` with its checkbox or disclosure bezel, `NSPopUpButton`), in the state, size and appearance asked for,
 rendered by native-theme at run time through AppKit, on the main thread as AppKit requires, at the display's
-backing scale and the control's pixel size, and cached per resolution, as the SF Symbols loader renders symbols
-today. For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
+backing scale and the control's pixel size, with the window's key state, and cached per control, state, size,
+appearance, key state and scale, as the SF Symbols loader renders symbols today. Called off the main thread, or
+off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
+a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
 together); the modelled box (its measured fill, stroke and corners, R6, R7) remains for a toolkit that cannot,
 while the mark has no model of its own. The rendering uses the system's accent: an application's accent cannot
 reach it, which the connector records (R23). Measuring the mark's geometry from renders was weighed and rejected:
@@ -699,7 +728,8 @@ are roles and parts of the widgets that draw them.
 The window becomes parts: the frame (paint, corners, outline, shadow), the title bar (heights per variant,
 padding, title alignment and text style), the caption buttons (one part type, each button an element with its
 glyph and its own rules, such as the close button's red hover), the window menu, and the resize zone. Maximised,
-full-screen, tiled (per edge) and inactive windows are conditions, so the corners and shadow a tiled window drops
+full-screen, tiled (per edge; a window maximised along one axis counts as tiled to those edges, as Breeze's
+edge tests do) and inactive windows are conditions, so the corners and shadow a tiled window drops
 are rules. The caption buttons' order and side are read where the platform has a setting (GNOME's
 `button-layout`, KDE's `kwinrc`).
 
@@ -937,9 +967,12 @@ community projects' platform ports (R19), and reading Plasma's accent derivation
 | independent 6 | 11 resolved, 6 partly | 3 serious, 10 should fix, 9 minor | the theme-change transition; size classes the platform's; touch and direction; Material token sets |
 | independent 7 | 15 resolved, 7 partly | 2 serious, 11 should fix, 9 minor | consolidated into this text: the theme-change token's three kinds and its trigger; `material-3` as Material's current token set for both flavours; tablet mode against opened-by-touch; the speed factor's scope; text scaling before font-derived lengths; the element defined; tiling per edge; the whole-control rendering's needs; the ripple's values on the transition and its origin from the toolkit; Material contrast by one route; material crossfades and layer interpolation; KDE's accent inputs; glossary, index, and R2 split by concern |
 
+| independent 8 | 12 resolved, 4 mostly, 6 partly | 3 serious, 6 should fix, 16 minor | re-resolution on every reader value, and which changes are theme changes; inputs per scheme and contrast condition; transient touch input; transitions on value changes; group opacity; `material-3`'s platform and reference order; the AppKit rendering's cache and absence; springs at factor zero; Plasma's accent; the consolidation's losses restored |
+
 Each check's full report and the worked cases it walked through (a destructive toggle button in a header bar; a WinUI
 toggle switch under high contrast in a compact container; a KDE list row with a palette, inactive, under the Kirigami
 flavour; an iOS 26 glass button in a sheet; a libadwaita entry row in a bottom sheet; a macOS sidebar row with a
 disclosure triangle and a dark-only palette; a Material Expressive button with a ripple; a WinUI combo box with Mica and an
-accent change; a KDE tab in a window being tiled) were working files of the checks and are not kept; every step those
-cases left open is decided in the text above, and this table records what each check changed.
+accent change; a KDE tab in a window being tiled; a libadwaita tab under an accent switch) were working files of the
+checks and are not kept; this table records what each check changed, and the steps a case left open became the
+findings of the next check.
