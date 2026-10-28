@@ -1038,7 +1038,8 @@ vertical, as iOS's do.
 `classic`, GtkSourceView's default for an application that sets none (GN-SF01†), as a keyed variant. Drawing a display's corners is the system's
 (R1.1, out), but its radius is what a full-screen container's concentric corners follow (W-6, MAT-W5, X-CR-4): it is
 element data the connector supplies where the platform reports it (Android's `RoundedCorner`), and the preset's
-measured value per device idiom where it does not (iOS states none publicly).
+measured value per device model where it does not (iOS states none publicly; the radius differs between models
+of one idiom, W-6), absent for a model the preset does not list.
 
 **R25.12 — Symbol effects (confirms R11).** An SF Symbol effect triggered by a change is a transition of a keyed
 kind; one that repeats while a state holds is a loop. A third route (an "effect" on the icon style) is not adopted.
@@ -1053,9 +1054,10 @@ surface set's roles while selected text has its own roles, which a platform that
 references to that set (R12).
 
 **R25.15 — Text scaling where no reader reads it (amends R10).** R10 has readers read each text style's size where the
-platform's scaling is not one factor (Dynamic Type, Android's non-linear scaling). Until Android's reader exists (R18),
-an application on `material-3` would have to state fifteen sizes itself. So the preset states its scaling function,
-Android 14's `FontScaleConverter` (MAT-X19), applied to the stand-in's factor; a reader that reads each style's size
+platform's scaling is not one factor (Dynamic Type, Android's non-linear scaling). Until the iOS and Android readers
+exist (R18), an application on `ios-*` or `material-3` would have to state every style's size itself. So the preset
+states its scaling function, Android 14's `FontScaleConverter` (MAT-X19) or Apple's published Dynamic Type table,
+applied to the stand-in's factor or content-size category; a reader that reads each style's size
 reports a factor of one, so nothing is scaled twice. The alternative, the application stating every size, moves a
 platform rule into every application.
 
