@@ -361,8 +361,12 @@ input's base for it. The inputs:
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
   separate highlight colour setting; on the `ios-*` presets the tint-dependent roles likewise. On
   `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
-  applied and writes them into kdeglobals, so the reader reads them as stated values, and an application or
-  palette changing the accent gets them by the same derivation, a function (R25.1).
+  applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states them as
+  that derivation, a function (R25.1), over Breeze's scheme inputs, and an application changing the accent gets
+  them by the same derivation over the scheme inputs in force, the reader's or those of a palette from a KDE port,
+  which is a scheme file. A palette that is native-theme's mapping (R19) has no scheme inputs: it states its
+  accent-dependent roles itself, following the accent by reference where they follow it, and is refused where it
+  leaves one to the preset's derivation over Breeze's inputs, which would mix the two schemes.
 - **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles whose base is
   the active value and which the reader, or a palette from a KDE port, replaces where kdeglobals or the
   scheme states one (what Plasma 6.8 writes there is its own substitute, R25.1);
@@ -685,6 +689,14 @@ pixels is scaled with it, one stated as a multiple of the font size follows the 
 non-linear font scaling (MAT-X19) are not a single factor: those platforms' readers read each style's size
 (R18), and a preset states the default size category's values.
 
+**Points.** A size stated in points becomes logical pixels before any of this, at the platform's font DPI, which is not
+one constant across the platforms (today's `ResolutionContext::font_dpi`): the preset states its platform's DPI as a
+token, from its facts, and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
+X11, then `Xft.dpi`, as the facts record them); a change of it is a theme change (R9). Folding the DPI into the
+text-scaling factor was rejected: that factor also scales sizes stated in pixels and is 1 where the platform scales by
+the font size itself, so it would scale pixel-stated fonts wrongly; a fixed DPI in the code was rejected as false on
+some platforms and as dropping the user's KDE setting.
+
 ### R11 — Icons and glyphs (C13, C19)
 
 **Icon style:** size (the existing `defaults.icon_sizes` contexts become its tokens), fill (the recolouring of
@@ -985,13 +997,16 @@ refine decisions above. Each is decided here, with the decision it extends.
 **R25.1 — Plasma's accent (extends R2.6).** Plasma derives every accent-dependent colour once, when the accent or the
 scheme is applied (`plasma-workspace/kcms/colors/colorsapplicator.cpp`, `applyScheme()`, at v6.8.2), and writes the
 results into kdeglobals; no application derives at run time. So the KDE reader reads the results, and on `kde-breeze`
-the accent is the only accent input: when an application or a palette changes it, the model applies Plasma's own
-derivation, a function `kde_accent(scheme, accent)` implemented to `applyScheme()` (the accent copied into
+the accent is the only accent input: the preset's own bases state the accent-dependent roles as Plasma's own
+derivation over Breeze's scheme inputs, and when an application changes the accent, under the reader's scheme or a
+KDE port palette's (whose scheme inputs the port carries), the model applies that derivation over those inputs, a
+function `kde_accent(scheme, accent)` implemented to `applyScheme()` (the accent copied into
 `ForegroundActive` and the decoration roles of every colour set, the link colour adjusted for contrast, the selection a 0.7 blend over the
 view background, the text on it black or white by KDE's contrast measure, and the scheme file's `TintFactor` and
 accent-coloured title bar options, which become tokens of the preset). Its `scheme` is the scheme file kdeglobals
 names (`[General] ColorScheme`, found as `color-schemes/<name>.colors`), which the reader reads, since kdeglobals
-holds only the derived values. KDE's stated Inactive values (R2.6) are, in kdeglobals, Plasma's: since
+holds only the derived values. A mapping palette (R19) has no scheme inputs, so it states its accent-dependent roles
+itself, by reference to the accent where they follow it (R2.6). KDE's stated Inactive values (R2.6) are, in kdeglobals, Plasma's: since
 Plasma 6.8.0, `applyScheme()` writes `[Colors:Header][Inactive]` as a copy of the scheme's active `[Colors:Window]`
 (tinted when the scheme tints), not the scheme's own Header Inactive values; the inactive input roles stay, filled
 from what kdeglobals holds.
@@ -1090,6 +1105,18 @@ Amended in place after the specification's eighth check:
 - R21: custom looks are application layers over a bundled preset; loading a whole non-bundled preset goes.
 - R25.5: a shape is typed and implemented in code, not keyed.
 
+Amended in place after the specification's ninth check:
+
+- R10: point sizes become logical pixels at the font DPI, a preset token the reader overrides where the platform has a
+  setting, before text scaling; a change of it is a theme change.
+- R2.6: on `kde-breeze` the preset states the accent-dependent roles as Plasma's derivation over Breeze's scheme
+  inputs; a KDE port palette carries scheme inputs, so the derivation applies over it; a mapping palette states those
+  roles itself and is refused where it leaves one to the preset.
+- R25.1: the same, in Plasma's accent decision.
+
+**R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
+convention would halve those rules but adds a second way to state geometry, so it is not adopted.
+
 **R25.15 — Text scaling where no reader reads it (amends R10).** R10 has readers read each text style's size where the
 platform's scaling is not one factor (Dynamic Type, Android's non-linear scaling). Until the iOS and Android readers
 exist (R18), an application on `ios-*` or `material-3` would have to state every style's size itself. So the preset
@@ -1097,9 +1124,6 @@ states its scaling function, Android 14's `FontScaleConverter` (MAT-X19) or Appl
 applied to the stand-in's factor or content-size category; a reader that reads each style's size
 reports a factor of one, so nothing is scaled twice. The alternative, the application stating every size, moves a
 platform rule into every application.
-
-**R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
-convention would halve those rules but adds a second way to state geometry, so it is not adopted.
 
 ## 4. What the specification decides
 
