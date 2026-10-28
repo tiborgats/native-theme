@@ -58,7 +58,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-B12 | `button.body.fill.append (state layer), button.label.text.fill, button.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}, each variant toggle` | rule |
 | MAT-B13 | `button.body.transitions (Shadow: duration and timing)` | field |
 | MAT-B13 | `token.motion.durations.<key>, token.motion.timings.emphasized` | token |
-| MAT-B15 | `button.label.text.letter_spacing, button.label.text.line_height (= token.text.keyed.label_large)` | field |
+| MAT-B15 | `button.label.text (= token.text.keyed.label_large)` (a block reference, S2.2: its letter spacing and line height with it) | field |
 | MAT-I1 | `input.body.stroke @ {focused} / {hover} / {disabled}` | rule |
 | MAT-I2 | `input.body.stroke @ {disabled}` | rule |
 | MAT-I3 | `input.floating_label.{text,padding} (the label's font at rest; the space below it)` | field |
@@ -166,8 +166,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-S5 | `slider.tick.corners` | field |
 | MAT-S6 | `slider.value_indicator.{fill,min_height,corners,text}` | field |
 | MAT-S6 | `slider.values.value_indicator_gap` | field |
-| MAT-S6 | `slider.values.presentations (events @value_indicator_show, @value_indicator_hide; part value_indicator)` | field |
-| MAT-S6 | `slider.values.presentations @ cond reduced_motion` | rule |
+| MAT-S6 | `slider.value_indicator.{transform,transitions}; slider.value_indicator (absent = true) outside the states it shows in` (its show and hide: it enters from transparent and leaves to transparent by its transitions, S2.7) | rule |
+| MAT-S6 | `slider.value_indicator.transitions @ cond reduced_motion` | rule |
 | MAT-S7 | `slider.halo.{fill,min_width,min_height} @ {hover} / {focused} / {pressed}` | rule |
 | MAT-S8 | `slider.thumb.fill @ {focused} / {pressed}` | rule |
 | MAT-S8 | `slider.{fill,track}.fill @ {focused} / {pressed}` | rule |
@@ -528,7 +528,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N27 | `autocomplete.values.placement (MaterialMenu)` | placement |
 | MAT-N28 | `pull_to_refresh.indicator.{fill,corners,shadow,min_width,min_height}; pull_to_refresh.values.trigger_distance` | field |
 | MAT-N28 | `spinner.* @ context pull_to_refresh (its spinner or loading shape); pull_to_refresh.values.progress_sweep (the arc following the pull, element.progress)` | rule |
-| MAT-N28 | `pull_to_refresh.values.presentations (event @collapse)` | field |
+| MAT-N28 | `pull_to_refresh.values.presentations (event Disappear)` | field |
 | MAT-N28 | `pull_to_refresh flags pulling, refreshing` | flag |
 | MAT-N30† | `edit_menu.body.{fill,corners,shadow}` | field |
 | MAT-N30† | `button.label.text @ context edit_menu.body (the items' font and colours); button @ variant overflow context edit_menu.body; edit_menu.* @ variant vertical (the overflow list)` | rule |

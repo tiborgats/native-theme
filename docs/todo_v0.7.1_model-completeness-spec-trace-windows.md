@@ -432,7 +432,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-03 | `calendar.* @ context date_picker.popup (the CalendarView in the flyout)` | rule |
 | W2-04 | `time_picker.{field.fill,field.stroke,field.text,field_segment.text} @ {hover} / {pressed} / {focused} / {disabled}` | rule |
 | W2-04 | `time_picker.{segment_separator.stroke,header.text,field.min_width,field.max_width}` | field |
-| W2-04 | `time_picker.popup.{fill,stroke,corners,shadow}; date_picker.popup.{fill,stroke,corners,shadow} @ variant text_field` (the one DateTimePickerFlyout surface, under each picker's `popup`) | field |
+| W2-04 | `time_picker.popup.{fill,stroke,corners,shadow}` (the one DateTimePickerFlyout surface, under each picker's `popup`) | field |
+| W2-04 | `date_picker.popup.{fill,stroke,corners,shadow} @ variant text_field` (the same surface under the date picker) | rule |
 | W2-04 | `date_picker.{field.fill,field.stroke,segment.fill,segment.text,segment_separator.stroke} @ {hover} / {pressed} / {focused} / {disabled} variant text_field` | rule |
 | W2-04 | `date_picker.{header.text,field.min_width,field.max_width}` | field |
 | W2-04 | `picker_wheel.{item.fill,item.text,item.padding,item.min_height,selection_band.fill,selection_band.min_height} @ context time_picker.popup / context date_picker.popup` (the looping selectors, their item height and highlight band: one home, `picker_wheel`) | rule |
@@ -441,7 +442,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-04 | `button.{body.fill,icon.glyph,body.transform} @ variant previous context picker_wheel.container / variant next context picker_wheel.container (the up and down buttons)` | rule |
 | W2-04 | `button.body.transform @ {pressed} variant previous context picker_wheel.container / {pressed} variant next context picker_wheel.container (their press scale)` | rule |
 | W2-04 | `button.* @ variant @accept context time_picker / variant @dismiss context time_picker / variant @accept context date_picker / variant @dismiss context date_picker (the accept and dismiss row)` | rule |
-| W2-04 | `time_picker.values.presentations (event @popup_show, part popup); date_picker.values.presentations (event @popup_show, part popup)` | field |
+| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (the flyout's open animation: it enters from transparent by its transitions, S2.7) | rule |
 | W2-05 | `color_picker.plane.{stroke,min_width,min_height} @ variant @box / variant @ring` | rule |
 | W2-05 | `color_picker.crosshair.{stroke,min_width,min_height} (the selection ellipse)` | field |
 | W2-05 | `color_picker.preview.corners (the previous and current colours)` | field |
@@ -697,7 +698,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-48† | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
 | W3-49† | `drag_image.image.{fill,opacity}` | field |
 | W3-49† | `drag_image.caption.text` | field |
-| W3-49† | `drag_image.glyph.glyph (copy, move, link)` | field |
+| W3-49† | `drag_image.glyph.glyph @ {drop_copy} / {drop_move} / {@drop_link}` (the glyph per drop operation) | rule |
 | W3-49† | `drag_image.drop_description.text` | field |
 | W3-49† | `role.global.drop_highlight` | role |
 | W3-49† | `list.row_background.fill @ {drop_target}` | rule |
@@ -780,7 +781,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-SF07† | - | out (R1.2) |
 | W-SF08† | - | out (R1.2) |
 | W-SF09† | `tab.bar.* @ {drop_target}` | rule |
-| W-SF09† | `tab.values.presentations (event @tear_out)` | field |
+| W-SF09† | `tab.values.presentations event Move @ {drop_target}` (the target strip's tabs parting while a torn-out window hovers it, if the measurement finds a gap; the source tab's tearing out is W1-087's `@tear_out`) | rule |
 | W-SF10† | `dialog.values.placement (CenteredInHost)` | placement |
 | W-SF11† | `dialog.values.placement (CenteredInHost, host ClientArea or Window)`; `dialog.scrim` covers the placement's host area (the smoke) | placement |
 | W-SF12† | `dialog.values.keyboard_avoidance (KeyboardAvoid(WinUiContentDialog))` | placement |
@@ -844,7 +845,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-RV-3† | `component.tabbed_command_bar.element_container.padding` | component |
 | W-RV-3† | `view_switcher.item_label.text.fill @ variant @contextual context component.tabbed_command_bar.body` | rule |
 | W-RV-3† | `view_switcher.item_label.text.fill @ {hover} / {pressed} / {disabled} / {selected} / {selected,hover} / {selected,pressed} variant @contextual context component.tabbed_command_bar.body` | rule |
-| W-RV-3† | `component.tabbed_command_bar.values.presentations (event @tab_change: PresentationKind::Keyed { key: pop_in })` | component |
+| W-RV-3† | `component.tabbed_command_bar.values.presentations (event @indicator_move, a step on part content_border: PresentationKind::Keyed { key: pop_in })` | component |
 | W-RV-3† | `button.values.label_position @ context any component.tabbed_command_bar (TextBesideIcon)` | rule |
 | W-P4-1† | `window.launch_screen.fill` | field |
 | W-P4-1† | `window.launch_icon.icon (the splash image's size)` | field |

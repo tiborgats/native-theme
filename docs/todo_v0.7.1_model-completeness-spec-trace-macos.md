@@ -401,7 +401,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-EX05† | `expander.values.arrow_gap, expander.values.content_indent` | field |
 | MAC-EX05† | `expander.header.min_height` | field |
 | MAC-EX05† | `reader:macos:intrinsicContentSize of a disclosure button per control size` | reader |
-| MAC-LK01 | `link.text.text.decoration (style, paint, thickness, offset) @ variant inline` (the default link attributes, a single underline; `NSUnderlineStyle`'s dash-dot, dash-dot-dot and by-word patterns have no `DecorationStyle`, which only a reader of a non-default value would meet) | rule |
+| MAC-LK01 | `link.text.text.decoration (style, paint, thickness, offset) @ variant inline` (the default link attributes, a single underline; `NSUnderlineStyle`'s other patterns are `DecorationStyle::DashDot`, `DashDotDot` and `Decoration.by_word`, ADD-A96) | rule |
 | MAC-LK01 | `reader:macos:NSTextView.linkTextAttributes (underline style, colour)` | reader |
 | MAC-LK02 | `link.text.cursor` | field |
 | MAC-LK02 | `reader:macos:NSTextView.linkTextAttributes[.cursor]` | reader |
@@ -532,7 +532,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N02 | `search_field.recents_indicator.glyph` | field |
 | MAC-N02 | `input.placeholder.{text,transitions} @ context any search_field` | rule |
 | MAC-N02 | `search_field.values.placeholder_alignment @ {focus_within}` | rule |
-| MAC-N02 | `input.* @ context any search_field size mini / small / regular / large` | rule |
+| MAC-N02 | `input.* @ size mini / small / regular / large context any search_field` | rule |
 | MAC-N02 | `reader:macos:searchButtonBounds, cancelButtonBounds, searchTextBounds of a new NSSearchField` | reader |
 | MAC-N03 | `chip.body.fill @ context any input` (the tokens: `chip` elements in a flow `layout` in the field, the structure Windows' token field has) | rule |
 | MAC-N03 | `chip.body.stroke @ context any input` | rule |
@@ -572,8 +572,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N07 | `breadcrumb.placeholder.text` | field |
 | MAC-N07 | `breadcrumb.* @ variant @standard / @pop_up` | rule |
 | MAC-N08 | `list.disclosure.glyph (the branch arrows)` | field |
-| MAC-N08 | `list.column_separator.stroke` | field |
-| MAC-N08 | `list.column_resize_handle.glyph` | field |
+| MAC-N08 | `list.column_separator.stroke @ variant @browser` (NSBrowser draws its column lines whatever the table grid setting) | rule |
+| MAC-N08 | `list.column_resize_handle.glyph @ variant @browser` | rule |
 | MAC-N08 | `list.row_background.fill @ {selected} context list.view {focus_within}` | rule |
 | MAC-N08 | `list.row_background.fill @ {selected} context list.view !{focus_within}` | rule |
 | MAC-N08 | `list.header (the title row)` | field |
@@ -755,7 +755,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X15 | `list.secondary_text.text.fill, list.leading_icon.icon.fill @ {selected} context list.view {focus_within}` | rule |
 | MAC-X15 | `menu.item.fill @ {focused} context autocomplete / {hover} context autocomplete (= role.@selected_control; the highlighted completion, S7.2)` | rule |
 | MAC-X15 | `role.global.find_highlight` | role |
-| MAC-X15 | `text_area.find_match.{fill,corners,shadow,text} @ {selected}` | rule |
+| MAC-X15 | `text_area.find_match.{fill,corners,shadow,text} @ {current}` (the current match) | rule |
 | MAC-X15 | `text_area.values.presentations event @find_indicator` | field |
 | MAC-X15 | `text_area.find_dimming.fill @ {@incremental_find}` | rule |
 | MAC-X15 | `list.row_background.corners @ {selected}` | rule |
@@ -931,7 +931,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-14† | - | out (R1.1) |
 | MAC-P3-15† | - | out (R1.1) |
 | MAC-P3-16† | - | out (R1.1) |
-| MAC-P3-17† | `token.behavior.scroll_lines_per_step / scroll distances` | token |
+| MAC-P3-17† | `scroll_view.values.wheel_step` (NSScrollView's `horizontalLineScroll`, `verticalLineScroll`: a distance per axis) | field |
+| MAC-P3-17† | `scroll_view.values.page_overlap` (`horizontalPageScroll`, `verticalPageScroll`: what a page scroll keeps visible) | field |
+| MAC-P3-17† | `token.behavior.scroll_lines_per_step` (the user's scrolling-speed setting, to verify) | token |
 | MAC-P3-17† | `reader:macos:NSScrollView line and page scroll properties` | reader |
 | MAC-P4-1† | `menu.* @ context window.title (title pop-up menu)` | rule |
 | MAC-P4-1† | `window.values.title_menu_placement (AppKitMenu)` | placement |

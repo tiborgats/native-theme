@@ -678,7 +678,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.17 | `sheet.handle.{fill,opacity,min_width,min_height,padding,corners} @ variant bottom` | rule |
 | GN-2.17 | `sheet.bottom_bar.{fill,shadow}` | field |
 | GN-2.17 | `sheet.body.transitions (Corners, Shadow)` | field |
-| GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show; sheet.values.top_padding_range` | field |
+| GN-2.17 | `sheet.values.presentations events Appear (spring), Disappear, @bottom_bar_show, @bottom_bar_hide; sheet.values.top_padding_range` | field |
 | GN-2.18 | `navigation_view.values.presentations events @push, @pop (spring), navigation_view.page.{transform,opacity}, navigation_view.edge_shadow.{fill,min_width,opacity}, navigation_view.scrim.{fill,opacity}, navigation_view.values.swipe_back, navigation_view.values.swipe_duration_min_ms, navigation_view.values.swipe_duration_max_ms` | field |
 | GN-2.18 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
 | GN-2.19 | `sidebar.scrim.{fill,opacity}, sidebar.edge_shadow.fill, sidebar.pane.bindings @ variant overlay` | rule |
@@ -741,7 +741,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.34 | `list.row.padding @ variant @stack_sidebar (the row's and its label's padding)` | rule |
 | GN-2.34 | `badge.body.{fill,min_width,min_height,corners} @ variants {dot,attention} context list.row context any list variant @stack_sidebar` (the needs-attention dot; the connector draws it while the page needs attention) | rule |
 | GN-2.35 | `component.tab_overview.grid.{fill,padding}` | component |
-| GN-2.35 | `component.tab_overview.thumbnail.{fill,corners,shadow,stroke,padding,transitions}; component.tab_overview.thumbnail.{fill,stroke} @ variant @pinned` (the pinned thumbnail's colours) | component |
+| GN-2.35 | `component.tab_overview.thumbnail.{fill,corners,shadow,stroke,margin,transitions}; component.tab_overview.thumbnail.{fill,stroke} @ variant @pinned` (the pinned thumbnail's colours) | component |
 | GN-2.35 | `badge.body.{fill,corners,min_width,min_height} @ variants {dot,attention} context component.tab_overview.thumbnail` (a thumbnail's needs-attention dot) | rule |
 | GN-2.35 | `button.body.{fill,min_width,min_height,corners} @ variant close context component.tab_overview / {hover} variant close context component.tab_overview / {pressed} variant close context component.tab_overview / variant @unpin context component.tab_overview / {hover} variant @unpin context component.tab_overview / {pressed} variant @unpin context component.tab_overview` (the close and unpin buttons) | rule |
 | GN-2.35 | `button.body.padding @ variant add context component.tab_overview (the new-tab button's margin)` | rule |
@@ -1067,10 +1067,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-2† | `button.values.menu_placement` (GtkPopover; side Below, centred, flip Y, slide X: the menu button's default direction, down) | placement |
 | GN-P4-2† | `button.values.menu_placement @ variant @arrow_up / variant @arrow_start / variant @arrow_end (the menu button's direction)` | placement |
 | GN-P4-3† | - | out (R1.1) |
-| GN-P4-4† | `input.caret, text_area.caret (absent = true) @ {overwrite}` (the block caret replaces the line caret, ADD-A23) | rule |
+| GN-P4-4† | `text_area.caret, code_editor.caret (absent = true) @ {overwrite}` (the block caret replaces the line caret, ADD-A23; `input.caret`'s rule is GN-1.49's) | rule |
 | GN-P4-4† | `text_area flags overwrite; code_editor flags overwrite (ADD-A23)` | flag |
-| GN-P4-4† | `text_area.block_caret.{fill,text} @ {overwrite} (ADD-A23, ADD-A24)` | rule |
-| GN-P4-4† | `code_editor.caret.{fill,min_width,text} @ {overwrite}` (the covered character redrawn in the background) | rule |
+| GN-P4-4† | `text_area.block_caret.{fill,text} @ {overwrite}, code_editor.block_caret.{fill,text} @ {overwrite}` (the covered character redrawn in the background; ADD-A23, ADD-A24) | rule |
+| GN-P4-4† | `text_area.block_caret (absent = true) @ !{overwrite} / !{focused} / {text_selected}, code_editor.block_caret (absent = true) @ !{overwrite} / !{focused} / {text_selected}` (drawn only in overwrite mode while the view has focus and no text is selected) | rule |
 | GN-P4-5† | `scrollbar.values.trough_click` | field |
 | GN-P4-5† | `slider.values.trough_click` | field |
 | GN-P4-6† | `menu.values.submenu_switch` | field |

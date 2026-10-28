@@ -137,13 +137,15 @@ ref      := "role." set "." role        typed colour role of a surface set      
                                           scroll_offset, scroll_progress, item_index,
                                           item_count, text, color, screen_width,
                                           screen_height, window_width, window_height, move_distance,
-                                          and char_width, font_x_height, font_height (the
+                                          and char_width (the average), max_char_width (the
+                                          widest glyph), font_x_height, font_height (the
                                           part's font, through `Element.metrics`)      (R25.3)
           | "part." field                 another resolved field of the same part      (R25.3)
           | "widget." part "." field      a resolved field of another part of the same widget (a band
                                           following the frame's shadow, GN-1.282†; a label following its
                                           half's corners, MAT-X37†), evaluated with the same element and
-                                          scope; not into or out of an *(element)* part (R25.3)
+                                          scope; not across elements (an *(element)* part
+                                          reaches only its own element's parts)        (R25.3)
           | "values." name                the element's widget's resolved value (the spinner's stroke weight,
                                           GN-1.227; a delay button's delay, Q2.3)      (R25.3)
           | "text_scale"                  the text-scaling factor (S9.4)               (ADD-A55)
@@ -273,7 +275,9 @@ repeating gradient repeats its stops beyond the last (stripes, K1.110).
 ```rust
 pub struct Corners { pub top_left: Radius, pub top_right: Radius, pub bottom_right: Radius,
                      pub bottom_left: Radius, pub curve: CornerCurve }
-pub enum Radius { Px(Value<Px>), Full, Concentric { minimum: Value<Px> },   // minimum may be absent; with no
+pub enum Radius { Px(Value<Px>), Full, Concentric { minimum: Value<Px> },   // the container: the nearest enclosing
+                                 // part or element that states corners (a root that draws nothing is skipped; a
+                                 // full-screen one's is the display, S4.6); minimum may be absent; with no
                                  // container radius the container is square (radius 0), so the corner is the
                                  // minimum or square; else the container's radius less the inset, at least zero
                   FollowPart }   // a focus indicator's: the part's radius plus the offset, concentric (R12);
@@ -822,7 +826,8 @@ content" reaches the toolkit), the field-path registry used by the TOML linter a
 
 ```rust
 pub enum PartPatch { Style(PartStylePatch), Absent,   // `Absent`: the whole part is not drawn (S6.3)
-                     DrawnAs { widget: WidgetRef, variants: Vec<VariantRef> } }   // drawn by another widget in the
+                     DrawnAs { widget: WidgetRef, part: Option<PartRef>,   // drawn by another widget, or a part
+                               variants: Vec<VariantRef> } }   // of one (kirigami-addons' menu actions as form rows), in the
                                  // host's context (KDE's date picker trigger as a combo box); the query answers
                                  // `Styled::DrawnAs` and the connector builds that widget
 pub enum ValuesPatch { Typed(WidgetValuesPatch), Component(ComponentValuesPatch) }
@@ -962,7 +967,8 @@ pub enum StateFlag { Hover, Pressed, Focused, FocusWithin, FocusVisible, Disable
 pub enum SharedFlag { Empty, InFill, Today, OtherMonth, Current, Multiline, Filled, Half, Preview, Placeholder,
                       Pulling, Refreshing, PlacedAbove, PlacedBelow, RouteActive, Editing, Swiped, ContextMenuOpen,
                       Sorted, Descending, Overwrite, Composing, Minimized,
-                      TextSelected }   // a text widget holding a selection (the caret hides, GN-3.73†)
+                      TextSelected,    // a text widget holding a selection (the caret hides, GN-3.73†)
+                      DropCopy, DropMove }   // a drop target's operation (W3-49†, P3-10†)
                       // flags two or more platforms draw on a typed widget (ADD-A15); the catalogue's
                       // *Shared flags* table names the widgets that declare each
 ```
@@ -1078,7 +1084,8 @@ Tokens and roles are read in a scope too, for what no part carries (behaviour ti
 pointer, the window's background).
 
 ```rust
-pub enum Styled<T> { Style(T), NotDrawn, DrawnAs { widget: WidgetRef, variants: Vec<VariantRef> },
+pub enum Styled<T> { Style(T), NotDrawn, DrawnAs { widget: WidgetRef, part: Option<PartRef>,
+                                                   variants: Vec<VariantRef> },
                      NotAvailable(Unavailable) }   // R2.7's answer; not an error
 pub enum Unavailable { Widget, Size, Variant, Part }
 impl ResolvedTheme {
@@ -1105,8 +1112,10 @@ pub struct Element<'a> {                                   // Element::new(part,
     pub metrics: &'a dyn FontMetrics,                      // the toolkit's measurement
 }
 pub struct Scope { /* owned: see above */ }
-pub trait FontMetrics { fn char_width(&self, font: &ResolvedFont) -> Px; fn x_height(&self, font: &ResolvedFont)
-                        -> Px; fn height(&self, font: &ResolvedFont) -> Px;      // ascent plus descent
+pub trait FontMetrics { fn char_width(&self, font: &ResolvedFont) -> Px;      // the average character width
+                        fn max_char_width(&self, font: &ResolvedFont) -> Px;  // the widest glyph (KCharSelect)
+                        fn x_height(&self, font: &ResolvedFont) -> Px;
+                        fn height(&self, font: &ResolvedFont) -> Px;          // ascent plus descent
                         fn line_spacing(&self, font: &ResolvedFont) -> Px; }   // plus leading; infallible
 pub struct Sibling<'a> { pub part: PartRef, pub variants: &'a [VariantRef], pub states: StateFlags }
 pub struct ElementData<'a> {                               // R25.3; Default: zero size, progress 0, scroll 0,
@@ -1306,7 +1315,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
 | an `Option` that is `None` | `"none"`; an `Option` leaf is never missing (left out means `None`) |
-| a part drawn by another widget | `drawn_as = { widget = "<w>", variants = [ … ] }` |
+| a part drawn by another widget | `drawn_as = { widget = "<w>", part = "<p>", variants = [ … ] }` (`part` left out: the whole widget) |
 | a condition | `"<name>"` in snake_case (`"window_inactive"`); with a parameter `"<name>:<value>"`: `"scheme:dark"`, `"tiled:left,top"`, `"input:touch"`, `"idiom:pad"`, `"flavor:kirigami"`, `"preset:adwaita"`, `"system_setting:<key>"`, `"container_size:sidebar:<key>"` |
 | a rule's target | `"colors"`, `"tokens"`, `"<widget>.<part>"`, `"<widget>.values"`, `"component.<key>.<part>"`, `"component.<key>.values"` |
 | a rule's patch | the table `set`; the keys `when`, `target` and `set` are the rule's own |
@@ -1684,6 +1693,7 @@ lines that cite it.
 | ADD-A87 | `ElementData.move_distance` | S8 |
 | ADD-A88 | `TextScaling` (R25.15) | S4.4, S9.4 |
 | ADD-A97 | `PartPatch::DrawnAs`, `Styled::DrawnAs`, `RuleBody`, `Keyframe.part`/`timing`, `Glyph.draw_start`, `FontMetrics::line_spacing` | S6.1, S8, S2.7, S2.9 |
+| ADD-A98 | `SharedFlag::DropCopy`/`DropMove`, `FontMetrics::max_char_width`, `DrawnAs.part`, the concentric container | S7.2, S8, S6.1, S2.4 |
 | ADD-A96 | `Comparison`, `Measured`, `OverlayBottomCenter`, two-edge fade, touchpad velocity samples, `Theme::system`, decoration patterns | S7.3, S13, S2.8, S4.2, S16 |
 | ADD-A95 | `Radius::FollowPart`, `Breakpoint`, `sizes_by_variant`, touchpad inertia, `Theme::set_contrast`, `WindowState` | S2.4, S7.3, S10, S4.2, S16, S8 |
 | ADD-A89 | `FadeUnder` | S2.8 |

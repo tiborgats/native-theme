@@ -246,7 +246,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | I-10† | - | readers (R18) |
 | TA-1 | `text_area.body.{stroke,corners} @ variant @rounded_rect` | rule |
 | TA-2 | `text_area.find_match.{fill,corners}` | field |
-| TA-2 | `text_area.find_match.{fill,transform} @ {selected}` (the current match) | rule |
+| TA-2 | `text_area.find_match.{fill,transform} @ {current}` (the current match) | rule |
 | TA-2 | `text_area.values.presentations event @find_indicator` (the current match's bounce, a step on part `find_match`) | field |
 | TA-2 | `role.global.find_highlight` | role |
 | TA-3 | `text_area.highlight.{fill,text} @ variant @<style>` (the keyed iOS 18 highlight styles) | rule |
@@ -638,7 +638,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-10 | `spinner.spoke.fill @ context pull_to_refresh.indicator` (the tint) | rule |
 | C-10 | `pull_to_refresh.values.progress_sweep` (`Spokes`: the spokes appear as the pull progresses) | field |
 | C-10 | `spinner.spoke.fill @ variant determinate context pull_to_refresh.indicator {pulling}` (the pull-progress spinner, its `element.progress` the pull progress; ADD-B12) | rule |
-| C-10 | `pull_to_refresh.values.trigger_distance, pull_to_refresh.title.text, pull_to_refresh.values.presentations event @collapse` | field |
+| C-10 | `pull_to_refresh.values.trigger_distance, pull_to_refresh.title.text, pull_to_refresh.values.presentations event Disappear` | field |
 | C-10 | - | readers (R18) |
 | C-11 | `dialog.body.{fill,corners} @ variant @action_sheet` (the actions' platter, its material and radius) | rule |
 | C-11 | `dialog.cancel_platter.{fill,corners} @ variant @action_sheet; dialog.values.cancel_platter_gap` | rule |
@@ -753,7 +753,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-37† | - | readers (R18) |
 | C-38† | `menu.body.fill, menu.item.fill, menu.item_icon.icon, menu.item_label.text @ context autocomplete.body variant @menu / context autocomplete.body variant @list` | rule |
 | C-38† | `menu.item.fill @ {focused} context autocomplete / {hover} context autocomplete` (the highlighted suggestion: `focused` or `hover`, never `selected`, S7.2) | rule |
-| C-38† | `autocomplete.values.placement (UiKitMenu)` | placement |
+| C-38† | `autocomplete.values.placement (UiKitMenu)` (the inline bar's menu) | placement |
+| C-38† | `autocomplete.values.placement @ variant @list` (the stacked form, a list overlaying the results: its strategy once measured, readers' milestone) | rule |
 | C-38† | - | readers (R18) |
 | C-40† | `ink_toolbar.bar.{fill,corners,shadow} @ cond scheme:light / cond scheme:dark` | rule |
 | C-40† | `button.{body.fill,icon.icon} @ {selected} variant tool context ink_toolbar` (the selected tool) | rule |
@@ -858,7 +859,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-6 | `button.body.transitions` (26's interactive glass, 13–18's highlight fade) | field |
 | X-MO-6 | `list.row_background.transitions; list.values.presentations events Appear, Disappear (the row's), @reload (the list's)` (the highlight fade, the row animations) | field |
 | X-MO-6 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse` (the outline disclosure) | field |
-| X-MO-6 | `pull_to_refresh.values.presentations event @collapse` (the refresh) | field |
+| X-MO-6 | `pull_to_refresh.values.presentations event Disappear` (the refresh) | field |
 | X-MO-8 | `token.behavior.scroll.{deceleration,overscroll,overscroll_effect,snap}` (rubber-band overscroll, paging snap) | token |
 | X-MO-8 | `reader:ios:UIScrollView.DecelerationRate raw values` | readers (R18) |
 | X-MO-9 | `<part>.transitions` (`PropertyGroup::Icon`, `TransitionKind::Keyed`: bounce, replace, appear, disappear, draw_on, draw_off, scale; R25.12, ADD-A27) | field |
@@ -896,7 +897,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-CO-4 | `reader:ios:wide-gamut UIColor components` | readers (R18) |
 | X-CO-5 | `role.window.foreground, role.window.foreground_inactive, role.@label_tertiary, role.@label_quaternary` (the label colour's four prominence levels); other colours' prominence `= uikit_prominence(<colour>, <prominence>)` (ADD-A90) | role |
 | X-CO-5 | `reader:ios:UIColor.Prominence withProminence` | readers (R18) |
-| X-CA-1 | `token.caret.{width,shape}` | token |
+| X-CA-1 | `token.caret.width` (the caret's shape is the caret parts' fields, below; S4.2) | token |
 | X-CA-1 | `input.caret.{corners,min_height}, text_area.caret.{corners,min_height}` (the end rounding; the height against the line; caret part ADD-A24) | field |
 | X-CA-1 | `reader:ios:UITextInput caretRect` | readers (R18) |
 | X-CA-2 | `token.caret.{blink_on,blink_off,blink_style,solid_while_typing}` (the pause while typing, ADD-A85; the non-blinking preference: `blink_off` zero, never off, by a Tokens rule under its setting, to verify) | token |
@@ -1018,7 +1019,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-9† | `input.caret, text_area.caret (absent = true) @ {text_selected}` (no caret while text is selected) | rule |
 | P3-9† | `input.drop_caret.{fill,min_width}, text_area.drop_caret.{fill,min_width}` (the insertion point under a text drag) | field |
 | P3-9† | - (the text drop's progress indicator, which the system shows) | out (R1.1) |
-| P3-10† | `drag_image.drop_badge.{fill,glyph} @ {@drop_copy} / {@drop_move} / {@drop_forbidden} / {@drop_cancel}` (the badge per drop operation) | rule |
+| P3-10† | `drag_image.drop_badge.{fill,glyph} @ {drop_copy} / {drop_move} / {@drop_forbidden} / {@drop_cancel}` (the badge per drop operation) | rule |
 | P3-10† | `token.pointer.drag_cursors.<drop operation>` | token |
 | P3-10† | - (the system's drop-progress indicator) | out (R1.1) |
 | P3-11† | `token.behavior.spring_loading (ADD-A45)` | token |
@@ -1032,7 +1033,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P4-1† | - | out (R1.1) |
 | P4-2† | - | out (R1.1) |
 | P4-3† | `toolbar.values.presentations events Appear, Disappear` (the bars hidden on a swipe and shown again) | field |
-| P4-3† | - (the status bar and the home indicator, which the system draws) | out (R1.1) |
+| P4-3† | `window.values.status_bar_hidden; window.values.status_bar_hidden @ v_size_class compact; window.values.status_bar_animation; window.values.home_indicator_auto_hidden` (what the application configures for the system to draw with, R1.1; the home indicator's default, where the HIG and the API page disagree, to verify) | rule |
+| P4-3† | - (the status bar's and the home indicator's own drawing: the fade and slide, the indicator's hide delay and reappearance) | out (R1.1) |
 | P4-4† | - | out (R1.1) |
 | P4-5† | `window.launch_screen.{fill,bindings}` | field |
 | P4-5† | `toolbar.bar.fill, bottom_tab_bar.bar.fill @ context window.launch_screen` (the placeholder bars) | rule |
