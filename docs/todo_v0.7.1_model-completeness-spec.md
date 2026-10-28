@@ -716,8 +716,11 @@ model (R4): the catalogue states, per widget and platform, the source of its lis
 - `docs/property-registry.toml`: generated from the derive's field registry (S6.1) and drift-tested.
 - `docs/inheritance-rules.toml`, `scripts/check_wrong_safety_nets.py`: removed (R20).
 - `scripts/check_platform_facts_rows.py`, `scripts/check_preset_citations.py`: read the facts data.
-- `scripts/check_spec_trace.py`: new; checks that every gap-map row (file, ID), excluding withdrawn and pointer rows,
-  appears in the traceability with at least one target (R24).
+- `scripts/check_spec_trace.py`: new; checks that every gap-map row (the IDs of the map's Appendix A), excluding
+  withdrawn rows, has at least one line in the traceability (S20), that every line names a live row, and that each
+  line's kind and target agree (a target kind has a target, a verdict has `-`). It checks working documents, so
+  it is run by hand while they change and is not part of `scripts/check_release.sh`; it is deleted when the
+  documents are archived.
 - The showcases' element lists and parity gates follow the connectors (R21).
 
 ## S19. Migration inside the branch
