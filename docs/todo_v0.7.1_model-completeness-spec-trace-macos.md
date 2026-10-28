@@ -860,7 +860,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X34† | `window.values.caption_button_layout @ dir rtl (the traffic lights)` | rule |
 | MAC-X34† | `list.disclosure.transform @ dir rtl` | rule |
 | MAC-X34† | `token.icons.mirroring (S2.9)` | token |
-| MAC-X35† | - | newest (R1.5) |
+| MAC-X35† | `reader:macos:UIDesignRequiresCompatibility in the app's Info.plist` (the generation choice per application: `from_system` picks the pre-26 preset when it is set, R1.5, S16) | reader |
 | MAC-X36† | `form.*, level_indicator.*, bottom_tab_bar.*, status_page.*, teaching_tip.*, chart.* (SwiftUI's own controls, MAC-N21–N23, MAC-N35†–N37†)` | field |
 | MAC-X36† | - (Mac Catalyst's iPad and Mac idioms) | out (R1.4) |
 | MAC-X37† | - | newest (R1.5) |

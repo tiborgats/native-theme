@@ -44,7 +44,7 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 
 Core questions this catalogue had are answered in the core (ADD-A100): `token.caret.blink_timeout` is `none` where
 the caret never stops blinking (K3.41, MAC-X12, X-CA-2); Kirigami's label-sized icons under a user's font (Q1.1) are
-`= kirigami_label_icon_size(body_line_height)` on the parts that use them, `token.icons.sizes.keyed.for_labels`
+`= kirigami_label_icon_size(body_font_height)` on the parts that use them, `token.icons.sizes.keyed.for_labels`
 holding the default font's size for what no part carries; `widget.<part>.line_height` and `.font_size` are named.
 
 ## Entry format
@@ -998,7 +998,7 @@ spaces:
     description, K2.7): `text`.
   - `icon` — the image: `icon` (size, fill per state, rendering mode, weight and scale for SF Symbols; its fill an
     expression on `element.color` under `contentTintColor`, MAC-B07; on `kde-breeze` the clear-field, inline-action and
-    chip-remove buttons' size is `= kirigami_label_icon_size(body_line_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_line_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24), `glyph` (for system button types, B-12),
+    chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24), `glyph` (for system button types, B-12),
     `transitions` (state-triggered icon animations, `TransitionKind::Keyed` of group `Icon`: WinUI's AnimatedIcon
     states, W1-024, W3-28; GtkSvg's state transitions, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
     R25.12), `transform` (as the label's, Q2.7).
@@ -1221,7 +1221,7 @@ spaces:
   - `text` — the link text: `text` (its text style carries the underline as `decoration`), `focus` (where the
     platform rings the text: KDE draws focus by weight instead, Q1.135), `cursor` (the pointing hand over the text,
     MAC-LK02, MAC-X20).
-  - `icon` — the external-link icon after the text (Kirigami `UrlButton`, Q1.136): `icon` (its size `= kirigami_label_icon_size(body_line_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_line_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)).
+  - `icon` — the external-link icon after the text (Kirigami `UrlButton`, Q1.136): `icon` (its size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)).
 - **Widget values:** `icon_text_gap_px: Value<Px>` (Q1.136); `shows_url_tooltip: Value<bool>` (Q1.136; the tooltip's
   look and delay are the `tooltip` widget's); `focus_visible_when` (S2.11's `FocusVisibleWhen`; macOS's ring under
   Full Keyboard Access is a rule `@ cond full_keyboard_access`, MAC-LK03).
@@ -1274,7 +1274,7 @@ spaces:
     are queried with it.
   - `label` — a segment's text: `text`, `opacity` (the dimmed label of a disabled group, GN-1.242), `transitions`
     (kirigami-addons' selected label turning to its selected text style, K-KA-25†).
-  - `icon` — a segment's image: `icon` (its tint per state, MAC-SG10†; kirigami-addons' radio selector's size `= kirigami_label_icon_size(body_line_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_line_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100), K-KA-25†), `opacity` (the dimmed image of a disabled
+  - `icon` — a segment's image: `icon` (its tint per state, MAC-SG10†; kirigami-addons' radio selector's size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100), K-KA-25†), `opacity` (the dimmed image of a disabled
     group, GN-1.242), `transitions` (kirigami-addons' selected icon recolouring, K-KA-25†).
   - `indicator` — the selected thumb drawn as a part of its own (iOS, SG-1; macOS 12–15's raised segment and 26's
     sliding indicator, MAC-SG02, MAC-SG09; the Toolkit's selected item border and pill, W1-138; kirigami-addons'
@@ -1597,7 +1597,7 @@ spaces:
     (K-KA-9†): `text`.
   - `icon` *(element)* — an icon or inline action inside the field, its side a variant (GNOME's primary and
     secondary icons, iOS's overlay views, Kirigami's search icon and ActionTextField actions, Material's leading and
-    trailing icons, a search field's magnifier): `icon` (Kirigami's search icon's size `= kirigami_label_icon_size(body_line_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_line_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100), Q1.15, Q1.17), `fill`, `padding`, `opacity`, `cursor`, `transitions`.
+    trailing icons, a search field's magnifier): `icon` (Kirigami's search icon's size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100), Q1.15, Q1.17), `fill`, `padding`, `opacity`, `cursor`, `transitions`.
   - `caps_lock_indicator` — the caps-lock glyph in a secure field (macOS, MAC-X14; GNOME, GN-2.23): `glyph`,
     `padding`, `opacity` (GNOME draws it dimmed, more opaque in high contrast, GN-2.23).
   - `autofill_affordance` — the AutoFill and strong-password affordance inside the field (macOS, iOS): `icon`,
@@ -3406,7 +3406,7 @@ spaces:
     colour, an expression on `element.color`, which it declares, `data = { body = ["color"] }`, ADD-B16, Q2.26),
     `corners`, `padding`, `min_width`, `min_height`.
   - `label` — the count or string: `text`.
-  - `icon` — Windows' icon form, Kirigami's icon (Q2.27): `icon` (Kirigami's size `= kirigami_label_icon_size(body_line_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_line_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)),
+  - `icon` — Windows' icon form, Kirigami's icon (Q2.27): `icon` (Kirigami's size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)),
     `opacity` (PersonPicture's image badge, W2-24).
 - **Widget values:** `anchor_offset_x_px: Value<Px>`, `anchor_offset_y_px: Value<Px>` (the placement on its anchor icon
   or item: MAT-N10, GN-2.37, C-15, GN-1.41); `presentations: Vec<PresentationTransition>`: events `Appear`,
@@ -6716,8 +6716,8 @@ platform default monospace typeface (MAT-X36†).
   [Q1.1]. Kirigami computes `for_labels` from the default font's line height (`kirigami_label_icon_size`, ADD-A53);
   a token has no font metrics (S2.2, S12), so `for_labels` holds the size at the preset's default font (value phase,
   from the facts) for what no part carries, and every part that uses Kirigami's label size states its `icon.size` as
-  `= kirigami_label_icon_size(body_line_height)` under `cond flavor:kirigami`, declaring the metric (`data = { icon =
-  ["body_line_height"] }`, S8), so it follows a user's font (ADD-A100): `input.icon`, `link.icon`, `badge.icon`,
+  `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, declaring the metric (`data = { icon =
+  ["body_font_height"] }`, S8), so it follows a user's font (ADD-A100): `input.icon`, `link.icon`, `badge.icon`,
   `segmented_control.icon` and the clear-field, inline-action and chip-remove `button.icon` (Q1.15, Q1.17, Q1.18,
   Q1.136, Q2.24, Q2.27, K-KA-25†); KDE's Qt Widgets: `main_toolbar`
   (KIconLoader's

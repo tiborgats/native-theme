@@ -375,7 +375,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.1 | `token.icons.sizes.keyed.huge` | token |
 | Q1.1 | `token.icons.sizes.keyed.enormous` | token |
 | Q1.1 | `token.icons.sizes.keyed.for_labels` (Kirigami's value at the preset's default font, stated from the facts, for what no part carries: a token has no font metrics, S12) | token |
-| Q1.1 | `input.icon.icon.size, button.icon.icon.size, link.icon.icon.size, badge.icon.icon.size, segmented_control.icon.icon.size` (each `= kirigami_label_icon_size(body_line_height)` in the Kirigami rules of the parts that use the label size, the button's only as the clear, inline-action and chip-remove buttons: Q1.15, Q1.17, Q1.18, Q1.136, Q2.24, Q2.27, K-KA-25†; each such part declares `body_line_height` in its data, so under a user's font it follows the font as Kirigami's `sizeForLabels` does, ADD-A100) | field |
+| Q1.1 | `input.icon.icon.size, button.icon.icon.size, link.icon.icon.size, badge.icon.icon.size, segmented_control.icon.icon.size` (each `= kirigami_label_icon_size(body_font_height)` in the Kirigami rules of the parts that use the label size, the button's only as the clear, inline-action and chip-remove buttons: Q1.15, Q1.17, Q1.18, Q1.136, Q2.24, Q2.27, K-KA-25†; each such part declares `body_font_height` in its data, so under a user's font it follows the font as Kirigami's `sizeForLabels` does, ADD-A100) | field |
 | Q1.2 | `token.text.keyed.smallest_readable` | token |
 | Q1.2 | `token.text.roles.caption (= token.text.keyed.<key>)` | token |
 | Q1.3 | `token.text.keyed.heading_1` | token |
@@ -420,16 +420,16 @@ rationale, each decided in the core's additions register (S22).
 | Q1.14 | `input.caret.min_width @ cond tablet_mode` | rule |
 | Q1.14 | `input.caret.fill @ cond tablet_mode` | rule |
 | Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode` | rule |
-| Q1.15 | `input.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100), input.icon.icon.fill (= surface.disabled.foreground), input.icon.padding @ variant leading context any search_field cond flavor:kirigami` | rule |
+| Q1.15 | `input.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100), input.icon.icon.fill (= surface.disabled.foreground), input.icon.padding @ variant leading context any search_field cond flavor:kirigami` | rule |
 | Q1.15 | `input.body.padding (the text inset) @ context any search_field cond flavor:kirigami` | rule |
-| Q1.15 | `button.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100) @ variant clear_field context any search_field cond flavor:kirigami` | rule |
+| Q1.15 | `button.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100) @ variant clear_field context any search_field cond flavor:kirigami` | rule |
 | Q1.16 | `menu.body.fill, menu.body.stroke, menu.body.corners, menu.body.shadow, menu.body.padding, menu.body.bindings (Surface(View)) @ context autocomplete context any search_field cond flavor:kirigami` | rule |
 | Q1.16 | `autocomplete.values.placement (its gap below the field) @ context any search_field cond flavor:kirigami` | rule |
 | Q1.16 | `menu.item.padding @ context autocomplete context any search_field cond flavor:kirigami` | rule |
-| Q1.17 | `input.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100), input.icon.icon.fill (= the placeholder's colour) @ variant leading context any search_field cond flavor:kirigami` | rule |
+| Q1.17 | `input.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100), input.icon.icon.fill (= the placeholder's colour) @ variant leading context any search_field cond flavor:kirigami` | rule |
 | Q1.17 | `input.values.search_delay (= token.motion.durations.short) @ context any search_field cond flavor:kirigami` | rule |
 | Q1.17 | `input.values.search_delay (= token.motion.durations.human_moment) @ context search_field.body[@delay_search] cond flavor:kirigami` (the field's `delaySearch`) | rule |
-| Q1.18 | `button.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100), button.body.padding @ variant tool context input cond flavor:kirigami (the inline actions)` | rule |
+| Q1.18 | `button.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100), button.body.padding @ variant tool context input cond flavor:kirigami (the inline actions)` | rule |
 | Q1.18 | `input.values.icon_text_gap @ cond flavor:kirigami (the actions' spacing)` | rule |
 | Q1.18 | `input.body.transitions (Geometry: the padding, as actions appear; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
 | Q1.18 | `tooltip @ context any input cond flavor:kirigami (the focus shortcut's tooltip)` | rule |
@@ -674,7 +674,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.134 | `link.text.text.fill @ {disabled} (= surface.foreground)` | rule |
 | Q1.135 | `link.text.text.font.weight @ {focus_visible}` | rule |
 | Q1.135 | `link.text.focus (Absent)` | field |
-| Q1.136 | `link.icon.icon (size = kirigami_label_icon_size(body_line_height), Q1.1; fill = surface.link; the open-link theme icon with its fallback) @ variant @url` | rule |
+| Q1.136 | `link.icon.icon (size = kirigami_label_icon_size(body_font_height), Q1.1; fill = surface.link; the open-link theme icon with its fallback) @ variant @url` | rule |
 | Q1.136 | `link.values.icon_text_gap` | field |
 | Q1.136 | `link.values.shows_url_tooltip @ variant @url` | rule |
 | Q1.136 | `tooltip.values.show_delay @ context link cond flavor:kirigami` | rule |
@@ -856,12 +856,12 @@ rationale, each decided in the core's additions register (S22).
 | Q2.23 | `chip.body.stroke, chip.body.corners` | field |
 | Q2.23 | `chip.body.stroke @ {hover} / {checked} / {pressed}` | rule |
 | Q2.24 | `chip.leading_icon.icon.size (= token.icons.sizes.keyed.small.size), chip.body.padding, chip.values.icon_text_gap; chip.body.padding @ !variant with_icon` (the extra padding without an icon) | rule |
-| Q2.24 | `button.icon.glyph (ThemeIcon), button.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100) @ variant remove context chip` | rule |
+| Q2.24 | `button.icon.glyph (ThemeIcon), button.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100) @ variant remove context chip` | rule |
 | Q2.24 | `chip @ variant @interactive / variant closable` | rule |
 | Q2.25 | `badge.body.stroke, badge.body.fill @ variant info / variant success / variant warning / variant error` | rule |
 | Q2.26 | `badge.label.text.fill (= kirigami_badge_text, ADD-A53)` | field |
 | Q2.26 | `badge.body.stroke (= mix(element.color, the text, <fraction>)) @ variant custom_color` (where the application gives a colour; `badge.body` declares `color`, ADD-B16) | rule |
-| Q2.27 | `badge.label.text (= token.text.keyed.smallest_readable, its weight restated), badge.body.padding, badge.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100)` | field |
+| Q2.27 | `badge.label.text (= token.text.keyed.smallest_readable, its weight restated), badge.body.padding, badge.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100)` | field |
 | Q2.27 | `badge.body.corners (Full) @ !{multiline} / (the corner radius) @ {multiline}` | rule |
 | Q2.27 | `badge.body.padding (the pill's extra horizontal padding) @ !{multiline}` | rule |
 | Q2.28 | `avatar.values.default_size (= token.icons.sizes.keyed.large.size)` | field |
@@ -1437,7 +1437,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-24† | `segmented_control.segment.stroke (= mix by token.params.color.frame_contrast) @ variant @ka_segmented_button; segmented_control.segment.stroke (= surface.decoration_focus) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the highlighted segment drawn above its neighbours: the connector's paint order)` | rule |
 | K-KA-24† | `segmented_control.segment.transitions (Fill, Stroke; = token.motion.durations.short, its timing) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the Behaviors run only while the segment is highlighted)` | rule |
 | K-KA-24† | `segmented_control.segment.shadow (a hard layer, one pixel lower) @ !{pressed} !{disabled} variant @ka_segmented_button` | rule |
-| K-KA-25† | `segmented_control.segment.fill.append @ {hover} variant @ka_radio_selector; segmented_control.segment.corners, segmented_control.segment.min_height, segmented_control.icon.icon.size (= kirigami_label_icon_size(body_line_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100) @ variant @ka_radio_selector` | rule |
+| K-KA-25† | `segmented_control.segment.fill.append @ {hover} variant @ka_radio_selector; segmented_control.segment.corners, segmented_control.segment.min_height, segmented_control.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's line height, Q1.1, ADD-A100) @ variant @ka_radio_selector` | rule |
 | K-KA-25† | `segmented_control.segment.transitions (= token.motion.durations.short, its timing) @ variant @ka_radio_selector !cond input:touch` | rule |
 | K-KA-25† | `segmented_control.indicator.fill, segmented_control.indicator.stroke, segmented_control.indicator.corners, segmented_control.indicator.shadow @ variant @ka_radio_selector` | rule |
 | K-KA-25† | `segmented_control.values.presentations (@indicator_move, step part indicator; = token.motion.durations.long, its timing) @ variant @ka_radio_selector` | rule |
