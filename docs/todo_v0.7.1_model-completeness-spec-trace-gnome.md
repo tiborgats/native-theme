@@ -464,7 +464,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.195 | `layout.values.max_content_width, layout.values.tightening_threshold @ variant clamp` | rule |
 | GN-1.196 | `layout.values.container_margin, layout.values.section_gap @ variant @preferences_page` | rule |
 | GN-1.197 | `window.values.breakpoints` (the header bar's mobile threshold: measured Window, height Below it, setting `@mobile`; libadwaita 1.10 defines `MOBILE_WINDOW_HEIGHT` without reading it, so the value phase confirms the use first, else the list is empty) | field |
-| GN-1.197 | `view_switcher.values.breakpoints` (the preferences dialog's thresholds: measured Allocation, width AtMost, setting `@bar_layout`) | field |
+| GN-1.197 | `dialog.values.breakpoints @ variant paged` (the preferences dialog's thresholds, measured on its content bin, width AtMost, setting `@bar_layout`; the first over `element.item_count`, the page count) | field |
 | GN-1.198 | `switch.track.fill @ {pressed} !{checked}` | rule |
 | GN-1.199 | `switch.track.fill @ {checked,pressed} (appended layer)` | rule |
 | GN-1.200 | `switch.thumb.fill @ {hover} / {pressed}` | rule |
@@ -647,7 +647,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.09 | `form.row.{min_height,padding} @ variant expander` | rule |
 | GN-2.09 | `list.row.{padding,min_height}, list.row_background.corners @ variant inset` (an AdwExpanderRow in a plain boxed list: a `list` row with a `disclosure`, as Material's and iOS's expandable rows; in a preferences group a `form.row` of kind `expander`; its arrow and nested box: GN-1.257–GN-1.260) | rule |
 | GN-2.10 | `form.values.group_gap, form.group_title.padding, form.group_title.min_height, form.page.padding, form.values.page_gap` | field |
-| GN-2.10 | `view_switcher.values.breakpoints (the preferences dialog's two thresholds: measured Allocation, width AtMost each, setting @bar_layout)` | field |
+| GN-2.10 | `dialog.values.breakpoints @ variant paged (the preferences dialog's two thresholds on its content bin, width AtMost each, setting @bar_layout); dialog.values.page_switcher (BottomBar) @ variants {paged,@bar_layout}` | field |
 | GN-2.11 | `banner.body.{fill,padding}, banner.values.content_gap, banner.values.action_gap, banner.values.actions_wrap (BelowWhenNotFitting)` | field |
 | GN-2.11 | `button.body.min_width @ context banner.action_area / context banner.action_area[vertical]; banner.values.{content_gap,action_gap} @ variant vertical` (one width and spacing side by side, others stacked; the connector sets `vertical`) | rule |
 | GN-2.11 | `banner.body.fill, banner.title.opacity, banner.message.opacity, banner.action_area.opacity @ cond window_inactive` | rule |
@@ -710,9 +710,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.25 | `calendar.day.fill @ {@marked}` | rule |
 | GN-2.25 | `calendar.day.opacity @ {other_month}` | rule |
 | GN-2.25 | `calendar.day.focus @ {focus_visible}` | rule |
-| GN-2.26 | `level_indicator.track.{fill,corners}, level_indicator.values.thickness, level_indicator.values.thresholds` | field |
+| GN-2.26 | `level_indicator.track.{fill,corners}, level_indicator.values.stroke_width, level_indicator.values.thresholds` | field |
 | GN-2.26 | `level_indicator.fill.{fill,corners} @ variant continuous; level_indicator.block.fill @ {filled} variant discrete / !{filled} variant discrete; level_indicator.block.corners @ pos first variant discrete / pos last variant discrete; level_indicator.values.{block_gap,block_min_length} @ variant discrete` (filled and empty blocks, the end radii) | rule |
-| GN-2.26 | `level_indicator.values.thickness @ variant vertical` | rule |
+| GN-2.26 | `level_indicator.values.stroke_width @ variant vertical` | rule |
 | GN-2.26 | `level_indicator.fill.fill, level_indicator.block.fill @ {@low} / {@high} / {@full}` | rule |
 | GN-2.26 | `level_indicator.track.{fill,stroke} @ cond contrast_high` | rule |
 | GN-2.26 | `level_indicator.body.opacity @ {disabled}` | rule |
@@ -747,7 +747,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.35 | `button.body.{fill,min_width,min_height,corners} @ variant close context component.tab_overview / {hover} variant close context component.tab_overview / {pressed} variant close context component.tab_overview / variant @unpin context component.tab_overview / {hover} variant @unpin context component.tab_overview / {pressed} variant @unpin context component.tab_overview` (the close and unpin buttons) | rule |
 | GN-2.35 | `button.body.padding @ variant add context component.tab_overview (the new-tab button's margin)` | rule |
 | GN-2.35 | `component.tab_overview.drop_target.{fill,stroke,corners}` | component |
-| GN-2.35 | `component.tab_overview.values.{grid_gap,columns_min,columns_max,thumbnail_width_min,thumbnail_width_max}` | component |
+| GN-2.35 | `component.tab_overview.values.{grid_gap,columns_min,columns_max}, component.tab_overview.thumbnail.{min_width,max_width}` (the thumbnail width bounds, the part's fields) | component |
 | GN-2.35 | `component.tab_overview.values.presentations events Appear, Disappear, Move, @thumbnail_fade / @ cond reduced_motion (crossfade)` | component |
 | GN-2.36 | `badge.body.{fill,min_width,min_height,corners,padding} @ variant dot / variants {dot,attention}` | rule |
 | GN-2.36 | `badge.body.{fill,min_height,padding,corners}, badge.label.text @ variant count; badge.values.cutout` | rule |
@@ -929,6 +929,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.67† | `input.body.cursor, text_area.body.cursor, link.body.cursor, color_picker.plane.cursor, window.resize_zone.cursor` | field |
 | GN-3.67† | `splitter.divider.cursor @ !variant vertical / variant vertical` (column or row resize by orientation) | rule |
 | GN-3.67† | `token.behavior.hide_pointer_while_typing` | token |
+| GN-3.67† | `component.selectable_label.body.cursor` (Text: a selectable label, `G/gtklabel.c:804-806`) | component |
 | GN-3.72† | - | out (R1.1) |
 | GN-3.47 | `token.behavior.double_click_time, token.behavior.double_click_distance` | token |
 | GN-3.47 | `reader:gnome:org.gnome.desktop.peripherals double-click` | reader |
@@ -939,7 +940,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.51 | `token.behavior.spring_loading (ADD-A45)` | token |
 | GN-3.51 | `expander.values.drag_hover_delay, view_switcher.values.drag_hover_delay, sidebar.values.drag_hover_delay, tab.values.drag_hover_delay, component.tab_overview.values.drag_hover_delay` (each `= token.behavior.spring_loading`; the last the tab grid's) | field |
 | GN-3.68† | `token.behavior.key_repeat_delay, token.behavior.key_repeat_interval` | token |
-| GN-3.68† | `token.behavior.{key_repeat_delay,key_repeat_interval}` (both `Absent` by the reader while the read `repeat` setting is off: keys do not repeat) | token |
+| GN-3.68† | `token.behavior.{key_repeat_delay,key_repeat_interval}` (the read `repeat` setting off, keys not repeating, is "never", not `Absent`: it awaits the core's `Option` for these two fields, the catalogue's open core question) | token |
 | GN-3.68† | `reader:gnome:org.gnome.desktop.peripherals key repeat` | reader |
 | GN-3.69† | `stepper.values.repeat_delay, stepper.values.repeat_interval, stepper.values.climb_after_repeats` (the step growing by the climb rate after that many repeats) | field |
 | GN-3.69† | `scrollbar.values.repeat_delay, scrollbar.values.repeat_interval (trough paging)` | field |
@@ -979,11 +980,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-SF13† | `menu.item.min_height, menu.item_icon.icon, menu.values.icon_column_width, menu.item_subtitle.text (the "before" column at a reduced alpha) @ context autocomplete context code_editor` | rule |
 | GN-SF13† | `autocomplete.details_pane.{fill,stroke,corners,padding,text} @ context code_editor` | rule |
 | GN-SF13† | `popover.body.{fill,corners,shadow} @ context code_editor; popover.body.fill @ variant warning context code_editor / variant error context code_editor` (the informative popup and its warning and error fills) | rule |
-| GN-SF14† | `component.dock_frame_drop.drop_overlay.fill` | component |
-| GN-SF14† | `component.dock_frame_drop.drop_overlay.fill @ {drop_target}` | component |
-| GN-SF14† | `component.dock_frame_drop.drop_overlay.stroke @ {drop_target}` | component |
-| GN-SF14† | `component.dock_frame_drop.drop_overlay.corners` | component |
-| GN-SF14† | `component.dock_frame_drop.drop_overlay.transitions` | component |
+| GN-SF14† | `rubber_band.body.{fill,corners,transitions} @ variant dock_target context component.dock_frame_drop.frame` (the drop overlay: libpanel's, the kind of K-SF18†'s drop zone) | rule |
+| GN-SF14† | `rubber_band.body.{fill,stroke} @ {drop_target} variant dock_target context component.dock_frame_drop.frame` (the drop over it: the stronger fill and the inset ring) | rule |
 | GN-SF14† | `component.dock_frame_drop.frame.shadow @ {drop_target}` | component |
 | GN-SF15† | `component.dock_frame_drop.drop_position_button.fill` | component |
 | GN-SF15† | `component.dock_frame_drop.drop_position_button.{corners,padding} / component.dock_frame_drop.drop_position_button.corners @ variant @center` | component |
@@ -1067,7 +1065,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-1† | - | out (R1.1) |
 | GN-P4-2† | `popover.values.placement (GtkPopover)` | placement |
 | GN-P4-2† | `menu.values.placement (GtkPopover)` | placement |
-| GN-P4-2† | `combo_box.values.popup_placement` (GtkPopover; width AtLeastAnchor, start-aligned); `menu.arrow` where a popover menu draws its arrow | placement |
+| GN-P4-2† | `combo_box.values.popup_placement` (GtkPopover; width AtLeastAnchor, start-aligned) | placement |
+| GN-P4-2† | `menu.arrow` (where a popover menu draws its arrow, in the base) | field |
 | GN-P4-2† | `menu.arrow (absent = true) @ context combo_box` (the drop-down's arrowless list) | rule |
 | GN-P4-2† | `button.values.menu_placement` (GtkPopover; side Below, centred, flip Y, slide X: the menu button's default direction, down) | placement |
 | GN-P4-2† | `button.values.menu_placement @ variant @arrow_up / variant @arrow_start / variant @arrow_end (the menu button's direction)` | placement |

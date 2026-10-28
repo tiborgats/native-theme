@@ -100,7 +100,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-I19† | - | readers (R18) |
 | MAT-C1 | `radio.ring.stroke @ !{checked} / {checked}; radio.dot.fill @ {checked}` | rule |
 | MAT-C1 | `radio.ring.stroke, radio.dot.fill @ {hover} / {focus_visible} / {pressed} / {disabled} / {checked,hover} / {checked,focus_visible} / {checked,pressed} / {checked,disabled} (the disabled opacity as the paint's alpha: ring and dot list no opacity)` | rule |
-| MAT-C2 | `checkbox.state_layer.{min_width,min_height,corners}; radio.state_layer.{min_width,min_height,corners} (corners Radius::Full)` | field |
+| MAT-C2 | `checkbox.state_layer.{min_width,min_height,corners}; radio.state_layer.{min_width,min_height,corners} (corners Radius::Full { maximum: Absent }, Material's full shape has no maximum)` | field |
 | MAT-C2 | `checkbox.state_layer.{fill,opacity}, radio.state_layer.{fill,opacity} @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-C3 | `checkbox.box.fill, checkbox.mark.glyph.fill, checkbox.box.stroke @ {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-C4 | `checkbox.box.stroke @ {hover} / {focus_visible} / {pressed}, each !{checked,indeterminate}` | rule |
@@ -206,7 +206,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TB6 | `tab.values.presentations (event @indicator_move, part indicator) @ cond reduced_motion` | rule |
 | MAT-TB7 | `tab.bar.padding (start) @ variant @scrollable` | rule |
 | MAT-TB8 | `tab.label.text.{letter_spacing,line_height}` | field |
-| MAT-SB1 | `list.row_background.corners @ {selected} variant sidebar (Radius::Full)` | rule |
+| MAT-SB1 | `list.row_background.corners @ {selected} variant sidebar (Radius::Full { maximum: Absent })` | rule |
 | MAT-SB1 | `list.row.min_height, list.values.row_background_inset @ variant sidebar (the indicator's height; its width, the row less the insets)` | rule |
 | MAT-SB2 | `list.row_background.fill.append @ {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}, each variant sidebar` | rule |
 | MAT-SB2 | `list.leading_icon.icon.fill, list.row.text.fill @ {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}, each variant sidebar` | rule |
@@ -355,21 +355,21 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS4 | `token.text.keyed.label_small_emphasized` | token |
 | MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.<key>)` | token |
 | MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.<key>)` | token |
-| MAT-TS5 | `token.text.keyed.display_large.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.display_medium.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.display_small.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.headline_large.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.headline_medium.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.headline_small.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.title_large.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.title_medium.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.title_small.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.body_large.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.body_medium.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.body_small.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.label_large.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.label_medium.font.axes` | token |
-| MAT-TS5 | `token.text.keyed.label_small.font.axes` | token |
+| MAT-TS5 | `token.text.keyed.display_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.display_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.display_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.headline_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.headline_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.headline_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.title_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.title_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.title_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.body_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.body_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.body_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.label_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.label_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
+| MAT-TS5 | `token.text.keyed.label_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-LA1 | `layout.values.window_margin, layout.values.pane_gap @ h_size_class compact / h_size_class medium / h_size_class expanded / h_size_class large / h_size_class extra_large` | rule |
 | MAT-LA1 | `token.size_classes` | token |
 | MAT-SW1 | `switch.thumb.min_width, switch.thumb.min_height @ {pressed}` | rule |
@@ -378,7 +378,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-SW3 | `switch.thumb_icon.glyph @ !{checked} / {checked}` (the close and the check symbol) | rule |
 | MAT-SW3 | `switch.thumb_icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled} / {checked,hover} / {checked,focus_visible} / {checked,pressed} / {checked,disabled}; switch.thumb_icon.opacity @ {disabled}` | rule |
 | MAT-SW3 | `switch.thumb.{min_width,min_height} @ variant @icons` | rule |
-| MAT-SW4 | `switch.state_layer.{min_width,min_height,corners} (corners Radius::Full)` | field |
+| MAT-SW4 | `switch.state_layer.{min_width,min_height,corners} (corners Radius::Full { maximum: Absent }, Material's full shape has no maximum)` | field |
 | MAT-SW4 | `switch.state_layer.{fill,opacity} @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW5 | `switch.track.fill, switch.track.stroke @ {focus_visible} / {pressed} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW6 | `switch.thumb.fill @ {disabled,checked} / {disabled} !{checked} (colour and opacity, the opacity as the paint's alpha: the thumb lists no opacity)` | rule |
@@ -503,6 +503,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N19 | `sheet.handle.{fill,min_width,min_height,opacity}; sheet.handle.focus @ {focus_visible}` | rule |
 | MAT-N19 | `sheet.values.presentations (events Appear, Disappear, @settle: the drag and settle motion)` | field |
 | MAT-N20 | `sheet.body.{fill,corners,shadow,max_width}, sheet.title.text, sheet.divider.stroke @ variants {@side,@standard} / variants {@side,@modal} / variants {@side,@detached}` | rule |
+| MAT-N20 | `sheet.body.margin @ variants {@side,@detached}` (the detached side sheet's insets from the window's edges, which set its height) | rule |
+| MAT-N20 | `sheet.handle (absent = true) @ variant @side` (the side sheet draws no drag handle) | rule |
 | MAT-N20 | `button.label.text.fill, button.body.fill.append (state layer) @ {hover} / {focus_visible} / {pressed}, each context sheet.body variant @side (the actions)` | rule |
 | MAT-N20 | `button @ variant close context sheet.header (the close button)` | rule |
 | MAT-N21 | `sheet.body.{fill,shadow,corners}, sheet.body.fill.append (surface tint) @ variant floating` | rule |
@@ -563,10 +565,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X10 | - (material-web's growing focus ring and its reduced-motion form, `md-focus-ring`'s own component tokens, `_md-comp-focus-ring.scss:20-52`; Compose, the reference, has its own focus indication, MAT-X34†) | reference (R1.6) |
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |
 | MAT-X11 | `token.params.shape.<scale step> (none … extra_extra_large, ADD-A44)` | token |
-| MAT-X11 | `PartStyle.corners per-corner Radius (the -top, -start, -end families) and Radius::Full (half the smaller side)` | field |
+| MAT-X11 | `PartStyle.corners per-corner Radius (the -top, -start, -end families) and Radius::Full { maximum: Absent } (half the smaller side)` | field |
 | MAT-X12 | `button.body.shape @ {pressed} / {selected} / {checked} cond flavor:expressive` (a `ShapeKind::Material` shape in place of the corners' outline; buttons and icon buttons; R25.5, ADD-B03, ADD-A99) | rule |
-| MAT-X12 | `button.body.transitions (Shape, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the morph between the shapes, `native_theme::shapes::morph`, S2.4) | rule |
-| MAT-X12 | `ShapeKind::Material(MaterialShape)` (Material's shapes implemented once in code to `androidx.graphics.shapes` and `MaterialShapes.kt` at a pinned commit, `MaterialShape` listing exactly that file's shapes in its order, named in UpperCamelCase, the list written by the value phase, with `native_theme::shapes::outline` and `morph`; S2.4, R25.5, ADD-A99, ADD-A101) | field |
+| MAT-X12 | `button.body.transitions (Shape, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the morph between the outlines, `native_theme::shapes::morph` over two `Outline`s, so a change between the rest corners and a pressed shape morphs too, S2.4, ADD-A103) | rule |
+| MAT-X12 | `ShapeKind::Material(MaterialShape)` (Material's shapes implemented once in code to `androidx.graphics.shapes` and `MaterialShapes.kt` at a pinned commit, `MaterialShape` listing exactly that file's shapes in its order, named in UpperCamelCase, the list written by the value phase, with `native_theme::shapes::outline` and `morph` returning a `Path`; S2.4, R25.5, ADD-A99, ADD-A101, ADD-A103) | field |
 | MAT-X12 | `spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape)` | rule |
 | MAT-X13 | `token.motion.durations.<duration key>` | token |
 | MAT-X13 | `token.motion.timings.<easing or spring key> (cubic Béziers, Timing::Spring)` | token |
@@ -635,7 +637,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X35† | - | out (R1.1) |
 | MAT-X36† | `token.text.roles.{body,monospace}.font.family` | token |
 | MAT-X36† | `reader:android:Typeface.DEFAULT, Typeface.MONOSPACE` | readers (R18) |
-| MAT-X37† | `split_button.{primary_label,primary_icon}.transform.translate_x = min(mul(token.params.layout.optical_centering, sub(widget.primary.corners.<outer>, widget.primary.corners.<inner>)), <max>); split_button.arrow.transform.translate_x` likewise over `widget.secondary.corners` (ADD-A56, ADD-A80; a transform, which S8's layout restriction does not cover) | field |
+| MAT-X37† | `split_button.{primary_label,primary_icon}.transform.translate_x = min(mul(token.params.optics.optical_centering, sub(widget.primary.corners.<outer>, widget.primary.corners.<inner>)), <max>); split_button.arrow.transform.translate_x` likewise over `widget.secondary.corners` (ADD-A56, ADD-A80; a transform, which S8's layout restriction does not cover) | field |
 | MAT-X38† | `button.values.scaffold_placement @ variant @fab` (`MaterialScaffoldSlot(Fab)`: end or centre, its spacing); `toast.values.placement` (`MaterialScaffoldSlot(Snackbar)`: above the FAB and the bottom bar) | placement |
 | MAT-SF01† | `dialog.values.placement (CenteredInHost)` | placement |
 | MAT-SF02† | `dialog.values.breakpoints (measured Window, setting full_size; its comparison and width to verify, as the row says)` | field |

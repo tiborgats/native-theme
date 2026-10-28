@@ -280,7 +280,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-095 | `list.row.* @ variant sidebar context sidebar.footer` (the settings item and the footer items, in the pane's footer at its bottom); `sidebar.footer.{padding,stroke}` | rule |
 | W1-096 | `sidebar.pane.{fill,shadow,corners} @ variant overlay (fill PaintKind::Material @acrylic_in_app; shadow Shadow::Elevation)` | rule |
 | W1-097 | `sidebar.content.{fill,stroke,corners}` | field |
-| W1-098 | `sidebar.values.presentations (events Appear, Disappear)` | field |
+| W1-098 | `sidebar.values.presentations (events Appear, Disappear; @expand, @collapse under variant compact)` (SplitView's open and close durations govern the minimal pane appearing and the compact rail expanding to the full pane, W1-096) | field |
 | W1-099 | `button.body.{min_width,min_height,padding,corners} @ variant tool context toolbar.bar / variants {tool,icon_only} context toolbar.bar (labelled and compact)` | rule |
 | W1-099 | `button.{body.fill,label.text.fill,icon.icon.fill} @ {hover} / {pressed} / {disabled} variant tool context toolbar.bar` | rule |
 | W1-099 | `button.values.label_position @ variant tool context toolbar.bar (TextUnderIcon, TextBesideIcon, IconOnly)` | rule |
@@ -430,11 +430,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-03 | `date_picker.* @ variant with_popup` | rule |
 | W2-03 | `date_picker.popup.shadow; date_picker.values.placement` | field |
 | W2-03 | `calendar.* @ context date_picker.popup (the CalendarView in the flyout)` | rule |
-| W2-04 | `time_picker.{field.fill,field.stroke,field.text,field_segment.text} @ {hover} / {pressed} / {focused} / {disabled}` | rule |
+| W2-04 | `time_picker.{field.fill,field.stroke,field_label.text,field_segment.text} @ {hover} / {pressed} / {focused} / {disabled}` | rule |
 | W2-04 | `time_picker.{segment_separator.stroke,header.text,field.min_width,field.max_width}` | field |
 | W2-04 | `time_picker.popup.{fill,stroke,corners,shadow}` (the one DateTimePickerFlyout surface, under each picker's `popup`) | field |
 | W2-04 | `date_picker.popup.{fill,stroke,corners,shadow} @ variant text_field` (the same surface under the date picker) | rule |
-| W2-04 | `date_picker.{field.fill,field.stroke,segment.fill,segment.text,segment_separator.stroke} @ {hover} / {pressed} / {focused} / {disabled} variant text_field` | rule |
+| W2-04 | `date_picker.{field.fill,field.stroke,field_segment.fill,field_segment.text,segment_separator.stroke} @ {hover} / {pressed} / {focused} / {disabled} variant text_field` | rule |
 | W2-04 | `date_picker.{header.text,field.min_width,field.max_width}` | field |
 | W2-04 | `picker_wheel.{item.fill,item.text,item.padding,item.min_height,selection_band.fill,selection_band.min_height} @ context time_picker.popup / context date_picker.popup` (the looping selectors, their item height and highlight band: one home, `picker_wheel`) | rule |
 | W2-04 | `picker_wheel.{item.fill,item.text,selection_band.fill} @ {hover} / {pressed} / {selected} context time_picker.popup` | rule |
@@ -607,7 +607,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.{row.padding,row.stroke,row_arrow.icon} @ variant expander / variant action (the expander's header and items, their top border, the chevron button, the clickable items)` | rule |
 | W2-41† | `level_indicator.{track.fill,fill.fill,tick.fill,needle.fill,needle.stroke,needle.min_width,needle.min_height,value_label.text,unit_label.text} @ variant circular / cond contrast_high variant circular` (the scale arc is `track`, the trail arc `fill`: one structure with iOS's circular gauge); `level_indicator.tick.fill @ variant @scale` (the scale ticks) | rule |
 | W2-41† | `level_indicator.body.opacity @ {disabled} variant circular` | rule |
-| W2-41† | `level_indicator.values.{start_angle,end_angle,thickness,tick_spacing,end_cap}` (the arcs' round caps: `end_cap`) | field |
+| W2-41† | `level_indicator.values.{start_angle,end_angle,stroke_width,tick_spacing,cap}` (the arcs' round caps: `cap`) | field |
 | W2-42† | `color_button.{swatch.corners,swatch.min_width,swatch.min_height,swatch.stroke,body.padding}; color_button.checkerboard.fill (PaintKind::Pattern checkerboard, ADD-B01)` | field |
 | W2-42† | `color_button.chevron.glyph` | field |
 | W2-42† | `color_button.chevron.glyph.fill @ {hover} / {pressed}` | rule |
@@ -669,7 +669,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-22 | `token.text.rendering (ADD-B04)` | token |
 | W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST` | reader |
 | W3-23 | `Font.axes (opsz: AxisValue::FollowsSize)` | field |
-| W3-23 | `token.text.roles.*.{line_height,letter_spacing}` | token |
+| W3-23 | `token.text.roles.*.line_height` (the line height per role) | token |
+| W3-23 | `view_switcher.item_label.text.letter_spacing @ variant @pivot` (`PivotHeaderItemCharacterSpacing`: the Pivot header item's own character spacing, W2-32) | rule |
 | W3-24 | `token.caret.width` | token |
 | W3-24 | `token.caret.{blink_on,blink_off,blink_timeout}` | token |
 | W3-24 | `reader:windows:SPI_GETCARETWIDTH, GetCaretBlinkTime, UISettings.CaretWidth, UISettings.CaretBlinkRate, SPI_GETCARETTIMEOUT` | reader |
@@ -790,6 +791,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-RL02† | - | preset (R1.3) |
 | W-RL03† | - | preset (R1.3) |
 | W-FM01† | `token.text.fallbacks.emoji_family (ADD-A41)` | token |
+| W-FM01† | `token.text.fallbacks.families` (Segoe UI Symbol, the fallback font for symbols, ADD-A41) | token |
 | W-FM01† | `reader:windows:IDWriteFontFallback::MapCharacters on an emoji string` | reader |
 | W-FM02† | `token.text.fallbacks.per_language (ADD-A41)` | token |
 | W-FM02† | `reader:windows:IDWriteFontFallback::MapCharacters per locale, LanguageFontGroup` | reader |

@@ -796,7 +796,8 @@ pub struct Caret { pub color: Value<Color>, pub width: Value<Px>,   // its shape
 pub enum BlinkStyle { Hard, Fade }
 pub struct Behavior { pub double_click_time: Value<Ms>, pub double_click_distance: Value<Px>,
                        pub drag_threshold: Value<Px>, pub hover_open_delay: Value<Ms>,
-                       pub key_repeat_delay: Value<Ms>, pub key_repeat_interval: Value<Ms>,
+                       pub key_repeat_delay: Option<Value<Ms>>, pub key_repeat_interval: Option<Value<Ms>>,
+                                                       // None: keys never repeat (the user turned repeat off)
                        pub scroll_lines_per_step: Value<f32>, pub scroll_px_per_step: Value<Px>,  // MAT-X32†
                        pub hide_pointer_while_typing: Value<bool>, pub hide_pointer_delay: Value<Ms>,  // K3.65†
                        pub hide_pointer_fade: Value<Ms>,                                     // MAT-P3-15†
@@ -1176,10 +1177,11 @@ against the allocation or the window it measures and adds the variant to `Elemen
 two variants that hold together apply in stated rule order, as any rules do.
 
 ```rust
-pub enum Measured { Allocation, Window }               // the size the parent offers the element (libadwaita's
-                                                       // breakpoint bin), or the window's: never the element's own
-                                                       // laid-out size, so a variant that changes padding does not
-                                                       // feed back into its own breakpoint
+pub enum Measured { Allocation, Window, Part(PartRef) }   // the size the parent offers the element, the window's,
+                                                       // or the allocation of a part of the widget that holds the
+                                                       // content (AdwPreferencesDialog's breakpoint bin, GN-2.10):
+                                                       // never a box the breakpoint's own variant sizes, so a
+                                                       // variant that changes padding does not feed back into it
 pub struct SizeClasses { pub horizontal: Option<SizeClass>, pub vertical: Option<SizeClass> }   // R25.10; None:
                                                                      // the platform states no class on that axis
 ```
@@ -1328,7 +1330,7 @@ come from the root's inputs through the scope; the font metrics from `Element.me
 The query tells the variants apart by name: the content variants are the catalogue's typed, listed set (*Entry
 format*, ADD-A61), the breakpoint variants those the widget's `breakpoints` value names (S7.3), and every other variant
 in `Element.variants` is one the application asked for. The query: ignores a content or breakpoint variant the widget
-does not declare (as an undeclared density); answers `NotAvailable` for an undeclared size or a variant the
+does not declare (as an undeclared density), and a keyed flag the widget does not declare selects nothing; answers `NotAvailable` for an undeclared size or a variant the
 application asked for, an unavailable widget, a missing required
 variant, or a part the widget does not have, and `NotDrawn` for a part whose style resolved `Absent` (the children of
 a `NotDrawn` or `NotAvailable` element take the parent's scope); drops excluded flags by the exclusive groups (S10),
@@ -2002,6 +2004,7 @@ lines that cite it.
 | ADD-A93 | `Mirroring::SwapWith` | S2.9 |
 | ADD-A94 | `gtk_contrast_pick` | S2.2 |
 | ADD-A95 | `Radius::FollowPart`, `Breakpoint`, `sizes_by_variant`, touchpad inertia, `Theme::set_contrast`, `WindowState` | S2.4, S7.3, S10, S4.2, S16, S8 |
+| ADD-A104 | key repeat as `Option`, `Measured::Part`, undeclared keyed flags | S4.2, S7.3, S8 |
 | ADD-A96 | `Comparison`, `Measured`, `OverlayBottomCenter`, two-edge fade, touchpad velocity samples, `Theme::system`, decoration patterns | S7.3, S13, S2.8, S4.2, S16 |
 | ADD-A97 | `PartPatch::DrawnAs`, `Styled::DrawnAs`, `RuleBody`, `Keyframe.part`/`timing`, `Glyph.draw_start`, `FontMetrics::line_spacing` | S6.1, S8, S2.7, S2.9 |
 | ADD-A98 | `SharedFlag::DropCopy`/`DropMove`, `FontMetrics::max_char_width`, `DrawnAs.part`, the concentric container | S7.2, S8, S6.1, S2.4 |

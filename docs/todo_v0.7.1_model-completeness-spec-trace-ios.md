@@ -148,7 +148,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | D-18 | `token.focus (corners.curve, offset)` | token |
 | D-18 | - | readers (R18) |
 | D-19 | `token.icons.sizes.keyed.*.weight` | token |
-| D-19 | `token.icons.sizes.keyed.*.scale` | token |
+| D-19 | `token.icons.sizes.keyed.*.scale` (a key declared in `[declare] symbol_scales`, S10) | token |
 | D-19 | - | readers (R18) |
 | D-20 | `token.params.opacity.disabled` (each widget's `{disabled}` rules carry the per-control rendering: state colours or this alpha, per control) | token |
 | D-20 | `role.window.disabled.foreground` | role |
@@ -333,8 +333,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | T-1 | `reader:ios:UITabBarAppearance backgroundEffect` | readers (R18) |
 | T-2 | `bottom_tab_bar.bar.stroke.top (Edge.snap ToDevicePixel, ADD-A33)` | field |
 | T-2 | `reader:ios:UIBarAppearance.shadowColor` | readers (R18) |
-| T-3 | `bottom_tab_bar.item.padding, bottom_tab_bar.item_icon.icon, bottom_tab_bar.item_label.text @ variant stacked / variant inline / variant @compact_inline` (each layout's icon size, title font and spacing) | rule |
-| T-3 | `bottom_tab_bar.values.item_gap, item_width, item_positioning` | field |
+| T-3 | `bottom_tab_bar.item.padding, bottom_tab_bar.item_icon.icon, bottom_tab_bar.item_label.text @ h_size_class compact / h_size_class regular / v_size_class compact` (the stacked, inline and compact-inline layouts, which UIKit picks from the trait collection: each layout's icon size, title font and spacing) | rule |
+| T-3 | `bottom_tab_bar.values.item_gap, bottom_tab_bar.values.item_width, bottom_tab_bar.values.item_positioning` | field |
 | T-3 | `reader:ios:UITabBarAppearance stacked and inline layout` | readers (R18) |
 | T-4 | `bottom_tab_bar.item_icon.icon.fill, bottom_tab_bar.item_label.text.fill` | field |
 | T-4 | `reader:ios:UITabBarItemAppearance.normal` | readers (R18) |
@@ -344,8 +344,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | T-6 | `reader:ios:UITabBarItemAppearance disabled, focused` | readers (R18) |
 | T-7 | `badge.* @ context bottom_tab_bar.item` | rule |
 | T-7 | `reader:ios:UITabBarItem.badgeColor, badgeTextAttributes` | readers (R18) |
-| T-8 | `bottom_tab_bar.indicator (fill material, corners full)` | field |
+| T-8 | `bottom_tab_bar.indicator (fill material, corners Radius::Full { maximum: Absent }, the lens a capsule)` | field |
 | T-8 | `bottom_tab_bar.values.presentations event @indicator_move` (step `part: indicator`, kind `Morph`) | field |
+| T-8 | `bottom_tab_bar.indicator.{transform,transitions} @ {pressed} / {dragged}` (the lens following the finger across the bar and growing while it does, as `segmented_control.indicator`'s, SG-4) | rule |
 | T-9 | `bottom_tab_bar.bar.{corners,shadow,min_height} @ variant floating` (corners `Full`) | rule |
 | T-9 | `bottom_tab_bar.values.floating_inset` | field |
 | T-10 | `bottom_tab_bar.bar.*, bottom_tab_bar.item.* @ {minimized}` | rule |
@@ -530,8 +531,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SP-4a | `spinner.icon` (`absent = true` on `ios-*`: iOS draws no animated icon; S6.3) | field |
 | SP-4a | `spinner.spoke.fill` | field |
 | SP-5a | `spinner.values.presentations (Appear, Disappear)` | field |
-| CB-1 | `combo_box.arrow.glyph` | field |
-| CB-1 | `combo_box.arrow.glyph @ variant pull_down` | rule |
+| CB-1 | `combo_box.arrow.glyph` (the pop-up button's indicator, its `.popup` up/down chevron pair, in the base: its identity, colour and weight; iOS's pull-down button is `button @ variant menu`, B-18†) | field |
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant @borderless / variant @bordered / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
@@ -613,8 +613,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-5 | `date_picker.field.fill, date_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `date_picker.popup.{fill,corners,shadow}` (the popover it opens) | field |
 | C-5 | `date_picker.values.placement (UiKitPopover)` | placement |
-| C-5 | `time_picker.field.{fill,corners,padding,text}, time_picker.popup.{fill,corners,shadow} @ variant with_popup` (the `.time` mode's pill, its text in the accent, and its popover: a time picker, gap map "time picker") | rule |
-| C-5 | `time_picker.field.{fill,text.fill} @ {pressed} variant with_popup` | rule |
+| C-5 | `time_picker.field.{fill,corners,padding}, time_picker.field_label.text, time_picker.popup.{fill,corners,shadow} @ variant with_popup` (the `.time` mode's pill, its text in the accent, and its popover: a time picker, gap map "time picker") | rule |
+| C-5 | `time_picker.field.fill, time_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `time_picker.values.placement (UiKitPopover)` | placement |
 | C-5 | - | readers (R18) |
 | C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.time_row.{text,padding}, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
@@ -739,7 +739,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-28 | - | readers (R18) |
 | C-29 | `button.icon.glyph @ variant pane_toggle context toolbar.bar` (a `NamedSystemImage`) | rule |
 | C-29 | - | readers (R18) |
-| C-30 | `level_indicator.track.fill, level_indicator.fill.fill, level_indicator.values.end_cap, level_indicator.values.thickness @ variant circular / variant @accessory / variant @capacity` (the linear gauge the base; the fill a gradient paint where drawn) | rule |
+| C-30 | `level_indicator.track.fill, level_indicator.fill.fill, level_indicator.values.cap, level_indicator.values.stroke_width @ variant circular / variant @accessory / variant @capacity` (the linear gauge the base; the fill a gradient paint where drawn) | rule |
 | C-31 | `spinner.indicator.fill, spinner.values.stroke_width @ variant determinate` (its geometry, to verify) | rule |
 | C-32 | `group_box.body.fill, group_box.body.corners, group_box.body.padding, group_box.title.text` | field |
 | C-33 | `text_area.writing_tools_glow` | field |
@@ -787,9 +787,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-44† | - | readers (R18) |
 | C-45† | `chart.grid_line_major.stroke, chart.axis_tick.stroke, chart.axis_label.text, chart.legend.text, chart.legend_label.text, chart.plot_area.padding` | field |
 | C-45† | `chart.series.fill = pick(element.item_index, …)` (the default series colour order; ADD-B15) | field |
+| C-45† | `chart.series.stroke` (a `LineMark` series' line, its width and paint per series) | field |
 | C-45† | `chart.values.grid_lines` (`AxisMarks`' defaults) | field |
 | C-45† | - | readers (R18) |
-| C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.ring_width`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
+| C-46† | `component.activity_rings.ring.fill @ variant @move / variant @exercise / variant @stand` (each ring's paint, flat or a gradient); `component.activity_rings.values.stroke_width`, `component.activity_rings.values.cap` (the rings' width and ends) | component |
 | C-46† | `component.activity_rings.track.fill` | component |
 | C-46† | `component.activity_rings.values.ring_gap` | component |
 | C-46† | - | readers (R18) |
@@ -825,6 +826,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MT-7 | `Material identity (lensing, specular highlight in the identity)` | field |
 | X-MT-7 | `PartStyle.fill @ {over_dark_content} (adaptive flip)` | rule |
 | X-MT-7 | state flag `over_dark_content` (S7.2) | flag |
+| X-MT-7 | `Material.{tint,luminosity} per widget (the large glass surfaces state their greater opacity in their own fill: sidebar.pane, menu.body, sheet.body)` | rule |
 | X-MT-8 | `glass_container.surface.{fill,transform,transitions} @ {pressed}; button.body.{fill,transform,transitions} @ {pressed} variant glass` (press scale, highlight, shimmer) | rule |
 | X-MT-9 | `glass_container.values.merge_gap` | field |
 | X-MT-9 | `PresentationKind::Morph` in the merging elements' `presentations` (S2.7) | field |
@@ -836,6 +838,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MT-13 | `reader:ios:UIDesignRequiresCompatibility in the host app's Info.plist` (the generation choice per application, R1.5, S16) | readers (R18) |
 | X-CR-1 | `Corners.curve Continuous (S2.4)` | field |
 | X-CR-2 | `Radius::Concentric (S2.4)` | field |
+| X-CR-2 | `Radius::Full { maximum: Value<Px> } (S2.4): a capsule with a maximum radius, UICornerConfiguration's capsule(maximumRadius:), ADD-A103` | field |
 | X-CR-2 | `reader:ios:UICornerConfiguration, effectiveRadius(corner:)` | readers (R18) |
 | X-CR-3 | `Corners per-corner Radius` | field |
 | X-CR-4 | `window.frame.corners (Concentric, following the display, the root's container, S4.6)` | field |
@@ -1034,7 +1037,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | P3-11† | `button.values.presentations, list.values.presentations, segmented_control.values.presentations, bottom_tab_bar.values.presentations event @spring_load` (the visual effect while a drag hovers) | field |
 | P3-11† | `button.body.fill, list.row_background.fill, segmented_control.segment.fill, bottom_tab_bar.item.fill @ {drop_target}` (the activating states) | rule |
 | P3-12† | - (the pointer and the settings the system applies to it and to scrolling) | out (R1.1) |
-| P3-13† | `token.behavior.key_repeat_delay_ms / key_repeat_interval_ms` | token |
+| P3-13† | `token.behavior.key_repeat_delay, token.behavior.key_repeat_interval` | token |
 | P3-14† | `token.icons.mirroring` (S2.9) | token |
 | P3-14† | `Element.language`, `Element.direction` (the icon lookup's inputs, S2.9, S8; ADD-B05) | field |
 | P3-14† | `reader:ios:semanticContentAttribute, layoutDirection` | readers (R18) |

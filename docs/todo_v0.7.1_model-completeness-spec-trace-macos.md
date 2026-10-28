@@ -270,7 +270,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-TL08 | `toolbar.separator @ variant @tracking` | rule |
 | MAC-TL09 | `toolbar.bar.fill` (the material on the 12–15 generation; `Absent` on `macos-tahoe`, whose bar is transparent, the scroll edge effect beneath it drawing the material once content lies under it, MAC-X05) | field |
 | MAC-TL09 | `scroll_view.edge_effect.fill @ variant top {scrolled} (under the toolbar, MAC-X05)` | rule |
-| MAC-TL10† | `toolbar.values.fixed_space_width, flexible_space_min_width` | field |
+| MAC-TL10† | `toolbar.values.fixed_space_width, toolbar.values.flexible_space_min_width` | field |
 | MAC-TL11† | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ {selected} variant tool context toolbar.bar` | rule |
 | MAC-TL11† | `button.body.fill @ {selected} variant tool context toolbar.bar cond window_inactive` | rule |
 | MAC-ST01 | `status_bar.bar.min_height, status_bar.bar.fill, status_bar.bar.stroke.top` | field |
@@ -356,7 +356,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SN04 | `spinner.{indicator,track} @ variant determinate` | rule |
 | MAC-SN05† | `spinner.values.presentations` | field |
 | MAC-CB01 | `combo_box.arrow.glyph (SystemControl::AppKitPopUp)` | system-control |
-| MAC-CB01 | `combo_box.arrow.glyph @ variant pull_down` | rule |
+| MAC-CB01 | `combo_box.arrow.glyph @ variant @pull_down` | rule |
 | MAC-CB01 | `combo_box.arrow_area.{fill,stroke,corners} @ variant editable` | rule |
 | MAC-CB01 | `input.body @ context combo_box variant editable` | rule |
 | MAC-CB02 | `combo_box.arrow_area.fill` | field |
@@ -477,7 +477,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-IC01 | `token.icons.sizes.keyed.sidebar @ cond container_size:sidebar:small / container_size:sidebar:medium / container_size:sidebar:large` | rule |
 | MAC-IC01 | `button.icon.icon.size @ variant tool size small context toolbar.bar (NSToolbar sizeMode .small)` | rule |
 | MAC-IC02 | `token.icons.sizes.keyed.*.weight` | token |
-| MAC-IC02 | `token.icons.sizes.keyed.*.scale` | token |
+| MAC-IC02 | `token.icons.sizes.keyed.*.scale` (a key declared in `[declare] symbol_scales`, S10) | token |
 | MAC-IC02 | `token.icons.sizes.keyed.*.rendering_mode` | token |
 | MAC-IC03 | - | out (R1.1) |
 | MAC-DF05† | `reader:macos:NSColor.textColor` | reader |
@@ -545,7 +545,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N03 | `chip.menu_arrow.glyph` | field |
 | MAC-N03 | `layout.values.item_gap @ variant flow context any input` (the token spacing) | rule |
 | MAC-N03 | `input.{body,text,caret}.*` (the token field's frame, text and caret are the `input`'s) | rule |
-| MAC-N04 | `date_picker.segment.{fill,text} @ {selected} context date_picker.field variant text_field / {selected} context date_picker.field variant @text_field_and_stepper` | rule |
+| MAC-N04 | `date_picker.field_segment.{fill,text} @ {selected} context date_picker.field variant text_field / {selected} context date_picker.field variant @text_field_and_stepper` | rule |
 | MAC-N04 | `stepper.* @ context date_picker variant @text_field_and_stepper` | rule |
 | MAC-N04 | `time_picker.field_segment.{fill,text} @ {selected} variant text_field / {selected} variant @text_field_and_stepper; stepper.* @ context time_picker variant @text_field_and_stepper` (the time elements alone: a time picker, gap map "time picker") | rule |
 | MAC-N04 | `calendar.header, calendar.title.text @ context any date_picker variant inline (the month header)` | rule |
@@ -558,7 +558,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N04 | `date_picker.popup.{fill,corners,shadow,padding} @ variant text_field` | rule |
 | MAC-N04 | `date_picker.values.placement (AppKitPopover, to verify; the calendar overlay)` | placement |
 | MAC-N05 | `color_button.body.{fill,stroke,corners}, color_button.swatch.{corners,stroke,min_width,min_height} @ variant @minimal / @expanded` (the default style is the base) | rule |
-| MAC-N05 | `color_button.swatch_ring.stroke @ {@active}` | rule |
+| MAC-N05 | `color_button.swatch_ring.stroke @ {open}` | rule |
 | MAC-N05 | `color_button.chevron.glyph @ variant @minimal` | rule |
 | MAC-N05 | `color_button.expand_button.{fill,glyph} @ variant @expanded` | rule |
 | MAC-N05 | `color_button.{body,swatch}.* @ variant @hdr` (the HDR well, `maximumLinearExposure` above one) | rule |
@@ -636,7 +636,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N28† | `split_button.secondary.fill, split_button.arrow.glyph @ {open}` | rule |
 | MAC-N28† | `split_button.* @ size mini / small / regular / large` | rule |
 | MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` (`NSComboButton` `.unified`) | rule |
-| MAC-N29† | `combo_box.{body,arrow} @ variant pull_down {pressed} / variant pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
+| MAC-N29† | `combo_box.{body,arrow} @ variant @pull_down {pressed} / variant @pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
 | MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |
 | MAC-N30† | `media_controls.bar.{fill,corners,shadow} @ variant @inline / floating / @minimal` | rule |
@@ -951,7 +951,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P4-6† | `token.behavior.double_click_distance` | token |
 | MAC-P4-7† | `token.icons.mirroring (S2.9)` | token |
 | MAC-P4-7† | `icon lookup by Element.direction and Element.language (S2.9, S8; ADD-B05)` | field |
-| MAC-P4-8† | `combo_box.values.popup_placement @ variant pull_down (AppKitMenu: the offset, width and edge)` | placement |
+| MAC-P4-8† | `combo_box.values.popup_placement @ variant @pull_down (AppKitMenu: the offset, width and edge)` | placement |
 | MAC-P4-8† | `combo_box.values.popup_placement @ variant editable (AppKitComboList: placement and width)` | placement |
 | MAC-P4-9† | `token.theme_change (accent and highlight colour change)` | token |
 | MAC-P4-10† | `menu.values.submenu_switch (SafeTriangle)` | field |
