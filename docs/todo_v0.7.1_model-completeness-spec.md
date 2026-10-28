@@ -43,11 +43,13 @@ platform is stated here: values come from the facts (S17) in the value phase.
   declared by the preset (S10); `Key::new(&str) -> Result<Key, KeyError>`, and `key!("name")` checks a literal at
   compile time. A typed name is an enum variant.
 - **`#[non_exhaustive]`** (R21): every public struct has it, except the closed value structs (`Color`, `Sides`,
-  `Axes`, `Rect`, `Size`, `Point`, `TiledEdges`, `SetMatch`, and the newtypes `Px`, `Ms`, `Deg`, `Fraction`, `Key`);
+  `Axes`, `Rect`, `Size`, `Point`, `TiledEdges`, `SetMatch`, and the newtypes `Px`, `Ms`, `Deg`, `Fraction`, `Key`) and
+  the inputs a connector fills in full (`WindowConditions`, `RootInputs`, `Sibling`, `PlacementInput`, `ReaderState`),
+  so a field added later breaks every connector's build, as a new enum variant does (R21);
   every public enum is exhaustive, so a connector maps each in full (S21.2). A public struct whose every field has a
-  neutral default (the patch types, `Selector`, `ElementData`, `ReaderState`, `WindowConditions`, `Layer`, `Bases`)
+  neutral default (the patch types, `Selector`, `ElementData`, `Layer`, `Bases`)
   implements `Default` and is built from `default()` and field assignment, as R21 prescribes; a struct with required
-  fields has a constructor (`Element::new(part, scope, metrics)`, `Rule::new(selector, target, patch)`); a full block
+  fields has a constructor (`Element::new(part, scope, metrics)`, `Rule::new(selector, body)`); a full block
   is built through its patch type. Validation refuses an `Absent` left where it is not allowed (S12), so a default
   never stands in for a value. Every public enum is exhaustive, error enums included, a choice made for
   simplicity before 1.0. A layer is also built from TOML in S11's format, `Layer::from_toml(&str) ->
@@ -64,14 +66,16 @@ platform is stated here: values come from the facts (S17) in the value phase.
   `StateFlags` is a set of `StateFlag`; `InputName` is an input's path (`accent`, `accent_ramp.light1`);
   `SizeClassThreshold` is `{ horizontal: Option<Value<Px>>, vertical: Option<Value<Px>> }`,
   the class's inclusive lower bound on each axis (`None`: not a class of that axis); a window's class on an axis is
-  the one with the largest bound not above its size there, and the axis has none when no class qualifies; `WinUiPlacement` is WinUI's `FlyoutPlacementMode`; `Accent` is `{ accent: InputValue, derived: Vec<(InputName, InputValue)> }`
+  the one with the largest bound not above its size there, and the axis has none when no class qualifies; `Accent` is `{ accent: InputValue, derived: Vec<(InputName, InputValue)> }`
   (S9.2); `WidgetValue` is the union of the value types widget values use: a number, integer, length, duration,
   bool, key, enum variant, colour, paint, timing, transition, loop, glyph, icon style, scroll physics, breakpoints,
   `Vec<PresentationTransition>` and a placement (`PlacementStrategy` with its `PlacementParams`); a keyed component's
   values are typed by its declaration (S10). `DisabledRoles` and `StatusRoles` are the catalogue's (*Colour
   roles*). `Expr` is a parsed expression (S2.2); `StepJump` is CSS's `jump-start | jump-end | jump-none |
-  jump-both`; the `Widget` trait, `ComponentValues`, `ComponentBase`, `ResolvedTokens`, `ResolvedFont`,
-  `ResolvedPartStyle` and the per-widget types are derive-generated (S6.1); `DataNeeds` is a set of element-data
+  jump-both`; the `Widget` trait, `ResolvedTokens`, `ResolvedFont`, `ResolvedPartStyle` and the per-widget types are
+  derive-generated (S6.1); a keyed component, declared at run time, has `ComponentBase { parts: Vec<(Key,
+  PartPatch)>, values: Vec<(Key, Value<WidgetValue>)> }`, `ComponentValuesPatch { key: Key, values: Vec<(Key,
+  Value<WidgetValue>)> }` and `ComponentValues = Vec<(Key, ResolvedWidgetValue)>`; `DataNeeds` is a set of element-data
   operands and metrics; `LayerId`, `PaletteId` are opaque ids; `ThemeError`, `ReaderStatus`, `KeyError` are the
   errors and status their calls name. `SchemeMap<T>` holds a `T` per `Scheme`; `SurfaceMap<T>` one per declared `SurfaceSet`; `SurfaceRole` and
   `GlobalRole` name a field of `SurfaceRoles` and `GlobalRoles` (a path, `disabled.foreground`); `WidgetKind` is the
@@ -192,7 +196,7 @@ colour expression stated on a `Value<Paint>` field, or in `append`, is one `Colo
 | `kde_effects(c, background, group, role_kind)` | colour | KColorScheme's effects of a group (`disabled`, `inactive`) on a role of kind `foreground`, `decoration` or `background` (the contrast effect only on the first two, against `background`), in KColorScheme's order, from `token.kde.<group>`; the inactive group only while `token.kde.inactive_enabled`; on the Selection set's inactive roles, while `inactive_change_selection_color` is on, KColorScheme's substitution instead (Window's background tinted with Selection's, Window's text, K3.40, `kcolorscheme.cpp:303-321`); it reads those tokens itself |
 | `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)`, `kcu_shade(c, luma, chroma)` | colour | `KColorUtils`, to `kcolorutils.cpp` |
 | `adw_standalone(c, scheme)` | colour | libadwaita's standalone accent derivation in OKLab, to its stylesheet |
-| `m3_role(role, seed, variant, version, contrast, scheme)` | colour | material-color-utilities' dynamic scheme, the role of that scheme |
+| `m3_role(role)` | colour | material-color-utilities' dynamic scheme, the role of that scheme; it reads `input.accent` (the seed), `token.material.{variant, spec_version, contrast_level}` and the colours' scheme itself, listed as its operands |
 | `mul(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56) |
 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | colour | `QColor::lighter`, `QColor::darker` in HSV, to qtbase `qcolor.cpp` (ADD-A50) |
 | `kcu_overlay(under, over)` | colour | `KColorUtils::overlayColors`, to `kcolorutils.cpp` (ADD-A51) |
@@ -275,7 +279,9 @@ repeating gradient repeats its stops beyond the last (stripes, K1.110).
 ```rust
 pub struct Corners { pub top_left: Radius, pub top_right: Radius, pub bottom_right: Radius,
                      pub bottom_left: Radius, pub curve: CornerCurve }
-pub enum Radius { Px(Value<Px>), Full, Concentric { minimum: Value<Px> },   // the container: the nearest enclosing
+pub enum Radius { Px(Value<Px>), Full, Concentric { minimum: Value<Px> },   // resolved as they are; the connector
+                                 // computes them at layout with `native_theme::corners::{concentric, full,
+                                 // follow_part}`, from the scope's container corners and the inset it knows;   // the container: the nearest enclosing
                                  // part or element that states corners (a root that draws nothing is skipped; a
                                  // full-screen one's is the display, S4.6); minimum may be absent; with no
                                  // container radius the container is square (radius 0), so the corner is the
@@ -296,9 +302,10 @@ pub enum LineJoin { Miter, Round, Bevel }
 pub enum StrokePosition { Inside, Center, Outside }
 ```
 
-A part's outline is its `corners`, unless `PartStyle.shape` names a keyed shape of the platform's shape library
-(declared in S10, each defined to its source, R25.5); an `Interpolate` transition of the `Shape` group morphs from one
-shape to the other.
+A part's outline is its `corners`, unless `PartStyle.shape` names a shape: `ShapeKind { Material(MaterialShape) }`, a
+closed set implemented once in native-theme to `androidx.graphics.shapes` and `MaterialShapes.kt` at a pinned commit
+(R25.5), with `native_theme::shapes::outline(shape, rect) -> Path` and `morph(a, b, t, rect) -> Path`, as placement
+strategies are code (R16); an `Interpolate` transition of the `Shape` group morphs from one shape to the other.
 
 TOML shorthands: `corners_px = <n>` sets all four radii (the curve is stated on its own); `stroke = { width_px = <n>, paint = "…" }`
 sets all four edges.
@@ -403,6 +410,7 @@ pub struct Font {
 pub enum AxisValue { Fixed(f32), FollowsSize }  // SF's and Segoe UI Variable's optical size
 pub struct TextStyle {
     pub font: Font,
+    pub scaling_role: Option<TextRole>,       // whose Dynamic Type curve scales it (S9.4); None: body's
     pub letter_spacing: Value<Px>, pub word_spacing: Value<Px>,      // word spacing: K3.46
     pub line_height: Value<FontSize>,         // pt or px (scaled with the text-scaling factor), an expression on
                                               // font_size, or `Auto`: the font's own line spacing (ADD-A40)
@@ -455,7 +463,8 @@ pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>,
 pub enum GlyphSource {
     FontCodePoint { family: String, code_point: u32 },
     ThemeIcon { name: String, fallbacks: Vec<String> },   // ADD-A36
-    Path { data: String },                              // SVG path syntax, from the platform's source code (cited
+    Path { data: String, view_box: Rect },              // SVG path syntax in the source's own coordinates, mapped
+                                                        // onto the glyph's box at `size` as SVG's viewBox (cited
                                                         // in the preset's comment, S11)
     NamedSystemImage { name: String },                   // a name the platform states for that purpose
     SystemControl { control: SystemControl, replaces: Vec<PartRef> },   // the system's rendering (S15)
@@ -495,7 +504,7 @@ pub struct PartStyle {
     pub fill: Value<Paint>,
     pub stroke: Value<Stroke>,
     pub corners: Value<Corners>,
-    pub shape: Value<Key>,                   // a keyed shape replacing the corners' outline; may be absent (R25.5)
+    pub shape: Value<ShapeKind>,             // a shape replacing the corners' outline; may be absent (R25.5)
     pub shadow: Value<Shadow>,
     pub opacity: Value<Fraction>,                 // applied to the element and its descendants as a group
     pub transform: Value<Transform>,         // likewise
@@ -707,7 +716,10 @@ pub enum ThemeChange {
 
 A theme change is a re-resolution caused by a change of the preset, a layer, an input or a reader value, or of one
 of these conditions: `Scheme`, `ContrastIncreased`, `ContrastHigh` (R9); any other condition change runs the
-property transitions of the styles it changes. A transition already running when a suspension starts finishes.
+property transitions of the styles it changes. A transition already running when a suspension starts finishes. Under
+`Crossfade` the window crossfades from the old frame to the new, and the property transitions the change triggers do
+not run (each property is at its new value under the fade); where a crossfading platform does otherwise, its facts
+say so.
 
 ### S4.4 Text ramp
 
@@ -1075,11 +1087,15 @@ scopes it kept, whose bound colours are the old resolution's (an inactive window
 A window resolves again on any change of its conditions, an input, a reader value, a layer, the flavour or the
 preset.
 
-**Query.** `ResolvedTheme::root_scope(&RootInputs) -> Scope` gives the window's root scope. Every query takes its
+**Query.** `ResolvedTheme::root_scope(&RootInputs) -> Scope` gives the window's root scope. Each query's returned
+`Scope` is its input scope plus this part's ancestor entry and bindings; a connector passes, for any part or element,
+the scope returned by the query of the innermost part that encloses it in the catalogue's nesting (a widget's root
+part: its host's part that holds it). Every query takes its
 parent's scope and returns its own, so a connector queries top-down, as it draws. A `Scope` holds owned, evaluated
 values only (the ancestor chain, each ancestor's widget, part, variants, states, control size and the surface set
 it binds, which context
-selectors match; the bound colours; density, size classes, direction, language; the window's and screen's size), so a scope kept across a re-resolution is safe to use but stale; the connector rebuilds it (above).
+selectors match; the bound colours; density, size classes, direction, language; the window's and screen's size; the
+nearest container's resolved corners, the display's at the root), so a scope kept across a re-resolution is safe to use but stale; the connector rebuilds it (above).
 Tokens and roles are read in a scope too, for what no part carries (behaviour timings, the caret, text rendering, the
 pointer, the window's background).
 
@@ -1101,7 +1117,8 @@ impl ResolvedTheme {
 }
 pub struct Element<'a> {                                   // Element::new(part, scope, metrics) and setters
     pub part: PartRef,                                     // names the widget too (S1)
-    pub scope: &'a Scope,                                  // the parent's, or the root's
+    pub scope: &'a Scope,                                  // the scope returned by the query of the innermost
+                                                           // part that encloses it in the catalogue's nesting
     pub variants: &'a [VariantRef], pub size: Option<ControlSize>,      // None: the declared default size
     pub density: Option<Density>, pub direction: Option<Direction>,     // the element's own, if it states one,
     pub size_classes: Option<SizeClasses>,                              // passed to its subtree (R16)
@@ -1133,7 +1150,8 @@ The operands `element.window_width`, `window_height`, `screen_width` and `screen
 come from the root's inputs through the scope; the font metrics from `Element.metrics`; the others from
 `Element.data`.
 
-The query: answers `NotAvailable` for an undeclared size or variant, an unavailable widget, a missing required
+The query: ignores a content or breakpoint variant the widget does not declare (as an undeclared density); answers
+`NotAvailable` for an undeclared size or a variant the application asked for, an unavailable widget, a missing required
 variant, or a part the widget does not have, and `NotDrawn` for a part whose style resolved `Absent` (the children of
 a `NotDrawn` or `NotAvailable` element take the parent's scope); drops excluded flags by the exclusive groups (S10),
 and ignores a density the widget does not declare (R15); takes density, size classes, direction, language and
@@ -1207,7 +1225,6 @@ flavors = ["widgets", "kirigami"]            # first is the default
 materials = ["mica", "mica_alt", "acrylic"]
 color_roles = ["fill_tertiary", …]            # keyed roles
 text_styles = [ … ]
-shapes = [ … ]                                 # the platform's shape library (R25.5)
 elevation = ["<step>", …]                       # the platform's ramp's names
 surface_sets = ["window", "view", …]
 conditions = ["@graphic_effects_level", …]    # SystemSetting keys
@@ -1315,6 +1332,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
 | an `Option` that is `None` | `"none"`; an `Option` leaf is never missing (left out means `None`) |
+| an enum variant | a unit variant is its snake_case name (`"full"`); a variant with data is a one-key table, `{ <variant> = <payload> }`: `corners = { concentric = { minimum_px = <n> } }`, `shadow = { elevation = "<step>" }`, `timing = { spring = { mass = <n>, … } }` |
 | a part drawn by another widget | `drawn_as = { widget = "<w>", part = "<p>", variants = [ … ] }` (`part` left out: the whole widget) |
 | a condition | `"<name>"` in snake_case (`"window_inactive"`); with a parameter `"<name>:<value>"`: `"scheme:dark"`, `"tiled:left,top"`, `"input:touch"`, `"idiom:pad"`, `"flavor:kirigami"`, `"preset:adwaita"`, `"system_setting:<key>"`, `"container_size:sidebar:<key>"` |
 | a rule's target | `"colors"`, `"tokens"`, `"<widget>.<part>"`, `"<widget>.values"`, `"component.<key>.<part>"`, `"component.<key>.values"` |
@@ -1373,7 +1391,7 @@ rules for several presets' keyed names (R2.3).
 pub enum PlacementStrategy { GtkPopover, GtkTooltip, QtMenu, QtTooltip, QtQuickTooltip, KToolTipWidget,
                              QtQuickMenu, QtComboBox, QtDialog, QtCompletionBox, QtWhatsThis,
                              KTextEditorCompletion, KirigamiTextActions,
-                             WinUiFlyout(WinUiPlacement), WinUiToolTip, WinUiComboBox, WinUiAutoSuggest,
+                             WinUiFlyout, WinUiFlyoutFull, WinUiToolTip, WinUiComboBox, WinUiAutoSuggest,
                              WinUiTeachingTip,
                              AppKitMenu, AppKitPopover, AppKitToolTip, AppKitExpansionTip, AppKitComboList,
                              AppKitSheet, AppKitWindowCenter,
@@ -1453,8 +1471,8 @@ pub fn render_system_control(control: SystemControl, states: StateFlags, size: C
 
 What each image covers: `AppKitCheckbox`, `AppKitRadio`, the box and mark; `AppKitDisclosure`, the triangle;
 `AppKitPushDisclosure`, the bezel and chevron; `AppKitPopUp`, the whole button at `width`, its arrow area being the
-cell's `indicatorRect` (`ControlImage.arrow`). The rendering uses the system's accent,
-which the connector records as the accent the theme has (R11).
+cell's `indicatorRect` (`ControlImage.arrow`). The rendering uses the system's accent; an accent the
+application or a palette sets cannot reach it, which the connector's contract records as its limit (R11, R23).
 
 On macOS's main thread it renders; anywhere else, and off macOS, it returns `None`, so connectors need no `cfg` of
 their own. Cached per (control, states, size, appearance, key, scale, width). **Open, the maintainer's decision:**
@@ -1694,6 +1712,7 @@ lines that cite it.
 | ADD-A88 | `TextScaling` (R25.15) | S4.4, S9.4 |
 | ADD-A97 | `PartPatch::DrawnAs`, `Styled::DrawnAs`, `RuleBody`, `Keyframe.part`/`timing`, `Glyph.draw_start`, `FontMetrics::line_spacing` | S6.1, S8, S2.7, S2.9 |
 | ADD-A98 | `SharedFlag::DropCopy`/`DropMove`, `FontMetrics::max_char_width`, `DrawnAs.part`, the concentric container | S7.2, S8, S6.1, S2.4 |
+| ADD-A99 | `ShapeKind` in code, `GlyphSource::Path.view_box`, `TextStyle.scaling_role`, closed connector inputs, the concentric helpers, `WinUiFlyoutFull` | S2.4, S2.9, S2.8, S1, S13 |
 | ADD-A96 | `Comparison`, `Measured`, `OverlayBottomCenter`, two-edge fade, touchpad velocity samples, `Theme::system`, decoration patterns | S7.3, S13, S2.8, S4.2, S16 |
 | ADD-A95 | `Radius::FollowPart`, `Breakpoint`, `sizes_by_variant`, touchpad inertia, `Theme::set_contrast`, `WindowState` | S2.4, S7.3, S10, S4.2, S16, S8 |
 | ADD-A89 | `FadeUnder` | S2.8 |

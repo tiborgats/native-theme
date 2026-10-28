@@ -949,7 +949,7 @@ toolkit's.
 
 The specification maps every row of the map, identified by its file and ID, to the fields, rules, roles or components
 that carry it, or to the decision that places it elsewhere: out of scope (R1.1–R1.4), another preset (R1.3), the newest
-release (R1.5), the readers' milestone (R18). The rows are the platform files' gap rows; withdrawn rows and the 42
+release (R1.5), a look the chosen reference does not draw (R1.6), the readers' milestone (R18). The rows are the platform files' gap rows; withdrawn rows and the 42
 pointer rows are excluded, and the cross-check and pass decision tables are decisions, not rows. A script checks that
 every row maps to at least one target. This proves the model carries everything the map found; what the map, a survey,
 did not find is caught by R4's gate, whose lists come from the platforms' own state models.
@@ -989,7 +989,7 @@ expressions may name, with the functions the platforms use over them (`pick(hash
 hash and list, cited). Also element data: a colour the application chose
 for the element that derived values follow (a badge's custom colour, Q2.26), the width of a character of the part's
 font as the toolkit measures it (GTK's `max-width-chars`, KMessageBox's widths in characters, GN-1.283†, K-P3-7†),
-and the display's corner radius (R25.11). A value may also follow another resolved field of the same part (Compose's
+and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
 declares it reads, so the query still cannot fail (R2.8); the connector supplies them and queries again when they
 change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4).
@@ -1038,7 +1038,7 @@ vertical, as iOS's do.
 `adwaita` preset carries GtkSourceView's Adwaita and Adwaita-dark schemes, which GNOME Text Editor sets, and
 `classic`, GtkSourceView's default for an application that sets none (GN-SF01†), as a keyed variant. Drawing a display's corners is the system's
 (R1.1, out), but its radius is what a full-screen container's concentric corners follow (W-6, MAT-W5, X-CR-4): it is
-element data the connector supplies where the platform reports it (Android's `RoundedCorner`), and the preset's
+a root input the connector supplies where the platform reports it, the radius of the root's container (Android's `RoundedCorner`), and the preset's
 measured value per device model where it does not (iOS states none publicly; the radius differs between models
 of one idiom, W-6), absent for a model the preset does not list.
 
@@ -1094,7 +1094,6 @@ the catalogue required is R25.
 | independent 5 | 22 resolved, 3 partly, 1 not | 3 serious, 9 should fix, 5 minor | expressions evaluated where used; the sidebar size as a condition; named images or the whole-control rendering |
 | independent 6 | 11 resolved, 6 partly | 3 serious, 10 should fix, 9 minor | the theme-change transition; size classes the platform's; touch and direction; Material token sets |
 | independent 7 | 15 resolved, 7 partly | 2 serious, 11 should fix, 9 minor | consolidated into this text: the theme-change token's three kinds and its trigger; `material-3` as Material's current token set for both flavours; tablet mode against opened-by-touch; the speed factor's scope; text scaling before font-derived lengths; the element defined; tiling per edge; the whole-control rendering's needs; the ripple's values on the transition and its origin from the toolkit; Material contrast by one route; material crossfades and layer interpolation; KDE's accent inputs; glossary, index, and R2 split by concern |
-
 | independent 8 | 12 resolved, 4 mostly, 6 partly | 3 serious, 6 should fix, 16 minor | re-resolution on every reader value, and which changes are theme changes; inputs per scheme and contrast condition; transient touch input; transitions on value changes; group opacity; `material-3`'s platform and reference order; the AppKit rendering's cache and absence; springs at factor zero; Plasma's accent; the consolidation's losses restored |
 | specification's work, 2026-10-28 | — | the maintainer's palette decision; 12 mechanisms or facts from the catalogue and the source readings | R19 rewritten (own labelled mapping); R25 added; R1.2 gains libspelling; R2.6's KDE accent and Inactive bullets follow Plasma's `applyScheme()` |
 
