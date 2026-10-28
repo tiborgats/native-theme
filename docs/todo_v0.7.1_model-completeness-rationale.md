@@ -870,7 +870,8 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
 - is suspended while either contrast condition holds, unless its project states colours for it (R2.4);
 - is refused by the API under a scheme it lacks; an application that wants a dark-only palette in a light system sets
   the colour scheme itself (R2.3); when the system's scheme changes under it, the API reports that it no longer applies
-  and the theme is the preset with the reader's values;
+  and the theme is the preset with the reader's values, and the palette applies again when the scheme returns (it
+  stays chosen, so the application need not watch the scheme to re-apply it);
 - carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one);
 - on `windows-11`, `macos-*` and `ios-*`, whose accent-dependent colours follow derivations their makers do not
   publish (R2.6), states those derived inputs too, mapped to the project's colours in a per-preset section and
@@ -1050,6 +1051,13 @@ Three of them refine decisions above: a platform that computes a stored colour b
 fallbacks are one token, the platform's chain, not a field of every font (R10); and selected items take the `Selection`
 surface set's roles while selected text has its own roles, which a platform that does not distinguish them states as
 references to that set (R12).
+
+**R25.15 — Text scaling where no reader reads it (amends R10).** R10 has readers read each text style's size where the
+platform's scaling is not one factor (Dynamic Type, Android's non-linear scaling). Until Android's reader exists (R18),
+an application on `material-3` would have to state fifteen sizes itself. So the preset states its scaling function,
+Android 14's `FontScaleConverter` (MAT-X19), applied to the stand-in's factor; a reader that reads each style's size
+reports a factor of one, so nothing is scaled twice. The alternative, the application stating every size, moves a
+platform rule into every application.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
