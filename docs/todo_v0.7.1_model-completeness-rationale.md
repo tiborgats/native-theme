@@ -871,7 +871,12 @@ look, and its mapping is stated as native-theme's choice, never presented as a f
 - is refused by the API under a scheme it lacks; an application that wants a dark-only palette in a light system sets
   the colour scheme itself (R2.3); when the system's scheme changes under it, the API reports that it no longer applies
   and the theme is the preset with the reader's values;
-- carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one).
+- carries no icon set (today's `icon_set = "lucide"` goes, as no project's colours state one);
+- on `windows-11`, `macos-*` and `ios-*`, whose accent-dependent colours follow derivations their makers do not
+  publish (R2.6), states those derived inputs too, mapped to the project's colours in a per-preset section and
+  labelled as native-theme's picks like any other (the alternatives: leaving the platform's own accent in place under
+  the palette, which mixes two colour schemes, or refusing the palette on those presets, which drops it there);
+- skips a role or surface set the current preset does not have, so one file serves every preset.
 
 The facts gate checks a palette's colours against the project's published colours; its labelled picks are recorded as
 such and not compared with any platform.
