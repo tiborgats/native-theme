@@ -1792,16 +1792,19 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
 - [ ] [v0.7.x] **macOS.** (1) `platform-facts.md:1622` says the 12–15 pop-up button casts
       no shadow, and `:1644` the same of the selected segment; the gap map (MAC-X01,
       MAC-SG02) finds both, and the cells were likely read from the non-key render, which
-      cannot show them; settle them on the macOS 14 key-window render. (2) `:1236`, no
+      cannot show them; settle them on the macOS 14 key-window render (the review of
+      2026-10-28 found the pop-up's alpha fading below its bezel like the push button's,
+      which `platform-facts.md` calls a soft shadow). (2) `:1236`, no
       checkbox shadow on 12–15, was never measured on a 12–15 render. (3) The reader does
       not read `NSColor.shadowColor` for `defaults.shadow_color`
       (`native-theme/src/macos.rs:157` at caeddd6b), and the sidebar's width is readable
-      at run time (MAC-SB09†).
+      at run time (MAC-SB09†). (4) `:1568` gives the 12–15 dialog icon 64 px with no
+      source (MAC-IC04†).
 - [ ] [v0.7.x] **Windows.** (1) The reader never sets `scrollbar.overlay_mode`, which
-      `platform-facts.md:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2) The
-      layout cells `:1503-1506` say "(none)" while Learn publishes Fluent's spacing (W1-146).
-      (3) WinUI's TextBox template has no read-only and no invalid state
-      (`TextBox_themeresources.xaml:255-291`): settles W1-033.
+      `platform-facts.md:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2)
+      WinUI's TextBox template has no read-only and no invalid state
+      (`TextBox_themeresources.xaml:255-291`): settles W1-033. The layout cells
+      (`:1503-1506`) are the first Windows entry's (2).
 - [ ] [v0.7.x] **GNOME, more "(none)" cells libadwaita states.** `platform-facts.md:1600`
       spinner `min_diameter` (16), `:1601` spinner `stroke_width` (radius ÷ 8, AdwSpinner),
       `:1639` segmented `separator_width` (1 px, `_misc.scss:20-23`), `:1641` segmented
@@ -1813,11 +1816,18 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       scrollbar component" (MAT-SC3†). Its `Text` also styles the links of rich text,
       `colorScheme.primary` and an underline (`Text.kt:673-695`), where
       `platform-facts.md` §2.28 states no Material link value.
-- [ ] [v0.7.x] **ios-13 states values for things iOS does not draw**: hover colours,
+- [ ] [v0.7.x] **KDE's dialog icon.** `kde-breeze.toml` `[light.dialog] icon_size_px` and
+      `[dark.dialog] icon_size_px` are 32 and `platform-facts.md` §2.22 says "(none) —
+      per-dialog", but on Plasma Breeze's base class is KStyle, whose
+      `PM_MessageBoxIconSize` is `KIconLoader::SizeHuge`, 64 (KDE/frameworkintegration
+      v6.31.0 `src/kstyle/kstyle.cpp:449-451`; gap map K1.224†).
+- [ ] [v0.7.x] **ios-13 states values for things iOS does not draw**: the tooltip's
+      (`UIToolTipInteraction`: "Tooltips appear when your app runs in macOS or visionOS";
+      gap map TT-1 to TT-3†, withdrawn), hover colours,
       `tab.active_background` (13–18 mark the selected tab by colour and symbol only; to
       confirm on a render), `dialog.icon_size_px` (alerts draw no icon) and
-      `scrollbar.groove_width_px` (the indicator has no groove); the 17 lines are in the
-      iOS gap map's *Cross-check*, table C. Its 62 other unsourced values each point to a
+      `scrollbar.groove_width_px` (the indicator has no groove); the 18 lines are in the
+      iOS gap map's *Cross-check*, table C. Its 61 other unsourced values each point to a
       row there, values to measure.
 
 ---

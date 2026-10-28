@@ -85,14 +85,14 @@ It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 ## v0.7.1 — Model completeness: what native-theme does not carry
 
 native-theme is to carry everything a platform draws visibly. It does not yet:
-the model has a shadow colour and a per-widget `shadow_enabled`, but no
-shadow's offset, blur, spread or layers, so every connector keeps its
-toolkit's own shadow shape; and the connectors record about forty more
-properties "the model states no" value for (the hover of a checked
-checkbox, a pressed segment, a dragged slider thumb, the menu bar's fill, a
-circular progress indicator's diameter, motion, among others). A value no
-platform document states is measured on the platform, never left to a
-toolkit's default.
+the gap map lists, in 2,292 rows, what the six platforms draw that the model
+cannot express. Among it: layered shadows (the model has a shadow colour and a
+per-widget `shadow_enabled`, so every connector keeps its toolkit's own
+shadow shape), translucent materials, motion, states and their combinations,
+widget variants and sizes, per-corner shapes, colours stated over what lies
+behind them, the window's chrome, and over a hundred kinds of controls the
+model has no section for. A value no platform document states is measured on
+the platform, never left to a toolkit's default.
 
 v0.7.1 is three documents, for the model only (the connectors follow once
 the model changes):
