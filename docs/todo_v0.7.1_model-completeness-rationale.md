@@ -382,8 +382,9 @@ colours.
 **R2.7 — Declarations.** A preset declares, per widget, its variants, sizes and densities (per flavour where
 they differ, and per container where the platform draws a size only in some, such as a large button outside a
 navigation bar), its widget-specific state flags and exclusive state groups with their precedence (R3), its
-keyed components and their parts (R14), its keyed colour roles, text styles and elevation entries, its
-flavours, and its inputs (R2.6). Resolution checks every rule and reference against the declarations: a typo
+keyed components' availability, sizes, variants, flags and value types (their parts and fields come from the
+catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and elevation entries, its
+flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
 is an error, not a silent miss. A query for a size or variant the element's widget does not declare in its
 context returns "not available", a result the application handles, not a failure; a density the widget does
 not declare is ignored (R15).
@@ -391,7 +392,8 @@ not declare is ignored (R15).
 **R2.8 — Validation and infallible queries.** The project forbids runtime panics, and a query runs inside a
 connector's draw call. Resolution checks every rule's derivations against every base and rule they can apply
 over, and every expression against every binding it can meet: types, references, cycles, and operands that
-could be absent. A preset or layer that fails is an error at resolution; a query cannot fail.
+could be absent. A preset or layer that fails is an error when it is added, and it is refused (R2.5); so resolution
+and the query cannot fail.
 
 ### R3 — State flags
 
@@ -465,13 +467,17 @@ fill and stroke tiers.
 
 **Decision:** the third (principle 4).
 
-**Groups.** The window being inactive holds for a whole window, so an inactive group is a colour-role rule
-under the inactive condition; being disabled is per element, so each surface set also holds disabled roles,
-which parts' {disabled} rules refer to. On KDE both are derived by KDE's colour effects (R5.4) with the
-scheme's effect parameters, as `KColorScheme` does: the inactive group by the inactive effects over the
-inactive input roles (R2.6), the disabled roles by the disabled effects over the active values, in an
-inactive window as in an active one. A role's **active value** is its value from the bases of every layer,
-before any rule; a derivation can name it.
+**Groups.** The window being inactive holds for a whole window, so an inactive group is a colour-role rule under the
+inactive condition; being disabled is per element, so each surface set also holds disabled roles, which parts'
+{disabled} rules refer to. On KDE both are derived by KDE's colour effects (R5.4) with the scheme's effect parameters,
+as `KColorScheme` does: the inactive group by the inactive effects over the inactive input roles (R2.6), the disabled
+roles by the disabled effects over the active values, in an inactive window as in an active one. The Selection set is
+the exception, as KColorScheme starts two of its groups from Window's colours (`kcolorscheme.cpp:304-319`,
+`:374-378`): its disabled roles are the disabled effects over Window's active values, and its inactive roles, while
+the scheme's `ChangeSelectionColor` holds (left unset, it follows `[ColorEffects:Inactive] Enable`, read there with a
+default of true, `:307`), the inactive effects over Window's inactive input roles, the backgrounds tinted toward
+Selection's background; the effects apply over these starting colours as over any group's (`:380-391`). A role's
+**active value** is its value from the bases of every layer, before any rule; a derivation can name it.
 
 **Schemes and contrast.** The colour roles have a base per colour scheme (light, dark), because exactly one
 scheme always holds and the two differ in most roles; every other condition is optional and combines with
@@ -519,7 +525,8 @@ font size, the line height or a token, and products of tokens (Kirigami's grid u
 characters, a multiple of the font's character width, which the connector supplies, R25.3, GN-1.283†; a duration times the speed factor, and Kirigami's `longDuration` times it, Q3.24;
 R9). A platform whose arithmetic differs gets its own function; a function is
 added only when a platform's rule needs it. Composition over the value beneath is a paint layer appended over
-`base` (R6), not a colour function. Evaluation follows dependencies; a cycle is an error at resolution.
+`base` (R6), not a colour function. Evaluation follows dependencies; a cycle is an error when its layer is added
+(R2.8).
 
 **R5.5 — Representation (C28).** macOS and iOS define system colours beyond sRGB (Display P3; MAC-X10, D-17);
 `Rgba` and the macOS reader's conversion to sRGB clip them. HDR appears only in the colour well's content
@@ -899,7 +906,7 @@ Today a `soft_option` `None` has four meanings and ~91 inheritance rules fill un
 - *automatic,* where the platform sizes by content (stated, so a toolkit sizes by content because the platform does);
 - *absent:* the platform does not draw the thing; it resolves to none and a connector draws nothing. A field may be
   absent only where the model marks it so;
-- *missing:* none of these, an error at resolution.
+- *missing:* none of these, an error when the layer that leaves it so is added (R2.8).
 
 "Draw another value instead" becomes stated values (where a platform draws a checked button with its pressed fill, its
 {checked} rule states that fill); "no published number" is not a kind: it is measured.
@@ -916,7 +923,23 @@ connector must map in full do not get it, and `IconRole` loses it: state flags, 
 blend modes, timing kinds, glyph sources, placement strategies, transition kinds, theme-change kinds. A new variant then
 breaks the connectors' builds, which before 1.0 is the check that they map it, rather than a wildcard arm that hides it.
 Enums with keyed counterparts are typed sets whose keyed side carries what is platform-specific (material identities are
-keyed per platform, R6), so they need no wildcard either.
+keyed per platform, R6), so they need no wildcard either. Structs their caller fills in full (a window's conditions, the
+root's inputs, a sibling, a placement's input, which a connector fills; the reader's state, which a reader or a
+stand-in application fills) are exhaustive for the same reason as the enums: a field added later must reach every
+caller's build, and a default would hide it.
+
+**Custom looks.** Today an application can load a whole theme of its own (`Theme::from_toml`, `Theme::from_file`).
+
+- *Keep loading a whole non-bundled preset,* validated like a bundled one. For: a company's own look in one file.
+  Against: a look outside the bundled presets has no facts, so the gate (R4) cannot check it, and it must state every
+  value the model carries (shadows, motion, materials, every state), which its author never defined: how today's
+  community presets came to invent values (R19).
+- *Custom looks as application layers over a bundled preset* (an application layer from TOML). For: one mechanism
+  (R2.4); the preset supplies what the custom look leaves alone, and the gate still checks that preset. Against: a
+  look that differs everywhere restates much in its layer.
+
+**Decision:** the second, before 1.0 the simpler and the one that keeps the gate meaningful; `Theme::from_toml` and
+`Theme::from_file` go.
 
 - *Release in stages.* Against: the rules touch every widget at once, each stage would break the connectors again, and
   a release with some capabilities filled shows mixed looks.
@@ -1004,9 +1027,11 @@ pattern cannot state is a finding for the rationale.
 
 **R25.5 — Shapes beyond corners (extends R7).** Material Expressive draws polygon shapes (its shape library: cookie,
 clover, …) and morphs between them (MAT-N24, MAT-X12), which corners cannot express.
-**Decision:** a part's shape is its corners or a keyed shape from the platform's shape library, defined to the
-platform's source (`androidx.graphics.shapes` and Material's shape definitions, cited), and a shape change is a
-transition of kind morph; a loop's keyframes may name shapes.
+**Decision:** a part's shape is its corners or a typed shape from the platform's shape library, implemented once in
+native-theme to the platform's source (`androidx.graphics.shapes` and Material's `MaterialShapes.kt`, cited at a pinned
+commit), as placement strategies and platform curves are code (R16, R9): native-theme computes the outlines and the
+morphs between them, which needs a closed set, and a keyed shape would name an outline no code draws. A shape change
+is a transition of kind morph; a loop's keyframes may name shapes.
 
 **R25.6 — Presentation transitions (extends R9).** Several transitions may run on one event together (a sheet's fade
 with its slide, Q2.40), one may target a single part (a clear button's fade), a slide states its distance, and
@@ -1054,6 +1079,16 @@ fallbacks are one token, the platform's chain, not a field of every font (R10); 
 surface set's roles while selected text has its own roles, which a platform that does not distinguish them states as
 references to that set (R12). One refines R2.4: the application's accent is a setting applied after its layers and a palette,
 derived again on every change of the stack, so the accent shown never depends on the order of the calls.
+
+Amended in place after the specification's eighth check:
+
+- R5.1: the Selection set's disabled and inactive groups start from Window's colours, as `kcolorscheme.cpp:304-319`
+  does, and the effects apply over them.
+- R2.8, R5.4, R20: a missing value or a cycle is an error when its layer is added, which is refused, not an error at
+  resolution.
+- R21: structs their caller fills in full are exhaustive, as the enums are.
+- R21: custom looks are application layers over a bundled preset; loading a whole non-bundled preset goes.
+- R25.5: a shape is typed and implemented in code, not keyed.
 
 **R25.15 — Text scaling where no reader reads it (amends R10).** R10 has readers read each text style's size where the
 platform's scaling is not one factor (Dynamic Type, Android's non-linear scaling). Until the iOS and Android readers
