@@ -143,7 +143,9 @@ ref      := "role." set "." role        typed colour role of a surface set      
                                           screen_height, window_width, window_height, move_distance,
                                           and char_width (the average), max_char_width (the
                                           widest glyph), font_x_height, font_height (the
-                                          part's font, through `Element.metrics`)      (R25.3)
+                                          part's own font, through `Element.metrics`; a
+                                          part without text measures another part's font as
+                                          `widget.<part>.char_width`, …)              (R25.3)
           | "part." field                 another resolved field of the same part      (R25.3)
           | "widget." part "." field      a resolved field of another part of the same widget (a band
                                           following the frame's shadow, GN-1.282†; a label following its
@@ -880,7 +882,9 @@ counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`;
 `animation`, `status_colors`; `Glyph.stroke`, `draw_extent`, `axes`; `TextStyle.decoration`,
 `mnemonic_decoration`, `letter_spacing`, `word_spacing`; `Decoration.by_word`; `Elision::Fade`'s `start` and `end`;
 an `Edge`'s `width` and `paint` (an edge not drawn); `Font.width`; every `TextRendering` field; `Stroke.outset`;
-`Edge.dash`; `PartStyle.shape`, `touch_target`, `margin`; `Caret.secondary`, `shown_in_read_only`,
+`Edge.dash`; `PartStyle.shape`, `touch_target`, `margin`, and a part's drawing fields `fill`, `stroke`,
+`shadow`, `text`, `icon`, `glyph`, `focus`, `cursor` (a part that paints nothing at rest, a flat button's fill, states
+`"absent"`; leaving a listed field out is still missing, S2.2); `Caret.secondary`, `shown_in_read_only`,
 `solid_while_typing`; every `Behavior`, `TouchBehavior`, `ScrollPhysics` and `PointerTokens` field; every
 `KdeTokens` field; `MaterialScheme.contrast_level`; `IconTokens.theme_fallback`; a spring's `Transition.duration`, `PresentationStep.duration` and `Loop.period`
 (checked: `Absent` only where the timing, followed through references, is a `Spring`); `Concentric.minimum`;
