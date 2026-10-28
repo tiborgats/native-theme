@@ -8,22 +8,19 @@ the pointer rows the map does not count are not listed; the cross-check and pass
 not rows.
 
 **Targets** use the widget catalogue's names
-([`todo_v0.7.1_model-completeness-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md), after its
-rename table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.name` (a widget value),
+([`todo_v0.7.1_model-completeness-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md), after its rename
+table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.name` (a widget value),
 `component.<key>.<part>` (a keyed component), `role.<set>.<role>`, `role.global.<role>`, `role.@<key>` (S3),
 `token.<path>` (S4), `input.<name>` with kind `input` (an S9 input, not the `input` widget), `reader:<platform>:<what
-is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type
-(`PartStyle.…`, `FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`:
-`{a,b}` states that hold together, `!{a}` states absent, `variant v` (`@v` keyed, `!variant v` negated),
-`cond c` (a condition, S7.1; `flavor:kirigami`, `system_setting:<key>`; `!cond c` negated), `context w.part` or
-`context any w` (an ancestor), `not_context w.part`, `pos first` / `pos last` / `pos only` / `pos parity odd` and
-`prev w{…}` / `next w{…}` (siblings), `size s`, `h_size_class c` / `v_size_class c`, `dir rtl`; ` / ` separates
-alternatives, each a rule of its own. A name with no unit suffix and the same name with `_px` or `_ms` are one field
-(S1 spells the suffix). `ADD-Ann`, `ADD-Bnn` and `CONTRA-n` cite the additions to the core and the contradictions with the
-rationale, each decided in the core's additions register (S22).
+is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type (`PartStyle.…`,
+`FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`, in the catalogue's selector
+notation (its *Selector notation* table): the element's own variants and states come before the first `context`, a
+context's `variant`/`{…}` belong to that ancestor, and ` / ` separates alternatives. A name with no unit suffix and
+the same name with `_px` or `_ms` are one field (S1 spells the suffix). `ADD-Ann`, `ADD-Bnn` and `CONTRA-n` cite the
+additions to the core and the contradictions with the rationale, each decided in the core's additions register (S22).
 
 **Kinds** (S20): `field`, `rule`, `role`, `token`, `component`, `input`, `reader` (a new read), `placement`,
-`system-control`, `condition`, `flag`; the verdicts `out (R1.1)` … `out (R1.4)`, `preset (R1.3)`, `newest (R1.5)`,
+`system-control`, `condition`, `flag`; the verdicts `out (R1.1)` … `out (R1.4)`, `preset (R1.3)`, `newest (R1.5)`, `reference (R1.6)`,
 `readers (R18)` with target `-`.
 
 | Row | Target | Kind |
@@ -149,14 +146,15 @@ rationale, each decided in the core's additions register (S22).
 | MAC-C05 | `checkbox.box.fill @ cond scheme:dark (Linear gradient)` | rule |
 | MAC-C05 | `checkbox.box.stroke (gradient paint), checkbox.box.shadow (inset bevel layer)` | field |
 | MAC-C06 | `checkbox.mark.glyph = SystemControl(AppKitCheckbox)` | system-control |
-| MAC-C06 | `checkbox.mark.glyph.{source,size,stroke_width} (path, extent and inset; measured)` | field |
+| MAC-C06 | `checkbox.mark.glyph.{source,size,stroke_width} (path and extent; measured)` | field |
+| MAC-C06 | `checkbox.mark.padding` (the mark's inset inside the box; measured) | field |
 | MAC-C07 | `radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}` | rule |
 | MAC-C07 | `radio.ring.*, radio.dot.* @ cond window_inactive` | rule |
 | MAC-C07 | `radio.dot.glyph = SystemControl(AppKitRadio)` | system-control |
 | MAC-MN01 | `menu.item.corners` | field |
 | MAC-MN01 | `menu.body.padding (highlight inset)` | field |
 | MAC-MN02 | `menu.body.padding (top, bottom)` | field |
-| MAC-MN03 | `menu.separator.{fill,min_height,padding} (the line's colour and width; its insets and the row's height)` | field |
+| MAC-MN03 | `menu.separator.{stroke,padding,min_height} (the line's colour and width as its stroke; its insets as padding; the row's height as min_height)` | field |
 | MAC-MN04 | `menu.accelerator.text` | field |
 | MAC-MN04 | `menu.accelerator.text.fill @ {hover} / {disabled}` | rule |
 | MAC-MN04 | `menu.values.{accelerator_gap_px,accelerator_alignment}` | field |
@@ -176,7 +174,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-MN13 | `menu.item @ variant palette` | rule |
 | MAC-MN13 | `menu.item.stroke @ variant palette {checked} (selection ring)` | rule |
 | MAC-MN14 | `menu.body.{stroke,shadow,fill}` | field |
-| MAC-MN15 | `menu.values.placement @ context combo_box (AppKitMenu, over_selected_item)` | placement |
+| MAC-MN15 | `combo_box.values.popup_placement (AppKitMenu, over_selected_item)` | placement |
 | MAC-MN15 | `menu.item_label.text @ context combo_box.body[size mini] / context combo_box.body[size small] / context combo_box.body[size large]` (the pop-up button's control size, `ContextMatch.sizes`, ADD-A84) | rule |
 | MAC-MN16 | `menu.body.min_width` | field |
 | MAC-MN17† | `menu.item_label.text.fill @ variant destructive` | rule |
@@ -249,24 +247,24 @@ rationale, each decided in the core's additions register (S22).
 | MAC-SB08 | `list.disclosure, list.values.indent_per_level @ variant sidebar` | rule |
 | MAC-SB08 | `reader:macos:NSOutlineView.indentationPerLevel` | reader |
 | MAC-SB09† | `sidebar.values.width_px; sidebar.pane.min_width, sidebar.pane.max_width` | field |
-| MAC-SB09† | `sidebar.values.display_mode_breakpoints (the collapse rule)` | field |
+| MAC-SB09† | `sidebar.values.breakpoints (the collapse rule)` | field |
 | MAC-SB09† | `sidebar.values.presentations event @collapse` | field |
 | MAC-SB09† | `reader:macos:NSSplitViewItem minimumThickness, maximumThickness` | reader |
 | MAC-TL01 | `toolbar.bar.min_height, toolbar.bar.padding @ variant @unified / @unified_compact / @expanded / @preference` | rule |
 | MAC-TL01 | `reader:macos:contentLayoutRect per toolbar style` | reader |
-| MAC-TL02 | `button.body.fill @ context toolbar.bar variant tool / variant tool {hover} / variant tool {pressed} / variant tool {disabled}` | rule |
-| MAC-TL02 | `button.icon.icon.fill, button.label.text @ context toolbar.bar variant tool / variant tool {hover} / variant tool {pressed} / variant tool {disabled}` | rule |
-| MAC-TL02 | `button.values.icon_text_gap, button.values.label_position (ButtonLabelPosition; the icon-and-label display mode) @ context toolbar.bar variant tool` | rule |
+| MAC-TL02 | `button.body.fill @ variant tool context toolbar.bar / {hover} variant tool context toolbar.bar / {pressed} variant tool context toolbar.bar / {disabled} variant tool context toolbar.bar` | rule |
+| MAC-TL02 | `button.icon.icon.fill, button.label.text @ variant tool context toolbar.bar / {hover} variant tool context toolbar.bar / {pressed} variant tool context toolbar.bar / {disabled} variant tool context toolbar.bar` | rule |
+| MAC-TL02 | `button.values.icon_text_gap, button.values.label_position (ButtonLabelPosition; the icon-and-label display mode) @ variant tool context toolbar.bar` | rule |
 | MAC-TL03 | `toolbar.item_group.{fill,padding,min_height,corners} (material fill)` | field |
 | MAC-TL03 | `toolbar.values.group_gap` | field |
 | MAC-TL03 | `segmented_control.* @ context toolbar.bar (NSToolbarItemGroup's segmented look)` | rule |
-| MAC-TL04 | `button.body.fill @ context toolbar.bar variant primary (the accent tint)` | rule |
-| MAC-TL04 | `button.body.fill @ context toolbar.bar variant primary` as an expression on `element.color` (backgroundTintColor; `button.body` declares `color`; R25.3, ADD-B16) | rule |
+| MAC-TL04 | `button.body.fill @ variant primary context toolbar.bar (the accent tint)` | rule |
+| MAC-TL04 | `button.body.fill @ variant primary context toolbar.bar` as an expression on `element.color` (backgroundTintColor; `button.body` declares `color`; R25.3, ADD-B16) | rule |
 | MAC-TL05 | `badge.* @ context toolbar.bar` | rule |
 | MAC-TL06 | `button.body, button.icon @ variant overflow context toolbar.bar` | rule |
 | MAC-TL06 | `menu.* @ context button variant overflow` | rule |
-| MAC-TL06 | `toolbar.values.overflow_placement` | placement |
-| MAC-TL07 | `button.body, button.icon @ context toolbar.bar variant tool (the collapsed search item)` | rule |
+| MAC-TL06 | `button.values.menu_placement @ variant overflow context toolbar.bar` | placement |
+| MAC-TL07 | `button.body, button.icon @ variant tool context toolbar.bar (the collapsed search item)` | rule |
 | MAC-TL07 | `search_field.*, input.* @ context toolbar.bar (the expanded field)` | rule |
 | MAC-TL07 | `search_field.values.presentations event @expand` (the one home of the expand motion, not the toolbar's) | field |
 | MAC-TL08 | `toolbar.separator @ variant @tracking` | rule |
@@ -274,12 +272,12 @@ rationale, each decided in the core's additions register (S22).
 | MAC-TL09 | `toolbar.bar.fill @ !{scrolled} (transparent over content)` | rule |
 | MAC-TL09 | `scroll_view.edge_effect.fill @ {scrolled} (under the toolbar, MAC-X05)` | rule |
 | MAC-TL10† | `toolbar.values.fixed_space_width, flexible_space_min_width` | field |
-| MAC-TL11† | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ context toolbar.bar variant tool {selected}` | rule |
-| MAC-TL11† | `button.body.fill @ context toolbar.bar variant tool {selected} cond window_inactive` | rule |
+| MAC-TL11† | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ {selected} variant tool context toolbar.bar` | rule |
+| MAC-TL11† | `button.body.fill @ {selected} variant tool context toolbar.bar cond window_inactive` | rule |
 | MAC-ST01 | `status_bar.bar.min_height, status_bar.bar.fill, status_bar.bar.stroke.top` | field |
 | MAC-ST01 | `status_bar.bar @ cond window_inactive` | rule |
-| MAC-L01 | `list.values.row_background_inset, list.row_background.corners, list.header.padding @ variant @automatic / @full_width / inset / sidebar / plain` | rule |
-| MAC-L01 | `list.values.section_inset @ variant @automatic / @full_width / inset / sidebar / plain` | rule |
+| MAC-L01 | `list.values.row_background_inset, list.row_background.corners, list.header.padding @ variant @full_width / inset / sidebar / plain` (the automatic style is the base) | rule |
+| MAC-L01 | `list.values.section_inset @ variant @full_width / inset / sidebar / plain` (the automatic style is the base) | rule |
 | MAC-L01 | `reader:macos:headerRect(ofColumn:), rect(ofRow:) per style` | reader |
 | MAC-L02 | `list.row_background.corners, list.values.row_background_inset @ {selected}` | rule |
 | MAC-L02 | `list.row_background.corners @ {selected} prev list.row{selected} / {selected} next list.row{selected} (ADD-B07)` | rule |
@@ -290,7 +288,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-L05 | `list.sort_indicator.glyph (NamedSystemImage NSAscendingSortIndicator, NSDescendingSortIndicator)` | field |
 | MAC-L05 | `list.header_section.fill @ {pressed}` | rule |
 | MAC-L05 | `list.header_section.padding, list.values.header_text_alignment` | field |
-| MAC-L06 | `list.row_separator.stroke @ variant row_separators / @dashed_horizontal_grid (dash, ADD-A32)` | rule |
+| MAC-L06 | `list.row_separator.stroke @ context list.view variant row_separators / context list.view variant @dashed_horizontal_grid (dash, ADD-A32; the separator is an element, the variants the list's)` | rule |
 | MAC-L06 | `list.column_separator.stroke @ variant column_separators` | rule |
 | MAC-L07 | `list.values.intercell_gap` | field |
 | MAC-L07 | `reader:macos:NSTableView.intercellSpacing` | reader |
@@ -324,9 +322,9 @@ rationale, each decided in the core's additions register (S22).
 | MAC-PO03 | `popover.body.shadow` | field |
 | MAC-PO04 | `popover.* @ variant @detached` | rule |
 | MAC-PO05 | `popover.values.presentations` | field |
-| MAC-SP01 | `splitter.divider @ variant @thin / @thick / @pane_splitter` | rule |
+| MAC-SP01 | `splitter.divider @ variant @thin / variant wide / variants {wide,@pane_splitter}` | rule |
 | MAC-SP01 | `reader:macos:NSSplitView.dividerThickness per style` | reader |
-| MAC-SP02 | `splitter.grip @ variant @thick / @pane_splitter` | rule |
+| MAC-SP02 | `splitter.grip @ variant wide / variants {wide,@pane_splitter}` (the thick divider is the typed `wide`; the pane splitter adds only its difference) | rule |
 | MAC-SP03 | `splitter.divider @ {dragged}` | rule |
 | MAC-SP04 | `splitter.divider @ variant sidebar (fill and stroke absent)` | rule |
 | MAC-SW01 | `switch.thumb.min_width, switch.thumb.min_height, switch.thumb.corners (Full)` | field |
@@ -344,8 +342,8 @@ rationale, each decided in the core's additions register (S22).
 | MAC-D01 | `checkbox.* @ context dialog.body variant alert (suppression check box)` | rule |
 | MAC-D01 | `button.* @ variant help context dialog.body variant alert (the help button)` | rule |
 | MAC-D01 | `reader:macos:NSAlert.layout(), then the window's and subviews' frames -> dialog alert width and layout` | reader |
-| MAC-D02 | `dialog.icon_badge` | field |
-| MAC-D02 | `dialog.icon_badge @ variant error` | rule |
+| MAC-D02 | `dialog.icon_badge.{icon,padding}` | field |
+| MAC-D02 | `dialog.icon_badge.{icon,padding} @ variant error` | rule |
 | MAC-D03 | `dialog.body.{corners,fill,shadow} @ variant @sheet` | rule |
 | MAC-D03 | `dialog.scrim @ variant @sheet` | rule |
 | MAC-D03 | `dialog.values.window_margin @ variant @sheet (macos-tahoe's floating inset sheet)` | rule |
@@ -368,11 +366,11 @@ rationale, each decided in the core's additions register (S22).
 | MAC-CB04 | `combo_box.{body,arrow} @ {open}` | rule |
 | MAC-CB04 | `menu.body, menu.item.{min_height,fill} @ context combo_box variant editable (NSComboBox's list)` | rule |
 | MAC-CB04 | `menu.item.fill @ {selected} context combo_box variant editable (its highlight)` | rule |
-| MAC-CB04 | `menu.values.placement @ context combo_box variant editable (its max_visible_items: numberOfVisibleItems)` | placement |
+| MAC-CB04 | `combo_box.values.popup_placement @ variant editable (its max_visible_items: numberOfVisibleItems)` | placement |
 | MAC-CB04 | `scrollbar.* @ context combo_box variant editable` | rule |
 | MAC-CB05 | `combo_box.body.{fill,stroke,shadow} @ variant flat` | rule |
 | MAC-CB06 | `combo_box.body.fill @ cond window_inactive` | rule |
-| MAC-SG01 | `segmented_control.separator.fill` | field |
+| MAC-SG01 | `segmented_control.separator.stroke` | field |
 | MAC-SG01 | `segmented_control.separator.opacity @ prev segmented_control.segment{checked} / next segmented_control.segment{checked}` | rule |
 | MAC-SG02 | `segmented_control.indicator.shadow (macos-monterey)` | field |
 | MAC-SG03 | `segmented_control.label.text.font.weight, segmented_control.label.text.fill @ {checked}` | rule |
@@ -388,7 +386,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-SG07 | `segmented_control.menu_indicator.glyph @ variant menu` | rule |
 | MAC-SG08 | `segmented_control.segment.corners @ pos first / pos last / pos only (outer corners only)` | rule |
 | MAC-SG08 | `segmented_control.indicator.corners (Concentric)` | field |
-| MAC-SG09 | `segmented_control.values.presentations event Move (part indicator; macos-tahoe)` | field |
+| MAC-SG09 | `segmented_control.values.presentations event @indicator_move (part indicator; macos-tahoe)` | field |
 | MAC-SG10† | `segmented_control.icon.icon.size @ size mini / small / regular / large` | rule |
 | MAC-SG10† | `segmented_control.values.image_scaling` | field |
 | MAC-SG10† | `segmented_control.icon.icon.fill @ {checked} / {pressed} / {disabled}` | rule |
@@ -469,17 +467,17 @@ rationale, each decided in the core's additions register (S22).
 | MAC-TS02 | `token.text.keyed.small_system` | token |
 | MAC-LY01 | `layout.values.label_gap, layout.values.button_gap @ size mini / small / regular / large` | rule |
 | MAC-LY01 | `layout.values.window_margin (concentric with the window's corners)` | field |
-| MAC-IC01 | `token.icon_sizes.keyed.button` | token |
-| MAC-IC01 | `token.icon_sizes.keyed.list_row` | token |
-| MAC-IC01 | `token.icon_sizes.keyed.tab` | token |
-| MAC-IC01 | `token.icon_sizes.toolbar` | token |
-| MAC-IC01 | `token.icon_sizes.keyed.status_item` | token |
-| MAC-IC01 | `token.icon_sizes.keyed.sidebar` | token |
-| MAC-IC01 | `token.icon_sizes.keyed.sidebar @ cond container_size(sidebar, small) / container_size(sidebar, medium) / container_size(sidebar, large)` | rule |
-| MAC-IC01 | `button.icon.icon.size @ context toolbar.bar variant tool size small (NSToolbar sizeMode .small)` | rule |
-| MAC-IC02 | `token.icon_sizes.keyed.*.weight` | token |
-| MAC-IC02 | `token.icon_sizes.keyed.*.scale` | token |
-| MAC-IC02 | `token.icon_sizes.keyed.*.rendering_mode` | token |
+| MAC-IC01 | `token.icons.sizes.keyed.button` | token |
+| MAC-IC01 | `token.icons.sizes.keyed.list_row` | token |
+| MAC-IC01 | `token.icons.sizes.keyed.tab` | token |
+| MAC-IC01 | `token.icons.sizes.toolbar` | token |
+| MAC-IC01 | `token.icons.sizes.keyed.status_item` | token |
+| MAC-IC01 | `token.icons.sizes.keyed.sidebar` | token |
+| MAC-IC01 | `token.icons.sizes.keyed.sidebar @ cond container_size(sidebar, small) / container_size(sidebar, medium) / container_size(sidebar, large)` | rule |
+| MAC-IC01 | `button.icon.icon.size @ variant tool size small context toolbar.bar (NSToolbar sizeMode .small)` | rule |
+| MAC-IC02 | `token.icons.sizes.keyed.*.weight` | token |
+| MAC-IC02 | `token.icons.sizes.keyed.*.scale` | token |
+| MAC-IC02 | `token.icons.sizes.keyed.*.rendering_mode` | token |
 | MAC-IC03 | - | out (R1.1) |
 | MAC-DF05† | `reader:macos:NSColor.textColor` | reader |
 | MAC-DF05† | `reader:macos:NSColor.textBackgroundColor` | reader |
@@ -517,14 +515,14 @@ rationale, each decided in the core's additions register (S22).
 | MAC-TS03† | `token.text.keyed.caption_2_loose` | token |
 | MAC-LY02† | `layout.values.form_label_alignment, layout.values.form_baseline_alignment @ variant form` | rule |
 | MAC-LY02† | `layout.values.label_gap @ variant form size mini / small / regular / large` | rule |
-| MAC-IC04† | `token.icon_sizes.dialog` | token |
+| MAC-IC04† | `token.icons.sizes.dialog` | token |
 | MAC-IC04† | `reader:macos:NSAlert icon view frame after layout()` | reader |
 | MAC-IC05† | `<part>.transitions (PropertyGroup::Icon, TransitionKind::Keyed: bounce, replace, appear, disappear, draw_on, draw_off; ADD-A27, R25.12)` | field |
 | MAC-IC05† | `IconStyle.animation (Loop: pulse, variable color, breathe, rotate, wiggle while a state holds; R25.12)` | field |
 | MAC-IC05† | `PartStyle.icon.symbol_variants @ {selected} / {checked} (the fill or outline variant a control picks per state, R25.8)` | rule |
 | MAC-N01 | `stepper.increment.fill, stepper.decrement.fill @ {pressed} / {disabled}` | rule |
 | MAC-N01 | `stepper.increment_glyph.glyph, stepper.decrement_glyph.glyph` | field |
-| MAC-N01 | `stepper.separator.{fill,min_width,min_height}` | field |
+| MAC-N01 | `stepper.separator.stroke` | field |
 | MAC-N01 | `stepper.body.fill (macos-tahoe's translucent body)` | field |
 | MAC-N01 | `stepper.body, stepper.increment, stepper.decrement @ size mini / small / regular` | rule |
 | MAC-N01 | `stepper.values.field_gap, stepper.values.repeat_delay_ms, stepper.values.repeat_interval_ms` | field |
@@ -537,15 +535,15 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N02 | `search_field.values.placeholder_alignment @ {focus_within}` | rule |
 | MAC-N02 | `input.* @ context any search_field size mini / small / regular / large` | rule |
 | MAC-N02 | `reader:macos:searchButtonBounds, cancelButtonBounds, searchTextBounds of a new NSSearchField` | reader |
-| MAC-N03 | `chip.body.fill @ context component.token_field` | rule |
-| MAC-N03 | `chip.body.stroke @ context component.token_field` | rule |
-| MAC-N03 | `chip.body.corners @ context component.token_field` | rule |
-| MAC-N03 | `chip.label.text @ context component.token_field` | rule |
-| MAC-N03 | `chip.body.fill @ {selected} context component.token_field` | rule |
-| MAC-N03 | `chip.body.* @ variant @default / @rounded / @squared / @plain_squared` | rule |
+| MAC-N03 | `chip.body.fill @ context any input` (the tokens: `chip` elements in a flow `layout` in the field, the structure Windows' token field has) | rule |
+| MAC-N03 | `chip.body.stroke @ context any input` | rule |
+| MAC-N03 | `chip.body.corners @ context any input` | rule |
+| MAC-N03 | `chip.label.text @ context any input` | rule |
+| MAC-N03 | `chip.body.fill @ {selected} context any input` | rule |
+| MAC-N03 | `chip.body.* @ variant @rounded / @squared / @plain_squared` (the default style is the base) | rule |
 | MAC-N03 | `chip.menu_arrow.glyph` | field |
-| MAC-N03 | `component.token_field.values.chip_gap` | component |
-| MAC-N03 | `input.* @ context component.token_field` | rule |
+| MAC-N03 | `layout.values.item_gap_px @ variant flow context any input` (the token spacing) | rule |
+| MAC-N03 | `input.{body,text,caret}.*` (the token field's frame, text and caret are the `input`'s) | rule |
 | MAC-N04 | `date_picker.segment.{fill,text} @ {selected} context date_picker.field variant text_field / {selected} context date_picker.field variant @text_field_and_stepper` | rule |
 | MAC-N04 | `stepper.* @ context date_picker variant @text_field_and_stepper` | rule |
 | MAC-N04 | `calendar.header, calendar.title.text @ context any date_picker variant inline (the month header)` | rule |
@@ -557,7 +555,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N04 | `calendar.* @ context date_picker.popup (the calendar overlay, presentsCalendarOverlay)` | rule |
 | MAC-N04 | `date_picker.popup.{fill,corners,shadow,padding} @ variant text_field` | rule |
 | MAC-N04 | `date_picker.values.placement (AppKitPopover, to verify; the calendar overlay)` | placement |
-| MAC-N05 | `color_button.body.{fill,stroke,corners}, color_button.swatch.{corners,stroke,min_width,min_height} @ variant @default / @minimal / @expanded` | rule |
+| MAC-N05 | `color_button.body.{fill,stroke,corners}, color_button.swatch.{corners,stroke,min_width,min_height} @ variant @minimal / @expanded` (the default style is the base) | rule |
 | MAC-N05 | `color_button.swatch_ring.stroke @ {@active}` | rule |
 | MAC-N05 | `color_button.chevron.glyph @ variant @minimal` | rule |
 | MAC-N05 | `color_button.expand_button.{fill,glyph} @ variant @expanded` | rule |
@@ -592,7 +590,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N10 | `button.body.fill, button.icon.glyph.fill @ variant help {pressed}` | rule |
 | MAC-N11 | `badge.body, badge.label @ variant count / circular / @inline` | rule |
 | MAC-N11 | `badge.body, badge.label @ context list.row (SwiftUI's .badge())` | rule |
-| MAC-N12 | `group_box.body @ variant @photo / @gray_bezel / @groove / @button` | rule |
+| MAC-N12 | `image.body.{fill,stroke,corners,shadow,padding} @ variant @photo / @gray_bezel / @groove / @button` | rule |
 | MAC-N13 | `list.row_background.fill @ variant grid {selected} context list.view {focus_within}` | rule |
 | MAC-N13 | `list.row_background.fill @ variant grid {selected} context list.view !{focus_within}` | rule |
 | MAC-N13 | `list.row_background.corners @ variant grid` | rule |
@@ -604,7 +602,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N15 | `dial.groove, dial.knob_dot, dial.tick @ variant @circular_slider` | rule |
 | MAC-N16 | `window.title_bar.min_height, window.caption_button_glyph.{min_width,min_height}, window.title.text @ variant utility` | rule |
 | MAC-N16 | `reader:macos:a utility panel's title-bar height (frame against content rect)` | reader |
-| MAC-N17 | `ruler.tick, ruler.label.text, ruler.marker` | field |
+| MAC-N17 | `ruler.tick.stroke, ruler.label.text, ruler.marker.glyph` | field |
 | MAC-N18 | `find_bar.bar.{fill,padding}` | field |
 | MAC-N18 | `find_bar.values.bar_position` | field |
 | MAC-N18 | `input.* @ context find_bar` | rule |
@@ -622,21 +620,21 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N20 | `menu_bar.status_item.icon.size, menu_bar.values.status_item_gap` | field |
 | MAC-N20 | `menu_bar.item_label.text, menu_bar.app_name.text, menu_bar.bar.min_height @ cond container_size(menu_bar, large)` | rule |
 | MAC-N20 | `reader:macos:NSStatusBar.system.thickness, NSMenu.menuBarHeight, menuBarFontOfSize:` | reader |
-| MAC-N21 | `form.card.{fill,corners,padding}, form.row_separator.{fill,min_height,padding}, form.row.min_height, form.group_title.text, form.group_description.text` | field |
-| MAC-N22 | `level_indicator.* @ variant linear / circular` | rule |
+| MAC-N21 | `form.card.{fill,corners,padding}, form.row_separator.{stroke,padding}, form.row.min_height, form.group_title.text, form.group_description.text` | field |
+| MAC-N22 | `level_indicator.* @ variant circular` (the linear gauge is the base) | rule |
 | MAC-N23 | `bottom_tab_bar.* @ variant @sidebar_adaptable` | rule |
 | MAC-N24 | `pull_to_refresh.indicator` | field |
 | MAC-N24 | `spinner.* @ context pull_to_refresh` | rule |
 | MAC-N25 | - | out (R1.1) |
 | MAC-N26 | - | out (R1.1) |
 | MAC-N27† | - | out (R1.1) |
-| MAC-N28† | `split_button.primary.{fill,stroke,corners}, split_button.secondary.{fill,stroke,corners}, split_button.divider.fill, split_button.arrow.glyph` | field |
+| MAC-N28† | `split_button.primary.{fill,stroke,corners}, split_button.secondary.{fill,stroke,corners}, split_button.divider.stroke, split_button.arrow.glyph` | field |
 | MAC-N28† | `split_button.primary.fill, split_button.secondary.fill @ {pressed}` | rule |
 | MAC-N28† | `split_button.secondary.fill, split_button.arrow.glyph @ {open}` | rule |
 | MAC-N28† | `split_button.* @ size mini / small / regular / large` | rule |
 | MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
-| MAC-N29† | `button.* @ context toolbar.bar variant menu (NSMenuToolbarItem)` | rule |
+| MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |
 | MAC-N30† | `media_controls.bar.{fill,corners,shadow} @ variant @inline / @floating / @minimal` | rule |
 | MAC-N30† | `button.* @ variant play / volume / full_screen / frame_step context media_controls.bar` | rule |
 | MAC-N30† | `button.* @ context media_controls.bar (the sharing button)` | rule |
@@ -645,7 +643,8 @@ rationale, each decided in the core's additions register (S22).
 | MAC-N30† | `media_controls.values.auto_hide_ms` | field |
 | MAC-N31† | `rubber_band.body.fill, rubber_band.body.stroke, rubber_band.body.corners` | field |
 | MAC-N32† | `about_dialog.icon.icon.size, about_dialog.name.text, about_dialog.version.text, about_dialog.credits.text, about_dialog.copyright.text` | field |
-| MAC-N32† | `about_dialog.values.gap, about_dialog.values.width` | field |
+| MAC-N32† | `about_dialog.{icon,name,version,credits,copyright}.margin` (the gaps between the icon, name, version, credits and copyright, each part's own; read from the subview frames) | field |
+| MAC-N32† | `about_dialog.values.width` | field |
 | MAC-N33† | `search_field.*, input.* @ context menu.body (the Help menu's search field)` | rule |
 | MAC-N33† | `menu.item, menu.item_label.text (its results, help topics among them)` | field |
 | MAC-N33† | `menu.found_item_pointer.{glyph,fill,transitions}` | field |
@@ -679,8 +678,8 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X03 | `PaintLayer.blend BlendMode::Keyed (vibrant blending)` | field |
 | MAC-X03 | `role.* under the vibrant appearances (reader)` | role |
 | MAC-X03 | `reader:macos:NSColor resolved under NSAppearance vibrantLight and vibrantDark` | reader |
-| MAC-X04 | `PartStyle.fill Material identity glass, variants regular and clear (tint, lensing in the identity)` | field |
-| MAC-X04 | `glass_container.surface.{fill,corners} @ variant regular / clear` | rule |
+| MAC-X04 | `PartStyle.fill Material identity glass, the regular glass (the base) and the variant clear (tint, lensing in the identity)` | field |
+| MAC-X04 | `glass_container.surface.{fill,corners} @ variant clear` (the regular glass is the base) | rule |
 | MAC-X04 | `PartStyle.shadow inset layer (the specular rim)` | field |
 | MAC-X04 | `Material.params interactive (ADD-A47)` | field |
 | MAC-X04 | `glass_container.surface.{transform,transitions} @ {pressed} (the interactive response; morphing)` | rule |
@@ -705,8 +704,8 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
 | MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` | field |
-| MAC-X11 | `switch.values.presentations event Move (part thumb); switch.track.transitions (the cross-fade)` | field |
-| MAC-X11 | `segmented_control.values.presentations event Move (part indicator)` | field |
+| MAC-X11 | `switch.values.presentations event @thumb_move (part thumb); switch.track.transitions (the cross-fade)` | field |
+| MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
 | MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, @insert, @delete` | field |
 | MAC-X11 | `FocusIndicator.transition (the ring's appearance)` | field |
@@ -820,7 +819,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X25 | `PartStyle.transitions and presentation transitions @ cond reduced_motion (reduced forms)` | rule |
 | MAC-X25 | `cond reduced_motion` | condition |
 | MAC-X26 | `cond button_shapes` | condition |
-| MAC-X26 | `button.body.{fill,stroke} @ context toolbar.bar variant tool cond button_shapes` | rule |
+| MAC-X26 | `button.body.{fill,stroke} @ variant tool context toolbar.bar cond button_shapes` | rule |
 | MAC-X26 | `reader:macos:the Text size setting (14+; no public API, to verify) -> text_scaling_factor (S9.4; the operand text_scale, ADD-A55)` | reader |
 | MAC-X26 | `token.pointer.size (ADD-A46)` | token |
 | MAC-X26 | - (Invert colours, which the OS applies) | out (R1.1) |
@@ -855,7 +854,7 @@ rationale, each decided in the core's additions register (S22).
 | MAC-X34† | `PartStyle rules @ dir rtl (per part)` | rule |
 | MAC-X34† | `window.values.caption_button_layout @ dir rtl (the traffic lights)` | rule |
 | MAC-X34† | `list.disclosure.transform @ dir rtl` | rule |
-| MAC-X34† | `token.icon_mirroring (S2.9)` | token |
+| MAC-X34† | `token.icons.mirroring (S2.9)` | token |
 | MAC-X35† | - | newest (R1.5) |
 | MAC-X36† | `form.*, level_indicator.*, bottom_tab_bar.*, status_page.*, teaching_tip.*, chart.* (SwiftUI's own controls, MAC-N21–N23, MAC-N35†–N37†)` | field |
 | MAC-X36† | - (Mac Catalyst's iPad and Mac idioms) | out (R1.4) |
@@ -904,22 +903,22 @@ rationale, each decided in the core's additions register (S22).
 | MAC-P3-7† | `autocomplete.body @ context input` | rule |
 | MAC-P3-7† | `menu.body, menu.item, menu.item_label.text, menu.section_header.text @ context autocomplete` | rule |
 | MAC-P3-7† | `menu.item.fill @ {selected} context autocomplete (the highlight)` | rule |
-| MAC-P3-7† | `menu.values.placement @ context autocomplete (AppKitMenu; its width an AnchorWidth)` | placement |
+| MAC-P3-7† | `autocomplete.values.placement (AppKitMenu; its width an AnchorWidth)` | placement |
 | MAC-P3-8† | `input.writing_tools_affordance` | field |
-| MAC-P3-9† | `route_button.body.{fill,stroke}` | field |
-| MAC-P3-9† | `route_button.glyph.glyph.fill` | field |
-| MAC-P3-9† | `route_button.glyph.glyph.fill @ {pressed} / {disabled}` | rule |
-| MAC-P3-9† | `route_button.glyph.glyph.fill @ {route_active}` | rule |
-| MAC-P3-9† | `route_button flags route_active` | flag |
-| MAC-P3-9† | `route_button.glyph.glyph` | field |
-| MAC-P3-9† | `route_button.values.bordered` | field |
-| MAC-P3-9† | `reader:macos:AVRoutePickerView.routePickerButtonColor(for:) per state -> route_button.glyph.glyph.fill` | reader |
+| MAC-P3-9† | `button.body.{fill,stroke} @ variant route` (the output-route button, `button`'s typed `route`) | rule |
+| MAC-P3-9† | `button.icon.glyph.fill @ variant route` (`routePickerButtonColor(for:)` tints the glyph) | rule |
+| MAC-P3-9† | `button.icon.glyph.fill @ {pressed} / {disabled} variant route` | rule |
+| MAC-P3-9† | `button.icon.glyph.fill @ {route_active} variant route` | rule |
+| MAC-P3-9† | `button flags route_active` | flag |
+| MAC-P3-9† | `button.icon.glyph @ variant route` (AVKit's system image) | rule |
+| MAC-P3-9† | `button.body.stroke @ variants {route,@bordered}` (`isRoutePickerButtonBordered`) | rule |
+| MAC-P3-9† | `reader:macos:AVRoutePickerView.routePickerButtonColor(for:) per state -> button.icon.glyph.fill @ variant route` | reader |
 | MAC-P3-9† | - (the device popover; the Picture in Picture window) | out (R1.1) |
 | MAC-P3-10† | `navigation_view.values.presentations (PresentationKind::Keyed, ADD-A26) @ variant @stack_history / @stack_book / @horizontal_strip` | rule |
 | MAC-P3-10† | `navigation_view.edge_shadow @ variant @stack_history / @stack_book (the shadow under the top page, to verify)` | rule |
 | MAC-P3-10† | `navigation_view.values.presentations @ cond reduced_motion` | rule |
 | MAC-P3-11† | `input.caret.fill, text_area.caret.fill @ cond window_inactive / !{focused} (caret visibility, ADD-A24)` | rule |
-| MAC-P3-11† | `token.caret.hides_while_selecting` | token |
+| MAC-P3-11† | `input.caret (absent = true), text_area.caret (absent = true) @ {text_selected}` (the caret hidden while text is selected, ADD-A24) | rule |
 | MAC-P3-11† | `input.caret, text_area.caret @ {drop_target} (the drop caret during a text drag)` | rule |
 | MAC-P3-12† | `token.behavior.hide_pointer_while_typing` | token |
 | MAC-P3-13† | - | out (R1.1) |
@@ -937,10 +936,10 @@ rationale, each decided in the core's additions register (S22).
 | MAC-P4-5† | `window.values.tab_bar_overflow` | field |
 | MAC-P4-5† | `tab.tab, tab.label.text.elision @ context window.title_bar (narrowed and truncated)` | rule |
 | MAC-P4-6† | `token.behavior.double_click_distance` | token |
-| MAC-P4-7† | `token.icon_mirroring (S2.9)` | token |
+| MAC-P4-7† | `token.icons.mirroring (S2.9)` | token |
 | MAC-P4-7† | `icon lookup by Element.direction and Element.language (S2.9, S8; ADD-B05)` | field |
-| MAC-P4-8† | `menu.values.placement @ context combo_box variant pull_down (AppKitMenu: the offset, width and edge)` | placement |
-| MAC-P4-8† | `menu.values.placement @ context combo_box variant editable (AppKitComboList: placement and width)` | placement |
+| MAC-P4-8† | `combo_box.values.popup_placement @ variant pull_down (AppKitMenu: the offset, width and edge)` | placement |
+| MAC-P4-8† | `combo_box.values.popup_placement @ variant editable (AppKitComboList: placement and width)` | placement |
 | MAC-P4-9† | `token.theme_change (accent and highlight colour change)` | token |
 | MAC-P4-10† | `menu.values.submenu_switch (SafeTriangle)` | field |
 | MAC-P4-10† | `menu.values.submenu_close_delay_ms` | field |

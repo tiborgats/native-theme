@@ -187,6 +187,7 @@ colour expression stated on a `Value<Paint>` field, or in `append`, is one `Colo
 | `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)`, `kte_mark_underlay(hue_from, background, foreground)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp`: the marks' HSV recolouring, and their underlay in HSL (one colour's hue and saturation at the background's lightness moved toward the foreground, K-P3-12†) (ADD-A57, ADD-A90) |
 | `sf_tracking(font_size, design)` | length | Apple's size-to-tracking tables for SF Pro, SF Pro Rounded, New York (ADD-A54) |
 | `uikit_prominence(c, prominence)` | colour | `UIColor.withProminence(_:)` (X-CO-5) |
+| `gtk_contrast_pick(c, on_light, on_dark)` | colour | `on_light` where GTK finds `c` light, else `on_dark`, to `gtkcolorswatch.c`'s lightness test (GN-2.27) |
 | `shadow_extent(shadow, side)` | length | how far a shadow reaches beyond the box on that side, over its layers, to GTK's `gtk_css_shadow_value_get_extents` (GN-1.282†) |
 | `gtk_wheel_step(page_size)` | length | GTK's scroll step from the page size, to `gtkrange.c` / `gtkscrolledwindow.c` (GN-P3-15†) |
 | `uifm_scaled(x, text_role)` | length | `UIFontMetrics.scaledValue(for:)` (ADD-A55) |
@@ -427,7 +428,9 @@ pub enum GlyphSource {
     NamedSystemImage { name: String },                   // a name the platform states for that purpose
     SystemControl { control: SystemControl, replaces: Vec<PartRef> },   // the system's rendering (S15)
 }
-pub enum Mirroring { Never, Always, ExceptLanguages(Vec<LanguageTag>) }
+pub enum Mirroring { Never, Always, ExceptLanguages(Vec<LanguageTag>),
+                     SwapWith(IconRole) }   // under right-to-left the role takes another role's icon
+                                            // (KStandardAction's Back/Forward, Prior/Next, K-P4-12†)
 ```
 
 Mirroring per icon role is `token.icons.mirroring`, stated per preset (R11; Material
@@ -490,7 +493,8 @@ in the catalogue is its root part; the root part's bindings apply to all the wid
 (R5.2), and the other parts' bindings to themselves and their descendants. Every part of a widget is queried with the
 widget's element (its states, siblings and scope, S8); the query applies the root part's resolved bindings before
 it evaluates any other part. A part marked *(element)* in the catalogue (a caption button, a tab) is an element of
-its own, queried in the root part's scope with its own states, and its sub-parts are queried with it. A block-typed field set to a reference
+its own, queried in the scope of the element that contains it (the root part's, or an enclosing *(element)* part's:
+a caption button inside the caption-button group) with its own states, and its sub-parts are queried with it. A block-typed field set to a reference
 holds the referenced token (S2.2). `CursorShape` gains
 `Crosshair` and `WhatsThis` (ADD-A59). Every widget's "when focus becomes visible" value is a
 `focus_visible_when: Value<FocusVisibleWhen>`, whose base each preset states, usually as
@@ -887,7 +891,8 @@ pub enum StateFlag { Hover, Pressed, Focused, FocusWithin, FocusVisible, Disable
                      Shared(SharedFlag), Widget(Key) }
 pub enum SharedFlag { Empty, InFill, Today, OtherMonth, Current, Multiline, Filled, Half, Preview, Placeholder,
                       Pulling, Refreshing, PlacedAbove, PlacedBelow, RouteActive, Editing, Swiped, ContextMenuOpen,
-                      Sorted, Descending, Overwrite, Composing, Minimized }
+                      Sorted, Descending, Overwrite, Composing, Minimized,
+                      TextSelected }   // a text widget holding a selection (the caret hides, GN-3.73†)
                       // flags two or more platforms draw on a typed widget (ADD-A15); the catalogue's
                       // *Shared flags* table names the widgets that declare each
 ```
@@ -1409,7 +1414,8 @@ Kinds: `field`, `rule`, `role`, `token`, `component`, `input`, `reader` (a new r
 `condition`, `flag`, and the verdicts, whose target is `-` (or `- (note)` naming the part of the row a verdict
 covers when the row's other parts are carried; `readers (R18)` may instead name the read the later reader makes): `out (R1.1)` (the system draws it), `out (R1.2)` (a
 library failing R1.2's test), `out (R1.4)` (a Mac Catalyst-only row; a SwiftUI-only control is in, R1.4), `preset (R1.3)` (another toolkit's preset),
-`newest (R1.5)` (an older generation's look), `readers (R18)` (the iOS and Android readers' milestone).
+`newest (R1.5)` (an older generation's look), `reference (R1.6)` (a look the preset's chosen reference does not
+draw: material-web where Compose is Material's reference), `readers (R18)` (the iOS and Android readers' milestone).
 
 ## S21. Release and compatibility (R21)
 
@@ -1517,6 +1523,9 @@ lines that cite it.
 | ADD-A89 | `FadeUnder` | S2.8 |
 | ADD-A90 | `uikit_prominence`, `gtk_wheel_step`, `shadow_extent`, `kte_mark_underlay` | S2.2 |
 | ADD-A91 | `ScrollPhysics.touchpad_factor` | S4.2 |
+| ADD-A92 | `SharedFlag::TextSelected` | S7.2 |
+| ADD-A93 | `Mirroring::SwapWith` | S2.9 |
+| ADD-A94 | `gtk_contrast_pick` | S2.2 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

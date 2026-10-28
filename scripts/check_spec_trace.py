@@ -55,7 +55,7 @@ KINDS = {
     "system-control", "condition", "flag",
 }
 VERDICTS = {
-    "out (R1.1)", "out (R1.2)", "out (R1.4)", "preset (R1.3)", "newest (R1.5)", "readers (R18)",
+    "out (R1.1)", "out (R1.2)", "out (R1.4)", "preset (R1.3)", "newest (R1.5)", "reference (R1.6)", "readers (R18)",
 }
 
 

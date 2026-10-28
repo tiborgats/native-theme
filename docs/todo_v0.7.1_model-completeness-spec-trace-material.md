@@ -8,22 +8,19 @@ the pointer rows the map does not count are not listed; the cross-check and pass
 not rows.
 
 **Targets** use the widget catalogue's names
-([`todo_v0.7.1_model-completeness-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md), after its
-rename table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.name` (a widget value),
+([`todo_v0.7.1_model-completeness-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md), after its rename
+table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.name` (a widget value),
 `component.<key>.<part>` (a keyed component), `role.<set>.<role>`, `role.global.<role>`, `role.@<key>` (S3),
 `token.<path>` (S4), `input.<name>` with kind `input` (an S9 input, not the `input` widget), `reader:<platform>:<what
-is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type
-(`PartStyle.…`, `FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`:
-`{a,b}` states that hold together, `!{a}` states absent, `variant v` or `variants {v,w}` (`@v` keyed, `!variant v`
-negated), `cond c` (a condition, S7.1; `flavor:expressive`, `input:touch`; `!cond c` negated), `context w.part` or
-`context any w` (an ancestor), `not_context w.part`, `pos first` / `pos last` / `pos only` / `pos parity odd` and
-`prev w{…}` / `next w{…}` (siblings), `size s`, `density d`, `h_size_class c` / `v_size_class c`, `dir rtl`; ` / `
-separates alternatives, each a rule of its own. A name with no unit suffix and the same name with `_px` or `_ms` are
-one field (S1 spells the suffix). `ADD-Ann`, `ADD-Bnn` and `CONTRA-n` cite the additions to the core and the
-contradictions with the rationale, each decided in the core's additions register (S22).
+is read>` (S9.3), a placement strategy, a system control (S15), a cond or flag, or a core type (`PartStyle.…`,
+`FocusIndicator.…`) where the row concerns every part. The selector of a rule follows `@`, in the catalogue's selector
+notation (its *Selector notation* table): the element's own variants and states come before the first `context`, a
+context's `variant`/`{…}` belong to that ancestor, and ` / ` separates alternatives. A name with no unit suffix and
+the same name with `_px` or `_ms` are one field (S1 spells the suffix). `ADD-Ann`, `ADD-Bnn` and `CONTRA-n` cite the
+additions to the core and the contradictions with the rationale, each decided in the core's additions register (S22).
 
 **Kinds** (S20): `field`, `rule`, `role`, `token`, `component`, `input`, `reader` (a new read), `placement`,
-`system-control`, `condition`, `flag`; the verdicts `out (R1.1)` … `out (R1.4)`, `preset (R1.3)`, `newest (R1.5)`,
+`system-control`, `condition`, `flag`; the verdicts `out (R1.1)` … `out (R1.4)`, `preset (R1.3)`, `newest (R1.5)`, `reference (R1.6)`,
 `readers (R18)` with target `-`.
 
 | Row | Target | Kind |
@@ -87,7 +84,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-I11 | `input.body.fill.append (state layer) @ {hover} variant @filled` | rule |
 | MAT-I11 | `input.body.stroke (bottom edge: the active indicator) @ variant @filled; @ {hover} / {focused} / {invalid} / {disabled}, each variant @filled` | rule |
 | MAT-I11 | `input.body.fill @ {disabled} variant @filled` | rule |
-| MAT-I12 | `token.caret.{width,blink_on_ms,blink_off_ms}` | token |
+| MAT-I12 | `token.caret.{width,blink_on,blink_off}` | token |
 | MAT-I12 | - | readers (R18) |
 | MAT-I13 | `input.selection_handle.{glyph,fill,min_width,min_height}` | field |
 | MAT-I14 | `input.floating_label.transitions (Transform, Text); input.placeholder.transitions (Opacity)` | field |
@@ -148,7 +145,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-T4 | `tooltip.values.placement (MaterialTooltip with its params.gap)` | placement |
 | MAT-T4 | `tooltip.arrow.{min_width,min_height,glyph}` | field |
 | MAT-T5 | `tooltip.body.min_height` | field |
-| MAT-T6 | `tooltip.values.{show_on_press,show_delay_ms} @ cond input:touch (show_delay_ms = token.behavior.long_press_ms)` | rule |
+| MAT-T6 | `tooltip.values.{show_on_press,show_delay_ms} @ cond input:touch (show_delay_ms = token.behavior.long_press)` | rule |
 | MAT-T6 | - | readers (R18) |
 | MAT-T7 | `tooltip.label.text.{letter_spacing,line_height}` | field |
 | MAT-SC1 | `scrollbar.values.auto_hide_delay; scrollbar.values.presentations (event Disappear: Fade)` | field |
@@ -169,7 +166,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-S5 | `slider.tick.corners` | field |
 | MAT-S6 | `slider.value_indicator.{fill,min_height,corners,text}` | field |
 | MAT-S6 | `slider.values.value_indicator_gap` | field |
-| MAT-S6 | `slider.values.presentations (events Appear, Disappear; part value_indicator)` | field |
+| MAT-S6 | `slider.values.presentations (events @value_indicator_show, @value_indicator_hide; part value_indicator)` | field |
 | MAT-S6 | `slider.values.presentations @ cond reduced_motion` | rule |
 | MAT-S7 | `slider.halo.{fill,min_width,min_height} @ {hover} / {focused} / {pressed}` | rule |
 | MAT-S8 | `slider.thumb.fill @ {focused} / {pressed}` | rule |
@@ -204,8 +201,8 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-TB4 | `tab.tab.min_height @ variant with_icon` | rule |
 | MAT-TB4 | `tab.values.icon_text_gap` | field |
 | MAT-TB5 | `tab.bar.stroke (the bottom edge: colour and width)` | field |
-| MAT-TB6 | `tab.values.presentations (event Move, part indicator: the slide between tabs)` | field |
-| MAT-TB6 | `tab.values.presentations (event Move, part indicator) @ cond reduced_motion` | rule |
+| MAT-TB6 | `tab.values.presentations (event @indicator_move, part indicator: the slide between tabs)` | field |
+| MAT-TB6 | `tab.values.presentations (event @indicator_move, part indicator) @ cond reduced_motion` | rule |
 | MAT-TB7 | `tab.bar.padding (start) @ variant @scrollable` | rule |
 | MAT-TB8 | `tab.label.text.{letter_spacing,line_height}` | field |
 | MAT-SB1 | `list.row_background.corners @ {selected} variant sidebar (Radius::Full)` | rule |
@@ -222,7 +219,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-SB7 | `sidebar.pane.corners @ dir rtl` | rule |
 | MAT-SB7 | `sidebar.pane.corners @ variant bottom_sheet` | rule |
 | MAT-SB8 | `list.row.text.font.weight @ {selected} variant sidebar` | rule |
-| MAT-SB9 | `sidebar.values.presentations (events @open, @close: steps on pane, Slide, and scrim, Fade, each with its duration, timing and delay; event @scrim_fade; ADD-B09)` | field |
+| MAT-SB9 | `sidebar.values.presentations (events Appear, Disappear: steps on pane, Slide, and scrim, Fade, each with its duration, timing and delay; event @scrim_fade; ADD-B09)` | field |
 | MAT-SB9 | `sidebar.pane.transitions (Geometry: the width change)` | field |
 | MAT-TA1 | `toolbar.bar.fill, toolbar.bar.shadow (elevation) @ {scrolled}` | rule |
 | MAT-TA1 | `toolbar.bar.transitions (Fill, Shadow)` | field |
@@ -235,8 +232,8 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-TA6 | `search_field.bar.fill @ context toolbar.bar {scrolled}` | rule |
 | MAT-TA7 | `toolbar.title.text.{letter_spacing,line_height}` | field |
 | MAT-TA8† | `button.icon.icon, button.body.{min_width,min_height} @ variant overflow context toolbar.bar / variant overflow context toolbar.bar variant vertical` | rule |
-| MAT-TA8† | `menu.* @ context button variant overflow; toolbar.values.overflow_placement` | rule |
-| MAT-L1 | `list.row.min_height @ variant @two_line / variant @three_line` | rule |
+| MAT-TA8† | `menu.* @ context button variant overflow; button.values.menu_placement @ variant overflow context toolbar.bar` | rule |
+| MAT-L1 | `list.row.min_height @ variant with_subtitle / variant @three_line` | rule |
 | MAT-L1 | `list.secondary_text.text, list.overline_text.text, list.trailing_text.text` | field |
 | MAT-L2 | `list.leading_icon.{icon,corners,min_width,min_height} @ variant @avatar / variant @image / variant @video` | rule |
 | MAT-L2 | `avatar.body.{fill,min_width,min_height,corners}, avatar.initials.text @ context list.row (the leading avatar and its label)` | rule |
@@ -383,7 +380,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-SW5 | `switch.track.fill, switch.track.stroke @ {focus_visible} / {pressed} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW6 | `switch.thumb.fill @ {disabled,checked} / {disabled} !{checked} (colour and opacity, the opacity as the paint's alpha: the thumb lists no opacity)` | rule |
 | MAT-SW7 | `switch.thumb.shadow = Shadow::Elevation(<key>) (its layers' colour the shadow colour)` | field |
-| MAT-SW8 | `switch.values.presentations (event Move, part thumb; timing = token.motion.timings.<key>, a cubic Bézier that overshoots)` | field |
+| MAT-SW8 | `switch.values.presentations (event @thumb_move, part thumb; timing = token.motion.timings.<key>, a cubic Bézier that overshoots)` | field |
 | MAT-SW8 | `switch.thumb.transitions (Geometry, Fill); switch.track.transitions (Fill, Stroke); switch.thumb_icon.transitions` | field |
 | MAT-SW9 | `switch.track.focus.offset` | field |
 | MAT-DG1 | `dialog.{header,message,action_area}.padding` | field |
@@ -437,7 +434,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-N1 | `button.body.focus @ {focus_visible} variant @fab; button.body.transitions (Shadow) @ variant @fab` | rule |
 | MAT-N2 | `button.label.text, button.values.icon_text_gap, button.body.{padding,min_height,corners} @ variant @extended_fab size small / variant @extended_fab size regular / variant @extended_fab size large` | rule |
 | MAT-N2 | `button.body.shadow @ variants {@extended_fab,@lowered}; button.body.fill, button.label.text.fill, button.icon.icon.fill @ variants {@extended_fab,primary} / variants {@extended_fab,@secondary} / variants {@extended_fab,@tertiary} / variants {@extended_fab,@surface}` | rule |
-| MAT-N3 | `component.fab_menu.item.{fill,corners,padding,shadow,min_height}, component.fab_menu.item_label.text, component.fab_menu.item_icon.icon, component.fab_menu.values.item_gap, component.fab_menu.values.presentations (events @open, @close: Morph); component.fab_menu.{item.fill,item_label.text,item_icon.icon} @ variant @primary / variant @secondary / variant @tertiary` (the colour styles) | component |
+| MAT-N3 | `component.fab_menu.item.{fill,corners,padding,shadow,min_height}, component.fab_menu.item_label.text, component.fab_menu.item_icon.icon, component.fab_menu.values.item_gap, component.fab_menu.values.presentations (events Appear, Disappear: Morph); component.fab_menu.{item.fill,item_label.text,item_icon.icon} @ variant @primary / variant @secondary / variant @tertiary` (the colour styles) | component |
 | MAT-N3 | `button.body.{min_width,min_height,corners,shadow}, button.icon.icon @ variant close context component.fab_menu (the close button)` | rule |
 | MAT-N4 | `button.body.{fill,stroke,focus}, button.icon.icon.{size,fill} @ variants {icon_only,primary} / variants {icon_only,tinted} / variants {icon_only,@outlined} / variant icon_only` | rule |
 | MAT-N4 | `button.body.fill.append (state layer), button.icon.icon.fill, button.body.stroke @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant icon_only (the disabled opacities as the paints' alpha)` | rule |
@@ -464,7 +461,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-N12 | `bottom_tab_bar.item.fill.append (state layer), bottom_tab_bar.item_icon.icon.fill, bottom_tab_bar.item_label.text.fill @ !{selected} / {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}` | rule |
 | MAT-N12 | `bottom_tab_bar.item.padding, bottom_tab_bar.indicator.{min_width,min_height} @ variant stacked / variant inline, each cond flavor:expressive` | rule |
 | MAT-N12 | `badge.* @ context bottom_tab_bar.item` | rule |
-| MAT-N12 | `bottom_tab_bar.values.presentations (event Move, part indicator)` | field |
+| MAT-N12 | `bottom_tab_bar.values.presentations (event @indicator_move, part indicator)` | field |
 | MAT-N13 | `sidebar.pane.{fill,corners,shadow,min_width} @ variant compact` | rule |
 | MAT-N13 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ {selected} variant sidebar context sidebar.pane variant compact / {selected} variants {sidebar,icon_only} context sidebar.pane variant compact` (the no-label form, the content variant `icon_only` on the row) | rule |
 | MAT-N13 | `list.leading_icon.icon.fill, list.row.text.fill @ {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}, each variant sidebar context sidebar.pane variant compact` | rule |
@@ -478,7 +475,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-N14 | `input.{text.text,placeholder.text} @ context any search_field; input.icon.icon @ variant leading context any search_field` | rule |
 | MAT-N14 | `button.icon.icon @ variant icon_only context search_field (the trailing icons); avatar.body.{min_width,min_height} @ context search_field` | rule |
 | MAT-N14 | `search_field.bar.{fill,corners,padding}, search_field.body.padding @ variant @contained cond flavor:expressive; search_field.values.presentations (event @view_open, Timing::Spring) @ variant @contained` | rule |
-| MAT-N15 | `search_field.view.{fill,shadow,corners}, search_field.view_header.min_height, search_field.view_divider.fill @ variant @docked / variant @full_screen` | rule |
+| MAT-N15 | `search_field.view.{fill,shadow,corners}, search_field.view_header.min_height, search_field.view_divider.stroke @ variant @docked / variant @full_screen` | rule |
 | MAT-N15 | `input.{text.text,placeholder.text} @ context search_field.view; search_field.supporting_text.text` | rule |
 | MAT-N15 | `list.row_background.corners, list.values.row_gap @ context search_field.view variant @contained (the contained bar's results)` | rule |
 | MAT-N15 | `search_field.values.presentations (events @view_open, @view_close)` | field |
@@ -493,14 +490,14 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-N17 | `time_picker.dial_label.text.fill @ {selected}` (the label under the selector, an element) | rule |
 | MAT-N17 | `time_picker.{selector_cell,period_selector}.{fill,stroke,corners,min_width,min_height,text} @ {selected} / {hover} / {pressed} / {focus_visible} / {selected,hover} / {selected,pressed} / {selected,focus_visible}, each variant @dial` (the period selector also under `variant @input`; the input's hour and minute fields are `input` elements, below) | rule |
 | MAT-N17 | `time_picker.headline.text, time_picker.time_separator.text` | field |
-| MAT-N17 | `input.{body.stroke,floating_label.text,supporting_text.text} @ context time_picker.field[@input]` (the time input fields, their outline, label and supporting text: `input` elements, Nested controls) | rule |
+| MAT-N17 | `input.{body.stroke,floating_label.text,supporting_text.text} @ context time_picker.body[@input]` (the time input fields, their outline, label and supporting text: `input` elements, Nested controls) | rule |
 | MAT-N18 | `carousel.item.{fill,corners,shadow,stroke}; carousel.values.item_gap` | field |
 | MAT-N18 | `carousel.item.fill.append (state layer) @ {hover} / {pressed} / {focus_visible}` | rule |
 | MAT-N18 | `carousel.item.{min_width,max_width,corners} = expressions over element.scroll_progress (the masked shape changing with the scroll, ADD-B13)` | field |
 | MAT-N19 | `sheet.body.{fill,corners,shadow}, sheet.body.fill.append (surface tint) @ variants {bottom,@standard} / variants {bottom,@modal} / {minimized} variants {bottom,@standard}` | rule |
 | MAT-N19 | `sheet.handle.{fill,min_width,min_height,opacity}; sheet.handle.focus @ {focus_visible}` | rule |
 | MAT-N19 | `sheet.values.presentations (events Appear, Disappear, @settle: the drag and settle motion)` | field |
-| MAT-N20 | `sheet.body.{fill,corners,shadow,max_width}, sheet.title.text, sheet.divider.{fill,min_width} @ variants {@side,@standard} / variants {@side,@modal} / variants {@side,@detached}` | rule |
+| MAT-N20 | `sheet.body.{fill,corners,shadow,max_width}, sheet.title.text, sheet.divider.stroke @ variants {@side,@standard} / variants {@side,@modal} / variants {@side,@detached}` | rule |
 | MAT-N20 | `button.label.text.fill, button.body.fill.append (state layer) @ {hover} / {focus_visible} / {pressed}, each context sheet.body variant @side (the actions)` | rule |
 | MAT-N20 | `button @ variant close context sheet.header (the close button)` | rule |
 | MAT-N21 | `sheet.body.{fill,shadow,corners}, sheet.body.fill.append (surface tint) @ variant floating` | rule |
@@ -525,7 +522,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-N26 | `button.icon.icon @ variant close context dialog.header; button.label.text, button.body.fill.append (state layer) @ {hover} / {focus_visible} / {pressed}, each context dialog.header (the header's action)` | rule |
 | MAT-N27 | `menu.{body,item,item_label,item_icon}.* @ context autocomplete` | rule |
 | MAT-N27 | `input.* @ context autocomplete / variant @filled context autocomplete (the field: outlined the base)` | rule |
-| MAT-N27 | `menu.values.placement (MaterialMenu) @ context autocomplete` | placement |
+| MAT-N27 | `autocomplete.values.placement (MaterialMenu)` | placement |
 | MAT-N28 | `pull_to_refresh.indicator.{fill,corners,shadow,min_width,min_height}; pull_to_refresh.values.trigger_distance` | field |
 | MAT-N28 | `spinner.* @ context pull_to_refresh (its spinner or loading shape); pull_to_refresh.values.progress_sweep (the arc following the pull, element.progress)` | rule |
 | MAT-N28 | `pull_to_refresh.values.presentations (event @collapse)` | field |
@@ -535,7 +532,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-N30† | `edit_menu.values.placement (AndroidTextToolbar)` | placement |
 | MAT-N31† | `picker_wheel.container.{fill,corners,min_height}; picker_wheel.values.visible_items` | field |
 | MAT-N31† | `picker_wheel.container.fill @ {disabled}; picker_wheel.item.text.fill @ !{selected} / {selected} / {disabled}; picker_wheel.item.focus @ {focus_visible}` | rule |
-| MAT-N31† | `picker_wheel.item.text = expressions over element.scroll_progress, element.item_index (interpolated between two text roles, ADD-B13)` | field |
+| MAT-N31† | `picker_wheel.item.text.{font.size,line_height,letter_spacing}, picker_wheel.item.opacity` as expressions over `element.scroll_progress`, `element.item_index` (the style interpolated between two text roles, ADD-B13) | field |
 | MAT-N31† | `picker_wheel.item.transitions (Geometry with Timing::Spring, Fill, Text: the snap to the centre)` | field |
 | MAT-X1 | `role.@tertiary, role.@on_tertiary, role.@tertiary_container, role.@on_tertiary_container; role.@primary_container, role.@on_primary_container, role.@secondary_container, role.@on_secondary_container, role.@error_container, role.@on_error_container` | role |
 | MAT-X1 | `role.@primary_fixed, role.@primary_fixed_dim, role.@on_primary_fixed, role.@on_primary_fixed_variant (and the same for secondary and tertiary)` | role |
@@ -557,7 +554,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-X9 | `PartStyle.transitions (Fill, TransitionKind::Ripple with its max_radius, initial_scale, padding, soft_edge, opacity, fade, min_press, touch_delay) @ {pressed} (on the state layer, S2.7)` | rule |
 | MAT-X9 | `Transition.{duration,delay,timing} of the ripple (grow time, easing)` | field |
 | MAT-X9 | `PartStyle.transitions (Fill, Interpolate) @ {hover} (the hover fade)` | rule |
-| MAT-X10 | `token.focus: FocusIndicator.offset (per side, negative for the inward offset, ADD-A18), FocusIndicator.corners (FocusCorners::FollowPart: the ring following the part's per-corner shape), FocusIndicator.transition` (`TransitionKind::Keyframes`: growing to the active width, then settling at the 25 / 75 split, ADD-A81) | token |
+| MAT-X10 | `token.focus: FocusIndicator.offset (per side, negative for the inward offset, ADD-A18), FocusIndicator.corners (stated as Material draws it: an expression over part.corners and the offsets, the ring following the part's per-corner shape), FocusIndicator.transition` (`TransitionKind::Keyframes`: growing to the active width, then settling at the 25 / 75 split, ADD-A81) | token |
 | MAT-X10 | `FocusIndicator.transition @ cond reduced_motion (the animation dropped)` | rule |
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |
 | MAT-X11 | `token.params.shape.<scale step> (none … extra_extra_large, ADD-A44)` | token |
@@ -626,17 +623,18 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-X32† | `reader:android:ViewConfiguration.getScaledTouchSlop, getScaledPagingTouchSlop, getScaledDoubleTapSlop, getScaledVerticalScrollFactor` | readers (R18) |
 | MAT-X33† | `PartStyle.cursor per part and state` | field |
 | MAT-X33† | `token.pointer.{size,color} (ADD-A46)` | token |
+| MAT-X33† | `reader:android:the pointer appearance settings (size, colour; per API level, keys to verify)` | readers (R18) |
 | MAT-X34† | `token.behavior.focus_visible_when = Keyboard { … } (material-web's :focus-visible; each widget's focus_visible_when refers to it, ADD-A16)` | token |
 | MAT-X34† | `PartStyle.fill.append @ {focus_visible} (Compose's default focus style: a state-layer opacity)` | rule |
 | MAT-X34† | `FocusIndicator.secondary (Compose's inset ring: an outer and an inner stroke, each with its inset and width, ADD-A17)` | field |
-| MAT-X34† | `FocusIndicator.corners (FocusCorners::Stated: the shape each component supplies)` | field |
+| MAT-X34† | `FocusIndicator.corners` (stated per component: the shape each component supplies, as expressions over `part.corners` and the offsets, cited) | field |
 | MAT-X35† | - | out (R1.1) |
 | MAT-X36† | `token.text.roles.{body,monospace}.font.family` | token |
 | MAT-X36† | `reader:android:Typeface.DEFAULT, Typeface.MONOSPACE` | readers (R18) |
 | MAT-X37† | `split_button.{primary_label,primary_icon}.transform.translate_x = min(mul(token.params.layout.optical_centering, sub(widget.primary.corners.<outer>, widget.primary.corners.<inner>)), <max>); split_button.arrow.transform.translate_x` likewise over `widget.secondary.corners` (ADD-A56, ADD-A80; a transform, which S8's layout restriction does not cover) | field |
 | MAT-X38† | `button.values.scaffold_placement @ variant @fab` (`MaterialScaffoldSlot(Fab)`: end or centre, its spacing); `toast.values.placement` (`MaterialScaffoldSlot(Snackbar)`: above the FAB and the bottom bar) | placement |
 | MAT-SF01† | `dialog.values.placement (CenteredInHost)` | placement |
-| MAT-SF02† | `dialog.values.presentation_breakpoint (below it the connector sets full_size)` | field |
+| MAT-SF02† | `dialog.values.breakpoints (below a window width it sets full_size; to verify, as the row says)` | field |
 | MAT-SF02† | `dialog.* @ variant full_size` | rule |
 | MAT-SF03† | `sheet.values.anchor (BottomCenter), sheet.body.max_width @ variants {bottom,@modal}` | rule |
 | MAT-SF04† | `layout.values.levitated_placement @ variant pane` (`MaterialLevitatedPane`: its alignment and scrim) | placement |
@@ -651,7 +649,7 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-FM03† | `slider.{track,fill,thumb}.* @ dir rtl (the active track's clip, the thumb's offset, the inside and outside corners); progress_bar.{indicator,stop_indicator}.* @ dir rtl; tab.indicator.* @ dir rtl; calendar.range_band.* @ dir rtl; text_area.* @ dir rtl (the outlined field's resize handle)` | rule |
 | MAT-FM03† | `sidebar.values.presentations @ dir rtl (the drawer's swipe and predictive-back origin); search_field.values.presentations @ dir rtl (its predictive-back offset); menu.values.placement (PlacementParams.align, mirrored in RTL, S13)` | rule |
 | MAT-FM03† | `reader:android:Configuration.getLayoutDirection` | readers (R18) |
-| MAT-FM04† | `token.icon_mirroring (IconRole, Mirroring::ExceptLanguages: Arabic and Farsi, not Hebrew; S2.9)` | token |
+| MAT-FM04† | `token.icons.mirroring (IconRole, Mirroring::ExceptLanguages: Arabic and Farsi, not Hebrew; S2.9)` | token |
 | MAT-FM04† | `Element.language, Element.direction (icon lookup per language and script, S2.9, S8; ADD-B05)` | field |
 | MAT-P3-1† | - | out (R1.1) |
 | MAT-P3-2† | - | out (R1.1) |
@@ -664,9 +662,10 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-P3-7† | `input.body.fill.append @ {autofilled}` | rule |
 | MAT-P3-8† | `checkbox.mark.glyph (GlyphSource::Path from Compose drawCheck)` | field |
 | MAT-P3-8† | `checkbox.mark.glyph @ {indeterminate} (the same path pulled to the centre line)` | rule |
-| MAT-P3-9† | `menu.values.placement (MaterialMenu: width AnchorWidth::AtLeastAnchor, or Anchor when clamped; align to the field's bottom start or end corner; the height limited by window_edge_margin; ADD-A21, ADD-A22) @ context combo_box / context autocomplete` | placement |
+| MAT-P3-9† | `combo_box.values.popup_placement (MaterialMenu: width AnchorWidth::AtLeastAnchor, or Anchor when clamped; align to the field's bottom start or end corner; the height limited by window_edge_margin; ADD-A21, ADD-A22)` | placement |
+| MAT-P3-9† | `autocomplete.values.placement (MaterialMenu: the same width, alignment and height limit for the autocomplete's list; ADD-A21, ADD-A22)` | placement |
 | MAT-P3-10† | `menu.values.placement (MaterialMenu: side, align mirrored in RTL, flip, window_edge_margin)` | placement |
-| MAT-P3-11† | `menu.body.{fill,min_width,max_width,shadow,corners,padding}, menu.item.{min_height,padding}, menu.item_icon.icon.size, menu.separator.{fill,padding}, menu.item_label.text @ variant @text_context` | rule |
+| MAT-P3-11† | `menu.body.{fill,min_width,max_width,shadow,corners,padding}, menu.item.{min_height,padding}, menu.item_icon.icon.size, menu.separator.{stroke,padding}, menu.item_label.text @ variant @text_context` | rule |
 | MAT-P3-11† | `menu.item_label.text.fill, menu.item_icon.icon.fill @ {disabled} variant @text_context (the disabled alpha)` | rule |
 | MAT-P3-11† | `role.@popup_menu_background, role.@popup_menu_text` (the platform popup-menu style, `material-3`'s keyed roles) | role |
 | MAT-P3-12† | `segmented_control.values.segment_width (FillEqually)` | field |
@@ -682,10 +681,12 @@ contradictions with the rationale, each decided in the core's additions register
 | MAT-P3-18† | `reader:android:Configuration.uiMode` | readers (R18) |
 | MAT-P3-19† | `cond flavor:baseline` | condition |
 | MAT-P3-19† | `cond flavor:expressive` | condition |
-| MAT-P3-19† | `token.material.spec_version` | token |
+| MAT-P3-19† | - (the Compose Material 3 library version an app ships) | newest (R1.5) |
+| MAT-P3-19† | - (material-web's look where it differs from Compose, Material's reference) | reference (R1.6) |
 | MAT-P3-20† | `rich_text.heading_1 … heading_6.text, rich_text.inline_code.text (<tt>), rich_text.list_marker.glyph, rich_text.values.list_indent_per_level, rich_text.{subscript,superscript,strikethrough}.text, rich_text.block_quote.{fill,stroke} @ variant html; rich_text.underline.text @ variant html` | rule |
 | MAT-P3-20† | `link.* @ variant inline context rich_text.body variant html` | rule |
-| MAT-P3-21† | `token.caret.{hides_while_selecting,width}` | token |
+| MAT-P3-21† | `token.caret.width` | token |
+| MAT-P3-21† | `input.caret (absent = true), text_area.caret (absent = true) @ {text_selected}` (none while the selection is not collapsed, ADD-A24) | rule |
 | MAT-P3-21† | `input.caret @ cond window_inactive / !{focused}` (`absent = true`: not drawn) | rule |
 | MAT-P3-21† | `reader:android:ViewConfiguration.getTextCursorBlinkIntervalMillis (token.caret.{blink_on,blink_off})` | readers (R18) |
 | MAT-P4-1† | - | out (R1.1) |
