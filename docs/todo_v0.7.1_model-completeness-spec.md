@@ -379,7 +379,7 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                        pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original }
 pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>, pub stroke_width: Value<Px>,
-                   pub fill: Value<Paint>, pub line_cap: LineCap, pub line_join: LineJoin,      // ADD-A34
+                   pub fill: Value<Paint>, pub stroke: Value<Paint>,   // the outline's paint (K1.184†) pub line_cap: LineCap, pub line_join: LineJoin,      // ADD-A34
                    pub axes: Vec<(AxisTag, AxisValue)>,  // a symbol font's axes (MAT-X27)
                    pub draw_extent: Value<Fraction>,      // the fraction of the path drawn (Breeze's check mark, ADD-A35)
                    pub mirrors_in_rtl: bool }        // Segoe Fluent's per-glyph mirroring (R25.8)
@@ -789,6 +789,7 @@ pub enum Condition {
     Elevated, Input(InputKind),                            // the kind of the last input (Kirigami's transient
                                                            // touch, WinUI's input kind; R2.3)
     NotComposited, Shaded, AttentionFlash, TintDimmed, MnemonicsVisible,
+    UnitScale,                                             // device pixel ratio 1 (Qt Quick's text rendering, Q3.32)
     // application
     Flavor(Key), Preset(PresetId),
 }
@@ -1359,6 +1360,8 @@ lines that cite it.
 | ADD-A72 | `PartStyle.touch_target` | S2.11 |
 | ADD-A73 | `ReaderState`, the reader's and stand-in's system conditions | S8, S16 |
 | ADD-A74 | `MaterialScheme.contrast_level` | S4.8 |
+| ADD-A75 | `Glyph.stroke` | S2.9 |
+| ADD-A76 | `Condition::UnitScale` | S7.1 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
