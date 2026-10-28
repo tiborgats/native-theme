@@ -19,9 +19,9 @@ platform is stated here: values come from the facts (S17) in the value phase.
 | Part | State |
 |---|---|
 | Core (this document) | drafted |
-| Research the rationale requires first: kirigami-addons survey (R1.2), community ports (R19), Plasma's accent derivation (R2.6) | running |
-| Widget catalogue | not started |
-| Traceability | not started |
+| Research the rationale requires first: kirigami-addons survey (R1.2), community ports (R19), Plasma's accent derivation (R2.6) | done; R19 and R25 decided from it |
+| Widget catalogue | drafted in eight groups, being merged |
+| Traceability | drafted in eight groups, being merged; `scripts/check_spec_trace.py` checks it |
 | Check passes | not started |
 
 ## S1. Conventions
@@ -83,6 +83,9 @@ ref      := "role." set "." role        typed colour role of a surface set      
           | "base"                        the value earlier rules gave in this query   (R2.5)
           | "foreground"                  the element's current foreground             (R5.4)
           | "font_size" | "line_height"   the part's, after text scaling               (R10)
+          | "element." data               the element's data (S8): width, height, progress,
+                                          scroll_offset, scroll_progress, item_index,
+                                          item_count, text                             (R25.3)
 call     := name "(" expr { "," expr } ")"
 ```
 
@@ -99,10 +102,14 @@ call     := name "(" expr { "," expr } ")"
 | `adw_standalone(c, scheme)` | colour | libadwaita's standalone accent derivation in OKLab, to its stylesheet |
 | `m3_role(role, seed, variant, version, contrast, scheme)` | colour | material-color-utilities' dynamic scheme, the role of that scheme |
 | `mul(x, y)` | length or duration | product (a token times the speed factor; a font size times a factor) |
+| `kde_accent(set, key)` | colour | Plasma's accent derivation for one key of one colour set, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1) |
+| `name_index(text, count, method)` | number | the index a platform's avatar hashes a name to; `method` keyed per platform (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3) |
+| `pick(index, c0, c1, …)` | colour | the colour at `index` (R25.3) |
 
 A function is added to this table only with the platform rule that needs it and its source (R5.4). Type
-checking: every operand and result is typed (colour, length, duration, number); a mismatch is a resolution error
-(S12).
+checking: every operand and result is typed (colour, length, duration, number, text); a mismatch is a resolution
+error (S12). An expression naming `element.<data>` is re-evaluated by each query, so a connector queries again when the
+data changes, as for a state (R25.3).
 
 ### S2.3 Paint (R6)
 
@@ -111,10 +118,14 @@ pub struct Paint { pub layers: Vec<PaintLayer> }             // bottom first; em
 pub struct PaintLayer { pub kind: PaintKind, pub blend: BlendMode }
 pub enum PaintKind {
     Color(Value<Color>),
-    Linear { angle_deg: f32, stops: Vec<Stop> },
-    Radial { center: (f32, f32), radius: f32, stops: Vec<Stop> },   // relative to the part's box
+    Linear { angle_deg: f32, stops: Vec<Stop>, repeat: bool },
+    Radial { center: (f32, f32), radius: f32, stops: Vec<Stop>, repeat: bool },   // relative to the part's box
+    Pattern { pattern: Pattern, colors: Vec<Value<Color>>, cell: Value<f32> },  // R25.4
     Material(Material),
 }
+pub enum Pattern { Checkerboard, Grid, QtBrush(QtBrushStyle) }   // each to its platform's source (R25.4)
+pub enum QtBrushStyle { Dense1, Dense2, Dense3, Dense4, Dense5, Dense6, Dense7, Hor, Ver, Cross, BDiag, FDiag,
+                        DiagCross }                               // Qt's `Qt::BrushStyle` patterns
 pub struct Stop { pub position: f32, pub color: Value<Color> }
 pub enum BlendMode { Normal, Keyed(Key) }    // platform blending modes as the facts name them (macOS vibrancy)
 pub struct Material {
@@ -128,7 +139,8 @@ pub struct Material {
 }
 ```
 
-A rule's patch either sets a paint (`fill = …`) or appends layers over `base` (`fill.append = [ … ]`) (R6).
+A rule's patch either sets a paint (`fill = …`) or appends layers over `base` (`fill.append = [ … ]`) (R6). A
+repeating gradient repeats its stops beyond the last (stripes, K1.110).
 
 ### S2.4 Corners, stroke (R7)
 
@@ -142,6 +154,10 @@ pub struct Stroke { pub top: Edge, pub right: Edge, pub bottom: Edge, pub left: 
 pub struct Edge { pub width: Value<f32>, pub paint: Paint }
 pub enum StrokePosition { Inside, Center, Outside }
 ```
+
+A part's outline is its `corners`, unless `PartStyle.shape` names a keyed shape of the platform's shape library
+(declared in S10, each defined to its source, R25.5); a shape change is a transition of the `Shape` group, which
+morphs.
 
 TOML shorthands: `corners = 6.0` sets all four `Px` with `Circular`; `stroke = { width = 1, paint = "…" }` sets
 all four edges.
@@ -173,9 +189,10 @@ pub enum Timing {
     Steps { count: u32, jump: StepJump },
     Spring { mass: f32, stiffness: f32, damping: f32,
              initial_velocity: f32, rest_epsilon: f32, clamp: bool },
-    Keyed(Key),                               // a platform's own (Kirigami's velocity-based curves)
+    Keyed(Key),                               // a platform's own, defined in its facts (velocity-based curves, R25.6)
 }
-pub enum PropertyGroup { Fill, Stroke, Corners, Shadow, Opacity, Transform, Text, Icon, Glyph, Focus, Geometry }
+pub enum PropertyGroup { Fill, Stroke, Corners, Shape, Shadow, Opacity, Transform, Text, Icon, Glyph, Focus,
+                         Geometry }
 pub struct Transition {
     pub properties: Vec<PropertyGroup>,
     pub kind: TransitionKind,
@@ -187,14 +204,21 @@ pub enum TransitionKind {
     Interpolate,
     Ripple { max_radius: Value<f32>, opacity: Value<f32>, fade_ms: Value<f32> },   // MAT-X9
 }
-pub struct PresentationTransition {
+pub struct PresentationTransition {          // one event's presentation: its steps run together (R25.6)
     pub event: PresentationEvent,             // Appear, Disappear, Move, and widget-specific keyed events
+    pub steps: Vec<PresentationStep>,
+}
+pub struct PresentationStep {
+    pub part: Option<PartRef>,                // None: the whole element
     pub kind: PresentationKind,
     pub duration: Value<f32>, pub delay: Value<f32>, pub timing: Timing,
+    pub stagger: Value<f32>,                  // ms between items, where the element presents items
 }
-pub enum PresentationKind { Fade, Slide { from: EdgeSide }, Scale { from: f32 }, Morph,
+pub enum PresentationKind { Fade, Slide { from: EdgeSide, distance: Value<f32> }, Scale { from: f32 }, Morph,
                             ClipReveal { from: RevealOrigin }, Keyed(Key), None }
 pub struct Loop { pub period_ms: Value<f32>, pub timing: Timing, pub keyframes: Vec<Keyframe> }
+pub struct Keyframe { pub at: f32, pub patch: Patch }   // `at` a fraction of the period; a patch of the part's
+                                                        // style, a keyed shape included (R25.5)
 ```
 
 Semantics (R9): a transition starts when a property's resolved value changes; the transition stated by the style
@@ -241,7 +265,8 @@ The text ramp (S4.4) holds the semantic `TextRole` slots and the keyed platform 
 
 ```rust
 pub struct IconStyle { pub size: Value<f32>, pub fill: Paint, pub rendering_mode: RenderingMode,
-                       pub weight: Value<u16>, pub scale: Value<f32>, pub effect: IconEffect }
+                       pub weight: Value<u16>, pub scale: Value<f32>, pub effect: IconEffect,
+                       pub symbol_variants: Vec<Key> }     // SF Symbols' `.fill`, `.circle`, … (R25.8)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original }
 pub enum IconEffect { None, Disabled { kind: Key }, Active { kind: Key } }   // KDE's effects, keyed (K3.60)
 pub struct Glyph { pub source: GlyphSource, pub size: Value<f32>, pub stroke_width: Value<f32>,
@@ -255,7 +280,8 @@ pub enum GlyphSource {
 }
 ```
 
-`IconRole` gains `mirrors_in_rtl` per role, stated per preset (R11).
+`IconRole` gains `mirrors_in_rtl` per role, stated per preset (R11). Icon lookup takes the element's direction and
+language (GTK's `-rtl` and `-ltr` names, SF Symbols' localized forms; R25.8).
 
 ### S2.10 Focus indicator (R12)
 
@@ -273,6 +299,7 @@ pub struct PartStyle {
     pub fill: Paint,
     pub stroke: Stroke,
     pub corners: Corners,
+    pub shape: Option<Key>,                  // a keyed shape replacing the corners' outline (R25.5)
     pub shadow: Shadow,
     pub opacity: Value<f32>,                 // applied to the element and its descendants as a group
     pub transform: Transform,                // likewise
@@ -351,8 +378,18 @@ pub struct Tokens {
     pub size_classes: Vec<(SizeClass, SizeClassThreshold)>,   // where the platform states widths (R16)
     pub colour_effects: Vec<(Key, Value<f32>)>,              // KDE's effect parameters
     pub material_scheme: Option<MaterialScheme>,             // Material's variant and specification version
+    pub text_rendering: TextRendering,                       // R25.7
 }
+pub struct TextRendering { pub antialiasing: Value<Antialiasing>, pub hinting: Value<Hinting>,
+                           pub subpixel_order: Value<SubpixelOrder>, pub lcd_filter: Value<Key>,
+                           pub gamma: Value<f32>, pub contrast: Value<f32> }
+pub enum Antialiasing { None, Grayscale, Subpixel }
+pub enum Hinting { None, Slight, Medium, Full }
+pub enum SubpixelOrder { None, Rgb, Bgr, Vrgb, Vbgr }
 ```
+
+The readers read the text-rendering settings (ClearType's, fontconfig's and GNOME's `font-antialiasing`,
+`font-hinting`, `font-rgba-order`, macOS's font smoothing); a toolkit applies what it can (R23).
 
 ### S4.1 Motion
 
@@ -450,15 +487,21 @@ pub struct Selector {
     pub states: SetMatch<StateFlag>,
 }
 pub struct SetMatch<T> { pub all_of: Vec<T>, pub none_of: Vec<T> }
-pub struct ContextMatch { pub scope: ContextScope, pub widget: WidgetRef, pub part: Option<PartRef>,
+pub struct ContextMatch { pub scope: ContextScope, pub widget: Option<WidgetRef>,   // None: any widget (R25.9)
+                          pub part: Option<PartRef>,
                           pub variants: SetMatch<VariantRef>, pub states: SetMatch<StateFlag> }
 pub enum ContextScope { AnyAncestor, NearestAmong(Vec<WidgetRef>) }
-pub struct PositionMatch { pub first: Option<bool>, pub last: Option<bool>, pub only: Option<bool>,
+pub struct PositionMatch { pub among: SiblingScope,                 // which siblings count (R25.9)
+                           pub first: Option<bool>, pub last: Option<bool>, pub only: Option<bool>,
+                           pub parity: Option<Parity>,
                            pub previous: Option<SiblingMatch>, pub next: Option<SiblingMatch> }
-pub struct SiblingMatch { pub widget: WidgetRef, pub variants: SetMatch<VariantRef>,
-                          pub states: SetMatch<StateFlag> }
+pub enum SiblingScope { SameKind, Any, Kinds(Vec<WidgetRef>) }     // default SameKind
+pub enum Parity { Odd, Even }                                       // counted from 1, among `among`
+pub struct SiblingMatch { pub widget: Option<WidgetRef>, pub part: Option<PartRef>,
+                          pub variants: SetMatch<VariantRef>, pub states: SetMatch<StateFlag> }
 pub struct SizeMatch { pub size: Option<ControlSize>, pub density: Option<Density>,
-                       pub size_class: Option<SizeClass> }
+                       pub size_class: Option<SizeClassMatch> }
+pub struct SizeClassMatch { pub horizontal: Option<SizeClass>, pub vertical: Option<SizeClass> }
 pub enum Direction { Ltr, Rtl }
 ```
 
@@ -500,10 +543,14 @@ pub enum StateFlag { Hover, Pressed, Focused, FocusWithin, FocusVisible, Disable
 ### S7.3 Sizes, density, size classes (R15, R16)
 
 ```rust
-pub enum ControlSize { Mini, Small, Regular, Large, ExtraLarge }
+pub enum ControlSize { ExtraSmall, Mini, Small, Regular, Large, ExtraLarge }
 pub enum Density { Default, Compact, Keyed(Key) }      // Material's density steps keyed
 pub enum SizeClass { Compact, Medium, Expanded, Large, ExtraLarge, Regular }   // closed by the catalogue
+pub struct SizeClasses { pub horizontal: Option<SizeClass>, pub vertical: Option<SizeClass> }   // R25.10
 ```
+
+Each preset's facts state which of its sizes fills which `ControlSize` slot (Material Expressive's five button sizes,
+AppKit's four control sizes); a preset declares only the slots it fills (S10).
 
 ## S8. Layers, order and resolution (R2.4, R2.5)
 
@@ -536,18 +583,30 @@ pub struct Element<'a> {
     pub widget: WidgetRef, pub part: PartRef,
     pub variants: &'a [VariantRef], pub size: Option<ControlSize>,
     pub density: Option<Density>, pub direction: Option<Direction>,     // the element's own, if it states one
+    pub language: Option<LanguageTag>,                                  // for icon lookup (S2.9)
     pub states: StateFlags,
-    pub previous: Option<Sibling<'a>>, pub next: Option<Sibling<'a>>,  // same widget kind only
+    pub siblings: &'a [Sibling<'a>], pub index: usize,                  // all siblings, itself at `index`
     pub ancestors: &'a [Ancestor<'a>],                                  // nearest first
+    pub data: ElementData<'a>,
 }
+pub struct Sibling<'a> { pub widget: WidgetRef, pub part: Option<PartRef>, pub variants: &'a [VariantRef],
+                         pub states: StateFlags }
 pub struct Ancestor<'a> { pub widget: WidgetRef, pub part: Option<PartRef>, pub variants: &'a [VariantRef],
                           pub states: StateFlags, pub density: Option<Density>,
-                          pub size_class: Option<SizeClass>, pub direction: Option<Direction> }
+                          pub size_classes: Option<SizeClasses>, pub direction: Option<Direction> }
+pub struct ElementData<'a> {                                            // R25.3; Default: zero size, progress 0,
+    pub width: f32, pub height: f32, pub progress: f32,                 // scroll 0, item 0 of 1, empty text
+    pub scroll_offset: f32, pub scroll_progress: f32,
+    pub item_index: u32, pub item_count: u32, pub text: &'a str,
+}
 ```
 
 The query: drops excluded flags by the exclusive groups (S10); computes the inherited density, size class and
 direction from the element and its ancestors; applies the part's kept rules in order, skipping those that do not
-match; evaluates expressions (S2.2) with `base`, `foreground` and bindings in scope. `ResolvedTheme::available(&Element)
+match (position counted among the siblings the rule's `among` names); evaluates expressions (S2.2) with `base`,
+`foreground`, `element.<data>` and bindings in scope. The query cannot fail (R2.8): element data are plain values,
+and each part declares the data its values read (S10, `data = [...]`), which is what a connector must supply for
+it, as it supplies the element's states; S12 rejects an expression naming data its part does not declare. `ResolvedTheme::available(&Element)
 -> Availability` answers "not available" for an undeclared size or variant (S10).
 
 ## S9. Inputs and readers (R2.6, R18)
@@ -559,12 +618,16 @@ pub struct InputValue { pub per_scheme: SchemeMap<Value<Color>>,
 ```
 
 **S9.1 Declared inputs per preset:** `accent` (all); `accent_ramp` entries (`windows-11`); the AppKit-derived
-accent roles and `highlight` (`macos-*`); the tint-dependent roles (`ios-*`); `seed` (`material-3`); the KDE
-inactive input roles and, until Plasma's derivation is read (§0), the accent-set roles (`kde-breeze`).
+accent roles and `highlight` (`macos-*`); the tint-dependent roles (`ios-*`); `seed` (`material-3`); on
+`kde-breeze` the inactive input roles and the scheme inputs `kde_scheme.<set>.<key>`, the values of the scheme file
+before Plasma applies the accent (the preset's from Breeze's scheme files; the reader's from the file kdeglobals
+names, `[General] ColorScheme`) (R25.1).
 
 **S9.2 Setting the accent:** `Theme::set_accent(Accent)` sets the declared accent inputs in the application's
-layer bases; on `windows-11`, `macos-*`, `ios-*` and (until read) `kde-breeze` it requires every declared accent
-input and otherwise returns `Err(AccentInputsMissing)`.
+layer bases; on `windows-11`, `macos-*` and `ios-*` it requires every declared accent input and otherwise returns
+`Err(AccentInputsMissing)`. On `kde-breeze` it takes the accent alone and also states, in the same layer's colour
+bases, each accent-dependent role as `= kde_accent(<set>, <key>)`, so they follow Plasma's derivation over the
+scheme inputs (R25.1); the reader itself states the derived values kdeglobals holds.
 
 **S9.3 Readers** state each value under the conditions they read it in: base conditions into the reader layer's
 bases, other conditions into reader rules (or inputs' per-contrast bases). The new reads per platform are the rows
@@ -581,6 +644,7 @@ flavours = ["widgets", "kirigami"]            # first is the default
 materials = ["mica", "mica_alt", "acrylic"]
 colour_roles = ["fill_tertiary", …]            # keyed roles
 text_styles = [ … ]
+shapes = [ … ]                                 # the platform's shape library (R25.5)
 elevation = ["1", "2", "8", "16", "32", "64", "128"]
 inputs = ["accent", "accent_ramp.light1", …]
 
@@ -591,6 +655,9 @@ densities = ["compact"]
 flags = ["@default_button"]
 exclusive = [["disabled", "pressed", "hover"]]              # highest precedence first
 sizes_by_context = [{ context = "navigation_bar", sizes = ["regular"] }]
+
+[declare.widget.spinner]
+data = { indicator = ["width", "height"] }                 # element data a part's values read (S8)
 
 [declare.component.rule_editor]
 parts = ["row", "popup_button", "add_button"]
@@ -635,8 +702,10 @@ fill.append = ["= alpha(foreground, <fraction>)"]
 ```
 
 `when` keys: `conditions`, `not_conditions`, `context` (array of `{ nearest = [...], widget, part, variants,
-not_variants, states, not_states }` or `{ any = widget, … }`), `position` (`{ first, last, only, previous, next }`),
-`variants`, `not_variants`, `size`, `density`, `size_class`, `direction`, `states`, `not_states`. Every value
+not_variants, states, not_states }` or `{ any = widget, … }`; `widget` may be left out to match by variant alone),
+`position` (`{ among, first, last, only, parity, previous, next }`, `among` = `"same"`, `"any"` or a list of
+widgets; `previous` and `next` as `{ widget, part, variants, states }`), `variants`, `not_variants`, `size`,
+`density`, `size_class` (`{ horizontal, vertical }`), `direction`, `states`, `not_states`. Every value
 carries its fact's citation in a comment, as today (`scripts/check_preset_citations.py`). Palettes use the same
 format with `[preset] kind = "palette"` and only `colors`, `inputs`, `tokens.colour_effects` and colour rules.
 
@@ -648,7 +717,8 @@ Resolution fails with `ResolveError` (listing every problem) when:
 - a name is undeclared (S10) or a rule targeting `Colors`/`Tokens` has non-condition selector parts;
 - an expression mistypes, refers to an unknown name, forms a cycle (through bindings too), or can meet an absent
   operand under any binding and rule it can apply under;
-- a declared size, variant or flag has no rule or base that states its look (it would be indistinguishable).
+- a declared size, variant or flag has no rule or base that states its look (it would be indistinguishable);
+- an expression names element data its part does not declare (S8).
 
 `Theme::add_layer` validates the layer against the theme and refuses it with the error (R2.5).
 
@@ -666,11 +736,20 @@ list is the traceability's placement rows.
 
 ## S14. Palettes (R19)
 
-`Palette::from_port(file) -> Result<Palette, PortError>` converts a port (a KDE `.colors` file; libadwaita colour
-overrides; each format the community-ports survey finds, §0) mechanically; `Theme::apply_palette(Palette)` adds it as
-an application layer with `replaces_reader_colours`, refusing it (`Err(SchemeNotInPalette)`) under a scheme it lacks.
-When the system scheme changes under it, the theme reports `PaletteSuspended`. The bundled community presets become
-bundled palettes, one per port file.
+A palette is a file in S11's format with `[preset] kind = "palette"`: colour-role bases, input bases and colour
+tokens for the schemes its project defines (R19). Two sources, each stated in the file's header:
+
+- **native-theme's mapping** (the default): each role it covers maps to a colour the project publishes, named by the
+  project's name for it (`# catppuccin: Surface0`), or to a derivation of those (S2.2); a value picked from a range
+  the project's guide gives is marked `# pick: <the guide's words>`. It is the same file on every platform.
+- **the project's port** for one platform, where one exists (Catppuccin's and Dracula's KDE colour schemes, R19):
+  `Palette::from_port(file) -> Result<Palette, PortError>` converts a KDE `.colors` file mechanically, and that
+  palette is used on `kde-breeze` in place of the mapping.
+
+`Theme::apply_palette(Palette)` adds it as an application layer with `replaces_reader_colours`, refusing it
+(`Err(SchemeNotInPalette)`) under a scheme it lacks; when the system scheme changes under it, the theme reports
+`PaletteSuspended`. A palette carries no icon set. The facts gate checks each mapped colour against the project's
+published colours (pinned like any source, S17) and skips the picks.
 
 ## S15. System control rendering (R11)
 
@@ -725,13 +804,15 @@ model (R4): the catalogue states, per widget and platform, the source of its lis
 
 ## S19. Migration inside the branch
 
-**S19.1** The presets are rewritten to S11 from the facts; the community presets become palettes from their ports.
+**S19.1** The presets are rewritten to S11 from the facts; the community presets become palettes (S14): one per
+variant the project publishes, their invented light variants and their `icon_set` removed.
 **S19.2** Today's inheritance rules become expressions in each preset's bases, converted by a script from
 `docs/inheritance-rules.toml` before it is removed, then checked by the gate.
 
 ## S20. Traceability format (R24)
 
-Per platform, `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`: one row per gap-map row:
+Per platform, `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`: at least one line per live gap-map row,
+several where a row needs several targets:
 
 | Row | Target | Kind |
 |---|---|---|
@@ -739,12 +820,14 @@ Per platform, `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`: one row
 | … | | |
 
 Kinds: `field`, `rule`, `role`, `token`, `component`, `input`, `reader` (a new read), `placement`, `system-control`,
-`condition`, `flag`, and the out-of-scope verdicts `out (R1.1)` … `out (R1.4)`, `preset (R1.3)`, `newest (R1.5)`,
-`readers (R18)`.
+`condition`, `flag`, and the verdicts, whose target is `-`: `out (R1.1)` (the system draws it), `out (R1.2)` (a
+library failing R1.2's test), `out (R1.4)` (SwiftUI-only drawing), `preset (R1.3)` (another toolkit's preset),
+`newest (R1.5)` (an older generation's look), `readers (R18)` (the iOS and Android readers' milestone).
 
 ## S21. Release and compatibility (R21)
 
 **S21.1** 0.8.0, one release, on `v0.8.0-rc1`; every platform preset, `ios-26` included, complete and passing the gate.
 **S21.2** Exhaustive enums (no `#[non_exhaustive]`): `StateFlag`, `Condition`, `Value`, `IconRole` (loses it),
 `BlendMode`, `Timing`, `GlyphSource`, `PlacementStrategy`, `TransitionKind`, `PresentationKind`, `ThemeChange`,
-`FocusKind`, `Radius`, `PaintKind`, `Shadow`. Every struct: `#[non_exhaustive]`.
+`FocusKind`, `Radius`, `PaintKind`, `Pattern`, `QtBrushStyle`, `Shadow`, `ControlSize`, `SiblingScope`, `Parity`,
+`Antialiasing`, `Hinting`, `SubpixelOrder`. Every struct: `#[non_exhaustive]`.

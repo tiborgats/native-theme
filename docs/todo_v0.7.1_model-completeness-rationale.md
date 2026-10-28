@@ -979,14 +979,16 @@ K-P3-10†, C-45†), and a text whose hash picks a colour (an avatar's colour f
 leave them to the connector (against: the platform's rule would be lost), or a typed set of **element data** the
 connector supplies in the query (size, progress, scroll offset and progress, index and count, a text), which
 expressions may name, with the functions the platforms use over them (`pick(hash(text), list)` to the platform's own
-hash and list, cited). **Decision:** element data in the query; the connector re-queries when it changes, as for a
-state.
+hash and list, cited). **Decision:** element data in the query, as plain values each part declares it reads, so the
+query still cannot fail (R2.8); the connector supplies them and queries again when they change, as for a state.
 
 **R25.4 — Pattern paint (extends R6).** Some fills are patterns no gradient makes: a colour well's transparency
 checkerboard (GN-2.53†, W2-42†), Qt's dense brush patterns (K-SF09†), a code editor's background grid (GN-SF11†),
 libadwaita's developer-build stripes (GN-1.10). **Decision:** a paint layer kind for patterns, a closed set each
-defined to its platform's source (checkerboard, Qt's brush patterns, grid, stripes), plus repeating gradients (Breeze's
-busy stripes); never an image drawn by native-theme.
+defined to its platform's source (checkerboard, Qt's brush patterns, grid), plus repeating gradients (Breeze's busy
+stripes, K1.110); never an image drawn by native-theme. libadwaita's developer stripes are its own SVG file
+(`devel-stripes.svg`); the value phase reads what it draws and states it with these kinds, and a platform image a
+pattern cannot state is a finding for the rationale.
 
 **R25.5 — Shapes beyond corners (extends R7).** Material Expressive draws polygon shapes (its shape library: cookie,
 clover, …) and morphs between them (MAT-N24, MAT-X12), which corners cannot express.
