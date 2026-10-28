@@ -122,7 +122,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-I03 | `input.caps_lock_indicator.{glyph,padding} @ variant secure` | rule |
 | MAC-I04 | `input.body.shadow (inset edge layers; outer ring layer)` | field |
 | MAC-I04 | `input.body.stroke` | field |
-| MAC-I05 | `input.selection.{fill,text.fill} @ !{focused} / cond window_inactive (= the two unfocused roles)` | rule |
+| MAC-I05 | `input.selection.{fill,text.fill} @ context input.body !{focused} / cond window_inactive (= the two unfocused roles)` | rule |
 | MAC-I05 | `text_area.selection.{fill,text.fill} @ context text_area.body !{focused} / cond window_inactive (= the two unfocused roles)` | rule |
 | MAC-I05 | `role.global.selection_text_background_unfocused` | role |
 | MAC-I05 | `role.global.selection_text_foreground_unfocused` | role |
@@ -268,9 +268,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-TL07 | `search_field.*, input.* @ context toolbar.bar (the expanded field)` | rule |
 | MAC-TL07 | `search_field.values.presentations event @expand` (the one home of the expand motion, not the toolbar's) | field |
 | MAC-TL08 | `toolbar.separator @ variant @tracking` | rule |
-| MAC-TL09 | `toolbar.bar.fill (material)` | field |
-| MAC-TL09 | `toolbar.bar.fill @ !{scrolled} (transparent over content)` | rule |
-| MAC-TL09 | `scroll_view.edge_effect.fill @ {scrolled} (under the toolbar, MAC-X05)` | rule |
+| MAC-TL09 | `toolbar.bar.fill` (the material on the 12–15 generation; `Absent` on `macos-tahoe`, whose bar is transparent, the scroll edge effect beneath it drawing the material once content lies under it, MAC-X05) | field |
+| MAC-TL09 | `scroll_view.edge_effect.fill @ variant top {scrolled} (under the toolbar, MAC-X05)` | rule |
 | MAC-TL10† | `toolbar.values.fixed_space_width, flexible_space_min_width` | field |
 | MAC-TL11† | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ {selected} variant tool context toolbar.bar` | rule |
 | MAC-TL11† | `button.body.fill @ {selected} variant tool context toolbar.bar cond window_inactive` | rule |
@@ -348,7 +347,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-D03 | `dialog.scrim @ variant @sheet` | rule |
 | MAC-D03 | `dialog.values.window_margin @ variant @sheet (macos-tahoe's floating inset sheet)` | rule |
 | MAC-D04 | `dialog.values.presentations events Appear, Disappear` | field |
-| MAC-D04 | `dialog.values.presentations events @sheet_attach, @sheet_detach @ variant @sheet` | rule |
+| MAC-D04 | `dialog.values.presentations events Appear, Disappear @ variant @sheet` (the sheet attaching to and detaching from its window) | rule |
 | MAC-SN01 | `spinner.spoke.fill` | field |
 | MAC-SN01 | `spinner.values.{spoke_count,spoke_inner_radius,spoke_length,spoke_width,spoke_opacity_ramp,cap}` | field |
 | MAC-SN02 | `spinner.values.loop (stepped timing)` | field |
@@ -371,25 +370,25 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-CB05 | `combo_box.body.{fill,stroke,shadow} @ variant flat` | rule |
 | MAC-CB06 | `combo_box.body.fill @ cond window_inactive` | rule |
 | MAC-SG01 | `segmented_control.separator.stroke` | field |
-| MAC-SG01 | `segmented_control.separator.opacity @ prev segmented_control.segment{checked} / next segmented_control.segment{checked}` | rule |
+| MAC-SG01 | `segmented_control.separator.opacity @ prev segmented_control.segment{selected} / next segmented_control.segment{selected}` | rule |
 | MAC-SG02 | `segmented_control.indicator.shadow (macos-monterey)` | field |
-| MAC-SG03 | `segmented_control.label.text.font.weight, segmented_control.label.text.fill @ {checked}` | rule |
+| MAC-SG03 | `segmented_control.label.text.font.weight, segmented_control.label.text.fill @ {selected}` | rule |
 | MAC-SG03 | `segmented_control.indicator.fill (macos-tahoe: the accent)` | field |
 | MAC-SG04 | `segmented_control.track.*, segmented_control.segment.* @ variant @rounded / @round_rect / @textured_rounded / pill / @textured_square / @small_square / @separated / @rounded_rectangle` | rule |
 | MAC-SG05 | `segmented_control.* @ variant @select_any / momentary` | rule |
 | MAC-SG05 | `segmented_control.indicator.fill (selectedSegmentBezelColor default)` | field |
 | MAC-SG05 | `segmented_control.indicator.fill` as an expression on `element.color` (an application's selectedSegmentBezelColor; `data = { indicator = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-SG05 | `reader:macos:a new NSSegmentedControl's selectedSegmentBezelColor -> segmented_control.indicator.fill` | reader |
-| MAC-SG06 | `segmented_control.segment.fill @ {pressed}; segmented_control.indicator.fill @ {checked,pressed}` | rule |
+| MAC-SG06 | `segmented_control.segment.fill @ {pressed}; segmented_control.indicator.fill @ {selected,pressed}` | rule |
 | MAC-SG06 | `segmented_control.segment.opacity, segmented_control.label.text.fill @ {disabled} (per segment)` | rule |
-| MAC-SG06 | `segmented_control.indicator.fill, segmented_control.label.text.fill @ {checked} cond window_inactive` | rule |
+| MAC-SG06 | `segmented_control.indicator.fill, segmented_control.label.text.fill @ {selected} cond window_inactive` | rule |
 | MAC-SG07 | `segmented_control.menu_indicator.glyph @ variant menu` | rule |
 | MAC-SG08 | `segmented_control.segment.corners @ pos first / pos last / pos only (outer corners only)` | rule |
 | MAC-SG08 | `segmented_control.indicator.corners (Concentric)` | field |
 | MAC-SG09 | `segmented_control.values.presentations event @indicator_move (part indicator; macos-tahoe)` | field |
 | MAC-SG10† | `segmented_control.icon.icon.size @ size mini / small / regular / large` | rule |
 | MAC-SG10† | `segmented_control.values.image_scaling` | field |
-| MAC-SG10† | `segmented_control.icon.icon.fill @ {checked} / {pressed} / {disabled}` | rule |
+| MAC-SG10† | `segmented_control.icon.icon.fill @ {selected} / {pressed} / {disabled}` | rule |
 | MAC-BX01 | `group_box.title.text, group_box.values.title_position, group_box.values.title_margin` | field |
 | MAC-BX01 | `reader:macos:NSBox titleFont and titleRect` | reader |
 | MAC-BX02 | `group_box.* @ variant @primary / @custom / @separator / @transparent` | rule |
@@ -402,7 +401,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-EX05† | `expander.values.arrow_gap, expander.values.content_indent` | field |
 | MAC-EX05† | `expander.header.min_height` | field |
 | MAC-EX05† | `reader:macos:intrinsicContentSize of a disclosure button per control size` | reader |
-| MAC-LK01 | `link.text.text.decoration (style, paint, thickness, offset) @ variant inline` | rule |
+| MAC-LK01 | `link.text.text.decoration (style, paint, thickness, offset) @ variant inline` (the default link attributes, a single underline; `NSUnderlineStyle`'s dash-dot, dash-dot-dot and by-word patterns have no `DecorationStyle`, which only a reader of a non-default value would meet) | rule |
 | MAC-LK01 | `reader:macos:NSTextView.linkTextAttributes (underline style, colour)` | reader |
 | MAC-LK02 | `link.text.cursor` | field |
 | MAC-LK02 | `reader:macos:NSTextView.linkTextAttributes[.cursor]` | reader |
@@ -632,7 +631,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N28† | `split_button.primary.fill, split_button.secondary.fill @ {pressed}` | rule |
 | MAC-N28† | `split_button.secondary.fill, split_button.arrow.glyph @ {open}` | rule |
 | MAC-N28† | `split_button.* @ size mini / small / regular / large` | rule |
-| MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` | rule |
+| MAC-N29† | `button.body.*, button.menu_indicator @ variant menu {pressed} / variant menu {open}` (`NSComboButton` `.unified`) | rule |
+| MAC-N29† | `combo_box.{body,arrow} @ variant pull_down {pressed} / variant pull_down {open}` (the pull-down `NSPopUpButton`, one control with MAC-CB01) | rule |
 | MAC-N29† | `button.values.menu_indicator_gap` | field |
 | MAC-N29† | `button.* @ variant menu context toolbar.bar (NSMenuToolbarItem)` | rule |
 | MAC-N30† | `media_controls.bar.{fill,corners,shadow} @ variant @inline / @floating / @minimal` | rule |
@@ -690,7 +690,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X04 | `cond system_setting:<the Clear / Tinted setting's key, to verify> (ADD-A04)` | condition |
 | MAC-X04 | `declare.widget.*.variants glass` | field |
 | MAC-X05 | `scroll_view.edge_effect.fill (Material) @ variant soft_edge {scrolled} / variant hard_edge {scrolled}` | rule |
-| MAC-X05 | `scroll_view.values.edge_effect_height, scroll_view.values.edge_effect_edges` | field |
+| MAC-X05 | `scroll_view.values.edge_effect_height; scroll_view.edge_effect @ variant start / variant end` (`absent = true`: the effect under the top and bottom bars only, one element per edge) | rule |
 | MAC-X06 | `background_extension.extension.fill (Material identity background_extension)` | field |
 | MAC-X06 | `background_extension.extension.fill @ context sidebar.pane variant floating` | rule |
 | MAC-X06 | `background_extension.values.mirrors_content` | field |
@@ -707,13 +707,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `switch.values.presentations event @thumb_move (part thumb); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
-| MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, @insert, @delete` | field |
+| MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted) | field |
 | MAC-X11 | `FocusIndicator.transition (the ring's appearance)` | field |
 | MAC-X11 | `menu.values.presentations events Appear, Disappear, @submenu_expand; menu.values.activation_flash` | field |
 | MAC-X11 | `popover.values.presentations events Appear, Disappear` | field |
-| MAC-X11 | `dialog.values.presentations events Appear @ variant alert / @sheet_attach, @sheet_detach @ variant @sheet` | rule |
+| MAC-X11 | `dialog.values.presentations events Appear @ variant alert / Appear, Disappear @ variant @sheet` | rule |
 | MAC-X11 | `window.frame.transitions (Geometry: an animated resize)` | field |
-| MAC-X11 | `tab.values.presentations event @switch` (the tab switch) | field |
+| MAC-X11 | `tab.values.presentations event @indicator_move` (the tab switch: its step on part `pane`, one event for the selection moving) | field |
 | MAC-X11 | `tooltip.values.presentations events Appear, Disappear` | field |
 | MAC-X11 | `scrollbar.values.presentations events Appear, Disappear, @flash; scrollbar.body.transitions, scrollbar.thumb.transitions (the expansion)` | field |
 | MAC-X11 | `token.behavior.scroll.{overscroll,overscroll_effect} (elastic overscroll and its bounce-back)` | token |
@@ -750,7 +750,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X14 | `input.caps_lock_indicator` | field |
 | MAC-X14 | `input.dictation_effect` | field |
 | MAC-X15 | `role.global.selection_text_background @ cond window_inactive` | rule |
-| MAC-X15 | `input.selection.fill @ !{focused}` | rule |
+| MAC-X15 | `input.selection.fill @ context input.body !{focused}` | rule |
 | MAC-X15 | `list.row.text.fill @ {selected} context list.view !{focus_within} / {selected} cond window_inactive` | rule |
 | MAC-X15 | `list.secondary_text.text.fill, list.leading_icon.icon.fill @ {selected} context list.view {focus_within}` | rule |
 | MAC-X15 | `menu.item.fill @ {selected} context autocomplete (= role.@selected_control)` | rule |
@@ -765,7 +765,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X16 | `switch.track.fill @ {checked} cond window_inactive` | rule |
 | MAC-X16 | `slider.fill.fill @ cond window_inactive` | rule |
 | MAC-X16 | `progress_bar.indicator.fill @ cond window_inactive` | rule |
-| MAC-X16 | `segmented_control.indicator.fill @ {checked} cond window_inactive` | rule |
+| MAC-X16 | `segmented_control.indicator.fill @ {selected} cond window_inactive` | rule |
 | MAC-X16 | `combo_box.arrow_area.fill @ cond window_inactive` | rule |
 | MAC-X16 | `list.row_background.fill @ {selected} cond window_inactive` | rule |
 | MAC-X16 | `sidebar.pane.fill @ cond window_inactive` | rule |
@@ -804,7 +804,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X21 | `role.global.drop_highlight` | role |
 | MAC-X21 | `list.row_background.fill @ {drop_target}` | rule |
 | MAC-X21 | `list.view.stroke @ {drop_target}` | rule |
-| MAC-X21 | `input.caret, text_area.caret @ {drop_target} (the text drop caret)` | rule |
+| MAC-X21 | `input.drop_caret, text_area.drop_caret @ {drop_target} (the text drop caret)` | rule |
 | MAC-X21 | `button.values.presentations, list.values.presentations, tab.values.presentations, segmented_control.values.presentations event @spring_load` | field |
 | MAC-X22 | `input.<role> per_contrast (InputValue.per_contrast, S9)` | input |
 | MAC-X22 | `role.* @ cond contrast_increased` | rule |
@@ -877,6 +877,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SF09† | `dialog.values.placement @ variant separate_window (AppKitWindowCenter)` | placement |
 | MAC-SF10† | `dialog.* @ variant @sheet / variant separate_window (SwiftUI's choice: a sheet or a window)` | rule |
 | MAC-SF10† | `dialog.values.natural_size @ variant @sheet (presentationSizing's default)` | rule |
+| MAC-SF10† | `dialog.values.placement (AppKitWindowCenter) @ variant separate_window` (the separate window centred like `center()`) | placement |
 | MAC-RL01† | `layout.values.{item_gap,line_gap} @ variant flow` | rule |
 | MAC-RL02† | `radio_group.values.row_gap; radio_group.values.column_gap @ variant horizontal` | rule |
 | MAC-RL02† | `radio_group.header.{text,padding}, radio_group.values.header_placement` | field |
@@ -896,7 +897,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-5† | `segmented_control.values.segment_width (Fill default)` | field |
 | MAC-P3-5† | `segmented_control.segment.padding` | field |
 | MAC-P3-5† | `segmented_control.values.compression` | field |
-| MAC-P3-6† | `toolbar_editor.body` | field |
+| MAC-P3-6† | `toolbar_editor.body` (the palette, a sheet) | field |
+| MAC-P3-6† | `list @ variant grid context toolbar_editor` (the item grid) | rule |
+| MAC-P3-6† | `toolbar @ context toolbar_editor` (the default set) | rule |
+| MAC-P3-6† | `combo_box @ context toolbar_editor` (the display mode) | rule |
+| MAC-P3-6† | `button @ variant done context toolbar_editor` | rule |
 | MAC-P3-6† | `toolbar.values.presentations events @customize, @items_change` (the items parting and re-laid out in the bar while the editor runs; one home, R20) | field |
 | MAC-P3-6† | `button.* @ {dragged} context toolbar.bar` | rule |
 | MAC-P3-6† | `toolbar.bar @ {drop_target}` | rule |
@@ -917,9 +922,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-10† | `navigation_view.values.presentations (PresentationKind::Keyed, ADD-A26) @ variant @stack_history / @stack_book / @horizontal_strip` | rule |
 | MAC-P3-10† | `navigation_view.edge_shadow @ variant @stack_history / @stack_book (the shadow under the top page, to verify)` | rule |
 | MAC-P3-10† | `navigation_view.values.presentations @ cond reduced_motion` | rule |
-| MAC-P3-11† | `input.caret.fill, text_area.caret.fill @ cond window_inactive / !{focused} (caret visibility, ADD-A24)` | rule |
+| MAC-P3-11† | `input.caret, text_area.caret @ cond window_inactive / !{focused}` (`absent = true`: caret visibility, ADD-A24) | rule |
 | MAC-P3-11† | `input.caret (absent = true), text_area.caret (absent = true) @ {text_selected}` (the caret hidden while text is selected, ADD-A24) | rule |
-| MAC-P3-11† | `input.caret, text_area.caret @ {drop_target} (the drop caret during a text drag)` | rule |
+| MAC-P3-11† | `input.drop_caret, text_area.drop_caret @ {drop_target} (the drop caret during a text drag)` | rule |
 | MAC-P3-12† | `token.behavior.hide_pointer_while_typing` | token |
 | MAC-P3-13† | - | out (R1.1) |
 | MAC-P3-14† | - | out (R1.1) |

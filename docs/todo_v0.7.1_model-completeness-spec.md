@@ -205,7 +205,7 @@ colour expression stated on a `Value<Paint>` field, or in `append`, is one `Colo
 | `gtk_wheel_step(page_size)` | length | GTK's scroll step from the page size, to `gtkrange.c` / `gtkscrolledwindow.c` (GN-P3-15†) |
 | `uifm_scaled(x, text_role)` | length | `UIFontMetrics.scaledValue(for:)` (ADD-A55) |
 | `kde_accent(set, key)` | colour | Plasma's accent derivation for one key of one colour set, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1) |
-| `name_index(text, count, method: NameIndexMethod)` | number | the index a platform's avatar hashes a name to; `NameIndexMethod = Kirigami \| Adwaita` (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3); `TrackingDesign = SfPro \| SfProRounded \| NewYork` |
+| `name_index(text, count, method: NameIndexMethod)` | number | the index a platform's avatar hashes a name to; `NameIndexMethod = Kirigami \| Adwaita` (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3; kirigami-addons' own `nameutils.cpp` is compared with Kirigami's in the value phase and becomes a member if it differs); `TrackingDesign = SfPro \| SfProRounded \| NewYork` |
 | `pick(index, c0, c1, …)` | colour | the colour at `index` (R25.3) |
 
 A function is added to this table only with the platform rule that needs it and its source (R5.4). A platform
@@ -402,12 +402,14 @@ pub struct TextStyle {
 pub enum TextCase { Mixed, Upper, Lower, SmallCaps, Capitalize }
 pub enum LineHeight { Size(FontSize), Auto }  // pt or px (scaled with the text-scaling factor), an Expr on font_size,
                                               // or `Auto`: the font's own line spacing, which the toolkit applies
-pub struct Decoration { pub line: DecorationLine, pub style: DecorationStyle,
+pub struct Decoration { pub line: DecorationLine, pub style: DecorationStyle, pub by_word: Value<bool>,
                         pub thickness: Value<Px>, pub offset: Value<Px>, pub paint: Value<Paint> }
 pub enum DecorationLine { Underline, Overline, Strike }
-pub enum DecorationStyle { Solid, Double, Dotted, Dashed, Wavy }
+pub enum DecorationStyle { Solid, Double, Dotted, Dashed, DashDot, DashDotDot, Wavy }   // AppKit's patterns
+                                                                                      // (MAC-LK01)
 pub enum Elision { None, End, Middle, Start,
-                   Fade { length: Value<Px>, relative: bool, under: Option<FadeUnder> } }  // relative: a fraction
+                   Fade { start: Value<Px>, end: Value<Px>, relative: bool, under: Option<FadeUnder> } }
+                                                       // a fade at either or both edges (GN-1.129); each may be absent  // relative: a fraction
                                                                                         // of the box (ADD-A38);
                                                                                         // under: None, the text's own
 pub enum Wrap { None, Word, Char }
@@ -650,7 +652,9 @@ pub struct ScrollPhysics { pub deceleration: Value<f32>, pub overscroll: Value<T
                            pub wheel_step_duration: Value<Ms>, pub wheel_step_duration_max: Value<Ms>,
                            pub touchpad_factor: Value<f32>,          // touchpad deltas' multiplier (GN-P3-15†)
                            pub touchpad_deceleration: Value<f32>, pub touchpad_timing: Value<Timing>,
-                                                                     // touchpad inertia (K-P3-18†)
+                           pub touchpad_velocity_samples: Value<f32>,   // touchpad inertia: deceleration, curve,
+                                                                     // and the deltas its start velocity is
+                                                                     // estimated from (K-P3-18†)
                            pub wheel_step_timing: Value<Timing>,     // the duration grows with the distance
                                                                      // up to the maximum (K-P3-18†)
                                                                  // smooth wheel scrolling (MAC-P4-4†)
@@ -830,7 +834,8 @@ gaps), which resolve to `Option<Length>`; every other length resolves to `Option
 counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`; `Ripple`'s values; a
 `FocusIndicator`'s `dash`, `shadow` and `transition`; `IconStyle.state_effect`, `weight`, `scale`, `axes`,
 `animation`, `status_colors`; `Glyph.stroke`, `draw_extent`, `axes`; `TextStyle.decoration`,
-`mnemonic_decoration`, `letter_spacing`, `word_spacing`; `Font.width`; every `TextRendering` field; `Stroke.outset`;
+`mnemonic_decoration`, `letter_spacing`, `word_spacing`; `Decoration.by_word`; `Elision::Fade`'s `start` and `end`;
+an `Edge`'s `width` and `paint` (an edge not drawn); `Font.width`; every `TextRendering` field; `Stroke.outset`;
 `Edge.dash`; `PartStyle.shape`, `touch_target`, `margin`; `Caret.secondary`, `shown_in_read_only`,
 `solid_while_typing`; every `Behavior`, `TouchBehavior`, `ScrollPhysics` and `PointerTokens` field; every
 `KdeTokens` field; `MaterialScheme.contrast_level`; `IconTokens.theme_fallback`; a spring's `Transition.duration`.
@@ -944,9 +949,13 @@ more platforms draw, and the catalogue says which widgets declare each.
 pub enum ControlSize { ExtraSmall, Mini, Small, Regular, Large, ExtraLarge }
 pub enum Density { Default, Compact, Keyed(Key) }      // Material's density steps keyed
 pub enum SizeClass { Compact, Medium, Expanded, Large, ExtraLarge, Regular }   // closed by the catalogue
-pub struct Breakpoint { pub min_width: Value<Px>, pub min_height: Value<Px>, pub variant: VariantRef }
-                                                       // a widget's breakpoint: at or above the sizes, the variant
-                                                       // holds (R16); either size may be absent
+pub struct Breakpoint { pub comparison: Comparison, pub measured: Measured, pub width: Value<Px>,
+                        pub height: Value<Px>, pub variant: VariantRef }   // either size may be absent (R16)
+pub enum Comparison { AtLeast, Below }                 // the platform's own direction, not inverted
+pub enum Measured { Allocation, Window }               // the size the parent offers the element (libadwaita's
+                                                       // breakpoint bin), or the window's: never the element's own
+                                                       // laid-out size, so a variant that changes padding does not
+                                                       // feed back into its own breakpoint
 pub struct SizeClasses { pub horizontal: Option<SizeClass>, pub vertical: Option<SizeClass> }   // R25.10; None:
                                                                      // the platform states no class on that axis
 ```
@@ -1054,7 +1063,9 @@ pub struct ElementData<'a> {                               // R25.3; Default: ze
     pub width: Px, pub height: Px, pub progress: Fraction, // item 0 of 1, empty text, transparent
     pub scroll_offset: Px, pub scroll_progress: Fraction,
     pub item_index: u32, pub item_count: u32, pub text: &'a str,
-    pub color: Color,                                      // an application-chosen colour derived values follow
+    pub color: Color,                                      // a colour the connector supplies that derived values
+                                                           // follow: the application's choice (a badge), or the
+                                                           // text's colour under a caret (K-P3-11†)
     pub move_distance: Px,                                 // how far a Move presentation moves it (K1.133†)
     pub display_corner_radius: Option<[Px; 4]>,            // per corner, where the platform reports it (Android,
 }                                                          // MAT-W5†); None: token.params.display.corner_radius
@@ -1168,6 +1179,9 @@ requires_variants = []                                     # e.g. iOS's checkbox
 [declare.flavor.kirigami.widget.button]                   # a flavour's declarations where they differ (R2.7)
 sizes = ["regular"]
 
+[declare.flavor.kirigami.component.<key>]                  # likewise for a component (which flavour draws it)
+available = true
+
 [declare.widget.spinner]
 data = { indicator = ["width", "height"] }                 # element data a part's values read (S8)
 
@@ -1265,7 +1279,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `part.`, `font_size`, `line_height` outside the block tokens S2.2 names) or a colour-role definition names
   `surface.` (S3.3);
 - a keyed selector name (a variant, flag, condition, container size or event) is declared but no rule selects on it,
-  or a declared keyed name no base states (a typo's sign);
+  or a declared keyed name no base states (a typo's sign); a `SystemSetting` the preset declares for applications to
+  read (`Theme::system`) is exempt;
 - a stated number is not finite.
 
 `Theme::add_layer` validates the layer against the theme and refuses it with the error (R2.5). A rule whose
@@ -1287,7 +1302,9 @@ pub enum PlacementStrategy { GtkPopover, GtkTooltip, QtMenu, QtTooltip, QtQuickT
                              UiKitPopover, UiKitMenu, UiKitAlert, UiKitEditMenu,
                              KCommandBar, AppKitContextHelp, WinUiKeyTip, UiKitContextMenu,
                              KirigamiAddonsSearchPopup, KirigamiAddonsOnboardingTip,
-                             CenteredInHost, BottomSheet, KeyboardAvoid(KeyboardAvoidance) }
+                             CenteredInHost, OverlayBottomCenter, BottomSheet,
+                             KeyboardAvoid(KeyboardAvoidance) }   // OverlayBottomCenter: AdwToastOverlay's and
+                                                                  // Kirigami's toasts (GN-2.12, Q2.50)
 pub enum ScaffoldSlot { Fab, Snackbar }
 pub enum KeyboardAvoidance { WinUiContentDialog, UiKitAlert, UiKitSheet, WinUiScrollIntoView, AndroidPan,
                              AndroidResize, AndroidInsetsAnimation }
@@ -1392,6 +1409,8 @@ impl Theme {
     pub fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError>;   // None: the system's again
     pub fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError>;  // None: removes it
     pub fn reader_status(&self) -> ReaderStatus;
+    pub fn system(&self) -> &ReaderState;                 // the conditions the reader reports, for what an
+                                                          // application acts on itself (Windows' ShowSounds, W-P3-11†)
     pub fn set_contrast(&mut self, contrast: Option<Contrast>) -> Result<(), LayerError>;  // None: the reader's
     pub fn resolve(&self, window: &mut WindowState, conditions: &WindowConditions) -> Resolution;   // S8
 }
@@ -1587,6 +1606,7 @@ lines that cite it.
 | ADD-A86 | pointer-hide delay and fade, pixels per wheel step, wheel-step duration range | S4.2 |
 | ADD-A87 | `ElementData.move_distance` | S8 |
 | ADD-A88 | `TextScaling` (R25.15) | S4.4, S9.4 |
+| ADD-A96 | `Comparison`, `Measured`, `OverlayBottomCenter`, two-edge fade, touchpad velocity samples, `Theme::system`, decoration patterns | S7.3, S13, S2.8, S4.2, S16 |
 | ADD-A95 | `Radius::FollowPart`, `Breakpoint`, `sizes_by_variant`, touchpad inertia, `Theme::set_contrast`, `WindowState` | S2.4, S7.3, S10, S4.2, S16, S8 |
 | ADD-A89 | `FadeUnder` | S2.8 |
 | ADD-A90 | `uikit_prominence`, `gtk_wheel_step`, `shadow_extent`, `kte_mark_underlay` | S2.2 |
