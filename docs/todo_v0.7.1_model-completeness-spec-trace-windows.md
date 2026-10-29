@@ -823,7 +823,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P3-10† | `token.behavior.hide_pointer_while_typing` | token |
 | W-P3-10† | `reader:windows:SPI_GETMOUSEVANISH` | reader |
 | W-P3-10† | - (the Working in Background cursor while a process starts: the system's) | out (R1.1) |
-| W-P3-11† | `cond system_setting:show_sounds (ADD-A04)` (SM_SHOWSOUNDS: what the system leaves the application to act on, R1.1; no preset rule selects on it, so the application must read it: a getter for the reader's conditions and S12's exemption for such a key are a needed core change) | condition |
+| W-P3-11† | `cond system_setting:show_sounds (ADD-A04)` (SM_SHOWSOUNDS: what the system leaves the application to act on, R1.1; no preset rule selects on it; the application reads it through `Theme::system()`, and S12 exempts a `SystemSetting` declared for applications to read) | condition |
 | W-P3-11† | `reader:windows:SM_SHOWSOUNDS` | reader |
 | W-P3-11† | - (the SoundSentry flash, which the system draws over the active window's title bar, the active window or the display) | out (R1.1) |
 | W-P3-12† | `token.behavior.{double_click_distance,double_click_height} (ADD-A45)` | token |

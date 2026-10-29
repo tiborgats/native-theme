@@ -266,8 +266,8 @@ decision):
 - Where one platform draws a host's own part with another widget (KDE's date and time triggers as a combo box or a
   spin box, its date popup as a menu, kirigami-addons' popups as a dialog), the part is `drawn_as` that widget on
   that preset (S6.1, Entry format): the query answers `DrawnAs` with the widget and its variants, and the connector
-  builds that element in the host's context, so it needs no platform knowledge and the look is stated once, by that
-  widget's rules in the host's context.
+  builds that element in the host's context, with the host element's states (S8), so it needs no platform knowledge
+  and the look is stated once, by that widget's rules in the host's context.
 - The element's identity in its host is a variant of its widget, typed where two or more platforms share it (R15):
   the typed identities `button` lists (its entry is the list): `close`, `back`, `previous`, `next`, `overflow`, `add`,
   `remove`, `done`, `clear_field`, `reveal`, `pane_toggle`, the media identities `play`, `volume`, `full_screen`,
@@ -2494,7 +2494,10 @@ spaces:
     following the progress, a pull to refresh's pull progress among them (Q2.54†), which the part declares, `data = {
     indicator = ["progress"] }`, ADD-B12; a pie, if MAC-SN04's render shows one, is the same route: the circle path at
     half the pie's radius, stroked as wide as the pie's radius with a `butt` cap, whose swept stroke fills the wedge;
-    its `fill` absent, the path being stroked only, granted below), `fill` (the loading indicator's shape colour,
+    its `fill` absent, the path being stroked only, granted below; on `adwaita` its `size` the smaller side of the
+    element's box, capped as AdwSpinner caps it, a glyph drawn to its box (S8: AdwSpinner measures at its minimum,
+    `body.min_width` and `min_height`, and draws the arc at its allocation, `adw-spinner.c:70-81`,
+    `adw-spinner-paintable.c:343`), the part then also declaring `width` and `height`), `fill` (the loading indicator's shape colour,
     MAT-N24; absent where the indicator is the arc, whose paint is its glyph's stroke), `transform` (its rotation,
     which the keyframes set), `transitions` (`Glyph`: the determinate arc's extent following a value change,
     MAT-SN6), `shape` (under Material's loading indicator a `ShapeKind::Material` shape, implemented in code, S2.4,
@@ -2558,8 +2561,8 @@ spaces:
   `body.corners` (all but `material-3`; `material-3` by a rule outside `@contained`: only
   Material's contained loading indicator draws a container round the spinner, MAT-N24), `indicator.glyph`
   (`material-3` by a rule under `@loading_indicator`, whose indicator is a morphing shape, MAT-X12),
-  `indicator.glyph.fill` (every preset: the arc's circle path is stroked only, its paint `glyph.stroke`'s; the core
-  marks no absence of `Glyph.fill` for a stroked-only path, a needed core change, until which this entry grants it),
+  `indicator.glyph.fill` (every preset: the arc's circle path is stroked only, its paint `glyph.stroke`'s; the
+  core's mark for a stroked-only path, S6.3),
   `indicator.transform` (`macos-*`, `ios-*`, whose indeterminate spinners are spokes and whose value arc does not
   turn; every preset by a rule under `!{indeterminate}`), `icon.transform` (all but
   `kde-breeze`: GtkSpinner's icon plays its own animated SVG, GN-1.230, and no other platform draws a spinner icon,
@@ -2652,8 +2655,9 @@ spaces:
   (Breeze tiles a two-stripe pattern over the rounded fill and offsets it by the busy engine's integer value, run
   from zero to the pattern's period and looped, `breezehelper.cpp:1222-1270`, `breezestyle.cpp:6263-6269`,
   `animations/breezebusyindicatorengine.cpp:94-98`, its duration the read `ProgressBarBusyStepDuration`,
-  `animations/breezeanimations.cpp:81`; reversed in right-to-left, `breezehelper.cpp:1245-1247`): a `Linear`
-  paint has no offset, so the shift is a needed core change, until which the stripes cannot move; GN-1.113, K1.110,
+  `animations/breezeanimations.cpp:81`; reversed in right-to-left, `breezehelper.cpp:1245-1247`): the shift is the
+  gradient's `offset` (S2.3), from zero to one pattern period over the loop, and a `dir rtl` rule states the
+  reversed loop, a paint not being mirrored (S2.3); GN-1.113, K1.110,
   MAC-P01, W1-075, MAT-P6); `label_position: Value<ValueLabelPosition>` (K1.115, PB-4, MAC-P3-4, K1.113); `label_gap_px: Value<Px>`,
   `label_alignment: Value<Alignment>` (K1.113, PB-4, MAC-P3-4); `warning_threshold: Value<Fraction>` (the value
   above which KDE's places panel recolours its capacity bar, K1.142†: the progress is element data, so the recolouring
@@ -2813,10 +2817,9 @@ spaces:
     (`top`, `bottom`, `start`, `end`), drawn while content lies under that edge (its own `scrolled`): GTK's
     undershoot (`undershoot.top`, `.bottom`, `.left`, `.right`, each on its own: a shade line over a short gradient,
     with its high-contrast border, GN-3.06), Apple 26's soft or hard edge under the top bar and the bottom bar each
-    (a material paint with blur, its `fill`; the soft edge's fade toward the content is a mask over that material,
-    which paint layers cannot state, as they composite, `Normal` or a keyed blend mode, and none masks the layers
-    beneath it: a needed core change, until which the value phase states the material and records the fade as a
-    finding, R25.4): `fill`, `stroke`.
+    (a material paint with blur, its `fill`; the soft edge's fade toward the content is a `Mask` layer over that
+    material, a linear gradient from opaque to transparent whose alpha masks it, S2.3, the value phase stating its
+    stops from the facts): `fill`, `stroke`.
   - `overshoot` *(element)* — GTK's overshoot gradient at one edge, one element per edge with the same identities,
     drawn while the user scrolls past that edge (its own `{@overshoot}`, GN-3.06): `fill`, `transitions`. Android's
     stretch and glow are `token.behavior.scroll.overscroll_effect`.
@@ -4686,8 +4689,10 @@ spaces:
   - `extra_caret` *(element)* — one of KDE's multiple cursors, one element per secondary caret, drawn as the caret
     is (K-P3-11†): `fill` (the colour of the text under that caret, `= element.color`, which the connector supplies
     as the element's data), `min_width`, `min_height` (the line, and under the editor's Vi variants the caret's
-    block, underline and half block, by the same rules as `caret`'s; its block width the `text` part's character
-    width); `data = { extra_caret = ["color", "widget.text.char_width"] }`.
+    block, underline and half block, by the same rules as `caret`'s; its block width the character width of the
+    editor's font), `text` (that font, which it measures and does not draw: a reference to the style the `text`
+    part's `text` references, as an *(element)* part reads none of its host's parts, S2.2); `data = { extra_caret =
+    ["color", "char_width"] }`.
   - `current_line` *(element)* — the current line, with KDE's mark flags of its own (GN-SF04†, K-SF03†): `fill`.
   - `gutter` (GN-SF05†, K-SF04†) — `fill`.
   - `line_number` — `text`.
@@ -8212,6 +8217,10 @@ group, snake-cased (the twelve keys KColorScheme reads, platform-facts §1.3.2: 
   KColorScheme's inactive effects (the start the inactive colour rules above apply `kde_effects(c, background, inactive, kind)` over),
   for every set and key.
 
+A fourth namespace, with keys of its own, `input.kde_scheme.wm.<key>`, holds the `[WM]` group's four keys (`active_background`, `active_foreground`,
+`inactive_background`, `inactive_foreground`, the core's `KdeWmKey`, S4.8), which `kde_accent_wm` reads (S9.1; the
+keyed roles `wm_*` below).
+
 Who states the accent-dependent roles and the inactive input roles (the catalogue's one summary of it; the core's
 S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this summary differs; ADD-A109):
 
@@ -8320,12 +8329,13 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
   which the reader states, in its `for_preset.kde-breeze` part, as references: `= active(role.selection.background)`,
   `= active(role.selection.foreground)`, `= role.selection.disabled.background`, `= role.selection.disabled.foreground`;
 - the accent layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the accent layer states
-  these four roles too, by that derivation over the scheme inputs in force; `kde_accent`'s signature (a `SurfaceSet`
-  and a scheme key) cannot name `[WM]`'s keys, so the core's accent derivation covers them (S2.2, S9.2);
-- a mapping palette states the four roles in `[for_preset.kde-breeze]` (the project's colours, or references to its
-  `Header` roles, as `applyScheme()`'s default does) and is refused where it leaves them to the preset, as for the
-  inactive input roles (S12, S14); a KDE port converts the file's `[WM]`, or where it has none the `Header` defaults
-  above (S14).
+  these four roles too, each `= kde_accent_wm(<key>)` (S2.2, S9.2), over the scheme inputs in force, among them
+  `input.kde_scheme.wm.<key>` (S9.1: the scheme file's `[WM]` key, or the `Header` default above where the file has
+  none);
+- a mapping palette states the four roles in `[for_preset.kde-breeze]` (the project's colours, or as `applyScheme()`'s
+  default takes them from its `Header` roles, S14) and is refused where it leaves them to the preset's Breeze value,
+  as for the inactive input roles (S12, S14); a KDE port converts the file's `[WM]`, or where it has none the `Header`
+  defaults above, to `input.kde_scheme.wm.<key>` and states each role as `= input.kde_scheme.wm.<key>` (S14).
 
 **macOS (`macos-*`).** Label hierarchy beyond the record: `label_tertiary`, `label_quaternary`, `label_quinary`
 (14+) [MAC-DF01]; the system fill ramp `system_fill`, `system_fill_secondary`, `system_fill_tertiary`,

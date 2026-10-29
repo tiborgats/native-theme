@@ -1,6 +1,6 @@
 # v0.7.1 — Model completeness: Specification
 
-**Status:** draft, 2026-10-28; in progress (§0). This document states the model the rationale
+**Status:** draft, 2026-10-29; in progress (§0). This document states the model the rationale
 ([`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md), "R…")
 decides: its types, values, rules, order, API, file formats and checks. It is in three parts:
 
@@ -22,20 +22,7 @@ platform is stated here: values come from the facts (S17) in the value phase.
 | Research the rationale requires first: kirigami-addons survey (R1.2), community ports (R19), Plasma's accent derivation (R2.6) | done; R19 and R25 decided from it |
 | Widget catalogue | 86 typed widgets, 28 keyed components; `scripts`-style checks in the session scratchpad (names, entries) pass |
 | Traceability | every row of the six platforms traced; `scripts/check_spec_trace.py` passes |
-| Check passes | serious findings per pass, core / catalogue / traces (random sample): 1: 11 / 5 / 9 rows of 256; 2: 10 / 4 / 6.7 % (then every row re-verified); 3: 6 / 5 / 0.8 %; 4: 6 / 12 / 1.25 %; 5: 3 / 4 / 0.4 %; 6: 1 / 5 / 0.4 %; 7: 0 / 5 / 0 %; 8: 0 / 2 / 0 %; 9: 1 / 2 / 0.4 %; 10: 1 / 8 / 0.4 %; 11: 0 / 9 / 2.1 %; each fixed (pass 11: the core's 9 should-fix and 19 minor findings fixed; the catalogue and traces follow) |
-
-**Open after the eleventh check's fix round** (found by the catalogue round, not yet in this core; the next round
-applies them): `keys` declarations for plain `Vec<Key>` values and keys inside list entries, and a flavour's own
-variant set (S10); content variants as (widget or part, variant) pairs (S8, S12); `WidgetValue` members `Vec<char>`,
-`Vec<Key>`, `Vec<MenuEntry>`, `FontSize` (S1); `[WM]` in `kde_accent` or a sibling, `[WM]` scheme inputs, a port's
-`[WM]`, and refusing a `kde-breeze` mapping that leaves the `wm_*` roles (S2.2, S12, S14); S12's stale "the preset's
-`kde_accent` expression" wording (now the preset's Breeze value); a linear gradient's offset (Breeze's busy stripes,
-K1.110) and a paint mask (Apple 26's soft scroll edge) (S2.3); every keyframe of a widget-value loop names its part,
-and `Glyph.fill` may be absent on a stroked-only glyph (S12, S6.3); a glyph sized to a box that is not fixed, and a
-`drawn_as` substitute taking its host's states (S8, S12); whether a font size derived from another style's is scaled
-once, the `line_height` exemption covering `widget.<part>.line_height`, and an *(element)* part reading its host
-part's metric (S2.2, S9.4); a change with no transition is immediate, two edges meeting at a corner paint it once,
-and whether `translate_x` mirrors in right-to-left (S2.7, S2.4, S2.6); `pointer_repeat` among S4.6's groups.
+| Check passes | serious findings per pass, core / catalogue / traces (random sample): 1: 11 / 5 / 9 rows of 256; 2: 10 / 4 / 6.7 % (then every row re-verified); 3: 6 / 5 / 0.8 %; 4: 6 / 12 / 1.25 %; 5: 3 / 4 / 0.4 %; 6: 1 / 5 / 0.4 %; 7: 0 / 5 / 0 %; 8: 0 / 2 / 0 %; 9: 1 / 2 / 0.4 %; 10: 1 / 8 / 0.4 %; 11: 0 / 9 / 2.1 %; each fixed (pass 11's fix round done: the core's 9 should-fix and 19 minor findings, the catalogue's and the traces' findings, and the ten core items the catalogue round found, ADD-A110). The maintainer chose to finish the specification with one final check of the core alone |
 
 ## S1. Conventions
 
@@ -91,7 +78,12 @@ and whether `translate_x` mirrors in right-to-left (S2.7, S2.4, S2.6); `pointer_
   the one with the largest bound not above its size there, and the axis has none when no class qualifies; `Accent` is `{ accent: InputValue, derived: Vec<(InputName, InputValue)> }`
   (S9.2); `WidgetValue` is the union of the value types widget values use: a number, integer, length, duration,
   bool, key, enum variant, colour, paint, timing, transition, loop, glyph, icon style, scroll physics, breakpoints,
-  `Vec<PresentationTransition>`, a `Placement` (S13) and `Sides<Value<Px>>` (a length per side, S10's `"sides"`); a keyed component's values are typed by its declaration
+  `Vec<PresentationTransition>`, a `Placement` (S13), `Sides<Value<Px>>` (a length per side, S10's `"sides"`), a
+  font size (`Value<FontSize>`, S2.8: `input.min_font_size`; converted from points as S9.4 converts a font size, and
+  not text-scaled, a platform that scales it stating the expression, `uifm_scaled`), `Vec<char>` (characters in order
+  of preference, `input.mask_character`), `Vec<Key>` (a list of declared keys, S10's `keys`) and `Vec<MenuEntry>`
+  (`MenuEntry` is the catalogue's, defined at `window`'s `window_menu_items`: an action key, a separator or a
+  submenu of entries); a keyed component's values are typed by its declaration
   (S10). `DisabledRoles` and `StatusRoles` are the catalogue's (*Colour
   roles*). `Expr` is a parsed expression (S2.2); `StepJump` is CSS's `jump-start | jump-end | jump-none |
   jump-both`; the `Widget` trait, `ResolvedTokens`, `ResolvedFont`, `ResolvedPartStyle`, `ResolvedIconStyle` and the per-widget types are
@@ -104,7 +96,7 @@ and whether `translate_x` mirrors in right-to-left (S2.7, S2.4, S2.6); `pointer_
   `PartStylePatch`, `ColorRolesPatch`, `TokensPatch`, `<W>ValuesPatch`), and `WidgetsPatch` holds, per typed widget,
   its parts' `PartPatch`es and its values' patch; `TextRole` is the enum of the nineteen `TextRoles` slots (S4.4), one
   variant per field (`Body`, `BodyEmphasized`, … `Numeric`); `DataNeeds` is a set of element-data
-  operands and metrics; `LayerId`, `PaletteId` are opaque ids; `KeyError` is `Key::new`'s error (the text and the
+  operands and metrics, with a flag for a part whose glyph or icon is drawn to its box (S8); `LayerId`, `PaletteId` are opaque ids; `KeyError` is `Key::new`'s error (the text and the
   first character outside the key grammar). `SchemeMap<T>` holds at most one `T` per `Scheme` (`Default`: none; a
 palette states only its schemes, S14, and a value no layer states for a scheme is missing, S2.2); `SurfaceMap<T>` one per declared `SurfaceSet`; `SurfaceRole` and
   `GlobalRole` name a field of `SurfaceRoles` and `GlobalRoles` (a path, `disabled.foreground`); `WidgetKind` is the
@@ -241,14 +233,25 @@ and `ResolvedTheme::tokens()` evaluates them against the style's own size, leavi
 line height can be `Auto` is refused (S12). `part.` is not allowed in tokens (S12). An expression nests at most 32
 deep, and a chain of references is at most 32 long (S12). `font_size` and `line_height` are lengths; a length is
 accepted where a font size is expected, as px. Under `line_height = auto` the `line_height` operand of a part's
-query is the font's own line spacing, `Element.metrics.line_spacing` (the part declares it, S8).
+query is the font's own line spacing, `Element.metrics.line_spacing` (the part declares it, S8), and
+`widget.<part>.line_height` is that part's font's line spacing likewise (the reading part declares
+`widget.<part>.line_height`, S10).
 
 **`Auto` is not a number.** An operand that can resolve `Auto` (a size limit, a gap or a line height a rule or base
 leaves `auto`, followed through references and rules conservatively, as for `Absent`) is refused in a call (S12):
 `add(part.max_width, 4px)` over an `auto` maximum would have to invent a value. Two uses stay: a part's
 `line_height` operand, defined above as the line spacing; and a plain reference (an expression that is one reference
 and no call) on a field that itself allows `Auto`, which then resolves `Auto` with it; a plain reference that can
-bring `Auto` to a field that does not allow it is refused, as a stated `Auto` there is (S12).
+bring `Auto` to a field that does not allow it is refused, as a stated `Auto` there is (S12). The first use covers
+`widget.<part>.line_height` too (a mark's size from the text's line, a caret's width from it): under `auto` it is
+that part's line spacing, never `Auto`.
+
+**An *(element)* part reads none of its host's parts**, a font metric included (`widget.<host part>.char_width`):
+one query evaluates one element, under that element's states, data and position (S8), while the host's part resolves
+its font under the host element's, which only the host's own query has; reading it would resolve a second element
+inside the first. Where an *(element)* part's value follows the font of a host part, it lists `text` itself, a
+reference to the style that part's `text` references (the token or slot stays the one home of the font), and reads
+its own font's metric (`element.char_width`), which it declares (S8).
 
 **`active(ref)`** names a role's active value (R5.1): the role is found as any reference finds it (S3.3: a
 `surface.x` through the `Surface(S)` bindings in scope to `role.S.x`), and its value is the colour roles' value from
@@ -316,6 +319,7 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 | `gtk_wheel_step(page_size)` | length | GTK's scroll step from the page size, to `gtkrange.c` / `gtkscrolledwindow.c` (GN-P3-15†) |
 | `uifm_scaled(x, text_role)` | length | `UIFontMetrics.scaledValue(for:)` (ADD-A55) |
 | `kde_accent(set: SurfaceSet, key: @kde_scheme key, group: KdeGroup)` | colour | Plasma's accent derivation for one key of one colour set and group, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1): group `active` the active role; group `inactive` the inactive input role: for a set whose scheme file states an `[Inactive]` group, what `applyScheme()` writes there (`colorsapplicator.cpp:247-284` at v6.8.2): while the scheme tints (`token.kde.tint_factor` stated), every set's own file value `input.kde_scheme.<set>.inactive.<key>`, `Header`'s included, tinted toward the accent; while it does not, `Header`'s the file's active `Window` value `input.kde_scheme.window.<key>` (Plasma 6.8's substitute, R25.1) and another set's its own file value untinted; the accent never replaces an `[Inactive]` group's accent keys; and then, while `token.kde.titlebar_is_accent_colored` holds, `Header`'s background and foreground as that option writes them (the file's `Window` background tinted toward the accent, and the text on it), over either branch. For a set whose file states none it is the set's active result, as KColorScheme reads a set without an `Inactive` group (`kcolorscheme.cpp`, which then keeps the active group); group `disabled` is refused (S12): disabled roles are KColorScheme's effects over the active values (R5.1), not an accent derivation |
+| `kde_accent_wm(key: KdeWmKey)` | colour | the rest of the same derivation, `applyScheme()`'s `[WM]` group (`colorsapplicator.cpp:287-338` at v6.8.2), one route with `kde_accent` (one implementation of `applyScheme()`, R25.1): it starts from the scheme input `input.kde_scheme.wm.<key>`, what `applyScheme()` writes with no accent (S9.1: the file's `[WM]` key, else its `Header` default); then the inactive background and foreground, while the scheme tints (`token.kde.tint_factor` stated), are the file's `Window` background `input.kde_scheme.window.background_normal` tinted toward the accent and the text on it (`tintColor`, `accentForeground`); the active background and foreground, while `token.kde.titlebar_is_accent_colored` holds, are that `Window` background accented as the title-bar option writes it and the text on it (`accentBackground`, `accentForeground`), else, while the scheme tints, the tinted `Window` background and the text on it; any key neither option changes keeps the start value. `KdeWmKey` (S4.8) names the four keys Breeze reads (`breezehelper.cpp:98-102`) |
 | `name_index(text, count, method: NameIndexMethod)` | number | the index a platform's avatar hashes a name to; `NameIndexMethod = Kirigami \| Adwaita` (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3; kirigami-addons' own `nameutils.cpp` is compared with Kirigami's in the value phase and becomes a member if it differs); `TrackingDesign = SfPro \| SfProRounded \| NewYork` |
 | `pick(index, c0, c1, …)` | colour | the colour at `index` (R25.3) |
 
@@ -331,9 +335,13 @@ style); a bare number takes the type of
 the other operand; `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)` and `floor(T)` give a `T`;
 a mismatch is an error when the layer is added (S12). A function that reads inputs or reader values itself
 (`kde_accent` reads `input.accent`, `input.kde_scheme.<set>.<key>` and `.<set>.inactive.<key>`, `token.kde.tint_factor` and
-`titlebar_is_accent_colored`; with tinting on, every role depends on the accent; `uifm_scaled` the reader's content-size
+`titlebar_is_accent_colored`; with tinting on, every role depends on the accent; `kde_accent_wm` reads `input.accent`,
+`input.kde_scheme.wm.<key>`, `input.kde_scheme.window.background_normal` and the same two tokens; `uifm_scaled` the reader's content-size
 category, S8, S9.4) lists them, and the checks treat them as its operands. A font size reaches a function in logical
-pixels, converted and scaled (S9.4).
+pixels, converted and scaled (S9.4), except in an expression stated on a `Font.size` (a part's `text.font.size`, a
+text style token's), where every font-size operand (another style's or slot's `font.size`, `widget.<part>.font_size`)
+is converted and not yet scaled, and the result is scaled once (S9.4); a `FontSize` widget value, not text-scaled
+(S1), reads its font-size operands converted only.
 
 **Totality** (the query cannot fail, R2.8): `alpha` clamps the resulting alpha to `0..=1`, as CSS Color 5's relative
 colours do (a factor above one is valid: libadwaita multiplies a shade's alpha by more, GN-1.210); `mix` clamps its
@@ -356,7 +364,9 @@ pub struct PaintLayer { pub kind: PaintKind, pub blend: BlendMode }
 pub enum PaintKind {
     Color(Value<Color>),
     Linear { angle: Deg, stops: Vec<Stop>, repeat: bool,
-             extent: Option<Value<Px>> },     // stops over this many px from the start edge (ADD-A31); None: the box
+             extent: Option<Value<Px>>,       // stops over this many px from the start edge (ADD-A31); None: the box
+             offset: Option<Value<Px>> },     // the stops shifted along the axis by this many px (K1.110); None:
+                                              // not shifted
     Radial { center: (f32, f32), radius: Value<Px>, stops: Vec<Stop>, repeat: bool },  // center: fractions of
                                                                                         // the box; radius in px
     Conic { center: (f32, f32), start_angle: Deg, stops: Vec<Stop> },          // R25.4
@@ -368,7 +378,8 @@ pub enum Pattern { Checkerboard, Grid, QtBrush(QtBrushStyle) }   // each to its 
 pub enum QtBrushStyle { Dense1, Dense2, Dense3, Dense4, Dense5, Dense6, Dense7, Hor, Ver, Cross, BDiag, FDiag,
                         DiagCross }                               // Qt's `Qt::BrushStyle` patterns
 pub struct Stop { pub position: f32, pub color: Value<Color> }
-pub enum BlendMode { Normal, Keyed(Key) }    // platform blending modes as the facts name them (macOS vibrancy)
+pub enum BlendMode { Normal, Mask,           // Mask: the layer's alpha masks the layers beneath it (below)
+                     Keyed(Key) }            // platform blending modes as the facts name them (macOS vibrancy)
 pub struct Material {
     pub identity: Key,                        // the platform's material (S10 declares the set)
     pub blur_radius: Value<Px>,
@@ -382,7 +393,19 @@ pub struct Material {
 ```
 
 A rule's patch either sets a paint (`fill = …`) or appends layers over `base` (`fill.append = [ … ]`) (R6). A
-repeating gradient repeats its stops beyond the last (stripes, K1.110).
+repeating gradient repeats its stops beyond the last (stripes, K1.110). A linear gradient's `offset` moves its stops
+along its axis, toward the axis's end for a positive offset (a repeating one wraps; a non-repeating one extends its
+end colours, as without an offset), so a loop's keyframes, or a transition, that change it move the pattern: Breeze's
+busy stripes, offset by one pattern period over the loop (K1.110). It interpolates as a length. A paint is drawn in
+the box's own coordinates and is not mirrored in right-to-left, as a CSS gradient is not; a platform that reverses
+one there (Breeze's stripes run the other way, `breezehelper.cpp:1245-1247`) states it by a rule under the direction
+(S7, R16).
+
+A layer with `BlendMode::Mask` is not drawn: its alpha, at each point, multiplies the alpha of the layers beneath it
+in the same paint (Porter-Duff destination-in, CSS's `mask` with an alpha mask), so a gradient from opaque to
+transparent stated over a `Material` layer fades the material out (Apple 26's soft scroll edge, MAC-X05, C-18;
+`scroll_view.edge_effect`); the layers above it are drawn normally. A paint whose bottom
+layer is a `Mask` masks nothing and is refused (S12).
 
 ### S2.4 Corners, stroke (R7)
 
@@ -402,7 +425,7 @@ pub enum CornerCurve { Circular, Continuous }
 pub struct Stroke { pub top: Edge, pub right: Edge, pub bottom: Edge, pub left: Edge,
                     pub position: StrokePosition,
                     pub outset: Value<Px> }      // the gap between the box and an `Outside` stroke (iOS's
-                                                 // `strokeOutset`, CD-1); absent elsewhere
+                                                 // `strokeOutset`, CD-1); absent where no outset is drawn
 pub struct Edge { pub width: Value<Px>, pub paint: Value<Paint>, pub dash: Value<DashPattern>,   // ADD-A32
                   pub snap: PixelSnap }                                                    // ADD-A33
 pub enum DashPattern { Solid, Dotted, Dashed { on: Px, off: Px } }   // a drawn edge states its pattern, `solid`
@@ -481,6 +504,12 @@ width_px = <n>, paint = "…", dash = "solid", snap = "to_device_pixel", positio
 }`), never both, as TOML cannot extend an inline table. An edge's table states no field a shorthand key sets (a
 duplicate key, S12): an edge that differs is stated with all four edges' tables and no shorthand.
 
+Where two drawn edges meet, the corner square (or, under rounded corners, the corner's arc) is painted once, never
+by both edges, so a translucent stroke's corner is no darker than its sides: where the two edges' paints and widths
+are equal it is that edge's; where they differ it is divided between them along the line from the outer corner to
+the inner one, as CSS divides a border's corner between two border colours, each half painted by its own edge (and
+dashed by its own pattern).
+
 ### S2.5 Shadow (R8)
 
 ```rust
@@ -503,6 +532,14 @@ pub struct Transform { pub scale_x: Value<f32>, pub scale_y: Value<f32>, pub rot
                        pub translate_x: Value<Px>, pub translate_y: Value<Px>,
                        pub origin: (f32, f32) }                // fractions of the part's box
 ```
+
+A transform is stated for a left-to-right layout and mirrored with it, as `Sides` and alignments are (S1, R16):
+under right-to-left, `translate_x` is negated and `origin`'s horizontal fraction is measured from the start edge,
+so a part moved toward its end moves toward the end in either direction (an indeterminate bar's moving indicator, a
+thumb's offset). The reason is R16's: the toolkit mirrors the layout, and a translation is a displacement in that
+layout, so stating it per direction would state one motion twice. `rotate`, `scale_x`, `scale_y` and
+`translate_y` are not mirrored; a platform that does otherwise (a rotation reversed under right-to-left, a
+translation kept) states it by a rule under the direction (S7).
 
 ### S2.7 Transitions and timing (R9)
 
@@ -554,7 +591,10 @@ pub enum PresentationKind { Fade, Slide { from: EdgeSide, distance: Value<Px> },
                             Keyed { key: Key, params: Vec<(Key, Value<Scalar>)> }, Instant }   // ADD-A25, A26
 pub enum EdgeSide { Top, Bottom, Start, End, TowardAnchor }   // TowardAnchor: WinUI's menus (ADD-A25)
 pub struct Loop { pub period: Value<Ms>, pub timing: Value<Timing>, pub keyframes: Vec<Keyframe> }
-pub struct Keyframe { pub at: Fraction, pub part: Option<PartRef>,    // None: the part the loop is on
+pub struct Keyframe { pub at: Fraction, pub part: Option<PartRef>,    // None: the part the loop is on; a loop
+                                                                       // that is a widget's or component's value
+                                                                       // is on no part, so each of its keyframes
+                                                                       // names one (S12)
                       pub timing: Value<Timing>,                       // to the next keyframe; may be absent: the
                       pub patch: PartStylePatch }   // loop's timing. `at` a fraction of the period; the part's
                                                         // style, a shape included (R25.5)
@@ -562,7 +602,9 @@ pub struct Keyframe { pub at: Fraction, pub part: Option<PartRef>,    // None: t
 
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
 a transition starts when a property's resolved value changes; the transition stated by the style
-after the change governs, both directions; a later rule's transition for the same property group wins; appearing
+after the change governs, both directions; a later rule's transition for the same property group wins; a property
+whose group has no transition in that style takes its new value at once, in the frame of the change (no
+transition is no animation, never a toolkit's default one); appearing
 layers interpolate from zero alpha, layers match by stack position, colours interpolate in premultiplied sRGB;
 a material giving way to a colour crossfades; a part that becomes drawn enters from transparent with its own
 geometry, and one that becomes absent leaves to transparent, by the transitions of the style it goes to or comes
@@ -652,7 +694,8 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                        pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original }
 pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>,
-                   pub fill: Value<Paint>, pub stroke: Value<GlyphStroke>,   // absent where the glyph is not stroked
+                   pub fill: Value<Paint>,              // absent only on a stroked-only path (S6.3)
+                   pub stroke: Value<GlyphStroke>,      // absent where the glyph is not stroked
                    pub axes: Vec<(AxisTag, AxisValue)>,  // a symbol font's axes (MAT-X27)
                    pub draw_extent: Value<Fraction>,      // the fraction of the path drawn (Breeze's check mark, ADD-A35)
                    pub draw_start: Value<Fraction>,       // where along the path drawing starts (a spinner's arc)
@@ -995,7 +1038,10 @@ K-KA-47†): the platform's lookup chain, as a KDE application resolves it, not 
 (`params = { <group> = { unit = "px", keys = [...] } }`, S10, each group one unit): `layout` (Kirigami's grid unit and
 spacings, Qt style metrics), `opacity` (disabled, dim, …; restated by `Tokens` rules under `ContrastHigh`), `shadow`,
 `motion`, `color` (KDE's contrast and frame contrast), `icon_effect` (KDE's icon-effect amounts, K3.60, Q3.18), `caret`,
-`shape`, `display` (`corner_radius_top_left`, `corner_radius_top_right`, `corner_radius_bottom_right`,
+`shape`, `pointer_repeat` (`delay` and `interval`, `unit = "ms"`: the platform's one system auto-repeat of a held
+pointer button, GTK's `gtkrange.c` timing, GN-3.69†, macOS's `NSEvent` periodic delay and interval, MAC-X12, declared
+by the presets whose platform states one; a widget's own auto-repeat values have it as their base there, the
+catalogue's one home per fact), `display` (`corner_radius_top_left`, `corner_radius_top_right`, `corner_radius_bottom_right`,
 `corner_radius_bottom_left`, the measured display radius per corner and device model, set by rules under `DeviceModel`,
 R25.11; for a model the preset does not list they are `Absent`, and concentric corners then fall back to their stated
 minimum) (ADD-A44). The display is the root's container: a full-screen container's `Radius::Concentric` corners follow
@@ -1036,7 +1082,10 @@ pub enum MaterialVariant { TonalSpot, Neutral, Vibrant, Expressive, Fidelity, Co
 ```
 
 `KdeGroup` is `Active | Disabled | Inactive` (`kde_accent` takes the first and the last, S2.2); `KdeRoleKind` is
-`Foreground | Decoration | Background`. A palette leaves the reader's `token.kde` out: a port states its own, a
+`Foreground | Decoration | Background`; `KdeWmKey` is `ActiveBackground | ActiveForeground | InactiveBackground |
+InactiveForeground`, the `[WM]` keys `activeBackground` … `inactiveForeground` (TOML `active_background` …), which the
+keyed roles `role.@wm_active_background` … `role.@wm_inactive_foreground` carry (the catalogue's KDE keyed roles);
+`applyScheme()` also writes `activeBlend` and `inactiveBlend`, which no gap-map row needs. A palette leaves the reader's `token.kde` out: a port states its own, a
 mapping keeps the preset's (S8, S14).
 
 ## S5. Widgets and parts
@@ -1127,7 +1176,8 @@ because some platform has no
 counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`; `Ripple`'s values; a `FocusIndicator`'s
 `shadow` and `transition` (its `dash` is stated, `solid` included, S2.4); `IconStyle.state_effect`, `weight`, `scale`,
 `animation`, and `fill` where `rendering_mode` is `Original` only (S2.9);
-`Glyph.stroke`, `draw_extent`; `TextStyle.decoration`, `mnemonic_decoration`, `letter_spacing`, `word_spacing`;
+`Glyph.stroke`, `draw_extent`, and `fill` on a stroked-only path (a spinner's arc, whose paint is its `stroke`'s;
+S12 refuses `fill` absent where the stroke can be absent too); `TextStyle.decoration`, `mnemonic_decoration`, `letter_spacing`, `word_spacing`;
 `Decoration.by_word`; `Elision::Fade`'s `start` and `end`; an `Edge`'s `width` and `paint` (an edge not drawn);
 `Font.width`; every `TextRendering` field; `Stroke.outset`; `Edge.dash` on an edge not drawn only (its `width` or
 `paint` absent; S12 refuses it absent on a drawn edge, S2.4); `PartStyle.shape`, `touch_target`, `margin`,
@@ -1394,7 +1444,8 @@ impl ResolvedTheme {
     pub fn role(&self, scope: &Scope, role: RoleRef) -> Option<Color>;             // None: not drawn
     pub fn size_classes(&self, window: Size) -> SizeClasses;                        // from the thresholds (R16)
     pub fn palette_status(&self) -> Option<PaletteStatus>;                          // S14; None: no palette
-    pub fn data_needs(&self, part: PartRef) -> DataNeeds;   // the element data and metrics its values read
+    pub fn data_needs(&self, part: PartRef) -> DataNeeds;   // the element data and metrics its values read, and
+                                                            // whether its glyph or icon is drawn to its box (below)
 }
 pub struct Element<'a> {                                   // Element::new(part, scope, metrics) and setters
     pub part: PartRef,                                     // names the widget too (S1)
@@ -1435,10 +1486,13 @@ The operands `element.window_width`, `window_height`, `screen_width` and `screen
 come from the root's inputs through the scope; the font metrics from `Element.metrics`; the others from
 `Element.data`.
 
-The query tells the variants apart by name: the content variants are the catalogue's typed, listed set (*Entry
-format*, ADD-A61), the breakpoint variants those the widget's `breakpoints` value names (S7.3), and every other variant
-in `Element.variants` is one the application asked for. The query: ignores a content or breakpoint variant the widget
-does not declare (as an undeclared density), and a keyed flag the widget does not declare selects nothing; answers `NotAvailable` for an undeclared size or a variant the
+The query tells the variants apart by name and element: the content variants are the catalogue's listed pairs, each a
+widget or one of its *(element)* parts and a typed variant name (`button`: `icon_only`; `list.row`: `with_subtitle`;
+*Entry format*, ADD-A61), a name being a content variant only on the widget or part its pair names; the breakpoint
+variants are those the widget's `breakpoints` value names (S7.3); and every other variant in `Element.variants` (the
+same name on another widget or part included: `vertical` on `slider`) is one the application asked for. The
+declarations in force are the preset's, a flavour's section replacing the keys it states (S10). The query: ignores a
+content or breakpoint variant the widget does not declare (as an undeclared density), and a keyed flag the widget does not declare selects nothing; answers `NotAvailable` for an undeclared size or a variant the
 application asked for, an unavailable widget, a missing required
 variant, or a part the widget does not have, and `NotDrawn` for a part whose style resolved `Absent` (the children of
 a `NotDrawn` or `NotAvailable` element take the parent's scope); drops excluded flags by the exclusive groups (S10),
@@ -1468,6 +1522,20 @@ lay the element out (a part's padding, margin, size limits and `touch_target`, w
 size on that axis does not depend on its content (a fixed box: an avatar's initials sized to the avatar, GN-2.14;
 the element's own part, root or *(element)*, is the box tested, S12), so one query per frame suffices (S12).
 
+A glyph or icon **drawn to its box** is the one other exemption: a part's `glyph.size` or `icon.size` may read
+`element.width` and `element.height` in a box that is not fixed (AdwSpinner draws its arc at the size it is allocated,
+the smaller side capped, `adw-spinner-paintable.c:343`, while it measures at its minimum, `adw-spinner.c:70-81`).
+That glyph or icon then takes no part in measuring the element: the connector measures the element without it, at
+the element's own part's `min_width` and `min_height` on the axis read (which S12 requires stated as lengths, not
+`auto`) and its other content, lays it out, and queries once with the laid-out box, which it draws the glyph to.
+`data_needs` marks such a part as drawn to its box, so the connector knows to leave it out of the measurement.
+
+A part a preset states `drawn_as` another widget (S6.1) is built as an element of that widget in the host's context,
+queried in the scope the drawn part was queried in, with the variants `DrawnAs` names and the states of the host's
+element (the element the drawn part belongs to: its hover, focus, pressed, …), as the platform's style draws the
+substitute from its host's state (Breeze's scroll-area frame as a styled panel, K2.21); a flag the substitute's widget
+does not declare selects nothing there, as on any element.
+
 ## S9. Inputs and readers (R2.6, R18)
 
 ```rust
@@ -1486,12 +1554,19 @@ accent roles and `highlight` (`macos-*`); the tint-dependent roles (`ios-*`); on
 before KColorScheme's inactive effects, for every declared set and key) and the scheme inputs `kde_scheme.<set>.<key>` (and `kde_scheme.<set>.inactive.<key>`
 for a set whose file states an `[Inactive]` group), the values of the scheme file
 before Plasma applies the accent (the preset's from Breeze's scheme files; the reader's from the file kdeglobals
-names, `[General] ColorScheme`) (R25.1). The `kde-breeze` preset's own bases state each role as `applyScheme()` writes it on
+names, `[General] ColorScheme`) (R25.1), and `kde_scheme.wm.<key>` for the four `KdeWmKey`s (S4.8), what
+`applyScheme()` writes into `[WM]` with no accent (`colorsapplicator.cpp:287-309`): the file's `[WM]` key where it
+states one, else the default `applyScheme()` takes from KColorScheme over the same file, stated by whoever states
+the scheme inputs as an expression over them: `active_background` and `active_foreground` the file's `Header` Normal
+background and foreground (`= input.kde_scheme.header.background_normal`, `.foreground_normal`), `inactive_background`
+and `inactive_foreground` the Inactive `Header` colours KColorScheme gives over the file (its `[Inactive]` `Header`
+values where it states them, else its active ones, under `kde_effects(…, inactive, …)` as the inactive colour rules
+apply it, S2.2). The `kde-breeze` preset's own bases state each role as `applyScheme()` writes it on
 Plasma's default path, "Accent color from color scheme" (no `AccentColor`): Breeze's scheme values with no accent
 derivation applied, the inactive roles as that path writes them. `kde_accent` applies only when an accent is set:
 the reader states the results kdeglobals holds when the user chose one, and the accent layer (`set_accent`) states
-each accent-dependent role and inactive input role as `= kde_accent(<set>, <key>, <group>)` over the scheme inputs
-in force (the reader's, a KDE port's, else Breeze's).
+each accent-dependent role and inactive input role as `= kde_accent(<set>, <key>, <group>)`, and each `[WM]` keyed
+role as `= kde_accent_wm(<key>)`, over the scheme inputs in force (the reader's, a KDE port's, else Breeze's).
 
 **Accent inputs.** A preset declares which of its inputs follow the accent, `[declare] accent_inputs` (S10, a subset
 of `inputs`): the inputs `set_accent` sets and requires, `set_preset` checks an `Accent` against
@@ -1504,12 +1579,14 @@ user's selection colour shows beside the application's accent (R2.6).
 **S9.2 Setting the accent:** `Theme::set_accent(Some(accent))` sets the preset's accent inputs (S9.1) in the accent
 layer's bases (S8); it requires every one of them and otherwise returns `Err(AccentInputsMissing)` (on `adwaita`,
 `material-3` and `kde-breeze` the `accent` alone). On `kde-breeze`, while no mapping palette applies, the accent
-layer also states each accent-dependent role and each inactive input role as `= kde_accent(<set>, <key>, <group>)`
-(whether tinting is on or off: `kde_accent` gives the untinted value when it is off), so they follow Plasma's
+layer also states each accent-dependent role and each inactive input role as `= kde_accent(<set>, <key>, <group>)`,
+and each `[WM]` keyed role (`role.@wm_active_background` …) as `= kde_accent_wm(<key>)` (whether tinting is on or
+off: each function gives the untinted value when it is off), so they follow Plasma's
 derivation over the scheme inputs in force (R25.1): the reader's, or a KDE port palette's (S14), whose stated roles
 the layer so replaces. While a mapping palette applies, the layer states the `accent` input only: a mapping states
-its roles itself, the accent-dependent ones by reference to `input.accent` where they follow it and the inactive input
-roles as S14 says, and has no scheme inputs for `kde_accent` to derive over (S14).
+its roles itself, the accent-dependent ones (the `[WM]` keyed roles among them) by reference to `input.accent` where
+they follow it and the inactive input roles as S14 says, and has no scheme inputs for `kde_accent` or `kde_accent_wm`
+to derive over (S14).
 
 **S9.3 Readers** state each value under the conditions they read it in: base conditions into the reader layer's bases,
 other conditions into reader rules (or inputs' per-contrast bases). A reader rule carries the condition
@@ -1540,7 +1617,11 @@ font-derived lengths, by the preset's `token.text.scaling`: `Linear` (a product)
 `FontScaleConverter`, which scales large sizes less (MAT-X19); or `DynamicType`, each text style's size for the
 reader's or stand-in's `content_size_category` (`ContentSizeCategory`, S8), to Apple's published table (the curve `uifm_scaled` uses for
 lengths). A part's font is scaled by the curve of its `TextStyle.scaling_role`, `body`'s when `None`; a reader that
-reads each style's size reports the default category. The last two stand in while `material-3` and `ios-*` have no
+reads each style's size reports the default category. A font size is scaled once, where its own style is resolved: a
+`Font.size` stated as an expression over other font sizes (`= mul(token.text.roles.body.font.size, <factor>)`) reads
+them converted and not yet scaled, and its result is scaled by its own style's curve (S2.2), so a size derived from
+another style's is never scaled twice, and under a non-linear kind it follows its own size's curve, as a platform
+scales a size stated in its own scalable unit (Android's sp, UIKit's `UIFontMetrics` over a custom size). The last two stand in while `material-3` and `ios-*` have no
 reader (R25.15). Under `DynamicType` the factor is not read: the category alone scales (`None` is the default
 category), so a factor read on another platform does not reach an `ios-*` preset. Validation refuses a reader's or
 stand-in's factor that is not finite and above zero (S12).
@@ -1629,8 +1710,9 @@ available = true                                           # false: the platform
 requires_variants = []                                     # e.g. iOS's checkbox only as `selection`
 
 
-[declare.flavor.kirigami.widget.button]                   # a flavour's declarations where they differ (R2.7)
-sizes = ["regular"]
+[declare.flavor.kirigami.widget.button]                   # a flavour's declarations where they differ (R2.7):
+sizes = ["regular"]                                        # each key replaces the widget's own under that flavour
+variants = ["primary", "@<variant>"]                       # the flavour's own variant set (below)
 
 [declare.flavor.kirigami.component.<key>]                  # likewise for a component (which flavour draws it)
 available = true
@@ -1647,16 +1729,27 @@ variants = ["@<variant>"]                                           # variants, 
 flags = ["@<flag>"]
 
 [declare.widget.segmented_control]
-keys = { compression = ["<key>", …] }          # the keys of a typed widget's `Value<Key>` value or keyed map
+keys = { compression = ["<key>", …] }          # the keys of a typed widget's `Value<Key>` value, keyed map,
+                                               # `Vec<Key>` list or list entries' keys (below)
 breakpoints = [{ measured = { part = "content" }, width = { at_most = <n> }, variant = "@<v>" }]
                                                # `Measured::Part` in TOML, by S11's enum rule
 ```
 
-A component value's type names one `WidgetValue` member (S1): `"number"`, `"integer"`, `"length"`, `"duration"`,
+A component value's type names one of these `WidgetValue` members (S1): `"number"`, `"integer"`, `"length"`, `"duration"`,
 `"bool"`, `"color"`, `"paint"`, `"timing"`, `"transition"`, `"loop"`, `"glyph"`, `"icon_style"`,
 `"scroll_physics"`, `"breakpoints"`, `"presentations"`, `"placement"`, `"sides"` (a length per side); `"enum:<Name>"` for one of the model's public
 enums (`"enum:Alignment"`, a shared value type of the catalogue's); and `{ key = ["<k>", …] }` for an enumerated
-value of the component's own, a `Value<Key>` whose keys the catalogue entry lists.
+value of the component's own, a `Value<Key>` whose keys the catalogue entry lists. The other members (a font size,
+`Vec<char>`, `Vec<Key>`, `Vec<MenuEntry>`) type typed widgets' values only: no component's entry has such a value.
+
+A `keys` entry names a typed widget's value and lists every key the value may hold: a `Value<Key>` value's, a keyed
+map's (`Vec<(Key, …)>`), a plain key list's (`Vec<Key>`, `input.context_menu_items`) and the keys inside a list's
+entries at any depth (`Vec<MenuEntry>`: `window.window_menu_items`' actions and submenus). A flavour's section
+(`[declare.flavor.<f>.widget.<w>]`, `[declare.flavor.<f>.component.<key>]`) states only the keys that differ under
+that flavour, and each key it states replaces the widget's or component's own while the flavour is in force: its own
+sizes, availability, flags, and its own variant set (`variants`, the whole set under that flavour, the variants
+every flavour draws included), so a variant only one flavour draws is declared in that flavour's set alone and the
+other flavour answers `NotAvailable` for it (S8).
 
 Adding a layer rejects any rule, reference or patch naming something undeclared (S12). Which flags form an
 exclusive group comes from the platform's state model (the catalogue names the flags, mapping each platform's own
@@ -1735,9 +1828,11 @@ not_horizontal, vertical, not_vertical }`, each a list), `direction`, `states`, 
 Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 
 - a field is missing (S2.2), or `Absent` where not `may_be_absent` (S6.3): among the conditional marks, an `Edge.dash`
-  absent on an edge whose `width` and `paint` can be drawn, or an `IconStyle.fill` absent, outside an icon-size context
-  (S4.5), where `rendering_mode` can be other than `Original` (S2.4, S2.9; conservatively, following references and
-  rules);
+  absent on an edge whose `width` and `paint` can be drawn, an `IconStyle.fill` absent, outside an icon-size context
+  (S4.5), where `rendering_mode` can be other than `Original`, or a `Glyph.fill` absent where its `stroke` can be
+  absent too (S2.4, S2.9; conservatively, following references and rules);
+- a keyframe of a loop stated as a widget's or a component's value leaves its `part` out (`None`): such a loop is on
+  no part, so each keyframe names the part it sets (S2.7);
 - a name is undeclared (S10), except a palette's typed role or surface set the current preset does not declare,
   which is skipped (S14); or a `Colors` or `Tokens` rule has non-condition selector parts;
 - a `DrawnAs` names a widget the preset does not make available, a part that widget does not have, or a variant it
@@ -1750,24 +1845,29 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - `Radius::FollowPart` is stated outside a `FocusIndicator.corners`; `kde_accent` is called with group `disabled`;
 - `token.text.font_dpi`, or a reader's or stand-in's `ReaderState.font_dpi` or `text_scaling_factor`, is not finite
   and above zero (S9.4); a `ReaderState.container_sizes` names one container twice (one value at a time, below);
-- on `kde-breeze`, a mapping palette leaves an accent-dependent role or an inactive input role to the preset's
-  `kde_accent` expression, which would derive over Breeze's own scheme inputs (S9.2, S14);
+- on `kde-breeze`, a mapping palette leaves an accent-dependent role (the `[WM]` keyed roles `role.@wm_*` included)
+  or an inactive input role to the preset's Breeze value, so an inactive window or a title bar would show Breeze's
+  colours under the palette's (S9.2, S14);
 - an application layer that is neither a palette nor a reader stand-in states an accent input (S9.1's
   `accent_inputs`, in its bases or a `for_preset` part): the accent is `Theme::set_accent`'s (S9.2), the one route
   that checks the derived inputs and restates `kde-breeze`'s roles;
 - a map or table has a duplicate key (two TOML keys for one field included, S11); `Auto` is stated on a field
   marked `auto` neither by the catalogue for that part nor by the core (S6.3); a call is stated on a `Value<bool>`, `Value<Key>` or enum field (a
-  reference is allowed); a paint has no layer or a `Shadow::Layers` no layer (S2.3, S2.5; an elevation entry may be
-  empty); `pick` has no colours;
+  reference is allowed); a paint has no layer, or its bottom layer is a `Mask`, or a `Shadow::Layers` no layer (S2.3,
+  S2.5; an elevation entry may be empty); `pick` has no colours;
 - a stated number lies outside its type's range: a negative length where the field cannot be negative (S1), a
   `Fraction` outside `0..=1`, a negative `Material.saturation` (a typo's sign; only a computed result is clamped,
   S2.2);
 - a glyph's `mirroring` is `SwapWith`, which names an icon role (S2.9);
 - an expression mistypes, refers to an unknown name, forms a cycle (through bindings too), or can meet an absent
   operand under any binding and rule it can apply under; a call can meet an operand that resolves `Auto` (S2.2:
-  exempt the part's `line_height` operand, and a plain reference on a field that allows `Auto`), or a plain
+  exempt the part's `line_height` operand and `widget.<part>.line_height`, each the line spacing under `auto`, and a
+  plain reference on a field that allows `Auto`), or a plain
   reference can bring `Auto` to a field that does not allow it; a `TextStyle`
   token's expression reads `line_height` while that style's line height can be `Auto` (S2.2);
+- a `widget.<part>` reference names a part of another element than the one its part is queried with (S2.2: an
+  *(element)* part reads none of its host's parts, a font metric included, and a host's part none of an *(element)*
+  part's);
 - an expression names element data its part does not declare (root inputs need no declaration: the window's and
   screen's size), or names a corner that can resolve `Concentric` or `FollowPart`, or a corner that can resolve
   `Full` of a part other than the element's own part (the root part, or the *(element)* part it is queried with, S8),
@@ -1784,7 +1884,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `glyph.size`) can read `element.width` or `element.height`, directly or through `part.`, `widget.`, `values.` or a
   `Full` corner (transitively), unless the element's own part (the widget's root part, or the *(element)* part the
   field's part is queried with, S8) states `min_width` and `max_width` equal (for `element.width`; `min_height` and
-  `max_height` for `element.height`) under every combination it can resolve under, a fixed box (S8);
+  `max_height` for `element.height`) under every combination it can resolve under, a fixed box (S8), or the field is
+  a `glyph.size` or `icon.size`, drawn to its box, and the element's own part states that axis's minimum as a length,
+  never `auto`, under every combination (S8);
 - a patch sets a field its part does not have (S2.11);
 - a spring has a mass or stiffness not above zero, a negative damping or a `rest_epsilon` not above zero; a cubic
   Bézier has an x outside `0..=1`; a `Steps` timing has no step; a `ThemeChange::Crossfade` or `Suspend` states a
@@ -1795,7 +1897,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - a keyed selector name (a variant, flag, condition or container size) is declared but no rule selects on it, or a
   declared keyed name no base states, or a declared event that no `presentations` list uses (a typo's sign); exempt:
   the default flavour, each container-size set's default, variants named in `requires_variants` and
-  `sizes_by_variant`, what a connector sets (content and breakpoint variants), and a `SystemSetting` declared for
+  `sizes_by_variant`, what a connector sets (a content variant on the widget or *(element)* part its catalogue pair
+  names, S8, and breakpoint variants), and a `SystemSetting` declared for
   applications to read (`Theme::system`);
 - a stated number is not finite;
 - a component's rule or base names a part or field that the catalogue's generated table does not give it, or a
@@ -1881,11 +1984,18 @@ does (S9.2). On `kde-breeze` (S9.1), a mapping states the accent-dependent roles
 (no `kde_accent`: a mapping has no scheme inputs, and the preset's would be Breeze's): each accent-dependent role as
 the project's colour or by reference to `input.accent` where it follows the accent; each inactive input role as the
 project's colour where it publishes an inactive one, else as its own set's active role, `= active(role.<set>.<role>)`,
-which is how KColorScheme reads a scheme with no `[Inactive]` group (`kcolorscheme.cpp`), and a mapping is one. One
-that leaves such a role to the preset is refused (S12): an inactive window would otherwise show Breeze's colours under
-the palette's. A KDE port is a scheme file: it converts to the scheme inputs (`kde_scheme.*`, the file's values, its
-`[Inactive]` groups included) and to the colour roles as the file states them, each inactive input role as the
-file's `[Inactive]` group states it or, for a set with none, `= active(role.<set>.<role>)`, so Plasma's derivation
+which is how KColorScheme reads a scheme with no `[Inactive]` group (`kcolorscheme.cpp`), and a mapping is one; and
+each `[WM]` keyed role as the project's colour, or as `applyScheme()`'s default takes it from the `Header` set (S9.1):
+the active ones by reference to its `Header` background and foreground (`= active(role.header.background)`, `=
+active(role.header.foreground)`), the inactive ones as the inactive colour rule computes the `Header` set's
+background and foreground, `kde_effects(…, inactive, …)` over its own `input.inactive.header.*` (the catalogue's KDE
+inactive rule). One
+that leaves such a role to the preset is refused (S12): an inactive window or a title bar would otherwise show
+Breeze's colours under the palette's. A KDE port is a scheme file: it converts to the scheme inputs (`kde_scheme.*`,
+the file's values, its `[Inactive]` groups included, and `kde_scheme.wm.*` from its `[WM]` group, or for a key the
+file lacks the `Header` default S9.1 states) and to the colour roles as the file states them, each inactive input
+role as the file's `[Inactive]` group states it or, for a set with none, `= active(role.<set>.<role>)`, and each
+`[WM]` keyed role as `= input.kde_scheme.wm.<key>`, `applyScheme()`'s no-accent result, so Plasma's derivation
 applies over the port's own scheme when an accent is set (S9.2).
 
 A `Palette` holds the mapping and the ports it has, per preset (a port carries its preset: a `.colors` file's is
@@ -2339,8 +2449,9 @@ lines that cite it.
 | ADD-A105 | `OutlineCorners` (resolved radii for `outline`/`morph`); construction routes (`SchemeMap::new`/`one`, `InputValue::new`, `ComponentValuesPatch::new`, `ContextMatch::new`, `KeyRepeat::new`; `SystemAppearance` exhaustive); the no-reader state, `from_preset(id, scheme)`, `Theme::system() -> Option`, `ThemeError::Reader`/`PresetNotForPlatform`; today's API decided (`PresetId`/`PaletteId` listing, `from_system(generation)`, `from_system_async`, `reload_reader_async`, `ResolvedTheme::icon`, `ResolvedIconStyle`, `IconId`/`IconData` kept; `to_toml`, `lint_toml`, `ResolutionContext`, the `detect` scheme and accessibility functions removed); preset-scoped reader rules; `[declare] accent_inputs`; accent inputs refused in application layers; inactive input roles under a mapping palette and in a port; `kde_scheme.<set>.inactive.<key>`; `FocusVisibleWhen::Keyboard.timeout` as `Option`; one route for a solid line (`Edge.dash` absent only on an edge not drawn); `KeyRepeat`; `Palette::from_port(file, scheme)`, `with_port`; the perturbed gate run; content-sizing fields in the layout ban; `ViewBox`; `FadeLength`; `IconStyle.fill` absent under `Original` only; zero theme-change durations refused; elevation references resolved to layers; stand-in factor and container-size checks; `container_sizes`' default | S2.2, S2.4, S2.5, S2.8, S2.9, S2.10, S4.2, S4.3, S6.3, S7, S8, S9, S10, S12, S14, S16, S17, S1 |
 | ADD-A106 | the reader's accent portable only where `accent_inputs` is the accent alone | S9.5 |
 | ADD-A107 | `auto` minimums, the `sides` value type, `keys` declarations, root inputs undeclared | S2.11, S10, S12 |
-| ADD-A109 | `kde-breeze` states Plasma's default no-accent path; `kde_accent` only when an accent is set | S9.1, S14 (R25.1) |
 | ADD-A108 | today's API decided further (`Theme::preset`, `flavor`, `scheme`, `version_match` with `VersionMatch` kept; `PresetId::for_system` for `platform_preset_name`; `diagnose_platform_support` kept; `SystemTheme.name` removed; `with_overlay` as `add_layer`; `crate::Error` narrowed to the non-theme APIs); the flavour across `set_preset`; `ContentSizeCategory`; `Auto` never a call's operand; `active(ref)` defined; colour literals in expressions; a shared text-role slot references the slot it shares, and the slots a reader patches; `element.width`/`height` as the queried element's box, `Full` corner operands on that element's part only; the font's underline and strikeout metrics (`FontMetrics`, `element.font_underline_offset`, …) and `Decoration`'s offset convention; the reader's accent left out under another preset with derived accent inputs; `Sides` and `Axes` members; the stroke table's shorthands; one form for "no shadow"; `morph` over circular corners only; `DrawnAs` cycles and `widget`/`part` disagreement refused; exclusive groups on ancestors' and siblings' states; `pick(None)` suspends a palette; `set_preset` refused for a mapping's missing accent inputs; `MaterialScheme.contrast_level` always stated; `SizeClasses` exhaustive; the inactive input roles' path | S1, S2.2, S2.4, S2.5, S2.8, S4.4, S4.8, S6.3, S7.1, S8, S9.1, S9.5, S12, S14, S16, S19.3, S21.2 |
+| ADD-A109 | `kde-breeze` states Plasma's default no-accent path; `kde_accent` only when an accent is set | S9.1, S14 (R25.1) |
+| ADD-A110 | `keys` for key lists and keys inside list entries, a flavour's own variant set; content variants as (widget or part, variant) pairs; `WidgetValue`'s font size, `Vec<char>`, `Vec<Key>`, `Vec<MenuEntry>`; `kde_accent_wm`, `KdeWmKey` and the `kde_scheme.wm.<key>` inputs, a port's `[WM]`, a mapping refused where it leaves the `wm_*` roles; `Linear.offset`; `BlendMode::Mask`; widget-value loops' keyframes name their part; `Glyph.fill` absent on a stroked-only path; a glyph or icon drawn to its box, `DataNeeds`' flag; a `drawn_as` substitute with its host's states; a font size scaled once; `widget.<part>.line_height` as the line spacing; no *(element)* part reads its host's parts; no transition is an immediate change; a stroke corner painted once; transforms mirrored in right-to-left; `pointer_repeat`; `Stroke.outset`'s comment | S1, S2.2, S2.3, S2.4, S2.6, S2.7, S2.9, S4.6, S4.8, S6.3, S8, S9.1, S9.2, S9.4, S10, S12, S14 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

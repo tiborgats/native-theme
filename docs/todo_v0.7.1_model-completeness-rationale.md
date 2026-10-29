@@ -1014,8 +1014,9 @@ application changes the accent, under the reader's scheme or a
 KDE port palette's (whose scheme inputs the port carries), the model applies that derivation over those inputs, a
 function `kde_accent(scheme, accent)` implemented to `applyScheme()` (the accent copied into
 `ForegroundActive` and the decoration roles of every colour set, the link colour adjusted for contrast, the selection a 0.7 blend over the
-view background, the text on it black or white by KDE's contrast measure, and the scheme file's `TintFactor` and
-accent-coloured title bar options, which become tokens of the preset). Its `scheme` is the scheme file kdeglobals
+view background, the text on it black or white by KDE's contrast measure, the `[WM]` title-bar colours, from the
+scheme file's `[WM]` or its `Header` colours and then tinted or accented by the next two options, `:287-338`, and the
+scheme file's `TintFactor` and accent-coloured title bar options, which become tokens of the preset). Its `scheme` is the scheme file kdeglobals
 names (`[General] ColorScheme`, found as `color-schemes/<name>.colors`), which the reader reads, since kdeglobals
 holds only the derived values. A mapping palette (R19) has no scheme inputs, so it states its accent-dependent roles
 itself, by reference to the accent where they follow it (R2.6). KDE's stated Inactive values (R2.6) are, in kdeglobals, Plasma's: since
@@ -1147,6 +1148,8 @@ Amended in place after the specification's eleventh check:
 - R2.6, R25.1: what `applyScheme()` writes into `[Inactive]` groups stated once, from `colorsapplicator.cpp:247-284`.
 - R2.8: an operand that can be automatic is refused where arithmetic would need a number.
 - R25.3: the font's underline and strikeout metrics are element data, so decorations follow the font.
+- R25.1 (the eleventh check's catalogue round): Plasma's derivation covers the `[WM]` title-bar colours
+  `applyScheme()` writes too, so the model applies it to KDE's `[WM]` keyed roles as to the colour sets.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
