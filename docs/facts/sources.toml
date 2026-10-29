@@ -1071,7 +1071,7 @@ note = "The cited pages' sources are in these repositories; pages with no public
 project = "developer.apple.com documentation"
 url = "https://developer.apple.com/documentation/"
 method = "snapshot"
-note = "Each page as its DocC JSON (https://developer.apple.com/tutorials/data/documentation/<path>.json). The pages are unversioned and describe the newest release, so a snapshot counts for a 26 fact only as D12 (a) says: an archived snapshot from 26's lifetime, the pinned Xcode's headers or a measurement confirms it."
+note = "Each page as its DocC JSON (https://developer.apple.com/tutorials/data/documentation/<path>.json), a snapshot entry with `describes` (spec S17): the pages are unversioned and describe the newest release when taken, so a snapshot serves only presets describing that release; an archived snapshot from 26's lifetime serves macos-tahoe and ios-26 (D12)."
 
 [[site]]
 project = "developer.apple.com HIG"

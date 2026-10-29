@@ -768,8 +768,8 @@ model, the platform presets and the three connectors
       carries. If it does, build `macos-golden-gate` (D8's key: Apple's codename for
       27) with a row in `pipeline.rs`'s `MACOS_GENERATIONS`; if not, raise
       `macos-tahoe`'s `last_verified` to 27. Until then a Mac on 27 gets
-      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (plan
-      D4). The preview probe already differs from 26.6.2 in the segmented
+      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (the
+      code-review plan's D4, `docs/archive/`). The preview probe already differs from 26.6.2 in the segmented
       control's width (98 against 91), the stepper's height (24 against 26),
       `underPageBackgroundColor` and the text field's render fill
       (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-xcode-27`).
