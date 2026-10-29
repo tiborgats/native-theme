@@ -1,8 +1,8 @@
 #!/bin/bash
 # Runs inside the GNOME container (tools/linux-containers/gnome), from the
 # repository's root: builds gnome-vectors, writes $1/vectors.tsv, writes it a
-# second time and checks that both are byte-identical. run.txt records each
-# step's exit status.
+# second time and checks that both are byte-identical (by sha256sum: the image
+# has no diffutils). run.txt records each step's exit status.
 set -u
 out=$1
 build=/tmp/gnome-vectors-build
@@ -21,7 +21,7 @@ note "gnome-vectors: exit $status"
 [ $status -eq 0 ] || exit 1
 "$build/gnome-vectors" "$build/vectors-again.tsv"
 note "gnome-vectors, second run: exit $?"
-if cmp "$out/vectors.tsv" "$build/vectors-again.tsv"; then
+if [ "$(sha256sum <"$out/vectors.tsv")" = "$(sha256sum <"$build/vectors-again.tsv")" ]; then
   note "two runs byte-identical"
 else
   note "two runs differ"

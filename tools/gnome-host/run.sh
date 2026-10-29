@@ -2,18 +2,24 @@
 # Runs inside the GNOME container (tools/linux-containers/gnome) under
 # dbus-run-session, from the repository's root: builds gnome-host, starts the
 # headless display named by $1 (mutter or xvfb), renders both schemes with
-# each renderer in GNOME_HOST_RENDERERS (default "cairo ngl") twice, and
-# checks that the two runs wrote byte-identical files. Writes into $2:
+# each renderer in GNOME_HOST_RENDERERS (default "cairo gl") twice, and
+# checks that the two runs wrote byte-identical files (the coreutils' sha256sum
+# compares them: the image has no diffutils). Writes into $2:
 #   <renderer>/run<N>/<scheme>/  gnome-host's PNGs, index.toml, its output
-#   run.txt (each step's exit status), build.log, display.log, sha256.txt
+#   run.txt (each step's exit status, the CPU), build.log, display.log,
+#   sha256.txt
 set -u
 display=$1
 out=$2
-renderers=${GNOME_HOST_RENDERERS:-"cairo ngl"}
+renderers=${GNOME_HOST_RENDERERS:-"cairo gl"}
 build=/tmp/gnome-host-build
 mkdir -p "$out"
 log="$out/run.txt"
 note() { echo "$*" | tee -a "$log"; }
+manifest() { (cd "$1" && find . -type f ! -name stdout.txt ! -name stderr.txt -print | sort | xargs sha256sum); }
+
+note "cpu: $(grep -m1 '^model name' /proc/cpuinfo | cut -d: -f2-)"
+note "cpu flags: $(grep -m1 '^flags' /proc/cpuinfo | tr ' ' '\n' | grep -E '^(avx|avx2|avx512f|fma|sse4_2)$' | tr '\n' ' ')"
 
 meson setup "$build" tools/gnome-host >"$out/build.log" 2>&1 && meson compile -C "$build" >>"$out/build.log" 2>&1
 status=$?
@@ -75,12 +81,13 @@ for run in 1 2; do
 done
 
 for renderer in $renderers; do
-  if diff -r -q -x stdout.txt -x stderr.txt "$out/$renderer/run1" "$out/$renderer/run2" \
-       >"$out/$renderer/diff.txt" 2>&1; then
-    note "$renderer: run 1 and run 2 byte-identical"
+  manifest "$out/$renderer/run1" >"$out/$renderer/run1.sha256"
+  manifest "$out/$renderer/run2" >"$out/$renderer/run2.sha256"
+  if [ -s "$out/$renderer/run1.sha256" ] && \
+     [ "$(cat "$out/$renderer/run1.sha256")" = "$(cat "$out/$renderer/run2.sha256")" ]; then
+    note "$renderer: run 1 and run 2 byte-identical ($(wc -l <"$out/$renderer/run1.sha256") files)"
   else
     note "$renderer: run 1 and run 2 differ"
-    cat "$out/$renderer/diff.txt"
     failed=1
   fi
 done

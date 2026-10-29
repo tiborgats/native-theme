@@ -10,10 +10,20 @@
  * decoration layout ":close", font "Adwaita Sans 11", font rendering manual
  * with hinted font metrics, and an empty icon theme name. As libadwaita's own
  * tests do (tests/meson.build), GDK_DEBUG=no-portals keeps portal settings
- * out and GSETTINGS_BACKEND=memory gives gsettings-desktop-schemas' defaults.
+ * out and GSETTINGS_BACKEND=memory gives gsettings-desktop-schemas' defaults;
+ * ADW_DISABLE_PORTAL=1 keeps libadwaita's own settings from the portal too.
  * GSK_RENDERER is set from --renderer. Each widget is drawn as screenshot.c
- * draws one: its GtkWidgetPaintable snapshotted with its margins and rendered
- * to a texture by the window's GskRenderer.
+ * draws one: a GtkWidgetPaintable snapshotted and rendered to a texture by the
+ * window's GskRenderer. A widget's paintable clips to the widget's bounds,
+ * which would cut what a button draws outside them (an outer focus ring), so
+ * each button sits in a cell of its own, inside the cell's margin, and the
+ * cell is drawn.
+ *
+ * index.toml also records the colour a label with libadwaita's `accent` style
+ * class gets from the stylesheet (`--accent-color`, derived from
+ * `--accent-bg-color` in CSS) beside what adw_rgba_to_standalone returns for
+ * the style manager's accent, to compare the stylesheet's derivation with the
+ * public function.
  *
  *     gnome-host --scheme light|dark --renderer NAME --out DIR
  *
@@ -105,6 +115,8 @@ typedef struct {
   gboolean dark;
   GtkWidget *window;
   GtkWidget *buttons[N_KINDS][N_STATES];
+  GtkWidget *cells[N_KINDS][N_STATES];
+  GtkWidget *accent_label;
   guint frames;
   guint timeout_id;
   int status;
@@ -288,6 +300,36 @@ append_style_manager (GString *s)
   g_type_class_unref (scheme_class);
 }
 
+static void
+append_rgba (GString *s, const char *key, const GdkRGBA *c)
+{
+  char *hex = rgba_hex (c);
+
+  g_string_append_printf (s, "%s = ", key);
+  toml_string (s, hex);
+  g_string_append_printf (s, "\n%s_floats = [%.9g, %.9g, %.9g, %.9g]\n", key, c->red, c->green, c->blue, c->alpha);
+  g_free (hex);
+}
+
+static void
+append_accent_check (GString *s, Host *host)
+{
+  AdwStyleManager *manager = adw_style_manager_get_default ();
+  GdkRGBA *accent = adw_style_manager_get_accent_color_rgba (manager);
+  GdkRGBA label_color, standalone;
+
+  gtk_widget_get_color (host->accent_label, &label_color);
+  adw_rgba_to_standalone (accent, adw_style_manager_get_dark (manager), &standalone);
+
+  g_string_append (s, "\n[accent_check]\n");
+  append_rgba (s, "accent_bg", accent);
+  append_rgba (s, "accent_label_color", &label_color);
+  append_rgba (s, "adw_rgba_to_standalone", &standalone);
+  g_string_append_printf (s, "equal = %s\n", gdk_rgba_equal (&label_color, &standalone) ? "true" : "false");
+
+  gdk_rgba_free (accent);
+}
+
 static gboolean
 render_to_png (GtkWidget  *widget,
                GskRenderer *renderer,
@@ -390,7 +432,7 @@ render_all (Host *host)
       char *file = g_strdup_printf ("%s-%s.png", kinds[k].name, states[st].name);
       char *path = g_build_filename (opt_out, file, NULL);
 
-      if (!render_to_png (button, renderer, path, &width, &height))
+      if (!render_to_png (host->cells[k][st], renderer, path, &width, &height))
         host->status = 1;
 
       if (!as_requested) {
@@ -411,6 +453,12 @@ render_all (Host *host)
       g_string_append_printf (images, "flags_as_requested = %s\n", as_requested ? "true" : "false");
       g_string_append_printf (images, "allocated_width = %d\nallocated_height = %d\n",
                               gtk_widget_get_width (button), gtk_widget_get_height (button));
+      {
+        graphene_point_t origin;
+
+        if (gtk_widget_compute_point (button, host->cells[k][st], &GRAPHENE_POINT_INIT (0, 0), &origin))
+          g_string_append_printf (images, "x_in_png = %g\ny_in_png = %g\n", origin.x, origin.y);
+      }
       g_string_append_printf (images, "png_width = %d\npng_height = %d\n", width, height);
 
       g_free (path);
@@ -453,7 +501,7 @@ render_all (Host *host)
   g_string_append (s, "\n[environment]\n");
   {
     static const char *vars[] = {
-      "GSK_RENDERER", "GDK_DEBUG", "GDK_BACKEND", "GSETTINGS_BACKEND",
+      "GSK_RENDERER", "GDK_DEBUG", "ADW_DISABLE_PORTAL", "GDK_BACKEND", "GSETTINGS_BACKEND",
       "ADW_DEBUG_COLOR_SCHEME", "ADW_DEBUG_HIGH_CONTRAST", "ADW_DEBUG_ACCENT_COLOR",
       "WAYLAND_DISPLAY", "DISPLAY", "GTK_A11Y", "NO_AT_BRIDGE", "LANG",
     };
@@ -468,6 +516,7 @@ render_all (Host *host)
 
   append_settings (s);
   append_style_manager (s);
+  append_accent_check (s, host);
   append_packages (s);
   g_string_append (s, images->str);
 
@@ -580,9 +629,15 @@ activate_cb (GApplication *app,
   for (gsize k = 0; k < N_KINDS; k++) {
     for (gsize st = 0; st < N_STATES; st++) {
       host->buttons[k][st] = make_button (&kinds[k], &states[st]);
-      gtk_grid_attach (GTK_GRID (grid), host->buttons[k][st], (int) st, (int) k, 1, 1);
+      host->cells[k][st] = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+      gtk_box_append (GTK_BOX (host->cells[k][st]), host->buttons[k][st]);
+      gtk_grid_attach (GTK_GRID (grid), host->cells[k][st], (int) st, (int) k, 1, 1);
     }
   }
+
+  host->accent_label = gtk_label_new (LABEL);
+  gtk_widget_add_css_class (host->accent_label, "accent");
+  gtk_grid_attach (GTK_GRID (grid), host->accent_label, 0, (int) N_KINDS, 1, 1);
 
   adw_application_window_set_content (ADW_APPLICATION_WINDOW (host->window), grid);
   gtk_widget_set_can_target (host->window, FALSE);
@@ -623,6 +678,7 @@ main (int    argc,
 
   g_setenv ("GSK_RENDERER", opt_renderer, TRUE);
   g_setenv ("GDK_DEBUG", "no-portals", TRUE);
+  g_setenv ("ADW_DISABLE_PORTAL", "1", TRUE);
   g_setenv ("GSETTINGS_BACKEND", "memory", TRUE);
   g_setenv ("ADW_DEBUG_COLOR_SCHEME", "default", TRUE);
   g_setenv ("ADW_DEBUG_HIGH_CONTRAST", "0", TRUE);
