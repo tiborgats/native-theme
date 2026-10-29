@@ -1187,7 +1187,7 @@ spaces:
   suggestion list's ListViewItem states in `context autocomplete`; `adwaita`: `_menus.scss` selectors (`:hover`,
   `:selected`, `:active`,
   `:disabled`, `:checked`, HC) and `gtkmodelbutton.c`; `kde-breeze`: Breeze's `drawMenuItemControl` branches
-  (`st:5982-6185`), qqc2's `MenuItem.qml`, kirigami-addons' `ConvergentContextMenu.qml`; `material-3`:
+  (`st:5977-6180`), qqc2's `MenuItem.qml`, kirigami-addons' `ConvergentContextMenu.qml`; `material-3`:
   `_md-comp-menu.scss` and the Expressive menu tokens (rest, hover, focus, pressed, selected, disabled); `macos-*`:
   `NSMenuItem.state` (on, off, mixed), `isEnabled`, highlight, `NSMenu.presentationStyle`; `ios-*`:
   `UIMenuElement.State`, `UIMenuElement.Attributes`, `UIMenu.ElementSize`, `UIMenu.Options`.
@@ -1430,7 +1430,7 @@ spaces:
     `_common.scss` (needs-attention); GTK's `:hover`, `:active`, `:checked`, `:disabled`, `:drop(active)`,
     `.has-open-popup`, `:focus-visible`, `prefers-contrast: more`.
   - `kde-breeze`: Breeze's `Helper::renderButtonFrame` branches (`hp:647-741`) and `Style` `CE_PushButton`,
-    `CC_ToolButton` (`st:4516-4543`, `:5327-5380`, `st:4577-4624` for the auto-raise tool button, K1.152); flavour
+    `CC_ToolButton` (`st:4511-4538`, `:5322-5375`, `st:4572-4619` for the auto-raise tool button, K1.152); flavour
     `kirigami`: qqc2-desktop-style `Button.qml`, `ToolButton.qml` state mapping (Q1.8, Q1.9) and kirigami-addons'
     `FloatingButton.qml` (K-KA-26†).
   - `macos-*`: `NSControl.StateValue` (on, off, mixed), highlighted, enabled × `NSButton.BezelStyle` ×
@@ -2278,7 +2278,7 @@ spaces:
   - `arrow_area` *(element)* — the arrow's sub-control, hovered and pressed on its own: macOS's accent-filled arrow
     area of the pop-up, NSComboBox's separate arrow button, Breeze's editable combo's arrow sub-control, which draws
     no box of its own (its drawing fields `Absent`, S6.3) but whose own hover recolours the arrow (`SC_ComboBoxArrow`,
-    `breezestyle.cpp:7889`, K1.240): `fill`, `stroke`, `corners`, `min_width`.
+    `breezestyle.cpp:7884`, K1.240): `fill`, `stroke`, `corners`, `min_width`.
   - `arrow`, in `arrow_area` — the indicator glyph (single or double chevron; on macOS the AppKit rendering, the
     system control `AppKitPopUp`: `GlyphSource::SystemControl { control: AppKitPopUp, replaces: [body, arrow_area,
     arrow] }`, as S15's image is the whole button, so the connector draws none of those parts' own fills, strokes or
@@ -2654,7 +2654,7 @@ spaces:
   moving segment or stripes as its render shows, by these fields or as KDE's; K1.110's stripes on `indicator`, each
   keyframe setting its `fill`, the repeating gradient shifted along its axis by one stripe period over the loop
   (Breeze tiles a two-stripe pattern over the rounded fill and offsets it by the busy engine's integer value, run
-  from zero to the pattern's period and looped, `breezehelper.cpp:1222-1270`, `breezestyle.cpp:6263-6269`,
+  from zero to the pattern's period and looped, `breezehelper.cpp:1222-1270`, `breezestyle.cpp:6258-6264`,
   `animations/breezebusyindicatorengine.cpp:94-98`, its duration the read `ProgressBarBusyStepDuration`,
   `animations/breezeanimations.cpp:81`; reversed in right-to-left, `breezehelper.cpp:1245-1247`): the shift is the
   gradient's `offset` (S2.3), from zero to one pattern period over the loop, and a `dir rtl` rule states the
@@ -2808,9 +2808,9 @@ spaces:
   - `frame` — border and background: KDE's framed background, NSScrollView's border type: `fill`, `stroke`, `corners`.
     On `kde-breeze` it is `drawn_as = { widget = "group_box", variants = ["@styled_panel"] }`, the look stated once,
     by `group_box`'s rules (K2.21): Breeze draws QAbstractScrollArea's frame and qqc2's framed ScrollView background
-    as one styled panel (`breezestyle.cpp:3924-3980`; qqc2's `frame` element is a `QFrame::StyledPanel` frame,
+    as one styled panel (`breezestyle.cpp:3919-3975`; qqc2's `frame` element is a `QFrame::StyledPanel` frame,
     `kquickstyleitem.cpp:496-503`, `:1782-1785`, `ScrollView.qml:35-45`), its hover and focus outlines from the scroll
-    area's own state (`breezestyle.cpp:3936-3941`; qqc2 passes `hover` and `hasFocus`, `ScrollView.qml:42-43`), so the
+    area's own state (`breezestyle.cpp:3931-3936`; qqc2 passes `hover` and `hasFocus`, `ScrollView.qml:42-43`), so the
     substitute element carries the scroll view's hover and focus as `{hover}` and `{focused}`, which K2.21's rules
     select.
   - `corner` — the square where two bars meet: `fill`, `transitions` (WinUI's expand and contract timing, W1-065).
@@ -3143,7 +3143,7 @@ spaces:
   where the platform has none (`accessory_placement`, `presentations`).
 - **State-model source:** `adwaita`: libadwaita selectors in `_lists.scss`, `_column-view.scss`, `_views.scss`,
   `_sidebars.scss`, `_deprecated.scss` (tree and icon views); `kde-breeze`: Breeze's item-view panel, header and
-  branch branches (`st:4751-4900`, `st:6808-6900`, `st:5229-5299`) and qqc2's `DefaultListItemBackground.qml` and
+  branch branches (`st:4746-4895`, `st:6803-6895`, `st:5224-5294`) and qqc2's `DefaultListItemBackground.qml` and
   `ItemDelegate.qml` states, kirigami-addons' delegates and table view; `macos-*`: NSTableView's style, row size
   style, the cell view's background style (normal, emphasized), key and main window, first responder; `ios-*`:
   `UICellConfigurationState` (highlighted, selected, focused, disabled, editing, swiped, expanded, drag and drop
@@ -3316,7 +3316,7 @@ spaces:
   `drag_hover_delay_ms` (where a drag hovering a tab activates nothing: the value phase names the presets from the
   facts; `adwaita`, `kde-breeze` state it, GN-1.132, K1.133†).
 - **State-model source:** `adwaita`: `_notebook.scss`, `_tab-view.scss` selectors and `adw-tab.c`; `kde-breeze`:
-  Breeze's tab-shape branches (`hp:1299-1430`, `st:7021-7200`) and qqc2 `TabButton.qml`; `macos-*`: NSTabView
+  Breeze's tab-shape branches (`hp:1299-1430`, `st:7016-7195`) and qqc2 `TabButton.qml`; `macos-*`: NSTabView
   (pressed, selected, key and non-key window, control size, tab position, border type); `material-3`: primary and
   secondary navigation-tab tokens (active, inactive × hover, focus, pressed); `windows-11`: TabViewItem visual state
   groups in `TabView.xaml` (CommonStates, DisabledStates, CloseIconStates, DragStates).
@@ -3394,7 +3394,7 @@ spaces:
   `collapsed_width_px: Value<Px>` (Q1.59, W1-094; the inspector's compact width, MAC-N19,
   C-41†); `breakpoints: Vec<Breakpoint>` (Shared value types; the widget's own breakpoints, R16. W-P4-19†'s
   NavigationView, measured `Allocation` (it adapts to its own width, the size its stretching parent offers),
-  `NavigationView.cpp:1428-1458`: `compact` with width `Below` the expanded threshold, `@left_minimal` with width
+  `NavigationView.cpp:1434-1464`: `compact` with width `Below` the expanded threshold, `@left_minimal` with width
   `Below` the compact threshold; the middle band is where only `compact` holds, the lower band holds both, and
   `@left_minimal`'s rules come after `compact`'s so they win there; above the expanded threshold neither holds (the
   expanded pane). iOS's arrangement per app size, P4-16†, measured `Window` (the app's size); macOS's collapse rule,
@@ -3457,7 +3457,7 @@ spaces:
 - **State-model source:** `adwaita`: `_sidebars.scss` selectors and the split views' properties
   (`adw-navigation-split-view.c`, `adw-overlay-split-view.c`); `kde-breeze`: Kirigami's `OverlayDrawer.qml`,
   `GlobalDrawer.qml`, `ContextDrawer.qml` states (modal, collapsed, open, position) and Breeze's side-panel branch
-  (`st:3958-3963`); `macos-*`: the visual effect view's state with the key state, NSSplitViewItem's behaviour and
+  (`st:3953-3958`); `macos-*`: the visual effect view's state with the key state, NSSplitViewItem's behaviour and
   collapse; `ios-*`: UISplitViewController's display mode and split behaviour, collapsed; `material-3`: navigation
   drawer and rail tokens (standard, modal, collapsed, expanded); `windows-11`: NavigationView's display-mode group and
   SplitView's pane states.
@@ -3592,7 +3592,7 @@ spaces:
   `ios-*`, `macos-*`: TB-8, MAC-TL10†), `title_alignment` (`adwaita`, `macos-*`, `windows-11`: no title of the
   bar's own), `floating_inset` (all but `material-3`: MAT-N25).
 - **State-model source:** `adwaita`: `_toolbars.scss` selectors (toolbars, action bar, raised and revealed bars);
-  `kde-breeze`: Breeze's tool-button and toolbar branches (`st:4577-4624`, `st:5162-5227`, `st:5526-5685`) and qqc2
+  `kde-breeze`: Breeze's tool-button and toolbar branches (`st:4572-4619`, `st:5157-5222`, `st:5521-5680`) and qqc2
   and Kirigami toolbar QML (position, flat, display), kirigami-addons' `FloatingToolBar.qml`; `macos-*`: NSToolbar's
   style, its items (bordered, style, enabled, selected), key window; `ios-*`: the bar button item's style, selected,
   `UIBarAppearance` standard, compact and scroll edge, the navigation item's style; `material-3`: top and bottom app
@@ -3646,7 +3646,7 @@ spaces:
 - **may_be_absent:** parts: none; fields: `bar.stroke` (`kde-breeze` by a rule outside `@main_window`, the top line
   being a main window's status bar's only, K1.160), `bar.shadow` (`kde-breeze`, `macos-*`: neither bar casts a
   shadow, K1.160 and MAC-ST01 naming the top line alone); values: none.
-- **State-model source:** `kde-breeze` Breeze `st:5312-5325`; `macos-*` the window's content border thickness for the
+- **State-model source:** `kde-breeze` Breeze `st:5307-5320`; `macos-*` the window's content border thickness for the
   bottom edge, key and main window.
 - **Today's fields:** `font` → `bar.text` (and through it `item.text`); `background_color` → `bar.fill`; `border` → `bar.stroke`, `bar.padding`,
   `bar.corners` (from `corner_radius`), `bar.shadow` (from `shadow_enabled`).
@@ -3831,7 +3831,7 @@ spaces:
   `arrow.stroke` (`adwaita`, `kde-breeze`, `macos-*`: W1-140); values: `drag_hover_delay_ms` (where a drag hovering
   the header expands nothing: the value phase names the presets from the facts; `adwaita` states it, GN-1.262).
 - **State-model source:** `adwaita` `_expanders.scss`; `kde-breeze` Breeze's arrow
-  branch (`st:4424-4427`) and `kcollapsiblegroupbox.cpp`; `macos-*` NSButton's disclosure states and control sizes;
+  branch (`st:4419-4422`) and `kcollapsiblegroupbox.cpp`; `macos-*` NSButton's disclosure states and control sizes;
   `windows-11` Expander visual states (CommonStates, ExpandStates,
   ExpandDirectionStates).
 - **Today's fields:** `font` → `header.text`; `header_height_px` → `header.min_height`; `arrow_icon_size_px` →
@@ -5074,7 +5074,7 @@ spaces:
   (`macos-*`: its value is the knob dot, MAC-N15), `knob_dot` (`kde-breeze`: Breeze's dial has the slider handle, K2.5),
   `tick` (`kde-breeze`: the ticks are MAC-N15's, K2.5 naming none); values: `default_size_px` (`macos-*`: the default
   size is the QML Dial's, Q2.2), `cap` (`macos-*`, whose dial draws no value arc).
-- **State-model source:** KDE Breeze `CC_Dial` branches (`st:8144-8217`) and the QML Dial; macOS `NSSlider`
+- **State-model source:** KDE Breeze `CC_Dial` branches (`st:8139-8212`) and the QML Dial; macOS `NSSlider`
   circular type × control states.
 - **Today's fields:** none.
 - **Notes:** none (the rows place no other widget in a dial's context).
@@ -5370,19 +5370,19 @@ spaces:
   and its field, GN-2.10, Q2.45); `title_subtitle_gap_px: Value<Px>` (between a row's title and subtitle, GN-2.01);
   `affix_gap_px: Value<Px>` (between the items inside a row's prefix or suffix box, GN-2.01); `label_alignment:
   Axes<Value<Alignment>>` (the label against its field, horizontally and vertically, Q2.45, Q2.46, Q2.47, restated
-  under `collapsed`; Qt's form layout's labels, `SH_FormLayoutLabelAlignment`, K1.210, `breezestyle.cpp:955-956`;
+  under `collapsed`; Qt's form layout's labels, `SH_FormLayoutLabelAlignment`, K1.210, `breezestyle.cpp:950-951`;
   SwiftUI's columns form's trailing-aligned label column, MAC-LY02†, under `columns`); `baseline_alignment:
   Value<bool>` (a label and its control on one baseline, MAC-LY02†; `false` where the platform does not do it);
   `field_growth: Value<FieldGrowth>`, `FieldGrowth { StayAtSizeHint, ExpandingFieldsGrow, AllNonFixedFieldsGrow }`
   (which fields grow to fill their column, Qt's `QFormLayout::FieldGrowthPolicy`, `SH_FormLayoutFieldGrowthPolicy`,
-  K1.210, `breezestyle.cpp:957-958`); `contents_alignment: Axes<Value<Alignment>>` (where the form's rows sit in
-  the form's own space, Qt's `SH_FormLayoutFormAlignment`, K1.210, `breezestyle.cpp:953-954`);
+  K1.210, `breezestyle.cpp:952-953`); `contents_alignment: Axes<Value<Alignment>>` (where the form's rows sit in
+  the form's own space, Qt's `SH_FormLayoutFormAlignment`, K1.210, `breezestyle.cpp:948-949`);
   `narrow_max_width_px: Value<Px>` (the collapsed form's width cap, Q2.45, Q2.56†; `auto` where a form that
   collapses sets no cap); `collapse: Value<FormCollapse>`,
   `FormCollapse { WhenWideDoesNotFit, AtBreakpoints }` (how the connector sets `collapsed`: KDE when the wide layout
   does not fit, Q2.45, Q2.56†, a measurement of the content with no threshold length, so it is no `Breakpoint`;
   Windows' wrap thresholds, W2-40†, by `breakpoints`; Qt's form layout never wraps its rows under Breeze,
-  `SH_FormLayoutWrapPolicy` `DontWrapRows`, K1.210, `breezestyle.cpp:959-960`, so `collapse` is absent under `cond
+  `SH_FormLayoutWrapPolicy` `DontWrapRows`, K1.210, `breezestyle.cpp:954-955`, so `collapse` is absent under `cond
   flavor:widgets`);
   `breakpoints: Vec<Breakpoint>` (Shared value types: Windows' SettingsCard wrap thresholds, W2-40†, measured
   `Allocation` (the card's stretched root grid), width `Below` each ("less than", `SettingsCard.xaml:312-333`): the
@@ -6004,7 +6004,7 @@ spaces:
 dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 
 - **Kind:** typed widget: the page preview of a print or page setup dialog the toolkit draws in the application's
-  process, in by R1.1: Qt Print Support's `QPagePreview` in QPageSetupDialog (`qpagesetupdialog_unix.cpp:60-141`,
+  process, in by R1.1: Qt Print Support's `QPagePreview` in QPageSetupDialog (`qpagesetupdialog_unix.cpp:61-142`,
   K-P3-9†; flavour `widgets`) and GtkPrintUnixDialog's preview, its `drawing` node holding the page's `paper` node
   (`_dialogs.scss:10-23`, GN-2.57†). QPrintDialog, QPageSetupDialog and KIO's Open With dialog, and GTK's
   GtkPrintUnixDialog, GtkPageSetupUnixDialog and GtkAppChooserDialog, are `dialog` elements with standard widgets in
@@ -6068,7 +6068,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   phase confirms from `gtkprintunixdialog.c`); `shadow_lines` (`adwaita`: no shadow lines, as for the shadow's part). On
   `kde-breeze` the margin rectangle and its filler text are drawn whenever the page layout leaves a margin rectangle
   (`:116`); one it leaves none of is not queried, as for content (S6.3).
-- **State-model source:** none of its own: the preview has no states (`kde-breeze`: `qpagesetupdialog_unix.cpp:66-150`,
+- **State-model source:** none of its own: the preview has no states (`kde-breeze`: `qpagesetupdialog_unix.cpp:67-151`,
   qtbase v6.10.1, K-P3-9†; `adwaita`: `_dialogs.scss:10-23` styles no state of the `drawing` or `paper` node).
 - **Today's fields:** none.
 - **Notes:** the preview is queried in its dialog's context (`context dialog`; GTK's print dialog's in `context
@@ -6280,7 +6280,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `list_marker_gap_px: Value<Px>` (K-SF15†); `list_marker_kinds: Vec<Key>` (per nesting level, K-SF15†; its keys
   `disc`, `circle`, `square`, the bullet kinds, drawn by `list_marker.glyph`, and `decimal`, `lower_alpha`,
   `upper_alpha`, `lower_roman`, `upper_roman`, the numbered kinds of Qt's `QTextListFormat`, drawn as text by
-  `list_marker.text`; the value phase confirms the set against `qtextdocumentlayout.cpp:2144-2229`, which K-SF15†
+  `list_marker.text`; the value phase confirms the set against `qtextdocumentlayout.cpp:2154-2239`, which K-SF15†
   cites);
   `quote_indent_per_level_px: Value<Px>` (K-SF14†).
 - **Variants:** typed `markdown` (KDE's Markdown importer, SwiftUI `Text` Markdown), `html` (Qt's HTML parser, Apple's
@@ -6505,7 +6505,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   it only in a focused label with no selection; `kde-breeze`: the value phase confirms from Kirigami's
   `SelectableLabel`, a read-only `TextEdit`, and qqc2's `Label` whether a caret is drawn).
 - **State-model source:** `adwaita`: `G/gtklabel.c:804-806`, `:1503-1515`, `A/w/_labels.scss:2` (GN-3.67†, GN-3.39);
-  `kde-breeze`: `kirigami@81ada72b src/controls/SelectableLabel.qml:266`, qqc2-desktop-style `org.kde.desktop/Label.qml:23`
+  `kde-breeze`: `kirigami@eecf183a src/controls/SelectableLabel.qml:266`, qqc2-desktop-style `org.kde.desktop/Label.qml:23`
   (K3.65†).
 - **Today's fields:** none.
 - **Notes:** a link's text is `link` (its own cursor, `link.body.cursor`); a selectable label is not a link, so KDE's
@@ -6736,7 +6736,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `variant @ka_double_floating`, whose shared shadow is the one drawn, K-KA-27†).
 - **State-model source:** GNOME `_buttons.scss` (`splitbutton`); macOS `NSComboButton.Style.split`; Material
   split-button tokens; Windows SplitButton visual states; KDE Breeze's tool-button branches for `MenuButtonPopup`
-  (`st:4431-4470`, `st:4992-5056`, K1.155); kirigami-addons `DoubleFloatingButton.qml`.
+  (`st:4426-4465`, `st:4987-5051`, K1.155); kirigami-addons `DoubleFloatingButton.qml`.
 - **Today's fields:** none.
 - **Notes:** the inner corners follow the state (Material: rest, hovered, pressed, and the trailing half's menu open:
   `primary.corners`, `secondary.corners` rules); GNOME hides the divider on hover and focus under `variant flat` (`divider.opacity`
@@ -7530,8 +7530,8 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   - `page_label`, in `page_button` — `text`.
   - `outline`, in `page_button` — the tab-shaped outline Breeze draws round every tab in every state
     (`renderToolBoxFrame`, `hp:743-782`): `stroke` (the frame outline colour at rest, the hover colour `@ {hover}`,
-    the focus colour `@ {selected}`, a later rule, since Breeze takes no hover on the open page, `st:7480`,
-    `:7498-7506`), `corners` (per-corner radii), `transitions` (the hover fade).
+    the focus colour `@ {selected}`, a later rule, since Breeze takes no hover on the open page, `st:7475`,
+    `:7493-7501`), `corners` (per-corner radii), `transitions` (the hover fade).
     The parts in `page_button` belong to it and are queried with it.
   - `page_area` — the content frame of the open page: `padding`.
 - **Widget values:** `item_gap: Value<Px>` (`ToolBox_TabItemSpacing`), `tab_margin_width: Value<Px>`
@@ -7541,8 +7541,8 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Transitions:** the hover fade is a property transition on the outline stroke (`breezetoolboxengine.cpp`), its
   duration through the speed factor (`= mul(token.motion.durations.<key>, token.motion.speed_factor)`, S4.1).
 - **may_be_absent:** none beyond S6.3's drawing fields (`outline` is drawn in every state, its colour by state:
-  the outline outside `{selected}` and `{hover}` is the frame outline colour, `st:7498-7506`, not an absence).
-- **State-model source:** Breeze's state branches (`st:7385-7510`, `st:2772-2804`, `hp:743-782`) and its animation
+  the outline outside `{selected}` and `{hover}` is the frame outline colour, `st:7493-7501`, not an absence).
+- **State-model source:** Breeze's state branches (`st:7380-7505`, `st:2767-2799`, `hp:743-782`) and its animation
   engine (K2.9).
 - **Today's fields:** none.
 
@@ -7573,13 +7573,13 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   main window's dock layout slides a gap open under a dragged one, `AnimatedDocks`, K-SF18†: the occasion and name of
   `toolbar`'s `Move`, K3.38†).
 - **Variants:** keyed `@vertical_title_bar` (the application's `QDockWidget::DockWidgetVerticalTitleBar`: the title
-  bar runs down the dock widget's side, its title turned along it, and Breeze draws no separator, `st:7550-7557`).
+  bar runs down the dock widget's side, its title turned along it, and Breeze draws no separator, `st:7545-7552`).
   **Sizes/flags:** none beyond state flags. **Exclusive groups:** none (Breeze's branches combine states);
   precedence: state models (S17).
 - **may_be_absent:** parts: `separator` (`kde-breeze` by a rule `variant @vertical_title_bar`: Breeze draws the line
-  under a horizontal title bar only, `st:7550-7557`, K2.10); fields: `frame.stroke` (`kde-breeze` by a rule `!cond
+  under a horizontal title bar only, `st:7545-7552`, K2.10); fields: `frame.stroke` (`kde-breeze` by a rule `!cond
   system_setting:dock_widget_draw_frame`, K2.10).
-- **State-model source:** Breeze's branches (`st:7512-7586`, `st:968-969`, `st:2125-2131`); Qt's
+- **State-model source:** Breeze's branches (`st:7507-7581`, `st:963-964`, `st:2120-2126`); Qt's
   `qmainwindowlayout.cpp` gap indicator (K-SF18†).
 - **Today's fields:** none.
 
@@ -7610,7 +7610,7 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **may_be_absent:** parts: `active_separator` (`kde-breeze` by a rule `!{@active}`, K2.11); fields: `frame.shadow`
   (`kde-breeze` where the reader reads breezerc `[Common] ShadowSize` as none, the shadow then not drawn,
   `breezemdiwindowshadow.cpp:39-41`, K3.3; a drawing field, S6.3).
-- **State-model source:** Breeze's branches (`st:8241-8366`, `hp:1581-1645`, `breezemdiwindowshadow.cpp:39-60`).
+- **State-model source:** Breeze's branches (`st:8236-8361`, `hp:1581-1645`, `breezemdiwindowshadow.cpp:39-60`).
 - **Today's fields:** none. The `[WM]` colours are KDE's keyed colour roles (*Colour roles*, keyed roles per
   platform), which the component's parts refer to; `[WM]` is no surface set, so nothing binds it.
 
@@ -7663,8 +7663,8 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Sizes/flags:** state flags only. **Exclusive groups:** none (Breeze's branches combine states); precedence:
   state models (S17).
 - **may_be_absent:** parts: `separator` (`kde-breeze` by a rule `variant @top / @bottom`: Breeze draws the line
-  beside a vertical bar only, `st:1412-1414`, K1.201). An icon-only tab's label is not queried (S6.3).
-- **State-model source:** Breeze's `st:1400-1422` and the widget's code.
+  beside a vertical bar only, `st:1407-1409`, K1.201). An icon-only tab's label is not queried (S6.3).
+- **State-model source:** Breeze's `st:1395-1417` and the widget's code.
 - **Today's fields:** none.
 
 #### component.command_bar (kde)
@@ -8183,7 +8183,7 @@ group starts from the `Window` set's active values whatever `inactive_change_sel
 (`kcolorscheme.cpp:317-319`, S2.2), so each of those fields of `role.selection.disabled` is `=
 kde_effects(active(role.window.<role>), active(role.window.background), disabled, <kind>)` (R5.1). `border` is no
 KColorScheme role (below), so no effect applies to it: Breeze computes its frame colour from the palette group the
-widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`breeze@75561b7 kstyle/breezehelper.cpp:142-144`,
+widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`breeze@c97883a kstyle/breezehelper.cpp:142-144`,
 the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border` is the active `border`'s derivation
 (`mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
 `= mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`. On a
@@ -8325,7 +8325,7 @@ keyed, not per set: KDE computes them from Window. `wm_active_background`, `wm_a
 MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
 
 - the preset: Breeze's scheme files' `[WM]` values (`activeBackground`, `activeForeground`, `inactiveBackground`,
-  `inactiveForeground`; `kcolorscheme@8bb948c src/color-schemes/BreezeLight.colors:194-200`, BreezeDark's likewise), as
+  `inactiveForeground`; `kcolorscheme@b01fde3 src/color-schemes/BreezeLight.colors:189-195`, BreezeDark's likewise), as
   Plasma's default path copies them into kdeglobals;
 - the reader: kdeglobals' `[WM]`, which Plasma's `applyScheme()` always writes
   (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:287-309`): each key from the scheme file's `[WM]` where it
@@ -8334,7 +8334,7 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
   accent and tinting or the accent-coloured title bar, `applyScheme()` overrides them (the tinted `Window` background
   and its text; the accent title bar's background and its text, `:318-338`). Where kdeglobals has no `[WM]` (one the
   colours KCM never wrote), Breeze falls back to the palette's `Highlight` and `HighlightedText`, the active group's
-  for the active title bar and the disabled group's for the inactive one (`breeze@75561b7 kstyle/breezehelper.cpp:98-102`),
+  for the active title bar and the disabled group's for the inactive one (`breeze@c97883a kstyle/breezehelper.cpp:98-102`),
   which the reader states, in its `for_preset.kde-breeze` part, as references: `= active(role.selection.background)`,
   `= active(role.selection.foreground)`, `= role.selection.disabled.background`, `= role.selection.disabled.foreground`;
 - the accent layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the accent layer states
@@ -8881,7 +8881,7 @@ holds.
   `toolBarFont`; the slots and keyed styles each patches, *keyed text styles per platform*): K3.46; kcmfonts `[General]
   forceFontDPI` and `Xft.dpi` into `ReaderState.font_dpi` (platform-facts' *Font DPI override*): K3.46.
 - icon theme `index.theme` `*Default` sizes: K3.63.
-- kcminputrc `[Mouse] cursorTheme`, `cursorSize`; key repeat (`kwin src/main.cpp:111-112`,
+- kcminputrc `[Mouse] cursorTheme`, `cursorSize`; key repeat (`kwin src/main.cpp:108-109`,
   `src/keyboard_input.cpp:196-209`): K3.64, K-P3-16†.
 - `org.kde.KWin.TabletModeManager` D-Bus property (to verify) into `cond tablet_mode`: K3.83.
 - Kirigami's `Settings.isMobile` (what it reads, to verify) into `cond mobile_form_factor`: Q3.31, K3.83 (the rules

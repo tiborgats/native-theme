@@ -145,7 +145,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.57 | `checkbox.box.focus; radio.ring.focus` | field |
 | K1.58† | `checkbox.mark.glyph (Path, stroke: GlyphStroke width and join)` | field |
 | K1.58† | `checkbox.mark.glyph @ {indeterminate} (three dots and their spacing, Path)` | rule |
-| K1.60 | `menu.item.{fill,stroke,corners} @ {hover} cond system_setting:menu_item_strong_focus / {focused} cond system_setting:menu_item_strong_focus` (Breeze fills the active item only under strong focus, `breezestyle.cpp:6021`, and draws the weak-focus line otherwise, K1.62; Breeze's `State_Selected` on QMenu's active action, which the pointer and the keys set: `hover` or `focused`, S7.2) | rule |
+| K1.60 | `menu.item.{fill,stroke,corners} @ {hover} cond system_setting:menu_item_strong_focus / {focused} cond system_setting:menu_item_strong_focus` (Breeze fills the active item only under strong focus, `breezestyle.cpp:6016`, and draws the weak-focus line otherwise, K1.62; Breeze's `State_Selected` on QMenu's active action, which the pointer and the keys set: `hover` or `focused`, S7.2) | rule |
 | K1.61 | `menu.item.fill @ {pressed} cond system_setting:menu_item_strong_focus` | rule |
 | K1.61 | `menu.item_label.text.fill @ {pressed} cond system_setting:menu_item_strong_focus` | rule |
 | K1.61 | `menu.item_icon.icon.state_effect @ {pressed} cond system_setting:menu_item_strong_focus (Selected mode)` | rule |
@@ -325,8 +325,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.200 | `splitter.divider.fill @ variant @dock` | rule |
 | K1.201 | `separator.line.stroke (centred on the half pixel: the edge's snap)` | field |
 | K1.201 | `component.multi_tab_bar.separator.stroke` | component |
-| K1.210 | `form.values.label_alignment (its horizontal member, `SH_FormLayoutLabelAlignment`), form.values.field_growth (`SH_FormLayoutFieldGrowthPolicy`), form.values.contents_alignment (the form's own left and top alignment, `SH_FormLayoutFormAlignment`) @ cond flavor:widgets` (Qt's `QFormLayout` as Breeze styles it, `breezestyle.cpp:953-958`) | rule |
-| K1.210 | `form.values.collapse (absent: the rows never wrap, `SH_FormLayoutWrapPolicy` `DontWrapRows`, `breezestyle.cpp:959-960`); form.{group_title,group_description,section_title,row_edit_icon} (absent = true) @ cond flavor:widgets` (Qt's form layout draws labels, `form.field_label`, beside fields, the nested widgets in `context form.row`) | rule |
+| K1.210 | `form.values.label_alignment (its horizontal member, `SH_FormLayoutLabelAlignment`), form.values.field_growth (`SH_FormLayoutFieldGrowthPolicy`), form.values.contents_alignment (the form's own left and top alignment, `SH_FormLayoutFormAlignment`) @ cond flavor:widgets` (Qt's `QFormLayout` as Breeze styles it, `breezestyle.cpp:948-953`) | rule |
+| K1.210 | `form.values.collapse (absent: the rows never wrap, `SH_FormLayoutWrapPolicy` `DontWrapRows`, `breezestyle.cpp:954-955`); form.{group_title,group_description,section_title,row_edit_icon} (absent = true) @ cond flavor:widgets` (Qt's form layout draws labels, `form.field_label`, beside fields, the nested widgets in `context form.row`) | rule |
 | K1.211 | `group_box.values.title_margin, group_box.title.text, group_box.body.padding (the space the title takes)` | field |
 | K1.220 | `dialog.values.action_layout (row_order: KdeLayout's roles, Help and Reset leading, the stretch, then the rest)` | field |
 | K1.221 | `dialog.values.button_icons` | field |
@@ -681,9 +681,9 @@ rationale, each decided in the core's additions register (S22).
 | Q1.136 | `link.values.shows_url_tooltip @ variant @url` | rule |
 | Q1.136 | `tooltip.values.show_delay @ context link cond flavor:kirigami` | rule |
 | K2.1 | `menu_bar.item.padding` | field |
-| K2.1 | `menu_bar.item.fill, menu_bar.item.corners @ {hover} cond system_setting:menu_item_strong_focus / {pressed} cond system_setting:menu_item_strong_focus` (the fill only under strong focus, `breezestyle.cpp:5864`; the weak-focus line otherwise, below) | rule |
+| K2.1 | `menu_bar.item.fill, menu_bar.item.corners @ {hover} cond system_setting:menu_item_strong_focus / {pressed} cond system_setting:menu_item_strong_focus` (the fill only under strong focus, `breezestyle.cpp:5859`; the weak-focus line otherwise, below) | rule |
 | K2.1 | `menu_bar.item_label.text.fill @ {pressed} cond system_setting:menu_item_strong_focus` | rule |
-| K2.1 | `menu_bar.item_label.stroke @ {hover} / {pressed} !cond system_setting:menu_item_strong_focus` (the weak-focus line under the item's text, breezestyle.cpp:5926-5941: the same setting as the menu's, K1.62) | rule |
+| K2.1 | `menu_bar.item_label.stroke @ {hover} / {pressed} !cond system_setting:menu_item_strong_focus` (the weak-focus line under the item's text, breezestyle.cpp:5921-5936: the same setting as the menu's, K1.62) | rule |
 | K2.1 | `menu_bar.bar.bindings (Surface(Header))` | field |
 | K2.1 | `role.header.background @ cond window_inactive (the inactive Header group, K1.150)` | role |
 | K2.3 | `stepper.increment.min_width, stepper.decrement.min_width (the arrow column)` | field |
@@ -720,7 +720,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.10 | `component.dock_widget.frame.stroke` | component |
 | K2.10 | `button.icon.glyph (ThemeIcon or the standard pixmap) @ variant @float context component.dock_widget / variant close context component.dock_widget` | rule |
 | K2.10 | `button.body.fill (Absent: frameless), button.icon.glyph.fill @ variant @float {hover} context component.dock_widget / variant @float {pressed} context component.dock_widget / variant @float {disabled} context component.dock_widget / variant close {hover} context component.dock_widget / variant close {pressed} context component.dock_widget / variant close {disabled} context component.dock_widget` (the buttons' own states) | rule |
-| K2.10 | `component.dock_widget.separator.stroke; component.dock_widget.separator (absent = true) @ variant @vertical_title_bar` (Breeze draws the line under a horizontal title bar only, `st:7550-7557`) | component |
+| K2.10 | `component.dock_widget.separator.stroke; component.dock_widget.separator (absent = true) @ variant @vertical_title_bar` (Breeze draws the line under a horizontal title bar only, `st:7545-7552`) | component |
 | K2.10 | `component.dock_widget.frame.stroke (Absent) @ !cond system_setting:dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, a read switch) | component |
 | K2.10 | `reader:kde:breezerc [Style] DockWidgetDrawFrame` | reader |
 | K2.11 | `component.mdi_sub_window.title_bar.fill (= role.@wm_active_background), component.mdi_sub_window.title_bar.corners (top rounded), component.mdi_sub_window.title.text (fill = role.@wm_active_foreground)` | component |
@@ -749,7 +749,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.15 | `component.title_widget.icon.icon` | component |
 | K2.16 | `component.multi_tab_bar.tab_button.fill, component.multi_tab_bar.tab_button.padding` | component |
 | K2.16 | `component.multi_tab_bar.tab_button.fill @ {checked} / {hover} / {pressed}` | component |
-| K2.16 | `component.multi_tab_bar.separator.stroke; component.multi_tab_bar.separator (absent = true) @ variant @top / variant @bottom` (Breeze draws the line beside a vertical bar only, `st:1412-1414`) | component |
+| K2.16 | `component.multi_tab_bar.separator.stroke; component.multi_tab_bar.separator (absent = true) @ variant @top / variant @bottom` (Breeze draws the line beside a vertical bar only, `st:1407-1409`) | component |
 | K2.16 | `component.multi_tab_bar.tab_button.padding @ variant @left / variant @right (the vertical tabs)` | component |
 | K2.16 | `component.multi_tab_bar.tab_icon.icon, component.multi_tab_bar.tab_label.text` | component |
 | K2.17 | `splitter.collapser.{fill,opacity} / @ {hover} / @ {pressed}` (KSplitterCollapserButton, a part of the splitter it sits on) | rule |
@@ -764,7 +764,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.20 | `color_button.swatch.corners, color_button.swatch.stroke, color_button.body.padding` (the swatch at the push button's contents rectangle less half `PM_ButtonMargin`, `kcolorbutton.cpp:159-161`) | field |
 | K2.21 | `group_box.body.fill, group_box.body.stroke, group_box.body.corners @ variant @styled_panel` | rule |
 | K2.21 | `group_box.body.stroke @ {hover} variant @styled_panel / {focused} variant @styled_panel` | rule |
-| K2.21 | `scroll_view.frame (drawn_as = { widget = "group_box", variants = ["@styled_panel"] }: Breeze's frame of a scroll area, the substitute carrying the view's hover and focus, breezestyle.cpp:3924-3980; qqc2's framed ScrollView the same styled panel, kquickstyleitem.cpp:496-503)` | field |
+| K2.21 | `scroll_view.frame (drawn_as = { widget = "group_box", variants = ["@styled_panel"] }: Breeze's frame of a scroll area, the substitute carrying the view's hover and focus, breezestyle.cpp:3919-3975; qqc2's framed ScrollView the same styled panel, kquickstyleitem.cpp:496-503)` | field |
 | K2.21 | `group_box.body.stroke (= role.@shade_light, role.@shade_dark …, K3.53) @ variant @box / variant @panel / variant @win_panel` | rule |
 | K2.22 | `wizard.header.padding, wizard.title.text, wizard.subtitle.text, wizard.banner.fill, wizard.action_area.padding` (the classic style, `kde-breeze`'s base) | field |
 | K2.23† | `date_picker.field @ variant with_popup cond flavor:widgets` (`drawn_as = { widget = "combo_box", variants = ["editable"] }`: KDateComboBox paints the editable `CC_ComboBox`, its constructor calling `setEditable(true)` whatever its options, kdatecombobox.cpp:214, as KTimeComboBox, K2.24†) `/ variant text_field cond flavor:widgets` (`drawn_as = { widget = "stepper", variants = [] }`: QDateEdit without the popup, K2.3) | rule |
@@ -1056,7 +1056,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.64 | `token.pointer.theme, token.pointer.size (ADD-A46)` | token |
 | K3.64 | `reader:kde:kcminputrc [Mouse] cursorTheme, cursorSize` | reader |
 | K3.65† | `PartStyle.cursor per part: link.body.cursor, splitter.divider.cursor @ variant @column_view, list.accessory.cursor @ variant reorder, button.body.cursor @ variant help, sidebar.handle (the drawer edges)` | field |
-| K3.65† | `selectable_label.body.cursor` (Text: Kirigami's `SelectableLabel`, `kirigami@81ada72b src/controls/SelectableLabel.qml:266`; qqc2-desktop-style's `Label`, `org.kde.desktop/Label.qml:23`) | field |
+| K3.65† | `selectable_label.body.cursor` (Text: Kirigami's `SelectableLabel`, `kirigami@eecf183a src/controls/SelectableLabel.qml:266`; qqc2-desktop-style's `Label`, `org.kde.desktop/Label.qml:23`) | field |
 | K3.65† | `token.behavior.{hide_pointer_while_typing,hide_pointer_delay}` (KLineEdit hides the pointer after its delay, ADD-A86) | token |
 | K3.66† | - | out (R1.1) |
 | K3.70 | `token.behavior.double_click_time` | token |
@@ -1257,7 +1257,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-8† | `dialog.action_area @ context about_dialog` | rule |
 | K-P3-8† | `button @ variant close context dialog.action_area context about_dialog` | rule |
 | K-P3-9† | `dialog; input @ context dialog; list @ context dialog; expander @ context dialog; checkbox @ context dialog` (QPrintDialog, QPageSetupDialog and KIO's KOpenWithDialog, widget dialogs drawn in the application's process, in by R1.1: KOpenWithDialog's URL requester an `input`, its application tree a `list` with its header hidden, so no header is queried, its "Terminal options" group the KCollapsibleGroupBox `expander` of K1.250–K1.251, its check boxes `checkbox`) | rule |
-| K-P3-9† | `page_preview.{body.padding,body.min_width,body.min_height,page_shadow.stroke,page_shadow.transform,page.fill,margins.stroke,margins.padding,filler_text.text}, page_preview.values.{filler_gap_fraction,shadow_lines}` (QPageSetupDialog's page preview, `qpagesetupdialog_unix.cpp:104-141`: the page `= role.@shade_light`; its shadow lines, one `page_shadow` element each, the bottom and right edges of the page's box moved out by the line's step, in `role.@shade_mid` at an opacity falling with `element.item_index`; the dotted margin rectangle and the filler text in `role.@shade_dark`, the filler text's font scaled from the body font by the source's factor) | field |
+| K-P3-9† | `page_preview.{body.padding,body.min_width,body.min_height,page_shadow.stroke,page_shadow.transform,page.fill,margins.stroke,margins.padding,filler_text.text}, page_preview.values.{filler_gap_fraction,shadow_lines}` (QPageSetupDialog's page preview, `qpagesetupdialog_unix.cpp:105-142`: the page `= role.@shade_light`; its shadow lines, one `page_shadow` element each, the bottom and right edges of the page's box moved out by the line's step, in `role.@shade_mid` at an opacity falling with `element.item_index`; the dotted margin rectangle and the filler text in `role.@shade_dark`, the filler text's font scaled from the body font by the source's factor) | field |
 | K-P3-9† | - (the print and Open With dialogs of a request that goes through the portal, which xdg-desktop-portal-kde draws in its own process: `xdg-desktop-portal-kde src/print.cpp:520`, `src/AppChooserDialog.qml`) | out (R1.1) |
 | K-P3-10† | `chart.body.fill, chart.body.bindings (Surface(View)) @ variant @line / variant @pie` | rule |
 | K-P3-10† | `chart.series.fill, chart.legend_swatch.fill (= kqc_series_color(<seed> = role.global.accent, element.item_count, element.item_index), ADD-A57, ADD-B15)` | field |
