@@ -28,10 +28,10 @@ Add the build dependency, and native-theme, which the generated code names:
 
 ```toml
 [build-dependencies]
-native-theme-build = "0.7"
+native-theme-build = "0.8"
 
 [dependencies]
-native-theme = { version = "0.7", features = ["material-icons"] }
+native-theme = { version = "0.8", features = ["material-icons"] }
 ```
 
 native-theme's loaders give `None` without their set's feature, for a

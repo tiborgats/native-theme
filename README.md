@@ -50,7 +50,7 @@ feature; the bundled presets need none:
 
 ```toml
 [dependencies]
-native-theme-iced = { version = "0.7", features = ["native"] }
+native-theme-iced = { version = "0.8", features = ["native"] }
 ```
 
 Then follow that crate's Quick start, which installs the theme in a running
