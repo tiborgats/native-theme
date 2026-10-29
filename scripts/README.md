@@ -837,6 +837,82 @@ python3 scripts/check_ledger.py --self-test
 python3 scripts/check_ledger.py --final --staged-file <path>
 ```
 
+## citations.py
+
+Finds every citation in the 0.8.0 planning documents (the core, the
+catalogue, the six traces, the gap maps, `docs/platform-facts.md` and
+`docs/todo.md`) and resolves each to a project and a ref where the documents
+let it: Markdown links and bare URLs to code hosts and documentation sites,
+`name@sha path:L`, the abbreviations the gap maps define (`st:5327`,
+`A/w/_buttons.scss:328`, `kwin src/x.cpp:140`, with the document line that
+defines each), bare `file:L` names, `:L` continuations, `platform-facts.md`
+line references, Apple documentation paths and pages named by title. Each
+record gives the document, line, syntax, project, ref, path as written, the
+repository path where the rules give one, the lines and a status (resolved,
+heuristic, ambiguous, unresolved); the seeds file's excerpts of other
+documents' cells are marked as quotes. A module, imported by
+`check_sources.py` and meant for the re-pin of the citations; its docstring
+states the rules in the order they apply and the API. Existence checks (a path
+carried from the citation before it, the Windows gap map's two bases, a bare
+name) use this repository's files, and with `--cache` also the source cache's
+checkouts. Run alone it prints the records as TSV, or with `--summary` the
+citations per project; `--self-test` runs one case per syntax family.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/citations.py --summary gap-map-kde
+python3 scripts/citations.py --cache spec-widgets
+python3 scripts/citations.py --self-test
+```
+
+## check_sources.py
+
+Checks `docs/facts/sources.toml`, the pinned platform sources of the 0.8.0
+model (plan D1): every `[[source]]` has the fields of its kind (a git
+repository at a commit, an SDK on a runner image, a dated distribution
+snapshot), a unique `<name>@<version>` id (a commit pin's version is its
+commit's first eight hex digits), full SHAs, preset ids as generations and
+one pin per name and generation; every `[[site]]` names its pinning method
+(its source repositories, or snapshots); every `[[not_pinned]]` gives its
+reason. Then, through `citations.py`, every project the core, the catalogue,
+the traces, the gap maps and `docs/platform-facts.md` cite must be a source, a
+site or not pinned. Offline: it reads the documents and the repository's file
+list, not the source cache. Prints the counts and one line per problem, and
+exits 0 when there is none, 1 when there are some, 2 when the file cannot be
+read. `--self-test` runs each rule on a synthetic file.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_sources.py
+python3 scripts/check_sources.py --self-test
+```
+
+## update_sources.sh
+
+Fills the source cache, `/run/media/tibi/work/cargo-build/native-theme-sources/`
+(`NATIVE_THEME_SOURCES` overrides it): every git entry of
+`docs/facts/sources.toml` is checked out at its commit into `<cache>/<id>/`,
+by a shallow fetch of that commit (or of its tag, where a server refuses a
+fetch by SHA), as a partial clone of the entry's `sparse` folders only where
+it lists them (androidx, AOSP, WebKit, the documentation repositories). A
+checkout already at its commit is skipped, so a run after an edit of
+`sources.toml` fetches only what changed; a new checkout is built beside its
+final folder and renamed once at its commit. `--seed DIR` copies a clean,
+complete checkout at the commit from `DIR/<repository name>` instead of
+fetching it, `--jobs N` sets how many fetches run at once (4). `--verify` runs
+offline and exits 1 unless every entry's checkout is at its commit with no
+tracked file changed; both modes report cache folders no entry names. The SDK
+and distribution entries are not fetched.
+
+Requires git and Python 3.11; network access unless `--verify`.
+
+```sh
+./scripts/update_sources.sh
+./scripts/update_sources.sh --verify
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
