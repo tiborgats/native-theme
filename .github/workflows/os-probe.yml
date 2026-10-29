@@ -400,8 +400,9 @@ jobs:
           mkdir -p gnome-container
           docker run --rm "$IMAGE" cat /usr/share/native-theme/packages.txt > gnome-container/packages.txt
           docker image inspect "$IMAGE" > gnome-container/inspect.json
-          printf '%s\n' 'libadwaita 1:1.10.0-1' 'gtk4 1:4.24.1-1' 'gsettings-desktop-schemas 51.0-1' > gnome-container/expected.txt
-          grep -Fx -f gnome-container/expected.txt gnome-container/packages.txt > gnome-container/found.txt
+          printf '%s\n' 'libadwaita 1:1.10.0-1' 'gtk4 1:4.24.1-1' 'gsettings-desktop-schemas 51.0-1' \
+            | sort > gnome-container/expected.txt
+          grep -Fx -f gnome-container/expected.txt gnome-container/packages.txt | sort > gnome-container/found.txt
           cat gnome-container/found.txt
           cmp gnome-container/expected.txt gnome-container/found.txt
       - name: Push the image
