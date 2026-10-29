@@ -913,6 +913,38 @@ Requires git and Python 3.11; network access unless `--verify`.
 ./scripts/update_sources.sh --verify
 ```
 
+## repin_citations.py
+
+Re-pins the 0.8.0 planning documents' citations of pinned platform sources
+(the core, the catalogue, the six traces and the gap maps; plan M0, *Re-pin*)
+to the release set of `docs/facts/sources.toml`. For each citation
+`citations.py` finds there, it takes the commit the citation was read at (the
+ref the citation or its abbreviation states; for a bare file name, the one
+source its gap-map row's platform file cites it from), reads the cited file at
+that commit (a checkout under `--from`) and at the pin (the source cache), and
+maps the cited lines by a line diff of the whole file: **unchanged** (the same
+commit), **moved** (every line found with the same text), **changed**,
+**vanished**, **present** (a file mention found at the pin), **unmappable**
+(no commit, several projects, no path) or **error** (no checkout of the
+commit). `--report PATH.tsv` writes one row per citation with its old and new
+lines, and stdout has the counts per status and document. `--apply` rewrites
+the moved, unchanged and present citations in place, line numbers and ref in
+the document's own syntax (an abbreviation's definition line gets the pin's
+commit and tag), and lists the lines that still name an old commit; changed,
+vanished and unmappable citations stay as they are for a reader to correct.
+`--docs DIR` works on a copy of the documents. Git runs offline. Exits 0 when
+no changed, vanished or error citation remains, 1 when some do, 2 on
+unreadable input. `--self-test` runs every status and rewrite on two commits
+of a fixture repository.
+
+Requires git and Python 3.11.
+
+```sh
+python3 scripts/repin_citations.py --from <checkouts> --report repin.tsv
+python3 scripts/repin_citations.py --from <checkouts> --apply
+python3 scripts/repin_citations.py --self-test
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
