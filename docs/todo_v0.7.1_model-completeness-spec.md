@@ -2241,9 +2241,8 @@ tokens for the schemes its project defines (R19). Two sources, each stated in th
 - **native-theme's mapping** (the default): each role it covers maps to a colour the project publishes, or to a
   derivation of those (S2.2); the file's `[palette.sources]` table names, for each colour it states, by the colour's
   TOML path, the project's colour by its palette-fact key (`"colors.dark.<…>" = "catppuccin.mocha.base"`, S17, S11),
-  and its
-  `[palette.picks]` table names each value picked from a range the project's guide gives, with the guide's words. It
-  is the same file on every platform.
+  and its `[palette.picks]` table names each value picked from a range the project's guide gives, with the guide's
+  words. It is the same file on every platform.
 - **the project's port** for one platform, where one exists (Catppuccin's and Dracula's KDE colour schemes, R19):
   `Palette::from_port(file, scheme) -> Result<Palette, PortError>` converts a KDE `.colors` file mechanically, and
   that palette is used on `kde-breeze` in place of the mapping. A `.colors` file does not say whether it is light or
