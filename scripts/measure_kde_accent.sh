@@ -31,8 +31,9 @@
 #      tool takes a scheme or an accent, not both, and applies the accent to
 #      the scheme kdeglobals names.
 # Each step must exit 0 and change kdeglobals; steps 1 and 3 must leave
-# ColorScheme naming their scheme; step 3 must leave ColorSchemeHash equal to
-# the scheme file's SHA-1. A scheme file outside /usr/share/color-schemes is
+# ColorScheme naming their scheme, or absent for BreezeLight (the settings
+# store a value equal to their default as no key); step 3 must leave
+# ColorSchemeHash equal to the scheme file's SHA-1. A scheme file outside /usr/share/color-schemes is
 # copied into the pair's data directory under its own name.
 #
 # Writes into <out-dir>: <id>/<n>-<step>.kdeglobals after each step,
@@ -58,6 +59,7 @@ log="$out/run.txt"
 manifest="$out/manifest.toml"
 work=$(mktemp -d)
 system_schemes=/usr/share/color-schemes
+default_scheme=BreezeLight
 : >"$log"
 note() { echo "$*" | tee -a "$log"; }
 toml() { local s=${1//\\/\\\\}; s=${s//\"/\\\"}; printf '"%s"' "$s"; }
@@ -190,7 +192,9 @@ for line in "${pairs[@]}"; do
     [ $changed = true ] || problems+=("$step: kdeglobals unchanged")
     if [ -n "$expect" ]; then
       named=$(ini_get "$kdeglobals" General ColorScheme || echo absent)
-      [ "$named" = "$expect" ] || problems+=("$step: ColorScheme is $named, not $expect")
+      if [ "$named" != "$expect" ] && ! { [ "$named" = absent ] && [ "$expect" = "$default_scheme" ]; }; then
+        problems+=("$step: ColorScheme is $named, not $expect")
+      fi
     fi
     if [ "$step" = scheme ]; then
       hash=$(ini_get "$kdeglobals" General ColorSchemeHash || echo absent)
@@ -241,5 +245,6 @@ for line in "${pairs[@]}"; do
 done
 
 rm -rf "$work"
+chmod -R a+rX "$out"
 note "pairs: ${#pairs[@]}, failed: $failed"
 exit $failed

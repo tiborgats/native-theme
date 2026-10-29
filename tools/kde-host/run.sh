@@ -28,13 +28,13 @@ manifest() { (cd "$1" && find . -type f ! -name stdout.txt ! -name stderr.txt -p
 note "cpu: $(grep -m1 '^model name' /proc/cpuinfo | cut -d: -f2-)"
 cp /usr/share/native-theme/packages.txt "$out/packages.txt"
 qml=$(command -v qml6 || command -v qml || echo /usr/lib/qt6/bin/qml)
-note "qml: $qml ($("$qml" --version 2>&1 | head -n 1))"
-"$qml" --help >"$out/qml-help.txt" 2>&1
+note "qml: $qml ($(QT_QPA_PLATFORM=offscreen "$qml" --version 2>&1 | head -n 1))"
+QT_QPA_PLATFORM=offscreen "$qml" --help >"$out/qml-help.txt" 2>&1
 
 bash scripts/measure_kde_accent.sh "$out/schemes" BreezeLight - BreezeDark - >/dev/null 2>&1
 status=$?
 note "measure_kde_accent.sh: exit $status"
-if [ $status -ne 0 ]; then cat "$out/schemes/run.txt"; exit 1; fi
+if [ $status -ne 0 ]; then cat "$out/schemes/run.txt"; chmod -R a+rX "$out"; exit 1; fi
 
 XDG_RUNTIME_DIR=$(mktemp -d)
 export XDG_RUNTIME_DIR
@@ -85,4 +85,5 @@ else
   failed=1
 fi
 (cd "$out" && find . -name '*.png' -print | sort | xargs sha256sum) >"$out/sha256.txt"
+chmod -R a+rX "$out"
 exit $failed
