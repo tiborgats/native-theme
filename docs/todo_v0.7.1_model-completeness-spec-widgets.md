@@ -319,7 +319,7 @@ is keyed. The list, with the widgets that declare each:
 | `multiline` | the element's text wraps to more than one line | `badge` (KDE), `banner` (KDE, Material), `toast` (Material) |
 | `filled`, `half` | a rating star filled, or half filled; a level indicator's block the value reaches (`filled`) | `rating` (KDE, Windows, macOS), `level_indicator` (`filled` on `block`: GNOME, macOS) |
 | `preview` | the hover preview of a value | `rating` (KDE, Windows) |
-| `pulling`, `refreshing` | the pull-to-refresh phases | `pull_to_refresh` (iOS, KDE, macOS 27 on `macos-tahoe`, Material, Windows) |
+| `pulling`, `refreshing` | the pull-to-refresh phases | `pull_to_refresh` (iOS, KDE, Material, Windows) |
 | `placed_above`, `placed_below` | a popup attached above or below its anchor (set by the connector from the placement result) | `menu` (KDE; Windows' suggestion list, a `menu` in `context autocomplete`) |
 | `route_active` | an output route (AirPlay) is active | `button` on its typed `route` (macOS, iOS) |
 | `editing` | a row or cell in edit mode | `list` (GNOME, iOS, macOS: a cell being edited, MAC-L13, MAC-I01, MAC-X14) |
@@ -5867,11 +5867,9 @@ spaces:
   (MAC-N34†); the bar's height is `bar.min_height` (macOS's, MAC-N20; `MenuBarHeight`, W2-22) and Kirigami's item
   height `item.min_height` (Q2.9); `presentations: Vec<PresentationTransition>`:
   event `Appear` (iPadOS's hidden bar revealed at the top edge, C-37†).
-- **Variants:** keyed `kde-breeze` `@quick` (the Kirigami MenuBar where it differs from QMenuBar, Q2.9, Q2.10);
-  `macos-*` `@expanded_interface` (macOS 27's `NSStatusItemExpandedInterfaceSession`, a status item's expanded
-  interface, the application's choice: the application presents it and the connector passes that choice on the
-  element; `macos-tahoe`
-  covers 27; what it draws, the `extra_window` parts under it, the value phase measures, MAC-N34†).
+- **Variants:** keyed `kde-breeze` `@quick` (the Kirigami MenuBar where it differs from QMenuBar, Q2.9, Q2.10).
+  macOS 27's expanded interface of a status item (`NSStatusItemExpandedInterfaceSession`, MAC-N34†) is not one:
+  `macos-tahoe` describes 26 (R1.5, D12), and it is carried to `docs/todo.md`'s macOS 27 entry.
 - **Sizes and densities:** none. macOS's "Menu bar size" accessibility setting is the condition
   `cond container_size:menu_bar:large` (S7.1 `ContainerSize`, MAC-N20), not a size: the sizes declared in
   `container_sizes = { menu_bar = ["default", "large"] }` with the platform's default first (S10), the setting's
@@ -6142,11 +6140,10 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 *From group 6's catalogue.*
 
 - **Kind:** typed widget: iOS's UIRefreshControl (C-10), Kirigami ScrollablePage's PullDownIndicator (Q2.54†, Q1.121),
-  macOS's `NSScrollView.refreshController` (MAC-N24, macOS 27), Material's Compose PullToRefresh (MAT-N28), Windows'
-  RefreshContainer and RefreshVisualizer (W2-26).
-- **Available:** every preset but `adwaita`, `macos-monterey` (`available = false`: GNOME has no such control; macOS
-  draws it from 27, MAC-N24, the newest release of the generation `macos-tahoe` describes, R1.5). `kde-breeze` flavour
-  `kirigami` only (Q2.54†).
+  Material's Compose PullToRefresh (MAT-N28), Windows' RefreshContainer and RefreshVisualizer (W2-26).
+- **Available:** every preset but `adwaita`, `macos-monterey`, `macos-tahoe` (`available = false`: GNOME has no such
+  control; macOS draws one only from 27, `NSScrollView.refreshController`, MAC-N24, a release `macos-tahoe` does not
+  describe, R1.5, D12, carried to `docs/todo.md`'s macOS 27 entry). `kde-breeze` flavour `kirigami` only (Q2.54†).
 - **Parts:**
   - `body` — the control's box (the root), holding the indicator and Kirigami's strip: `padding`, `bindings`.
   - `indicator` — the indicator's container (Material's container colour, size and elevation, MAT-N28; Windows'
@@ -6174,10 +6171,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   (every preset but `kde-breeze`: Kirigami's `refreshDelay`, Q2.54†); `content_shift_px` (every preset but
   `kde-breeze`: Kirigami's content moving down by the strip, Q2.54†); `loop` (every preset but `windows-11`: the
   others spin the spinner element, W2-26's spin animation being the visualizer's own); `progress_sweep`
-  (`windows-11`: RefreshVisualizer draws an arrow glyph in its circle, neither an arc nor spokes, W2-26;
-  `macos-tahoe` where its facts show neither, value phase, MAC-N24).
-- **State-model source:** iOS `UIRefreshControl`; KDE `PullDownIndicator.qml`, `ScrollablePage.qml`; macOS
-  `NSScrollView` refresh controller (27); Material Compose `PullToRefresh` states; Windows `RefreshVisualizerState`.
+  (`windows-11`: RefreshVisualizer draws an arrow glyph in its circle, neither an arc nor spokes, W2-26).
+- **State-model source:** iOS `UIRefreshControl`; KDE `PullDownIndicator.qml`, `ScrollablePage.qml`; Material
+  Compose `PullToRefresh` states; Windows `RefreshVisualizerState`.
 - **Today's fields:** none.
 - **Notes:** Nested controls: the pull-progress arc or spokes are a `spinner` in `context pull_to_refresh`,
   `!{indeterminate}` while `{pulling}`, its progress the pull progress (`element.progress`, ADD-B12; KDE's arc with its
@@ -6562,8 +6558,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `SheetAnchor { BottomCenter, Center, Side(Side), FullScreen }` (where the platform places the sheet:
   bottom-centred: GNOME, Material, iOS in compact width; centred: KDE's OverlaySheet, iOS in regular width; at a side,
   `Start` or `End`: Material's side sheet (docked, spanning the window's full height, its docked container height
-  the window's, MAT-N20; detached, inset from the window's edges by `body.margin`), iOS 27's leading and trailing
-  placements; filling the window: iOS's page
+  the window's, MAT-N20; detached, inset from the window's edges by `body.margin`); filling the window: iOS's page
   and form sheets in a compact height, SF-7†), stated by rules under the variants and restated by rules
   `@ h_size_class c` and `@ v_size_class c` (SF-7†, ADD-A20); `edge_attached_width: Value<SheetWidth>`,
   `SheetWidth { SafeArea, PreferredContent }` (an edge-attached sheet's width: the container's safe-area width, or
@@ -6595,9 +6590,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   sheet, MAT-N21; iOS 26's inset sheet at partial detents, to verify, C-12); keyed `adwaita` `@flush` (GN-2.17);
   `ios-*` `@page`, `@form` (SF-8†), `@edge_attached` (compact height, C-12, SF-7†), `@width_follows_content` (the
   application's choice, `widthFollowsPreferredContentSizeWhenEdgeAttached`, which the connector passes on, SF-7†),
-  `@placement_center`, `@placement_leading`, `@placement_trailing` (`ios-26`: iOS 27's `preferredPlacement`, the
-  application's choice, which the connector passes on, its `automatic` the base; where a leading or trailing sheet goes and how it looks the value phase
-  measures, SF-7†), and the modal transition styles
+  and the modal transition styles
   `@cover_vertical`, `@cross_dissolve`, `@flip_horizontal`, `@partial_curl`, `@zoom` (`UIModalTransitionStyle`, the
   application's choice of presentation, which the connector passes on, each with its own `presentations`, X-MO-4); `material-3` `@side`, `@modal`,
   `@standard`, `@detached` (MAT-N19, MAT-N20); `kde-breeze` `@overlay` (the centred OverlaySheet, Q2.37),
@@ -8190,7 +8183,7 @@ group starts from the `Window` set's active values whatever `inactive_change_sel
 (`kcolorscheme.cpp:317-319`, S2.2), so each of those fields of `role.selection.disabled` is `=
 kde_effects(active(role.window.<role>), active(role.window.background), disabled, <kind>)` (R5.1). `border` is no
 KColorScheme role (below), so no effect applies to it: Breeze computes its frame colour from the palette group the
-widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`src/breeze/kstyle/breezehelper.cpp:142-144`,
+widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`breeze@75561b7 kstyle/breezehelper.cpp:142-144`,
 the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border` is the active `border`'s derivation
 (`mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
 `= mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`. On a
@@ -8242,7 +8235,7 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
 - the accent layer (`set_accent`, while no mapping palette applies) states each as `= kde_accent(<set>, <key>,
   <group>)` over the scheme inputs in force, the reader's, a KDE port's, else Breeze's (S9.2). Group `active` gives
   the active role; group `inactive`, for a set `input.kde_scheme.inactive_groups` names, what `applyScheme()`
-  writes there (`src/plasma-workspace/kcms/colors/colorsapplicator.cpp:247-284`, v6.8.2):
+  writes there (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:247-284`):
   - while the scheme tints (`token.kde.tint_factor` is `Some`): every set's own file value
     `input.kde_scheme.<set>.inactive.<key>`, `Header`'s included, tinted toward the accent;
   - while it does not: `Header`'s the file's active `Window` value `input.kde_scheme.window.<key>` (Plasma 6.8's
@@ -8332,16 +8325,16 @@ keyed, not per set: KDE computes them from Window. `wm_active_background`, `wm_a
 MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
 
 - the preset: Breeze's scheme files' `[WM]` values (`activeBackground`, `activeForeground`, `inactiveBackground`,
-  `inactiveForeground`; `src/kcolorscheme/src/color-schemes/BreezeLight.colors:194-200`, BreezeDark's likewise), as
+  `inactiveForeground`; `kcolorscheme@8bb948c src/color-schemes/BreezeLight.colors:194-200`, BreezeDark's likewise), as
   Plasma's default path copies them into kdeglobals;
 - the reader: kdeglobals' `[WM]`, which Plasma's `applyScheme()` always writes
-  (`src/plasma-workspace/kcms/colors/colorsapplicator.cpp:287-309`): each key from the scheme file's `[WM]` where it
+  (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:287-309`): each key from the scheme file's `[WM]` where it
   states one, else the scheme's `Header` set, Normal background and foreground for the active keys, the Inactive
   group's for the inactive ones (`:297-303`), so a user's scheme without `[WM]` reaches the reader too; with an
   accent and tinting or the accent-coloured title bar, `applyScheme()` overrides them (the tinted `Window` background
   and its text; the accent title bar's background and its text, `:318-338`). Where kdeglobals has no `[WM]` (one the
   colours KCM never wrote), Breeze falls back to the palette's `Highlight` and `HighlightedText`, the active group's
-  for the active title bar and the disabled group's for the inactive one (`src/breeze/kstyle/breezehelper.cpp:98-102`),
+  for the active title bar and the disabled group's for the inactive one (`breeze@75561b7 kstyle/breezehelper.cpp:98-102`),
   which the reader states, in its `for_preset.kde-breeze` part, as references: `= active(role.selection.background)`,
   `= active(role.selection.foreground)`, `= role.selection.disabled.background`, `= role.selection.disabled.foreground`;
 - the accent layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the accent layer states
@@ -9192,7 +9185,7 @@ and the owning group's name where the kinds are the same.
 | dial/circular slider | macOS, KDE | typed `dial` |
 | menu bar | macOS, Windows, KDE, GNOME, iOS | typed `menu_bar`; macOS's Help-menu search is drawn inside `menu` |
 | navigation/app bar | GNOME, KDE, Material, iOS, Windows | split by what is drawn: the page stack's push/pop is typed `navigation_view` (GNOME, KDE); bottom and Expressive bars and iOS's navigation bar are drawn inside `toolbar`; Windows' top NavigationView is a `view_switcher` (keyed `@navigation_top`); KDE's KPageView is a keyed component `page_view` |
-| pull-to-refresh | macOS (27), Windows, KDE, Material, iOS | typed `pull_to_refresh` |
+| pull-to-refresh | Windows, KDE, Material, iOS (macOS from 27: `docs/todo.md`, D12) | typed `pull_to_refresh` |
 | rich text view | KDE, macOS, iOS, Material (Windows' MarkdownTextBlock is Toolkit Labs: out, R1.2) | typed `rich_text` |
 | search field | macOS, Windows, GNOME, Material, iOS | typed `search_field` |
 | stepper/spin box | macOS, Windows, KDE, GNOME, iOS | typed `stepper` |

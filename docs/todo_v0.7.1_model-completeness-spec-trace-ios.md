@@ -584,7 +584,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-1 | `toolbar.title_menu_chevron.glyph` | field |
 | C-1 | `button.icon.glyph @ variant overflow context toolbar.bar` (the overflow button) | rule |
 | C-1 | `toolbar.large_title.{opacity,transform}, toolbar.large_subtitle.{opacity,transform}, toolbar.bar.min_height` as expressions on `element.scroll_offset` (the large-title collapse on scroll, ADD-B13) | field |
-| C-1 | `toolbar.values.title_alignment` (27.2's `titleAlignment`, to verify) | field |
+| C-1 | - (iOS 27.2's `titleAlignment`; `ios-26` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | C-1 | - | readers (R18) |
 | C-2 | `button.icon.glyph @ variant back context toolbar.bar` | rule |
 | C-2 | `button.label.text @ variant back context toolbar.bar` | rule |
@@ -1001,7 +1001,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SF-7† | `sheet.values.anchor, sheet.body.corners @ variant @edge_attached v_size_class compact` (attached to the bottom edge) | rule |
 | SF-7† | `sheet.values.anchor (full_screen) @ variant @page v_size_class compact / variant @form v_size_class compact` (compact height: full screen, unless the application asks for the edge-attached form, `@edge_attached`) | rule |
 | SF-7† | `sheet.values.edge_attached_width @ variant @edge_attached / variants {@edge_attached,@width_follows_content}` (the container's safe-area width, or the content's preferred width where the application asks, `widthFollowsPreferredContentSizeWhenEdgeAttached`) | rule |
-| SF-7† | `sheet.values.anchor, sheet.body.{fill,corners,shadow} @ variant @placement_center / variant @placement_leading / variant @placement_trailing` (`ios-26`: iOS 27's `preferredPlacement`, set by the connector from the application's choice; where a leading or trailing sheet goes and how it looks is measured in the value phase) | rule |
+| SF-7† | - (iOS 27's `preferredPlacement`; `ios-26` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | SF-7† | - | readers (R18) |
 | SF-8† | `sheet.body.{max_width,max_height,corners} @ variant @form` (the automatic style's mapping on iOS 18) | rule |
 | SF-8† | - (the page sheet as the automatic style before iOS 18) | newest (R1.5) |

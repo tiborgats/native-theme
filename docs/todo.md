@@ -778,6 +778,17 @@ model, the platform presets and the three connectors
       disabled slider's bar left of the knob #d9d9d9 / #3d3d3d (26: #dfdfdf /
       #393939; `docs/platform-facts.md` §2.9 `disabled_fill_color`, §2.21
       `disabled_checked_background`).
+      Carried here from the v0.7.1 specification by the 0.8.0 plan's D12
+      (2026-10-29: `macos-tahoe` and `ios-26` describe 26.x), what only 27
+      draws, each a model addition for 27's preset: macOS's pull to refresh
+      (`NSScrollView.refreshController`, MAC-N24; a `pull_to_refresh` on the
+      macOS preset), a status item's expanded interface
+      (`NSStatusItemExpandedInterfaceSession`, MAC-N34†; a `menu_bar` variant
+      `@expanded_interface` and its `extra_window` look), iOS 27's sheet
+      placements (`preferredPlacement`: `@placement_center`, `_leading`,
+      `_trailing`, with a side anchor, SF-7†) and iOS 27.2's navigation-bar
+      `titleAlignment` (C-1); the gap maps' rows and the traces' `newest
+      (R1.5)` lines name them.
 
 ### macOS: the window background macOS 14 and 15 draw is not the one they read
 

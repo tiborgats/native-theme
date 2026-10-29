@@ -2665,7 +2665,7 @@ Kinds: `field`, `rule`, `role`, `token`, `component`, `input`, `reader` (a new r
 `condition`, `flag`, and the verdicts, whose target is `-` (or `- (note)` naming the part of the row a verdict
 covers when the row's other parts are carried; `readers (R18)` may instead name the read the later reader makes): `out (R1.1)` (the system draws it), `out (R1.2)` (a
 library failing R1.2's test), `out (R1.4)` (a Mac Catalyst-only row; a SwiftUI-only control is in, R1.4), `preset (R1.3)` (another toolkit's preset),
-`newest (R1.5)` (an older generation's look), `reference (R1.6)` (a look the preset's chosen reference does not
+`newest (R1.5)` (a look of a release the preset does not describe: an older generation's, or one only macOS or iOS 27 draws, D12), `reference (R1.6)` (a look the preset's chosen reference does not
 draw: material-web where Compose is Material's reference), `readers (R18)` (the iOS and Android readers' milestone).
 
 ## S21. Release and compatibility (R21)
@@ -2813,6 +2813,7 @@ lines that cite it.
 | ADD-A116 | a fact's `rows` and citations (`kind`, `source`, `quote`, `conversion`, `evidence`, `tolerance`), `sources.toml`, a generation's facts by `preset:<id>`, the declarations in `state-models.toml` (the 0.8.0 plan) | S17 |
 | ADD-A117 | the 0.8.0 plan's new scripts | S18 |
 | ADD-A118 | a connector contract's `pending` entries while 0.8.0 is built (the 0.8.0 plan) | S21.3 |
+| ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

@@ -635,8 +635,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N22 | `level_indicator.* @ variant circular` (the linear gauge is the base: every `NSLevelIndicator` element carries its style's variant, `continuous`, `discrete` or `@relevancy`, MAC-N06, so the base, with none, is SwiftUI's linear gauge alone) | rule |
 | MAC-N23 | `bottom_tab_bar.*` (the toolbar tab bar, the widget's base on `macos-*`) | field |
 | MAC-N23 | `bottom_tab_bar.* @ variant @sidebar_adaptable` | rule |
-| MAC-N24 | `pull_to_refresh.indicator` | field |
-| MAC-N24 | `spinner.* @ context pull_to_refresh` | rule |
+| MAC-N24 | - (macOS 27's `NSScrollView.refreshController`; `macos-tahoe` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | MAC-N25 | - (notification banners and Notification Center, the Dock tile's badge, the share picker, and the open, save, colour, font and print panels, which the row finds drawn by the OS or AppKit, not by the application's toolkit; whether AppKit draws any of the panels in the application's process, which R1.1 would bring in as it does Qt's QPrintDialog, is to verify) | out (R1.1) |
 | MAC-N26 | `component.touch_bar.bar.{fill,padding}, component.touch_bar.item.{fill,corners,padding,min_width,min_height,text,icon}, component.touch_bar.values.item_gap` (the application's `NSTouchBar` items, which AppKit draws in its process: what it configures, R1.1) | component |
 | MAC-N26 | `component.touch_bar.scrubber.{fill,corners,padding}, component.touch_bar.scrubber_item.{fill,corners,text,icon}, component.touch_bar.scrubber_selection.{fill,stroke,corners}, component.touch_bar.values.scrubber_item_gap` (`NSScrubber`) | component |
@@ -663,7 +662,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N33† | `menu.item, menu.item_label.text (its results, help topics among them)` | field |
 | MAC-N33† | `menu.found_item_pointer.{glyph,fill,transitions}` | field |
 | MAC-N34† | `menu_bar.extra_window.fill (material), menu_bar.extra_window.corners, menu_bar.extra_window.shadow, menu_bar.values.extra_window_gap` | field |
-| MAC-N34† | `menu_bar.extra_window.{fill,corners,shadow} @ variant @expanded_interface` (`macos-tahoe`: macOS 27's `NSStatusItemExpandedInterfaceSession`; what it draws is measured in the value phase) | rule |
+| MAC-N34† | - (macOS 27's `NSStatusItemExpandedInterfaceSession`; `macos-tahoe` describes 26, D12; carried to `docs/todo.md`'s macOS 27 entry) | newest (R1.5) |
 | MAC-N35† | `status_page.icon.icon, status_page.title.text, status_page.description.text` | field |
 | MAC-N35† | `status_page.values.{icon_to_title,title_to_description,description_to_actions}` | field |
 | MAC-N35† | `button.* @ context status_page.action_area` | rule |

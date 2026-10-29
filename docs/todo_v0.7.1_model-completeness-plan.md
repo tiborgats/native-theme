@@ -390,7 +390,12 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
   those. Not re-pinned: `platform-facts.md` (its rows are lane input the lanes pin themselves, and editing it would
   break today's preset checks before the switch); the rationale (its citations record what each decision was based on,
   dated by their SHAs); `docs/todo.md` (only its `platform-facts.md:LINE` citations get the `@<sha>` rewrite; a lane
-  taking a triaged item re-reads its sources at the pin).
+  taking a triaged item re-reads its sources at the pin). A citation the script cannot map (M0's inventory, 2026-10-29:
+  about 1,100 of 7,729 in scope, mostly the catalogue's bare file names with no commit, names several projects own,
+  and branches with no SHA) takes its commit from its row's platform file where that names one source for it;
+  otherwise it is listed in the ledger with its row, and the lane that takes the row re-reads it at the pin, as for
+  `docs/todo.md`. Re-reading all of them in M0 was rejected: the lanes read every source at the pin anyway, and the
+  facts' quote check, not the catalogue's pointer, is what holds a value to its source.
 - **The `@<sha>` rewrite** of the gap maps' and `docs/todo.md`'s `platform-facts.md:LINE` citations (*What carries
   over*), as its own pass.
 - **The specification's amendments** this plan needs, through *Spec changes*:
@@ -434,7 +439,7 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
     on `windows-11-arm` and reporting a flyout's frame;
   - **A:** the Android host.
 - **Gate:** the spec checkers' self-tests and runs green; `check_sources.py` and `update_sources.sh --verify` green;
-  `repin_citations.py` reports no unresolved citation; `scripts/check_ledger.py` (every triaged item has a
+  `repin_citations.py` reports no unresolved citation among those it maps, and the ledger lists the rest; `scripts/check_ledger.py` (every triaged item has a
   destination) green.
 
 ## M1a — The slice's core: `button`, colour roles and the slice's tokens on two presets
