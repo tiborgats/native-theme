@@ -427,9 +427,9 @@ jobs:
   # The renderer is GTK's GL renderer (GSK_RENDERER=gl, on Mesa's llvmpipe):
   # the GPU renderers' code path; the cairo fallback's 8-bit values differ from
   # it by one step in some fills (each renderer byte-identical across runs).
-  # The pull is tried without credentials first,
-  # to check that the package is public; pull.txt records the result, and the
-  # job's token pulls it where that fails.
+  # The pull is tried without credentials first, to check that the package is
+  # public; pull.txt records the result, and the job's token pulls it where
+  # that fails.
   gnome-harness:
     name: GNOME harness (${{ matrix.display }})
     needs: gnome-container
