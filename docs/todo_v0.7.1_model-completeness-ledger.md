@@ -108,6 +108,11 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 | W — microsoft-ui-xaml coverage and WinUI host | | | |
 | A — Android host | | | |
 
+`scripts/check_ledger.py --final` (M4) needs two things the plan leaves open, to be settled before M4: the path of
+S19.2's staged inheritance file (named when M1a writes `convert_inheritance_rules.py`; passed as `--staged-file`),
+and a per-fact table of drift comparisons in this ledger, which the script then reads (until then `--final` reports
+the drift rule as a finding).
+
 ## Evidence size
 
 | Date | `docs/evidence/` size | Change | Notes |
