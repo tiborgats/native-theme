@@ -3,10 +3,24 @@ name: OS probe
 # Runs tools/os-probe (native-theme-os-probe, never published) on each macOS
 # and Windows runner image and uploads what the OS reported: probe.toml and,
 # on macOS, the control renders. Evidence for the platform-fidelity review
-# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3). Dispatched by hand only.
+# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
+# jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
+# Dispatched by hand only; `workflow_dispatch` needs this file on `main`, and
+# `gh workflow run os-probe.yml --ref <branch>` runs the branch's version:
+#
+#     gh workflow run os-probe.yml --ref v0.8.0-tools -f jobs=probe -f images='["macos-26"]'
 
 on:
   workflow_dispatch:
+    inputs:
+      jobs:
+        description: "The jobs to run, comma-separated without spaces (probe); empty runs every job"
+        required: false
+        default: ""
+      images:
+        description: "The probe job's runner images, a JSON list; the default is the 0.8.0 release set's"
+        required: false
+        default: '["macos-15", "macos-26", "windows-11-arm"]'
 
 permissions:
   contents: read
@@ -17,13 +31,17 @@ env:
 jobs:
   probe:
     name: OS probe (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',probe,')
     runs-on: ${{ matrix.os }}
     # xcode-27 is the macOS 27 preview image: its failure does not fail the run.
     continue-on-error: ${{ matrix.os == 'xcode-27' }}
     strategy:
       fail-fast: false
+      # The default set is the 0.8.0 release set's (D3): macos-14, xcode-27
+      # (macOS 27, outside the release set, D12), windows-2022 and windows-2025
+      # (Windows Server) left it; each can still be named in `images`.
       matrix:
-        os: [macos-14, macos-15, macos-26, xcode-27, windows-2022, windows-2025, windows-11-arm]
+        os: ${{ fromJSON(inputs.images) }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
