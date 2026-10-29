@@ -1,0 +1,1410 @@
+# The pinned platform sources of the 0.8.0 model (plan D1, specification S17).
+#
+# One [[source]] per platform source and generation, frozen until 0.8.0 unless the ledger records a re-pin. A fact
+# cites a source as `source = "<id> <path>:<lines>"`, the id being `<name>@<version>`: the release's version as its
+# project names it (`breeze@6.8.2` for the tag v6.8.2), or the commit's first eight hex digits where the project has
+# no tag for the release (`tag = "commit"`, the reason in `note`).
+#
+# Fields:
+#   kind          "git": a repository fetched at `commit` by scripts/update_sources.sh into <cache>/<id>/;
+#                 "sdk": an SDK on a CI runner image (Apple's headers exist only on macOS runners), not fetched;
+#                 "distribution": a dated package snapshot the KDE and GNOME harnesses install, not fetched.
+#   project       the name scripts/citations.py gives the project's citations (absent where none cites it).
+#   repository    the canonical repository; tag, its tag ("commit" where none); commit, the full SHA (an annotated
+#                 tag's peeled commit; tag_object, its tag object).
+#   release       the release the pin belongs to; generations, the preset ids it serves.
+#   researched    the date the pin was read; proof, how (every SHA comes from git ls-remote or the GitHub API);
+#                 arch, the package and release in archlinux@2026-10-29 where the snapshot carries it.
+#   sparse        large repositories: the folders the documents cite, fetched alone (cone mode).
+#   site          documentation repositories: the site whose pages they are the source of.
+#
+# The release set (docs/todo_v0.7.1_model-completeness-ledger.md, *Release set*): the newest stable release of each
+# platform at M0 (2026-10-29), coherent. KDE and GNOME: what the Arch Linux Archive snapshot of 2026-10-29 carries
+# (Plasma 6.8.2, KDE Frameworks 6.31.0, KDE Gear 26.08.2, Qt 6.12.0, GNOME 51); the other cited projects of those
+# platforms at the snapshot's version, which is each one's newest stable (git ls-remote of its tags). Material:
+# material-web v2.5.0, Compose Material 3 1.4.0 (androidx), material-color-utilities by commit, Android 17's AOSP
+# tag. The Android emulator's system image (API 37.0 rev 8, 4 KB pages, or API 37.1 rev 9, 16 KB pages only) is
+# decided by spike A and recorded here then. Windows: the Windows App SDK 2.5.1 pair, the Community Toolkit
+# 8.2.251219, Microsoft Learn's public source repositories at a commit. Apple (D12): the GitHub runner images
+# `macos-15` and `macos-26` with their default Xcode.
+#
+# Checked by scripts/check_sources.py (form, and every project the documents cite is pinned, a listed site or
+# [[not_pinned]]); fetched and verified by scripts/update_sources.sh.
+
+# KDE (Plasma 6.8.2, KDE Frameworks 6.31.0, KDE Gear 26.08.2, Qt 6.12.0: archlinux@2026-10-29)
+
+[[source]]
+id = "plasma-workspace@6.8.2"
+kind = "git"
+project = "KDE/plasma-workspace"
+repository = "https://invent.kde.org/plasma/plasma-workspace.git"
+tag = "v6.8.2"
+commit = "30beb0095873364c6b34ebcfd292ecafd4db7f61"
+tag_object = "6095c941525909950fef4dd2d95fb7835301f42c"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/plasma-workspace.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "plasma-workspace 6.8.2-1"
+
+[[source]]
+id = "kwin@6.8.2"
+kind = "git"
+project = "KDE/kwin"
+repository = "https://invent.kde.org/plasma/kwin.git"
+tag = "v6.8.2"
+commit = "f130ab33c8e6f3b9d728aade87836086ae9a8ed4"
+tag_object = "a26a6edec31bda6ee3307d25b50b28b2586f617b"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/kwin.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "kwin 6.8.2-1"
+
+[[source]]
+id = "breeze@6.8.2"
+kind = "git"
+project = "KDE/breeze"
+repository = "https://invent.kde.org/plasma/breeze.git"
+tag = "v6.8.2"
+commit = "c97883a8fe41bce774835c25d7f7e321c71fa618"
+tag_object = "b10d17a54bdf1425e4fcf10deac30dbde8229eb3"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/breeze.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "breeze 6.8.2-1"
+
+[[source]]
+id = "plasma-integration@6.8.2"
+kind = "git"
+project = "KDE/plasma-integration"
+repository = "https://invent.kde.org/plasma/plasma-integration.git"
+tag = "v6.8.2"
+commit = "b8233c2a238f97371014dc47a3f8ec8e10f41048"
+tag_object = "e7273f477f7e8bd568dd31b2ec16ffb14a6de948"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/plasma-integration.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "plasma-integration 6.8.2-1"
+
+[[source]]
+id = "plasma-desktop@6.8.2"
+kind = "git"
+project = "KDE/plasma-desktop"
+repository = "https://invent.kde.org/plasma/plasma-desktop.git"
+tag = "v6.8.2"
+commit = "3a67a04b656bda45b2c175b5f12bb7e4222d5026"
+tag_object = "59fd06d04c690ef8c1e64c96842eceec8aafd9b4"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/plasma-desktop.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "plasma-desktop 6.8.2-1"
+
+[[source]]
+id = "kdecoration@6.8.2"
+kind = "git"
+project = "KDE/kdecoration"
+repository = "https://invent.kde.org/plasma/kdecoration.git"
+tag = "v6.8.2"
+commit = "3cd4373b90578e95685dcbda13a34fcfd445fa4c"
+tag_object = "9c154ab3f90515d1ebce2d7a8b85da29902b5794"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/kdecoration.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "kdecoration 6.8.2-1"
+
+[[source]]
+id = "libplasma@6.8.2"
+kind = "git"
+project = "KDE/libplasma"
+repository = "https://invent.kde.org/plasma/libplasma.git"
+tag = "v6.8.2"
+commit = "6f6566e4ec44a432abdcdd4854cbed3582bcddd1"
+tag_object = "09315d26d749ad6f4b23d382fe0e795506115b57"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/libplasma.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "libplasma 6.8.2-1"
+
+[[source]]
+id = "xdg-desktop-portal-kde@6.8.2"
+kind = "git"
+project = "KDE/xdg-desktop-portal-kde"
+repository = "https://invent.kde.org/plasma/xdg-desktop-portal-kde.git"
+tag = "v6.8.2"
+commit = "5b33864bf4ba72acca9b5965469c617a13512865"
+tag_object = "b264baa69b36e999a0d1b73d93b726a1ec537ada"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/xdg-desktop-portal-kde.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "xdg-desktop-portal-kde 6.8.2-1"
+
+[[source]]
+id = "systemsettings@6.8.2"
+kind = "git"
+project = "KDE/systemsettings"
+repository = "https://invent.kde.org/plasma/systemsettings.git"
+tag = "v6.8.2"
+commit = "f2858453a9b7fa402fba81d3cce528dba0349fc2"
+tag_object = "4b4e7d0c80f43e27e19076356f67acfc5a21862c"
+release = "Plasma 6.8.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/plasma/systemsettings.git refs/tags/v6.8.2 (annotated: the ^{} line)"
+arch = "systemsettings 6.8.2-1"
+
+[[source]]
+id = "kcolorscheme@6.31.0"
+kind = "git"
+project = "KDE/kcolorscheme"
+repository = "https://invent.kde.org/frameworks/kcolorscheme.git"
+tag = "v6.31.0"
+commit = "b01fde3096de99584786aa412e0130661c97f7e8"
+tag_object = "add23e32625b112e4376c869961b56212d8d1e31"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kcolorscheme.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kcolorscheme 6.31.0-1"
+
+[[source]]
+id = "kconfigwidgets@6.31.0"
+kind = "git"
+project = "KDE/kconfigwidgets"
+repository = "https://invent.kde.org/frameworks/kconfigwidgets.git"
+tag = "v6.31.0"
+commit = "02b7a0bd5f9eaff65900dd85029a7edefdfb14bd"
+tag_object = "7db3a233f8fed65750dab6d1ce075c10a787f693"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kconfigwidgets.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kconfigwidgets 6.31.0-1"
+
+[[source]]
+id = "kiconthemes@6.31.0"
+kind = "git"
+project = "KDE/kiconthemes"
+repository = "https://invent.kde.org/frameworks/kiconthemes.git"
+tag = "v6.31.0"
+commit = "420364ec1a81b77ea43e4055df8254f29c14bce4"
+tag_object = "ca8d8948e5f6db5f95ebdf54f6e94daca10db03f"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kiconthemes.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kiconthemes 6.31.0-1"
+
+[[source]]
+id = "kirigami@6.31.0"
+kind = "git"
+project = "KDE/kirigami"
+repository = "https://invent.kde.org/frameworks/kirigami.git"
+tag = "v6.31.0"
+commit = "eecf183a956fdbfbf331c0ef61fd6e35220d4275"
+tag_object = "a9f88d3f58fb7c60024a082c865d8fc2086e38ad"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kirigami.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kirigami 6.31.0-1"
+
+[[source]]
+id = "kwidgetsaddons@6.31.0"
+kind = "git"
+project = "KDE/kwidgetsaddons"
+repository = "https://invent.kde.org/frameworks/kwidgetsaddons.git"
+tag = "v6.31.0"
+commit = "259b994c32e20a77593af4d2fbdc7c13bc948bd8"
+tag_object = "b5f16b7b7890926ec979dda3145b9037d350bad1"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kwidgetsaddons.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kwidgetsaddons 6.31.0-1"
+
+[[source]]
+id = "kxmlgui@6.31.0"
+kind = "git"
+project = "KDE/kxmlgui"
+repository = "https://invent.kde.org/frameworks/kxmlgui.git"
+tag = "v6.31.0"
+commit = "e47ccaf51aa34a538117161cac1f0b8039e66526"
+tag_object = "6ae6b161413d35fac440bd9a13d8985e7ee4296b"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kxmlgui.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kxmlgui 6.31.0-1"
+
+[[source]]
+id = "qqc2-desktop-style@6.31.0"
+kind = "git"
+project = "KDE/qqc2-desktop-style"
+repository = "https://invent.kde.org/frameworks/qqc2-desktop-style.git"
+tag = "v6.31.0"
+commit = "2efe38d55ebcfa97599643daada20c157fa1a8a5"
+tag_object = "ca276ab05e4d8e9af1d9a64a0fcfb5d5b8e1ed5b"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/qqc2-desktop-style.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "qqc2-desktop-style 6.31.0-1"
+
+[[source]]
+id = "kguiaddons@6.31.0"
+kind = "git"
+project = "KDE/kguiaddons"
+repository = "https://invent.kde.org/frameworks/kguiaddons.git"
+tag = "v6.31.0"
+commit = "92ebbc758fa58bb89e6d73fdd24e50a296259bd3"
+tag_object = "f286f890bd6766daf1f18fe2444c4fa2223a6e23"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kguiaddons.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kguiaddons 6.31.0-1"
+
+[[source]]
+id = "kcompletion@6.31.0"
+kind = "git"
+project = "KDE/kcompletion"
+repository = "https://invent.kde.org/frameworks/kcompletion.git"
+tag = "v6.31.0"
+commit = "b9094f8773b8e143ffd3793a933157b72930499d"
+tag_object = "f456865f7fa61476b29d62f3e14d4097110e737a"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kcompletion.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kcompletion 6.31.0-1"
+
+[[source]]
+id = "ktexteditor@6.31.0"
+kind = "git"
+project = "KDE/ktexteditor"
+repository = "https://invent.kde.org/frameworks/ktexteditor.git"
+tag = "v6.31.0"
+commit = "ea14509c132f2c016d55b38f7a1ec24cc6f9e7d2"
+tag_object = "e91afed4327bb62c24431136c4ed368f9df01741"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/ktexteditor.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "ktexteditor 6.31.0-1"
+
+[[source]]
+id = "kio@6.31.0"
+kind = "git"
+project = "KDE/kio"
+repository = "https://invent.kde.org/frameworks/kio.git"
+tag = "v6.31.0"
+commit = "2dd4bdc916a6f46d297d8788f5b628181483315d"
+tag_object = "b617f28e9d1033741ab82ccfbb2113746ef14d28"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kio.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kio 6.31.0-1"
+
+[[source]]
+id = "syntax-highlighting@6.31.0"
+kind = "git"
+project = "KDE/syntax-highlighting"
+repository = "https://invent.kde.org/frameworks/syntax-highlighting.git"
+tag = "v6.31.0"
+commit = "6d8ab7945958e7354295db7f399cce06f7de7571"
+tag_object = "dd59d7099ca863e6b3beb51b84bde24378e26414"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/syntax-highlighting.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "syntax-highlighting 6.31.0-1"
+
+[[source]]
+id = "sonnet@6.31.0"
+kind = "git"
+project = "KDE/sonnet"
+repository = "https://invent.kde.org/frameworks/sonnet.git"
+tag = "v6.31.0"
+commit = "faff0a83f637b74e900d82252aab8fccf99ae0d7"
+tag_object = "e545aace21fa66ee2205ee31e77124db810fc688"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/sonnet.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "sonnet 6.31.0-1"
+
+[[source]]
+id = "kconfig@6.31.0"
+kind = "git"
+project = "KDE/kconfig"
+repository = "https://invent.kde.org/frameworks/kconfig.git"
+tag = "v6.31.0"
+commit = "a25acdfb1f51c9d8af3426f03380a9de5c88817a"
+tag_object = "5b2b87b1f69b91e22059cf6dabe4f4aeb944001d"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kconfig.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kconfig 6.31.0-1"
+
+[[source]]
+id = "kitemviews@6.31.0"
+kind = "git"
+project = "KDE/kitemviews"
+repository = "https://invent.kde.org/frameworks/kitemviews.git"
+tag = "v6.31.0"
+commit = "1999b84038c9aae77dce9709ca6c52e186ef4912"
+tag_object = "0f77ae868971f750991cc1a930d051eaaeff6b58"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kitemviews.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kitemviews 6.31.0-1"
+
+[[source]]
+id = "kquickcharts@6.31.0"
+kind = "git"
+project = "KDE/kquickcharts"
+repository = "https://invent.kde.org/frameworks/kquickcharts.git"
+tag = "v6.31.0"
+commit = "61fc0d8d7a58578bde112ebd2efa0a7f8484a000"
+tag_object = "ba31b979f90e83e0860d927781a04d353d299b38"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/kquickcharts.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "kquickcharts 6.31.0-1"
+
+[[source]]
+id = "frameworkintegration@6.31.0"
+kind = "git"
+project = "KDE/frameworkintegration"
+repository = "https://invent.kde.org/frameworks/frameworkintegration.git"
+tag = "v6.31.0"
+commit = "d2be52439d0556c04080b02179af80b0544b03fb"
+tag_object = "ac5524def4f02b23d15ad573337eb93a586a5732"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/frameworkintegration.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "frameworkintegration 6.31.0-1"
+
+[[source]]
+id = "breeze-icons@6.31.0"
+kind = "git"
+project = "KDE/breeze-icons"
+repository = "https://invent.kde.org/frameworks/breeze-icons.git"
+tag = "v6.31.0"
+commit = "60ca51729f00b85813f01580fc9e85723245054d"
+tag_object = "381bf0713c528a97f32b63b0589936462dbdb673"
+release = "KDE Frameworks 6.31.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/frameworks/breeze-icons.git refs/tags/v6.31.0 (annotated: the ^{} line)"
+arch = "breeze-icons 6.31.0-1"
+
+[[source]]
+id = "kirigami-addons@1.15.0"
+kind = "git"
+project = "KDE/kirigami-addons"
+repository = "https://invent.kde.org/libraries/kirigami-addons.git"
+tag = "v1.15.0"
+commit = "4668f4cad74205348f6111e8ef33b5192463fb80"
+tag_object = "c3416822957d683aa95607208e9db3c33170115d"
+release = "kirigami-addons 1.15.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/libraries/kirigami-addons.git refs/tags/v1.15.0 (annotated: the ^{} line)"
+arch = "kirigami-addons 1.15.0-1"
+note = "1.16.0 (tag object cebce65e2a43dd5eed53c7bbf864410a14474b9d, commit af4cef554bb64ca695c1164036f5eba2939c064c) was released on 2026-10-29 and reached Arch's live repository at 18:02 UTC, after the 2026/10/29 snapshot; the 2026/10/30 snapshot, the first that could carry it beside Plasma 6.8.2, did not exist at 2026-10-29 22:37 UTC (404). So the release set keeps 1.15.0, the version archlinux@2026-10-29 carries; a move to 1.16.0 is a re-pin the ledger records."
+
+[[source]]
+id = "kate@26.08.2"
+kind = "git"
+project = "KDE/kate"
+repository = "https://invent.kde.org/utilities/kate.git"
+tag = "v26.08.2"
+commit = "2b6465a886b9d3bfc6eab25065c14ffe025e6ac3"
+tag_object = "4ee4d9bf561cd622a72f7155ee3692c45da44d98"
+release = "KDE Gear 26.08.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/utilities/kate.git refs/tags/v26.08.2 (annotated: the ^{} line)"
+arch = "kate 26.08.2-1"
+note = "A KDE application, cited for its editor's behaviour (the seeds' kate/)."
+
+[[source]]
+id = "konsole@26.08.2"
+kind = "git"
+project = "KDE/konsole"
+repository = "https://invent.kde.org/utilities/konsole.git"
+tag = "v26.08.2"
+commit = "c21993d0b73b6fe5d4c52da50b25370b40389e4e"
+tag_object = "a6a3d4d67488bedd918c273d93fad05fe985588f"
+release = "KDE Gear 26.08.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/utilities/konsole.git refs/tags/v26.08.2 (annotated: the ^{} line)"
+arch = "konsole 26.08.2-1"
+note = "A KDE application (the seeds' konsole/)."
+
+[[source]]
+id = "kdenlive@26.08.2"
+kind = "git"
+project = "KDE/kdenlive"
+repository = "https://invent.kde.org/multimedia/kdenlive.git"
+tag = "v26.08.2"
+commit = "ef54398259f2af1d29095a798cab48ca4c52f141"
+tag_object = "e82b2f9c7a41fdde4ecfaa20e1d88bfd6a9f16a3"
+release = "KDE Gear 26.08.2"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/multimedia/kdenlive.git refs/tags/v26.08.2 (annotated: the ^{} line)"
+arch = "kdenlive 26.08.2-3"
+note = "A KDE application (the seeds' kdenlive/)."
+
+[[source]]
+id = "KDDockWidgets@2.5.1"
+kind = "git"
+project = "KDAB/KDDockWidgets"
+repository = "https://github.com/KDAB/KDDockWidgets.git"
+tag = "v2.5.1"
+commit = "674f28453219dddedafd4b8f33cf094e8e546be3"
+tag_object = "8983583ce242eba521653f277acc968afd9dc06a"
+release = "KDDockWidgets 2.5.1"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/KDAB/KDDockWidgets.git refs/tags/v2.5.1 (annotated: the ^{} line)"
+arch = "kddockwidgets 2.5.1-1"
+note = "KDAB's docking library, which KDE applications use (the seeds' kddw/)."
+
+[[source]]
+id = "qtbase@6.12.0"
+kind = "git"
+project = "qt/qtbase"
+repository = "https://code.qt.io/qt/qtbase.git"
+tag = "v6.12.0"
+commit = "025bdad181de241e81bf853c8a2d7bf3d19261a9"
+tag_object = "fcef5b2c755492753eb8f7424dd2bc7337832068"
+release = "Qt 6.12.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://code.qt.io/qt/qtbase.git refs/tags/v6.12.0 (annotated: the ^{} line)"
+arch = "qt6-base 6.12.0-3"
+note = "Arch's 6.12.0-3 builds the tag plus two build-only patches (cflags, nostrip). code.qt.io serves no partial clone, so the shallow fetch takes the whole tree."
+
+[[source]]
+id = "qtdeclarative@6.12.0"
+kind = "git"
+project = "qt/qtdeclarative"
+repository = "https://code.qt.io/qt/qtdeclarative.git"
+tag = "v6.12.0"
+commit = "4332fbbb4c340463dc8cee36dda0c85d932122d8"
+tag_object = "c3ab6d3094e8b843c6fc3e04ed3e0f40d4092447"
+release = "Qt 6.12.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://code.qt.io/qt/qtdeclarative.git refs/tags/v6.12.0 (annotated: the ^{} line)"
+arch = "qt6-declarative 6.12.0-3"
+
+[[source]]
+id = "pyside-setup@6.12.0"
+kind = "git"
+project = "qt/pyside-setup"
+repository = "https://code.qt.io/pyside/pyside-setup.git"
+tag = "v6.12.0"
+commit = "f50facb83fc3dc5f3240c854668c7a6dd93871b2"
+tag_object = "6aefae25747a8d860d201f3ab2b2e199b9e8e006"
+release = "Qt for Python 6.12.0"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://code.qt.io/pyside/pyside-setup.git refs/tags/v6.12.0 (annotated: the ^{} line)"
+arch = "pyside6 6.12.0-3"
+note = "Not cited: the KDE harness's Qt Widgets runtime (D4), pinned with the release set."
+
+[[source]]
+id = "develop-kde-org@6abc3286"
+kind = "git"
+project = "KDE/develop-kde-org"
+repository = "https://invent.kde.org/documentation/develop-kde-org.git"
+tag = "commit"
+commit = "6abc32860bf19c4a449b74bd831321f3dbfa8283"
+release = "KDE's developer documentation and HIG (develop.kde.org)"
+generations = ["kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://invent.kde.org/documentation/develop-kde-org.git HEAD"
+note = "The source of develop.kde.org (its HIG under content/hig/); the repository has no tags, so the pin is master's head on 2026-10-29."
+
+# GNOME 51 (archlinux@2026-10-29)
+
+[[source]]
+id = "libadwaita@1.10.0"
+kind = "git"
+project = "GNOME/libadwaita"
+repository = "https://gitlab.gnome.org/GNOME/libadwaita.git"
+tag = "1.10.0"
+commit = "c9ab118612eee92324143783c4641c98eaded3f0"
+tag_object = "4ea63504565cf31e7c751fed08af4a3ff2f48260"
+release = "libadwaita 1.10.0 (GNOME 51)"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/libadwaita.git refs/tags/1.10.0 (annotated: the ^{} line)"
+arch = "libadwaita 1:1.10.0-1"
+
+[[source]]
+id = "gtk@4.24.1"
+kind = "git"
+project = "GNOME/gtk"
+repository = "https://gitlab.gnome.org/GNOME/gtk.git"
+tag = "4.24.1"
+commit = "2ea935e3ec680fb122f245b28e18c3495df8c344"
+tag_object = "02b85fda7f2078b601774bef3e5c0daddca12b2a"
+release = "GTK 4.24.1"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/gtk.git refs/tags/4.24.1 (annotated: the ^{} line)"
+arch = "gtk4 1:4.24.1-1"
+
+[[source]]
+id = "gtk3@3.24.52"
+kind = "git"
+project = "GNOME/gtk"
+repository = "https://gitlab.gnome.org/GNOME/gtk.git"
+tag = "3.24.52"
+commit = "6a0b360d473f7c546314738c0c8dd9829eb9d3c2"
+tag_object = "6e559833fc074ce0b3a69656b2431d1e9b314984"
+release = "GTK 3.24.52"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/gtk.git refs/tags/3.24.52 (annotated: the ^{} line)"
+arch = "gtk3 1:3.24.52-2"
+note = "GTK 3, the gap maps' G3/: the same repository as GTK 4, a product line of its own."
+
+[[source]]
+id = "gsettings-desktop-schemas@51.0"
+kind = "git"
+project = "GNOME/gsettings-desktop-schemas"
+repository = "https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas.git"
+tag = "51.0"
+commit = "1db238b6a349ea7fae6f1c0713afe04d1bb7ea5c"
+tag_object = "1a97aa82fe617217ed1b251665f7f3c6b536e407"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas.git refs/tags/51.0 (annotated: the ^{} line)"
+arch = "gsettings-desktop-schemas 51.0-1"
+
+[[source]]
+id = "mutter@51.1"
+kind = "git"
+project = "GNOME/mutter"
+repository = "https://gitlab.gnome.org/GNOME/mutter.git"
+tag = "51.1"
+commit = "9134e3a5869ce232bf95b77519005865747ba603"
+tag_object = "d5ebd031dd4387455a4a7bdc0ae3d7bb9d7a8f4b"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/mutter.git refs/tags/51.1 (annotated: the ^{} line)"
+arch = "mutter 51.1-1"
+note = "The gap maps read 51.0 (138a14fb); 51.1 is the newest stable."
+
+[[source]]
+id = "gnome-shell@51.1"
+kind = "git"
+project = "GNOME/gnome-shell"
+repository = "https://gitlab.gnome.org/GNOME/gnome-shell.git"
+tag = "51.1"
+commit = "33da06854e229c256afd5872fedd83c28cbfa176"
+tag_object = "633418a22528dd699abeb635d05efd42c010d225"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/gnome-shell.git refs/tags/51.1 (annotated: the ^{} line)"
+arch = "gnome-shell 1:51.1-1"
+note = "The gap maps read 51.0 (2177bdf9); 51.1 is the newest stable."
+
+[[source]]
+id = "gnome-settings-daemon@51.1"
+kind = "git"
+project = "GNOME/gnome-settings-daemon"
+repository = "https://gitlab.gnome.org/GNOME/gnome-settings-daemon.git"
+tag = "51.1"
+commit = "4a75955f7481e2bb19fa73fa67456e83d67e8563"
+tag_object = "935069315e9321d88d031e8937dcda785a34f7ea"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/gnome-settings-daemon.git refs/tags/51.1 (annotated: the ^{} line)"
+arch = "gnome-settings-daemon 51.1-1"
+note = "The gap maps read 51.0 (7f7913cc); 51.1 is the newest stable."
+
+[[source]]
+id = "xdg-desktop-portal-gnome@51.0"
+kind = "git"
+project = "GNOME/xdg-desktop-portal-gnome"
+repository = "https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome.git"
+tag = "51.0"
+commit = "99446c9c9d8197ac4651c5a8e1ee9eb771e1e120"
+tag_object = "9d9652823a66740fd005ecc65f62987e974cad33"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome.git refs/tags/51.0 (annotated: the ^{} line)"
+arch = "xdg-desktop-portal-gnome 51.0-1"
+
+[[source]]
+id = "gtksourceview@5.22.0"
+kind = "git"
+project = "GNOME/gtksourceview"
+repository = "https://gitlab.gnome.org/GNOME/gtksourceview.git"
+tag = "5.22.0"
+commit = "c7b52cf9f9e42035b133902a1a9b18faae00b1d0"
+tag_object = "e2e4695fdbc98e15caaf397946c56f178e4ced34"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/gtksourceview.git refs/tags/5.22.0 (annotated: the ^{} line)"
+arch = "gtksourceview5 5.22.0-1"
+
+[[source]]
+id = "libpanel@1.10.4"
+kind = "git"
+project = "GNOME/libpanel"
+repository = "https://gitlab.gnome.org/GNOME/libpanel.git"
+tag = "1.10.4"
+commit = "ed3e78f3c09d7daed05b2450313dbe138c8f3c87"
+tag_object = "d35ca4dd91d94821fa037b2f1cd45ede859f3259"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/libpanel.git refs/tags/1.10.4 (annotated: the ^{} line)"
+arch = "libpanel 1.10.4-1"
+note = "The seeds read 1.9.0 (0dbdbf6e); 1.10.4 is the newest stable and the snapshot's."
+
+[[source]]
+id = "libspelling@0.4.10"
+kind = "git"
+project = "GNOME/libspelling"
+repository = "https://gitlab.gnome.org/GNOME/libspelling.git"
+tag = "0.4.10"
+commit = "1facdde8e1c0fd72bed806f9a9be2fbec83af5f2"
+tag_object = "2df51a0f44a2b5f24a5523e68c789158a9cdcc0b"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/libspelling.git refs/tags/0.4.10 (annotated: the ^{} line)"
+arch = "libspelling 0.4.10-2"
+
+[[source]]
+id = "pango@1.58.2"
+kind = "git"
+project = "GNOME/pango"
+repository = "https://gitlab.gnome.org/GNOME/pango.git"
+tag = "1.58.2"
+commit = "d360f14004e4a4824f2352f6e2722016f9a51dd6"
+tag_object = "76b9566e76ee1abf6198609d8576c83b92583310"
+release = "GNOME 51"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/pango.git refs/tags/1.58.2 (annotated: the ^{} line)"
+arch = "pango 1:1.58.2-1"
+
+[[source]]
+id = "cantarell-fonts@0.311"
+kind = "git"
+project = "GNOME/cantarell-fonts"
+repository = "https://gitlab.gnome.org/GNOME/cantarell-fonts.git"
+tag = "0.311"
+commit = "e3daf2c141af45058e46873a6564aa895afb7f9c"
+tag_object = "1f2d06f68784455880b4137b21bd528c9af51d76"
+release = "Cantarell 0.311"
+generations = ["adwaita"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/cantarell-fonts.git refs/tags/0.311 (annotated: the ^{} line)"
+arch = "cantarell-fonts 1:0.311-1"
+
+[[source]]
+id = "fontconfig@2.18.3"
+kind = "git"
+project = "fontconfig"
+repository = "https://gitlab.freedesktop.org/fontconfig/fontconfig.git"
+tag = "2.18.3"
+commit = "0f236723a3c26bd9745e32ba2b3ee21e5f809295"
+tag_object = "06009a87a8ff2d7978c6032cf55d514d4ee303b1"
+release = "fontconfig 2.18.3"
+generations = ["adwaita", "kde-breeze"]
+researched = "2026-10-29"
+proof = "git ls-remote https://gitlab.freedesktop.org/fontconfig/fontconfig.git refs/tags/2.18.3 (annotated: the ^{} line)"
+arch = "fontconfig 2:2.18.3-2"
+note = "Cited by the GNOME and KDE gap maps (fc/, read at 2.15.0, the version native-theme/src/fonts.rs names); 2.18.3 is the newest stable and the snapshot's."
+
+# Material and Android
+
+[[source]]
+id = "material-web@2.5.0"
+kind = "git"
+project = "material-components/material-web"
+repository = "https://github.com/material-components/material-web.git"
+tag = "v2.5.0"
+commit = "b4de401eb665ec63474f39319a4ba8f2145974cc"
+release = "material-web 2.5.0"
+generations = ["material-3"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/material-components/material-web.git refs/tags/v2.5.0 (lightweight tag)"
+note = "The gap maps read main at cbd34a89; v2.5.0 is the newest release (2026-07-15, not a prerelease)."
+
+[[source]]
+id = "material-components-android@1.14.0"
+kind = "git"
+project = "material-components/material-components-android"
+repository = "https://github.com/material-components/material-components-android.git"
+tag = "1.14.0"
+commit = "66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad"
+release = "Material Components for Android 1.14.0"
+generations = ["material-3"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/material-components/material-components-android.git refs/tags/1.14.0 (lightweight tag)"
+
+[[source]]
+id = "frameworks-base@android-17.0.0_r1"
+kind = "git"
+project = "AOSP platform/frameworks/base"
+repository = "https://android.googlesource.com/platform/frameworks/base"
+tag = "android-17.0.0_r1"
+commit = "94b4c163b7dfe5ce3607f7bb8456f9573f7de57d"
+tag_object = "23149ba144e850fe494a91ffa13f8019455c0804"
+release = "Android 17 (API 37)"
+generations = ["material-3"]
+researched = "2026-10-29"
+proof = "git ls-remote https://android.googlesource.com/platform/frameworks/base refs/tags/android-17.0.0_r1 (annotated: the ^{} line)"
+sparse = ["data/fonts", "libs/WindowManager/Shell", "core/java/android/text", "core/java/android/hardware/display", "services/accessibility/java/com/android/server/accessibility", "services/core/java/com/android/server/am", "services/core/java/com/android/server/wm"]
+note = "The gap maps read main at 1cdfff55 (2025-03-26); android-17.0.0_r1 is the newest release tag (AOSP publishes no QPR source between its twice-yearly drops)."
+
+[[source]]
+id = "androidx@5113b82a"
+kind = "git"
+project = "androidx/androidx"
+repository = "https://android.googlesource.com/platform/frameworks/support"
+tag = "commit"
+commit = "5113b82a4ed6416d6344efa50e41db8cb65928ff"
+release = "Compose Material 3 1.4.0 (androidx.compose.material3:material3)"
+generations = ["material-3"]
+researched = "2026-10-29"
+proof = "developer.android.com/jetpack/androidx/releases/compose-material3, Version 1.4.0 (2025-09-24): its log range +log/122e65c9…..5113b82a…/compose/material3 ends at this commit; maven-metadata.xml lists 1.4.0 as the newest stable (1.5.0 is beta)"
+sparse = ["compose/material3", "compose/foundation/foundation", "compose/animation/animation", "compose/ui/ui", "compose/ui/ui-text"]
+note = "androidx has no git tag per artifact, so the pin is the commit the 1.4.0 release notes end at (branch androidx-compose-material3-release, committed 2025-09-17); the GitHub mirror androidx/androidx, which the gap maps cite, holds the same commit. The gap maps read androidx-main at 1e677685."
+
+[[source]]
+id = "material-color-utilities@bd811e4c"
+kind = "git"
+project = "material-foundation/material-color-utilities"
+repository = "https://github.com/material-foundation/material-color-utilities.git"
+tag = "commit"
+commit = "bd811e4ca2ab94c4ce3cadc89c19b1820b9704b3"
+release = "Material color utilities"
+generations = ["material-3"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/material-foundation/material-color-utilities.git HEAD"
+note = "The repository has no tags and no GitHub releases, so the pin is main's head, committed 2026-10-19 (`gh api repos/material-foundation/material-color-utilities/commits/main`, unchanged on 2026-10-29). Not cited yet: Compose carries its own colour code (D1)."
+
+# Windows
+
+[[source]]
+id = "microsoft-ui-xaml@2.5.1"
+kind = "git"
+project = "microsoft/microsoft-ui-xaml"
+repository = "https://github.com/microsoft/microsoft-ui-xaml.git"
+tag = "winui3/release/2.5.1"
+commit = "ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd"
+release = "Windows App SDK 2.5.1"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/microsoft/microsoft-ui-xaml.git refs/tags/winui3/release/2.5.1 (lightweight tag)"
+note = "Windows App SDK 2.6.4 (2026-10-27) is newer, but microsoft-ui-xaml has no winui3/release/2.6* tag; 2.5.1 is the newest release with one. The tag is also the head of winui3/release/2.0-stable. The gap maps read main at 8463f451."
+
+[[source]]
+id = "WindowsAppSDK@2.5.1"
+kind = "git"
+project = "microsoft/WindowsAppSDK"
+repository = "https://github.com/microsoft/WindowsAppSDK.git"
+tag = "v2.5.1"
+commit = "13160d542e410f826b524ffa6bdbb7700db9fb40"
+release = "Windows App SDK 2.5.1"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/microsoft/WindowsAppSDK.git refs/tags/v2.5.1 (lightweight tag)"
+note = "The WinUI host builds against it (the release set's pair with microsoft-ui-xaml)."
+
+[[source]]
+id = "CommunityToolkit-Windows@8.2.251219"
+kind = "git"
+project = "CommunityToolkit/Windows"
+repository = "https://github.com/CommunityToolkit/Windows.git"
+tag = "v8.2.251219"
+commit = "a6b4dc451c0e54dd29f58743894a956100e7f713"
+release = "Windows Community Toolkit 8.2.251219"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/CommunityToolkit/Windows.git refs/tags/v8.2.251219 (lightweight tag)"
+note = "The newest stable; later tags are previews (v8.3.260402-preview2)."
+
+[[source]]
+id = "Labs-Windows@251217"
+kind = "git"
+project = "CommunityToolkit/Labs-Windows"
+repository = "https://github.com/CommunityToolkit/Labs-Windows.git"
+tag = "release/weekly/251217"
+commit = "d620e8b5eb39a3f41f3797101a94d9bda6ba2190"
+tag_object = "b0368b8be3a08d804cfcfde66069808109298ca3"
+release = "Community Toolkit Labs, weekly release 2025-12-17"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/CommunityToolkit/Labs-Windows.git refs/tags/release/weekly/251217 (annotated: the ^{} line)"
+note = "Labs publishes experimental packages only: every release is a weekly prerelease, release/weekly/251217 the newest. The seeds read main at 27ef7604."
+
+[[source]]
+id = "fluentui@1.0.0-alpha.24"
+kind = "git"
+project = "microsoft/fluentui"
+repository = "https://github.com/microsoft/fluentui.git"
+tag = "@fluentui/tokens_v1.0.0-alpha.24"
+commit = "b6351802032e9af61bf03033d22cb354b2e2822c"
+tag_object = "a7ca6c5c642b7f7d7f6f5af821aa3f3f2b52e36e"
+release = "@fluentui/tokens 1.0.0-alpha.24"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/microsoft/fluentui.git refs/tags/@fluentui/tokens_v1.0.0-alpha.24 (annotated: the ^{} line)"
+sparse = ["packages/tokens"]
+note = "Only packages/tokens is cited. @fluentui/tokens has never had a stable version: npm's `latest` dist-tag is 1.0.0-alpha.24 (2026-08-11), the commit platform-facts.md already cites (b6351802)."
+
+# Microsoft Learn's public source repositories. A page's `git_commit_id` meta names the commit it was last built
+# from, which differs per page (each an ancestor of the branch head pinned here: compare API, 2026-10-29), so each
+# repository is pinned at the head of the branch its pages are published from, read on 2026-10-29.
+
+[[source]]
+id = "windows-dev-docs@f54166ed"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/MicrosoftDocs/windows-dev-docs.git"
+tag = "commit"
+commit = "f54166edfc21db4151077f5ef7e3f93b776843cb"
+release = "learn.microsoft.com/windows/apps (Windows app design and WinUI pages)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/MicrosoftDocs/windows-dev-docs.git refs/heads/main"
+sparse = ["hub/apps/design", "hub/apps/develop/ui"]
+note = "Documentation has no tags. The published line is `main`: the pages' git_commit_id 7b6ada41764877abf34578ddb4c9571b6097cd9a (buttons, color, xaml-theme-resources) is in the public repository, 30 commits behind this head; the default branch `docs` has diverged and is not published."
+
+[[source]]
+id = "win32@ca8274de"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/MicrosoftDocs/win32.git"
+tag = "commit"
+commit = "ca8274decead49403d70ceeed4af8d4ca74eaf11"
+release = "learn.microsoft.com/windows/win32 (desktop-src: controls, UX guide, DWM, GDI, window messages)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/MicrosoftDocs/win32.git refs/heads/docs"
+sparse = ["desktop-src/Controls", "desktop-src/uxguide", "desktop-src/dwm", "desktop-src/gdi", "desktop-src/winmsg"]
+note = "Documentation has no tags: the head of the published branch `docs`."
+
+[[source]]
+id = "sdk-api@656e9656"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/MicrosoftDocs/sdk-api.git"
+tag = "commit"
+commit = "656e9656bfaef34dd29cd7ee9e1146aec17e924c"
+release = "learn.microsoft.com/windows/win32/api (the Win32 API reference)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/MicrosoftDocs/sdk-api.git refs/heads/docs"
+sparse = ["sdk-api-src/content/winuser", "sdk-api-src/content/dwmapi", "sdk-api-src/content/shellapi", "sdk-api-src/content/wingdi"]
+note = "Documentation has no tags: the head of `docs`. The pages build from a private copy (sdk-api-build); this public repository is its source."
+
+[[source]]
+id = "winrt-api@4c1e9164"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/MicrosoftDocs/winrt-api.git"
+tag = "commit"
+commit = "4c1e9164521785f82dc63ab57a5ee4644f9d1888"
+release = "learn.microsoft.com/uwp/api (the Windows Runtime API reference)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/MicrosoftDocs/winrt-api.git refs/heads/docs"
+sparse = ["windows.ui.viewmanagement", "windows.ui.xaml"]
+note = "Documentation has no tags: the head of `docs`, which syncs the private winrt-api-build the pages are built from."
+
+[[source]]
+id = "winapps-winrt-api@554b7e3a"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/MicrosoftDocs/winapps-winrt-api.git"
+tag = "commit"
+commit = "554b7e3a6db7b471deb74de52f9a47997f61a95a"
+release = "learn.microsoft.com/windows/windows-app-sdk/api (the Windows App SDK API reference)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/MicrosoftDocs/winapps-winrt-api.git refs/heads/docs"
+note = "Documentation has no tags: the head of `docs` (2026-07-23). The pages cite the private winapps-winrt-api-build (commit 70ebf766…), which is not public, so a page newer than this head needs a snapshot."
+
+[[source]]
+id = "dotnet-api-docs@b0487852"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/dotnet/dotnet-api-docs.git"
+tag = "commit"
+commit = "b048785279367d02531d04e1f61dc7dad6ed7096"
+release = "learn.microsoft.com/dotnet/api (the .NET API reference)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/dotnet/dotnet-api-docs.git refs/heads/main"
+sparse = ["xml/System.Windows"]
+note = "Documentation has no tags: the head of `main`; the page's git_commit_id cd1806cf… is its ancestor."
+
+[[source]]
+id = "visualstudio-docs@fedd6469"
+kind = "git"
+site = "learn.microsoft.com"
+repository = "https://github.com/MicrosoftDocs/visualstudio-docs.git"
+tag = "commit"
+commit = "fedd646924b5e9d7986a4af2be669efa5fe0c29f"
+release = "learn.microsoft.com/visualstudio (the Visual Studio UX guidelines)"
+generations = ["windows-11"]
+researched = "2026-10-29"
+proof = "git ls-remote https://github.com/MicrosoftDocs/visualstudio-docs.git refs/heads/main"
+sparse = ["docs/extensibility/ux-guidelines"]
+note = "Documentation has no tags: the head of `main`; the page's git_commit_id 12e72ec4… is its ancestor."
+
+# Apple (D12: macOS 26.x and iOS 26 on `macos-26`, macOS 15 and iOS 18 on `macos-15`). The images move within a
+# release, so each evidence file records its exact build; these entries name what the images' READMEs listed at
+# actions/runner-images 9329c776c4a38d3dcb31fc78b8180005041c07fb (main, 2026-10-29).
+
+[[source]]
+id = "xcode@16.4"
+kind = "sdk"
+runner = "macos-15"
+image_version = "20260907.0337.1"
+macos = "15.7.9 (24G830)"
+xcode = "16.4"
+xcode_build = "16F6"
+ios_simulator = "18.6"
+readme = "images/macos/macos-15-arm64-Readme.md"
+readme_commit = "f95c0c791f690fa64eaf9788bea06643a4176db5"
+release = "macOS 15 and iOS 18 on GitHub's macos-15 image, default Xcode"
+generations = ["macos-monterey", "ios-13"]
+researched = "2026-10-29"
+proof = "gh api 'repos/actions/runner-images/commits?path=images/macos/macos-15-arm64-Readme.md&sha=9329c776c4a38d3dcb31fc78b8180005041c07fb&per_page=1' (the README's last commit); the README: 'OS Version: macOS 15.7.9 (24G830)', 'Image Version: 20260907.0337.1', '16.4 (default) | 16F6', iOS simulator runtimes 18.5, 18.6"
+note = "Image 20261028.0489 (macOS 15.8.2, 24H232) is rolling out as a GitHub prerelease; an evidence file names the build it ran on."
+
+[[source]]
+id = "xcode@26.6"
+kind = "sdk"
+runner = "macos-26"
+image_version = "20261013.0424.1"
+macos = "26.6.2 (25G83)"
+xcode = "26.6"
+xcode_build = "17F113"
+ios_simulator = "26.5"
+readme = "images/macos/macos-26-arm64-Readme.md"
+readme_commit = "d490982abb0217949a4cca2950c8d9903137280a"
+release = "macOS 26 and iOS 26 on GitHub's macos-26 image, default Xcode"
+generations = ["macos-tahoe", "ios-26"]
+researched = "2026-10-29"
+proof = "gh api 'repos/actions/runner-images/commits?path=images/macos/macos-26-arm64-Readme.md&sha=9329c776c4a38d3dcb31fc78b8180005041c07fb&per_page=1'; the README: 'OS Version: macOS 26.6.2 (25G83)', 'Image Version: 20261013.0424.1', '26.6 (default) | 17F113', iOS simulator runtimes 26.2, 26.4, 26.5 (Xcode 26.6 uses the iOS 26.5 SDK; no 26.6 runtime)"
+note = "Apple ships macOS 26.7.2 and iOS 26.7.2 (2026-10-26); the image is behind. macOS 27 runs only on the `xcode-27` preview image, outside the release set (D12 a)."
+
+[[source]]
+id = "WebKit@7624.5.1.11.3"
+kind = "git"
+project = "WebKit/WebKit"
+repository = "https://github.com/WebKit/WebKit.git"
+tag = "WebKit-7624.5.1.11.3"
+commit = "26695efdefc6076049ec50713a2c4e54b90b4d47"
+tag_object = "2066ef18aa0c97d3ce501fe73a3630fc2de86bf1"
+release = "Safari 26.6.2 on macos-26 (macOS 26.6.2), build 21624.5.1.11.3"
+generations = ["macos-tahoe"]
+researched = "2026-10-29"
+proof = "the macos-26 README (above): 'Safari 26.6.2 (21624.5.1.11.3)'; git ls-remote https://github.com/WebKit/WebKit.git refs/tags/WebKit-7624.5.1.11.3 (annotated: the ^{} line)"
+sparse = ["Source/WebCore/platform/graphics/mac/controls", "Source/WebCore/platform/mac", "Source/WebCore/rendering", "Source/WebKit/Shared/Cocoa"]
+note = "Third-party evidence for AppKit's controls (WebKit draws them to match), cited by the macOS gap map and platform-facts.md. The tag is matched to the runner's Safari by its number (build 21624.5.1.11.3, tag 7624.5.1.11.3: the same but the leading OS digits), an inference the macOS lane confirms from the image's WebKit.framework version before a fact rests on it. macos-15's Safari is 26.6.1 (20624.5.1.18.3), for which no WebKit-7624.5.1.18.3 tag exists, so macos-monterey has no WebKit pin; the iOS simulator's WebKit build is not identified, so ios-26 has none either."
+
+# The package snapshot the KDE and GNOME pins come from
+
+[[source]]
+id = "archlinux@2026-10-29"
+kind = "distribution"
+url = "https://archive.archlinux.org/repos/2026/10/29/"
+lastupdate = "1793272411 (2026-10-29 11:13:31 UTC)"
+extra_db_sha256 = "8bd693be5e69f746b0cfb4e6ed2fe80c68cdd9951ad32183cd31a9b12173f615"
+core_db_sha256 = "0b720f1750ea22fd3d7b571a09f41832c9805f0f62838eb0e5f389967785236d"
+release = "Plasma 6.8.2, KDE Frameworks 6.31.0, KDE Gear 26.08.2, Qt 6.12.0, GNOME 51 (the KDE and GNOME containers, D2)"
+generations = ["kde-breeze", "adwaita"]
+researched = "2026-10-29"
+proof = "curl -s https://archive.archlinux.org/repos/2026/10/29/extra/os/x86_64/extra.db.tar.gz | tar -tzf - (and core.db): the packages each entry's `arch` names; curl https://archive.archlinux.org/repos/2026/10/29/lastupdate"
+note = "The first snapshot with Plasma 6.8.2 (2026/10/28 has 6.8.1) and the newest when read. 2026/10/30, which could carry kirigami-addons 1.16.0, did not exist at 2026-10-29 22:37 UTC (HTTP 404), so kirigami-addons stays at 1.15.0 (its entry). qt6-base 6.12.0-4 is in the snapshot's extra-staging only; extra has 6.12.0-3."
+
+# Documentation sites the documents cite. `method`: "repository", the site's public source repositories are pinned
+# above (`sources`); "snapshot", each cited page is to be saved with its date and SHA-256 (a later M0 step adds the
+# snapshot entries and update_sources.sh fetches and verifies them). `project` is the name scripts/citations.py
+# gives the site's citations.
+
+[[site]]
+project = "learn.microsoft.com"
+url = "https://learn.microsoft.com/"
+method = "repository"
+sources = ["windows-dev-docs@f54166ed", "win32@ca8274de", "sdk-api@656e9656", "winrt-api@4c1e9164", "winapps-winrt-api@554b7e3a", "dotnet-api-docs@b0487852", "visualstudio-docs@fedd6469"]
+note = "The cited pages' sources are in these repositories; pages with no public source (previous-versions, Microsoft Q&A) and Windows App SDK pages newer than winapps-winrt-api's head are snapshots. A page cited by title only is mapped to its file by the lane."
+
+[[site]]
+project = "developer.apple.com documentation"
+url = "https://developer.apple.com/documentation/"
+method = "snapshot"
+note = "Each page as its DocC JSON (https://developer.apple.com/tutorials/data/documentation/<path>.json). The pages are unversioned and describe the newest release, so a snapshot counts for a 26 fact only as D12 (a) says: an archived snapshot from 26's lifetime, the pinned Xcode's headers or a measurement confirms it."
+
+[[site]]
+project = "developer.apple.com HIG"
+url = "https://developer.apple.com/design/human-interface-guidelines/"
+method = "snapshot"
+note = "Each page as its DocC JSON (tutorials/data/design/human-interface-guidelines/<page>.json); the HIG has no versions, so its snapshot serves the newest generation only (D1)."
+
+[[site]]
+project = "developer.apple.com WWDC videos"
+url = "https://developer.apple.com/videos/"
+method = "snapshot"
+note = "The session page with its transcript."
+
+[[site]]
+project = "developer.apple.com fonts"
+url = "https://developer.apple.com/fonts/"
+method = "snapshot"
+
+[[site]]
+project = "support.apple.com"
+url = "https://support.apple.com/guide/"
+method = "snapshot"
+note = "User guides (the gap maps' AS-* and IPUG-*), each page with the edition it states."
+
+[[site]]
+project = "m3.material.io"
+url = "https://m3.material.io/"
+method = "snapshot"
+note = "The pages render with JavaScript only, so a plain download has no content (gap-map-material.md:17); the snapshot is of the rendered page or of the data it loads."
+
+[[site]]
+project = "m2.material.io"
+url = "https://m2.material.io/"
+method = "snapshot"
+
+[[site]]
+project = "developer.android.com"
+url = "https://developer.android.com/"
+method = "snapshot"
+
+[[site]]
+project = "developers.google.com"
+url = "https://developers.google.com/"
+method = "snapshot"
+
+[[site]]
+project = "fonts.google.com"
+url = "https://fonts.google.com/"
+method = "snapshot"
+note = "The Material Symbols catalogue (gap-map-material, MAT-X27)."
+
+[[site]]
+project = "fluent2.microsoft.design"
+url = "https://fluent2.microsoft.design/"
+method = "snapshot"
+
+[[site]]
+project = "support.microsoft.com"
+url = "https://support.microsoft.com/"
+method = "snapshot"
+
+[[site]]
+project = "microsoft.github.io/windows-docs-rs"
+url = "https://microsoft.github.io/windows-docs-rs/"
+method = "snapshot"
+
+[[site]]
+project = "develop.kde.org"
+url = "https://develop.kde.org/"
+method = "repository"
+sources = ["develop-kde-org@6abc3286"]
+note = "The KDE HIG (content/hig/), cited through its repository."
+
+[[site]]
+project = "developer.gnome.org"
+url = "https://developer.gnome.org/"
+method = "snapshot"
+
+[[site]]
+project = "docs.gtk.org"
+url = "https://docs.gtk.org/"
+method = "snapshot"
+note = "Generated from GTK's sources: a fact can cite the doc comment in gtk@4.24.1 instead."
+
+[[site]]
+project = "release.gnome.org"
+url = "https://release.gnome.org/"
+method = "snapshot"
+
+[[site]]
+project = "flatpak.github.io"
+url = "https://flatpak.github.io/"
+method = "snapshot"
+note = "The XDG desktop portal documentation."
+
+# Cited, but not a platform source (D1, S17): no fact cites these. `project` is the name scripts/citations.py gives
+# the citations, where it gives one; a toolkit named only in the prose around a crate path has none.
+
+[[not_pinned]]
+name = "native-theme"
+project = "native-theme (own)"
+reason = "This repository's own files: a citation means the file at the citing document's commit, or at the `at <sha>` it states."
+
+[[not_pinned]]
+name = "docs/platform-facts.md"
+project = "native-theme (own): docs/platform-facts.md"
+reason = "This repository's own file, cited as `platform-facts.md@<sha>:LINE`; generated from docs/facts at the switch."
+
+[[not_pinned]]
+name = "installed system file"
+project = "installed system file"
+reason = "A header under /usr (docs/todo.md's kiconcolors.h): an installed package's copy, not a source; the pinned project (kiconthemes@6.31.0) holds the file."
+
+# Toolkits: each connector's dependency version (its Cargo.toml and the workspace's Cargo.lock) pins what it targets.
+
+[[not_pinned]]
+name = "gpui"
+project = "toolkit: gpui"
+reason = "A toolkit a connector targets, not a platform source: the connector's dependency version pins it."
+
+[[not_pinned]]
+name = "gpui-component"
+project = "toolkit: gpui-component"
+reason = "A toolkit a connector targets, not a platform source: the connector's dependency version pins it."
+
+[[not_pinned]]
+name = "gpui-pre"
+reason = "gpui-pre and gpui-pre-macos, the gpui build GPUI Kit uses: the connector's dependency version pins them."
+
+[[not_pinned]]
+name = "GPUI Kit"
+reason = "The gpui connector's toolkit (gpui-kit): the connector's dependency version pins it."
+
+[[not_pinned]]
+name = "iced"
+project = "toolkit: iced"
+reason = "iced and its crates (iced_core, iced_widget, iced_winit, iced_aw, iced_test): the connector's dependency versions pin them."
+
+[[not_pinned]]
+name = "egui"
+project = "toolkit: egui"
+reason = "A toolkit a connector targets, not a platform source: the connector's dependency version pins it."
+
+[[not_pinned]]
+name = "epaint"
+reason = "egui's painter crate: the egui connector's dependency version pins it."
+
+[[not_pinned]]
+name = "toolkit crate file"
+project = "toolkit (gpui / gpui-component / iced / egui: named in the prose)"
+reason = "A `.rs` path in no project of this repository: a toolkit crate's file, the crate and its version named in the prose; the connectors' dependency versions pin the toolkits."
+
+# Third-party evidence. Today's docs/platform-facts.md rows are lane input that the lanes replace with facts at
+# their own pins (S17 cites a platform source or a measurement), and the file becomes generated at the switch.
+
+[[not_pinned]]
+name = "Chromium"
+project = "chromium/chromium"
+reason = "A browser's own drawing and reading of platform settings, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Chromium (googlesource)"
+project = "chromium/src"
+reason = "A browser's own code, cited by platform-facts.md and as supporting evidence by gap-map-macos.md:48 (its user-default reading), which the macOS lane measures instead."
+
+[[not_pinned]]
+name = "Gecko"
+project = "mozilla/gecko-dev"
+reason = "A browser's own drawing of platform controls, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Gecko (searchfox)"
+project = "mozilla/gecko-dev (searchfox mozilla-central)"
+reason = "A browser's own drawing of platform controls on searchfox's live tree, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Wine"
+project = "wine-mirror/wine"
+reason = "A reimplementation of Windows, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "ReactOS"
+project = "nicknisi/reactos"
+reason = "A reimplementation of Windows, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "GNUstep"
+project = "gnustep/libs-gui"
+reason = "A reimplementation of AppKit, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Cocotron"
+project = "berkus/cocotron"
+reason = "A reimplementation of AppKit, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "macOS_headers"
+project = "w0lfschild/macOS_headers"
+reason = "Class dumps of macOS frameworks, cited by platform-facts.md only; Apple's own headers are checked at the pinned Xcode on a macOS runner."
+
+[[not_pinned]]
+name = "MacOSX-SDKs"
+project = "phracker/MacOSX-SDKs"
+reason = "A third-party copy of old macOS SDKs, cited by platform-facts.md only; the pinned Xcode holds the SDK."
+
+[[not_pinned]]
+name = "Inter"
+project = "rsms/inter"
+reason = "A third-party font project, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Noto"
+project = "notofonts/noto-source"
+reason = "A font project, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "GRProgressIndicator"
+project = "insidegui/GRProgressIndicator"
+reason = "A third-party reimplementation of an AppKit control, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "macos-corner-fix"
+project = "m4rkw/macos-corner-fix"
+reason = "A third-party tool, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Qt 5 code browser"
+project = "qt5/qtbase"
+reason = "codebrowser.dev's Qt 5 qtbase, no version, cited by platform-facts.md only; Qt is pinned as qtbase@6.12.0."
+
+# Issue trackers, forums, blogs and other pages: reports and descriptions by third parties, not platform sources.
+
+[[not_pinned]]
+name = "Visual Studio Code issues"
+project = "microsoft/vscode"
+reason = "An application's issue tracker, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "Zed issues"
+project = "zed-industries/zed"
+reason = "An application's issue tracker, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "AltTab issues"
+project = "lwouis/alt-tab-macos"
+reason = "An application's issue tracker, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "bugs.kde.org"
+project = "bugs.kde.org"
+reason = "KDE's bug tracker, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "phabricator.kde.org"
+project = "phabricator.kde.org"
+reason = "KDE's former review site, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "bugzilla.mozilla.org"
+project = "bugzilla.mozilla.org"
+reason = "A browser's bug tracker, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "discussions.apple.com"
+project = "discussions.apple.com"
+reason = "A user forum post, supporting evidence in gap-map-macos.md:50 for a user default the macOS lane measures."
+
+[[not_pinned]]
+name = "michelf.ca"
+project = "michelf.ca"
+reason = "A 2005 blog post (gap-map-macos.md:995, marked community evidence) for a behaviour the row says is to be measured."
+
+[[not_pinned]]
+name = "example.com"
+project = "example.com"
+reason = "The URL inside a quoted SwiftUI sample (`Text(\"[a](https://example.com)\")`, gap-map-macos.md:710): not a citation."
+
+[[not_pinned]]
+name = "gist.github.com"
+project = "gist.github.com"
+reason = "Four third-party gists, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "lapcatsoftware.com"
+project = "lapcatsoftware.com"
+reason = "Articles on a developer's site (lapcatsoftware.com/articles/…), cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "leopard-adc.pepas.com"
+project = "leopard-adc.pepas.com"
+reason = "A third-party mirror of Apple's Mac OS X 10.5 era Human Interface Guidelines, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "www.podfeet.com"
+project = "www.podfeet.com"
+reason = "A blog post (podfeet.com/blog/2025/10/…), cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "asciiwwdc.com"
+project = "asciiwwdc.com"
+reason = "A third-party transcript of WWDC 2018 session 210, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "bjango.com"
+project = "bjango.com"
+reason = "An article on designing menu bar extras (bjango.com/articles/…), cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "codeworkshop.net"
+project = "codeworkshop.net"
+reason = "A third-party diff of the macOS 12 AppKit SDK (codeworkshop.net/objc-diff), cited by platform-facts.md only; the pinned Xcode holds the SDK."
+
+[[not_pinned]]
+name = "en.wikipedia.org"
+project = "en.wikipedia.org"
+reason = "An encyclopedia article (MacOS_Tahoe), cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "mackuba.eu"
+project = "mackuba.eu"
+reason = "A 2014 article on NSButton styles (mackuba.eu), cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "www.macrumors.com"
+project = "www.macrumors.com"
+reason = "A news roundup (macOS 26), cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "www.monkeybreadsoftware.net"
+project = "www.monkeybreadsoftware.net"
+reason = "A plugin vendor's reference page for an NSFont method, cited by platform-facts.md only."
+
+[[not_pinned]]
+name = "www.tempel.org"
+project = "www.tempel.org"
+reason = "A page on dialog button placement (tempel.org/DialogButtonPlacement), cited by platform-facts.md only."
