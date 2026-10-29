@@ -375,9 +375,13 @@ input's base for it. The inputs:
   (`kde_accent(…, inactive)`, R25.1: what `applyScheme()`
   writes for a set whose scheme states an Inactive group, that group's own values tinted toward the accent in a tinting
   scheme and, in one that does not tint, Header's as a copy of Window's active values (Plasma 6.8) and another set's as
-  stated, Header's background and foreground then replaced under the accent-coloured title bar option; and the set's
-  active value for one that states none, as KColorScheme reads it); the reader, or a palette from a KDE port,
-  replaces them with what kdeglobals or the port's scheme states. A mapping palette has no scheme, so it states them
+  stated, Header's background and foreground then replaced under the accent-coloured title bar option (whether or
+  not Header's scheme states an Inactive group, as `applyScheme()` writes them either way); and the set's
+  active value for one that states none, as KColorScheme reads it, the scheme inputs naming the sets whose scheme
+  states an Inactive group, as the preset, the reader and a port each read it from their own scheme file); the reader
+  replaces them with what kdeglobals states, and a palette from a KDE port with what Plasma's default path writes over
+  the port's scheme (`applyScheme()`'s rules, as the preset's values follow them), not the raw file, so an accent set
+  later cannot shift a non-tinting port's inactive title bar. A mapping palette has no scheme, so it states them
   itself (the project's colours, or each its set's active value, which is how KColorScheme reads a scheme without an
   Inactive group), and is refused where it leaves one to the preset's derivation over Breeze's inputs, which would
   show Breeze's colours in an inactive window under the palette's. KDE's inactive effects apply over them, as
@@ -650,7 +654,10 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
   indeterminate progress).
 - **Scroll physics:** deceleration, overscroll and its spring, snapping, distance per wheel step (GN-3.24,
-  W3-52†).
+  W3-52†). A deceleration is a platform's own model, from a closed set implemented once in native-theme to each
+  source, as the platform curves are: the platforms decelerate by different physics (a decay per millisecond, a
+  constant deceleration, Android's spline fling, MAT-P3-16†), so one number read one way by every connector would
+  convert some of them approximately.
 - **Tokens and the speed factor:** the platform's published durations and curves, referred to by parts; a global
   speed factor (KDE's `AnimationDurationFactor`, K3.30) read by the reader. Which durations the factor scales is
   the platform's, so each scaled duration is stated as a derivation, a token times the factor (Breeze's
@@ -696,7 +703,8 @@ fifteen and fifteen emphasized (MAT-TS4), WinUI eight, libadwaita about nine.
 `text_scaling_factor`; 1 where the platform scales text another way, as KDE does on Wayland by the font size
 itself, read) multiplies font sizes when a query evaluates them, before any length derived from the font, as
 platforms that derive metrics from the font do (Kirigami's grid unit grows with it); a line height stated in
-pixels is scaled with it, one stated as a multiple of the font size follows the scaled font. Dynamic Type and Android's
+pixels is scaled with it, one stated as a multiple of the font size follows the scaled font, and letter and word
+spacing follow the line height's rule (Compose's typescale tracking is in sp, which scales with the font, MAT-TS2). Dynamic Type and Android's
 non-linear font scaling (MAT-X19) are not a single factor: those platforms' readers read each style's size
 (R18), and a preset states the default size category's values.
 
@@ -824,7 +832,13 @@ height of 360 or less, and the bottom sheet is then a variant of its presentatio
 **Right-to-left:** the toolkit mirrors the layout; the model states what the platform does not mirror or does
 differently (Material keeps time-based content left to right and mirrors question-mark icons in Arabic and Farsi but
 not Hebrew, MAT-FM03†; libadwaita's `:dir()` rules, GN-FM03†), as icon-role properties (R11) and rules selecting on
-the direction (R2.3).
+the direction (R2.3). What mirrors is the layout's own geometry (padding and margins per side, alignments, placement)
+and a part's translation, a displacement in that layout; a part's drawing (its corners, stroke edges, shadow offsets
+and paints) is physical, and a platform that mirrors one states a rule under the direction. Mirroring the drawing
+with the layout was weighed: it would save the rules where a platform mirrors (a segmented control's rounded start
+corners), but the platforms state these physically and mirror by their own direction branches (GTK's borders and
+radii with `:dir(rtl)` rules, GN-1.42; Breeze's painter rectangles), which the traceability carries as direction
+rules, while a light source does not turn with the text.
 
 ### R17 — Timings, behaviours and the pointer (C21, C22)
 
@@ -1150,6 +1164,15 @@ Amended in place after the specification's eleventh check:
 - R25.3: the font's underline and strikeout metrics are element data, so decorations follow the font.
 - R25.1 (the eleventh check's catalogue round): Plasma's derivation covers the `[WM]` title-bar colours
   `applyScheme()` writes too, so the model applies it to KDE's `[WM]` keyed roles as to the colour sets.
+
+Amended in place after the specification's final (twelfth) check:
+
+- R2.6: which colour sets have an Inactive group is a stated scheme input; a KDE port's inactive input roles follow
+  `applyScheme()`'s rules, as the preset's do, not the raw file.
+- R9: a scroll deceleration is one of a closed set of platform models, each implemented to its source.
+- R10: letter and word spacing are scaled by the line height's rule.
+- R16: a part's corners, stroke edges and shadow offsets are physical in right-to-left; only the layout's geometry and
+  a translation mirror.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.

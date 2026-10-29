@@ -1042,9 +1042,10 @@ rationale, each decided in the core's additions register (S22).
 | K3.54 | `role.<set>.foreground_inactive / foreground_active / link / link_visited / negative / neutral / positive / background_alternate / decoration_focus / decoration_hover (tooltip, header, button, selection)` | role |
 | K3.54 | `reader:kde:kdeglobals [Colors:*] all seven sets` | reader |
 | K3.54 | `role.<set>.<role> for each accent-dependent role, in the preset's bases (Breeze's scheme values as Plasma's default path, "Accent color from color scheme", writes them, with no accent derivation; the reader overrides them with kdeglobals' results, S9.1, R25.1, ADD-A109)` | role |
-| K3.54 | `role.<set>.<role> for each accent-dependent role, in the accent layer (= kde_accent(<set>, <key>, active) over the scheme inputs in force, while no mapping palette applies: the roles plasma-workspace's applyScheme() derives from the accent, listed from colorsapplicator.cpp in the value phase, S2.2, S9.2)` | role |
+| K3.54 | `role.<set>.<role> for each accent-dependent role, in the accent layer (= kde_accent(<set>, <key>, active) over the scheme inputs in force, while no mapping palette applies: the roles plasma-workspace's applyScheme() derives from the accent, S9.1's list from colorsapplicator.cpp, S2.2, S9.2)` | role |
 | K3.54 | `input.kde_scheme.<set>.<key>` (the scheme file's values before Plasma applies the accent: Breeze's in the preset, the file `[General] ColorScheme` names in the reader, S9.1) | input |
-| K3.54 | `input.kde_scheme.<set>.inactive.<key>` (the scheme file's `[Colors:<Set>][Inactive]` values, for a set whose file states an `[Inactive]` group: Breeze's Header in the preset, K3.55; the accent layer's `kde_accent(<set>, <key>, inactive)` reads them, S2.2, S9.2) | input |
+| K3.54 | `input.kde_scheme.<set>.inactive.<key>` (the scheme file's `[Colors:<Set>][Inactive]` values, for every set: a set without an `[Inactive]` group states its active values, as KColorScheme reads it; the accent layer's `kde_accent(<set>, <key>, inactive)` reads them, S2.2, S9.1, S9.2) | input |
+| K3.54 | `input.kde_scheme.inactive_groups` (per scheme, the sets whose scheme file has an `[Inactive]` group: Breeze's `Header` in the preset, K3.55; the user's file in the reader; a port's own; `kde_accent` branches on it, S2.2, S9.1) | input |
 | K3.60 | `IconStyle.state_effect @ {disabled} / {hover} (keys declared in icon_state_effects, each implemented to KIconEffect's source; S2.9)` | field |
 | K3.60 | `PartStyle.icon.state_effect, PartStyle.opacity @ {disabled} (to gray and semi-transparent)` | rule |
 | K3.60 | `token.params.icon_effect.<key> (the effects' amounts: the gamma of the active effect, the gray and transparency of the disabled one)` | token |
@@ -1065,8 +1066,8 @@ rationale, each decided in the core's additions register (S22).
 | K3.71 | `reader:kde:kdeglobals [KDE] StartDragDist, StartDragTime` | reader |
 | K3.72 | `token.behavior.scroll_lines_per_step` | token |
 | K3.72 | `reader:kde:kdeglobals [KDE] WheelScrollLines` | reader |
-| K3.73 | `token.behavior.single_click_activates (ADD-A45)` | token |
-| K3.73 | `reader:kde:kdeglobals [KDE] SingleClick -> token.behavior.single_click_activates, cond system_setting:single_click` | reader |
+| K3.73 | `token.behavior.single_click_activates @ cond system_setting:single_click (a `Tokens` rule; one route, S4.2; ADD-A45)` | token |
+| K3.73 | `reader:kde:kdeglobals [KDE] SingleClick -> cond system_setting:single_click` | reader |
 | K3.73 | `cond system_setting:single_click (ADD-A04)` | condition |
 | K3.73 | `list.row @ {hover} cond system_setting:single_click context any file_chooser` (the hover feedback of KIO's file views in single-click mode; the fields it sets are read from KIO and Dolphin in the value phase) | rule |
 | K3.76† | `stepper.values.repeat_delay, stepper.values.repeat_interval (the mouse's interval)` | field |

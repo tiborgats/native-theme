@@ -344,7 +344,7 @@ spaces:
 | `variant v`, `variant @k`, `variants {v,w}`, `!variant v`, `!variants {v,w}`, `w.part[v]` | the element's (or the named ancestor's) variants: `variants {v,w}` all of them, `!variants {v,w}` none of them (`SetMatch.none_of`); `@k` is keyed, and a rule names only the keyed variants its own preset declares (S12) |
 | `w.part[size s]` | the named ancestor's control size (`ContextMatch.sizes`, ADD-A84) |
 | `cond c`, `!cond c` | a condition (S7.1, snake_case): `window_inactive`, `contrast_high`, `scheme:dark`, `input:touch`, `idiom:pad`, `flavor:kirigami`, `preset:ios-26`, `system_setting:<key>` (ADD-A04), `container_size:sidebar:small`, `tiled:top`, `freeform`, `posture:tabletop`, `device_model:<key>` (ADD-A83) |
-| `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch`: an ancestor in the chain the `Scope` carries (S8); `AnyAncestor` or `NearestAmong`. The `variant` and `{…}` written after `context w.part` are that ancestor's; the element's own variants and states are written before the first `context` (`button.body.fill @ variant tool context toolbar.bar`). A bare `context w` (`context combo_box`, `context list variant table`) is the same match as `context any w`: an ancestor of widget `w`, whichever of its parts (`ContextMatch.part: None`); `context any (surface S)` is an ancestor binding the surface set `S`, whatever its widget (`ContextMatch.surface`, ADD-A68) |
+| `context w.part [variant v] [{a}]`, `context any w`, `context nearest {A, B} = A` | `ContextMatch`: an ancestor in the chain the `Scope` carries (S8); `AnyAncestor` or `NearestAmong`. The `variant` and `{…}` written after `context w.part` are that ancestor's; the element's own variants and states are written before the first `context` (`button.body.fill @ variant tool context toolbar.bar`). A bare `context w` (`context combo_box`, `context list variant table`) is the same match as `context any w`: an ancestor of widget `w`, whichever of its parts (`ContextMatch.target` is `WidgetOrPart::Widget(w)`, S1); `context any (surface S)` is an ancestor binding the surface set `S`, whatever its widget (`ContextMatch.surface`, ADD-A68) |
 | `not_context w.part` | `Selector.not_context` |
 | `pos first`, `pos last`, `pos only`, `pos parity odd`, `prev w{…}`, `next w{…}` | `PositionMatch` (parity: ADD-B06; by part: ADD-B07). A `prev` or `next` term that names a part other than the element's own counts among every sibling of that widget (`among {w}`): `prev list.row {hover}` on a `list.row_separator` is the row before it |
 | `… among any`, `… among {w, v}` after a `pos` term | `PositionMatch.among`: siblings of any kind (`SiblingScope::Any`, CONTRA-3) or of the kinds named; without it, siblings of the same kind |
@@ -6040,8 +6040,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     overlap and compound their alphas, and one `Edge` per side holds one width and one paint, so neither reproduces
     the five lines. Two points the value phase confirms: `alpha` multiplies the colour's alpha where the source's
     `setAlpha` sets it (`:108`), the same while `role.@shade_mid` is opaque; and the source mirrors nothing in a
-    right-to-left layout (`:94`, `:107-113`), so where the model mirrors the edges or the move there, a `dir rtl`
-    rule restates them.
+    right-to-left layout (`:94`, `:107-113`): the stroked edges are physical in the model too (S2.4), and the move,
+    a translation the model mirrors (S2.6), is restated by a `dir rtl` rule.
   - `page` — the page: `fill` (`kde-breeze` `= role.@shade_light`, `:114`; `adwaita` the `paper` node's background,
     `_dialogs.scss:18`, inside its border, `background-clip: padding-box`, `:20`), `stroke` (`adwaita`: the `paper`
     node's border on every edge, its width and paint the source's, `:21`; `kde-breeze` draws no outline round the page,
@@ -8211,13 +8211,16 @@ group, snake-cased (the twelve keys KColorScheme reads, platform-facts §1.3.2: 
 
 - `input.kde_scheme.<set>.<key>`: the scheme file's `[Colors:<Set>]` value before Plasma applies the accent (Breeze's
   in the preset, the file kdeglobals' `[General] ColorScheme` names in the reader; K3.54, R25.1);
-- `input.kde_scheme.<set>.inactive.<key>`: the file's `[Colors:<Set>][Inactive]` value, declared only for a set whose
-  scheme file states an `[Inactive]` group (Breeze's scheme files state one for `Header`, K3.51, K3.55);
+- `input.kde_scheme.<set>.inactive.<key>`: the file's `[Colors:<Set>][Inactive]` value, declared for every set; a
+  set `input.kde_scheme.inactive_groups` does not name states each as `= input.kde_scheme.<set>.<key>`, what
+  KColorScheme reads for a set without an `[Inactive]` group (S9.1);
 - `input.inactive.<set>.<key>`: the inactive input role, the colour the set's key takes in an inactive window before
   KColorScheme's inactive effects (the start the inactive colour rules above apply `kde_effects(c, background, inactive, kind)` over),
   for every set and key.
 
-A fourth namespace, with keys of its own, `input.kde_scheme.wm.<key>`, holds the `[WM]` group's four keys (`active_background`, `active_foreground`,
+`input.kde_scheme.inactive_groups` holds, per scheme, the list of the sets whose scheme file has an `[Inactive]`
+group (Breeze's scheme files state one for `Header`, K3.51, K3.55; the reader's and a port's from their own file),
+which `kde_accent` branches on (S2.2, S9.1). A fourth namespace, with keys of its own, `input.kde_scheme.wm.<key>`, holds the `[WM]` group's four keys (`active_background`, `active_foreground`,
 `inactive_background`, `inactive_foreground`, the core's `KdeWmKey`, S4.8), which `kde_accent_wm` reads (S9.1; the
 keyed roles `wm_*` below).
 
@@ -8231,25 +8234,28 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
   K3.54), as Plasma wrote them for the user's scheme and accent;
 - the accent layer (`set_accent`, while no mapping palette applies) states each as `= kde_accent(<set>, <key>,
   <group>)` over the scheme inputs in force, the reader's, a KDE port's, else Breeze's (S9.2). Group `active` gives
-  the active role; group `inactive`, for a set whose scheme file states an `[Inactive]` group, what `applyScheme()`
+  the active role; group `inactive`, for a set `input.kde_scheme.inactive_groups` names, what `applyScheme()`
   writes there (`src/plasma-workspace/kcms/colors/colorsapplicator.cpp:247-284`, v6.8.2):
-  - while the scheme tints (`token.kde.tint_factor` stated): every set's own file value
+  - while the scheme tints (`token.kde.tint_factor` is `Some`): every set's own file value
     `input.kde_scheme.<set>.inactive.<key>`, `Header`'s included, tinted toward the accent;
   - while it does not: `Header`'s the file's active `Window` value `input.kde_scheme.window.<key>` (Plasma 6.8's
     substitute, BUG 516396), every other set's its own file value, untinted;
   - the accent never replaces an `[Inactive]` group's accent keys;
   - then, while `token.kde.titlebar_is_accent_colored` holds, `Header`'s inactive background and foreground are the
-    file's `Window` background tinted toward the accent and the text on it, over either branch above;
+    file's `Window` background tinted toward the accent and the text on it, over either branch above, and also where
+    the list does not name `Header` (`applyScheme()` writes that group either way, S2.2);
 
-  and for a set whose file states none, the set's active result, as KColorScheme reads a set without an `Inactive`
-  group (S2.2, R25.1). Group `disabled` is refused (S12);
+  and for a set the list does not name, the set's active result, as KColorScheme reads a set without an `Inactive`
+  group (S2.2, R25.1). Which roles are accent-dependent is the core's list (S9.1). Group `disabled` is refused (S12);
 - a mapping palette states them itself in `[for_preset.kde-breeze]` (it has no scheme inputs for `kde_accent`): each
   accent-dependent role as the project's colour or `= input.accent` where it follows the accent, each inactive input
   role as the project's colour where it publishes an inactive one, else `= active(role.<set>.<role>)`, as KColorScheme
   reads a scheme with no `[Inactive]` group; it is refused where it leaves an accent-dependent or inactive input role
   to the preset's Breeze value (S12, S14);
-- a KDE port converts its `[Inactive]` groups to the inactive input roles and to `input.kde_scheme.<set>.inactive.*`,
-  and states each inactive input role of a set with none as `= active(role.<set>.<role>)` (S14).
+- a KDE port converts its file by `applyScheme()`'s rules on Plasma's default path, as the preset is stated, not as
+  the raw file reads: its `[Inactive]` groups to `input.kde_scheme.<set>.inactive.*` and `inactive_groups`, each
+  inactive input role as that path writes it (a non-tinting port's `Header` the file's active `Window` values), and
+  each inactive input role of a set with no group as `= active(role.<set>.<role>)` (S14).
 
 `kde-breeze`'s `[declare] accent_inputs` is `["accent"]` alone: the scheme inputs and the inactive input roles are the
 scheme's, which Plasma's derivation reads (S9.1). So a reader's `input.accent` from another platform applies on
@@ -8613,10 +8619,12 @@ wherever the block appears and is cited here, not repeated: among the tokens it 
 `Behavior`, `TouchBehavior`, `ScrollPhysics` and `PointerTokens` (`hide_pointer_delay`, `hide_pointer_fade`,
 `scroll_px_per_step`, `touchpad_factor`, `wheel_step_duration_max`, `touchpad_deceleration`, `touchpad_timing`,
 `spring_loading`, `touch.*` and `pointer.color` on the platforms without them; `Behavior.key_repeat` is an `Option`,
-`none` where keys never repeat, and its `KeyRepeat`'s `delay` and `interval` are stated, S4.2), every `Value` field of
-`KdeTokens` and `KdeEffects`, `IconTokens.theme_fallback`, the `Caret` fields it
+`none` where keys never repeat, and its `KeyRepeat`'s `delay` and `interval` are stated, S4.2; a `ScrollDecay`'s
+`amount` is stated), `IconTokens.theme_fallback`, the `Caret` fields it
 names, every `TextRendering` field and a `FocusIndicator`'s `shadow` and `transition` (its `dash` is stated, `solid`
-included, S2.4). The second is this table, for the tokens no block mark covers:
+included, S2.4). `KdeTokens` and `KdeEffects` are stated whole on `kde-breeze`, never `Absent` (`tint_factor` an
+`Option`, `none` where the scheme does not tint; a reader's and a port's unset keys as KColorScheme and `applyScheme()`
+read them, S4.8). The second is this table, for the tokens no block mark covers:
 
 | Token | May be `Absent` on | Why |
 |---|---|---|
@@ -8695,8 +8703,8 @@ one home per fact, as `drag_hover_delay_ms` has.
 **token.kde** (`KdeTokens`, S4.8, `kde-breeze` only): `disabled` and `inactive`, each a `KdeEffects` (intensity effect
 and amount, colour effect, amount and colour, contrast effect and amount: K3.50, K3.51; the amounts `Value<f32>` as
 kdeglobals states them, each function clamping them as KColorScheme does), the inactive group's
-`inactive_change_selection_color` and `inactive_enabled` (K3.40), the scheme's `tint_factor` and
-`titlebar_is_accent_colored` (R25.1). The icon effects (K3.60, Q3.18) are `IconStyle.state_effect` keys (S2.9, declared
+`inactive_change_selection_color` and `inactive_enabled` (K3.40), the scheme's `tint_factor` (an `Option`: `none`, the
+scheme does not tint) and `titlebar_is_accent_colored` (R25.1), every one stated (S4.8). The icon effects (K3.60, Q3.18) are `IconStyle.state_effect` keys (S2.9, declared
 in `icon_state_effects`), their gray, transparency and gamma parameters `token.params.icon_effect.<key>`. A palette from
 a KDE port states `token.kde` itself (R19, S14). Who states KDE's accent-dependent roles and inactive input roles,
 and how (the preset Breeze's values on Plasma's default path, the reader kdeglobals' results, the accent layer
@@ -8808,7 +8816,7 @@ The conditions these rows added to S7.1 (ADD-A04 … ADD-A11, ADD-A76, ADD-A83),
 | `Freeform` | an Android desktop-windowing (freeform) window, with its own corner radius (ADD-A83) | MAT-W5† |
 | `Posture(Posture)` | a foldable's posture (Jetpack WindowManager): two stacked panes in tabletop (ADD-A83) | MAT-P3-13† |
 | `DeviceModel(Key)` | the device model, where a measured value differs per model: the display's corner radius (ADD-A83) | W-6, X-CR-4 |
-| `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions` (the traceability's `cond system_setting:<key>` lines are the full set, each with its row): Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†), `menu_animation` (W1-054), `tooltip_animation` (W1-058), `menu_drop_alignment` (`SPI_GETMENUDROPALIGNMENT`, W3-55†), `accent_on_title_bars` (W1-001, W1-013), `material_policy` (W3-07), `show_sounds` (W-P3-11†); KDE `ui_effects` (K-P3-24†), `stacked_widget_transitions` (breezerc `StackedWidgetTransitionsEnabled`, K3.31), `dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, K2.10), `outline_enabled` (breezerc `[Common] OutlineEnabled`, K1.9), `rounded_corners`, `no_borders` (K1.10, K-P3-1†), `no_side_borders` (K-P3-1†), `draw_border_on_maximized`, `hide_title_bar` (K1.15), `title_bar_gradient` (K1.14), `outline_close_button` (K1.7), `menu_item_strong_focus` (K1.62), `show_icons_in_menus` (K1.70), `slider_tick_marks` (K1.103), `toolbar_draw_item_separator` (K1.156), `side_panel_draw_frame` (K1.140), `view_draw_focus_indicator` (K1.175), `view_draw_tree_branch_lines` (K1.176), `qqc2_desktop_style` (K-KA-40†), `single_click` (kdeglobals `[KDE] SingleClick`: the file views' hover feedback, K3.73); macOS `wallpaper_tinting` (MAC-W08, MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) and `pointer_animations` (the Pointer Animations setting, P3-12†, X-PH-1) | W3-53†, W1-054, W1-058, W3-55†, W1-001, W1-013, W3-07, W-P3-11†, K-P3-24†, K3.31, K2.10, K1.9, K1.10, K-P3-1†, K1.15, K1.14, K1.7, K1.62, K1.70, K1.103, K1.156, K1.140, K1.175, K1.176, K-KA-40†, K3.73, MAC-W08, MAC-X27, MAC-X31†, X-MT-11, P3-12† |
+| `SystemSetting(Key)` | a platform-specific switch the reader reads, declared by the preset in `[declare] conditions` (the traceability's `cond system_setting:<key>` lines are the full set, each with its row): Win32 `menu_fade`, `tooltip_fade`, `selection_fade`, `combo_animation`, `listbox_smooth_scroll`, `hot_tracking`, `drop_shadow`, `ui_effects` (W3-53†), `menu_animation` (W1-054), `tooltip_animation` (W1-058), `menu_drop_alignment` (`SPI_GETMENUDROPALIGNMENT`, W3-55†), `accent_on_title_bars` (W1-001, W1-013), `material_policy` (W3-07), `show_sounds` (W-P3-11†, declared `for_applications = true`: only applications read it, through `Theme::system`, S10); KDE `ui_effects` (K-P3-24†), `stacked_widget_transitions` (breezerc `StackedWidgetTransitionsEnabled`, K3.31), `dock_widget_draw_frame` (breezerc `DockWidgetDrawFrame`, K2.10), `outline_enabled` (breezerc `[Common] OutlineEnabled`, K1.9), `rounded_corners`, `no_borders` (K1.10, K-P3-1†), `no_side_borders` (K-P3-1†), `draw_border_on_maximized`, `hide_title_bar` (K1.15), `title_bar_gradient` (K1.14), `outline_close_button` (K1.7), `menu_item_strong_focus` (K1.62), `show_icons_in_menus` (K1.70), `slider_tick_marks` (K1.103), `toolbar_draw_item_separator` (K1.156), `side_panel_draw_frame` (K1.140), `view_draw_focus_indicator` (K1.175), `view_draw_tree_branch_lines` (K1.176), `qqc2_desktop_style` (K-KA-40†), `single_click` (kdeglobals `[KDE] SingleClick`: the file views' hover feedback, K3.73); macOS `wallpaper_tinting` (MAC-W08, MAC-X27) and `title_icons` (MAC-X31†); iOS `glass_look` (X-MT-11) and `pointer_animations` (the Pointer Animations setting, P3-12†, X-PH-1) | W3-53†, W1-054, W1-058, W3-55†, W1-001, W1-013, W3-07, W-P3-11†, K-P3-24†, K3.31, K2.10, K1.9, K1.10, K-P3-1†, K1.15, K1.14, K1.7, K1.62, K1.70, K1.103, K1.156, K1.140, K1.175, K1.176, K-KA-40†, K3.73, MAC-W08, MAC-X27, MAC-X31†, X-MT-11, P3-12† |
 
 Conditions the rows do not need: a "colour filters" or "invert" condition (system-applied, R1.1: K3.93, W3-56†,
 MAC-P4-3†, X-A11-8, MAT-X35†), and a "not responding" condition or an attention mark the shell or the compositor
@@ -8861,8 +8869,8 @@ holds.
 - kdeglobals `[KDE] contrast` (unread today) and `frameContrast` (the factor kept, not only finished colours):
   K3.53, K3.91, Q3.14.
 - kdeglobals `[KDE] CursorBlinkRate`: K3.41; `DoubleClickInterval`: K3.70; `StartDragDist`, `StartDragTime`: K3.71;
-  `WheelScrollLines`: K3.72; `SingleClick` (into `token.behavior.single_click_activates` and `cond
-  system_setting:single_click`): K3.73; `SmoothScroll`: K-P3-18†; `GraphicEffectsLevel` (into `cond
+  `WheelScrollLines`: K3.72; `SingleClick` (into `cond system_setting:single_click`, under which the preset's
+  `Tokens` rule states `token.behavior.single_click_activates`, one route, S4.2): K3.73; `SmoothScroll`: K-P3-18†; `GraphicEffectsLevel` (into `cond
   system_setting:ui_effects`): K-P3-24†.
 - breezerc `[Style] MnemonicsMode`: K3.44.
 - kdeglobals `[General] XftAntialias`, `XftHintStyle`, `XftSubPixel` (keys to verify in plasma-workspace): K3.45.
