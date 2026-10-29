@@ -388,14 +388,18 @@ platform publishes a table (Apple's tracking), that table is the vector table, i
 S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`) are checked the same way. The model's own arithmetic
 (`alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `pick`) is not a platform function: its unit tests
 follow this section's definitions; every other function of the table above is one. A vector table is a TSV file,
-`native-theme/tests/vectors/<function>.tsv`, whose leading `# <name>: <value>` lines name the route, the reference's
-`sources.toml` entry, the generator, the output columns (`# outputs:`) and, for measured rows, each output column's
-tolerance (`# tolerance: <column> = <t>`, as S17's), followed by a column header row, and whose measured or published rows each
-carry their evidence path or citation (S17's forms; its output columns are the literals checked); a
-test evaluates the function over its table. `scripts/check_function_vectors.py` checks the tables' form, that every
-platform function of the table above, every function implementing S9.4's curves and every `pub` or `pub(crate)`
-function of the `platform` module has a table and a test, and that every platform function a fact or a preset names
-is one of them; `check_fact_citations.py` checks the rows' citations and counts their evidence as cited.
+`native-theme/tests/vectors/<function>.tsv`, or `<function>.<preset>.tsv` where the reference differs by generation.
+Its leading `# <name>: <value>` lines name the route, the reference's `sources.toml` entries (one or more), the
+generations it covers (`# generations:`, preset IDs), the generator, the output columns (`# outputs:`) and, for
+measured rows, each output column's tolerance (one `# tolerance: <column> = <t>` line per column, as S17's);
+generated rows compare at S17's quote-check precision. A column header row follows. Measured and published rows each
+carry their evidence path or citation (S17's forms), which serves each generation the table lists; a measured row's
+input and output columns are compared with its evidence. Every preset whose facts call the function is among the
+generations of one of its tables. A test evaluates the function over its table. `scripts/check_function_vectors.py`
+checks the tables' form, that every platform function of the table above, every function implementing S9.4's curves
+and every `pub` or `pub(crate)` function of the `platform` module has a table and a test, and that every platform
+function a fact or a preset names is one of them; `check_fact_citations.py` checks the rows' citations and counts
+their evidence as cited.
 
 ### S2.3 Paint (R6)
 
@@ -2605,7 +2609,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   shadow's layers, a curve), the `evidence` path names a table of the evidence file shaped like the value, and
   `tolerance` is one number for every numeric leaf or a table from each numeric leaf's path in the value as S11
   spells it to its number (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); leaves that are not numbers or
-  colours (a bool, a name) compare exactly. Where several `measured` citations serve one generation, each must hold
+  colours (a bool, a name) compare exactly; a colour leaf is numeric for this rule (its tolerance per channel). Where several `measured` citations serve one generation, each must hold
   and the gate uses the smallest tolerance; where a generation has `published` or `read` citations too, both checks
   must hold and the gate uses the measured tolerance.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
@@ -2672,7 +2676,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   moves within a release (D1). Every evidence file is cited by a fact, a state-model entry or a
   vector table (S2.2, S13); a run's README and `run.toml` are not evidence;
   the runs the 0.8.0 plan lists as legacy count as cited until its M4.
-- **Generations.** Facts are one directory per platform, covering its presets: `gnome` (`adwaita`), `kde`
+- **Generations.** Facts are one directory per platform (and `palettes/`, S14, whose facts have no generation),
+  covering its presets: `gnome` (`adwaita`), `kde`
   (`kde-breeze`), `macos` (`macos-monterey`, `macos-tahoe`), `ios` (`ios-13`, `ios-26`), `windows` (`windows-11`),
   `material` (`material-3`); `docs/facts/imported/`, the 0.8.0 plan's lane input, is not facts. A fact for one
   generation carries `preset:<id>` (S7.1) in
@@ -2680,8 +2685,9 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   each generation its directory covers among the presets that exist, a citation's generations being its source
   entry's or its evidence file's. Where two generations' sources order the facts differently, the facts are split by
   `preset:`.
-- **The gate's tolerance** for a key is the tolerance of the citation serving the resolved preset's generation; a
-  `published` or `read` citation compares at the quote check's precision.
+- **The gate's tolerance** for a key is the measured tolerance of the generation the resolved preset serves (above,
+  the smallest where several citations serve it); a generation with only `published` or `read` citations compares at
+  the quote check's precision.
 
 `docs/platform-facts.md` is generated from these files (a script), and the two existing scripts read the data.
 
