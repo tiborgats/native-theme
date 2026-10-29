@@ -1932,10 +1932,9 @@ cell's `indicatorRect` (`ControlImage.arrow`). The rendering uses the system's a
 application or a palette sets cannot reach it, which the connector's contract records as its limit (R11, R23).
 
 On macOS's main thread it renders; anywhere else, and off macOS, it returns `None`, so connectors need no `cfg` of
-their own. Cached per (control, states, size, appearance, key, scale, width). **Open, the maintainer's decision:**
-rendering through AppKit needs `unsafe` objc2 calls, as the SF Symbols loader does under its approved exception
-(`native-theme/src/sficons.rs`, module-scoped, each block with its safety argument); the project allows `unsafe` only
-with the maintainer's approval, so this section stands on that approval. A glyph naming a system control
+their own. Cached per (control, states, size, appearance, key, scale, width). **Approved by the maintainer (2026-10-29):** rendering through AppKit uses `unsafe` objc2 calls under the same
+exception as the SF Symbols loader (`native-theme/src/sficons.rs`): module-scoped, each block with its safety
+argument. A glyph naming a system control
 (`GlyphSource::SystemControl { control, replaces }`) states the parts the rendering replaces (the checkbox's box and
 mark together, R11). The list of `SystemControl`s is the traceability's rows that need it.
 
