@@ -388,18 +388,25 @@ platform publishes a table (Apple's tracking), that table is the vector table, i
 S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`) are checked the same way. The model's own arithmetic
 (`alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `pick`) is not a platform function: its unit tests
 follow this section's definitions; every other function of the table above is one. A vector table is a TSV file,
-`native-theme/tests/vectors/<function>.tsv`, or `<function>.<preset>.tsv` where the reference differs by generation.
-Its leading `# <name>: <value>` lines name the route, the reference's `sources.toml` entries (one or more), the
-generations it covers (`# generations:`, preset IDs), the generator, the output columns (`# outputs:`) and, for
-measured rows, each output column's tolerance (one `# tolerance: <column> = <t>` line per column, as S17's);
-generated rows compare at S17's quote-check precision. A column header row follows. Measured and published rows each
-carry their evidence path or citation (S17's forms), which serves each generation the table lists; a measured row's
-input and output columns are compared with its evidence. Every preset whose facts call the function is among the
-generations of one of its tables. A test evaluates the function over its table. `scripts/check_function_vectors.py`
-checks the tables' form, that every platform function of the table above, every function implementing S9.4's curves
-and every `pub` or `pub(crate)` function of the `platform` module has a table and a test, and that every platform
-function a fact or a preset names is one of them; `check_fact_citations.py` checks the rows' citations and counts
-their evidence as cited.
+`native-theme/tests/vectors/<function>.tsv` (a placement strategy's: `place.<strategy>.tsv`, snake_case), one per
+function: a function whose reference differs by generation or
+platform selects the reference by an enum operand, as `name_index`'s `method` does (a class 2 change where a lane
+finds such a difference), so one implementation answers every row. Its leading `# <name>: <value>` lines name the
+route, the reference's `sources.toml` entries (one or more), the generations it covers (`# generations:`, preset
+IDs), the generator, the input and output columns (`# inputs:`, `# outputs:`) and, for measured rows, each output
+column's tolerance (one `# tolerance: <column> = <t>` line per column, as S17's; input columns compare exactly
+unless a line names them); generated rows compare at S17's quote-check precision, colours to ±1 per 8-bit channel
+(the references compute in floats). A column header row follows. A published row carries one or more citations (S17's form, in a
+`cite` column, separated by ` ; `) whose quotes together hold every literal of the row's columns, by S17's quote
+check; a measured row carries its evidence path, and its harness records every input it set beside the outputs it
+measured (an AppKit placement's anchor, size, window and `PlacementParams`), so each column is compared with the
+evidence. Every `sources.toml` entry the header names serves every listed generation; a published row's citations
+serve every listed generation, a measured row serves its evidence's preset, and the rows together serve every listed
+generation; every preset whose facts call the function is among them. A test evaluates the function over its table. `scripts/check_function_vectors.py` checks the
+tables' form, that every platform function of the table above, every function implementing S9.4's curves and every
+`pub` or `pub(crate)` function of the `platform` module has a table and a test, and that every platform function a
+fact or a preset names is one of them; `check_fact_citations.py` checks the rows' citations and counts their
+evidence as cited.
 
 ### S2.3 Paint (R6)
 
@@ -2587,7 +2594,7 @@ whole by a reference (S2.2: `= token.focus`), an enum block (`Timing`, S2.2) as 
 spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct blocks the valid keys decide (below). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
   sketches as `scripts/check_spec_names.py` reads them) until `docs/property-registry.toml` is generated (S18), and
-  the registry's from then on. A value is spelled as S11's **Spelling** table spells it in a preset, as a TOML value
+  the registry's from then on; palette facts have keys of their own (below). A value is spelled as S11's **Spelling** table spells it in a preset, as a TOML value
   (a number a TOML number, a bool a TOML bool, a variant with data a one-key table, a list of layers a list of
   tables), with the key's own length, duration or angle in S2.2's units (`"4px"`, `"150ms"`) since the key carries no
   suffix, while tables nested in a value keep S11's suffixed keys (`x_px = <n>`); the quote check compares its
@@ -2610,7 +2617,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   `tolerance` is one number for every numeric leaf or a table from each numeric leaf's path in the value as S11
   spells it to its number (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); leaves that are not numbers or
   colours (a bool, a name) compare exactly; a colour leaf is numeric for this rule (its tolerance per channel). Where several `measured` citations serve one generation, each must hold
-  and the gate uses the smallest tolerance; where a generation has `published` or `read` citations too, both checks
+  and the gate uses the smallest tolerance per leaf; where a generation has `published` or `read` citations too, both checks
   must hold and the gate uses the measured tolerance.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
   kind `git` (a repository at a release's commit, id `<name>@<version>`, or the commit's first eight hex digits where
