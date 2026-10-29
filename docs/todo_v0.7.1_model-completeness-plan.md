@@ -95,9 +95,9 @@ its milestone. The plan's examples:
   their steps, after S19.2's conversion (S18).
 - **Unlinked** at the switch (its `mod` line removed, the file kept): the readers and the watchers, linked again at
   M1b. Integration tests of unlinked code (`tests/reader_kde.rs`) are deleted and restored with it.
-- **Under D10's options (a) and (b)** the existing ports and transcriptions (`gnome/accent.rs`, `kde/colors.rs`'s
+- **Under D10's decision** the existing ports and transcriptions (`gnome/accent.rs`, `kde/colors.rs`'s
   ports, `scripts/generate_qt_color_vectors.py`'s transcriptions and their output `kde/qt_color_vectors.rs`) are
-  deleted at the switch and not restored; under (c) they are kept.
+  deleted at the switch and not restored; they are redone by the clean room.
 
 An unlinked module is not compiled, so with the splits the reader features compile and the `--all-features`,
 cross-target and per-feature steps keep checking the kept code. Code restored from the switch's parent commit has its
@@ -192,11 +192,12 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
 ### For the maintainer, at approval
 
 - **D1 — the source cache and the release sets.**
-  - **Location:** `/run/media/tibi/work/native-theme-sources/` (the work SSD that builds already need mounted, outside
-    `/home`'s snapshots), read and written by this work and its agents: it needs a read and write grant. Rejected: a
-    git-ignored folder inside the project (every fetch of several GB lands in `/home`'s snapshots); the session
-    scratchpad (lost at reboot). The in-project folder would need no grant; the snapshots outweigh that. Approving now lets M0 seed the cache from this session's scratchpad checkouts whose
-    commit equals the pin before a reboot clears them.
+  - **Location (decided 2026-10-29):** `/run/media/tibi/work/cargo-build/native-theme-sources/`, a folder beside the
+    workspaces' build folders on the work SSD: inside the maintainer's standing read and write grant for
+    `cargo-build`, outside `/home`'s snapshots, and outside every project's own build folder, which is all
+    `sweep-target.sh` cleans. `update_sources.sh` can rebuild it from `sources.toml` at any time. Rejected: a git-ignored
+    folder inside the project (several GB in `/home`'s snapshots); the session scratchpad (lost at reboot). M0 seeds it
+    from this session's scratchpad checkouts whose commit equals the pin.
   - **The release set** per platform: the newest stable at M0 (R1.5), coherent, frozen until 0.8.0 unless the ledger
     records a re-pin. KDE: the Plasma release, KDE Frameworks, Qt, Kirigami and kirigami-addons one dated Arch Linux
     Archive snapshot carries (the container D2 measures in; today Plasma 6.8.2). GNOME: libadwaita, GTK and the
@@ -263,15 +264,15 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     pattern covers), writes one self-contained file, tests it with plain `rustc --test` (pure arithmetic: no crate, no
     build folder) and never sees the project, the source cache or git history; the orchestrator moves the file into
     `platform/`; the vectors prove equivalence.
-  - **(b) A maintained crate** that passes the vectors (D8), which moves the question to that crate.
+  - **(b) A maintained crate** that passes the vectors, which moves the question to that crate.
   - **(c) A port with the reference's notice**, which conflicts with offering the crate under MIT or 0BSD alone.
   - **Apache-2.0 code** (material-color-utilities) can be ported, but the ported file stays under Apache-2.0 with its
     notice whatever licence a user picks for the rest: the crate's `license` becomes `(MIT OR Apache-2.0 OR 0BSD) AND
     Apache-2.0`, and the README's licence section names the file. Rejected: keeping the field and stating it only in a
     NOTICE file, which leaves the crate's metadata wrong.
-  - **Recommended:** (b) where a crate passes, else (a) for LGPL references; a port under a file-level Apache-2.0
-    licence for material-color-utilities; the existing ports and transcriptions redone by (a) or (b); the bundled KDE
-    port files shipped with their licence notices; the tools written from the settings the references pin, not their
+  - **Decided by the maintainer (2026-10-29):** (a) for every LGPL reference, no third-party crate; an own port of
+    material-color-utilities under a file-level Apache-2.0 licence; the existing ports and transcriptions redone by
+    (a); the bundled KDE port files shipped with their licence notices; the tools written from the settings the references pin, not their
     code, though a CI tool may compile a pinned upstream source unchanged to call an internal function (it never ships
     in the crate).
 - **D11 — 0.7.x releases during the work.** Recommended: no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
@@ -285,7 +286,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   catalogue entries such as pull-to-refresh and `@expanded_interface`). But the specification's `version_match` calls
   macOS 27 under `macos-tahoe` `PresetOlder` (S16), GitHub offers macOS 27 only as a preview image (`xcode-27`, run with
   `continue-on-error`), and Apple's unversioned pages, snapshotted at M0, describe 27.
-  - **(a) 26.x** (recommended): measured on the generally available `macos-26` image and its iOS 26 simulator, and
+  - **(a) 26.x** (decided by the maintainer, 2026-10-29): measured on the generally available `macos-26` image and its iOS 26 simulator, and
     consistent with S16. Then R1.5's wording is amended to "the newest release a supported runner measures" (a
     rationale change, hence the maintainer's), the 27-only catalogue entries move to `docs/todo.md`'s macOS 27 entry
     (a class 2 spec change), and an Apple page counts for a 26 fact only when an archived snapshot from 26's lifetime,
@@ -341,9 +342,8 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   what a round needs. `macos-14`, `xcode-27` (macOS 27, not in the release set) and the two Windows Server images
   leave the default set at M0 (the import reads their committed evidence; `xcode-27` can still be dispatched by name).
   The runners are virtual machines; whether they have a GPU is probed once (spike M).
-- **D8 — the ports:** a platform function or placement strategy is implemented in the crate (D10), unless a maintained
-  Rust crate passes the same vector table at the same pinned version, in which case the crate is used (less code). The
-  vectors decide.
+- **D8 — the ports:** every platform function and placement strategy is implemented in the crate, as D10 decides (no
+  third-party crate), and proven by its vector table.
 - **The package:** the facts gate reads `docs/facts` at run time (a directory of many files, which `include_str!`
   handles badly); `native-theme`'s package excludes `tests/` (the gate and the vector tables), and the packaging step
   fails above crates.io's 10 MB limit.
@@ -678,7 +678,8 @@ tasks; the generator's drift check makes the code follow.
 
 ## Checklist
 
-- [ ] D1, D4, D5, D7, D9, D10, D11, D12 decided
+- [x] D1 (location), D10, D12 decided (2026-10-29)
+- [ ] D4, D5, D7, D9, D11 decided
 - [ ] M0 setup
 - [ ] Spikes M · G · K · I · W · A
 - [ ] M1a slice core
