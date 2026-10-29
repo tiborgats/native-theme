@@ -127,7 +127,7 @@ a showcase item that touches theme data, Widget Info, the element lists, the par
 M5, other showcase behaviour after 0.8.0; a connector convenience helper for a value the toolkit takes only through a
 builder is after 0.8.0, the contract table listing the value (S21.3); an item with parts for several destinations
 keeps one row naming its main destination and, in its reason, the others; a reader item goes to M1b where the
-slice's `ReaderState` needs it, else to the readers unit; items that appear done are verified and closed in M0.
+slice's `ReaderState` needs it, else to the readers unit; items that appeared done were verified and closed in M0 (three, 2026-10-29: the CI legs, the egui widgets crate, the Widget Info audit; their rows removed).
 
 **Identity** (what `scripts/check_ledger.py` matches): Source; Heading as written, hashes included; Item, the
 opening words between `“` and `”` as a prefix of the item's words (`docs/todo.md`: an open `- [ ]` item under its
@@ -200,7 +200,6 @@ in the 0.7.x releases* as one item; the two connector plans: a fixed list the sc
 | docs/todo.md | ### Model: a hovered segment's text colour | “From the D11/D12 review” · l. 1525 | M3 unit buttons and toggles | The catalogue's segmented_control states each part's text colour per state, so a hovered segment's label colour is a fact of that unit; the Windows reader's high-contrast write follows in the unit's reader step. |
 | docs/todo.md | ### windows-11: the validator's findings after T35 left open | “From the windows-11 `preset-validator`” · l. 1538 | lane windows | The list alternate row, the high-contrast mappings, the link's HC states and the splitter hover are Windows facts; the one-shadow-colour question is settled by S2.5's layered shadows. |
 | docs/todo.md | ### Linux font DPI: the `xrandr` fallback has no facts row | “From the kde-breeze validator” · l. 1572 | M1b | The reader's font DPI becomes ReaderState.font_dpi (S9.4, which names only forceFontDPI and Xft.dpi), ported with the readers at M1b, where the xrandr step gets a source or is dropped. |
-| docs/todo.md | ### CI: the macOS and Windows legs and the strict-panic steps have not run | “M4 added CI test” · l. 1582 | M0 | Appears done: verified and closed to `docs/archive/todo_closed.md` in M0. |
 | docs/todo.md | ### Dependencies: zbus 6 and the three unmaintained-crate advisories | “From M8 Step 8” · l. 1598 | not this plan's work | A dependency chore (zbus 6 after ashpd moves, the audit entries, the outdated check), unrelated to the model. |
 | docs/todo.md | ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read | “From M4's final review” · l. 1624 | settled by the model | S16 removes prefers_reduced_motion and accessibility_preferences, replaced by Theme::system()'s ReaderState, so the two caches disappear. |
 | docs/todo.md | ### KDE: the icon sizes and the icon lookup search the base dirs in different orders | “From M4's final review” · l. 1635 | after 0.8.0 | The icon lookup and the KDE icon-theme base dirs are kept code the model does not change (S16 keeps the icons loaders), a rare-case consistency fix for a later release. |
@@ -220,7 +219,6 @@ in the 0.7.x releases* as one item; the two connector plans: a fixed list the sc
 | docs/todo.md | ### Values the v0.7.1 gap map found against their sources | “**Material has a scrollbar.**” · l. 1813 | lane material | Compose's scrollbar and rich-text link styling are Material facts (the indicators and buttons units consume them). |
 | docs/todo.md | ### Values the v0.7.1 gap map found against their sources | “**KDE's dialog icon.** `kde-breeze.toml`” · l. 1819 | lane kde | The dialog icon size from KStyle's PM_MessageBoxIconSize is a KDE fact. |
 | docs/todo.md | ### Values the v0.7.1 gap map found against their sources | “**ios-13 states values for” · l. 1824 | lane ios | What iOS does not draw is declared absent from the facts and the 61 unsourced values are measured (S17, S10 declarations). |
-| docs/todo.md | ### native-theme-egui connector | “Implement the companion widget” · l. 1839 | M0 | Appears done: verified and closed to `docs/archive/todo_closed.md` in M0. |
 | docs/todo.md | ### native-theme-egui connector | “Map the platform font-rendering” · l. 1845 | M2.1 | `token.text.rendering` is part of S4.4's `TextTokens`, built in M1a, so the egui connector maps it when it moves to the slice. |
 | docs/todo.md | ### native-theme-egui connector | “Possible upstream egui issue:” · l. 1855 | not this plan's work | An upstream egui issue to file; the showcase's workaround stands. |
 | docs/todo.md | ### native-theme-egui connector | “**A widget font's own” · l. 1870 | not this plan's work | Waits on an epaint hook; the connector contract records the limit (S21.3, R23). |
@@ -283,7 +281,6 @@ in the 0.7.x releases* as one item; the two connector plans: a fixed list the sc
 | docs/todo.md | ### native-theme-gpui connector | “Widen the captured screenshot” · l. 2734 | M5 | The showcases are rebuilt and their screenshots regenerated and compared at M5, where the captured tabs are chosen. |
 | docs/todo.md | ### native-theme-gpui connector | “Re-verify the upstream `file:line`” · l. 2742 | after 0.8.0 | The upstream toolkits are not pinned sources (D1); their citations in docs/todo.md are re-verified at the next GPUI Kit upgrade, and `docs/todo_gpui-full-theme.md` is archived at M6 as superseded. |
 | docs/todo.md | ### native-theme-gpui connector | “**Open question for the” · l. 2756 | M5 | A maintainer question about the gpui showcase's Widget Info panel, decided when the showcases are rebuilt on the query. |
-| docs/todo.md | ### native-theme-gpui connector | “**Finish auditing the Widget” · l. 2765 | M0 | Appears done: verified and closed to `docs/archive/todo_closed.md` in M0. |
 | docs/todo.md | ### native-theme-gpui connector | “Two focus claims hold” · l. 3007 | M5 | Showcase Widget Info claims that depend on the focus ring, revisited when the showcases are rebuilt. |
 | docs/todo.md | ### native-theme-gpui connector | “**There is no ambient” · l. 3020 | M2.1 | The body font's weight is in the slice's text ramp (S4.4), so the gpui connector's rewrite decides whether `Root` gets it. |
 | docs/todo.md | ### native-theme-gpui connector | “**Model the widgets the” · l. 3038 | M3 unit typed widgets batch | The catalogue now types `badge`, `breadcrumb`, `keycap` (Kbd) and `chip` (Tag), each stated from facts in their alphabetical batches; Alert is a `dialog` variant and `banner`. |
