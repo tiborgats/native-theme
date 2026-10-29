@@ -13,8 +13,9 @@ container's Qt and so loads its Breeze style plugin:
 The states: normal; hovered (the button marked as under the mouse,
 Qt::WA_UnderMouse, and sent a mouse move over its centre, which a button with
 mouse tracking needs; QStyleOption reads State_MouseOver from it); pressed
-(setDown); disabled; checked (checkable, setChecked). The cells' margins are
-the layout's, which the style states.
+(setDown); disabled; checked (checkable, setChecked). The window holds the
+keyboard focus, so no button has it. The cells' margins are the layout's,
+which the style states.
 """
 
 import sys
@@ -77,6 +78,7 @@ def main():
     status = []
 
     def grab():
+        window.setFocus()
         hovered = cells["hovered"][1]
         hovered.setAttribute(Qt.WidgetAttribute.WA_UnderMouse, True)
         centre = QPointF(hovered.rect().center())

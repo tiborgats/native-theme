@@ -11,7 +11,8 @@
 // pointer, so the style's background item, a StyleItem whose `hover` the style
 // binds to it, is set directly); pressed (`down`, which the style draws as
 // sunken); disabled; checked (checkable, `checked`). Each line printed with the
-// prefix "index:" records a cell or the theme, for run.sh's index.txt.
+// prefix "index:" (console.info; console.log printed nothing in the
+// container) records a cell or the theme, for run.sh's index.txt.
 
 import QtQuick
 import QtQuick.Controls as QQC2
@@ -30,7 +31,7 @@ QQC2.ApplicationWindow {
 
     function grabNext() {
         if (next >= cells.length) {
-            console.log(`index: window active=${root.active}`);
+            console.info(`index: window active=${root.active}`);
             Qt.quit();
             return;
         }
@@ -38,12 +39,12 @@ QQC2.ApplicationWindow {
         cell.grabToImage(result => {
             const path = `${root.outDir}/${cell.name}.png`;
             if (!result.saveToFile(path)) {
-                console.log(`index: error cannot write ${path}`);
+                console.info(`index: error cannot write ${path}`);
                 Qt.exit(3);
                 return;
             }
             const b = cell.button;
-            console.log(`index: cell ${cell.name} size=${cell.width}x${cell.height} button=${b.x},${b.y},${b.width}x${b.height} down=${b.down} hovered=${b.hovered} background.hover=${b.background.hover} background.sunken=${b.background.sunken} enabled=${b.enabled} checked=${b.checked} activeFocus=${b.activeFocus}`);
+            console.info(`index: cell ${cell.name} size=${cell.width}x${cell.height} button=${b.x},${b.y},${b.width}x${b.height} down=${b.down} hovered=${b.hovered} background.hover=${b.background.hover} background.sunken=${b.background.sunken} enabled=${b.enabled} checked=${b.checked} activeFocus=${b.activeFocus}`);
             root.next += 1;
             root.grabNext();
         });
@@ -74,14 +75,14 @@ QQC2.ApplicationWindow {
 
     Component.onCompleted: {
         if (outDir === "") {
-            console.log("index: error no output folder (qml ... buttons.qml -- <out>)");
+            console.info("index: error no output folder (qml ... buttons.qml -- <out>)");
             Qt.exit(2);
             return;
         }
         requestActivate();
-        console.log(`index: theme window background=${Kirigami.Theme.backgroundColor} text=${Kirigami.Theme.textColor} highlight=${Kirigami.Theme.highlightColor} focus=${Kirigami.Theme.focusColor} hover=${Kirigami.Theme.hoverColor}`);
-        console.log(`index: theme button background=${normal.button.Kirigami.Theme.backgroundColor} text=${normal.button.Kirigami.Theme.textColor}`);
-        console.log(`index: font ${normal.button.font.family} ${normal.button.font.pointSize}pt; largeSpacing=${Kirigami.Units.largeSpacing}; devicePixelRatio=${Screen.devicePixelRatio}`);
+        console.info(`index: theme window background=${Kirigami.Theme.backgroundColor} text=${Kirigami.Theme.textColor} highlight=${Kirigami.Theme.highlightColor} focus=${Kirigami.Theme.focusColor} hover=${Kirigami.Theme.hoverColor}`);
+        console.info(`index: theme button background=${normal.button.Kirigami.Theme.backgroundColor} text=${normal.button.Kirigami.Theme.textColor}`);
+        console.info(`index: font ${normal.button.font.family} ${normal.button.font.pointSize}pt; largeSpacing=${Kirigami.Units.largeSpacing}; devicePixelRatio=${Screen.devicePixelRatio}`);
     }
 
     Row {
