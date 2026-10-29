@@ -1,0 +1,26 @@
+# The GNOME measurement container of the 0.8.0 plan (D2; spike G): libadwaita,
+# GTK 4 and gsettings-desktop-schemas at the release set's versions
+# (docs/todo_v0.7.1_model-completeness-ledger.md, Release set), every package
+# from one dated Arch Linux Archive snapshot, so nothing drifts. Built and
+# pushed by os-probe.yml's gnome-container job as
+# ghcr.io/tiborgats/native-theme-gnome:2026-10-29.
+#
+# The base image is pinned by digest; `pacman -Syyuu` against the snapshot
+# alone then moves each of its packages to the snapshot's version, downgrades
+# included. /usr/share/native-theme/packages.txt lists every installed package
+# (`pacman -Q`), for the evidence files to record.
+
+FROM docker.io/library/archlinux:base-20261025.0.616225@sha256:e82623936fa1a69700b48e98b058df6eaab18b737c27473a7234a40fdecb9413
+
+ARG SNAPSHOT=2026/10/29
+
+RUN echo "Server = https://archive.archlinux.org/repos/${SNAPSHOT}/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist \
+ && pacman -Syyuu --noconfirm \
+ && pacman -S --noconfirm --needed \
+      libadwaita gtk4 gsettings-desktop-schemas adwaita-fonts \
+      mutter xorg-server-xvfb mesa dbus \
+      gcc meson pkgconf \
+ && rm -rf /var/cache/pacman/pkg/* \
+ && mkdir -p /usr/share/native-theme \
+ && echo "${SNAPSHOT}" > /usr/share/native-theme/snapshot.txt \
+ && pacman -Q > /usr/share/native-theme/packages.txt

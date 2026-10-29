@@ -2,11 +2,27 @@ name: OS probe
 
 # Runs tools/os-probe (native-theme-os-probe, never published) on each macOS
 # and Windows runner image and uploads what the OS reported: probe.toml and,
-# on macOS, the control renders. Evidence for the platform-fidelity review
-# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3). Dispatched by hand only.
+# on macOS, the control renders; and the GNOME jobs, in the GNOME container
+# (tools/linux-containers/gnome): its build, the harness (tools/gnome-host) and
+# the vector generator (tools/gnome-vectors). Evidence for the platform-fidelity review
+# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
+# jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
+# Dispatched by hand only; `workflow_dispatch` needs this file on `main`, and
+# `gh workflow run os-probe.yml --ref <branch>` runs the branch's version:
+#
+#     gh workflow run os-probe.yml --ref v0.8.0-tools -f jobs=probe -f images='["macos-26"]'
 
 on:
   workflow_dispatch:
+    inputs:
+      jobs:
+        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors); empty runs every job"
+        required: false
+        default: ""
+      images:
+        description: "The probe job's runner images, a JSON list; the default is the 0.8.0 release set's"
+        required: false
+        default: '["macos-15", "macos-26", "windows-11-arm"]'
 
 permissions:
   contents: read
@@ -17,13 +33,17 @@ env:
 jobs:
   probe:
     name: OS probe (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',probe,')
     runs-on: ${{ matrix.os }}
     # xcode-27 is the macOS 27 preview image: its failure does not fail the run.
     continue-on-error: ${{ matrix.os == 'xcode-27' }}
     strategy:
       fail-fast: false
+      # The default set is the 0.8.0 release set's (D3): macos-14, xcode-27
+      # (macOS 27, outside the release set, D12), windows-2022 and windows-2025
+      # (Windows Server) left it; each can still be named in `images`.
       matrix:
-        os: [macos-14, macos-15, macos-26, xcode-27, windows-2022, windows-2025, windows-11-arm]
+        os: ${{ fromJSON(inputs.images) }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -33,16 +53,19 @@ jobs:
       # The probe's window section captures its window with `screencapture -l`,
       # which needs kTCCServiceScreenCapture on macOS 14+, and the extra passes
       # below write com.apple.universalaccess, which needs Full Disk Access
-      # (kTCCServiceSystemPolicyAllFiles): both granted to the shells that run
-      # the steps, as screenshots.yml grants the first. Each insert reports its
-      # own failure and the step fails nothing, so a TCC schema an image does
-      # not share leaves the probe to record what it then cannot do.
+      # (kTCCServiceSystemPolicyAllFiles), and the button pass posts mouse
+      # events, which needs Accessibility and PostEvent access: all granted to
+      # the shells that run the steps, as screenshots.yml grants the first.
+      # Each insert reports its own failure and the step fails nothing, so a
+      # TCC schema an image does not share leaves the probe to record what it
+      # then cannot do.
       - name: Grant screen recording and Full Disk Access (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
           set +e
-          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles; do
+          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles \
+                         kTCCServiceAccessibility kTCCServicePostEvent; do
             for client in /bin/bash /bin/zsh; do
               sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
                 "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
@@ -52,6 +75,38 @@ jobs:
           done
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
+      # The button pass (spike M of the 0.8.0 plan), with the image's own
+      # settings, into button-pass/: only push buttons, in a key window, per
+      # state, control size and appearance; it moves the cursor and clicks
+      # with posted CGEvents, so Accessibility and PostEvent access are also
+      # granted to the built probe's path. environment.txt records the OS, the
+      # selected Xcode and its SDK, the SDK the probe was built against
+      # (vtool), the Rust toolchain and the display adapter.
+      - name: Run the button pass (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass
+          probe="$PWD/target/release/native-theme-os-probe"
+          mkdir -p "$out"
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            echo "xcrun SDK: $(xcrun --show-sdk-version) build $(xcrun --show-sdk-build-version)"
+            vtool -show-build "$probe"; echo "vtool -show-build: exit $?"
+            rustc -V
+            system_profiler SPDisplaysDataType; echo "system_profiler SPDisplaysDataType: exit $?"
+            for service in kTCCServiceAccessibility kTCCServicePostEvent; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$probe', 1, 2, 4, 1);"
+              echo "grant $service to $probe: exit $?"
+            done
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
       # The image's own accessibility settings, wallpaper tinting and accent,
       # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
       # pair "does not exist", xcode-27 "Could not find key"), or what the read
@@ -317,3 +372,144 @@ jobs:
         with:
           name: os-probe-${{ matrix.os }}
           path: os-probe-out
+
+  # The GNOME container (D2, spike G): tools/linux-containers/gnome/Containerfile
+  # built from the Arch Linux Archive snapshot of the release set, checked to
+  # carry the release set's libadwaita, GTK and gsettings-desktop-schemas, and
+  # pushed to ghcr.io for the GNOME jobs to pull. packages.txt lists every
+  # package the image holds.
+  gnome-container:
+    name: GNOME container
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',gnome-container,')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/tiborgats/native-theme-gnome:2026-10-29
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build the image
+        run: |
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --label "org.opencontainers.image.description=native-theme's GNOME measurement container (Arch Linux Archive 2026/10/29)" \
+            -t "$IMAGE" -f tools/linux-containers/gnome/Containerfile tools/linux-containers/gnome
+      - name: Check the release set
+        run: |
+          mkdir -p gnome-container
+          docker run --rm "$IMAGE" cat /usr/share/native-theme/packages.txt > gnome-container/packages.txt
+          docker image inspect "$IMAGE" > gnome-container/inspect.json
+          printf '%s\n' 'libadwaita 1:1.10.0-1' 'gtk4 1:4.24.1-1' 'gsettings-desktop-schemas 51.0-1' \
+            | sort > gnome-container/expected.txt
+          grep -Fx -f gnome-container/expected.txt gnome-container/packages.txt | sort > gnome-container/found.txt
+          cat gnome-container/found.txt
+          cmp gnome-container/expected.txt gnome-container/found.txt
+      - name: Push the image
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE" | tee gnome-container/push.txt
+          docker logout ghcr.io
+      - name: Upload the image's record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gnome-container
+          path: gnome-container
+
+  # The GNOME harness (D2, D4, spike G): tools/gnome-host on a headless display
+  # in the GNOME container, run twice and compared (tools/gnome-host/run.sh).
+  # The display is mutter's headless mode (spike G): GNOME's own compositor,
+  # GTK's Wayland backend as a GNOME session runs it, byte-identical renders
+  # across runs and runner CPUs. Xvfb rendered byte-identically too, but
+  # through GTK's X11 backend, whose font settings (hinting, DPI) and window
+  # frame are not a GNOME session's; run.sh still takes `xvfb` for a re-check.
+  # The renderer is GTK's GL renderer (GSK_RENDERER=gl, on Mesa's llvmpipe):
+  # the GPU renderers' code path; the cairo fallback's 8-bit values differ from
+  # it by one step in some fills (each renderer byte-identical across runs).
+  # The pull is tried without credentials first, to check that the package is
+  # public; pull.txt records the result, and the job's token pulls it where
+  # that fails.
+  gnome-harness:
+    name: GNOME harness (${{ matrix.display }})
+    needs: gnome-container
+    if: >-
+      !cancelled() && needs.gnome-container.result != 'failure'
+      && (inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',gnome-harness,'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        display: [mutter]
+    env:
+      IMAGE: ghcr.io/tiborgats/native-theme-gnome:2026-10-29
+      OUT: gnome-harness-out
+    steps:
+      - uses: actions/checkout@v6
+      - name: Pull the image
+        run: |
+          mkdir -p "$OUT"
+          docker logout ghcr.io > /dev/null 2>&1 || true
+          if docker pull "$IMAGE" > "$OUT/pull.txt" 2>&1; then
+            echo "pull without credentials: succeeded" | tee -a "$OUT/pull.txt"
+          else
+            echo "pull without credentials: failed" | tee -a "$OUT/pull.txt"
+            echo "::warning::$IMAGE does not pull without credentials"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull "$IMAGE"
+            docker logout ghcr.io
+          fi
+          cat "$OUT/pull.txt"
+      - name: Render
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work "$IMAGE" \
+            dbus-run-session -- bash tools/gnome-host/run.sh "${{ matrix.display }}" "$OUT"
+      - name: Upload the renders
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gnome-harness-${{ matrix.display }}
+          path: gnome-harness-out
+
+  # The vector table of libadwaita's public colour functions (the plan's route
+  # 1; spike G): tools/gnome-vectors in the GNOME container, no display.
+  gnome-vectors:
+    name: GNOME vectors
+    needs: gnome-container
+    if: >-
+      !cancelled() && needs.gnome-container.result != 'failure'
+      && (inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',gnome-vectors,'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE: ghcr.io/tiborgats/native-theme-gnome:2026-10-29
+      OUT: gnome-vectors-out
+    steps:
+      - uses: actions/checkout@v6
+      - name: Pull the image
+        run: |
+          mkdir -p "$OUT"
+          docker logout ghcr.io > /dev/null 2>&1 || true
+          if docker pull "$IMAGE" > "$OUT/pull.txt" 2>&1; then
+            echo "pull without credentials: succeeded" | tee -a "$OUT/pull.txt"
+          else
+            echo "pull without credentials: failed" | tee -a "$OUT/pull.txt"
+            echo "::warning::$IMAGE does not pull without credentials"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull "$IMAGE"
+            docker logout ghcr.io
+          fi
+          cat "$OUT/pull.txt"
+      - name: Generate the vectors
+        run: docker run --rm -v "$PWD:/work" -w /work "$IMAGE" bash tools/gnome-vectors/run.sh "$OUT"
+      - name: Upload the vectors
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gnome-vectors
+          path: gnome-vectors-out
