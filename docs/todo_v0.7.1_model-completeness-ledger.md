@@ -43,6 +43,15 @@ the newest stable release set at M0, coherent:
 - **Apple (D12):** `macos-26` (macOS 26.6.2, Xcode 26.6, the iOS 26.5 simulator) and `macos-15` (macOS 15.7.9, Xcode
   16.4, the iOS 18.6 simulator); the images move within a release, so each evidence file records its exact build.
 
+## Re-pin (M0)
+
+`scripts/repin_citations.py`, applied 2026-10-30 (2218dc32): of 5,730 in-scope citations, 1,701 unchanged, 2,950
+moved and 516 present at the pin were rewritten or kept as they are (3,039 citations and 44 source definitions
+rewritten); 78 changed and 14 vanished go to the orchestrator's re-read (below); 471 unmappable and 46 held back
+(their cell shares a ref with a changed or unmappable citation) are listed in
+[`todo_v0.7.1_model-completeness-repin-unmapped.tsv`](todo_v0.7.1_model-completeness-repin-unmapped.tsv), each
+re-read at its pin by the lane that takes its row. Re-read of the changed and vanished: in progress.
+
 ## Units
 
 Per unit and platform: facts (`—` none, `L` lane writing, `F` written), verification (`V` agreed, `T` at the
