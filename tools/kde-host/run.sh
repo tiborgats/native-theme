@@ -10,7 +10,8 @@
 # renderer, and fresh XDG_CONFIG_HOME (the scheme's kdeglobals with
 # [KDE] AnimationDurationFactor=0, KDE's "instant" animation speed, so Breeze
 # draws each state at its end and not part way through a transition),
-# XDG_DATA_HOME and XDG_CACHE_HOME. Writes into $1:
+# XDG_DATA_HOME and XDG_CACHE_HOME, and Qt's messages on stderr (without a
+# terminal, Qt sends them to the system log instead). Writes into $1:
 #   schemes/               the accent script's output for the two schemes
 #   run<N>/<scheme>/qml/   buttons.qml's PNGs, index.txt, its output
 #   run<N>/<scheme>/widgets/  widgets.py's PNGs, index.toml, its output
@@ -54,7 +55,8 @@ for run in 1 2; do
     note "kwriteconfig6 AnimationDurationFactor 0, run $run $scheme: exit $?"
     environment=(env XDG_CONFIG_HOME="$home/config" XDG_DATA_HOME="$home/data" XDG_CACHE_HOME="$home/cache"
                  QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=kde QT_QUICK_CONTROLS_STYLE=org.kde.desktop
-                 QT_QUICK_BACKEND=software QML_DISABLE_DISK_CACHE=1 QT_MESSAGE_PATTERN='%{message}')
+                 QT_QUICK_BACKEND=software QML_DISABLE_DISK_CACHE=1 QT_MESSAGE_PATTERN='%{message}'
+                 QT_FORCE_STDERR_LOGGING=1)
 
     dir="$out/run$run/$scheme/qml"
     mkdir -p "$dir"

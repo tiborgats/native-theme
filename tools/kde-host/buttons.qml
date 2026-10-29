@@ -11,8 +11,7 @@
 // pointer, so the style's background item, a StyleItem whose `hover` the style
 // binds to it, is set directly); pressed (`down`, which the style draws as
 // sunken); disabled; checked (checkable, `checked`). Each line printed with the
-// prefix "index:" (console.info; console.log printed nothing in the
-// container) records a cell or the theme, for run.sh's index.txt.
+// prefix "index:" records a cell or the theme, for run.sh's index.txt.
 
 import QtQuick
 import QtQuick.Controls as QQC2
