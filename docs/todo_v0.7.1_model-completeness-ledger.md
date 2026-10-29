@@ -76,6 +76,11 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 
 | # | Class | Document and place | Change | Reported by | Status |
 |---|---|---|---|---|---|
+| 1 | 2 | spec S2.2, S6.1, S13, S14, S17, S18, S21.3; ADD-A113–A118 | the plan's amendments: fact citations and `sources.toml`, vector tables, generated declarations, palette facts, `pending` contract entries | the plan (M0) | applied 1a55a93d; independent check pending (applied before its check, but before any work used it) |
+| 2 | 3 | rationale R1.5, logged under R25.13 | a preset describes the newest release a supported runner measures | the maintainer (D12) | applied dcaefce1 |
+| 3 | 2 | catalogue, traces (macOS, iOS), spec S20; ADD-A119; `docs/todo.md` | what only macOS or iOS 27 draws carried to the macOS 27 entry; `newest (R1.5)` covers it | the maintainer (D12) | applied 893df7de; independent check pending |
+| 4 | 1 | catalogue :8193-8347 | five citations of the session's scratchpad paths named by project and commit | the citation inventory (M0) | applied 893df7de |
+| 5 | 1 | spec §0 | the name and entry checkers are in the repository | the orchestrator | applied 1a55a93d |
 
 ## Unmeasured register
 
