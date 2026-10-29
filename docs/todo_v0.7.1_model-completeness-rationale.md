@@ -174,8 +174,9 @@ through them; a control only SwiftUI has (`Gauge`, the grouped `Form`) is a cont
 controls, both of which the `ios-*` and `macos-*` presets cover; its Catalyst-only rows are out.
 
 **R1.5 — Versions inside a generation, and choosing the generation.** A preset describes the newest
-release of its generation (macOS 15 for `macos-monterey`, libadwaita 1.10 for `adwaita`, iOS 18 for
-`ios-13`, Material 3 as its current token set states it for `material-3`); readers read what the running
+release of its generation that a supported runner measures (macOS 15 for `macos-monterey`, libadwaita 1.10 for
+`adwaita`, iOS 18 for `ios-13`, macOS 26 for `macos-tahoe` and iOS 26 for `ios-26` while GitHub's macOS 27 image is a
+preview, Material 3 as its current token set states it for `material-3`); readers read what the running
 release states; a release whose look differs as a whole starts a new generation and preset, as macOS 26
 did. A per-release overlay inside a preset was rejected: it multiplies values by releases for
 differences the readers already read where they can. The generation is chosen by the running OS
@@ -1192,6 +1193,11 @@ Amended in place after the specification's confirming (thirteenth) check:
 - R4: the gate also sets accents on `kde-breeze` and compares Plasma's derivation with facts measured from Plasma.
 - R9: each scroll deceleration model carries the parameters its source defines, not one number.
 - R16: the query returns the mirrored values physical, so no connector mirrors again; a transform's origin is physical.
+
+Amended by the maintainer's decision D12 of the 0.8.0 plan (2026-10-29):
+
+- R1.5: a preset describes the newest release a supported runner measures, so `macos-tahoe` and `ios-26` describe
+  26.x while macOS 27 runs only on a preview image; what only 27 draws is carried to `docs/todo.md`'s macOS 27 entry.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
