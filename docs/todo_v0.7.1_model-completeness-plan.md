@@ -1,6 +1,6 @@
 # v0.7.1 → 0.8.0 — Model completeness: Plan
 
-**Status:** draft 9, 2026-10-29, for the maintainer's approval (revised after eight independent reviews).
+**Status:** draft 10, 2026-10-29, for the maintainer's approval (revised after nine independent reviews).
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
@@ -41,8 +41,8 @@ the first push, so that every push runs CI (`ci.yml` runs on pull requests, not 
 - **Captures announce themselves** when they take the desktop's focus, and are run and compared by the agent.
 - **Closing.** Each task ends with `scripts/check_release.sh --commit` green on its last commit, and the pull
   request's CI green when it touches macOS or Windows code (the local run checks and lints both targets but runs
-  neither's tests); each milestone ends with the full `scripts/check_release.sh`, with only the expected items the
-  ledger lists, its documents updated, a commit and the branch pushed (standing grant for work branches). A tooling
+  neither's tests); each milestone ends with the full `scripts/check_release.sh` green (here and below: no failure
+  except `PLAN_EXCLUDED`'s skipped steps; warnings are read and recorded in the ledger), its documents updated, a commit and the branch pushed (standing grant for work branches). A tooling
   task or spike, which runs no `cargo` in its worktree, closes on its CI run instead, and `--commit` runs on its merge.
 
 ## The transition from today's model
@@ -58,9 +58,10 @@ the first push, so that every push runs CI (`ci.yml` runs on pull requests, not 
   - **ported beside** in M1a (what the slice's API needs before the switch: `error.rs`'s new errors, the colour type
     if S1 changes it);
   - **kept in place, its imports repointed in the switch** (code whose only change is its imports and whose API `next`
-    does not use before the switch: `sficons.rs`, `winicons.rs`, `rasterize.rs`, `fonts.rs`; `model/icons.rs`'s
-    `IconSet`, `IconRole`, `IconData` and `IconProvider`, moved out of `model/` with S21.2's exhaustive enums, which
-    `native-theme-build` uses), so no `unsafe` file is copied;
+    does not use before the switch: `sficons.rs`, `winicons.rs`, `rasterize.rs`, `fonts.rs`; `model/icons.rs`, moved
+    whole out of `model/` with its enums made exhaustive (S21.2): `IconSet`, `IconRole`, `IconData`, `IconProvider`,
+    `RgbaData`, `icon_name`, which `native-theme-build`, `sficons.rs` and `winicons.rs` use), so no `unsafe` file is
+    copied;
   - **split**, where kept code calls a reader: at the switch the file loses its reader functions (a deleting edit) and
     keeps the rest linked; the milestone that ports the reader restores them from the switch's parent commit. `detect`,
     which `native-theme-build` calls, keeps its desktop detection and loses the scheme and accessibility functions S16
@@ -70,7 +71,8 @@ the first push, so that every push runs CI (`ci.yml` runs on pull requests, not 
     `macos_generation`) and loses its system entry points; `icons.rs` and `freedesktop.rs` lose the indicator loaders
     for good (S2.7) and their documentation links to `SystemTheme`;
   - **deleted** at the switch as replaced (today's `model/`, `resolve/`, the preset table, `documented_sizes.rs`,
-    `ThemeWidget`, `AnimatedIcon`, `spinners.rs` and the loaders that return `AnimatedIcon` (S2.7, S19.3),
+    `ThemeWidget`, `AnimatedIcon`, `spinners.rs` and the loaders that return `AnimatedIcon` (S2.7, S19.3), with the
+    READMEs' spinner animations and `scripts/generate_gifs_spinners.py` that makes them,
     `SystemTheme`, `AccessibilityPreferences`, today's tests of them);
   - **unlinked** at the switch (its `mod` line removed, the file kept, linked again by the milestone that ports it: the
     readers and the watchers at M1b; `pipeline.rs`'s system entry points are restored then too, as a split's are);
@@ -106,16 +108,25 @@ the first push, so that every push runs CI (`ci.yml` runs on pull requests, not 
   list: any other failing step is fixed, or added only with the reviewer's agreement and its reason. Each milestone's
   full run also runs the listed steps once and removes those that pass. `ci.yml` follows with the same list as matrix
   entries, steps and `--exclude` arguments (the MSRV `--workspace` check), and a step of `check_release.sh` checks
-  that each crate and each step the list names is excluded in `ci.yml` too. M5's gate is the list empty.
+  that the exclusions marked in `ci.yml` (one comment form, `# PLAN_EXCLUDED: <name>`) and the list name the same set,
+  in both directions. M5's gate is the list empty and no mark left.
+- **Today's evidence** (the five runs under `docs/evidence/os-probe/`, about 6,400 files, of which today's rows cite a
+  few hundred) is listed by run folder in `check_fact_citations.py` as legacy evidence: its files count as cited until
+  M4, when every legacy file no fact cites is deleted (git history keeps it) and the list is emptied. The rule that
+  every evidence file is cited applies to evidence added from the cut on. Rejected: deleting the uncited files now (a
+  lane converting a row may need another render of the same run); a warning instead of a failure (nothing would
+  catch an uncited file after M4).
 - **Today's files that carry over:** today's `platform-facts.md` rows and evidence are imported at M1a into
-  `docs/facts/imported/`, lane input that neither the gate nor the citation check reads (except that evidence an
-  imported row cites counts as cited, so today's five probe runs are not reported as uncited): the lanes turn each row into
+  `docs/facts/imported/`, lane input that neither the gate nor the citation check reads: the lanes turn each row into
   a verified fact like any other or record it as not a model value, so nothing unverified reaches the gate, and the
   folder is empty at M4 (the `windows-11-arm` evidence stays usable; the Windows Server images' values are dropped
   where they differ). `platform-facts.md` becomes generated at the switch (from the verified facts only), when today's presets and the `platform_facts_xref.rs` test go and the
   preset-citation check, which reads it by line, goes to `PLAN_EXCLUDED`. The `platform-facts.md:LINE` citations of
   the gap maps and `docs/todo.md` are rewritten by the re-pin to the commit `v0.8.0-rc1` is cut from
-  (`platform-facts.md@<sha>:LINE`); S19.2's conversion of today's inheritance rules runs at M1a into a staged input file that
+  (`platform-facts.md@<sha>:LINE`); the same rewrite runs at the switch over `native-theme/src`, the connectors and
+  `tools/` (about 75 doc comments cite the old document by line), the probe's strings that cite it become fact keys in
+  the next spike that changes the probe, and a `check_release.sh` step fails on a `platform-facts.md:N` citation
+  without `@` outside `docs/archive/` and `docs/evidence/`; S19.2's conversion of today's inheritance rules runs at M1a into a staged input file that
   each unit's preset step uses and the gate checks (removed at M4); the ten community preset files go at the switch,
   since the palettes are built from the projects' published colours (M2), not from them.
 
@@ -164,7 +175,8 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
     at M0 is fetched instead of today's. Recorded in `docs/facts/sources.toml`, one pin per source and generation.
     Rejected: pinning `master` commits (unreleased code no user runs and no harness can run); re-pinning per fact
     (every lane redoes the mapping and versions mix).
-  - The list of sources is generated from the citations in the documents the re-pin reads (`scripts/check_sources.py`
+  - The list of sources is generated from the citations in the documents the re-pin reads and in `platform-facts.md`
+    (`scripts/check_sources.py`
     fails on a cited project with no entry). A web page is pinned as a commit of its public
     source repository where it has one (Microsoft Learn's MicrosoftDocs repositories), else as a dated snapshot with its
     SHA-256 (Apple's pages as their DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no
@@ -215,8 +227,10 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
   likely interoperability facts rather than ported code; they are listed so the decision covers the whole list. Options: (a) a two-role clean room for the LGPL references: one agent reads the code and writes a
   behavioural description, which the orchestrator puts in the catalogue (the core's function rows already paraphrase
   some references branch by branch, written by agents who read the code: they serve as such descriptions), and an
-  implementer whose brief excludes the source cache, the reference files, the existing ports by name and the git
-  history (and who uses no `locate` agent) implements from the description alone, the vectors proving equivalence; (b) a maintained crate that passes the vectors (D8), which moves the question to
+  implementer who works as a verifier does, in a scratchpad folder holding only the description and the vector table
+  (laid out as `<folder>/src/platform/<name>.rs`, which D9's hook pattern covers), writes one self-contained file,
+  tests it with plain `rustc --test` (pure arithmetic: no crate, no build folder) and never sees the project, the
+  source cache or git history; the orchestrator moves the file into `platform/`; the vectors prove equivalence; (b) a maintained crate that passes the vectors (D8), which moves the question to
   that crate; (c) a port with the reference's notice, which conflicts with offering the crate under MIT or 0BSD alone.
   Apache-2.0 code (material-color-utilities) can be ported, but the ported file stays under Apache-2.0 with its notice
   whatever licence a user picks for the rest, so the crate's `license` becomes `(MIT OR Apache-2.0 OR 0BSD) AND
@@ -245,7 +259,8 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
 
 - **D2 — all Linux measurement on CI.** The KDE, GNOME and Android harnesses run on CI's Linux runners in containers
   pinned to the release set, as jobs of `os-probe.yml`; each container is built once from its pinned source and pushed
-  to `ghcr.io` (free for public repositories), and the jobs pull it (the Arch Linux Archive is a volunteer service).
+  to `ghcr.io` as a public package (free for public packages; spikes K and G check that it pulls without
+  credentials), and the jobs pull it (the Arch Linux Archive is a volunteer service).
   Nothing is installed on this machine, nothing touches the
   desktop, and the versions never drift. Rejected: this machine's Plasma (a rolling distribution moves past the pin
   during the work); local packages or a Flatpak runtime for GNOME (installs, and takes Plasma's portal settings); a
@@ -267,8 +282,9 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
 - **D3 — macOS, iOS and Windows on GitHub's runners.** The repository is public, so hosted runners cost nothing; the
   limits are concurrent macOS jobs and the six-hour job limit. macOS 15 and 26 on `macos-15` and `macos-26`; iOS 18 on
   `macos-15`'s simulator and iOS 26 on `macos-26`'s (checked by spike I); Windows 11 on `windows-11-arm`, which
-  `os-probe.yml` already measures (`macos-14` and the two Windows Server images leave its default set at M0, when the
-  `images` input is added; the import reads their committed evidence). Every job is in `os-probe.yml`, dispatched by hand, because `workflow_dispatch` needs the file
+  `os-probe.yml` already measures (`macos-14`, `xcode-27` (macOS 27, not in the release set) and the two Windows
+  Server images leave its default set at M0, when the `images` input is added; the import reads their committed
+  evidence, and `docs/todo.md`'s macOS 27 entry can still dispatch `xcode-27` by name). Every job is in `os-probe.yml`, dispatched by hand, because `workflow_dispatch` needs the file
   on `main` (`--ref` runs the branch's version); a `jobs` input (an `if:` per job) and an `images` input (feeding the
   probe's matrix through `fromJSON`, since an `if:` cannot read the matrix) run only what a round needs, as GitHub runs
   at most five macOS jobs at once. The runners are virtual machines; whether they have a GPU is probed once
@@ -294,15 +310,18 @@ M0 setup ──► M1a slice core ──► M1b slice complete ──► D6 ─�
 
 M0 closes when its setup tasks close; the spikes continue beside M1a and have their own checklist line.
 
-- Cut `v0.8.0-rc1` (D5) and `v0.8.0-tools`; open the draft pull requests; add `PLAN_EXCLUDED` (empty) to
-  `check_release.sh`.
+- Cut `v0.8.0-rc1` (D5) and `v0.8.0-tools`; bump the workspace version to 0.8.0 with a `## [0.8.0] - Unreleased`
+  CHANGELOG heading and the READMEs' versions (`check_readme_versions.py` requires them together), so the visual-asset
+  and compatibility stamp checks, which fail once a release's entry is dated, stay warnings until M6 dates it; add
+  `PLAN_EXCLUDED` (empty) to `check_release.sh`; open each branch's draft pull request after its first commit (GitHub
+  refuses one with no commit beyond its base).
 - **The facts checkers early,** so the lanes can start on M1a's first day: `scripts/check_facts.py` (form: keys from
   the catalogue through `spec_catalogue.py`, `when` as S11's, kind and source well formed, the source pinned, the
   value as S2.2's, the generation rule) and `scripts/check_fact_citations.py` (*How values are checked*), after the S17
   amendment below.
 - The ledger `docs/todo_v0.7.1_model-completeness-ledger.md`, written by the orchestrator only (the others report to
-  it): per unit and platform the status of facts, verification, presets, gate and connectors; the expected items of
-  the full check; the spec-change queue; the unmeasured register; the verifiers' agreement and audit rates; the
+  it): per unit and platform the status of facts, verification, presets, gate and connectors; the warnings of each
+  full run; the spec-change queue; the unmeasured register; the verifiers' agreement and audit rates; the
   evidence size; the tokens per milestone (the sum of the agents' reported usage). This plan's checklist stays at
   milestone level.
 - `check_spec_names.py` and `check_spec_entries.py` gain `--self-test` (`check_spec_trace.py` has one); the catalogue
@@ -310,9 +329,10 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
 - The source cache (D1): `docs/facts/sources.toml`, `scripts/check_sources.py`, and `scripts/update_sources.sh`, which
   fetches each entry at its pin (androidx and AOSP shallow and sparse) and whose `--verify` checks every checkout's
   commit and every snapshot's hash.
-- **Re-pin:** `scripts/repin_citations.py` maps every citation in the core, the catalogue, the rationale, the traces
-  and the gap maps (not `platform-facts.md`, whose rows are lane input the lanes pin themselves, and whose edits would
-  break today's preset checks before the switch)
+- **Re-pin:** `scripts/repin_citations.py` maps every citation in the core, the catalogue, the traces, the gap maps
+  and `docs/todo.md` (not `platform-facts.md`, whose rows are lane input the lanes pin themselves, and whose edits would
+  break today's preset checks before the switch; not the rationale, whose citations record what each decision was
+  based on, dated by their SHAs)
   from the commit it was read at (the gap maps record each SHA, `master` for most KDE sources read 2026-10-27),
   fetched again by its SHA, to the pinned
   release, by the line mapping between the two commits, and lists each citation
@@ -410,8 +430,10 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
    its contract test (S21.3). The showcases are unlinked from their crates as the switch unlinks modules (the
    `[[example]]` entries removed with `autoexamples = false`, the `native-theme-showcase-support` dev-dependency
    removed, gpui's `mod showcase;` removed; files kept, back at M5, in the inventory), so `--all-targets` and the tests
-   no longer build them, and every connector step except the showcases' own leaves `PLAN_EXCLUDED`. They come first
-   so the connectors use the API before the rest of S16 is built on it.
+   no longer build them, and every connector step except the showcases' own leaves `PLAN_EXCLUDED`;
+   `check_connector_parity.py` is rewritten to apply its naming and sibling rules over the new resolved types' leaves
+   (an S22 line, since S18 does not name it) and leaves the list too. They come first so the connectors use the API
+   before the rest of S16 is built on it.
 2. The model's remaining arithmetic (S2.2), with unit tests. The platform functions come only with the facts that use
    them (M1b, M3), each with its vector table.
 3. S12 complete.
@@ -472,8 +494,9 @@ moves on to the next unit meanwhile.
   verified again, or goes to the unmeasured register).
 - **Gate:** `cargo test -p native-theme --test facts_gate` green on the eight presets, with no fact lacking a resolved
   key, no state-model combination lacking a fact and every declaration agreeing with its facts;
-  `check_facts_trace.py` and `check_function_vectors.py` over every fact green; the unmeasured register has no open
-  entry.
+  `check_facts_trace.py` and `check_function_vectors.py` over every fact green; `docs/facts/imported/` empty, S19.2's
+  staged file gone and the legacy evidence list empty (each a check in `check_ledger.py`); the unmeasured register has
+  no open entry.
 
 ## M5 — Showcases (after M4)
 
@@ -484,8 +507,7 @@ drawn from the `spinner` widget (S19.3); the unlinked showcase entries, dev-depe
 
 ## M6 — Release 0.8.0
 
-- The version bump (the workspace version, `workspace.dependencies`, `native-theme-derive`'s path dependency, the
-  READMEs' versions), CHANGELOG, the READMEs, ROADMAP, `docs/todo.md`'s closed entries, `docs/COMPATIBILITY.toml`
+- The CHANGELOG's 0.8.0 entry dated (the version was bumped at M0), the READMEs, ROADMAP, `docs/todo.md`'s closed entries, `docs/COMPATIBILITY.toml`
   (`update_compatibility.sh`), `docs/new-os-version-guide.md` (facts per generation, the harnesses), the docs.rs
   build, `generate_assets_release.sh` and the provenance stamps, the full `check_release.sh`.
 - The v0.7.1 documents, `tools/gap-map/`, this plan and the ledger archived to `docs/archive/`; the scripts as the
@@ -498,14 +520,14 @@ drawn from the `spinner` widget (S19.3); the unlinked showcase entries, dev-depe
 | Script | Made in | In `check_release.sh` | At M6 |
 |---|---|---|---|
 | `spec_catalogue.py`; the three spec checkers | M0 | no (run by hand, S18) | deleted |
-| `check_sources.py` (reads the documents the re-pin reads) | M0 | yes | deleted |
+| `check_sources.py` (reads the re-pin's documents and `platform-facts.md`) | M0 | yes | deleted |
 | `repin_citations.py` | M0 | no | deleted |
 | `check_ledger.py` | M0 | full run only | deleted |
 | `import_platform_facts.py` | M1a | no | deleted at M4 |
 | `generate_widgets.py` | M1a | `--check` | deleted; the generated code is the source |
 | `check_facts_trace.py` (reads the traces) | M1a | `--enabled` | deleted |
 | `check_facts.py` | M0 | yes | kept |
-| `check_fact_citations.py` | M0 | the full run fails without the cache; `--commit` reports it skipped by name; the SDK-header citations in a macOS job of `os-probe.yml` | kept |
+| `check_fact_citations.py` | M0 | the full run fails without the cache; `--commit` skips it, by name, only when the cache is absent; the SDK-header citations in a macOS job of `os-probe.yml` | kept |
 | `check_function_vectors.py` | M1a | yes | kept |
 | `generate_platform_facts.py` | M1a | `--check`, from the switch | kept |
 | `update_sources.sh` | M0 | `--verify` in the full run | kept |
@@ -518,7 +540,7 @@ drawn from the `spinner` widget (S19.3); the unlinked showcase entries, dev-depe
   after unit normalisation, colours in any notation, a derivation's operands), after its `conversion`, occurs in the
   `quote`; a `measured` fact's `evidence` file is committed, the value at its `evidence` path equals the fact's value
   after its `conversion` within its tolerance, and the file records the pinned generation and toolkit versions (the
-  exact builds listed); an evidence file that no fact (and, until M4, no imported row) cites is reported.
+  exact builds listed); an evidence file that no fact cites fails the check, except the legacy runs until M4.
 - **Facts, independently:** per unit and platform, a verifier that is not the lane's author first derives the unit's
   state model and declarations from the sources, without the lane's, and the two are compared mechanically (a
   combination the lane missed would otherwise never be checked); then, for the agreed combinations, it reports a value
@@ -538,17 +560,19 @@ drawn from the `spinner` widget (S19.3); the unlinked showcase entries, dev-depe
   drawn check-mark colour for GTK's file-local `INTENSITY`, a scrolled window's adjustment after one synthetic wheel
   event, an avatar's style class); (3) the pinned upstream source compiled unchanged in the container with a harness
   that calls the internal function (`gtk_css_shadow_value_get_extents`, KTextEditor's helpers), a CI tool never in the
-  crate; where none works, the function's facts are `measured` and go through the unmeasured register. The routes: Qt through the snapshot's
+  crate; where none works, the function goes to the unmeasured register. The routes: Qt through the snapshot's
   PySide6; KColorScheme and KColorUtils (`kde_effects`, `kde_selection_inactive`, `kcu_mix`, `kcu_tint`, `kcu_shade`,
   `kcu_overlay`) by a small C++ program built
   in the KDE container against the snapshot's Frameworks; material-color-utilities' own code at its commit;
   libadwaita's and GTK's functions in the GNOME container; Kirigami's QML functions in a QML engine
   (`scripts/generate_qt_color_vectors.py`'s Python transcriptions of `KColorUtils::mix` and Kirigami's
   `linearInterpolation` are replaced, since a transcription checks a port against another port); or measured where the reference
-  is closed (AppKit and UIKit placement through the probe and the iOS host); where a platform publishes a table
+  is closed (AppKit and UIKit placement through the probe and the iOS host: the measured frames, anchor, size and
+  window in and frame out, each with its evidence, are the strategy's vector table); where a platform publishes a table
   (Apple's tracking), the table itself is the facts. The model's own arithmetic has unit tests from the
   specification's definition. `check_function_vectors.py` checks that every public function of `platform` and
-  `placement` has a table and a test, and that every function any fact or preset uses is one of them. Without this, a derivation fact and the preset would both be evaluated by the same
+  `placement` has a table and a test, and that every platform function or placement strategy any fact or preset calls
+  is one of them (the model's own arithmetic is not one). Without this, a derivation fact and the preset would both be evaluated by the same
   function, and a wrong function would pass the gate.
 - **The presets need no separate author:** the gate compares them with the verified facts mechanically, so who writes
   them does not change what passes.
