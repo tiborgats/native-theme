@@ -13,6 +13,7 @@ neither defines, plus notation the specification forbids.
     python3 scripts/check_spec_names.py --only trace-macos   # one file
     python3 scripts/check_spec_names.py --cat cat-assembled.md --part cat/cat-01-A.md   # index the whole catalogue, check one chunk
     python3 scripts/check_spec_names.py --cat copy/widgets.md --traces copy/   # check copies (trace-<platform>.md in copy/)
+    python3 scripts/check_spec_names.py --self-test   # the rules on built-in fixtures
 
 Output: one line per problem, tab-separated: file, line, kind, name, context.
 """
@@ -21,6 +22,8 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+from spec_catalogue import catalogue_index
 
 DOCS = Path("docs")  # run from the repository root
 CORE = DOCS / "todo_v0.7.1_model-completeness-spec.md"
@@ -99,8 +102,8 @@ def struct_fields(code: str, name: str) -> list[str]:
     return re.findall(r"pub (\w+):", body_of(code, "struct", name))
 
 
-def core_vocab() -> dict:
-    text = CORE.read_text()
+def core_vocab(text=None) -> dict:
+    text = CORE.read_text() if text is None else text
     code = strip_comments(rust_blocks(text))
     v = {}
     sf = enum_variants(code, "StateFlag")
@@ -158,113 +161,6 @@ def core_vocab() -> dict:
     return v
 
 
-# ----------------------------------------------------------------------------------------- catalogue
-
-LABELS = {
-    "parts": re.compile(r"part", re.I),
-    "values": re.compile(r"value", re.I),
-    "variants": re.compile(r"variant", re.I),
-    "flags": re.compile(r"flag", re.I),
-}
-ITEM = re.compile(r"^\s{0,2}(?:- )?\*\*([^*]+?)\*\*")
-
-
-def names_in(text: str) -> set[str]:
-    out = set()
-    for span in re.findall(r"`([^`]+)`", text):
-        for tok in re.findall(r"@?[a-z_][a-z0-9_]*", span):
-            out.add(tok)
-    return out
-
-
-def catalogue_index(text: str) -> dict:
-    lines = text.splitlines()
-    widgets: dict[str, dict] = {}
-    cur_item = None
-
-    def flush(ci):
-        # an item's text joined, so backtick spans wrapping across lines count
-        if ci:
-            w, keys, buf = ci
-            joined = " ".join(x.strip() for x in buf)
-            for k in keys:
-                w[k] |= names_in(joined)
-    section = None  # the H2 we are in
-    cur = None
-    item = None
-    typed_zone = False
-    comp_zone = False
-    for i, line in enumerate(lines):
-        if line.startswith("## "):
-            section = line[3:].strip()
-            typed_zone = section in ("Window and chrome", "Overlays", "Buttons and toggles", "Fields", "Indicators",
-                                     "Containers") or section.startswith("Typed widgets")
-            comp_zone = section.startswith("Keyed components")
-            flush(cur_item)
-            cur_item = None
-            cur = None
-            item = None
-            continue
-        m3 = re.match(r"^### ([a-z_][a-z0-9_]*)\s*$", line)
-        if m3 and typed_zone:
-            flush(cur_item)
-            cur_item = None
-            cur = widgets.setdefault(m3.group(1), {"kind": "typed", "line": i + 1, "parts": set(), "values": set(),
-                                                    "variants": set(), "flags": set()})
-            item = None
-            continue
-        m4 = re.match(r"^#### component\.([a-z_][a-z0-9_]*)", line)
-        if m4 and comp_zone:
-            flush(cur_item)
-            cur_item = None
-            cur = widgets.setdefault("component." + m4.group(1), {"kind": "component", "line": i + 1, "parts": set(),
-                                                                 "values": set(), "variants": set(), "flags": set()})
-            item = None
-            continue
-        if line.startswith("### ") or line.startswith("#### "):
-            flush(cur_item)
-            cur_item = None
-            cur = None
-            item = None
-            continue
-        if comp_zone and line.startswith("| `"):
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            mm = re.fullmatch(r"`([a-z_][a-z0-9_]*)`", cells[0])
-            if mm and len(cells) >= 4:
-                w = widgets.setdefault("component." + mm.group(1), {"kind": "component", "line": i + 1,
-                                                                    "parts": set(), "values": set(),
-                                                                    "variants": set(), "flags": set()})
-                parts = names_in(cells[2])
-                w["parts"] |= {p for p in parts if not p.startswith("@")}
-                w["variants"] |= {p for p in parts if p.startswith("@")}
-                w["flags"] |= {p for p in parts if p.startswith("@")}
-                w["values"] |= names_in(cells[3])
-            continue
-        if cur is None:
-            continue
-        mi = ITEM.match(line)
-        if mi:
-            flush(cur_item)
-            # a line may hold several items ("**Variants:** none. **Flags:** `@x`"): each segment to its label
-            segs = re.split(r"\*\*([^*]+?)\*\*", line[mi.start():])
-            pairs = list(zip(segs[1::2], segs[2::2]))
-            item, last = [], ""
-            for n, (lab, txt) in enumerate(pairs):
-                keys = [k for k, rx in LABELS.items() if rx.search(lab)]
-                if "may_be_absent" in lab or "Today" in lab or "State-model" in lab:
-                    keys = []
-                if n < len(pairs) - 1:
-                    flush((cur, keys, [txt]))
-                else:
-                    item, last = keys, txt  # the last item may continue on the next lines
-            cur_item = (cur, item, [last])
-            continue
-        if item and cur_item:
-            cur_item[2].append(line)
-    flush(cur_item)
-    return widgets
-
-
 # ----------------------------------------------------------------------------------------- checking
 
 def norm_value(n: str) -> str:
@@ -272,9 +168,9 @@ def norm_value(n: str) -> str:
 
 
 class Checker:
-    def __init__(self, cat=CAT):
-        self.v = core_vocab()
-        self.cat_text = Path(cat).read_text()
+    def __init__(self, cat=CAT, core_text=None, cat_text=None):
+        self.v = core_vocab(core_text)
+        self.cat_text = Path(cat).read_text() if cat_text is None else cat_text
         self.w = catalogue_index(self.cat_text)
         self.all_variants = set().union(*(x["variants"] for x in self.w.values()))
         self.all_flags = set().union(*(x["flags"] for x in self.w.values()))
@@ -596,7 +492,10 @@ class Checker:
 
     # -- files
     def check_trace(self, key, path):
-        for i, line in enumerate(path.read_text().splitlines(), 1):
+        self.check_trace_text(key, path.read_text())
+
+    def check_trace_text(self, key, text):
+        for i, line in enumerate(text.splitlines(), 1):
             if not line.startswith("| ") or line.startswith("| Row") or line.startswith("|---"):
                 continue
             cells = [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
@@ -786,8 +685,216 @@ def platform_values(text):
     return out
 
 
+SELF_TEST_CORE = """
+```rust
+pub enum StateFlag { Hover, Pressed, Selected, Disabled, Shared(SharedFlag), Widget(Key) }
+pub enum SharedFlag { Empty }
+pub enum Condition { WindowInactive, ContrastHigh }
+pub enum Scheme { Light, Dark }
+pub enum InputKind { Touch, Mouse }
+pub enum Idiom { Phone, Pad }
+pub enum Posture { Tabletop }
+pub enum ControlSize { Small, Regular }
+pub enum Density { Compact, Keyed(Key) }
+pub enum SizeClass { Compact, Regular }
+pub enum SurfaceSet { View, Header }
+pub struct SurfaceRoles { pub background: Paint, pub foreground: Paint }
+pub struct GlobalRoles { pub accent: Paint, pub status: Status }
+pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: Motion }
+pub struct PartStyle { pub fill: X, pub stroke: X, pub corners: X, pub text: X, pub focus: X, pub padding: X }
+pub struct ElementData { pub progress: f32 }
+pub struct TextRoles { pub body: X }
+pub struct TextTokens { pub roles: X, pub keyed: X, pub scaling: X }
+pub struct TextStyle { pub font: Font, pub fill: X }
+pub struct Font { pub size: X, pub weight: X }
+pub struct IconStyle { pub size: X }
+pub struct Glyph { pub stroke: X }
+pub struct GlyphStroke { pub width: X }
+pub struct FocusIndicator { pub width: X, pub corners: X }
+pub struct Corners { pub radius: X }
+pub struct Stroke { pub top: X }
+pub struct Transform { pub scale: X }
+pub struct Caret { pub width: X }
+pub struct Behavior { pub focus_visible_when: X }
+pub struct ScrollPhysics { pub friction: X }
+pub struct TouchBehavior { pub slop: X }
+pub struct FontFallbacks { pub emoji: X }
+pub struct TextRendering { pub hinting: X }
+pub struct KdeTokens { pub disabled: KdeEffects, pub frame_width: X }
+pub struct KdeEffects { pub intensity_amount: X }
+pub struct MaterialScheme { pub primary: X }
+pub struct Material { pub blur: X }
+pub enum PlacementStrategy { Below, Above }
+pub enum PresentationEvent { Appear, Keyed(Key) }
+pub enum PresentationKind { Fade }
+pub enum FocusVisibleWhen { Always, Keyboard }
+```
+"""
+
+SELF_TEST_CATALOGUE = """
+## Buttons and toggles
+
+### button
+
+- **Parts:**
+  - `body` — the root: `fill`, `stroke`, `corners`, `focus`.
+  - `label` — the text: `text`.
+- **Widget values:** `icon_text_gap_px: Value<Px>`.
+- **Variants:** typed `flat`; keyed `@osd`.
+- **Flags:** keyed `@busy`.
+
+## Overlays
+
+### menu
+
+- **Parts:**
+  - `body` — the root: `fill`.
+  - `item` *(element)* — one item: `fill`.
+
+## Keyed components
+
+#### component.led (kde)
+
+- **Parts:**
+  - `body` — the root: `fill`.
+"""
+
+# (string, the problems check_string reports as (kind, name)): a passing and a failing case per rule
+SELF_TEST_STRINGS = [
+    ("button.body.fill @ {hover}", []),
+    ("button.values.icon_text_gap", []),
+    ("button.values.nope", [("value", "button.values.nope")]),
+    ("button.label.text", []),
+    ("button.nope.fill", [("part", "button.nope")]),
+    ("button.label.text.font.size", []),
+    ("button.body.nope", [("field", "button.body.nope")]),
+    ("button.label.text.font.nope", [("field", "button.label.text.font.nope")]),
+    ("component.led.body.fill", []),
+    ("component.ghost.body.fill", [("widget", "component.ghost")]),
+    ("wrap_box.body.fill", [("widget", "wrap_box")]),
+    ("button.body.fill @ context component.led.body", []),
+    ("button.body.fill @ context component.ghost", [("widget", "component.ghost")]),
+    ("button.body.corners = widget.body.corners", []),
+    ("button.body.corners = widget.nope.corners", [("widget-ref", "button: widget.nope")]),
+    ("role.view.background role.global.status.error.fill", []),
+    ("role.view.nope", [("role", "role.view.nope")]),
+    ("role.nope", [("role", "role.nope")]),
+    ("token.text.roles.body token.kde.disabled.intensity_amount", []),
+    ("token.nope", [("token", "token.nope")]),
+    ("token.text.roles.nope", [("token", "token.text.roles.nope")]),
+    ("surface.background", []),
+    ("surface.nope", [("surface", "surface.nope")]),
+    ("element.progress", []),
+    ("element.nope", [("element", "element.nope")]),
+    ("button.body.fill @ {@busy, empty, !disabled}", []),
+    ("button.body.fill @ {nope}", [("flag", "nope")]),
+    ("button.body.fill @ {@nope}", [("flag", "@nope")]),
+    ("button.body.fill @ variant flat", []),
+    ("button.body.fill @ variant @osd", []),
+    ("button.body.fill @ variant nope", [("variant", "nope")]),
+    ("menu.item.fill @ variant flat", [("variant", "flat")]),
+    ("button.body.fill @ cond scheme:dark", []),
+    ("button.body.fill @ cond container_size:sidebar:small", []),
+    ("button.body.fill @ cond nope", [("condition", "nope")]),
+    ("button.body.fill @ cond scheme:nope", [("condition", "scheme:nope")]),
+    ("button.body.fill @ size small", []),
+    ("button.body.fill @ size nope", [("size", "nope")]),
+    ("button.body.fill @ h_size_class compact", []),
+    ("button.body.fill @ h_size_class nope", [("size_class", "nope")]),
+    ("FocusVisibleWhen::Keyboard", []),
+    ("FocusVisibleWhen::Nope", [("focus_visible_when", "Nope")]),
+    ("PlacementStrategy::Below", []),
+    ("PlacementStrategy::Nope", [("placement", "Nope")]),
+    ("button.body.fill @ cond system_setting:reduce_motion", []),
+    ("button.body.fill @ {system_setting reduce_motion}",
+     [("notation", "{system_setting x} (write `cond system_setting:x`)")]),
+    ("button.body.fill @ {hover|pressed}", [("notation", "{a|b}")]),
+    ("button.body.fill @ container_size(sidebar, small)",
+     [("notation", "container_size(w, k) (write `container_size:w:k`)")]),
+    ("button.body.fill @ condition window_inactive", [("notation", "condition (write `cond <name>`)")]),
+    ("button.body.fill @ ctx menu", [("notation", "ctx (write `context`)")]),
+    ("button.body.fill @ !{hover}", []),
+    ("button.body.fill @ not {hover}", [("notation", "not {a} (write `!{a}`)")]),
+    ("button.body.fill @ pos parity odd", []),
+    ("button.body.fill @ pos odd", [("notation", "pos odd (write `pos parity odd`)")]),
+]
+
+SELF_TEST_TRACE = """
+| Row | Target | Kind |
+|---|---|---|
+| R-1 | `button.body.fill @ {hover}` | rule |
+| R-2 | `button.label.text (TextSlot)` | field |
+| R-3 | `button.body.corners = Radius::FollowPart` | field |
+| R-4 | `button.body.focus.corners = Radius::FollowPart` | field |
+| R-5 | `menu.item.fill @ {selected}` | rule |
+| R-6 | `menu.item.fill @ {selected} context combo_box` | rule |
+| R-7 | `reader:kde:nope.nope` | reader |
+| R-8 | - (nope.nope) | out (R1.1) |
+| R-9 | `button.nope` | field |
+"""
+
+SELF_TEST_BAD_CATALOGUE = """
+## Notes
+
+- **may_be_absent:** fields: `body.min_width` (`adwaita`: none), `body.fill` (`adwaita`).
+- Old: `TextSlot`.
+- `button.body.corners = Radius::FollowPart`.
+- `button.body.focus.corners = Radius::FollowPart`.
+
+## Rename table
+
+| `TextSlot` | `button.nope` |
+"""
+
+
+def self_test() -> int:
+    failures = []
+    ck = Checker(core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE)
+    if sorted(ck.w) != ["button", "component.led", "menu"]:
+        failures.append(f"index: got {sorted(ck.w)}")
+    if ck.v["state_flags"] != {"hover", "pressed", "selected", "disabled"} or ck.v["densities"] != {"compact"}:
+        failures.append(f"core vocabulary: got {ck.v['state_flags']}, {ck.v['densities']}")
+    for s, want in SELF_TEST_STRINGS:
+        ck.problems = []
+        ck.check_string("t", 1, s)
+        got = sorted((p[2], p[3]) for p in ck.problems)
+        if got != sorted(want):
+            failures.append(f"{s!r}: got {got}, want {sorted(want)}")
+    ck.problems = []
+    ck.check_catalogue()
+    if ck.problems:
+        failures.append(f"clean catalogue: got {ck.problems}")
+    ck.problems = []
+    ck.check_trace_text("trace", SELF_TEST_TRACE)
+    got = [(p[1], p[2], p[3]) for p in ck.problems]
+    want = [(5, "old-name", r"\bTextSlot\b"), (6, "follow-part", "FollowPart outside a focus indicator"),
+            (8, "menu-selected", "{selected} on a menu item outside context combo_box (S7.2)"),
+            (12, "part", "button.nope")]
+    if got != want:
+        failures.append(f"trace: got {got}, want {want}")
+    bad = Checker(core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE + SELF_TEST_BAD_CATALOGUE)
+    bad.check_catalogue()
+    got = [(p[1], p[2], p[3]) for p in bad.problems]
+    n = SELF_TEST_CATALOGUE.count("\n")
+    want = [(n + 4, "absent-size-limit", "body.min_width"), (n + 5, "old-name", r"\bTextSlot\b"),
+            (n + 6, "follow-part", "FollowPart outside a focus indicator")]
+    if got != want:
+        failures.append(f"catalogue: got {got}, want {want}")
+    got = [(i, v) for i, v, _ in platform_values("a 12px gap, 250 ms\nS2.4, <8px, #a1b2c3, bold, InOutCubic")]
+    want = [(1, "12px"), (1, "250 ms"), (2, "#a1b2c3"), (2, "bold"), (2, "InOutCubic")]
+    if got != want:
+        failures.append(f"platform values: got {got}, want {want}")
+    for failure in failures:
+        print(f"self-test FAIL: {failure}", file=sys.stderr)
+    if not failures:
+        print("self-test ok")
+    return 1 if failures else 0
+
+
 def main():
     args = sys.argv[1:]
+    if args == ["--self-test"]:
+        sys.exit(self_test())
     cat = CAT
     if "--cat" in args:
         cat = Path(args[args.index("--cat") + 1])
