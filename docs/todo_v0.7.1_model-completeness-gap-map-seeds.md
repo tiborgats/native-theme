@@ -23,7 +23,7 @@ Group citations are the representative sites read in full; a line ending "(not e
 - docs/todo.md:2864-2866 — theme `shadow` flag one reader; `ButtonVariant::shadow` false
 - docs/todo.md:1540-1543 — windows-11 `defaults.shadow_color` one colour serves popup and window shadows
 - docs/todo.md:1160-1167 — "platform-facts: no shadow rows for the toolbar and the list"
-- docs/platform-facts.md:1057 — `shadow_color` row (Chapter 2 global colours)
+- docs/platform-facts.md@fc6109d1:1057 — `shadow_color` row (Chapter 2 global colours)
 
 ## G02 shadow on a specific widget: progress bar, slider thumb, expander, scrollbar, popup
 - docs/todo.md:212-227 — "Slider: the thumb's outline or shadow" (soft shadow on macOS 26 knob; geometry not in model)
@@ -226,7 +226,7 @@ Group citations are the representative sites read in full; a line ending "(not e
 - docs/todo.md:2681-2688 — "a whole category the model is missing": `Theme::motion`
 - ROADMAP.md:91-92 — "motion, among others"
 - connectors/native-theme-gpui/src/widgets/progress.rs:139 — see G10
-- docs/platform-facts.md:1128-1130 — `reduce_motion`, `high_contrast`, `reduce_transparency` (**(none)** cells in KDE/GNOME, see none list)
+- docs/platform-facts.md@fc6109d1:1128-1130 — `reduce_motion`, `high_contrast`, `reduce_transparency` (**(none)** cells in KDE/GNOME, see none list)
 
 ## G27 text colours and fonts: `*_text_color` meanings, selection text, markdown inline code, window label
 - docs/todo.md:910 — "### Model: one `*_text_color` field, two meanings"
@@ -281,7 +281,7 @@ Group citations are the representative sites read in full; a line ending "(not e
 - docs/todo.md:3886 — `system_icon_set()` returns Material on other platforms
 - connectors/native-theme-gpui/src/icons.rs (3 hits) (not expanded)
 - connectors/native-theme-iced/src/icons.rs? — no hits
-- docs/platform-facts.md:1137-1140 — icon sizes `small`/`large`/`dialog`/`panel` with (none) cells (see none list)
+- docs/platform-facts.md@fc6109d1:1137-1140 — icon sizes `small`/`large`/`dialog`/`panel` with (none) cells (see none list)
 
 ## G34 windows-11 values with no field (menu, combo, window)
 - docs/todo.md:1504-1543 — "windows-11: values WinUI 3 states no source for"; "WinUI 3 states no selected-text foreground"
@@ -309,230 +309,230 @@ Group citations are the representative sites read in full; a line ending "(not e
 Format: platform-facts.md:LINE — row name — platform column — excerpt (first 220 chars). Cells counted: 224 (one line per cell; a line of the file may hold more than one).
 Column names for Chapter 1 tables are the section (e.g. 1.1.4 Widget Metrics = macOS, "macOS" section); 'value column' means the table's Value column under that section.
 
-platform-facts.md:65 — `+monospacedSystemFontOfSize:weight:` — 1.1.1 Fonts (value column) — ✅ · macOS 26: the same face as on 14.8.9 and 15.7.9, `.AppleSystemUIFontMonospaced` 13pt, weight trait 0 ([probe 26 :161-165](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml#L161-L165)); whether
-platform-facts.md:68 — `+menuBarFontOfSize:` — 1.1.1 Fonts (value column) — ❓ weight undocumented; no evidence of SemiBold; likely Regular like other font methods · the OS probe settles it: 13pt, weight trait 0 (Regular) on 14.8.9 and 15.7.9 ([probe 14 :84-88](evidence/os-probe/2026-10-11-run-38
-platform-facts.md:164 — `NSTextInsertionIndicator` — 1.1.2 Colors (value column) — ✅ · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:177 — Window corner radius — 1.1.3 Geometry (value column) — ✅ multiple sources confirm through Sequoia; macOS Tahoe (26) uses variable radii per window style — 16pt (title-bar-only) confirmed by [macos-corner-fix](https://github.com/m4rkw/macos-corner-fix); toolbar window radii: 
-platform-facts.md:178 — Control corner radius — 1.1.3 Geometry (value column) — ❓ no AppKit source: WebKit's `baseBorderRadius = 5` ([`RenderThemeMac.mm:1351`](https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1351), used a
-platform-facts.md:179 — Frame/border width — 1.1.3 Geometry (value column) — ❓ measured, no Apple docs · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:181 — Scrollbar width — 1.1.3 Geometry (value column) — ✅ Gecko [`ScrollbarDrawingCocoa.cpp`](https://searchfox.org/mozilla-central/source/widget/ScrollbarDrawingCocoa.cpp): overlay non-hovered thumb = 7px, hovered = 11px; Chromium [`native_theme_mac.mm`](https://github.com/c
-platform-facts.md:183 — Focus ring offset — 1.1.3 Geometry (value column) — ❓ measured, no Apple docs; WebKit [`RenderThemeCocoa.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm) notes "macOS controls have never honored outline offset" — focus ri
-platform-facts.md:185 — Drop shadows — 1.1.3 Geometry (value column) — ✅ · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:199 — NSButton — 1.1.4 Widget Metrics (value column) — ❓ The legacy HIG 12px is inter-button *spacing*, not internal padding. Gecko [`nsNativeThemeCocoa.mm`](https://searchfox.org/mozilla-central/source/widget/cocoa/nsNativeThemeCocoa.mm) `pushButtonSettings` margins `IntMar
-platform-facts.md:209 — NSScroller — 1.1.4 Widget Metrics (value column) — ✅ Gecko [`ScrollbarDrawingCocoa.cpp`](https://searchfox.org/mozilla-central/source/widget/ScrollbarDrawingCocoa.cpp): overlay non-hovered thumb thickness = 7px (8px base − 1px overlay reduction), hovered = 11px; Chromium
-platform-facts.md:210 — NSTabView — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:211 — NSTabView — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:212 — NSMenuItem — 1.1.4 Widget Metrics (value column) — ❓ measured, plausible · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:213 — NSMenuItem — 1.1.4 Widget Metrics (value column) — ❓ measured; Chromium [`menu_config.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/ui/views/controls/menu/menu_config.cc) corroborates `item_horizontal_border_padding = 12` · macOS 26: ❓ — no source
-platform-facts.md:214 — NSToolTipManager — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:216 — NSTableView — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:217 — NSToolbar — 1.1.4 Widget Metrics (value column) — ❓ measured; varies by config · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:218 — NSToolbar — 1.1.4 Widget Metrics (value column) — ✅ HIG: "8 pixels between toolbar controls" · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:226 — NSPopUpButton — 1.1.4 Widget Metrics (value column) — ❓ measured visible indicator; note: WebKit total right-padding is 26px (includes arrow + surrounding space); the OS probe's render (macOS 14.8.9) shows no boundary of an arrow area to measure ([render](evidence/os-probe/
-platform-facts.md:228 — NSSegmentedControl — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:229 — NSDisclosureButton — 1.1.4 Widget Metrics (value column) — ❓ measured visible triangle; Gecko `nsNativeThemeCocoa.mm`: cell=21×21px — visible triangle is a subset of the cell · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:238 — Between related controls — 1.1.5 Layout Spacing (value column) — ❓ oversimplified: HIG says 12px for regular push buttons, 8px for mini/icon · macOS 26: same, `NSStackView.spacing`'s default 8 ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsstackview/spacing.
-platform-facts.md:239 — Between unrelated groups — 1.1.5 Layout Spacing (value column) — ❓ 20pt is documented as superview-edge margin, not specifically inter-group · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:240 — Label to its associated control — 1.1.5 Layout Spacing (value column) — ✅ HIG: 8px for regular, 6px small, 5px mini · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:242 — Compact spacing (toolbar items) — 1.1.5 Layout Spacing (value column) — ✅ HIG: "8 pixels between toolbar controls" · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:256 — Sidebar (small) — 1.1.6 Icon Sizes (value column) — ✅ Apple HIG Sidebars page (macOS, 2022 archived); metrics table removed from current HIG ~2024 · macOS 26: ❓ — no source gives its macOS 26 value: the current HIG gives no sidebar metrics ([HIG sidebars](https://develope
-platform-facts.md:257 — Sidebar (medium) — 1.1.6 Icon Sizes (value column) — ✅ same source; pre-Big Sur was 18pt (legacy CoreTypes.bundle sizes) · macOS 26: ❓ — no source gives its macOS 26 value (as the small row)
-platform-facts.md:258 — Sidebar (large) — 1.1.6 Icon Sizes (value column) — ✅ same source; pre-Big Sur was 32pt · macOS 26: ❓ — no source gives its macOS 26 value (as the small row)
-platform-facts.md:259 — Menu item — 1.1.6 Icon Sizes (value column) — ❓ inferred from system font size · macOS 26: ❓ — no source gives its macOS 26 value; on 27 NSMenu hides item images by default
-platform-facts.md:260 — Menu bar extra — 1.1.6 Icon Sizes (value column) — ❓ community best-practice (Bjango), not official · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:374 — `DwmGetColorizationColor` — 1.2.2 Colors (value column) — ❓ no source ties it to the title bar; #006fc4, alpha 0xe3, on `windows-11-arm`, where `ColorPrevalence` (accent on title bars) is 0 ([probe.toml:763](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/p
-platform-facts.md:402 — Disabled opacity — 1.2.3 Geometry (value column) — ❓ no global disabled opacity; WinUI3 uses per-control `*Disabled` color brushes; 0.55 was legacy Win8.x/UWP — current WinUI3 value is 0.3
-platform-facts.md:413 — Button — 1.2.4 Widget Metrics (value column) — ❓ no `ButtonMinHeight` resource; effective=14px text + 5+6 padding + 2 border = 27px; `ContentDialogButtonHeight=32` is dialog-specific
-platform-facts.md:416 — Button — 1.2.4 Widget Metrics (value column) — ❓ hardcoded `Margin="8,0,0,0"` in DropDownButton template; no named XAML resource; consistent with Fluent 2 `size80` spacing
-platform-facts.md:424 — Scrollbar (WinUI3) — 1.2.4 Widget Metrics (value column) — ❓ XAML template inline value; expands on pointer proximity
-platform-facts.md:425 — Scrollbar (WinUI3) — 1.2.4 Widget Metrics (value column) — ❓ 6 = `ScrollBarSize` 12 less two 3px halves of `ScrollBarThumbStrokeThickness` 6, a derivation no source states; the template's named resources are `ScrollBarSize` 12, `ScrollBarVerticalThumbMinWidth` 8 and `ScrollBarTh
-platform-facts.md:434 — Menu item — 1.2.4 Widget Metrics (value column) — ❓ Win32 formula (from [Wine `menu.c`](https://github.com/wine-mirror/wine/blob/master/dlls/user32/menu.c) / [ReactOS `menu.c`](https://github.com/nicknisi/reactos/blob/master/win32ss/user/ntuser/menu.c)): `max(text_heigh
-platform-facts.md:1057 — `shadow_color` — Windows — **(Fluent)** two-layer per elevation (from [Fluent 2 spec](https://fluent2.microsoft.design/elevation)): low L=14%/14% D=28%/14%; high L=24%/20% D=28%/20% (note: FluentUI React web tokens use different opacities). The sa
-platform-facts.md:1110 — `focus_ring_offset` — macOS — -1px **(measured)** (inset) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1116 — `border.corner_radius` — macOS — 5px **(measured)** ❓ no AppKit source (§1.1.3) · macOS 26: 6 **(WebKit)**, the push button's and pop-up's (§1.1.3); the text field's 5
-platform-facts.md:1117 — `border.corner_radius_lg` — macOS — 10px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1118 — `border.line_width` — macOS — 0.5px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1121 — `border.shadow_enabled` — macOS — yes · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1137 — `small` — macOS — sidebar: 16–20pt · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1138 — `large` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1139 — `dialog` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1140 — `panel` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1164 — `title_bar_font.style` — macOS — `+titleBarFontOfSize:` → Normal · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1167 — `inactive_title_bar_text_color` — macOS — **(none)** — system-managed · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1168 — `border.corner_radius` — macOS — 10px **(measured)** through Sequoia (compositor-controlled, not inherited — happens to equal `defaults.border.corner_radius_lg`); Tahoe (26): variable per window style, no public API (see appendix) · macOS 26: ❓ (the Tah
-platform-facts.md:1170 — `border.padding_horizontal` — macOS — **(none)** — use §2.20 layout margins · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1171 — `border.padding_vertical` — macOS — **(none)** — use §2.20 layout margins · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1182 — `min_width` — macOS — **(none)** — sizes to content · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1187 — `icon_text_gap` — macOS — 4 **(measured)** AppKit · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1192 — `hover_background` — macOS — **(measured)** subtle CoreUI highlight · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1194 — `checked_background` — macOS — **(none)** — AppKit publishes no colour for a push-on/push-off `NSButton` that is on; its bezel is its own · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1195 — `checked_text_color` — macOS — **(none)** — not published · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1196 — `active_background` — macOS — ❓ — AppKit publishes no fill for a pressed push button, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/push_button-regular@2x.png)) · macOS 
-platform-facts.md:1197 — `active_text_color` — macOS — ❓ — not published, and not rendered by the OS probe · macOS 26: ❓ — the same
-platform-facts.md:1218 — `hover_border_color` — macOS — ❓ — AppKit publishes no hover colour for a text field's bezel, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/text_field-regular@2x.png)) · 
-platform-facts.md:1219 — `focus_border_color` — macOS — ❓ for the bezel line: AppKit shows focus with the focus ring around the field, `keyboardFocusIndicatorColor`, "The color to use for the keyboard focus ring around controls" ([docs](https://developer.apple.com/tutorials/d
-platform-facts.md:1220 — `disabled_background` — macOS — ❓ — AppKit publishes no disabled field fill, and the OS probe renders no disabled text field (its disabled renders are the push button, checkbox, radio, switch and slider) · macOS 26: ❓ — the same
-platform-facts.md:1232 — `indicator_color` — macOS — white (#ffffff) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1237 — `border.padding_horizontal` — macOS — **(none)** — checkmark fills indicator · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1238 — `border.padding_vertical` — macOS — **(none)** — checkmark fills indicator · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1244 — `hover_background` — macOS — ❓ — AppKit publishes no hover state for a checkbox, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/checkbox-regular-off@2x.png)) · macOS 26:
-platform-facts.md:1245 — `disabled_background` — macOS — **(measured)** for the unchecked box, ❓ for the checked one. macOS 14–15: a disabled unchecked box, fill and edge, is the enabled one at half its alpha, #ffffff80 / #ffffff1b where the enabled box is #ffffff / #ffffff37 
-platform-facts.md:1253 — `background_color` — macOS — **(measured)** ≈ `defaults.background_color` (vibrancy) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1253 — `background_color` — Windows — `COLOR_MENU` — Windows 10+: not supported (§1.2.2); #f0f0f0 on the three Windows probe images ([probe.toml:343](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml#L343)). WinUI3 `MenuFlyoutPr
-platform-facts.md:1254 — `separator_color` — macOS — **(measured)** = `separatorColor` · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1258 — `font.style` — macOS — `+menuFontOfSize:` → Normal · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1259 — `font.color` — macOS — **(measured)** = `labelColor` · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1260 — `row_height` — macOS — NSMenuItem: 22 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1260 — `row_height` — Windows — ❓ — WinUI3 `MenuFlyoutItem` has no MinHeight (`MenuFlyoutThemeMinHeight` 32 is the presenter's, [MenuFlyout_themeresources.xaml:256, :284](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df75259
-platform-facts.md:1261 — `border.padding_horizontal` — macOS — NSMenuItem: 12 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1262 — `border.padding_vertical` — macOS — 3 **(measured)** (22−16)/2 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1263 — `border.color` — macOS — **(none)** — popup border from §2.16 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1264 — `border.line_width` — macOS — **(none)** — popup border from §2.16 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1265 — `border.corner_radius` — macOS — **(none)** — items are rectangular · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1266 — `border.shadow_enabled` — macOS — **(none)** — popup shadow from §2.16 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1267 — `icon_text_gap` — macOS — 4 **(measured)** AppKit layout · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1268 — `icon_size` — macOS — 16 **(cross-project)** — no Apple API constant; Qt/Firefox/Ladybird/Godot all use 16×16 for NSMenuItem images · macOS 26: ❓ — no source gives its macOS 26 value; on 27 NSMenu hides item images by default
-platform-facts.md:1269 — `hover_background` — macOS — `selectedContentBackgroundColor` · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1277 — `background_color` — macOS — **(preset)** L #2c2c2e D #3a3a3c · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1281 — `font.style` — macOS — `+toolTipsFontOfSize:` → Normal · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1282 — `font.color` — macOS — **(preset)** #ffffff (both variants) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1283 — `border.padding_horizontal` — macOS — NSToolTipManager: 4 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1284 — `border.padding_vertical` — macOS — NSToolTipManager: 4 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1285 — `max_width` — macOS — 300 **(measured)** macOS Sonoma · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1287 — `border.color` — macOS — **(measured)** subtle frame · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1289 — `border.shadow_enabled` — macOS — yes (system popup shadow) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1290 — `show_delay` — macOS — ❓ — undocumented: neither `NSView.toolTip` ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsview/tooltip.json)) nor the HIG's *Offering help* ("tooltips can appear when a person holds the pointer
-platform-facts.md:1304 — `track_color` — macOS — mode-dependent: overlay=transparent, legacy=light gray **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1305 — `thumb_color` — macOS — `#80808080` **(measured)** Sonoma · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1306 — `thumb_hover_color` — macOS — `#60606080` **(measured)** Sonoma · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1308 — `min_thumb_length` — macOS — 40 **(measured)** legacy mode · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1309 — `thumb_width` — macOS — mode-dependent: legacy=15 (fills groove), overlay=7 (idle) / 11 (hover) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1310 — `overlay_mode` — Windows — `UISettings.AutoHideScrollBars` (Bool, the *Automatically hide scroll bars* setting, 10.0.18362+; it "returns the specified user setting, not whether a specific scroll bar is visible", [UISettings.AutoHideScrollBars](htt
-platform-facts.md:1311 — `thumb_active_color` — macOS — ❓ — NSScroller publishes no colour for a dragged knob; `selectedKnobColor`, "The system color used for the slider knob when it is selected", is deprecated since macOS 11 ("Use NSScroller instead", [docs](https://develope
-platform-facts.md:1324 — `thumb_hover_color` — macOS — ❓ — AppKit publishes no hover colour for a slider knob, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/slider-regular@2x.png)); whether a la
-platform-facts.md:1336 — `min_width` — macOS — **(none)** — no minimum · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1339 — `border.color` — macOS — **(none)** — not read · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1340 — `border.line_width` — macOS — **(none)** — not read · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1350 — `min_width` — macOS — **(none)** — sizes to label · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1351 — `min_height` — macOS — NSTabView: 24 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1352 — `border.padding_horizontal` — macOS — NSTabView: 12 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1353 — `border.padding_vertical` — macOS — 4 **(measured)** (24−16)/2 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1354 — `border.color` — macOS — **(none)** — CoreUI bezel is a multi-color composite, no single extractable color · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1355 — `border.line_width` — macOS — **(none)** — CoreUI bezel is a multi-stroke composite, no single line width · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1356 — `border.corner_radius` — macOS — **(none)** — CoreUI bezel corners baked into `.car` assets, no queryable constant · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1357 — `border.shadow_enabled` — macOS — no — bezel creates visual depth via edge shading, not a drop shadow · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1361 — `active_indicator_color` — macOS — **(none)** — not published (see `item_gap`): no selection line is described · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1362 — `active_indicator_width` — macOS — **(none)** — no line · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1363 — `active_indicator_side` — macOS — **(none)** — no line · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1364 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a tab, and the OS probe renders no tab view · macOS 26: ❓ — the same
-platform-facts.md:1365 — `hover_text_color` — macOS — ❓ — not published · macOS 26: ❓ — the same
-platform-facts.md:1366 — `active_outward_corner_radius` — macOS — ❓ — AppKit publishes no tab shape: the selected tab is a CoreUI bezel (see `border.corner_radius`) · macOS 26: ❓ — the same
-platform-facts.md:1377 — `border.corner_radius` — macOS — **(none)** — rectangular pane · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1378 — `border.shadow_enabled` — macOS — **(none)** — no shadow · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1379 — `hover_background` — macOS — ❓ — no source: AppKit publishes no hover colour for a sidebar item (NSColor has none) and no Apple guidance describes one (HIG *Lists and tables*, *Sidebars*, read 2026-10-26), and the OS probe renders none hovered: its 
-platform-facts.md:1380 — `border.padding_horizontal` — macOS — ❓ — AppKit publishes no inset between a sidebar and its rows, and the OS probe's sidebar is an empty `NSVisualEffectView` of the sidebar material, holding no rows to measure an inset from ([probe 14 :3247](evidence/os-pr
-platform-facts.md:1380 — `border.padding_horizontal` — KDE — ❓ — the sidebar is named (`GlobalDrawer`, `background_color` above), but its padding is not stated: the drawer pads itself by the window's safe-area margins alone, a device inset rather than the style's ([controls/Global
-platform-facts.md:1381 — `border.padding_vertical` — macOS — ❓ — as across · macOS 26: ❓ — the same
-platform-facts.md:1381 — `border.padding_vertical` — Windows — ❓ — no one value: above the item list the pane stacks a top padding, a toggle-button row and a search area (`PaneContentGrid`, NavigationView.xaml:291-350); each item's fill sits 2 inside its slot above and below (`Navig
-platform-facts.md:1381 — `border.padding_vertical` — KDE — ❓ — as across
-platform-facts.md:1390 — `bar_height` — macOS — NSToolbar: 38 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1391 — `item_gap` — macOS — AppKit: 8 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1392 — `border.padding_horizontal` — macOS — 8 **(measured)** NSToolbar · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1393 — `border.padding_vertical` — macOS — 0 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1396 — `border.color` — macOS — ❓ — the toolbar's lower edge is the window's title-bar separator, `NSWindow.titlebarSeparatorStyle`, whose default is `.automatic`, "A style indicating that the system determines the type of separator" (macOS 11+, [docs]
-platform-facts.md:1397 — `border.corner_radius` — macOS — ❓ — not published · macOS 26: ❓ — the HIG has toolbar controls' "corner radii that are concentric with bar corners" and gives the bar's none ([HIG toolbars](https://developer.apple.com/tutorials/data/design/human-interfa
-platform-facts.md:1398 — `border.line_width` — macOS — ❓ — the same title-bar separator: a `.line`, a `.shadow` or `.none` as the system chooses under `.automatic` (docs, as `border.color`); no width is published · macOS 26: ❓ — the same
-platform-facts.md:1399 — `border.shadow_enabled` — macOS — ❓ — `NSTitlebarSeparatorStyle.shadow`, "A style indicating that the title bar separator is a shadow", is one of the styles `.automatic` chooses from (docs, as `border.color`) · macOS 26: ❓ — the same
-platform-facts.md:1412 — `border.corner_radius` — macOS — **(none)** — rectangular bar · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1413 — `border.shadow_enabled` — macOS — **(none)** — no shadow · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1424 — `alternate_row_background` — Windows — **(preset)** L #f9f9f9 D #262626 ❓ — no WinUI3 source
-platform-facts.md:1433 — `border.padding_horizontal` — macOS — NSTableView: 4 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1434 — `border.padding_vertical` — macOS — 4 **(measured)** (24−16)/2 · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1435 — `hover_background` — macOS — ❓ — no source: AppKit publishes no hover colour for a table row (NSColor has none) and no Apple guidance describes one (HIG *Lists and tables*, *Sidebars*, read 2026-10-26), and the OS probe renders none hovered: its key
-platform-facts.md:1436 — `hover_text_color` — macOS — ❓ — AppKit publishes no hover colour for a table row · macOS 26: ❓ — the same
-platform-facts.md:1437 — `disabled_text_color` — macOS — ← `defaults.disabled_text_color`: `disabledControlTextColor` (§2.3 `disabled_text_color`); a disabled cell's text does change, "The text of disabled cells is gray" ([NSCell.isEnabled](https://developer.apple.com/tutorial
-platform-facts.md:1438 — `border.color` — macOS — ❓ — a table's frame is its enclosing NSScrollView's, `borderType`, "A value that specifies the appearance of the scroll view's border" ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsscrollview/
-platform-facts.md:1439 — `border.corner_radius` — macOS — ❓ — not published (`border.color`) · macOS 26: ❓ — the same
-platform-facts.md:1440 — `border.line_width` — macOS — ❓ — not published (`border.color`) · macOS 26: ❓ — the same
-platform-facts.md:1441 — `border.shadow_enabled` — macOS — ❓ — not published · macOS 26: ❓ — the same
-platform-facts.md:1457 — `border.color` — macOS — ❓ — AppKit publishes no edge colour for a popover or a pop-up menu, and the OS probe renders neither · macOS 26: ❓ — the same
-platform-facts.md:1458 — `border.line_width` — macOS — ❓ — as `border.color` · macOS 26: ❓ — the same
-platform-facts.md:1460 — `border.shadow_enabled` — macOS — yes (system popup shadow) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1461 — `border.padding_horizontal` — macOS — **(none)** — content provides own padding · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1462 — `border.padding_vertical` — macOS — **(none)** — content provides own padding · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1470 — `hover_color` — macOS — ❓ — `NSSplitView.dividerColor` (`divider_color` above) has no hover variant, and AppKit publishes none · macOS 26: ❓ — the same
-platform-facts.md:1504 — `container_margin` — macOS HIG — **(none)** — not specified · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1506 — `section_gap` — macOS HIG — 20 **(HIG)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1527 — `hover_checked_background` — macOS — ❓ — AppKit publishes no hover colour for a switch, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/switch-regular-on@2x.png)) · macOS 26: ❓ —
-platform-facts.md:1528 — `hover_unchecked_background` — macOS — ❓ — as `hover_checked_background` · macOS 26: ❓ — the same
-platform-facts.md:1532 — `unchecked_track_border_color` — macOS — ❓ — AppKit's `NSSwitch` and the HIG's *Toggles* name no outline ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsswitch.json), [HIG toggles](https://developer.apple.com/tutorials/data/design/huma
-platform-facts.md:1533 — `hover_unchecked_track_border_color` — macOS — ❓ — AppKit publishes no switch outline colours, and the OS probe renders the rest state only · macOS 26: ❓ — the same
-platform-facts.md:1534 — `disabled_unchecked_track_border_color` — macOS — ❓ — as `unchecked_track_border_color`: the macOS 14–15 disabled off render shows the same soft rim, the fill's 7/255 rising to 12/255 (L) and 20/255 (D) near the edge, where in the same column the enabled off track's 26/
-platform-facts.md:1535 — `checked_track_border_color` — macOS — ❓ — as `unchecked_track_border_color`: the macOS 14–15 on render shows the same kind of soft rim, alpha 88-91/255 along the straight edge over the fill's 64/255 ([D](evidence/os-probe/2026-10-11-run-38129819806/os-probe-
-platform-facts.md:1536 — `disabled_checked_track_border_color` — macOS — ❓ — the renders are not key and draw a disabled on track grey, not in the accent: macOS 14–15 #00000007 / #ffffff07 with the off track's kind of rim, 13/255 / 23/255 ([L](evidence/os-probe/2026-10-26-run-40348854007/os-p
-platform-facts.md:1537 — `track_border_line_width` — macOS — ❓ — as `unchecked_track_border_color` · macOS 26: off: **(measured)** 0 — no edge (`unchecked_track_border_color`); on: ❓ — the on render is the inactive window's (`checked_track_border_color`)
-platform-facts.md:1538 — `thumb_border_color` — macOS — ❓ — AppKit's `NSSwitch` and the HIG's *Toggles* name no outline ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsswitch.json), [HIG toggles](https://developer.apple.com/tutorials/data/design/huma
-platform-facts.md:1539 — `hover_thumb_border_color` — macOS — ❓ — AppKit publishes no switch outline colours, and the OS probe renders the rest state only · macOS 26: ❓ — the same
-platform-facts.md:1540 — `disabled_thumb_border_color` — macOS — ❓ — as `thumb_border_color`: the macOS 14–15 disabled render shows the same grey pixel between the knob and the track at about half its alpha (L: 113,113,113 at 34/255 above the knob; 80,80,80 at 48/255, then black at 34
-platform-facts.md:1541 — `thumb_border_line_width` — macOS — ❓ — as `thumb_border_color` · macOS 26: **(measured)** 0 — no ring (`thumb_border_color`)
-platform-facts.md:1551 — `border.shadow_enabled` — macOS — yes (sheet overlay) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1552 — `min_width` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1553 — `max_width` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1554 — `min_height` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1555 — `max_height` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1556 — `border.padding_horizontal` — macOS — ~20px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1557 — `border.padding_vertical` — macOS — ~20px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1558 — `button_gap` — macOS — ~12px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1561 — `title_font.size` — macOS — ✅ 13pt **(HIG)** — "emphasized system font" = `boldSystemFontOfSize:0` → `systemFontSize` (13pt); corroborated by Cocotron `NSAlert.m` · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1562 — `title_font.weight` — macOS — ✅ Bold (700) **(HIG)** — "emphasized system font" = `boldSystemFontOfSize:0`; corroborated by Cocotron `NSAlert.m` · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1563 — `title_font.style` — macOS — Normal · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1568 — `icon_size` — macOS — 64px (app icon) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1569 — `entrance` — macOS — ❓ — `NSWindow.AnimationBehavior` names styles only ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nswindow/animationbehavior-swift.enum.json)); the HIG's *Sheets* states no motion for macOS ([HIG
-platform-facts.md:1602 — `fill_color` — macOS — black (L) / white (D) fins at a graded alpha, the leading one 82/255 **(measured)** ❓ — the macOS 14.8.9 and 15.7.9 probe renders ([L](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/progress_
-platform-facts.md:1617 — `min_width` — macOS — **(none)** — sizes to content · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1619 — `arrow_icon_size` — macOS — macOS 14–15: the chevron is 12 × 20 px at 2× (6 × 10) **(measured)** ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/pop_up_button-regular@2x.png)) · macOS 26: 14 × 21 px at 2× (7 × 
-platform-facts.md:1620 — `arrow_area_width` — macOS — ~16–18px **(measured)** ❓ (the macOS 14.8.9 probe render shows no arrow-area boundary to measure, §1.1.4) · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1625 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a pop-up button, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/pop_up_button-regular@2x.png)) · ma
-platform-facts.md:1626 — `disabled_background` — macOS — ❓ — AppKit publishes no disabled pop-up fill, and the OS probe renders no disabled pop-up button (its disabled renders are the push button, checkbox, radio, switch and slider) · macOS 26: ❓ — the same
-platform-facts.md:1633 — `background_color` — macOS — NSSegmentedControl bg · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1635 — `font.color` — macOS — `controlTextColor` · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1639 — `separator_width` — macOS — 1px · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1640 — `border.padding_horizontal` — macOS — ~8–10px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1642 — `border.color` — macOS — NSSegmentedControl border · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1645 — `border.padding_vertical` — macOS — ~3px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1647 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a segment, and the OS probe renders the control at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/segmented_control-regular@2x.png
-platform-facts.md:1657 — `background_color` — macOS — ❓ — the macOS counterpart is the box, `NSBox` ("A stylized rectangular box with an optional title", [docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsbox.json)) or SwiftUI `GroupBox`, which "By def
-platform-facts.md:1658 — `border.color` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
-platform-facts.md:1659 — `border.line_width` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
-platform-facts.md:1660 — `border.corner_radius` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
-platform-facts.md:1661 — `border.shadow_enabled` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
-platform-facts.md:1675 — `header_height` — macOS — **(none)** — content-sized · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1676 — `arrow_icon_size` — macOS — ~13px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1677 — `border.padding_horizontal` — macOS — **(none)** — app-defined · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1678 — `border.padding_vertical` — macOS — **(none)** — app-defined · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1679 — `border.corner_radius` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1680 — `border.color` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1681 — `border.line_width` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1682 — `border.shadow_enabled` — macOS — **(none)** — no shadow · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1684 — `arrow_gap` — macOS — **(none)** — not documented · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1685 — `content_indent` — macOS — **(none)** — not documented · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1686 — `frame_enabled` — macOS — **(none)** — not documented · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1687 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a disclosure control · macOS 26: ❓ — the same
-platform-facts.md:1688 — `arrow_color` — macOS — ❓ — the disclosure button, `NSButton.BezelStyle.disclosure`, "A bezel style button for use with a disclosure triangle" ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsbutton/bezelstyle-swift.enu
-platform-facts.md:1695 — `visited_text_color` — macOS — **(none)** — same as link · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1696 — `underline_enabled` — macOS — yes · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1697 — `background_color` — macOS — **(none)** — inline · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1698 — `hover_background` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
-platform-facts.md:1699 — `hover_text_color` — macOS — ❓ — `linkColor` has no hover variant, and AppKit publishes none · macOS 26: ❓ — the same
-platform-facts.md:1700 — `active_text_color` — macOS — ❓ — not published · macOS 26: ❓ — the same
-platform-facts.md:1701 — `disabled_text_color` — macOS — ❓ — not published · macOS 26: ❓ — the same
-platform-facts.md:1738 — `menuBarFontOfSize:` weight — macOS (value column) — ❓ API exists ([Apple docs](https://developer.apple.com/documentation/appkit/nsfont/menubarfont(ofsize:))) but weight is not documented; no evidence of SemiBold — likely Regular like other font methods; needs verification
-platform-facts.md:1749 — Control corner radius = 5px — macOS (value column) — ❓ WebKit [`RenderThemeMac.mm:1351`](https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1351): `const int baseBorderRadius = 5`, for CSS-styled p
-platform-facts.md:1757 — NSButton (checkbox) indicator = 14px — macOS (value column) — ❓ WebKit [`ToggleButtonMac.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/mac/controls/ToggleButtonMac.mm): regular={14,14}; Gecko [`nsNativeThemeCocoa.mm`](https://github.com/mozilla/ge
-platform-facts.md:1760 — Other geometry/widget metrics (0.5px, padding values, etc.) — macOS (value column) — ❓ Apple does not publish these. All are measured values. Legacy scrollbar width = ✅ 15px, `scrollerWidth(for: .regular, scrollerStyle: .legacy)` on macOS 14.8.9 ([probe 14 :481](evidence/os-probe/2026-10-11-run-381298198
-platform-facts.md:1763 — NSButton horizontal padding ~8px — macOS (value column) — ❓ WebKit [`RenderThemeMac.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/rendering/mac/RenderThemeMac.mm) `controlPadding(PushButton)` = 8px horizontal; comment says "AppKit wants to use 11px for mini but
-platform-facts.md:1775 — `+toolTipsFontOfSize:` default size — macOS (value column) — ❓ [Apple API docs](https://developer.apple.com/documentation/appkit/nsfont/1527704-tooltipsfontofsize) do not state default size; [Leopard-era Apple HIG](https://leopard-adc.pepas.com/documentation/UserExperience/Concept
-platform-facts.md:1776 — NSProgressIndicator visual bar vs control frame — macOS (value column) — ❓ bar height 6px is the visual track; `NSProgressIndicatorPreferredThickness`=14px deprecated (Apple: "do not accurately represent the geometry"); WebKit [`ProgressBarMac.mm`](https://github.com/WebKit/WebKit/blob/main/S
+platform-facts.md@fc6109d1:65 — `+monospacedSystemFontOfSize:weight:` — 1.1.1 Fonts (value column) — ✅ · macOS 26: the same face as on 14.8.9 and 15.7.9, `.AppleSystemUIFontMonospaced` 13pt, weight trait 0 ([probe 26 :161-165](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml#L161-L165)); whether
+platform-facts.md@fc6109d1:68 — `+menuBarFontOfSize:` — 1.1.1 Fonts (value column) — ❓ weight undocumented; no evidence of SemiBold; likely Regular like other font methods · the OS probe settles it: 13pt, weight trait 0 (Regular) on 14.8.9 and 15.7.9 ([probe 14 :84-88](evidence/os-probe/2026-10-11-run-38
+platform-facts.md@fc6109d1:164 — `NSTextInsertionIndicator` — 1.1.2 Colors (value column) — ✅ · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:177 — Window corner radius — 1.1.3 Geometry (value column) — ✅ multiple sources confirm through Sequoia; macOS Tahoe (26) uses variable radii per window style — 16pt (title-bar-only) confirmed by [macos-corner-fix](https://github.com/m4rkw/macos-corner-fix); toolbar window radii: 
+platform-facts.md@fc6109d1:178 — Control corner radius — 1.1.3 Geometry (value column) — ❓ no AppKit source: WebKit's `baseBorderRadius = 5` ([`RenderThemeMac.mm:1351`](https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1351), used a
+platform-facts.md@fc6109d1:179 — Frame/border width — 1.1.3 Geometry (value column) — ❓ measured, no Apple docs · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:181 — Scrollbar width — 1.1.3 Geometry (value column) — ✅ Gecko [`ScrollbarDrawingCocoa.cpp`](https://searchfox.org/mozilla-central/source/widget/ScrollbarDrawingCocoa.cpp): overlay non-hovered thumb = 7px, hovered = 11px; Chromium [`native_theme_mac.mm`](https://github.com/c
+platform-facts.md@fc6109d1:183 — Focus ring offset — 1.1.3 Geometry (value column) — ❓ measured, no Apple docs; WebKit [`RenderThemeCocoa.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm) notes "macOS controls have never honored outline offset" — focus ri
+platform-facts.md@fc6109d1:185 — Drop shadows — 1.1.3 Geometry (value column) — ✅ · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:199 — NSButton — 1.1.4 Widget Metrics (value column) — ❓ The legacy HIG 12px is inter-button *spacing*, not internal padding. Gecko [`nsNativeThemeCocoa.mm`](https://searchfox.org/mozilla-central/source/widget/cocoa/nsNativeThemeCocoa.mm) `pushButtonSettings` margins `IntMar
+platform-facts.md@fc6109d1:209 — NSScroller — 1.1.4 Widget Metrics (value column) — ✅ Gecko [`ScrollbarDrawingCocoa.cpp`](https://searchfox.org/mozilla-central/source/widget/ScrollbarDrawingCocoa.cpp): overlay non-hovered thumb thickness = 7px (8px base − 1px overlay reduction), hovered = 11px; Chromium
+platform-facts.md@fc6109d1:210 — NSTabView — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:211 — NSTabView — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:212 — NSMenuItem — 1.1.4 Widget Metrics (value column) — ❓ measured, plausible · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:213 — NSMenuItem — 1.1.4 Widget Metrics (value column) — ❓ measured; Chromium [`menu_config.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/ui/views/controls/menu/menu_config.cc) corroborates `item_horizontal_border_padding = 12` · macOS 26: ❓ — no source
+platform-facts.md@fc6109d1:214 — NSToolTipManager — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:216 — NSTableView — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:217 — NSToolbar — 1.1.4 Widget Metrics (value column) — ❓ measured; varies by config · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:218 — NSToolbar — 1.1.4 Widget Metrics (value column) — ✅ HIG: "8 pixels between toolbar controls" · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:226 — NSPopUpButton — 1.1.4 Widget Metrics (value column) — ❓ measured visible indicator; note: WebKit total right-padding is 26px (includes arrow + surrounding space); the OS probe's render (macOS 14.8.9) shows no boundary of an arrow area to measure ([render](evidence/os-probe/
+platform-facts.md@fc6109d1:228 — NSSegmentedControl — 1.1.4 Widget Metrics (value column) — ❓ measured · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:229 — NSDisclosureButton — 1.1.4 Widget Metrics (value column) — ❓ measured visible triangle; Gecko `nsNativeThemeCocoa.mm`: cell=21×21px — visible triangle is a subset of the cell · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:238 — Between related controls — 1.1.5 Layout Spacing (value column) — ❓ oversimplified: HIG says 12px for regular push buttons, 8px for mini/icon · macOS 26: same, `NSStackView.spacing`'s default 8 ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsstackview/spacing.
+platform-facts.md@fc6109d1:239 — Between unrelated groups — 1.1.5 Layout Spacing (value column) — ❓ 20pt is documented as superview-edge margin, not specifically inter-group · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:240 — Label to its associated control — 1.1.5 Layout Spacing (value column) — ✅ HIG: 8px for regular, 6px small, 5px mini · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:242 — Compact spacing (toolbar items) — 1.1.5 Layout Spacing (value column) — ✅ HIG: "8 pixels between toolbar controls" · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:256 — Sidebar (small) — 1.1.6 Icon Sizes (value column) — ✅ Apple HIG Sidebars page (macOS, 2022 archived); metrics table removed from current HIG ~2024 · macOS 26: ❓ — no source gives its macOS 26 value: the current HIG gives no sidebar metrics ([HIG sidebars](https://develope
+platform-facts.md@fc6109d1:257 — Sidebar (medium) — 1.1.6 Icon Sizes (value column) — ✅ same source; pre-Big Sur was 18pt (legacy CoreTypes.bundle sizes) · macOS 26: ❓ — no source gives its macOS 26 value (as the small row)
+platform-facts.md@fc6109d1:258 — Sidebar (large) — 1.1.6 Icon Sizes (value column) — ✅ same source; pre-Big Sur was 32pt · macOS 26: ❓ — no source gives its macOS 26 value (as the small row)
+platform-facts.md@fc6109d1:259 — Menu item — 1.1.6 Icon Sizes (value column) — ❓ inferred from system font size · macOS 26: ❓ — no source gives its macOS 26 value; on 27 NSMenu hides item images by default
+platform-facts.md@fc6109d1:260 — Menu bar extra — 1.1.6 Icon Sizes (value column) — ❓ community best-practice (Bjango), not official · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:374 — `DwmGetColorizationColor` — 1.2.2 Colors (value column) — ❓ no source ties it to the title bar; #006fc4, alpha 0xe3, on `windows-11-arm`, where `ColorPrevalence` (accent on title bars) is 0 ([probe.toml:763](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/p
+platform-facts.md@fc6109d1:402 — Disabled opacity — 1.2.3 Geometry (value column) — ❓ no global disabled opacity; WinUI3 uses per-control `*Disabled` color brushes; 0.55 was legacy Win8.x/UWP — current WinUI3 value is 0.3
+platform-facts.md@fc6109d1:413 — Button — 1.2.4 Widget Metrics (value column) — ❓ no `ButtonMinHeight` resource; effective=14px text + 5+6 padding + 2 border = 27px; `ContentDialogButtonHeight=32` is dialog-specific
+platform-facts.md@fc6109d1:416 — Button — 1.2.4 Widget Metrics (value column) — ❓ hardcoded `Margin="8,0,0,0"` in DropDownButton template; no named XAML resource; consistent with Fluent 2 `size80` spacing
+platform-facts.md@fc6109d1:424 — Scrollbar (WinUI3) — 1.2.4 Widget Metrics (value column) — ❓ XAML template inline value; expands on pointer proximity
+platform-facts.md@fc6109d1:425 — Scrollbar (WinUI3) — 1.2.4 Widget Metrics (value column) — ❓ 6 = `ScrollBarSize` 12 less two 3px halves of `ScrollBarThumbStrokeThickness` 6, a derivation no source states; the template's named resources are `ScrollBarSize` 12, `ScrollBarVerticalThumbMinWidth` 8 and `ScrollBarTh
+platform-facts.md@fc6109d1:434 — Menu item — 1.2.4 Widget Metrics (value column) — ❓ Win32 formula (from [Wine `menu.c`](https://github.com/wine-mirror/wine/blob/master/dlls/user32/menu.c) / [ReactOS `menu.c`](https://github.com/nicknisi/reactos/blob/master/win32ss/user/ntuser/menu.c)): `max(text_heigh
+platform-facts.md@fc6109d1:1057 — `shadow_color` — Windows — **(Fluent)** two-layer per elevation (from [Fluent 2 spec](https://fluent2.microsoft.design/elevation)): low L=14%/14% D=28%/14%; high L=24%/20% D=28%/20% (note: FluentUI React web tokens use different opacities). The sa
+platform-facts.md@fc6109d1:1110 — `focus_ring_offset` — macOS — -1px **(measured)** (inset) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1116 — `border.corner_radius` — macOS — 5px **(measured)** ❓ no AppKit source (§1.1.3) · macOS 26: 6 **(WebKit)**, the push button's and pop-up's (§1.1.3); the text field's 5
+platform-facts.md@fc6109d1:1117 — `border.corner_radius_lg` — macOS — 10px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1118 — `border.line_width` — macOS — 0.5px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1121 — `border.shadow_enabled` — macOS — yes · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1137 — `small` — macOS — sidebar: 16–20pt · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1138 — `large` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1139 — `dialog` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1140 — `panel` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1164 — `title_bar_font.style` — macOS — `+titleBarFontOfSize:` → Normal · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1167 — `inactive_title_bar_text_color` — macOS — **(none)** — system-managed · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1168 — `border.corner_radius` — macOS — 10px **(measured)** through Sequoia (compositor-controlled, not inherited — happens to equal `defaults.border.corner_radius_lg`); Tahoe (26): variable per window style, no public API (see appendix) · macOS 26: ❓ (the Tah
+platform-facts.md@fc6109d1:1170 — `border.padding_horizontal` — macOS — **(none)** — use §2.20 layout margins · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1171 — `border.padding_vertical` — macOS — **(none)** — use §2.20 layout margins · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1182 — `min_width` — macOS — **(none)** — sizes to content · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1187 — `icon_text_gap` — macOS — 4 **(measured)** AppKit · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1192 — `hover_background` — macOS — **(measured)** subtle CoreUI highlight · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1194 — `checked_background` — macOS — **(none)** — AppKit publishes no colour for a push-on/push-off `NSButton` that is on; its bezel is its own · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1195 — `checked_text_color` — macOS — **(none)** — not published · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1196 — `active_background` — macOS — ❓ — AppKit publishes no fill for a pressed push button, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/push_button-regular@2x.png)) · macOS 
+platform-facts.md@fc6109d1:1197 — `active_text_color` — macOS — ❓ — not published, and not rendered by the OS probe · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1218 — `hover_border_color` — macOS — ❓ — AppKit publishes no hover colour for a text field's bezel, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/text_field-regular@2x.png)) · 
+platform-facts.md@fc6109d1:1219 — `focus_border_color` — macOS — ❓ for the bezel line: AppKit shows focus with the focus ring around the field, `keyboardFocusIndicatorColor`, "The color to use for the keyboard focus ring around controls" ([docs](https://developer.apple.com/tutorials/d
+platform-facts.md@fc6109d1:1220 — `disabled_background` — macOS — ❓ — AppKit publishes no disabled field fill, and the OS probe renders no disabled text field (its disabled renders are the push button, checkbox, radio, switch and slider) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1232 — `indicator_color` — macOS — white (#ffffff) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1237 — `border.padding_horizontal` — macOS — **(none)** — checkmark fills indicator · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1238 — `border.padding_vertical` — macOS — **(none)** — checkmark fills indicator · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1244 — `hover_background` — macOS — ❓ — AppKit publishes no hover state for a checkbox, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/checkbox-regular-off@2x.png)) · macOS 26:
+platform-facts.md@fc6109d1:1245 — `disabled_background` — macOS — **(measured)** for the unchecked box, ❓ for the checked one. macOS 14–15: a disabled unchecked box, fill and edge, is the enabled one at half its alpha, #ffffff80 / #ffffff1b where the enabled box is #ffffff / #ffffff37 
+platform-facts.md@fc6109d1:1253 — `background_color` — macOS — **(measured)** ≈ `defaults.background_color` (vibrancy) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1253 — `background_color` — Windows — `COLOR_MENU` — Windows 10+: not supported (§1.2.2); #f0f0f0 on the three Windows probe images ([probe.toml:343](evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml#L343)). WinUI3 `MenuFlyoutPr
+platform-facts.md@fc6109d1:1254 — `separator_color` — macOS — **(measured)** = `separatorColor` · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1258 — `font.style` — macOS — `+menuFontOfSize:` → Normal · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1259 — `font.color` — macOS — **(measured)** = `labelColor` · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1260 — `row_height` — macOS — NSMenuItem: 22 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1260 — `row_height` — Windows — ❓ — WinUI3 `MenuFlyoutItem` has no MinHeight (`MenuFlyoutThemeMinHeight` 32 is the presenter's, [MenuFlyout_themeresources.xaml:256, :284](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df75259
+platform-facts.md@fc6109d1:1261 — `border.padding_horizontal` — macOS — NSMenuItem: 12 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1262 — `border.padding_vertical` — macOS — 3 **(measured)** (22−16)/2 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1263 — `border.color` — macOS — **(none)** — popup border from §2.16 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1264 — `border.line_width` — macOS — **(none)** — popup border from §2.16 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1265 — `border.corner_radius` — macOS — **(none)** — items are rectangular · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1266 — `border.shadow_enabled` — macOS — **(none)** — popup shadow from §2.16 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1267 — `icon_text_gap` — macOS — 4 **(measured)** AppKit layout · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1268 — `icon_size` — macOS — 16 **(cross-project)** — no Apple API constant; Qt/Firefox/Ladybird/Godot all use 16×16 for NSMenuItem images · macOS 26: ❓ — no source gives its macOS 26 value; on 27 NSMenu hides item images by default
+platform-facts.md@fc6109d1:1269 — `hover_background` — macOS — `selectedContentBackgroundColor` · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1277 — `background_color` — macOS — **(preset)** L #2c2c2e D #3a3a3c · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1281 — `font.style` — macOS — `+toolTipsFontOfSize:` → Normal · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1282 — `font.color` — macOS — **(preset)** #ffffff (both variants) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1283 — `border.padding_horizontal` — macOS — NSToolTipManager: 4 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1284 — `border.padding_vertical` — macOS — NSToolTipManager: 4 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1285 — `max_width` — macOS — 300 **(measured)** macOS Sonoma · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1287 — `border.color` — macOS — **(measured)** subtle frame · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1289 — `border.shadow_enabled` — macOS — yes (system popup shadow) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1290 — `show_delay` — macOS — ❓ — undocumented: neither `NSView.toolTip` ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsview/tooltip.json)) nor the HIG's *Offering help* ("tooltips can appear when a person holds the pointer
+platform-facts.md@fc6109d1:1304 — `track_color` — macOS — mode-dependent: overlay=transparent, legacy=light gray **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1305 — `thumb_color` — macOS — `#80808080` **(measured)** Sonoma · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1306 — `thumb_hover_color` — macOS — `#60606080` **(measured)** Sonoma · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1308 — `min_thumb_length` — macOS — 40 **(measured)** legacy mode · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1309 — `thumb_width` — macOS — mode-dependent: legacy=15 (fills groove), overlay=7 (idle) / 11 (hover) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1310 — `overlay_mode` — Windows — `UISettings.AutoHideScrollBars` (Bool, the *Automatically hide scroll bars* setting, 10.0.18362+; it "returns the specified user setting, not whether a specific scroll bar is visible", [UISettings.AutoHideScrollBars](htt
+platform-facts.md@fc6109d1:1311 — `thumb_active_color` — macOS — ❓ — NSScroller publishes no colour for a dragged knob; `selectedKnobColor`, "The system color used for the slider knob when it is selected", is deprecated since macOS 11 ("Use NSScroller instead", [docs](https://develope
+platform-facts.md@fc6109d1:1324 — `thumb_hover_color` — macOS — ❓ — AppKit publishes no hover colour for a slider knob, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/slider-regular@2x.png)); whether a la
+platform-facts.md@fc6109d1:1336 — `min_width` — macOS — **(none)** — no minimum · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1339 — `border.color` — macOS — **(none)** — not read · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1340 — `border.line_width` — macOS — **(none)** — not read · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1350 — `min_width` — macOS — **(none)** — sizes to label · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1351 — `min_height` — macOS — NSTabView: 24 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1352 — `border.padding_horizontal` — macOS — NSTabView: 12 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1353 — `border.padding_vertical` — macOS — 4 **(measured)** (24−16)/2 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1354 — `border.color` — macOS — **(none)** — CoreUI bezel is a multi-color composite, no single extractable color · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1355 — `border.line_width` — macOS — **(none)** — CoreUI bezel is a multi-stroke composite, no single line width · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1356 — `border.corner_radius` — macOS — **(none)** — CoreUI bezel corners baked into `.car` assets, no queryable constant · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1357 — `border.shadow_enabled` — macOS — no — bezel creates visual depth via edge shading, not a drop shadow · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1361 — `active_indicator_color` — macOS — **(none)** — not published (see `item_gap`): no selection line is described · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1362 — `active_indicator_width` — macOS — **(none)** — no line · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1363 — `active_indicator_side` — macOS — **(none)** — no line · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1364 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a tab, and the OS probe renders no tab view · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1365 — `hover_text_color` — macOS — ❓ — not published · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1366 — `active_outward_corner_radius` — macOS — ❓ — AppKit publishes no tab shape: the selected tab is a CoreUI bezel (see `border.corner_radius`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1377 — `border.corner_radius` — macOS — **(none)** — rectangular pane · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1378 — `border.shadow_enabled` — macOS — **(none)** — no shadow · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1379 — `hover_background` — macOS — ❓ — no source: AppKit publishes no hover colour for a sidebar item (NSColor has none) and no Apple guidance describes one (HIG *Lists and tables*, *Sidebars*, read 2026-10-26), and the OS probe renders none hovered: its 
+platform-facts.md@fc6109d1:1380 — `border.padding_horizontal` — macOS — ❓ — AppKit publishes no inset between a sidebar and its rows, and the OS probe's sidebar is an empty `NSVisualEffectView` of the sidebar material, holding no rows to measure an inset from ([probe 14 :3247](evidence/os-pr
+platform-facts.md@fc6109d1:1380 — `border.padding_horizontal` — KDE — ❓ — the sidebar is named (`GlobalDrawer`, `background_color` above), but its padding is not stated: the drawer pads itself by the window's safe-area margins alone, a device inset rather than the style's ([controls/Global
+platform-facts.md@fc6109d1:1381 — `border.padding_vertical` — macOS — ❓ — as across · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1381 — `border.padding_vertical` — Windows — ❓ — no one value: above the item list the pane stacks a top padding, a toggle-button row and a search area (`PaneContentGrid`, NavigationView.xaml:291-350); each item's fill sits 2 inside its slot above and below (`Navig
+platform-facts.md@fc6109d1:1381 — `border.padding_vertical` — KDE — ❓ — as across
+platform-facts.md@fc6109d1:1390 — `bar_height` — macOS — NSToolbar: 38 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1391 — `item_gap` — macOS — AppKit: 8 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1392 — `border.padding_horizontal` — macOS — 8 **(measured)** NSToolbar · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1393 — `border.padding_vertical` — macOS — 0 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1396 — `border.color` — macOS — ❓ — the toolbar's lower edge is the window's title-bar separator, `NSWindow.titlebarSeparatorStyle`, whose default is `.automatic`, "A style indicating that the system determines the type of separator" (macOS 11+, [docs]
+platform-facts.md@fc6109d1:1397 — `border.corner_radius` — macOS — ❓ — not published · macOS 26: ❓ — the HIG has toolbar controls' "corner radii that are concentric with bar corners" and gives the bar's none ([HIG toolbars](https://developer.apple.com/tutorials/data/design/human-interfa
+platform-facts.md@fc6109d1:1398 — `border.line_width` — macOS — ❓ — the same title-bar separator: a `.line`, a `.shadow` or `.none` as the system chooses under `.automatic` (docs, as `border.color`); no width is published · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1399 — `border.shadow_enabled` — macOS — ❓ — `NSTitlebarSeparatorStyle.shadow`, "A style indicating that the title bar separator is a shadow", is one of the styles `.automatic` chooses from (docs, as `border.color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1412 — `border.corner_radius` — macOS — **(none)** — rectangular bar · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1413 — `border.shadow_enabled` — macOS — **(none)** — no shadow · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1424 — `alternate_row_background` — Windows — **(preset)** L #f9f9f9 D #262626 ❓ — no WinUI3 source
+platform-facts.md@fc6109d1:1433 — `border.padding_horizontal` — macOS — NSTableView: 4 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1434 — `border.padding_vertical` — macOS — 4 **(measured)** (24−16)/2 · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1435 — `hover_background` — macOS — ❓ — no source: AppKit publishes no hover colour for a table row (NSColor has none) and no Apple guidance describes one (HIG *Lists and tables*, *Sidebars*, read 2026-10-26), and the OS probe renders none hovered: its key
+platform-facts.md@fc6109d1:1436 — `hover_text_color` — macOS — ❓ — AppKit publishes no hover colour for a table row · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1437 — `disabled_text_color` — macOS — ← `defaults.disabled_text_color`: `disabledControlTextColor` (§2.3 `disabled_text_color`); a disabled cell's text does change, "The text of disabled cells is gray" ([NSCell.isEnabled](https://developer.apple.com/tutorial
+platform-facts.md@fc6109d1:1438 — `border.color` — macOS — ❓ — a table's frame is its enclosing NSScrollView's, `borderType`, "A value that specifies the appearance of the scroll view's border" ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsscrollview/
+platform-facts.md@fc6109d1:1439 — `border.corner_radius` — macOS — ❓ — not published (`border.color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1440 — `border.line_width` — macOS — ❓ — not published (`border.color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1441 — `border.shadow_enabled` — macOS — ❓ — not published · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1457 — `border.color` — macOS — ❓ — AppKit publishes no edge colour for a popover or a pop-up menu, and the OS probe renders neither · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1458 — `border.line_width` — macOS — ❓ — as `border.color` · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1460 — `border.shadow_enabled` — macOS — yes (system popup shadow) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1461 — `border.padding_horizontal` — macOS — **(none)** — content provides own padding · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1462 — `border.padding_vertical` — macOS — **(none)** — content provides own padding · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1470 — `hover_color` — macOS — ❓ — `NSSplitView.dividerColor` (`divider_color` above) has no hover variant, and AppKit publishes none · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1504 — `container_margin` — macOS HIG — **(none)** — not specified · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1506 — `section_gap` — macOS HIG — 20 **(HIG)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1527 — `hover_checked_background` — macOS — ❓ — AppKit publishes no hover colour for a switch, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/switch-regular-on@2x.png)) · macOS 26: ❓ —
+platform-facts.md@fc6109d1:1528 — `hover_unchecked_background` — macOS — ❓ — as `hover_checked_background` · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1532 — `unchecked_track_border_color` — macOS — ❓ — AppKit's `NSSwitch` and the HIG's *Toggles* name no outline ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsswitch.json), [HIG toggles](https://developer.apple.com/tutorials/data/design/huma
+platform-facts.md@fc6109d1:1533 — `hover_unchecked_track_border_color` — macOS — ❓ — AppKit publishes no switch outline colours, and the OS probe renders the rest state only · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1534 — `disabled_unchecked_track_border_color` — macOS — ❓ — as `unchecked_track_border_color`: the macOS 14–15 disabled off render shows the same soft rim, the fill's 7/255 rising to 12/255 (L) and 20/255 (D) near the edge, where in the same column the enabled off track's 26/
+platform-facts.md@fc6109d1:1535 — `checked_track_border_color` — macOS — ❓ — as `unchecked_track_border_color`: the macOS 14–15 on render shows the same kind of soft rim, alpha 88-91/255 along the straight edge over the fill's 64/255 ([D](evidence/os-probe/2026-10-11-run-38129819806/os-probe-
+platform-facts.md@fc6109d1:1536 — `disabled_checked_track_border_color` — macOS — ❓ — the renders are not key and draw a disabled on track grey, not in the accent: macOS 14–15 #00000007 / #ffffff07 with the off track's kind of rim, 13/255 / 23/255 ([L](evidence/os-probe/2026-10-26-run-40348854007/os-p
+platform-facts.md@fc6109d1:1537 — `track_border_line_width` — macOS — ❓ — as `unchecked_track_border_color` · macOS 26: off: **(measured)** 0 — no edge (`unchecked_track_border_color`); on: ❓ — the on render is the inactive window's (`checked_track_border_color`)
+platform-facts.md@fc6109d1:1538 — `thumb_border_color` — macOS — ❓ — AppKit's `NSSwitch` and the HIG's *Toggles* name no outline ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsswitch.json), [HIG toggles](https://developer.apple.com/tutorials/data/design/huma
+platform-facts.md@fc6109d1:1539 — `hover_thumb_border_color` — macOS — ❓ — AppKit publishes no switch outline colours, and the OS probe renders the rest state only · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1540 — `disabled_thumb_border_color` — macOS — ❓ — as `thumb_border_color`: the macOS 14–15 disabled render shows the same grey pixel between the knob and the track at about half its alpha (L: 113,113,113 at 34/255 above the knob; 80,80,80 at 48/255, then black at 34
+platform-facts.md@fc6109d1:1541 — `thumb_border_line_width` — macOS — ❓ — as `thumb_border_color` · macOS 26: **(measured)** 0 — no ring (`thumb_border_color`)
+platform-facts.md@fc6109d1:1551 — `border.shadow_enabled` — macOS — yes (sheet overlay) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1552 — `min_width` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1553 — `max_width` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1554 — `min_height` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1555 — `max_height` — macOS — **(none)** — AppKit-managed · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1556 — `border.padding_horizontal` — macOS — ~20px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1557 — `border.padding_vertical` — macOS — ~20px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1558 — `button_gap` — macOS — ~12px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1561 — `title_font.size` — macOS — ✅ 13pt **(HIG)** — "emphasized system font" = `boldSystemFontOfSize:0` → `systemFontSize` (13pt); corroborated by Cocotron `NSAlert.m` · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1562 — `title_font.weight` — macOS — ✅ Bold (700) **(HIG)** — "emphasized system font" = `boldSystemFontOfSize:0`; corroborated by Cocotron `NSAlert.m` · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1563 — `title_font.style` — macOS — Normal · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1568 — `icon_size` — macOS — 64px (app icon) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1569 — `entrance` — macOS — ❓ — `NSWindow.AnimationBehavior` names styles only ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nswindow/animationbehavior-swift.enum.json)); the HIG's *Sheets* states no motion for macOS ([HIG
+platform-facts.md@fc6109d1:1602 — `fill_color` — macOS — black (L) / white (D) fins at a graded alpha, the leading one 82/255 **(measured)** ❓ — the macOS 14.8.9 and 15.7.9 probe renders ([L](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/progress_
+platform-facts.md@fc6109d1:1617 — `min_width` — macOS — **(none)** — sizes to content · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1619 — `arrow_icon_size` — macOS — macOS 14–15: the chevron is 12 × 20 px at 2× (6 × 10) **(measured)** ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/pop_up_button-regular@2x.png)) · macOS 26: 14 × 21 px at 2× (7 × 
+platform-facts.md@fc6109d1:1620 — `arrow_area_width` — macOS — ~16–18px **(measured)** ❓ (the macOS 14.8.9 probe render shows no arrow-area boundary to measure, §1.1.4) · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1625 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a pop-up button, and the OS probe renders it at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/pop_up_button-regular@2x.png)) · ma
+platform-facts.md@fc6109d1:1626 — `disabled_background` — macOS — ❓ — AppKit publishes no disabled pop-up fill, and the OS probe renders no disabled pop-up button (its disabled renders are the push button, checkbox, radio, switch and slider) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1633 — `background_color` — macOS — NSSegmentedControl bg · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1635 — `font.color` — macOS — `controlTextColor` · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1639 — `separator_width` — macOS — 1px · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1640 — `border.padding_horizontal` — macOS — ~8–10px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1642 — `border.color` — macOS — NSSegmentedControl border · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1645 — `border.padding_vertical` — macOS — ~3px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1647 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a segment, and the OS probe renders the control at rest only ([render](evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/renders/aqua/segmented_control-regular@2x.png
+platform-facts.md@fc6109d1:1657 — `background_color` — macOS — ❓ — the macOS counterpart is the box, `NSBox` ("A stylized rectangular box with an optional title", [docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsbox.json)) or SwiftUI `GroupBox`, which "By def
+platform-facts.md@fc6109d1:1658 — `border.color` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1659 — `border.line_width` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1660 — `border.corner_radius` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1661 — `border.shadow_enabled` — macOS — ❓ — the default box's look is not published (`background_color`) · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1675 — `header_height` — macOS — **(none)** — content-sized · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1676 — `arrow_icon_size` — macOS — ~13px **(measured)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1677 — `border.padding_horizontal` — macOS — **(none)** — app-defined · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1678 — `border.padding_vertical` — macOS — **(none)** — app-defined · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1679 — `border.corner_radius` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1680 — `border.color` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1681 — `border.line_width` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1682 — `border.shadow_enabled` — macOS — **(none)** — no shadow · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1684 — `arrow_gap` — macOS — **(none)** — not documented · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1685 — `content_indent` — macOS — **(none)** — not documented · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1686 — `frame_enabled` — macOS — **(none)** — not documented · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1687 — `hover_background` — macOS — ❓ — AppKit publishes no hover colour for a disclosure control · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1688 — `arrow_color` — macOS — ❓ — the disclosure button, `NSButton.BezelStyle.disclosure`, "A bezel style button for use with a disclosure triangle" ([docs](https://developer.apple.com/tutorials/data/documentation/appkit/nsbutton/bezelstyle-swift.enu
+platform-facts.md@fc6109d1:1695 — `visited_text_color` — macOS — **(none)** — same as link · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1696 — `underline_enabled` — macOS — yes · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1697 — `background_color` — macOS — **(none)** — inline · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1698 — `hover_background` — macOS — **(none)** · macOS 26: ❓ — no source gives its macOS 26 value
+platform-facts.md@fc6109d1:1699 — `hover_text_color` — macOS — ❓ — `linkColor` has no hover variant, and AppKit publishes none · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1700 — `active_text_color` — macOS — ❓ — not published · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1701 — `disabled_text_color` — macOS — ❓ — not published · macOS 26: ❓ — the same
+platform-facts.md@fc6109d1:1738 — `menuBarFontOfSize:` weight — macOS (value column) — ❓ API exists ([Apple docs](https://developer.apple.com/documentation/appkit/nsfont/menubarfont(ofsize:))) but weight is not documented; no evidence of SemiBold — likely Regular like other font methods; needs verification
+platform-facts.md@fc6109d1:1749 — Control corner radius = 5px — macOS (value column) — ❓ WebKit [`RenderThemeMac.mm:1351`](https://github.com/WebKit/WebKit/blob/de320ba3ff90229f983988d42d4b0f83315459da/Source/WebCore/rendering/mac/RenderThemeMac.mm#L1351): `const int baseBorderRadius = 5`, for CSS-styled p
+platform-facts.md@fc6109d1:1757 — NSButton (checkbox) indicator = 14px — macOS (value column) — ❓ WebKit [`ToggleButtonMac.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/graphics/mac/controls/ToggleButtonMac.mm): regular={14,14}; Gecko [`nsNativeThemeCocoa.mm`](https://github.com/mozilla/ge
+platform-facts.md@fc6109d1:1760 — Other geometry/widget metrics (0.5px, padding values, etc.) — macOS (value column) — ❓ Apple does not publish these. All are measured values. Legacy scrollbar width = ✅ 15px, `scrollerWidth(for: .regular, scrollerStyle: .legacy)` on macOS 14.8.9 ([probe 14 :481](evidence/os-probe/2026-10-11-run-381298198
+platform-facts.md@fc6109d1:1763 — NSButton horizontal padding ~8px — macOS (value column) — ❓ WebKit [`RenderThemeMac.mm`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/rendering/mac/RenderThemeMac.mm) `controlPadding(PushButton)` = 8px horizontal; comment says "AppKit wants to use 11px for mini but
+platform-facts.md@fc6109d1:1775 — `+toolTipsFontOfSize:` default size — macOS (value column) — ❓ [Apple API docs](https://developer.apple.com/documentation/appkit/nsfont/1527704-tooltipsfontofsize) do not state default size; [Leopard-era Apple HIG](https://leopard-adc.pepas.com/documentation/UserExperience/Concept
+platform-facts.md@fc6109d1:1776 — NSProgressIndicator visual bar vs control frame — macOS (value column) — ❓ bar height 6px is the visual track; `NSProgressIndicatorPreferredThickness`=14px deprecated (Apple: "do not accurately represent the geometry"); WebKit [`ProgressBarMac.mm`](https://github.com/WebKit/WebKit/blob/main/S
 
 ## Seed follow-up sources
 

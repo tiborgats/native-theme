@@ -232,7 +232,7 @@ Connector crates provide toolkit playback helpers (see the `native-theme-gpui` a
 
 ```toml
 [dependencies]
-native-theme = { version = "0.7", features = ["native"] }
+native-theme = { version = "0.8", features = ["native"] }
 ```
 
 `native` is a meta-feature enabling every OS reader for the current target

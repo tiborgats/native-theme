@@ -102,6 +102,25 @@ SKIPPED=()
 SCRIPT_START=$SECONDS
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PLAN_EXCLUDED: the steps the 0.8.0 plan's transition breaks until a later
+# milestone (docs/todo_v0.7.1_model-completeness-plan.md, "What cannot build
+# meanwhile"), keyed by the step's description, valued by the milestone that
+# brings it back. The --commit run skips them by name. The full run still runs
+# each once: a failure is a warning naming its milestone, a pass a warning to
+# remove the step from this list. .github/workflows/ci.yml marks its matching
+# exclusions `# PLAN_EXCLUDED: <description>`, and the "Plan exclusions"
+# section checks that both name the same set. Empty at M0 and again at M5.
+# ─────────────────────────────────────────────────────────────────────────────
+declare -A PLAN_EXCLUDED=()
+PLAN_SKIPPED=()
+
+# Prints the milestone and returns 0 when $1 is a plan-excluded step.
+plan_excluded_milestone() {
+    [[ -n "${PLAN_EXCLUDED[$1]+set}" ]] || return 1
+    printf "%s" "${PLAN_EXCLUDED[$1]}"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Output primitives
 # ─────────────────────────────────────────────────────────────────────────────
 print_section() {
@@ -192,6 +211,7 @@ _run_check_impl() {
     local description="$1"
     local mode="$2"
     shift 2
+    plan_excluded_step "$description" "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -217,6 +237,32 @@ _run_check_impl() {
     fi
 }
 
+# A plan-excluded step ($1 its description, $2... its command): returns 1 for
+# any other step, which then runs as usual. --commit skips it; the full run
+# runs it and reports either outcome as a warning, never a failure.
+plan_excluded_step() {
+    local description="$1"
+    shift
+    local milestone
+    milestone=$(plan_excluded_milestone "$description") || return 1
+    PLAN_SKIPPED+=("$description (until $milestone)")
+    if [[ $COMMIT_MODE ]]; then
+        printf "${DIM}   %s: skipped (PLAN_EXCLUDED until %s)${NC}\n" "$description" "$milestone"
+        return 0
+    fi
+    local status=0
+    set +e
+    "$@" >/dev/null 2>&1
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ]; then
+        print_warn "$description: passes, remove it from PLAN_EXCLUDED"
+    else
+        print_warn "$description: fails, PLAN_EXCLUDED until $milestone"
+    fi
+    return 0
+}
+
 run_check()      { _run_check_impl "$1" "hard" "${@:2}"; }
 run_check_soft() { _run_check_impl "$1" "soft" "${@:2}"; }
 
@@ -225,6 +271,7 @@ _run_tests_impl() {
     local description="$1"
     local min_passed="$2"
     shift 2
+    plan_excluded_step "$description" "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -328,6 +375,25 @@ if [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-commit checks (--commit)${NC}\n" "$CURRENT_VERSION"
 else
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: plan exclusions
+#
+# PLAN_EXCLUDED (above) and ci.yml's `# PLAN_EXCLUDED: <description>` marks name
+# the same set of steps, in both directions: a step CI still skips after it
+# left the list, or one the list skips while CI still runs it, fails here.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Plan exclusions"
+PLAN_LISTED=$(for k in "${!PLAN_EXCLUDED[@]}"; do printf "%s\n" "$k"; done | sort -u)
+PLAN_MARKED=$(sed -nE 's/.*# PLAN_EXCLUDED: (.*[^ ])[[:space:]]*$/\1/p' .github/workflows/ci.yml | sort -u)
+if [ "$PLAN_LISTED" = "$PLAN_MARKED" ]; then
+    print_ok "PLAN_EXCLUDED and ci.yml's marks agree ($(grep -c . <<<"$PLAN_LISTED" || true) steps)"
+else
+    print_fail "PLAN_EXCLUDED and ci.yml's # PLAN_EXCLUDED marks differ"
+    diff <(printf "%s\n" "$PLAN_LISTED") <(printf "%s\n" "$PLAN_MARKED") \
+        | sed -nE 's/^< (.*)/   listed, not marked in ci.yml: \1/p; s/^> (.*)/   marked in ci.yml, not listed: \1/p' >&2
+    exit 1
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1376,6 +1442,13 @@ if [ "$FAIL_COUNT" -gt 0 ]; then
     printf "\n${BOLD}${RED}Failures (re-summarised):${NC}\n"
     for f in ${FAILURES[@]+"${FAILURES[@]}"}; do
         printf "   ${RED}${ICON_FAIL}${NC} %s\n" "$f"
+    done
+fi
+
+if [ "${#PLAN_SKIPPED[@]}" -gt 0 ]; then
+    printf "\n${BOLD}PLAN_EXCLUDED (the 0.8.0 plan's transition):${NC}\n"
+    for s in "${PLAN_SKIPPED[@]}"; do
+        printf "   ${DIM}%s${NC}\n" "$s"
     done
 fi
 

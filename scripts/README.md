@@ -714,6 +714,97 @@ python3 scripts/check_preset_citations.py
 python3 scripts/check_preset_citations.py --self-test
 ```
 
+## spec_catalogue.py
+
+Reads the v0.7.1 specification's widget catalogue,
+`docs/todo_v0.7.1_model-completeness-spec-widgets.md`, into its entries: the
+86 typed widgets (`### <name>` under the typed sections) and the 28 keyed
+components (`#### component.<key> (<platform>)`), each with its heading line,
+its items (the bold labels, `**Parts:**`, `**Widget values:**`, several to a
+line in many components), its parts (names, the parent a part nests in, the
+*(element)* mark and note, the field list) and its widget values (name and
+the type the catalogue states), with the source line of each. Variants, sizes
+and flags are prose in the catalogue, so their items' text and backticked
+names are given as they stand. A module, imported by `check_spec_names.py` and
+`check_spec_entries.py` and meant for the widget-declaration generator and the
+facts checker; its docstring states the API and the reading rules. Run alone
+it prints one line per entry (line, kind, name, parts, values); `--self-test`
+runs the rules on a synthetic catalogue.
+
+Requires Python 3.
+
+```sh
+python3 scripts/spec_catalogue.py
+python3 scripts/spec_catalogue.py --self-test
+```
+
+## check_spec_names.py
+
+Checks every name the v0.7.1 specification's catalogue and traceability use:
+builds the vocabulary the core (`docs/todo_v0.7.1_model-completeness-spec.md`)
+defines (state and shared flags, conditions, colour roles, tokens, element
+data, part-style fields) and, through `spec_catalogue.py`, the parts, widget
+values, variants and flags each catalogue entry lists, then reports each name
+in a trace target or a catalogue backtick span that neither defines, notation
+the specification forbids, names the core's checks removed, and platform
+values written into the specification. Prints one line per problem
+(tab-separated: file, line, kind, name, context) and exits 0 when there is
+none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
+`trace-macos`, ...), `--cat` and
+`--traces` read copies, `--index` also writes `index.json` and `vocab.json`
+beside the script; the docstring lists the options. `--self-test` runs each
+rule on a synthetic core, catalogue and trace.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_names.py
+python3 scripts/check_spec_names.py --self-test
+```
+
+## check_spec_entries.py
+
+Checks the form of the v0.7.1 catalogue's entries, read through
+`spec_catalogue.py`: every typed entry has every item of the entry format, in
+order, one part per bullet, a root that is neither an *(element)* nor a
+may-be-absent part, and a `PartStyle` field on every part bullet; every
+`may_be_absent` item (typed entries and keyed components) gives each name its
+own preset list and no "the preset states none" reason; the role-record and
+token tables grant absence per name with presets or a criterion. Prints the
+counts and one line per problem, and exits 0 when there is none, 1 when there
+are some. `--self-test` runs each rule on a synthetic entry, component and
+table.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_entries.py
+python3 scripts/check_spec_entries.py --self-test
+```
+
+## check_spec_trace.py
+
+Checks the v0.7.1 traceability: every row of the gap map's Appendix A
+(`docs/todo_v0.7.1_model-completeness-gap-map.md`) that its platform file does
+not withdraw has a line in that platform's
+`docs/todo_v0.7.1_model-completeness-spec-trace-<platform>.md`, and every line
+names a row of the map and a known kind or verdict, with a target where its
+kind needs one and none under a verdict but `readers (R18)`; the script's
+docstring states the whole rule. Prints one
+line per problem (platform, row, what is wrong) and exits 0 when there is
+none, 1 when there are some, 2 on a malformed input. `--self-test` runs the
+rule on a synthetic map and trace.
+
+The three spec checkers and `spec_catalogue.py` are run by hand while the
+specification changes; `check_release.sh` and CI do not run them.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_trace.py
+python3 scripts/check_spec_trace.py --self-test
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
