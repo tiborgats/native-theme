@@ -1,6 +1,6 @@
 # v0.7.1 → 0.8.0 — Model completeness: Plan
 
-**Status:** draft 5, 2026-10-29, for the maintainer's approval (revised after four independent reviews).
+**Status:** draft 6, 2026-10-29, for the maintainer's approval (revised after five independent reviews).
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
@@ -52,14 +52,21 @@ the first push, so that every push runs CI (`ci.yml` runs on pull requests, not 
   integration tests (the facts gate is `tests/facts_gate.rs`) reach it, and clippy's `-D warnings` raises no dead
   code. Rejected: a private module (dead-code warnings, and integration tests cannot reach it); a cargo feature `next`
   (every check leg gains and later loses it).
-- **The module inventory.** Before the switch, the ledger gives every module of `native-theme` outside today's
-  `model/` one fate with its milestone: **ported beside** in M1a (what the slice's API needs: `error.rs` to S1's
-  errors, the colour type, the icon loaders and `IconSet` as S2.9 and S16 need them, which `native-theme-build` uses);
-  **deleted** at the switch as replaced (`resolve/`, the preset table, `documented_sizes.rs`, `ThemeWidget`,
-  `AnimatedIcon`); **unlinked** at the switch (its `mod` line removed, the file kept, linked again by the milestone
-  that ports it: the readers, the watchers and `pipeline.rs`'s system entry points at M1b, `spinners.rs` with the
-  `spinner` unit). An unlinked module is not compiled, so the reader features compile as empty and the
-  `--all-features` and cross-target steps keep passing; only the reader tests leave until M1b.
+- **The module inventory.** Before the switch, the ledger gives every module, integration test and `lib.rs` item of
+  `native-theme` (today's `model/` included) one fate with its milestone:
+  - **kept** as it is, being independent of the model (`rasterize.rs`; the colour type, renamed as S1 says);
+  - **ported beside** in M1a (what the slice's API needs: `error.rs` to S1's errors, the icon loaders and `IconSet` as
+    S2.9 and S16 need them, which `native-theme-build` uses, without `AnimatedIcon`);
+  - **split**, where kept code calls a reader: the kept part stays linked and the reader part is unlinked (`detect`,
+    which `native-theme-build` calls, keeps its desktop detection and loses the scheme and accessibility functions S16
+    removes; `macos.rs` keeps `system_ui_font`, which `fonts.rs` calls, so no new `unsafe` file arises; `kde/` keeps its
+    config-path helpers; `windows.rs` its DPI constant);
+  - **deleted** at the switch as replaced (today's `model/`, `resolve/`, the preset table, `documented_sizes.rs`,
+    `ThemeWidget`, `AnimatedIcon`, `SystemTheme`, `AccessibilityPreferences`, today's tests of them);
+  - **unlinked** at the switch (its `mod` line removed, the file kept, linked again by the milestone that ports it: the
+    readers, the watchers and `pipeline.rs`'s system entry points at M1b, `spinners.rs` with the indicators unit).
+  An unlinked module is not compiled, so with the splits the reader features compile and the `--all-features` and
+  cross-target steps keep checking the kept code; only the reader tests leave until M1b.
 - **M1a's last task switches:** it moves `next` into place as the public API, deletes and unlinks as the inventory
   says, rewrites the README's examples (they are doctests) and fills `PLAN_EXCLUDED`. No second model is kept after
   M1a. Rejected: deleting today's model first (the crate stays red for most of M1a); one task for all of M1a (too large
@@ -76,14 +83,16 @@ the first push, so that every push runs CI (`ci.yml` runs on pull requests, not 
     preset values (invented).
 - **What cannot build meanwhile is listed, not silently skipped.** One variable, `PLAN_EXCLUDED`, in
   `scripts/check_release.sh` names each excluded step and the milestone that brings it back, and the summary prints it.
-  The switch task builds it mechanically: after the switch, every step of the full run that fails is in the list with
-  its reason and return milestone, and nothing else is (expected: the connectors' and `tools/showcase-support`'s
-  steps, the showcases, widget coverage, connector and showcase parity, the screenshot stamps and configuration
-  sections until M2–M5; the reader tests until M1b; the data-document checks, each rewritten or removed in M2). `ci.yml` follows with the same list as matrix entries, steps
+  Excluded steps are skipped by name, so the full run is green. The switch task builds the list mechanically: after
+  the switch, every step of the full run that fails is in the list with its reason and return milestone, and nothing
+  else is (expected: the connectors' and `tools/showcase-support`'s steps, the showcases, widget coverage, connector
+  and showcase parity, the screenshot stamps and configuration sections until M2–M5; the reader tests until M1b; the
+  data-document checks, each rewritten or removed in M2). `ci.yml` follows with the same list as matrix entries, steps
   and `--exclude` arguments (the MSRV `--workspace` check). M5's gate is the list empty.
-- **Today's files that carry over:** today's `platform-facts.md` rows and evidence become facts (M1a's import; the
-  `windows-11-arm` evidence stays, and the Windows Server images' values are dropped where they differ, the two images
-  only building afterwards); S19.2's conversion of today's inheritance rules runs at M1a into a staged input file that
+- **Today's files that carry over:** today's `platform-facts.md` rows and evidence become facts (M1a's import, each
+  fact verified with its unit like any other; the `windows-11-arm` evidence stays, and the Windows Server images'
+  values are dropped where they differ); `platform-facts.md` becomes generated at the switch, when today's presets, the
+  `platform_facts_xref.rs` test and the preset-citation check that read it by line go; S19.2's conversion of today's inheritance rules runs at M1a into a staged input file that
   each unit's preset step uses and the gate checks (removed at M4); the ten community preset files go at the switch,
   since the palettes are built from the projects' published colours (M2), not from them.
 
@@ -95,13 +104,16 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
 
 - **Facts lanes, preset writers, verifiers and tie-breakers** each work in their own git worktree of `v0.8.0-rc1` at
   the last commit and never run `cargo` there, so no build folder is created; they write TOML and run only the Python
-  checkers. A verifier's worktree never holds the lane's unverified facts, and its brief limits it to its own worktree,
-  the source cache and the scratchpad (no other worktree, no other branch's history); that rests on the brief, which
-  is why the audit sample exists. The orchestrator brings verified facts, and a unit's eight preset parts, into
+  checkers. A verifier never sees the lane's work: it receives a generated brief (the unit's keys, the pins and the
+  catalogue's state-model source lines) and reads only the source cache and the scratchpad, not the project, whose gap
+  maps and `platform-facts.md` state values it could copy; that rests on the brief, which is why the quote check and
+  the audit sample exist. The orchestrator brings verified facts, and a unit's eight preset parts, into
   `v0.8.0-rc1` itself, and runs the gates there.
 - **Tooling** (the probe's passes, the hosts, the harnesses, the vector generators, the workflow jobs) works on
   `v0.8.0-tools` in its own worktree, built and run on CI only (`gh workflow run os-probe.yml --ref v0.8.0-tools -f
-  jobs=<names>`, and a draft pull request to `v0.8.0-rc1` for CI); the orchestrator merges it between code tasks.
+  jobs=<names> -f images=<list>`, and a draft pull request to `v0.8.0-rc1` for CI). A tooling task closes on its CI
+  run; `v0.8.0-tools` merges `v0.8.0-rc1` first, and the orchestrator merges it back between code tasks, with
+  `--commit` on the merge.
 - **The project's guards in worktrees:** M0 checks that the panic and invented-value hooks fire for an agent working
   in a worktree (they are registered by a relative path and `.claude/` is git-ignored); if not, D9 covers making their
   paths absolute.
@@ -128,7 +140,7 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
     Rejected: pinning `master` commits (unreleased code no user runs and no harness can run); re-pinning per fact
     (every lane redoes the mapping and versions mix).
   - The list of sources is generated from the citations in the traces, the gap maps and `platform-facts.md`
-    (`scripts/check_sources.py` fails on a cited project with no entry). A web page is pinned as a commit of its public
+    (`scripts/check_sources.py` reads the same documents as the re-pin and fails on a cited project with no entry). A web page is pinned as a commit of its public
     source repository where it has one (Microsoft Learn's MicrosoftDocs repositories), else as a dated snapshot with its
     SHA-256 (Apple's pages as their DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no
     versions, so its snapshot serves the newest generation only. Apple's SDK headers exist only on macOS runners, so
@@ -157,7 +169,9 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
   `add-preset` skills describe today's `platform-facts.md`, inheritance rules and preset format. Recommended: the hook
   exempts the platform functions' module by its path, as it already exempts tests, since `check_function_vectors.py`
   proves that every function there has a vector table
-  (rejected: a `// reference:` comment per function, which the hook cannot see in an edit's fragment); the hooks'
+  (rejected: a `// reference:` comment per function, which the hook cannot see in an edit's fragment);
+  `.claude/hooks/no-runtime-panics.sh`, which allows `unsafe` only in the probe's two `ffi.rs` files, gains the
+  module exceptions above (`macos.rs`, `windows.rs`, `watch/*.rs`) and S15's module; the hooks'
   paths made absolute if M0 finds they do not fire in worktrees; the agent and the skills are rewritten at M1a's switch for
   facts and S11's format. The guards are the maintainer's configuration, so this is the maintainer's to approve.
 - **D10 — licences.** The crate is MIT OR Apache-2.0 OR 0BSD. The platform functions' references are LGPL
@@ -165,11 +179,14 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
   Apache-2.0 (material-color-utilities); the specification defines several functions only by their reference
   (`adw_standalone`, `m3_role`, `kde_accent`), and today's `gnome/accent.rs` calls itself a port of libadwaita's
   routine. Options: (a) a two-role clean room for the LGPL references: one agent reads the code and writes a
-  behavioural description into the catalogue, another implements from the description alone, the vectors prove
-  equivalence; (b) a maintained crate that passes the vectors (D8), which moves the question to that crate; (c) a port
-  with the reference's notice, which conflicts with offering the crate under MIT or 0BSD alone. Recommended: (b) where
-  a crate passes, else (a) for LGPL references; Apache-2.0 references ported with their notice (Apache-2.0 is one of
-  the crate's own licences); `gnome/accent.rs` redone by (a); the bundled port files shipped with their licence
+  behavioural description, which the orchestrator puts in the catalogue (the core's function rows already paraphrase
+  some references branch by branch, written by agents who read the code: they serve as such descriptions), and an
+  implementer whose brief excludes the source cache and the reference files implements from the description alone,
+  the vectors proving equivalence; (b) a maintained crate that passes the vectors (D8), which moves the question to
+  that crate; (c) a port with the reference's notice, which conflicts with offering the crate under MIT or 0BSD alone.
+  Apache-2.0 code (material-color-utilities) can be ported, but the ported file stays under Apache-2.0 with its notice
+  whatever licence a user picks for the rest. Recommended: (b) where a crate passes, else (a) for LGPL references and
+  a port under a file-level Apache-2.0 licence for material-color-utilities; `gnome/accent.rs` redone by (a); the bundled port files shipped with their licence
   notices; the tools written from what the references' behaviour pins (settings, not code). This states a risk, not a
   legal conclusion; the maintainer decides.
 
@@ -214,8 +231,9 @@ work changes the files a code task builds or its gate reads (`docs/facts`, the p
   `macos-15`'s simulator and iOS 26 on `macos-26`'s (checked by spike I); Windows 11 on `windows-11-arm`, which
   `os-probe.yml` already measures (`macos-14` and the two Windows Server images leave its default set once the import
   no longer needs them). Every job is in `os-probe.yml`, dispatched by hand, because `workflow_dispatch` needs the file
-  on `main` (`--ref` runs the branch's version); a `jobs` input with an `if:` per job runs only the jobs named, since
-  GitHub runs at most five macOS jobs at once. The runners are virtual machines; whether they have a GPU is probed once
+  on `main` (`--ref` runs the branch's version); a `jobs` input (an `if:` per job) and an `images` input (feeding the
+  probe's matrix through `fromJSON`, since an `if:` cannot read the matrix) run only what a round needs, as GitHub runs
+  at most five macOS jobs at once. The runners are virtual machines; whether they have a GPU is probed once
   (spike M).
 - **D8 — the ports:** a platform function or placement strategy is implemented in the crate (D10), unless a maintained
   Rust crate passes the same vector table at the same pinned version, in which case the crate is used (less code). The
@@ -255,7 +273,8 @@ M0 closes when its setup tasks close; the spikes continue beside M1a.
 - The source cache (D1): `docs/facts/sources.toml`, `scripts/check_sources.py`, and `scripts/update_sources.sh`, which
   fetches each entry at its pin (androidx and AOSP shallow and sparse) and whose `--verify` checks every checkout's
   commit and every snapshot's hash.
-- **Re-pin:** `scripts/repin_citations.py` maps every citation in the traces, the gap maps and `platform-facts.md`
+- **Re-pin:** `scripts/repin_citations.py` maps every citation in the core, the catalogue, the rationale, the traces,
+  the gap maps and `platform-facts.md`
   from the commit it was read at (the gap maps record each SHA, `master` for most KDE sources read 2026-10-27; the
   several Plasma releases `platform-facts.md` cites, v6.4.0 to v6.8.1), fetched again by its SHA, to the pinned
   release, by the line mapping between the two commits, and lists each citation
@@ -285,7 +304,7 @@ M0 closes when its setup tasks close; the spikes continue beside M1a.
   or a connector, whatever its tag, and each of the catalogue's *Open items*, gets a destination in the ledger: a
   named milestone, unit or lane, settled by the model, or carried to a later version with its reason.
 - **Spikes** on `v0.8.0-tools` (each ends with yes or no and its evidence in the ledger), three at a time, M1a's needs
-  first (an agent waiting on a CI run does not count against the cap): M, the macOS probe's button pass (hovered, pressed, disabled and checked in a key window, at each size), then
+  first (the spikes count against the cap below; an agent waiting on a CI run does not count): M, the macOS probe's button pass (hovered, pressed, disabled and checked in a key window, at each size), then
   its other missing passes (a wallpaper and transparency setting under control, the drawn against the read window
   background) and the runner's GPU; G, the GNOME harness and its vector generator for libadwaita's functions; K, the
   KDE container and accent script; then I, the iOS simulator host; W, whether microsoft-ui-xaml states the slice's
@@ -305,19 +324,21 @@ M0 closes when its setup tasks close; the spikes continue beside M1a.
   S4.6's groups the button and the roles use (`token.params.pointer_repeat`, `token.params.color`,
   `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts`; S7; S8 without
   S13; S9.1, S9.2, S9.4; S10; S11; S12 for what the model holds, with its refusal test (an exhaustive `match` over
-  `LayerError` and `Problem`, one triggering case per variant, so a new variant does not compile without one); S16's
+  `LayerError` and `Problem`, one triggering case per variant, so a new variant does not compile without one); S21.2's
+  shape from the start (exhaustive enums, `#[non_exhaustive]` structs), so the connectors are written against it; S16's
   `Theme`, `from_preset`, `set_reader_stand_in`, `set_accent` and the query; S17's gate with its normal and perturbed
   runs and the declarations check. `PresetId` holds the presets written so far.
 - **Facts tooling:** `scripts/check_function_vectors.py` (*How values are checked*); `scripts/check_facts_trace.py`
-  (`--enabled` checks the enabled units, `--unit` one unit, no option all); `scripts/generate_platform_facts.py` with `--check`;
-  `scripts/import_platform_facts.py`, which converts today's `platform-facts.md` rows and their evidence to facts
-  wherever the key maps (through the re-pin) and keeps the rest in a legacy appendix of the generated document.
+  (`--enabled` checks the enabled units on the presets that exist, `--unit` one unit, no option all);
+  `scripts/generate_platform_facts.py` with `--check` (from the switch on); `scripts/import_platform_facts.py`, which
+  converts today's `platform-facts.md` rows and their evidence to facts wherever the key maps (through the re-pin) and
+  keeps the rest in a legacy appendix of the generated document.
 - **The switch** (the last task): as *The transition* says, with the inventory; `native-theme-build` follows the new
   API (its drift test calls `IconSet::from_name`); the preset-validator agent and the two skills rewritten if D9
   approves.
 - **Gate:** `cargo test -p native-theme` (the facts gate and the doctests included), `check_facts.py`,
-  `check_fact_citations.py`, `check_function_vectors.py`, `generate_platform_facts.py --check` and
-  `generate_widgets.py --check` green; after the switch, the full run fails only on `PLAN_EXCLUDED`'s steps.
+  `check_fact_citations.py`, `check_function_vectors.py` and `generate_widgets.py --check` green; after the switch,
+  `generate_platform_facts.py --check` green and the full run green with `PLAN_EXCLUDED`'s steps skipped.
 
 ## M1b — The slice complete
 
@@ -337,18 +358,21 @@ M0 closes when its setup tasks close; the spikes continue beside M1a.
 ## M2 — The model's core, complete (after D6; in series)
 
 1. **The four connectors on the slice,** gpui first, then iced, egui and egui-widgets: each one's old mapping
-   deleted, its spinner and animated-icon code removed (`AnimatedIcon` is gone; they return with the `spinner` unit's
-   connector task), the colour roles and `button` mapped from the query, its contract test (S21.3); their clippy,
-   strict panic and test steps leave `PLAN_EXCLUDED` (the showcases stay). They come first so the connectors use the
-   API before the rest of S16 is built on it.
-2. S2.2's remaining functions: the model's arithmetic with unit tests, the platform functions with vector tables.
+   deleted, its spinner and animated-icon code removed (`AnimatedIcon` is gone; they return with the indicators unit's
+   connector task), everything the model holds then mapped from the query (or listed as what the toolkit cannot draw),
+   its contract test (S21.3). The showcases are unlinked from their crates as the switch unlinks modules (the
+   `[[example]]` entries removed with `autoexamples = false`, the `native-theme-showcase-support` dev-dependency
+   removed, gpui's `mod showcase;` removed; files kept, back at M5, in the inventory), so `--all-targets` and the tests
+   no longer build them, and the connectors' clippy, strict panic and test steps leave `PLAN_EXCLUDED`. They come first
+   so the connectors use the API before the rest of S16 is built on it.
+2. The model's remaining arithmetic (S2.2), with unit tests. The platform functions come only with the facts that use
+   them (M1b, M3), each with its vector table.
 3. S12 complete.
 4. S14 complete: one palette per variant each of the seven projects publishes (S19.1), as mappings with their labelled
    picks (the guide's own example value where it gives one, else the middle of the stated range; the picks listed in
    the ledger for the maintainer's veto), the KDE ports with their measured facts added to the accent run, the
    projects' published colours as facts (a palette lane and its verifier), the gate's palette run (each pick skipped).
-5. S16 complete; S19.3 inside `native-theme`; S21.2 (exhaustive enums,
-   `#[non_exhaustive]` structs as S21.2 names them).
+5. S16 complete; S19.3 inside `native-theme`.
 6. S18: `property-registry.toml` generated with its drift test; `check_wrong_safety_nets.py` and the
    `inheritance-rules.toml` checks removed; `check_platform_facts_rows.py` and `check_preset_citations.py` rewritten to
    read the facts (S18); `check_todo_citations.py` rewritten to the model's paths; `check_section_refs.py` rewritten to
@@ -375,9 +399,10 @@ components. Per unit:
 2. **Verification** (*How values are checked*), then the spec corrections the unit found.
 3. **Model and presets, in one commit:** the unit enabled in the generator (or its hand-written fields), the platform
    functions it adds with their vectors, its readers' new reads (the traces' `reader` lines), and the unit's parts in
-   the eight presets (written in worktrees, or generated if D6 so decides).
-4. **Connectors:** the unit mapped in the four connectors, one task in the series queue, their contract tests
-   extended.
+   the eight presets (written in worktrees, or generated if D6 so decides). The unit's new resolved fields enter each
+   connector's contract table as `pending` (the generator lists them), which the contract test accepts.
+4. **Connectors:** the unit mapped in the four connectors, one task in the series queue, emptying the unit's `pending`
+   entries.
 
 A unit with an open entry in the unmeasured register waits for the maintainer's decision on it; the series queue
 moves on to the next unit meanwhile.
@@ -391,16 +416,18 @@ moves on to the next unit meanwhile.
 - Every unit enabled; the legacy appendix of `platform-facts.md` empty (each row converted or recorded as not a model
   value, with its reason); S19.2's staged file removed; the accent run over every pinned scheme and accent; the palette
   run over every bundled palette; every harness run once more on the then-current runner images and every measured fact
-  compared with that run, so a drift within a generation is found before the release.
+  compared with that run, so a drift within a generation is found before the release (a drifted fact is measured and
+  verified again, or goes to the unmeasured register).
 - **Gate:** `cargo test -p native-theme --test facts_gate` green on the eight presets, with no fact lacking a resolved
   key, no state-model combination lacking a fact and every declaration agreeing with its facts;
-  `check_facts_trace.py` without `--unit` green; the unmeasured register has no open entry.
+  `check_facts_trace.py` and `check_function_vectors.py` over every fact green; the unmeasured register has no open
+  entry.
 
 ## M5 — Showcases (after M4)
 
 The three showcases rebuilt on the query, their element lists and parity gates following (S18), their busy indicators
-drawn from the `spinner` widget (S19.3); the connectors built from `default()` with field assignment (R21) checked complete.
-- **Gate:** each connector's contract test; the showcase parity gates; the screenshots regenerated and compared side by
+drawn from the `spinner` widget (S19.3); the unlinked showcase entries, dev-dependencies and modules linked again.
+- **Gate:** each connector's contract test with no `pending` entry; the showcase parity gates; the screenshots regenerated and compared side by
   side with the platforms under the same theme; `PLAN_EXCLUDED` empty and `ci.yml`'s exclusions gone.
 
 ## M6 — Release 0.8.0
@@ -436,12 +463,13 @@ drawn from the `spinner` widget (S19.3); the connectors built from `default()` w
 - **Facts, mechanically** (`check_fact_citations.py`): a `published` or `read` fact's `quote` occurs,
   whitespace-normalised, in the cited lines of the cited file at its pin, and every literal of its `value` (numbers
   after unit normalisation, colours in any notation, a derivation's operands), after its `conversion`, occurs in the
-  `quote`; a `measured` fact's `evidence` file is committed, holds the fact's key, combination and value in the
-  harness's keyed record, and records the pinned generation and toolkit versions (the exact builds listed); an
-  evidence file no fact cites is reported.
-- **Facts, independently:** per unit and platform, a verifier that is not the lane's author receives the keys,
-  combinations and the pinned sources, never the lane's citations or values, and reports a value and a citation for
-  each; both are compared mechanically. Each disagreement goes to a tie-breaker agent with both citations and the
+  `quote`; a `measured` fact's `evidence` file is committed, the value at its `evidence` path equals the fact's value
+  after its `conversion` within its tolerance, and the file records the pinned generation and toolkit versions (the
+  exact builds listed); an evidence file no fact cites is reported.
+- **Facts, independently:** per unit and platform, a verifier that is not the lane's author first derives the unit's
+  state model and declarations from the sources, without the lane's, and the two are compared mechanically (a
+  combination the lane missed would otherwise never be checked); then, for the agreed combinations, it reports a value
+  and a citation for each key, never seeing the lane's, and both are compared mechanically. Each disagreement goes to a tie-breaker agent with both citations and the
   source. An audit sample of the agreed facts (during the slice 5 % per lane and unit, at least ten; D6 sets the rate)
   goes to the tie-breaker too, to
   measure how often a lane and its verifier agree on a wrong value. The orchestrator reads the tie-breakers' summaries
@@ -460,8 +488,8 @@ drawn from the `spinner` widget (S19.3); the connectors built from `default()` w
   `linearInterpolation` are replaced, since a transcription checks a port against another port); or measured where the reference
   is closed (AppKit and UIKit placement through the probe and the iOS host); where a platform publishes a table
   (Apple's tracking), the table itself is the facts. The model's own arithmetic has unit tests from the
-  specification's definition. `check_function_vectors.py` checks that every function and strategy a preset or fact
-  uses has a table and a test. Without this, a derivation fact and the preset would both be evaluated by the same
+  specification's definition. `check_function_vectors.py` checks that every function and strategy the existing
+  presets use has a table and a test (every one any fact uses, at M4). Without this, a derivation fact and the preset would both be evaluated by the same
   function, and a wrong function would pass the gate.
 - **The presets need no separate author:** the gate compares them with the verified facts mechanically, so who writes
   them does not change what passes.
@@ -494,8 +522,8 @@ tasks; the generator's drift check makes the code follow.
   agent per platform and one for the palettes, briefed with the pinned sources, the traces and the facts format;
   verifiers and tie-breakers as above; tooling in its own agents on `v0.8.0-tools`. Broad searches go to the `locate`
   agent (Haiku).
-- **Briefs:** every agent reads and searches only its worktree, the project, the source cache and the scratchpad, and
-  never searches the whole filesystem (no `find /`).
+- **Briefs:** every agent reads and searches only its worktree, the project, the source cache and the scratchpad
+  (verifiers and clean-room implementers less, as above), and never searches the whole filesystem (no `find /`).
 - **Failures:** a subagent that fails the same gate twice is not dispatched a third time; the orchestrator takes the
   task over or re-specifies it.
 - **Parallel by default:** the lanes, the verifiers, the reviews and the tooling run beside the code, in their own
