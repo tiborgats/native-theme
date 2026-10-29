@@ -789,9 +789,9 @@ model, the platform presets and the three connectors
       `_trailing`, with a side anchor, SF-7†), iOS 27.2's navigation-bar
       `titleAlignment` (C-1), and iOS 27.1's `UIVerticalBarBehavior` and
       `UIBarButtonItem.axisBehavior` (the iOS gap map's 26 column); the gap
-      maps' rows and the traces' `newest (R1.5)` lines name them. Whether 27
-      re-describes `macos-tahoe` and `ios-26` or gets presets of its own is
-      decided as this entry's first paragraph says.
+      maps' rows and the traces' `newest (R1.5)` lines name them. For iOS 27
+      the same decision is taken when a non-preview runner image carries its
+      simulator: `ios-26` re-described, or a preset of its own.
 
 ### macOS: the window background macOS 14 and 15 draw is not the one they read
 

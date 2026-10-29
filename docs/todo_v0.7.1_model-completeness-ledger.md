@@ -81,7 +81,9 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 3 | 2 | catalogue, traces (macOS, iOS), spec S20; ADD-A119; `docs/todo.md` | what only macOS or iOS 27 draws carried to the macOS 27 entry; `newest (R1.5)` covers it | the maintainer (D12) | applied 893df7de; checked with #1 |
 | 4 | 1 | catalogue :8193-8347 | five citations of the session's scratchpad paths named by project and commit | the citation inventory (M0) | applied 893df7de |
 | 5 | 1 | spec §0 | the name and entry checkers are in the repository | the orchestrator | applied 1a55a93d |
-| 6 | 2 | spec S2.2, S5.1, S6.1, S14, S17, S18, S21.3; catalogue presets line; iOS gap map; `docs/todo.md`; R1.5 | the first check's fixes: S17's fields per kind, the quote check's direction and precision, composable conversions, absence citations, `read` facts, evidence paths and what counts as cited, sources keyed `<project>@<ref>` and D12's rule for Apple pages, accent facts by `scheme_file`, the gate's staging, palette facts and `[palette.sources]`; the model's arithmetic named; S9.4's curves vector-checked | the independent check of #1 and #3 | applied; second check pending |
+| 6 | 2 | spec S2.2, S5.1, S6.1, S14, S17, S18, S21.3; catalogue presets line; iOS gap map; `docs/todo.md`; R1.5 | the first check's fixes: S17's fields per kind, the quote check's direction and precision, composable conversions, absence citations, `read` facts, evidence paths and what counts as cited, sources keyed `<project>@<ref>` and D12's rule for Apple pages, accent facts by `scheme_file`, the gate's staging, palette facts and `[palette.sources]`; the model's arithmetic named; S9.4's curves vector-checked | the independent check of #1 and #3 | applied abcc9518, except R1.5's rewording, which was the maintainer's (class 3) and is reverted to D12's words; second check: 6 serious, 15 minor |
+| 7 | 2 | spec S2.2, S11, S14, S17, S18, S22; `docs/todo.md` | the second check's fixes: the facts' keys and values, the quote's notations (SCSS, CSS, XAML `#aarrggbb`, INI byte lists, `Qt.rgba`), the quotes of one generation's citations checked together, absence citing the whole definition, evidence's side of `conversion` and its preset by the run README, snapshots' `describes` instead of "cited beside", the state models' format, palette facts without rows or generations and `[palette.sources]` keyed by TOML path in S11, examples without invented values | the second independent check | applied; third check pending |
+| 8 | 1 | catalogue :8328 | `kcolorscheme@8bb948c src/color-schemes/BreezeLight.colors` against the KDE gap map's `breeze@75561b7f colors/BreezeLight.colors`: two copies of one file; the re-pin settles which one Plasma 6.8.2 installs | the first independent check | open, for the re-pin |
 
 ## Unmeasured register
 
@@ -102,7 +104,7 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 
 | Spike or run | Result | Run URL | Notes |
 |---|---|---|---|
-| M — macOS probe's button pass | | | |
+| M — macOS probe's button pass | **yes** (2026-10-29): every state, size (extraLarge on 26) and appearance in a key window on macOS 15.7.9 (Xcode 16.4) and 26.6.2 (Xcode 26.6); `highlight:YES` equals a real press pixel for pixel; AppKit draws no hover look for push buttons (record hover as not drawn); runner screen 1× only, no GPU reported; not yet: the accent and contrast passes, focus, mixed, other bezels | [40969040283](https://github.com/tiborgats/native-theme/actions/runs/40969040283) | `tools/os-probe/src/macos/buttons.rs`, `--button-pass`, merged into `v0.8.0-tools` |
 | G — GNOME harness and libadwaita vector generator | | | |
 | K — KDE container and accent script | | | |
 | I — iOS simulator host | | | |

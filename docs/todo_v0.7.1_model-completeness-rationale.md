@@ -174,7 +174,7 @@ through them; a control only SwiftUI has (`Gauge`, the grouped `Form`) is a cont
 controls, both of which the `ios-*` and `macos-*` presets cover; its Catalyst-only rows are out.
 
 **R1.5 — Versions inside a generation, and choosing the generation.** A preset describes the newest
-release of its generation that its pinned sources and a supported runner describe (macOS 15 for `macos-monterey`, libadwaita 1.10 for
+release of its generation that a supported runner measures (macOS 15 for `macos-monterey`, libadwaita 1.10 for
 `adwaita`, iOS 18 for `ios-13`, macOS 26 for `macos-tahoe` and iOS 26 for `ios-26` while GitHub's macOS 27 image is a
 preview, Material 3 as its current token set states it for `material-3`); readers read what the running
 release states; a release whose look differs as a whole starts a new generation and preset, as macOS 26
@@ -1196,7 +1196,7 @@ Amended in place after the specification's confirming (thirteenth) check:
 
 Amended by the maintainer's decision D12 of the 0.8.0 plan (2026-10-29):
 
-- R1.5: a preset describes the newest release its pinned sources and a supported runner describe, so `macos-tahoe` and `ios-26` describe
+- R1.5: a preset describes the newest release a supported runner measures, so `macos-tahoe` and `ios-26` describe
   26.x while macOS 27 runs only on a preview image; what only 27 draws is carried to `docs/todo.md`'s macOS 27 entry.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
