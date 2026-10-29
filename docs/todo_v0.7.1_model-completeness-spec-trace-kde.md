@@ -1026,7 +1026,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.48† | `input.preedit.text, text_area.preedit.text (TextStyle.decoration and fill from the input method's attributes)` | field |
 | K3.48† | `input.caret @ {composing}; text_area.caret @ {composing}` | rule |
 | K3.50 | `token.kde.disabled` | token |
-| K3.50 | `role.<set>.disabled.* (= kde_effects(<the active role>, role.<set>.background, disabled, <role kind>): `foreground` for the text roles, `decoration` for the decoration roles, `background` for the backgrounds), except the Selection set, whose disabled group starts from Window's active values (kcolorscheme.cpp:317-319): role.selection.disabled.* = kde_effects(active(role.window.<role>), active(role.window.background), disabled, <role kind>) (S2.2, R5.1)` | role |
+| K3.50 | `role.<set>.disabled.* (= kde_effects(<the active role>, active(role.<set>.background), disabled, <role kind>): `foreground` for the text roles, `decoration` for the decoration roles, `background` for the backgrounds), except the Selection set, whose disabled group starts from Window's active values (kcolorscheme.cpp:317-319): role.selection.disabled.* = kde_effects(active(role.window.<role>), active(role.window.background), disabled, <role kind>) (S2.2, R5.1)` | role |
 | K3.50 | `reader:kde:kdeglobals [ColorEffects:Disabled] IntensityEffect, IntensityAmount, ColorEffect, ColorAmount, ContrastEffect, ContrastAmount` | reader |
 | K3.51 | `role.* @ cond window_inactive (kde_* over the inactive input roles)` | rule |
 | K3.51 | `input.inactive (KDE stated Inactive values)` | input |

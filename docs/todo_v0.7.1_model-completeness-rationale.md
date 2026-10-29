@@ -1,8 +1,8 @@
 # v0.7.1 — Model completeness: Rationale
 
-**Status:** design, drafted 2026-10-28 from the gap map; checked seven times independently and by
-the author between them, revised after each check, and consolidated after the seventh (§5); awaiting
-the maintainer's review. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
+**Status:** design, drafted 2026-10-28 from the gap map; checked eight times independently (§5), then amended
+in place during the specification's thirteen checks (each amendment noted under R25.13); done with the
+specification, 2026-10-29. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
 and its six platform files ("the map"; a row is identified by its file and ID, and cited here by ID,
 with its file where the prefix does not say it). Next: the specification,
 `todo_v0.7.1_model-completeness-spec.md`, which states every type, field and rule decided here and
@@ -365,23 +365,26 @@ input's base for it. The inputs:
   `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
   applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states Breeze's scheme
   values as Plasma's default ("Accent color from color scheme") writes them, with no accent derivation, and an
-  application changing the accent gets the accent-dependent roles by that derivation, a function (R25.1), over the
-  scheme inputs in force, the reader's or those of a palette from a KDE port,
+  application changing the accent, or another platform's reader whose accent reaches `kde-breeze`, gets the
+  accent-dependent roles by that derivation, a function (R25.1), over the scheme inputs in force, the reader's or those of a palette from a KDE port,
   which is a scheme file. A palette that is native-theme's mapping (R19) has no scheme inputs: it states its
   accent-dependent roles itself, following the accent by reference where they follow it, and is refused where it
   leaves one to the preset's Breeze value, which would mix the two schemes.
 - **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles. The preset states
-  each as Plasma's default path writes it, and an accent the application sets restates each by Plasma's derivation
+  each as Plasma's default path writes it, and an accent the application sets (or another platform's reader's) restates
+  each by Plasma's derivation
   (`kde_accent(…, inactive)`, R25.1: what `applyScheme()`
   writes for a set whose scheme states an Inactive group, that group's own values tinted toward the accent in a tinting
   scheme and, in one that does not tint, Header's as a copy of Window's active values (Plasma 6.8) and another set's as
-  stated, Header's background and foreground then replaced under the accent-coloured title bar option (whether or
-  not Header's scheme states an Inactive group, as `applyScheme()` writes them either way); and the set's
-  active value for one that states none, as KColorScheme reads it, the scheme inputs naming the sets whose scheme
-  states an Inactive group, as the preset, the reader and a port each read it from their own scheme file); the reader
+  stated, Header's background and foreground then replaced under the accent-coloured title bar option where the
+  scheme has a Header group (whether or not it states an Inactive group, as `applyScheme()` writes them either way;
+  a scheme without one gets no Header written, and KColorScheme reads Header from Window); and the set's
+  active value for one that states none, as KColorScheme reads it, the scheme inputs naming the sets the scheme has a
+  group for, those whose group states an Inactive group and the keys it leaves unset, as the preset, the reader and a
+  port each read it from their own scheme file); the reader
   replaces them with what kdeglobals states, and a palette from a KDE port with what Plasma's default path writes over
   the port's scheme (`applyScheme()`'s rules, as the preset's values follow them), not the raw file, so an accent set
-  later cannot shift a non-tinting port's inactive title bar. A mapping palette has no scheme, so it states them
+  later cannot shift a non-tinting port's inactive title bar without the accent-coloured title bar option. A mapping palette has no scheme, so it states them
   itself (the project's colours, or each its set's active value, which is how KColorScheme reads a scheme without an
   Inactive group), and is refused where it leaves one to the preset's derivation over Breeze's inputs, which would
   show Breeze's colours in an inactive window under the palette's. KDE's inactive effects apply over them, as
@@ -1032,14 +1035,18 @@ view background, the text on it black or white by KDE's contrast measure, the `[
 scheme file's `[WM]` or its `Header` colours and then tinted or accented by the next two options, `:287-338`, and the
 scheme file's `TintFactor` and accent-coloured title bar options, which become tokens of the preset). Its `scheme` is the scheme file kdeglobals
 names (`[General] ColorScheme`, found as `color-schemes/<name>.colors`), which the reader reads, since kdeglobals
-holds only the derived values. A mapping palette (R19) has no scheme inputs, so it states its accent-dependent roles
+holds only the derived values; where kdeglobals names none, or the file is missing, kdeglobals' own colours stand in
+for it, and the reader reports that rather than failing, as failing would discard every other value it read. A group
+or key a scheme file lacks is read as KColorScheme and `applyScheme()` read it unset: a scheme without a Header group
+(Breeze Classic, Dracula's port) gets no Header written, accent or title bar included, and KColorScheme reads Header
+from Window, so its title bar takes the accent through `[WM]` alone. A mapping palette (R19) has no scheme inputs, so it states its accent-dependent roles
 itself, by reference to the accent where they follow it (R2.6). KDE's stated Inactive values (R2.6) are, in kdeglobals, Plasma's: since
 Plasma 6.8.0, `applyScheme()` writes `[Colors:Header][Inactive]`, in a scheme that does not tint, as a copy of the
 scheme's active `[Colors:Window]`, not the scheme's own Header Inactive values; in a tinting scheme it writes every
 set's `[Inactive]` values, Header's included, as the scheme's own tinted toward the accent; and under the
 accent-coloured title bar option it then writes Header's inactive background and foreground from Window's background
-tinted toward the accent (`colorsapplicator.cpp:247-284`). The inactive input roles stay, filled from what kdeglobals
-holds.
+tinted toward the accent (`colorsapplicator.cpp:247-284`), where the scheme has a Header group. The inactive input
+roles stay, filled from what kdeglobals holds.
 
 **R25.2 — KDE and contrast (confirms R2.3).** One KDE row (K2.23†, the date picker) has code that drops
 hard-coded colours under a high-contrast preference. Plasma reports none (the KDE portal's appearance keys are
@@ -1173,6 +1180,18 @@ Amended in place after the specification's final (twelfth) check:
 - R10: letter and word spacing are scaled by the line height's rule.
 - R16: a part's corners, stroke edges and shadow offsets are physical in right-to-left; only the layout's geometry and
   a translation mirror.
+
+Amended in place after the specification's confirming (thirteenth) check:
+
+- R2.6, R25.1: a scheme file's missing colour groups and keys are read as KColorScheme and `applyScheme()` read them
+  unset (a scheme without a Header group gets no Header written, its title-bar accent `[WM]`'s alone); another
+  platform's reader's accent on `kde-breeze` is derived like the application's; a non-tinting port's inactive title bar
+  is unchanged by an accent only without the title-bar option.
+- R25.1: where kdeglobals names no scheme file or the file is missing, kdeglobals' own colours stand in and the reader
+  reports it, instead of the whole read failing.
+- R4: the gate also sets accents on `kde-breeze` and compares Plasma's derivation with facts measured from Plasma.
+- R9: each scroll deceleration model carries the parameters its source defines, not one number.
+- R16: the query returns the mirrored values physical, so no connector mirrors again; a transform's origin is physical.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.

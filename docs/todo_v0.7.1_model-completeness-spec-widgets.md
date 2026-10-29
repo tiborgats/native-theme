@@ -1,7 +1,8 @@
 # v0.7.1 — Model completeness: Specification, widget catalogue
 
-**Status:** draft, 2026-10-28; merged from eight groups' catalogues and revised after each check pass (the core's
-§0 records the passes). Part of the specification ([`todo_v0.7.1_model-completeness-spec.md`](todo_v0.7.1_model-completeness-spec.md), "S…"; its
+**Status:** done with the specification, 2026-10-29; merged from eight groups' catalogues and revised after each
+of eleven check passes and a systematic absence pass (the core's §0 records them); its per-platform details are
+confirmed or corrected by the facts in the value phase. Part of the specification ([`todo_v0.7.1_model-completeness-spec.md`](todo_v0.7.1_model-completeness-spec.md), "S…"; its
 decisions are the rationale's,
 [`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md),
 "R…"). The traceability is in `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`.
@@ -8182,8 +8183,9 @@ but `kde-breeze`), `shade` (every preset), `shade_darker` (every preset), `borde
 `ios-*` and `material-3` state the disabled text colour, `foreground` (today's `defaults.disabled_text_color`; on `ios-*`
 D-9, D-20), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
 KDE each field but `border` is the KColorScheme disabled effect applied to the active value (`kde_effects(c,
-background, disabled, <role kind>)`, the kind `foreground`, `decoration` or `background` per field, which reads
-`token.kde.disabled`, S2.2, S4.8) [K3.50], with one exception KColorScheme makes: the `Selection` set's disabled
+background, disabled, <role kind>)`, the kind `foreground`, `decoration` or `background` per field, `background` the
+set's active background, `active(role.<set>.background)`, never the effected one, which reads `token.kde.disabled`,
+S2.2, S4.8) [K3.50], with one exception KColorScheme makes: the `Selection` set's disabled
 group starts from the `Window` set's active values whatever `inactive_change_selection_color` says
 (`kcolorscheme.cpp:317-319`, S2.2), so each of those fields of `role.selection.disabled` is `=
 kde_effects(active(role.window.<role>), active(role.window.background), disabled, <kind>)` (R5.1). `border` is no
@@ -8198,8 +8200,10 @@ from `token.params.opacity` instead [GN-1.271, GN-1.272].
 The inactive group is no record field: it is a colour-role rule `@ cond window_inactive` on the active field
 (libadwaita's
 `*_backdrop_color`, KDE's `[Colors:*][Inactive]` inputs and effects, AppKit's unemphasised colours) [K3.51, GN-1.136,
-S3.2]. On KDE the inactive effects (`kde_effects(c, background, inactive, kind)`) apply over every set's inactive start, the
-`Selection` set's included: that set starts from `kde_selection_inactive(<its inactive input>, <Window's inactive
+S3.2]. On KDE the inactive effects (`kde_effects(c, background, inactive, kind)`, `background` the set's starting
+background, its inactive input role `input.inactive.<set>.background_normal`, never the effected one, S2.2) apply over
+every set's inactive start, the `Selection` set's included, whose starting background is the one
+`kde_selection_inactive` gives: that set starts from `kde_selection_inactive(<its inactive input>, <Window's inactive
 input>, active(role.selection.background), <kind>)` (`kcolorscheme.cpp:304-316`, `:374-378`), the function choosing
 between the two sets by `token.kde.inactive_change_selection_color`, and the effects are applied over its result
 (`:380-391`; K3.40, K1.173, S2.2).
@@ -8220,7 +8224,10 @@ group, snake-cased (the twelve keys KColorScheme reads, platform-facts §1.3.2: 
 
 `input.kde_scheme.inactive_groups` holds, per scheme, the list of the sets whose scheme file has an `[Inactive]`
 group (Breeze's scheme files state one for `Header`, K3.51, K3.55; the reader's and a port's from their own file),
-which `kde_accent` branches on (S2.2, S9.1). A fourth namespace, with keys of its own, `input.kde_scheme.wm.<key>`, holds the `[WM]` group's four keys (`active_background`, `active_foreground`,
+which `kde_accent` branches on (S2.2, S9.1), with two lists beside it: `input.kde_scheme.groups`, the sets the file
+has a group for, and `input.kde_scheme.unset_keys`, the keys those groups leave unset; a group or key the file lacks
+is stated as KColorScheme reads it unset (a file without a `Header` group, such as Dracula's port, gives `Header`
+`Window`'s values), so no input is missing (S9.1). A fourth namespace, with keys of its own, `input.kde_scheme.wm.<key>`, holds the `[WM]` group's four keys (`active_background`, `active_foreground`,
 `inactive_background`, `inactive_foreground`, the core's `KdeWmKey`, S4.8), which `kde_accent_wm` reads (S9.1; the
 keyed roles `wm_*` below).
 
@@ -8241,9 +8248,11 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
   - while it does not: `Header`'s the file's active `Window` value `input.kde_scheme.window.<key>` (Plasma 6.8's
     substitute, BUG 516396), every other set's its own file value, untinted;
   - the accent never replaces an `[Inactive]` group's accent keys;
-  - then, while `token.kde.titlebar_is_accent_colored` holds, `Header`'s inactive background and foreground are the
-    file's `Window` background tinted toward the accent and the text on it, over either branch above, and also where
-    the list does not name `Header` (`applyScheme()` writes that group either way, S2.2);
+  - then, where the file has a `Header` group and `token.kde.titlebar_is_accent_colored` holds, `Header`'s inactive
+    background and foreground are the file's `Window` background tinted toward the accent and the text on it, over
+    either branch above, and also where the list does not name `Header` (`applyScheme()` writes that group either
+    way, S2.2); where the file has no `Header` group, `applyScheme()` writes none, and `Header`'s active and inactive
+    roles are `Window`'s active results, the title-bar accent being `[WM]`'s alone (S2.2);
 
   and for a set the list does not name, the set's active result, as KColorScheme reads a set without an `Inactive`
   group (S2.2, R25.1). Which roles are accent-dependent is the core's list (S9.1). Group `disabled` is refused (S12);
@@ -8259,7 +8268,8 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
 
 `kde-breeze`'s `[declare] accent_inputs` is `["accent"]` alone: the scheme inputs and the inactive input roles are the
 scheme's, which Plasma's derivation reads (S9.1). So a reader's `input.accent` from another platform applies on
-`kde-breeze`; under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
+`kde-breeze`, where the accent layer derives the accent-dependent roles from it by `kde_accent` over Breeze's scheme
+inputs, as for `set_accent` (S9.2); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
 leaves a foreign reader's `input.accent` out, so no accent mixes with another platform's derived inputs (S8, S9.5).
 
 Each key names one record field, the same in all three namespaces and in `kde_accent`'s `key` operand:
@@ -8619,8 +8629,8 @@ wherever the block appears and is cited here, not repeated: among the tokens it 
 `Behavior`, `TouchBehavior`, `ScrollPhysics` and `PointerTokens` (`hide_pointer_delay`, `hide_pointer_fade`,
 `scroll_px_per_step`, `touchpad_factor`, `wheel_step_duration_max`, `touchpad_deceleration`, `touchpad_timing`,
 `spring_loading`, `touch.*` and `pointer.color` on the platforms without them; `Behavior.key_repeat` is an `Option`,
-`none` where keys never repeat, and its `KeyRepeat`'s `delay` and `interval` are stated, S4.2; a `ScrollDecay`'s
-`amount` is stated), `IconTokens.theme_fallback`, the `Caret` fields it
+`none` where keys never repeat, and its `KeyRepeat`'s `delay` and `interval` are stated, S4.2; every parameter
+of a `ScrollDecay` is stated), `IconTokens.theme_fallback`, the `Caret` fields it
 names, every `TextRendering` field and a `FocusIndicator`'s `shadow` and `transition` (its `dash` is stated, `solid`
 included, S2.4). `KdeTokens` and `KdeEffects` are stated whole on `kde-breeze`, never `Absent` (`tint_factor` an
 `Option`, `none` where the scheme does not tint; a reader's and a port's unset keys as KColorScheme and `applyScheme()`

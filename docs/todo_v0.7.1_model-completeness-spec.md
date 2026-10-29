@@ -1,6 +1,6 @@
 # v0.7.1 — Model completeness: Specification
 
-**Status:** draft, 2026-10-29; in progress (§0). This document states the model the rationale
+**Status:** done, 2026-10-29: checked by thirteen independent reviews (§0) and finished by the maintainer's decision after the final core check; next is the value phase. This document states the model the rationale
 ([`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md), "R…")
 decides: its types, values, rules, order, API, file formats and checks. It is in three parts:
 
@@ -18,11 +18,11 @@ platform is stated here: values come from the facts (S17) in the value phase.
 
 | Part | State |
 |---|---|
-| Core (this document) | drafted; the final check's findings fixed (below) |
+| Core (this document) | drafted; the final check's findings and its confirming check's fixed (below) |
 | Research the rationale requires first: kirigami-addons survey (R1.2), community ports (R19), Plasma's accent derivation (R2.6) | done; R19 and R25 decided from it |
 | Widget catalogue | 86 typed widgets, 28 keyed components; its name and entry checks pass (working scripts of the specification's sessions, not kept in the repository, so they cannot be re-run from it; the kept check is S18's `scripts/check_spec_trace.py`) |
 | Traceability | every row of the six platforms traced; `scripts/check_spec_trace.py` passes |
-| Check passes | serious findings per pass, core / catalogue / traces (random sample): 1: 11 / 5 / 9 rows of 256; 2: 10 / 4 / 6.7 % (then every row re-verified); 3: 6 / 5 / 0.8 %; 4: 6 / 12 / 1.25 %; 5: 3 / 4 / 0.4 %; 6: 1 / 5 / 0.4 %; 7: 0 / 5 / 0 %; 8: 0 / 2 / 0 %; 9: 1 / 2 / 0.4 %; 10: 1 / 8 / 0.4 %; 11: 0 / 9 / 2.1 %; each fixed (pass 11's fix round done: the core's 9 should-fix and 19 minor findings, the catalogue's and the traces' findings, and the ten core items the catalogue round found, ADD-A110). The maintainer chose to finish the specification with one final check of the core alone: 12 (final, core only): 2 serious, 12 should fix, 21 minor, each fixed (ADD-A111): KDE's tint switch an `Option` and every `token.kde` value stated, so no function branches on absence; the sets with an `[Inactive]` group a stated input (`kde_scheme.inactive_groups`); a port's inactive roles by `applyScheme()`'s rules; the accent-dependent roles listed; corners, stroke edges and shadow offsets physical in right-to-left; one-of selector parts and the checks' precision in validation; element data declared by the preset and readable by any layer; the rest as the check recommended |
+| Check passes | serious findings per pass, core / catalogue / traces (random sample): 1: 11 / 5 / 9 rows of 256; 2: 10 / 4 / 6.7 % (then every row re-verified); 3: 6 / 5 / 0.8 %; 4: 6 / 12 / 1.25 %; 5: 3 / 4 / 0.4 %; 6: 1 / 5 / 0.4 %; 7: 0 / 5 / 0 %; 8: 0 / 2 / 0 %; 9: 1 / 2 / 0.4 %; 10: 1 / 8 / 0.4 %; 11: 0 / 9 / 2.1 %; each fixed (pass 11's fix round done: the core's 9 should-fix and 19 minor findings, the catalogue's and the traces' findings, and the ten core items the catalogue round found, ADD-A110). The maintainer chose to finish the specification with one final check of the core alone: 12 (final, core only): 2 serious, 12 should fix, 21 minor, each fixed (ADD-A111): KDE's tint switch an `Option` and every `token.kde` value stated, so no function branches on absence; the sets with an `[Inactive]` group a stated input (`kde_scheme.inactive_groups`); a port's inactive roles by `applyScheme()`'s rules; the accent-dependent roles listed; corners, stroke edges and shadow offsets physical in right-to-left; one-of selector parts and the checks' precision in validation; element data declared by the preset and readable by any layer; the rest as the check recommended. The maintainer chose to finish after that final core check, with one confirming check of its fixes: 13 (confirming, core only): 1 serious, 11 should fix, 7 minor, each fixed in this last round (ADD-A112): a KDE scheme file lacking a colour group or key read as KColorScheme and `applyScheme()` read it (`kde_scheme.groups` and `unset_keys` beside `inactive_groups`; a scheme without a `Header` group gives `Header` `Window`'s results, its title-bar accent `[WM]`'s alone; Dracula's port converted, `PortError::MissingKey` gone); an accent run of the facts gate for `kde_accent` and `kde_accent_wm`; another platform's accent derived on `kde-breeze`; the KDE reader's scheme inputs from kdeglobals where its scheme file is missing (`ReaderStatus::Fallback`); the reader's `token.kde` under the scheme it read; the query returning right-to-left values physical, the transform origin unmirrored; the exact check's non-applying rules; `widget.<part>` refused on a part that can be absent or drawn as another; the accent layer per scheme under a mixed palette; `LayerError::UnknownLayer`; `kde_effects`' starting background; `ScrollDecay` variants with their own parameters; the model's implications among selector atoms; the rest as the check recommended |
 
 ## S1. Conventions
 
@@ -107,18 +107,22 @@ palette states only its schemes, S14, and a value no layer states for a scheme i
   bundled preset; `AxisTag` and `FeatureTag` are OpenType four-letter tags; `IconId` (an icon role or a name) and `IconData` (an
   icon's SVG or pixels) are today's `icons` types, kept (S16); `LanguageTag` is a BCP 47 tag;
   `FontStyle` is `Normal | Italic | Oblique`; `Sides<T>` is `{ top: T, right: T, bottom: T, left: T }`, in `Stroke`'s
-  edge order, stated for a left-to-right layout and mirrored with it (R16), every `Sides` alike (padding, margin, a
-  focus indicator's offsets, placement margins), while a `Stroke`'s edges, a `Corners` and a shadow's offsets are
-  physical (S2.4), and `Axes<T>` is `{ horizontal: T,
+  edge order, stated for a left-to-right layout (a stated `left` is the start side) and mirrored with it (R16), every
+  `Sides` alike (padding, margin, a focus indicator's offsets, placement margins): the query returns it physical,
+  `left` and `right` swapped for an element whose direction is right-to-left (S2.4), while a `Stroke`'s edges, a
+  `Corners` and a shadow's offsets are physical as stated (S2.4), and `Axes<T>` is `{ horizontal: T,
   vertical: T }`, both generic (`Sides<Value<Px>>`, `Axes<bool>`), their members spelled in TOML as any field, with
-  the unit's suffix where the member has a unit (`padding.top_px = <n>`, `flip.horizontal = true`); `Rect`, `Size`,
+  the unit's suffix where the member has a unit (`padding.top_px = <n>`, `flip.horizontal = true`; `padding.left_px`
+  is the start side, the left in left-to-right, which the query returns on the right in right-to-left); `Rect`, `Size`,
   `Point` are plain geometry in `Px`; `ContentSizeCategory` is S8's; `ViewBox` is `{ x: f32, y: f32, width: f32, height: f32 }`, unitless, in a path's own coordinates (S2.9).
   Error and status types:
 
 ```rust
 pub enum LayerError { Invalid(Vec<Problem>),             // every validation problem S12 finds, not the first only
                       ReaderPresent, AccentInputsMissing(Vec<InputName>), SchemeNotInPalette(Scheme),
-                      PaletteNotForPreset(PresetId) }
+                      PaletteNotForPreset(PresetId),
+                      UnknownLayer(LayerId) }             // `replace_layer`, `remove_layer`: an id this theme does
+                                                          // not hold (already removed, or another theme's; S16)
 pub struct Problem { pub path: String,                   // the model path, or the TOML key path where read from TOML
                      pub kind: ProblemKind }             // one variant per S12 item, with that item's names
 pub enum ThemeError { PlatformUnsupported, FeatureDisabled,
@@ -127,10 +131,13 @@ pub enum ThemeError { PlatformUnsupported, FeatureDisabled,
                                                           // `from_system` chose, for `from_preset` (S16)
                       Preset(LayerError) }                // a bundled preset failing validation, which a build
                                                           // test rules out (S19.1)
-pub enum ReaderStatus { Read, NoReader, StandIn, Failed(ReaderFailure) }   // Failed: a re-read failed; the previous
+pub enum ReaderStatus { Read, NoReader, StandIn,
+                        Fallback(ReaderFailure),            // read, but one source failed and another stood in for
+                                                            // it, which the failure names (the KDE scheme file, S9.1)
+                        Failed(ReaderFailure) }             // Failed: a re-read failed; the previous
 pub enum ReaderFailure { Platform(String), Invalid(LayerError) }           // reader layer stays (S8, S16)
-pub enum PortError { Parse { line: u32 }, MissingKey(String) }   // a `.colors` file it cannot read, or a key the
-                                                                 // conversion needs that the file lacks (S14)
+pub enum PortError { Parse { line: u32 } }   // a `.colors` file it cannot read; a group or key the file lacks is
+                                             // no error, as KColorScheme and `applyScheme()` read it unset (S9.1, S14)
 pub enum PaletteStatus { Applied, Suspended, SkippedForContrast }   // S14
 ```
 
@@ -227,10 +234,14 @@ ref      := "role." set "." path        typed colour role of a surface set, a pa
                                           scope with the bindings of the plain parts enclosing it), so the
                                           value is what that part draws;
                                           not across elements (an *(element)* part
-                                          reaches only its own element's parts)        (R25.3)
+                                          reaches only its own element's parts), and
+                                          not to a part that can be absent as a whole
+                                          or drawn as another widget (S12)             (R25.3)
           | "values." name                the element's widget's resolved value (the spinner's stroke weight,
                                           GN-1.227; a delay button's delay, Q2.3)      (R25.3)
-          | "text_scale"                  the text-scaling factor (S9.4)               (ADD-A55)
+          | "text_scale"                  the text-scaling factor (S9.4); refused where
+                                          `token.text.scaling` can be `DynamicType`,
+                                          whose lengths scale by `uifm_scaled` (S12)   (ADD-A55)
 call     := name "(" expr { "," expr } ")"
 ```
 
@@ -311,7 +322,7 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 |---|---|---|
 | `alpha(c, a)` | colour | `c` with its alpha multiplied by `a` |
 | `mix(a, b, t)` | colour | interpolation from `a` (t = 0) to `b` (t = 1) in sRGB with premultiplied alpha, as CSS `color-mix(in srgb, a (1−t)·100%, b t·100%)` |
-| `kde_effects(c, background, group, role_kind)` | colour | KColorScheme's effects of a group (`disabled`, `inactive`) on a role of kind `foreground`, `decoration` or `background` (the contrast effect only on the first two, against `background`), in KColorScheme's order, from `token.kde.<group>`; the inactive group only while `token.kde.inactive_enabled`; it reads those tokens itself, listed as its operands; group `active` returns `c` unchanged. KColorScheme applies a group's effects over every group but the active one, a stated `[Inactive]` group included (`kcolorscheme.cpp:380-391` at the facts' pinned commit) |
+| `kde_effects(c, background, group, role_kind)` | colour | KColorScheme's effects of a group (`disabled`, `inactive`) on a role of kind `foreground`, `decoration` or `background` (the contrast effect only on the first two, against `background`), in KColorScheme's order; `background` is the group's starting background, the same input role the background's own effects start from, never the effected one, as KColorScheme applies the foreground and decoration effects before it replaces the background with its effected value (`kcolorscheme.cpp:383-389`): for the disabled group the set's active background (`active(role.<set>.background)`, Window's for `Selection`), for the inactive group the inactive start's background (the set's inactive input role `input.inactive.<set>.background_normal`, or in S9.1's `[WM]` default the scheme input `input.kde_scheme.header.inactive.background_normal`), for `Selection` the background `kde_selection_inactive` gives; from `token.kde.<group>`; the inactive group only while `token.kde.inactive_enabled`; it reads those tokens itself, listed as its operands; group `active` returns `c` unchanged. KColorScheme applies a group's effects over every group but the active one, a stated `[Inactive]` group included (`kcolorscheme.cpp:380-391` at the facts' pinned commit) |
 | `kde_selection_inactive(selection, window, selection_background, role_kind)` | colour | where KColorScheme starts the Selection set's Inactive group (`kcolorscheme.cpp:304-316`, `:374-378`): while `token.kde.inactive_change_selection_color` holds (it reads that token itself, listed as its operand), `window`, and for role kind `background` `window` tinted toward `selection_background` by `KColorUtils::tint` with the amount KColorScheme passes there (the implementation's, from that source; the core states no platform value); otherwise `selection`. The preset passes the Selection and Window sets' inactive input roles and the Selection set's active background, and applies `kde_effects(…, inactive, …)` over the result, as KColorScheme does (K3.40, K1.173; R5.1). The Selection set's Disabled group starts from Window's colours whatever the switch (`:317-319`), a plain reference in the preset |
 | `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)`, `kcu_shade(c, luma, chroma)` | colour | `KColorUtils`, to `kcolorutils.cpp` |
 | `adw_standalone(c, scheme)` | colour | libadwaita's standalone accent derivation in OKLab, to its stylesheet |
@@ -329,8 +340,8 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 | `shadow_extent(shadow, side)` | length | how far a shadow reaches beyond the box on that side, over its layers, to GTK's `gtk_css_shadow_value_get_extents` (GN-1.282†) |
 | `gtk_wheel_step(page_size)` | length | GTK's scroll step from the page size, to `gtkrange.c` / `gtkscrolledwindow.c` (GN-P3-15†) |
 | `uifm_scaled(x, text_role)` | length | `UIFontMetrics.scaledValue(for:)` (ADD-A55) |
-| `kde_accent(set: SurfaceSet, key: KdeSchemeKey, group: KdeGroup)` | colour | Plasma's accent derivation for one key of one colour set and group, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1): group `active` the active role, as `applyScheme()` writes it with the accent (`:183-245`, `:270-278`); group `inactive` the inactive input role, branching on the sets `input.kde_scheme.inactive_groups` names for the scheme being resolved (S9.1), as `applyScheme()` and KColorScheme do. For a set the list names, what `applyScheme()` writes into its `[Inactive]` group (`colorsapplicator.cpp:247-284` at v6.8.2): while the scheme tints (`token.kde.tint_factor` is `Some`), every such set's own file value `input.kde_scheme.<set>.inactive.<key>`, `Header`'s included, tinted toward the accent; while it does not (`None`), `Header`'s the file's active `Window` value `input.kde_scheme.window.<key>` (Plasma 6.8's substitute, R25.1) and another set's its own file value untinted; the accent never replaces an `[Inactive]` group's accent keys. For a set the list does not name, the set's active result, as KColorScheme reads a set without an `Inactive` group (`kcolorscheme.cpp:345-351`). Then, while `token.kde.titlebar_is_accent_colored` holds, `Header`'s background and foreground are what that option writes into `Header`'s `[Inactive]` group (the file's `Window` background tinted toward the accent by the scheme's factor, `applyScheme()`'s default factor where `tint_factor` is `None`, `:155`, `:273`, and the text on it, `:280-282`), over either branch and whether or not the list names `Header`, as `applyScheme()` writes that group either way; where the list does not name `Header`, KColorScheme reads that group's other keys from `Header`'s defaults, the `Window` set's values (`kcolorscheme.cpp:330-333`), so they are `Window`'s active results. Group `disabled` is refused (S12): disabled roles are KColorScheme's effects over the active values (R5.1), not an accent derivation. The function branches only on `Option`s, bools, enums and that list, never on an absent value (S4.8) |
-| `kde_accent_wm(key: KdeWmKey)` | colour | the rest of the same derivation, `applyScheme()`'s `[WM]` group (`colorsapplicator.cpp:287-338` at v6.8.2), one route with `kde_accent` (one implementation of `applyScheme()`, R25.1): it starts from the scheme input `input.kde_scheme.wm.<key>`, what `applyScheme()` writes with no accent (S9.1: the file's `[WM]` key, else its `Header` default); then the inactive background and foreground, while the scheme tints (`token.kde.tint_factor` is `Some`), are the file's `Window` background `input.kde_scheme.window.background_normal` tinted toward the accent and the text on it (`tintColor`, `accentForeground`); the active background and foreground, while `token.kde.titlebar_is_accent_colored` holds, are that `Window` background accented as the title-bar option writes it and the text on it (`accentBackground`, `accentForeground`), else, while the scheme tints, the tinted `Window` background and the text on it; any key neither option changes keeps the start value. `KdeWmKey` (S4.8) names the four keys Breeze reads (`breezehelper.cpp:98-102`) |
+| `kde_accent(set: SurfaceSet, key: KdeSchemeKey, group: KdeGroup)` | colour | Plasma's accent derivation for one key of one colour set and group, from `input.accent` and the scheme inputs `input.kde_scheme.<set>.<key>`, to `plasma-workspace` `kcms/colors/colorsapplicator.cpp` `applyScheme()` (R25.1); `set` is one of KDE's seven colour sets (`Window`, `View`, `Button`, `Selection`, `Tooltip`, `Complementary`, `Header`), declared by the preset (S12). It branches on the scheme inputs' three lists for the scheme being resolved (S9.1): `input.kde_scheme.groups`, the sets the file has a group for; `.inactive_groups`, the sets whose group has an `[Inactive]` group; `.unset_keys`, the keys a group the file has leaves unset. Group `active` gives the active role, as `applyScheme()` writes it with the accent (`:183-245`, `:270-278`), every set but a missing `Header` written whether or not the file has a group for it (a set without one as a group whose every key is unset, below); group `inactive` the inactive input role, as `applyScheme()` and KColorScheme give it. For a set `inactive_groups` names, what `applyScheme()` writes into its `[Inactive]` group (`colorsapplicator.cpp:247-284` at v6.8.2): while the scheme tints (`token.kde.tint_factor` is `Some`), every such set's own file value `input.kde_scheme.<set>.inactive.<key>`, `Header`'s included, tinted toward the accent; while it does not (`None`), `Header`'s the file's active `Window` value `input.kde_scheme.window.<key>` (Plasma 6.8's substitute, R25.1) and another set's its own file value untinted; the accent never replaces an `[Inactive]` group's accent keys. For a set `inactive_groups` does not name, the set's active result, as KColorScheme reads a set without an `Inactive` group (`kcolorscheme.cpp:345-351`). Then, where the file has a `Header` group and `token.kde.titlebar_is_accent_colored` holds, `Header`'s background and foreground are what that option writes into `Header`'s `[Inactive]` group (the file's `Window` background tinted toward the accent by the scheme's factor, `applyScheme()`'s default factor where `tint_factor` is `None`, `:155`, `:273`, and the text on it, `:280-282`), over either branch and whether or not `inactive_groups` names `Header`, as `applyScheme()` writes that group either way; where `inactive_groups` does not name `Header`, KColorScheme reads that group's other keys from `Header`'s defaults, the `Window` set's values (`kcolorscheme.cpp:330-333`), so they are `Window`'s active results. **`Header` where the file has no `Header` group:** `applyScheme()` writes no `Header` group at all, neither the accent keys, the tint nor the title bar (`colorsapplicator.cpp:186-192`), and KColorScheme reads `Header` from kdeglobals' `[Colors:Window]` (`kcolorscheme.cpp:330-333`), in the `Inactive` group too, there being no `[Inactive]` group (`:345-351`): groups `active` and `inactive` both give `Window`'s active result for the key where `applyScheme()` writes one into `[Colors:Window]`, else `input.kde_scheme.header.<key>` (KColorScheme's `Header` default, S9.1); the accent-coloured title bar is then `[WM]`'s alone (`kde_accent_wm`). **A key the file leaves unset** (named by `unset_keys`, or any key of a set `groups` does not name): wherever `applyScheme()` reads it from the file (a tinted key, `:220`, `:254`; the background of the link's contrast check, `:203`, of the `Selection` and `Button` blends, `:231`, `:241`, and of the title bar, `:271`, `:321`), it reads an invalid `QColor()`, and the function reads the same, implemented from that code; where `applyScheme()` writes nothing for it, the result is what KColorScheme then reads from kdeglobals for it (the set's defaults, `Header`'s from kdeglobals' `[Colors:Window]`, `kcolorscheme.cpp:330-357`). An accent equal to Qt's `transparent` is no accent to `applyScheme()` (`:129-131`), and the function then gives what `applyScheme()` writes without one. Group `disabled` is refused (S12): disabled roles are KColorScheme's effects over the active values (R5.1), not an accent derivation. The function branches only on `Option`s, bools, enums and those three lists, never on an absent value (S4.8) |
+| `kde_accent_wm(key: KdeWmKey)` | colour | the rest of the same derivation, `applyScheme()`'s `[WM]` group (`colorsapplicator.cpp:287-338` at v6.8.2), one route with `kde_accent` (one implementation of `applyScheme()`, R25.1, its rules for an unset key and a transparent accent included): it starts from the scheme input `input.kde_scheme.wm.<key>`, what `applyScheme()` writes with no accent (S9.1: the file's `[WM]` key, else its `Header` default); then the inactive background and foreground, while the scheme tints (`token.kde.tint_factor` is `Some`), are the file's `Window` background `input.kde_scheme.window.background_normal` tinted toward the accent and the text on it (`tintColor`, `accentForeground`); the active background and foreground, while `token.kde.titlebar_is_accent_colored` holds, are that `Window` background accented as the title-bar option writes it and the text on it (`accentBackground`, `accentForeground`), else, while the scheme tints, the tinted `Window` background and the text on it; any key neither option changes keeps the start value. `KdeWmKey` (S4.8) names the four keys Breeze reads (`breezehelper.cpp:98-102`) |
 | `name_index(text, count, method: NameIndexMethod)` | number | the index a platform's avatar hashes a name to; `NameIndexMethod = Kirigami \| Adwaita` (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3; kirigami-addons' own `nameutils.cpp` is compared with Kirigami's in the value phase and becomes a member if it differs); `TrackingDesign = SfPro \| SfProRounded \| NewYork` |
 | `pick(index, c0, c1, …)` | colour | the colour at `index` (R25.3) |
 
@@ -346,10 +357,10 @@ set the function's parameter names (`design: TrackingDesign`, `group: KdeGroup`,
 style); a bare number takes the type of
 the other operand; `mul(T, number)`, `div(T, number)`, `div(T, T)` (a number), `add(T, T)`, `sub(T, T)`, `min(T, T)`, `max(T, T)` and `floor(T)` give a `T`;
 a mismatch is an error when the layer is added (S12). A function that reads inputs or reader values itself
-(`kde_accent` reads `input.accent`, `input.kde_scheme.<set>.<key>`, `.<set>.inactive.<key>` and `.inactive_groups`,
-`token.kde.tint_factor` and `titlebar_is_accent_colored`, every one stated, S4.8, S9.1; which roles depend on the accent is
+(`kde_accent` reads `input.accent`, `input.kde_scheme.<set>.<key>`, `.<set>.inactive.<key>`, `.groups`, `.inactive_groups` and
+`.unset_keys`, `token.kde.tint_factor` and `titlebar_is_accent_colored`, every one stated, S4.8, S9.1; which roles depend on the accent is
 S9.1's list; `kde_accent_wm` reads `input.accent`,
-`input.kde_scheme.wm.<key>`, `input.kde_scheme.window.background_normal` and the same two tokens; `uifm_scaled` the reader's content-size
+`input.kde_scheme.wm.<key>`, `input.kde_scheme.window.background_normal`, `.unset_keys` and the same two tokens; `uifm_scaled` the reader's content-size
 category, S8, S9.4) lists them, and the checks treat them as its operands. A font size reaches a function in logical
 pixels, converted and scaled (S9.4), except in an expression stated on a `Font.size` (a part's `text.font.size`, a
 text style token's), where every font-size operand (another style's or slot's `font.size`, `widget.<part>.font_size`)
@@ -531,10 +542,23 @@ are not mirrored under right-to-left, as CSS's physical `border-*-radius` and `b
 neither is a shadow's `x` offset (S2.5). A platform that mirrors one of them (a segmented control's first segment
 rounding its start corners in either direction, a sidebar pane's stroke on its content side) states it by a rule
 under the direction (`dir rtl`, S7). What mirrors with the layout is the layout's own geometry, `Sides` (S1),
-alignments and placement (S13), and of a part's drawing only a transform's translation, for S2.6's reason: it is a
-displacement in the mirrored layout, while a corner, an edge or a light source belongs to the drawing. A corner that
-reads a `Sides` value (a `FollowPart` corner's offsets, S2.10) reads the members lying on its own physical edges in
-the element's direction.
+alignments (`Alignment`, and the start and end of every other alignment value), placement (S13: `PlacementSide`,
+`PlacementAlign`, and its `Sides`), a presentation's start or end edge (`EdgeSide`), and of a part's drawing only a
+translation (a transform's `translate_x`, a presentation's `Translate.dx`), for S2.6's reason: it is a displacement
+in the mirrored layout, while a corner, an edge, a transform's origin or a light source belongs to the drawing.
+
+**Who mirrors: the query.** Values are stated for a left-to-right layout; the query returns them physical, already
+mirrored for the element's direction (its own, else its scope's, S8): for `rtl` it swaps `left` and `right` in
+`Sides`, swaps `Start` and `End` in the alignments, `PlacementSide`, `PlacementAlign` and `EdgeSide` it lists above,
+and negates `translate_x` and `Translate.dx`, so in a resolved value `left` and `Start` are the physical left. A
+rule under `dir rtl` states these values the same way, for the left-to-right layout, and the query mirrors them with
+the rest, so a platform that keeps one unmirrored states its mirror image there (a translation kept: the rule's
+`translate_x` negated); the physical values (corners, stroke edges, shadow offsets, paints, the origin) a rule under
+the direction states as drawn. A connector draws what it receives and never mirrors these again: where its toolkit mirrors start and end values itself
+(Qt's and GTK's layouts), it passes them in the toolkit's physical form (Qt's `AlignAbsolute`) or turns that
+mirroring off, and its contract records which (S21.3). `place()` takes the parameters so resolved and does not mirror
+them again (S13). A corner that reads a `Sides` value (a `FollowPart` corner's offsets, S2.10) reads the resolved,
+physical members on its own edges.
 
 ### S2.5 Shadow (R8)
 
@@ -556,17 +580,19 @@ change to or from it interpolates as layers that appear or disappear do (S2.7).
 ```rust
 pub struct Transform { pub scale_x: Value<f32>, pub scale_y: Value<f32>, pub rotate: Value<Deg>,
                        pub translate_x: Value<Px>, pub translate_y: Value<Px>,
-                       pub origin: (f32, f32) }                // fractions of the part's box
+                       pub origin: (f32, f32) }                // fractions of the part's box from its top-left
+                                                               // corner, physical (below)
 ```
 
 A transform's translation is stated for a left-to-right layout and mirrored with it, as `Sides` and alignments are,
 the one part of a part's drawing that mirrors (S1, S2.4, R16):
-under right-to-left, `translate_x` is negated and `origin`'s horizontal fraction is measured from the start edge,
-so a part moved toward its end moves toward the end in either direction (an indeterminate bar's moving indicator, a
-thumb's offset). The reason is R16's: the toolkit mirrors the layout, and a translation is a displacement in that
-layout, so stating it per direction would state one motion twice. `rotate`, `scale_x`, `scale_y` and
-`translate_y` are not mirrored; a platform that does otherwise (a rotation reversed under right-to-left, a
-translation kept) states it by a rule under the direction (S7).
+under right-to-left the query returns `translate_x` negated (S2.4), so a part moved toward its end moves toward the
+end in either direction (an indeterminate bar's moving indicator, a thumb's offset). The reason is R16's: the toolkit
+mirrors the layout, and a translation is a displacement in that layout, so stating it per direction would state one
+motion twice. `origin`, `rotate`, `scale_x`, `scale_y` and `translate_y` are not mirrored: the origin is physical, as
+the corners are (a fraction measured from the box's left edge in either direction), so a rotation or scale about an
+origin off the centre is not mirrored either; a platform that does otherwise (a rotation reversed or an origin
+mirrored under right-to-left, a translation kept) states it by a rule under the direction (S7).
 
 ### S2.7 Transitions and timing (R9)
 
@@ -985,26 +1011,27 @@ pub struct ScrollPhysics { pub deceleration: Value<ScrollDecay>, pub overscroll:
                                                                      // up to the maximum (K-P3-18†, MAC-P4-4†)
                            pub snap: Value<bool> }
 pub enum OverscrollEffect { None, RubberBand, Stretch, Glow }   // None: the platform draws none
-pub struct ScrollDecay { pub model: DecayModel, pub amount: Value<f32> }   // how a flung velocity falls; `amount`
-                                                 // is stated, in the unit and meaning its model defines
-pub enum DecayModel { /* closed: one variant per platform deceleration, written in the value phase (below) */ }
+pub enum ScrollDecay { /* closed: one variant per platform deceleration, each holding the parameters its source
+                          defines as stated `Value` fields, written in the value phase (below) */ }
 ```
 
 A deceleration is a platform's own code, not one number with one meaning: the platforms' decelerations are
 different physical models (a per-millisecond rate, a friction, a constant deceleration, a spline), so one `f32` read
-the same way by every connector would convert some of them approximately. `DecayModel` is therefore a closed set,
-as `PlatformCurve` is (S2.7): one variant per platform deceleration the traceability's scroll rows cite, named for its
-source and implemented once in `native_theme::scroll` to it, the variant defining `amount`'s unit and how the
-velocity falls over time and how a touchpad's start velocity is estimated from its samples; the value phase writes the
-variants when it pins those sources, as it writes `MaterialShape`'s (S2.4). A connector applies them through the pure
-functions, so every toolkit scrolls by the same numbers and the facts gate compares `amount` per model:
+the same way by every connector would convert some of them approximately, and a model may have more than one
+parameter, each user- or platform-stated. `ScrollDecay` is therefore a closed set, as `PlatformCurve` is (S2.7): one
+variant per platform deceleration the traceability's scroll rows cite, named for its source and implemented once in
+`native_theme::scroll` to it, the variant holding exactly the parameters its source defines (each a `Value`, with its
+unit) and defining how the velocity falls over time and how a touchpad's start velocity is estimated from its samples;
+the value phase writes the variants and their parameters when it pins those sources, as it writes `MaterialShape`'s
+(S2.4). A connector applies them through the pure functions, so every toolkit scrolls by the same numbers and the
+facts gate compares each variant's parameters:
 
 ```rust
 pub fn velocity(decay: &ResolvedScrollDecay, initial: f32, elapsed: Ms) -> f32;   // px/s at `elapsed` after release
 pub fn distance(decay: &ResolvedScrollDecay, initial: f32, elapsed: Ms) -> Px;    // travelled since release
 pub fn start_velocity(decay: &ResolvedScrollDecay, samples: &[(Ms, Px)]) -> f32;  // from the latest deltas, at most
                                                                                   // `touchpad_velocity_samples`
-// ResolvedScrollDecay: ScrollDecay with `amount` evaluated; each function total (S2.2's rules)
+// ResolvedScrollDecay: ScrollDecay with every parameter evaluated; each function total (S2.2's rules)
 ```
 
 The caret is also a part (`caret`) of the text widgets, whose base refers to `token.caret`, so rules apply to it by
@@ -1148,9 +1175,10 @@ pub enum MaterialVariant { TonalSpot, Neutral, Vibrant, Expressive, Fidelity, Co
 ```
 
 Every value of `KdeTokens` and `KdeEffects` is stated, and "the scheme does not tint" is `tint_factor`'s `None`, so
-the KDE functions branch only on `Option`s, bools, enums and `input.kde_scheme.inactive_groups` (S9.1), never on an
-absent value, and S12's absent-operand check passes them. The preset states Breeze's; a reader and a KDE port state
-each from the file they read (kdeglobals, or the port's `.colors`): the key's value where the file states it, else
+the KDE functions branch only on `Option`s, bools, enums and the scheme inputs' lists `input.kde_scheme.groups`,
+`inactive_groups` and `unset_keys` (S9.1), never on an absent value, and S12's absent-operand check passes them. The
+preset states Breeze's; a reader and a KDE port state each from the files they read (the reader kdeglobals and the
+scheme file it names, a port its `.colors`): the key's value where the file states it, else
 the value the reading code takes for an unset key, cited, never left absent: the effects, amounts and colour as
 KColorScheme reads them unset (`kcolorscheme.cpp:36-49`; where `[ColorEffects:Disabled] Enable` is false, the
 disabled group's three effects are stated `none`, as KColorScheme then applies none, `:39-40`, `KdeTokens` having no
@@ -1160,6 +1188,13 @@ else the file's `[ColorEffects:Inactive] Enable` where it states one, else true 
 `inactive_enabled` when `Enable` is unset; `tint_factor` as the scheme file's `[General] TintFactor`, `None` where it
 has none (`colorsapplicator.cpp:154-155`); `titlebar_is_accent_colored` as `applyScheme()` reads it
 (`TitlebarIsAccentColored`, else `accentActiveTitlebar`, else false, `:152-153`).
+
+These values are the scheme's: Plasma writes kdeglobals' effects and contrast from the scheme file
+(`colorsapplicator.cpp:311-318`, `:340-359`), and the tint and title-bar options are in the scheme file alone. So the reader states
+its `token.kde`, and its other scheme-file tokens (`token.params.color.contrast`, `frame_contrast`), as a `Tokens` rule
+under the scheme it read (S9.3, carrying `preset:kde-breeze` as its preset-specific rules do), as S14 states a
+one-scheme port's: after `pick(Some(<the other scheme>))` the preset's Breeze values apply with Breeze's scheme inputs,
+never the user's scheme's effects or options over another scheme's inputs.
 
 `KdeGroup` is `Active | Disabled | Inactive` (`kde_accent` takes the first and the last, S2.2); `KdeRoleKind` is
 `Foreground | Decoration | Background`; `KdeSchemeKey` is the twelve keys of a scheme file's colour group that
@@ -1268,8 +1303,8 @@ S12 refuses `fill` absent where the stroke can be absent too); `TextStyle.decora
 and a part's drawing fields `fill`, `stroke`, `shadow`, `text`, `icon`, `glyph`, `focus`, `cursor` (a part that paints
 nothing at rest, a flat button's fill, states `"absent"`; leaving a listed field out is still missing, S2.2);
 `Caret.secondary`, `shown_in_read_only`, `solid_while_typing`; every `Value` field of `Behavior`, `TouchBehavior`,
-`ScrollPhysics` and `PointerTokens` (a plain enum or record field, `Behavior.scroll`, is stated, and so is a
-`ScrollDecay`'s `amount`; the catalogue's rule, *Entry format*; `KdeTokens` and `KdeEffects` are stated whole,
+`ScrollPhysics` and `PointerTokens` (a plain enum or record field, `Behavior.scroll`, is stated, and so is every
+parameter of a `ScrollDecay`; the catalogue's rule, *Entry format*; `KdeTokens` and `KdeEffects` are stated whole,
 `tint_factor`'s `None` saying the scheme does not tint, S4.8); in an icon-size context, every `IconStyle`
 `Value` field but `size` (S4.5); `IconTokens.theme_fallback`; a spring's
 `Transition.duration` and `PresentationStep.duration` (checked: `Absent` only where the timing, followed through
@@ -1469,10 +1504,11 @@ come from `Theme`'s setters, and win over the reader's.
 (`set_reader_stand_in`, R2.6; refused while a reader exists, `Err(ReaderPresent)`); then the application's layers in
 the order it adds them (R2.4), the palette `apply_palette` adds among them where it was first added; and last the
 accent layer, which `Theme` derives from the `Accent` the application set on every change of the stack (preset,
-palette, reader re-read), so which accent shows never depends on call order. The accent is a setting, not a layer
+palette, reader re-read), so which accent shows never depends on call order (on `kde-breeze` also from another
+platform's reader's accent, S9.2). The accent is a setting, not a layer
 the application stacks. Every layer's bases apply in that order, then every
 layer's rules in that order. While a palette applies, the reader's colour bases, colour rules, colour inputs (the
-`kde_scheme.*` scheme inputs and their `inactive_groups` list among them) and `token.kde` are left out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
+`kde_scheme.*` scheme inputs and their `groups`, `inactive_groups` and `unset_keys` lists among them) and `token.kde` are left out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
 states colours for that condition (colour rules under it, or per-contrast input bases for it, S9), and the reader's
 colours then apply as without it (R19). While the current preset is not the reader's own (S9.5) and declares
 `accent_inputs` beyond `accent` (S9.1), `Theme` leaves the reader's common `input.accent`, with its per-contrast
@@ -1630,9 +1666,12 @@ does not declare selects nothing there, as on any element.
 
 ```rust
 pub struct InputBases { pub entries: Vec<(InputName, InputValue)>,
-                        pub kde_inactive_groups: SchemeMap<Vec<SurfaceSet>> }   // `input.kde_scheme.inactive_groups`
-                                              // (S9.1): `kde-breeze`'s only, empty elsewhere; a later layer's
-                                              // list for a scheme replaces the earlier one whole
+                        pub kde_groups: SchemeMap<Vec<SurfaceSet>>,            // `input.kde_scheme.groups`
+                        pub kde_inactive_groups: SchemeMap<Vec<SurfaceSet>>,   // `input.kde_scheme.inactive_groups`
+                        pub kde_unset_keys: SchemeMap<Vec<InputName>> }        // `input.kde_scheme.unset_keys`
+                                              // (S9.1): `kde-breeze`'s only, empty elsewhere; stated together by
+                                              // whoever states the scheme inputs; a later layer's list for a
+                                              // scheme replaces the earlier one whole
 pub struct InputValue { pub per_scheme: SchemeMap<Value<Color>>,
                         pub per_contrast: Vec<(Contrast, SchemeMap<Value<Color>>)> }
 pub enum Contrast { Increased, High }         // one at a time: `ReaderState.contrast` and `set_contrast` hold one,
@@ -1647,12 +1686,20 @@ accent roles and `highlight` (`macos-*`); the tint-dependent roles (`ios-*`); on
 before KColorScheme's inactive effects, for every declared set and key) and the scheme inputs, the values of the
 scheme file before Plasma applies the accent (the preset's from Breeze's scheme files; the reader's from the file
 kdeglobals names, `[General] ColorScheme`; a port's from its own file, S14) (R25.1): `kde_scheme.<set>.<key>` and
-`kde_scheme.<set>.inactive.<key>` for every declared set and `KdeSchemeKey`; `kde_scheme.inactive_groups`, per scheme
-the list of the declared sets whose file has an `[Inactive]` group (empty where it has none), which `kde_accent`
-branches on as `applyScheme()` and KColorScheme do (S2.2) and which is no expression operand; for a set the list
-does not name, each `kde_scheme.<set>.inactive.<key>` is stated `= input.kde_scheme.<set>.<key>`, what KColorScheme
-reads for a set without an `[Inactive]` group (`kcolorscheme.cpp:345-351`), so every declared input has a value and
-the list, not a missing value, carries the group's absence; and `kde_scheme.wm.<key>` for the four `KdeWmKey`s (S4.8), what
+`kde_scheme.<set>.inactive.<key>` for every declared set and `KdeSchemeKey`; three lists per scheme, which `kde_accent`
+branches on as `applyScheme()` and KColorScheme do (S2.2) and which are no expression operands:
+`kde_scheme.groups`, the declared sets the file has a `[Colors:<Set>]` group for; `kde_scheme.inactive_groups`, the
+declared sets whose group has an `[Inactive]` group (empty where none has); and `kde_scheme.unset_keys`, the scheme
+inputs (`kde_scheme.<set>.<key>`, `.<set>.inactive.<key>`) of the groups the file has that it leaves unset (a set
+`groups` does not name has every key unset and is not listed); for a set `inactive_groups` does not name, each
+`kde_scheme.<set>.inactive.<key>` is stated `= input.kde_scheme.<set>.<key>`, what KColorScheme reads for a set without
+an `[Inactive]` group (`kcolorscheme.cpp:345-351`). A value the file lacks, a whole group's or one key's, is stated as
+KColorScheme reads it unset over the file, cited, never left missing: `Header`'s from the file's `[Colors:Window]`,
+with KColorScheme's `Header` defaults beneath (`kcolorscheme.cpp:330-333`); another set's from KColorScheme's defaults
+for that set (the `default*Colors` tables, `:122-216`); a key an `[Inactive]` group lacks from those same defaults, not
+from the set's active value (`:345-357`). So every declared input has a value, the lists, not a missing value, carry
+what the file lacks, and `kde_accent` follows `applyScheme()` where it reads an unset key itself (S2.2: in a tinting
+scheme it tints such a key as `applyScheme()` does, from the invalid colour it reads). And `kde_scheme.wm.<key>` for the four `KdeWmKey`s (S4.8), what
 `applyScheme()` writes into `[WM]` with no accent (`colorsapplicator.cpp:287-309`): the file's `[WM]` key where it
 states one, else the default `applyScheme()` takes from KColorScheme over the same file, stated by whoever states
 the scheme inputs as an expression over them: `active_background` and `active_foreground` the file's `Header` Normal
@@ -1663,13 +1710,26 @@ as the inactive colour rules apply it (S2.2) over `input.kde_scheme.header.inact
 ones where it does not. The `kde-breeze` preset's own bases state each role as `applyScheme()` writes it on
 Plasma's default path, "Accent color from color scheme" (no `AccentColor`): Breeze's scheme values with no accent
 derivation applied, the inactive roles as that path writes them. `kde_accent` applies only when an accent is set:
-the reader states the results kdeglobals holds when the user chose one, and the accent layer (`set_accent`) states
-each accent-dependent role and inactive input role as `= kde_accent(<set>, <key>, <group>)`, and each `[WM]` keyed
-role as `= kde_accent_wm(<key>)`, over the scheme inputs in force (the reader's, a KDE port's, else Breeze's). The
-KDE reader's read fails (`ReaderFailure::Platform`, naming the file) where the file `[General] ColorScheme` names
-cannot be found or read: it would have no scheme inputs, Breeze's would stand in under the user's colours, and
-`set_accent` would derive over a scheme the user does not have (R19); a first read's failure is `from_system`'s error,
-a re-read's keeps the previous reader layer (S8, S16).
+the reader states the results kdeglobals holds when the user chose one, and the accent layer (`set_accent`, or
+another platform's reader's accent, S9.2) states each accent-dependent role and inactive input role as `=
+kde_accent(<set>, <key>, <group>)`, and each `[WM]` keyed role as `= kde_accent_wm(<key>)`, over the scheme inputs in
+force (the reader's, a KDE port's, else Breeze's).
+
+**The KDE reader without its scheme file.** The reader reads kdeglobals as KConfig does, with Plasma's
+`kdedefaults/kdeglobals` beneath the user's file (`startplasma.cpp:421-426`, as today's reader does), and its scheme
+inputs and scheme-file tokens from the file `[General] ColorScheme` names. Where neither file names a scheme, the scheme
+is Plasma's own default, Breeze Light (`startplasma.cpp:452`), whose inputs are the preset's. Where the file it names
+cannot be found or read, the reader takes them from kdeglobals itself, read as the scheme file would be
+(its `[Colors:*]` groups and their `[Inactive]` groups, the lists from what kdeglobals has, its `[WM]` group; a key it
+lacks as S9.1 and S4.8 state for an unset key, so `tint_factor` is `None` and the title-bar option false), keeps
+everything else it read, and reports it: its status is `ReaderStatus::Fallback`, the failure naming the scheme and
+the file. Only a kdeglobals the reader cannot read fails the read (`ReaderFailure::Platform`; a first read's failure is
+`from_system`'s error, a re-read's keeps the previous reader layer, S8, S16). Weighed: failing the whole read, so that
+`set_accent` never derives over anything but the user's scheme file, discards the user's fonts, colours and
+conditions, all of which the reader has, to protect one derivation; while kdeglobals holds exactly the colours Plasma
+shows, and is Plasma's own output of the scheme it was applied from. What the fallback costs is that a later `set_accent` derives over
+those results rather than over the file (a tinting scheme's tint or an accent-coloured title bar already applied
+there), which the status tells the application.
 
 **Accent-dependent roles** (`kde-breeze`): the roles `applyScheme()` writes from the accent
 (`colorsapplicator.cpp` at v6.8.2), named by scheme key per set (the catalogue's key table gives each key's
@@ -1680,14 +1740,15 @@ a re-read's keeps the previous reader layer (S8, S16).
 - `Selection`'s `background_normal`, `background_alternate`, `foreground_normal` and `foreground_inactive`
   (`:230-238`);
 - `Button`'s `background_alternate` (`:240-245`);
-- `Header`'s `background_normal` and `foreground_normal` (the accent-coloured title bar, `:270-278`);
+- `Header`'s `background_normal` and `foreground_normal` where the file has a `Header` group (the accent-coloured
+  title bar, `:270-278`; without one `Header` reads `Window`'s results, S2.2);
 - the four `[WM]` keyed roles `role.@wm_active_background` … `role.@wm_inactive_foreground` (`:320-338`);
 - wherever `token.kde.tint_factor` can be `Some` (conservatively, S12), every other key of every declared set
   (`:219-221`).
 
 The inactive input roles, every declared set's and key's, are stated beside them (S9.2), as `applyScheme()` writes
-each `[Inactive]` group from the accent while the scheme tints and `Header`'s under the title-bar option
-(`:247-284`). `kde_accent` gives a role the scheme input unchanged where `applyScheme()` changes nothing (a key the
+each `[Inactive]` group from the accent while the scheme tints and `Header`'s under the title-bar option where the
+file has a `Header` group (`:247-284`). `kde_accent` gives a role the scheme input unchanged where `applyScheme()` changes nothing (a key the
 accent does not touch while the scheme does not tint, `Header`'s colours without the title-bar option), so the list's
 conditional entries are harmless under a combination where their condition does not hold.
 
@@ -1709,7 +1770,18 @@ derivation over the scheme inputs in force (R25.1): the reader's, or a KDE port 
 the layer so replaces. While a mapping palette applies, the layer states the `accent` input only: a mapping states
 its roles itself, the accent-dependent ones (the `[WM]` keyed roles among them) by reference to `input.accent` where
 they follow it and the inactive input roles as S14 says, and has no scheme inputs for `kde_accent` or `kde_accent_wm`
-to derive over (S14).
+to derive over (S14). The choice is per scheme, as a palette's source is (S14): where a palette serves one scheme by
+a KDE port and another by its mapping, the layer's colour bases (a `SchemeMap`) state the `kde_accent` and
+`kde_accent_wm` roles under the port's scheme and the `accent` input alone under the mapping's.
+
+**Another platform's accent on `kde-breeze`.** `kde-breeze`'s accent input is the accent alone (S9.1), so a reader's
+or stand-in's common `input.accent` from another platform reaches it (S9.5); its accent-dependent roles are the
+preset's literals of Plasma's no-accent path, which follow no `input.accent`. So where the application sets no accent
+and the `input.accent` in force comes from a reader or stand-in whose own preset (S9.5) is not `kde-breeze`, `Theme`
+derives the accent layer from that accent as from `set_accent`'s: it states the same `kde_accent` and `kde_accent_wm`
+roles over the scheme inputs in force, Breeze's (no other platform's reader states KDE scheme inputs, and a palette
+leaves the reader's accent out, S8), so the user's accent changes every role Plasma's derivation changes, never
+`role.global.accent` alone. The KDE reader's own accent needs none: its results already hold the derivation.
 
 **S9.3 Readers** state each value under the conditions they read it in: base conditions into the reader layer's bases,
 other conditions into reader rules (or inputs' per-contrast bases). A reader rule carries the condition
@@ -1784,7 +1856,8 @@ OS version, or the generation the application names). `set_preset` applies the c
 preset is current; it is refused (`Err(AccentInputsMissing)`) when the `Accent` the application set, or the applied
 mapping palette's per-preset section (S14), lacks accent inputs the new preset declares, and
 (`Err(PaletteNotForPreset)`) when the applied palette has neither a port nor a mapping for the new preset (S14). The
-reader's `input.accent` is portable only to a preset whose `accent_inputs` is `accent` alone, or to its own preset:
+reader's `input.accent` is portable only to a preset whose `accent_inputs` is `accent` alone (on `kde-breeze` the
+accent layer then derives Plasma's accent-dependent roles from it, S9.2), or to its own preset:
 under another preset that declares derived accent inputs (`windows-11`'s ramp, the AppKit- and UIKit-derived roles),
 which no reader from another platform states, `Theme` leaves the reader's accent out (S8), so that preset keeps its own
 accent and derived inputs, and nothing mixes.
@@ -1947,7 +2020,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | an enum variant | a unit variant is its snake_case name (`"follow_part"`, `"continuous"`); a variant with data is a one-key table, `{ <variant> = <payload> }`: `top_left = { concentric = { minimum_px = <n> } }` (a `Corners` field is a table of its four corners and its curve, S2.4), `shadow = { elevation = "<step>" }`, `timing = { spring = { mass = <n>, … } }` |
 | a list | a TOML array; where the platform has none, `[]` with its citation (a list is never `"absent"`, S2.11) |
 | a tuple, a tuple variant | a positional TOML array: `center = [<x>, <y>]` (`Radial.center`, `Conic.center`), `origin = [<x>, <y>]` (`Transform.origin`); a tuple variant is a one-key table holding that array, `timing = { cubic_bezier = [<x1>, <y1>, <x2>, <y2>] }` |
-| `input.kde_scheme.inactive_groups` | `[inputs.kde_scheme.inactive_groups]` with `light` and `dark`, each an array of surface sets (`["header"]`, or `[]`) |
+| `input.kde_scheme.groups`, `.inactive_groups`, `.unset_keys` | `[inputs.kde_scheme.groups]`, `[inputs.kde_scheme.inactive_groups]` and `[inputs.kde_scheme.unset_keys]`, each with `light` and `dark`: arrays of surface sets (`["header"]`, or `[]`), and for `unset_keys` of scheme input names (`["kde_scheme.view.foreground_visited"]`, or `[]`) |
 | a part drawn by another widget | `drawn_as = { widget = "<w>", part = "<p>", variants = [ … ] }` (`part` left out: the whole widget; `part` a bare name of `<w>`'s parts, so the two keys spell one `WidgetOrPart`, S1) |
 | a condition | `"<name>"` in snake_case (`"window_inactive"`); with a parameter `"<name>:<value>"`: `"scheme:dark"`, `"tiled:left,top"`, `"input:touch"`, `"idiom:pad"`, `"flavor:kirigami"`, `"preset:adwaita"`, `"system_setting:<key>"`, `"container_size:sidebar:<key>"` |
 | a rule's target | `"colors"`, `"tokens"`, `"<widget>.<part>"`, `"<widget>.values"`, `"component.<key>.<part>"`, `"component.<key>.values"` |
@@ -1985,13 +2058,17 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   a `part` its `widget` lacks is an unknown name);
 - an axis or feature duplicates a field's route (S2.8): `wght` or `wdth` in `Font.axes`, `wght` in `IconStyle.axes`,
   `smcp` in `Font.features`;
-- `Radius::FollowPart` is stated outside a `FocusIndicator.corners`; `kde_accent` is called with group `disabled`;
+- `Radius::FollowPart` is stated outside a `FocusIndicator.corners`; `kde_accent` is called with group `disabled`, or
+  with a set that is not one of KDE's seven colour sets (S2.2); `text_scale` is read where `token.text.scaling` can be
+  `DynamicType` (S2.2, S9.4);
 - `token.text.font_dpi`, or a reader's or stand-in's `ReaderState.font_dpi` or `text_scaling_factor`, is not finite
   and above zero (S9.4); a `ReaderState.container_sizes` names one container twice (one value at a time, below);
 - on `kde-breeze`, a mapping palette leaves an accent-dependent role (S9.1's list, its tinting entries wherever the
   preset's `token.kde.tint_factor` can be `Some`) or an inactive input role to the preset's Breeze value, so an
   inactive window or a title bar would show Breeze's colours under the palette's (S9.2, S14); an
-  `input.kde_scheme.inactive_groups` list names a set twice or a set the preset does not declare;
+  `input.kde_scheme.groups` or `inactive_groups` list names a set twice or a set the preset does not declare, or an
+  `unset_keys` list names an input twice or one that is not a declared `kde_scheme.<set>.<key>` or
+  `.<set>.inactive.<key>` input;
 - an application layer that is neither a palette nor a reader stand-in states an accent input (S9.1's
   `accent_inputs`, in its bases or a `for_preset` part): the accent is `Theme::set_accent`'s (S9.2), the one route
   that checks the derived inputs and restates `kde-breeze`'s roles;
@@ -2010,7 +2087,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   token's expression reads `line_height` while that style's line height can be `Auto` (S2.2);
 - a `widget.<part>` reference names a part of another element than the one its part is queried with (S2.2: an
   *(element)* part reads none of its host's parts, a font metric included, and a host's part none of an *(element)*
-  part's);
+  part's), or a part that can resolve `Absent` as a whole or `DrawnAs` under some combination of the rules before it
+  (following rules as for any absent operand): such a part has no fields of its own, a drawn-as part's style being
+  another widget's (S6.1, S6.3);
 - an expression names element data its part does not declare in the preset's `[declare]` (S10; an application
   layer's or palette's included, which may read what the part declares; root inputs need no declaration: the
   window's and screen's size), or names a corner that can resolve `Concentric` or `FollowPart`, or a corner that can resolve
@@ -2052,16 +2131,22 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 
 **Combinations, conservatively.** Where a check considers "every combination" of conditions and states (absent and
 `Auto` operands, `Fields` over `Absent` or `Auto`, the conditional `Absent` marks, R2.8), it is decided per
-combination of rule applicability, not field by field: a violation is reported exactly when some assignment of the
+combination of rule applicability, not field by field. The check evaluates the query under each assignment of the
 selectors' atoms (each condition, state flag, variant, control size, density, direction, size class, position and
-context match the rules name) makes every rule and binding on the violation's path apply at once, honouring the
-exclusions below; references and rules are followed as the query follows them. The exclusions are all the check
-knows of the atoms: the values of each one-of parametrised condition (`Scheme`, `Input`, `Idiom`, `DeviceModel`,
-`Posture`, `Flavor`, `Preset`, and `ContainerSize` per container; one value holds at a time), the two contrast
-conditions (`ReaderState.contrast` is one value, S9), the flags of each declared exclusive group, after the S10
-reduction, and the one-of selector parts: an element has one control size, one density, one direction, one size
-class on each axis and one parity at a time, and each ancestor one control size, which a `ContextMatch.sizes` tests
-per ancestor. Every other combination is assumed possible, so a preset stating `Absent` under `scheme:dark` and a
+context match the rules name) that honours the exclusions below, every rule's and binding's applicability fixed by
+that assignment: a rule that applies under it applies and one that does not is skipped, references and rules being
+followed as the query follows them. A violation is reported exactly when some such assignment makes the path so
+evaluated violate, rules that apply and rules that do not alike: an `Absent` from one rule and a `Fields` patch from
+another fail together only under an assignment where no rule between them, applying under it too, restores the value.
+The exclusions are all the check knows of the atoms: the values of each one-of parametrised condition (`Scheme`,
+`Input`, `Idiom`, `DeviceModel`, `Posture`, `Flavor`, `Preset`, and `ContainerSize` per container; one value holds at
+a time), the two contrast conditions (`ReaderState.contrast` is one value, S9), the flags of each declared exclusive
+group, after the S10 reduction, the one-of selector parts (an element has one control size, one density, one
+direction, one size class on each axis and one parity at a time, and each ancestor one control size, which a
+`ContextMatch.sizes` tests per ancestor), and the model's own definitions among the atoms: among one `among` set of
+siblings, `only` holds exactly when `first` and `last` do, and `first` implies odd parity; `Tiled(e)` implies
+`Tiled(e')` for every `e'` whose edges `e` includes; and `Maximized` implies `Tiled` on all four edges (S7.1). Every
+other combination is assumed possible, so a preset stating `Absent` under `scheme:dark` and a
 `Fields` patch under `scheme:light` passes, as does a part `Absent` under `sizes = ["mini"]` with a `Fields` patch
 under `sizes = ["regular"]`, and one stating them under two independent conditions fails. Deciding per combination
 lets correlated settings pass that a field-by-field approximation would refuse (one rule stating `rendering_mode =
@@ -2096,7 +2181,8 @@ pub enum ScaffoldSlot { Fab, Snackbar }
 pub enum KeyboardAvoidance { WinUiContentDialog, UiKitAlert, UiKitSheet, WinUiScrollIntoView, AndroidPan,
                              AndroidResize, AndroidInsetsAnimation }
 pub struct PlacementParams { pub gap: Value<Px>, pub edge_margin: Sides<Value<Px>>, pub side: PlacementSide,
-                             pub align: PlacementAlign,            // mirrored in RTL
+                             pub align: PlacementAlign,            // side, align and the Sides are returned
+                                                                  // physical, mirrored for rtl (S2.4)
                              pub flip: Axes<bool>, pub slide: Axes<bool>, pub width: AnchorWidth,
                              pub over_selected_item: bool, pub max_visible_items: Option<u32>,   // None: no limit
                              pub use_full_screen_height: bool, pub anchor_grow: Sides<Value<Px>>,
@@ -2116,7 +2202,9 @@ pub fn place(strategy: &PlacementStrategy, params: &ResolvedPlacementParams, inp
 ```
 
 `native_theme::placement`, pure functions, each to its platform's source (cited in its doc comment); the closed
-list is the traceability's placement rows, each implemented (R16). An optional input a strategy needs and lacks is
+list is the traceability's placement rows, each implemented (R16). `params` are physical as the query returns them
+(S2.4), so `place()` does not mirror them again; `direction` is the element's, for what a strategy's source reads of
+the direction beyond those parameters. An optional input a strategy needs and lacks is
 taken as: no pointer, the anchor's start corner; no selected item, the first item; no keyboard, none shown.
 
 ## S14. Palettes (R19)
@@ -2153,16 +2241,23 @@ Breeze's colours under the palette's. A KDE port is a scheme file, converted by 
 default path writes it ("Accent color from color scheme", no accent), the rule the preset follows (S9.1), not as the
 raw file reads, so the port shows what Plasma shows for that scheme and an accent set later changes only what
 Plasma's derivation changes. It converts to the scheme inputs (`kde_scheme.<set>.<key>` and `.inactive.<key>`, the
-file's values; `kde_scheme.inactive_groups`, the sets the file gives an `[Inactive]` group, a set it does not name
-stated as S9.1 says; and `kde_scheme.wm.*` from its `[WM]` group, or for a key the file lacks the `Header` default
-S9.1 states); to `token.kde` (S4.8); to the colour roles as that path writes them, the file's own values with no
-accent (`colorsapplicator.cpp:225-226`); each inactive input role as that path writes it (`:247-284`): for a set the
+file's values, a group or key it lacks as S9.1 states, as KColorScheme reads it unset; `kde_scheme.groups`,
+`inactive_groups` and `unset_keys` from the file, a set `inactive_groups` does not name stated as S9.1 says; and
+`kde_scheme.wm.*` from its `[WM]` group, or for a key the file lacks the `Header` default S9.1 states); to `token.kde`
+(S4.8); to the colour roles as that path writes them, the file's own values with no accent
+(`colorsapplicator.cpp:225-226`), and for a group or key it lacks what KColorScheme then reads, as the scheme inputs
+hold it (S9.1: Dracula's port, which has no `Header` or `Complementary` group, gets `Window`'s values for `Header`,
+`kcolorscheme.cpp:330-333`, and KColorScheme's defaults for `Complementary`); each inactive input role as that path writes it (`:247-284`): for a set the
 list names, in a scheme that does not tint, `Header`'s the file's active `Window` value (Plasma 6.8's substitute) and
 another set's its `[Inactive]` group's value, and in one that tints, the group as that path writes it, read from the
 same code `kde_accent` implements; for a set the list does not name, `= active(role.<set>.<role>)`; and each `[WM]`
-keyed role as `= input.kde_scheme.wm.<key>`, `applyScheme()`'s no-accent result. So Plasma's derivation applies over
-the port's own scheme when an accent is set (S9.2), and a non-tinting port's inactive title bar is the same with an
-accent as without, as in Plasma (`kde_accent`'s non-tinting branch gives `Header` the same `Window` values).
+keyed role as `= input.kde_scheme.wm.<key>`, `applyScheme()`'s no-accent result. No group or key is required, so
+`from_port` converts a file that lacks some, as Plasma applies it, and fails only on one it cannot parse (`PortError`,
+S1); S19.1's build test validates every bundled port, Dracula's among them. So Plasma's derivation applies over the
+port's own scheme when an accent is set (S9.2), and a non-tinting port's inactive title bar is, without the
+accent-coloured title bar option, the same with an accent as without, as in Plasma (`kde_accent`'s non-tinting branch
+gives `Header` the same `Window` values; under the option, where the file has a `Header` group, the accent tints it,
+S2.2).
 
 A `Palette` holds the mapping and the ports it has, per preset (a port carries its preset: a `.colors` file's is
 `kde-breeze`); `Palette::with_port(self, port)` adds the ports another palette holds, one replacing another for the
@@ -2273,12 +2368,15 @@ impl Theme {
                                                           // is not a generation of the running platform
     pub fn add_layer(&mut self, layer: Layer) -> Result<LayerId, LayerError>;
     pub fn replace_layer(&mut self, id: LayerId, layer: Layer) -> Result<(), LayerError>;
-    pub fn remove_layer(&mut self, id: LayerId) -> Result<(), LayerError>;
+    pub fn remove_layer(&mut self, id: LayerId) -> Result<(), LayerError>;   // both: `Err(UnknownLayer(id))` for an id
+                                                          // this theme does not hold, as a stale id is the caller's
+                                                          // error (S1)
     pub fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError>;   // None: the system's again
     pub fn apply_palette(&mut self, palette: Option<Palette>) -> Result<(), LayerError>;  // None: removes it;
                                                           // refused as S14 says (a scheme it lacks, no source for
                                                           // the preset, missing accent inputs)
-    pub fn reader_status(&self) -> ReaderStatus;
+    pub fn reader_status(&self) -> ReaderStatus;         // `Fallback` where a read succeeded with a source standing
+                                                          // in (S9.1): `from_system` returns the theme then
     pub fn reload_reader(&mut self) -> ReaderStatus;     // re-read the system into the reader layer in place
                                                           // (a failure keeps the old layer); the application calls it
                                                           // from its event loop on the watcher's `on_theme_change`
@@ -2448,6 +2546,19 @@ derivation, evaluated over the same perturbed values in the same scope: a litera
 colour, which the perturbation replaces, so comparing it would always fail, while a preset stating a literal where
 the platform derives fails here. iOS's facts are `docs/facts/ios/…` like any platform's (R22).
 
+**The accent run** (`kde-breeze`): neither run sets an accent, and the preset states Plasma's no-accent path (S9.1), so
+`kde_accent` and `kde_accent_wm`, the model's implementation of `applyScheme()`, are checked by a run of their own.
+For each KDE scheme the facts hold (the scheme files the preset's inputs come from, the bundled ports, and the further
+`.colors` files the facts pin as sources) and each accent the facts were measured with, the gate resolves `kde-breeze`
+with that scheme's inputs in force (the preset's own for its files; for every other file a palette converted by
+`Palette::from_port` and applied, under the scheme the facts name for it) and the accent set through `set_accent`, and compares every accent-dependent role, every inactive input
+role and the four `wm_*` keyed roles with the facts recorded from Plasma with that scheme and accent applied (kind
+`measured`: `applyScheme()`'s output in kdeglobals, read back as the KDE reader reads kdeglobals). Each such fact names, beside
+its `when`, the scheme file and the accent it was measured with (`scheme_file = "<file>"`, `accent = "<colour>"`). The
+schemes include at least one that tints, one with the accent-coloured title bar option and a `Header` group, one with
+that option and no `Header` group, and one that lacks a colour group the others have; the value phase chooses the
+files and the accents and records them as sources.
+
 ## S18. Documents and scripts
 
 - `docs/property-registry.toml`: stays the checked list of the model's fields (R22), now generated from the
@@ -2466,7 +2577,8 @@ the platform derives fails here. iOS's facts are `docs/facts/ios/…` like any p
 
 **S19.1** The presets are rewritten to S11 from the facts; the community presets become palettes (S14): one per
 variant the project publishes, their invented light variants and their `icon_set` removed. A build test parses and
-validates every bundled preset and palette (each palette over every preset it has a source for), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
+validates every bundled preset and palette (each palette over every preset it has a source for, Dracula's KDE port,
+which lacks two colour groups, among them, S14), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
 release (S16).
 **S19.2** Today's inheritance rules (`[uniform]`, `[per_platform]`) become expressions in each preset's bases,
 converted by a script from `docs/inheritance-rules.toml` before it is removed, then checked by the gate; the
@@ -2635,6 +2747,7 @@ lines that cite it.
 | ADD-A109 | `kde-breeze` states Plasma's default no-accent path; `kde_accent` only when an accent is set | S9.1, S14 (R25.1) |
 | ADD-A110 | `keys` for key lists and keys inside list entries, a flavour's own variant set; content variants as (widget or part, variant) pairs; `WidgetValue`'s font size, `Vec<char>`, `Vec<Key>`, `Vec<MenuEntry>`; `kde_accent_wm`, `KdeWmKey` and the `kde_scheme.wm.<key>` inputs, a port's `[WM]`, a mapping refused where it leaves the `wm_*` roles; `Linear.offset`; `BlendMode::Mask`; widget-value loops' keyframes name their part; `Glyph.fill` absent on a stroked-only path; a glyph or icon drawn to its box, `DataNeeds`' flag; a `drawn_as` substitute with its host's states; a font size scaled once; `widget.<part>.line_height` as the line spacing; no *(element)* part reads its host's parts; no transition is an immediate change; a stroke corner painted once; transforms mirrored in right-to-left; `pointer_repeat`; `Stroke.outset`'s comment | S1, S2.2, S2.3, S2.4, S2.6, S2.7, S2.9, S4.6, S4.8, S6.3, S8, S9.1, S9.2, S9.4, S10, S12, S14 |
 | ADD-A111 | the final check's fixes: `KdeTokens.tint_factor` as `Option` and every `token.kde` value stated (the reader's and a port's unset keys as KColorScheme and `applyScheme()` read them), no KDE function branching on absence; `input.kde_scheme.inactive_groups` (`InputBases.kde_inactive_groups`), every set's inactive scheme inputs declared; `KdeSchemeKey`; a KDE port converted by `applyScheme()`'s rules; the accent-dependent roles listed; a missing KDE scheme file a reader failure; corners, stroke edges and shadow offsets physical in right-to-left; `WidgetOrPart`; `GlyphMirroring`; `Elision::Fade`'s ends as `Option`; letter and word spacing as `FontSize`, scaled as a line height; `ScrollDecay`, `DecayModel` and the `native_theme::scroll` functions; the new resolution's theme-change token; a plain part's scope and context selectors skipping the element's own parts; `widget.<part>` in its own scope; the one-of selector parts and the per-combination precision of the checks; element data declared by the preset and readable by application layers, the declaration names; the text-role owner order; `ContainerSize`'s default holding; `for_applications` settings; one route for single-click and menu drop alignment; gradient angles, at least two stops, `Steps` with `jump-none`, keyframe order; tuple spellings, negative literals; `remove_reader_stand_in`; resolving both schemes; a port's scheme beside a two-scheme mapping; today's helper APIs decided | S0, S1, S2.2, S2.3, S2.4, S2.5, S2.6, S2.7, S2.8, S2.9, S2.11, S4.2, S4.3, S4.4, S4.8, S6.1, S6.3, S7, S7.1, S7.3, S8, S9, S9.1, S9.2, S9.4, S10, S11, S12, S13, S14, S15, S16 |
+| ADD-A112 | the confirming check's fixes: `input.kde_scheme.groups` and `unset_keys` (`InputBases.kde_groups`, `kde_unset_keys`), a scheme file's missing groups and keys as KColorScheme and `applyScheme()` read them, `Header` without a `Header` group as `Window`'s results, `PortError::MissingKey` removed; a transparent accent as no accent; `kde_accent`'s `set` one of KDE's seven; `kde_effects`' starting background; the facts gate's accent run; another platform's accent derived on `kde-breeze`; the accent layer per scheme under a palette with a port and a mapping; the KDE reader's fallback to kdeglobals (`ReaderStatus::Fallback`); the reader's scheme-file tokens as a `Tokens` rule under its scheme; the query returning `Sides`, alignments, placement, `EdgeSide` and translations physical for right-to-left, the transform origin physical; the exact checks evaluating non-applying rules, the model's implications among atoms; `widget.<part>` refused on a part that can be absent or drawn as another; `text_scale` refused under `DynamicType`; `ScrollDecay` as a closed enum of models with their own parameters; `LayerError::UnknownLayer` | S0, S1, S2.2, S2.4, S2.6, S4.2, S4.8, S8, S9, S9.1, S9.2, S9.5, S11, S12, S13, S14, S16, S17, S19.1 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
