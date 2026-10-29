@@ -547,12 +547,12 @@ The abbreviations the platform files' *Seed follow-up* sections cite (2026-10-28
 | `kte/F:L` | KTextEditor tag **v6.31.0** (KF 6.31.0, commit `ea14509c132f2c016d55b38f7a1ec24cc6f9e7d2`) |
 | `qt/F:L` | qtbase tag **v6.12.0** (the tag `platform-facts.md` cites), `src/gui/text/F` |
 | `A/…`, `G/…` | libadwaita 1.10.0 and GTK 4.24.1, as in the GNOME file |
-| `kirigami@81ada72b`, `qqc2@305eb2c4` | the KDE file's Kirigami pin; qqc2-desktop-style `305eb2c44fdc3eb38eebea3b0e6b493cf12d1e5e` (KDE GitHub mirror, `master`; to re-pin to the KF 6.31.0 tag with the KDE file, §6.3) |
-| `labs/F:L` | Windows Community Toolkit **Labs**, `CommunityToolkit/Labs-Windows` at `d620e8b5eb39a3f41f3797101a94d9bda6ba2190` (tag `release/weekly/251217`) (`main`, 2026-10-26), path `components/MarkdownTextBlock/src/F`. Labs is the toolkit's experimental channel: `MarkdownTextBlock` is **not** in the CTK release the Windows file pins (the `components/` list of `CommunityToolkit/Windows` at `a6b4dc45`, tag v8.2.251219, read through the GitHub contents API, has no MarkdownTextBlock) |
-| `MUX` | microsoft-ui-xaml at `8463f451`, as in the Windows file |
+| `kirigami@eecf183a`, `qqc2@2efe38d5` | the KDE file's Kirigami pin; qqc2-desktop-style `2efe38d55ebcfa97599643daada20c157fa1a8a5` (tag `v6.31.0`, the KDE file's pin) |
+| `labs/F:L` | Windows Community Toolkit **Labs**, `CommunityToolkit/Labs-Windows` at `d620e8b5eb39a3f41f3797101a94d9bda6ba2190` (tag `release/weekly/251217`), path `components/MarkdownTextBlock/src/F`. Labs is the toolkit's experimental channel: `MarkdownTextBlock` is **not** in the CTK release the Windows file pins (the `components/` list of `CommunityToolkit/Windows` at `a6b4dc45`, tag v8.2.251219, read through the GitHub contents API, has no MarkdownTextBlock) |
+| `MUX` | microsoft-ui-xaml at `ba3a8d59` (tag `winui3/release/2.5.1`), paths under `src/`, as in the Windows file |
 | Apple `x/y` | `https://developer.apple.com/documentation/x/y`, fetched as JSON (`…/tutorials/data/documentation/x/y.json`) on 2026-10-28 |
 | WWDC26-370 | `https://developer.apple.com/videos/play/wwdc2026/370/` ("Elevate your app's text experience with TextKit"), read 2026-10-28 |
-| `compose/`, `latest/` | androidx `1e6776853023ebe4266aca2b308305723e3a2d57` and material-web `cbd34a89…` `tokens/versions/latest/sass/`, as in the Material file |
+| `compose/`, `latest/` | androidx `e4d933c98df7baa7ea2b83eea6e086915961e0ff` and material-web `b4de401e…` (tag `v2.5.0`) `tokens/versions/latest/sass/`, as in the Material file |
 
 SRC: **R** read at run time, **P** published, **M** measure, **V** to verify. CAPS: the IDs of
 `taxonomy.md`. For macOS and iOS a **Gen** column follows *Element*.
@@ -576,9 +576,9 @@ both with one colour (`TextFillColorPrimary`, `onSurface`, `label`): no row. No 
 | Short | Source |
 |---|---|
 | `qt/F:L` | qtbase tag **v6.12.0** (the tag the KDE file already cites), `src/widgets/…/F`, fetched from `raw.githubusercontent.com/qt/qtbase/v6.12.0/` |
-| `st:L` | `kstyle/breezestyle.cpp`, KDE/breeze @ `75561b7f` (as in the KDE file) |
+| `st:L` | `kstyle/breezestyle.cpp`, KDE/breeze @ `c97883a8` (tag `v6.8.2`, as in the KDE file) |
 | `kwin/F:L` | KDE/kwin @ `f130ab33c8e6f3b9d728aade87836086ae9a8ed4` (tag `v6.8.2`) (as in the KDE file), `src/F` |
-| `kirigami`, `qqc2` | as in the KDE file (`81ada72b`, `305eb2c4`) |
+| `kirigami`, `qqc2` | as in the KDE file (`eecf183a`, `2efe38d5`) |
 | `kate/F:L` | KDE/kate `master` @ `2b6465a886b9d3bfc6eab25065c14ffe025e6ac3` (tag `v26.08.2`) (2026-10-27), `apps/lib/F` |
 | `konsole/F:L` | KDE/konsole `master` @ `c21993d0b73b6fe5d4c52da50b25370b40389e4e` (tag `v26.08.2`), `src/F` |
 | `kdenlive/F:L` | KDE/kdenlive `master` @ `ef54398259f2af1d29095a798cab48ca4c52f141` (tag `v26.08.2`) |
@@ -587,11 +587,11 @@ both with one colour (`TextFillColorPrimary`, `onSurface`, `label`): no row. No 
 | `M/F:L` | mutter tag **51.1** (commit `9134e3a5869ce232bf95b77519005865747ba603`, the mutter of the gnome-shell 51.1 the GNOME file cites) |
 | `GS-data/F:L` | gnome-shell tag **51.1** (`33da0685`), `data/F` |
 | `LP/F:L` | GNOME/libpanel tag **1.10.4** (commit `ed3e78f3c09d7daed05b2450313dbe138c8f3c87`), `src/F` |
-| `MUX/…` | microsoft-ui-xaml @ `8463f451` (as in the Windows file), `controls/dev/…` |
+| `MUX/…` | microsoft-ui-xaml @ `ba3a8d59` (tag `winui3/release/2.5.1`, as in the Windows file), `src/controls/dev/…` |
 | Learn | learn.microsoft.com, read 2026-10-28, with the page's `updated_at` |
 | Apple | `developer.apple.com/tutorials/data/documentation/<path>.json`, read 2026-10-28; HIG pages as the macOS/iOS files read them (2026-10-27) |
-| `mw/`, `compose/` | as in the Material file (material-web `cbd34a89`, androidx `1e677685`) |
-| `ax/F:L` | androidx `1e6776853023ebe4266aca2b308305723e3a2d57`, the full path given in the row |
+| `mw/`, `compose/` | as in the Material file (material-web `b4de401e`, androidx `e4d933c9`) |
+| `ax/F:L` | androidx `e4d933c98df7baa7ea2b83eea6e086915961e0ff`, the full path given in the row |
 
 Columns: section · model element · Element · What is missing · Source · Nearest model field · CAPS · SRC.
 For macOS and iOS the "What is missing" cell ends with **Gen:** (whether the generations differ).
@@ -609,14 +609,14 @@ The abbreviations the platform files' *Fonts and mirroring* sections cite (2026-
 | `qt/` | qtbase tag **v6.12.0** (the KDE file's Qt ref), `src/gui/text/`: `unix/qfontconfigdatabase.cpp`, `qfontdatabase.cpp` |
 | `P/` | pango tag **1.58.2** (commit `d360f14004e4a4824f2352f6e2722016f9a51dd6`), `pango/`; GTK 4.24.1 requires pango ≥ 1.58 (`gtk/meson.build:17-22` at tag 4.24.1) |
 | `G/`, `A/w/`, `S/` | as the GNOME file: GTK 4.24.1 `gtk/`, libadwaita 1.10.0 `src/stylesheet/widgets/`, gsettings-desktop-schemas 51.0 |
-| `st`, `kirigami@81ada72b` | as the KDE file: KDE/breeze @ `c97883a8` `kstyle/breezestyle.cpp`; KDE/kirigami @ `81ada72b` |
-| `aosp/` | AOSP `platform/frameworks/base` @ `94b4c163b7dfe5ce3607f7bb8456f9573f7de57d` (tag `android-17.0.0_r1`) (`refs/heads/main` on android.googlesource.com, read 2026-10-28; committer date 2025-03-26), `data/fonts/`: `fonts.xml`, `fallback_order.json` |
+| `st`, `kirigami@eecf183a` | as the KDE file: KDE/breeze @ `c97883a8` `kstyle/breezestyle.cpp`; KDE/kirigami @ `eecf183a` |
+| `aosp/` | AOSP `platform/frameworks/base` @ `94b4c163b7dfe5ce3607f7bb8456f9573f7de57d` (tag `android-17.0.0_r1`) (read 2026-10-28 at `refs/heads/main`, re-pinned 2026-10-30), `data/fonts/`: `fonts.xml`, `fallback_order.json` |
 | `ndk` | developer.android.com/ndk/reference/group/font (updated 2026-08-27): `AFontMatcher_match`, `AFontMatcher_setLocales`, `ASystemFontIterator_open`, "Available since API level 29" |
 | `c-emoji` | developer.android.com/develop/ui/compose/text/emoji (updated 2026-10-22) |
 | `a-ref` | developer.android.com reference, read 2026-10-28: `android.content.res.Configuration#getLayoutDirection()`; `android.graphics.drawable.Drawable#isAutoMirrored()` |
 | `CAM` | developer.android.com reference `androidx.compose.material.icons.Icons.AutoMirrored` (artifact `material-icons-core`, added in 1.6.0), read 2026-10-28 |
 | `GFI` | Google Fonts, *Material Icons Guide*, `developers.google.com/fonts/docs/material_icons`, sections "Icons in RTL" and "Which icons should be mirrored for RTL?" (last updated 2024-07-23) |
-| `mw/`, `latest/`, `compose/` | as the Material file: material-web `cbd34a8921915af94d5ef65c2a69eece41d5b4f3` (repository root; `latest/` = `tokens/versions/latest/sass/`); androidx `1e6776853023ebe4266aca2b308305723e3a2d57`, `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/` |
+| `mw/`, `latest/`, `compose/` | as the Material file: material-web `b4de401eb665ec63474f39319a4ba8f2145974cc` (tag `v2.5.0`; repository root; `latest/` = `tokens/versions/latest/sass/`); androidx `e4d933c98df7baa7ea2b83eea6e086915961e0ff`, `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/` |
 | `m3.io` | m3.material.io *Bidirectionality & RTL* (`foundations/layout/understanding-layout/bidirectionality-rtl`) and the m2 page (`m2.material.io/design/usability/bidirectionality.html`) render with JavaScript only and returned no text: **to verify**, as the Material file says of every m3.io cite |
 
 The probe methods named in the rows are the gap map's §3 probes; "the sample set" means one string

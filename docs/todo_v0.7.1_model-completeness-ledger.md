@@ -50,7 +50,10 @@ moved and 516 present at the pin were rewritten or kept as they are (3,039 citat
 rewritten); 78 changed and 14 vanished go to the orchestrator's re-read (below); 471 unmappable and 46 held back
 (their cell shares a ref with a changed or unmappable citation) are listed in
 [`todo_v0.7.1_model-completeness-repin-unmapped.tsv`](todo_v0.7.1_model-completeness-repin-unmapped.tsv), each
-re-read at its pin by the lane that takes its row. Re-read of the changed and vanished: in progress.
+re-read at its pin by the lane that takes its row. The changed and vanished were re-read (2026-10-30): 54 had moved
+to other lines and 80 stale refs were reworded (applied); 38 state behaviour that changed or is gone at the pin,
+listed in [`todo_v0.7.1_model-completeness-repin-changed.tsv`](todo_v0.7.1_model-completeness-repin-changed.tsv) for
+the lanes (11 of them on rows traced `out`); one reaches the catalogue (queue #16).
 
 ## Units
 
@@ -105,6 +108,7 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 13 | 2 | spec S2.2, S17; `sources.toml` | the seventh check's fixes: vector tables' measured rows carry a tolerance per output column; any value with leaves has evidence shaped like it; non-numeric leaves compare exactly; the smallest of several tolerances; a span one notation reads is not re-read as numbers; block fields by the valid keys; `available` always stated; archived Apple snapshots are the archive's JSON | the seventh independent check | applied 54e85831; eighth check: 1 serious, 6 minor |
 | 14 | 2 | spec S2.2, S17 | the eighth check's fixes: vector tables name their generations (one table per generation where the reference differs), their rows' citations serve them, every preset calling a function covered; measured inputs compared with evidence; colour leaves numeric; the gate's tolerance per generation; `palettes/` in the directory rule | the eighth independent check | applied ace2f3bf; ninth check: 3 serious, 7 minor (two from #14's own wording) |
 | 15 | 2 | spec S2.2 | the ninth check's fixes: one vector table per function, a reference that differs by generation selected by an enum operand (as `name_index`'s `method`); published rows' citations hold every literal of the row; measured rows' harness records the inputs it set (placement's `PlacementParams`) | the ninth independent check | applied; tenth check pending |
+| 16 | 2 | catalogue `avatar` on `kde-breeze` (Q2.28, Q2.29, K-KA-33†) | Kirigami's own Avatar exists only on `master`; at KF 6.31.0 the KDE avatar is kirigami-addons' (`Avatar.qml`, `nameutils.cpp`), so the base look on `kde-breeze` and its `@ka_avatar` variant need restating from kirigami-addons 1.15.0 | the re-pin's re-read | open: settled with the typed-widgets unit that holds `avatar` |
 
 ## Unmeasured register
 

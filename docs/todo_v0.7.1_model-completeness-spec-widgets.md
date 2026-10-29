@@ -4960,7 +4960,7 @@ spaces:
     (KDateComboBox paints an
     editable combo box, `CC_ComboBox` with its line edit, K1.240, as KTimeComboBox: its constructor calls
     `setEditable(true)` whatever its options, and clearing `EditDate` only makes the line edit read-only,
-    `kdatecombobox.cpp:214`, `:103`, kwidgetsaddons at `17cca25b`; the value phase pins the release's commit), under `text_field` `drawn_as = { widget = "stepper", variants = [] }` (QDateEdit's spin box,
+    `kdatecombobox.cpp:214`, `:103`, kwidgetsaddons at `259b994c`, tag `v6.31.0`), under `text_field` `drawn_as = { widget = "stepper", variants = [] }` (QDateEdit's spin box,
     K2.23†), so the look is stated once, by those widgets' rules in `context date_picker`. Under `cond
     flavor:kirigami` the field is kirigami-addons' own flat button in `context form.row` (K-KA-22†), drawn as this
     part.
