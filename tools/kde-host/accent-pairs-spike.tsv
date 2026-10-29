@@ -1,0 +1,22 @@
+# The accent run's pairs for spike K of the 0.8.0 plan, read by scripts/measure_kde_accent.sh
+# (a bare name is the installed scheme file /usr/share/color-schemes/<name>.colors): the three
+# schemes breeze installs, each with no accent and two fixed accents, #e5a50a (a yellow: low
+# contrast on a light background, so the link colour is darkened) and #5e2ca5 (a violet: low
+# contrast on a dark one, so it is lightened). BreezeClassic is the one installed scheme with the
+# accent-coloured title bar option (accentActiveTitlebar=true), and it has no Colors:Header
+# group. The last two pairs check that the scheme applied first leaves nothing behind:
+# BreezeLight after BreezeClassic instead of BreezeDark, and BreezeClassic applied to a fresh
+# configuration with no scheme before it.
+#
+# id	scheme-file	accent	predecessor	same-as
+light-none	BreezeLight	-	-	-
+light-e5a50a	BreezeLight	#e5a50a	-	-
+light-5e2ca5	BreezeLight	#5e2ca5	-	-
+dark-none	BreezeDark	-	-	-
+dark-e5a50a	BreezeDark	#e5a50a	-	-
+dark-5e2ca5	BreezeDark	#5e2ca5	-	-
+classic-none	BreezeClassic	-	-	-
+classic-e5a50a	BreezeClassic	#e5a50a	-	-
+classic-5e2ca5	BreezeClassic	#5e2ca5	-	-
+light-none-after-classic	BreezeLight	-	BreezeClassic	light-none
+classic-none-fresh	BreezeClassic	-	none	classic-none

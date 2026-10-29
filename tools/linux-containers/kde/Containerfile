@@ -1,0 +1,35 @@
+# The KDE measurement container of the 0.8.0 plan (D2; spike K): Plasma,
+# KDE Frameworks, Qt, Kirigami and kirigami-addons at the release set's
+# versions (docs/todo_v0.7.1_model-completeness-ledger.md, Release set), every
+# package from one dated Arch Linux Archive snapshot, so nothing drifts. Built
+# and pushed by os-probe.yml's kde-container job as
+# ghcr.io/tiborgats/native-theme-kde:2026-10-29.
+#
+# What it holds: plasma-workspace for `plasma-apply-colorscheme` (the accent
+# run, scripts/measure_kde_accent.sh); breeze (the colour schemes and the Qt
+# Widgets style); plasma-integration (the `kde` platform theme, which gives Qt
+# applications kdeglobals' palette); kirigami, qqc2-desktop-style and
+# kirigami-addons with qt6-declarative's `qml` runtime for the QML host, and
+# pyside6 for the Qt Widgets host (tools/kde-host, D4); dbus for
+# dbus-run-session; Noto Sans and Hack, the fonts kdeglobals' defaults name.
+#
+# The base image is pinned by digest; `pacman -Syyuu` against the snapshot
+# alone then moves each of its packages to the snapshot's version, downgrades
+# included. /usr/share/native-theme/packages.txt lists every installed package
+# (`pacman -Q`), for the evidence files to record.
+
+FROM docker.io/library/archlinux:base-20261025.0.616225@sha256:e82623936fa1a69700b48e98b058df6eaab18b737c27473a7234a40fdecb9413
+
+ARG SNAPSHOT=2026/10/29
+
+RUN echo "Server = https://archive.archlinux.org/repos/${SNAPSHOT}/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist \
+ && pacman -Syyuu --noconfirm \
+ && pacman -S --noconfirm --needed \
+      noto-fonts ttf-hack \
+      plasma-workspace plasma-integration breeze kcolorscheme kconfig \
+      kirigami qqc2-desktop-style kirigami-addons qt6-declarative pyside6 \
+      dbus \
+ && rm -rf /var/cache/pacman/pkg/* \
+ && mkdir -p /usr/share/native-theme \
+ && echo "${SNAPSHOT}" > /usr/share/native-theme/snapshot.txt \
+ && pacman -Q > /usr/share/native-theme/packages.txt

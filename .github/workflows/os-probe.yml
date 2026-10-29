@@ -4,7 +4,10 @@ name: OS probe
 # and Windows runner image and uploads what the OS reported: probe.toml and,
 # on macOS, the control renders; and the GNOME jobs, in the GNOME container
 # (tools/linux-containers/gnome): its build, the harness (tools/gnome-host) and
-# the vector generator (tools/gnome-vectors). Evidence for the platform-fidelity review
+# the vector generator (tools/gnome-vectors); and the KDE jobs, in the KDE
+# container (tools/linux-containers/kde): its build, the accent run
+# (scripts/measure_kde_accent.sh) and the render host (tools/kde-host).
+# Evidence for the platform-fidelity review
 # (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
 # jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
 # Dispatched by hand only; `workflow_dispatch` needs this file on `main`, and
@@ -16,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       jobs:
-        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors); empty runs every job"
+        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render); empty runs every job"
         required: false
         default: ""
       images:
@@ -513,3 +516,148 @@ jobs:
         with:
           name: gnome-vectors
           path: gnome-vectors-out
+
+  # The KDE container (D2, spike K): tools/linux-containers/kde/Containerfile
+  # built from the Arch Linux Archive snapshot of the release set, checked to
+  # carry the release set's Plasma, KDE Frameworks, Qt, PySide6 and
+  # kirigami-addons, and pushed to ghcr.io for the KDE jobs to pull.
+  # packages.txt lists every package the image holds; color-schemes.txt the
+  # installed colour schemes and which of them state a tint, the
+  # accent-coloured title bar or a Colors:Header group.
+  kde-container:
+    name: KDE container
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',kde-container,')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/tiborgats/native-theme-kde:2026-10-29
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build the image
+        run: |
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --label "org.opencontainers.image.description=native-theme's KDE measurement container (Arch Linux Archive 2026/10/29)" \
+            -t "$IMAGE" -f tools/linux-containers/kde/Containerfile tools/linux-containers/kde
+      - name: Check the release set
+        run: |
+          mkdir -p kde-container
+          docker run --rm "$IMAGE" cat /usr/share/native-theme/packages.txt > kde-container/packages.txt
+          docker image inspect "$IMAGE" > kde-container/inspect.json
+          printf '%s\n' 'plasma-workspace 6.8.2-1' 'plasma-integration 6.8.2-1' 'breeze 6.8.2-1' \
+            'kcolorscheme 6.31.0-1' 'kconfig 6.31.0-1' 'kirigami 6.31.0-1' 'qqc2-desktop-style 6.31.0-1' \
+            'kirigami-addons 1.15.0-1' 'qt6-base 6.12.0-3' 'qt6-declarative 6.12.0-3' 'pyside6 6.12.0-3' \
+            | sort > kde-container/expected.txt
+          grep -Fx -f kde-container/expected.txt kde-container/packages.txt | sort > kde-container/found.txt
+          cat kde-container/found.txt
+          cmp kde-container/expected.txt kde-container/found.txt
+      - name: Record the colour schemes
+        run: |
+          docker run --rm "$IMAGE" sh -c '
+            cd /usr/share/color-schemes && sha256sum *.colors
+            for key in TintFactor TitlebarIsAccentColored accentActiveTitlebar "\[Colors:Header\]"; do
+              echo "$key: $(grep -l "^$key" *.colors | tr "\n" " ")"
+            done' | tee kde-container/color-schemes.txt
+      - name: Push the image
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE" | tee kde-container/push.txt
+          docker logout ghcr.io
+      - name: Upload the image's record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kde-container
+          path: kde-container
+
+  # The accent run (D2, spike K): scripts/measure_kde_accent.sh in the KDE
+  # container on the pairs of tools/kde-host/accent-pairs-spike.tsv, each pair
+  # in a fresh configuration; the script fails the job when a step fails, does
+  # not change kdeglobals, or finds an AccentColor stored before a scheme's
+  # apply. The pull is tried without credentials first, to check that the
+  # package is public; pull.txt records the result.
+  kde-accent:
+    name: KDE accent run
+    needs: kde-container
+    if: >-
+      !cancelled() && needs.kde-container.result != 'failure'
+      && (inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',kde-accent,'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE: ghcr.io/tiborgats/native-theme-kde:2026-10-29
+      OUT: kde-accent-out
+    steps:
+      - uses: actions/checkout@v6
+      - name: Pull the image
+        run: |
+          mkdir -p "$OUT"
+          docker logout ghcr.io > /dev/null 2>&1 || true
+          if docker pull "$IMAGE" > "$OUT/pull.txt" 2>&1; then
+            echo "pull without credentials: succeeded" | tee -a "$OUT/pull.txt"
+          else
+            echo "pull without credentials: failed" | tee -a "$OUT/pull.txt"
+            echo "::warning::$IMAGE does not pull without credentials"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull "$IMAGE"
+            docker logout ghcr.io
+          fi
+          cat "$OUT/pull.txt"
+      - name: Measure
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work "$IMAGE" \
+            dbus-run-session -- bash scripts/measure_kde_accent.sh "$OUT" tools/kde-host/accent-pairs-spike.tsv
+      - name: Upload the measurements
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kde-accent
+          path: kde-accent-out
+
+  # The KDE render host (D4, spike K): tools/kde-host's QML host (the `qml`
+  # runtime, qqc2-desktop-style and Kirigami) and Qt Widgets host (PySide6,
+  # Breeze) in the KDE container, offscreen, under BreezeLight and BreezeDark,
+  # run twice and compared (tools/kde-host/run.sh).
+  kde-render:
+    name: KDE render host
+    needs: kde-container
+    if: >-
+      !cancelled() && needs.kde-container.result != 'failure'
+      && (inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',kde-render,'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE: ghcr.io/tiborgats/native-theme-kde:2026-10-29
+      OUT: kde-render-out
+    steps:
+      - uses: actions/checkout@v6
+      - name: Pull the image
+        run: |
+          mkdir -p "$OUT"
+          docker logout ghcr.io > /dev/null 2>&1 || true
+          if docker pull "$IMAGE" > "$OUT/pull.txt" 2>&1; then
+            echo "pull without credentials: succeeded" | tee -a "$OUT/pull.txt"
+          else
+            echo "pull without credentials: failed" | tee -a "$OUT/pull.txt"
+            echo "::warning::$IMAGE does not pull without credentials"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull "$IMAGE"
+            docker logout ghcr.io
+          fi
+          cat "$OUT/pull.txt"
+      - name: Render
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work "$IMAGE" \
+            dbus-run-session -- bash tools/kde-host/run.sh "$OUT"
+      - name: Upload the renders
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kde-render
+          path: kde-render-out

@@ -805,6 +805,29 @@ python3 scripts/check_spec_trace.py
 python3 scripts/check_spec_trace.py --self-test
 ```
 
+## measure_kde_accent.sh
+
+Records what Plasma's colour scheme applier (`plasma-apply-colorscheme`)
+writes into kdeglobals for each (scheme file, accent) pair: the KDE accent
+run's measured facts (`docs/todo_v0.7.1_model-completeness-plan.md`, D2).
+Each pair runs in fresh configuration, data and cache directories, offscreen
+and on its own D-Bus session: another scheme is applied first (a fresh
+configuration already names BreezeLight, for which the tool writes nothing),
+the script checks that no `AccentColor` is stored, then applies the scheme and,
+for an accent, the accent in a second call. Every step must exit 0 and change
+kdeglobals. Writes each step's kdeglobals and a `manifest.toml` (the pairs,
+the commands, their exit statuses, kdeglobals' SHA-256 before and after, the
+container's builds); exits 1 when a check fails. The pairs come from a TSV
+file or the command line; the script's header states the format.
+
+Runs only inside the KDE container (`tools/linux-containers/kde`), which
+`os-probe.yml`'s `kde-accent` job starts on CI; nothing is run on a desktop.
+
+```sh
+scripts/measure_kde_accent.sh <out-dir> tools/kde-host/accent-pairs-spike.tsv
+scripts/measure_kde_accent.sh <out-dir> BreezeLight - BreezeDark '#e5a50a'
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
