@@ -76,11 +76,12 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 
 | # | Class | Document and place | Change | Reported by | Status |
 |---|---|---|---|---|---|
-| 1 | 2 | spec S2.2, S6.1, S13, S14, S17, S18, S21.3; ADD-A113–A118 | the plan's amendments: fact citations and `sources.toml`, vector tables, generated declarations, palette facts, `pending` contract entries | the plan (M0) | applied 1a55a93d; independent check pending (applied before its check, but before any work used it) |
+| 1 | 2 | spec S2.2, S6.1, S13, S14, S17, S18, S21.3; ADD-A113–A118 | the plan's amendments: fact citations and `sources.toml`, vector tables, generated declarations, palette facts, `pending` contract entries | the plan (M0) | applied 1a55a93d; checked 2026-10-29 (7 serious, 16 minor, all fixed in #6), before any work used it |
 | 2 | 3 | rationale R1.5, logged under R25.13 | a preset describes the newest release a supported runner measures | the maintainer (D12) | applied dcaefce1 |
-| 3 | 2 | catalogue, traces (macOS, iOS), spec S20; ADD-A119; `docs/todo.md` | what only macOS or iOS 27 draws carried to the macOS 27 entry; `newest (R1.5)` covers it | the maintainer (D12) | applied 893df7de; independent check pending |
+| 3 | 2 | catalogue, traces (macOS, iOS), spec S20; ADD-A119; `docs/todo.md` | what only macOS or iOS 27 draws carried to the macOS 27 entry; `newest (R1.5)` covers it | the maintainer (D12) | applied 893df7de; checked with #1 |
 | 4 | 1 | catalogue :8193-8347 | five citations of the session's scratchpad paths named by project and commit | the citation inventory (M0) | applied 893df7de |
 | 5 | 1 | spec §0 | the name and entry checkers are in the repository | the orchestrator | applied 1a55a93d |
+| 6 | 2 | spec S2.2, S5.1, S6.1, S14, S17, S18, S21.3; catalogue presets line; iOS gap map; `docs/todo.md`; R1.5 | the first check's fixes: S17's fields per kind, the quote check's direction and precision, composable conversions, absence citations, `read` facts, evidence paths and what counts as cited, sources keyed `<project>@<ref>` and D12's rule for Apple pages, accent facts by `scheme_file`, the gate's staging, palette facts and `[palette.sources]`; the model's arithmetic named; S9.4's curves vector-checked | the independent check of #1 and #3 | applied; second check pending |
 
 ## Unmeasured register
 
@@ -177,7 +178,7 @@ in the 0.7.x releases* as one item; the two connector plans: a fixed list the sc
 | docs/todo.md | ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28) | “**egui Inputs page.** `pages/inputs.rs`” · l. 733 | M5 | A showcase defect (the egui Inputs page reads the outer scope's visuals), fixed when the showcases are rebuilt. |
 | docs/todo.md | ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28) | “**Card as a group” · l. 736 | M3 unit typed widgets batch | The catalogue's `group_box` is a typed widget of its own, answering whether a group box is the card. |
 | docs/todo.md | ### Progress bar: Breeze's groove, the radii, the shadow | “Found with the progress-bar” · l. 742 | M3 unit indicators | The catalogue's `progress_bar` groove, radii and shadow come from each platform's facts. |
-| docs/todo.md | ### macOS 27 Golden Gate: no preset of its own yet | “When GitHub offers a” · l. 765 | after 0.8.0 | D12 (a): `macos-tahoe` describes 26.x; macOS 27 waits for a non-preview runner image. |
+| docs/todo.md | ### macOS 27 Golden Gate and iOS 27: no preset of their own yet | “When GitHub offers a” · l. 765 | after 0.8.0 | D12 (a): `macos-tahoe` describes 26.x; macOS 27 waits for a non-preview runner image. |
 | docs/todo.md | ### macOS: the window background macOS 14 and 15 draw is not the one they read | “From the D round's” · l. 784 | spike M | Spike M's probe passes put the wallpaper and transparency under control and compare the drawn with the read window background. |
 | docs/todo.md | ### macOS: what the OS probe does not render yet | “The OS probe renders” · l. 811 | lane macos | Hovered slider knob, rows and switch are measured macOS facts, from probe passes like spike M's button pass. |
 | docs/todo.md | ### macOS: what the OS probe does not render yet | “A disabled checked checkbox” · l. 822 | lane macos | A disabled checked checkbox and radio is a measured {checked, disabled} combination on macOS (S7.2 state model). |

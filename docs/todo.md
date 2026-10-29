@@ -760,7 +760,7 @@ model, the platform presets and the three connectors
       for the progress bar (and for the text field, check box, drop-down,
       segmented control and expander), as `docs/platform-facts.md`'s macOS cells give.
 
-### macOS 27 Golden Gate: no preset of its own yet
+### macOS 27 Golden Gate and iOS 27: no preset of their own yet
 
 - [ ] [1.0] When GitHub offers a non-preview macOS 27 runner image (today only the
       `xcode-27` preview, actions/runner-images #14404), run the OS probe on it and
@@ -786,9 +786,12 @@ model, the platform presets and the three connectors
       (`NSStatusItemExpandedInterfaceSession`, MAC-N34†; a `menu_bar` variant
       `@expanded_interface` and its `extra_window` look), iOS 27's sheet
       placements (`preferredPlacement`: `@placement_center`, `_leading`,
-      `_trailing`, with a side anchor, SF-7†) and iOS 27.2's navigation-bar
-      `titleAlignment` (C-1); the gap maps' rows and the traces' `newest
-      (R1.5)` lines name them.
+      `_trailing`, with a side anchor, SF-7†), iOS 27.2's navigation-bar
+      `titleAlignment` (C-1), and iOS 27.1's `UIVerticalBarBehavior` and
+      `UIBarButtonItem.axisBehavior` (the iOS gap map's 26 column); the gap
+      maps' rows and the traces' `newest (R1.5)` lines name them. Whether 27
+      re-describes `macos-tahoe` and `ios-26` or gets presets of its own is
+      decided as this entry's first paragraph says.
 
 ### macOS: the window background macOS 14 and 15 draw is not the one they read
 

@@ -38,6 +38,8 @@ form (`https://developer.apple.com/tutorials/data/documentation/uikit/<page>.jso
 The 26 column also covers the iOS 27.x API additions the documentation already lists:
 `UINavigationItem.titleAlignment` (27.2), `UIVerticalBarBehavior` (27.1) and `UIBarButtonItem.axisBehavior`
 (27.1). What each of them draws is *to verify*.
+*Superseded by the 0.8.0 plan's D12 (2026-10-29):* `ios-26` describes iOS 26.x, so these three are carried to
+`docs/todo.md`'s macOS and iOS 27 entry.
 
 **Probe runtimes.** 13–18 values come from the iOS 18 simulator runtime. Drift inside 13–18 is X-VR-1: iOS 15
 bar scroll-edge transparency, the iOS 16 edit menu, the iOS 17 caret, selection UI and page-control progress,

@@ -72,8 +72,8 @@ Each `### <widget>` section states, in this order:
   `<f>` only" (or `material-3`'s): the other flavour declares `[declare.flavor.<other>.widget.<w>] available = false`
   (S10).
   Preset identifiers: `adwaita`, `kde-breeze` (flavours `widgets`, `kirigami`), `macos-*` (`macos-monterey`, the macOS
-  12–15 generation, and `macos-tahoe`, the macOS 26–27 generation), `windows-11`, `ios-*` (`ios-13`, the iOS 13–18
-  generation, and `ios-26`, the iOS 26–27 generation), `material-3` (flavours `baseline`,
+  12–15 generation, and `macos-tahoe`, the macOS 26 generation, describing 26.x), `windows-11`, `ios-*` (`ios-13`, the
+  iOS 13–18 generation, and `ios-26`, the iOS 26 generation, describing 26.x; R1.5, D12), `material-3` (flavours `baseline`,
   the default, Material 3's components, and `expressive`, with Material 3 Expressive's additions; an entry marks what
   only `expressive` draws "flavour `expressive`", or selects it by `cond flavor:expressive`) (R1.5).
 - **Parts:** each part's name, what it is, and its fields, written `` `part` — what it is: `field`, `field` ``. A line

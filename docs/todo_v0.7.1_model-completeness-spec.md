@@ -384,10 +384,12 @@ query, so a connector queries again when the data changes, as for a state (R25.3
 routes, recorded with the table: the reference's public API; its observable behaviour through public API; or the
 pinned upstream source compiled unchanged in a CI tool that calls the internal function (never part of the crate).
 Where the reference is closed, measured inputs and outputs, each with its evidence (S17), are the table; where a
-platform publishes a table (Apple's tracking), the published table is the facts. A test evaluates the function over
-its table. `scripts/check_function_vectors.py` checks that every public function of the `platform` module has a table
-and a test, and that every platform function a fact or a preset names is one of them. The model's own arithmetic
-(`mul`, `pick`, `mix`, …) is not a platform function: its unit tests follow this section's definitions.
+platform publishes a table (Apple's tracking), its vector table is generated from those facts. S9.4's scaling curves
+(`AndroidNonLinear`, `DynamicType`) are checked the same way. A test evaluates the function over its table.
+`scripts/check_function_vectors.py` checks that every function of the `platform` module has a table and a test, and
+that every platform function a fact or a preset names is one of them. The model's own arithmetic (`alpha`, `mix`,
+`mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `pick`) is not a platform function: its unit tests follow this
+section's definitions; every other function of the table above is a platform function.
 
 ### S2.3 Paint (R6)
 
@@ -1233,8 +1235,8 @@ struct ButtonTheme {                   // the derive's input, not public: it nam
 **S5.1 Typed and keyed.** A kind two or more platforms draw is a typed widget struct; a one-platform kind is a
 keyed component (R14), named by a `Key`: bases state it as a `ComponentBase` (S1) in `Bases.components`, rules name
 it by `PartRef::Component` and `WidgetRef::Component`, and the query answers with `ResolvedPartStyle` and
-`ComponentValues` as for a typed widget. One route states a component's shape: the derive generates each component's table of
-parts and their fields from the catalogue, as for a typed widget (S6.1), and the preset's
+`ComponentValues` as for a typed widget. One route states a component's shape: each component's table of
+parts and their fields is generated from the catalogue, as for a typed widget (S6.1), and the preset's
 `[declare.component.<key>]` states only its availability, sizes, densities, variants, flags and values' types (S10);
 adding a layer checks its rules and bases against both (S12).
 
@@ -1256,9 +1258,10 @@ part: a `PartStyle` length field that the catalogue marks `auto` on any part, `m
 `Option<Length>` on every part (`ResolvedPartStyle` is one type), validation refusing `Auto` where neither the part's
 entry nor the core (S6.3) marks it (S12); a widget's value struct, generated per widget, resolves a length to `Option<Length>` only
 where that widget's entry marks the value `auto`. Each component's part and field table is generated from the
-catalogue the same way (S5.1), as data, its parts' styles being `PartStyle`. The derive's input structs and the
-components' tables are themselves generated from the catalogue by `scripts/generate_widgets.py` (ADD-A114), which
-emits the units its list enables, so a unit enters the model in the commit whose presets state it; its `--check`
+catalogue the same way (S5.1), as data, its parts' styles being `PartStyle`. The derive's input structs, the
+widgets' values structs (`ButtonValues`) and the components' tables are themselves generated from the catalogue by
+`scripts/generate_widgets.py` (ADD-A114), which emits the units its list enables (a unit: a set of catalogue entries
+the list names), so a unit enters the model in the commit whose presets state it; its `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
 archived); hand-written entries with no drift check.
@@ -2232,9 +2235,11 @@ size and window in, frame out, each with its evidence); `scripts/check_function_
 A palette is a file in S11's format with `[preset] kind = "palette"`: colour-role bases, input bases and colour
 tokens for the schemes its project defines (R19). Two sources, each stated in the file's header:
 
-- **native-theme's mapping** (the default): each role it covers maps to a colour the project publishes, named by the
-  project's name for it (`# catppuccin: Surface0`), or to a derivation of those (S2.2); a value picked from a range
-  the project's guide gives is marked `# pick: <the guide's words>`. It is the same file on every platform.
+- **native-theme's mapping** (the default): each role it covers maps to a colour the project publishes, or to a
+  derivation of those (S2.2); the file's `[palette.sources]` table names, for each role stated as a colour, the
+  project's colour by its palette-fact key (`"role.window.background" = "catppuccin.mocha.base"`, S17), and its
+  `[palette.picks]` table names each value picked from a range the project's guide gives, with the guide's words. It
+  is the same file on every platform.
 - **the project's port** for one platform, where one exists (Catppuccin's and Dracula's KDE colour schemes, R19):
   `Palette::from_port(file, scheme) -> Result<Palette, PortError>` converts a KDE `.colors` file mechanically, and
   that palette is used on `kde-breeze` in place of the mapping. A `.colors` file does not say whether it is light or
@@ -2304,10 +2309,10 @@ again (S8), so `set_preset` switches it to the new preset's; a `set_preset` to a
 serve with neither is refused whole (`Err(PaletteNotForPreset)`, S8), as `apply_palette` refuses it, and the
 application removes the palette first (`apply_palette(None)`) to switch. A mapping palette need not state
 `token.kde`: the preset's applies. The facts gate checks each mapped colour against the project's
-published colours (pinned like any source, S17) and skips the picks: the colours are facts in
-`docs/facts/palettes/<project>.toml`, keyed by the project's name for each colour and scheme, and the gate's palette
-run resolves every bundled palette over each preset it has a source for and compares each mapped role with the
-colour or derivation its mapping names (ADD-A115).
+published colours (pinned like any source, S17) and skips the picks: the colours are palette facts (S17), and the
+gate's palette run resolves every bundled palette over each preset it has a source for and compares each role its
+`[palette.sources]` names with that fact; a role stated as a derivation names no colour, its operands being checked
+where they are mapped (ADD-A115).
 
 ## S15. System control rendering (R11)
 
@@ -2536,34 +2541,66 @@ notification, and the application calls `reload_reader` and resolves its windows
 [[fact]]
 key = "button.body.fill"                          # model path
 when = { states = ["checked", "hover"], variants = ["flat"] }   # as S11's `when`
-value = "= alpha(surface.foreground, <fraction>)"   # value or the platform's derivation
+value = "= alpha(surface.foreground, 0.1)"        # value or the platform's derivation
 rows = ["GN-1.29"]                                # the gap-map rows the fact carries (R24)
 
-[[fact.cite]]                                     # one or more: together they cover every generation
-kind = "published"                                # read | published | measured
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:L"   # a sources.toml entry, a path, lines
-quote = "…"                                       # published, read: the source's exact text at those lines
-conversion = "…"                                  # optional: one of the closed list below
-evidence = "docs/evidence/<harness>/<run>/<image>/probe.toml#macos.fonts.sizes.systemFontSize"   # measured
-tolerance = 0.0                                   # measured: the measurement's precision
+[[fact.cite]]                                     # one or more: together they serve every generation (below)
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:120-124"
+quote = "background-color: alpha(currentColor, 0.1);"
+
+[[fact.cite]]                                     # a second generation's citation, here a measurement
+kind = "measured"
+evidence = "docs/evidence/os-probe/<date>-run-<id>/<image>/probe.toml#macos.fonts.sizes.systemFontSize"
+tolerance = 0.0
 ```
 
-- **Sources** are pinned in `docs/facts/sources.toml`: one entry per platform source and generation (a code
-  repository at a release's commit; a web page at its public source repository's commit, else as a dated snapshot
-  with its SHA-256), each naming the generations it serves; cited code that is not a platform source (the
-  toolkits, the project's own files) is listed there as not pinned, with its reason.
-- **`quote`**: whitespace-normalised, it occurs in the cited lines at the pin, and every literal of `value` (numbers
-  after unit normalisation, colours in any notation, a derivation's operands), after `conversion`, occurs in it.
-- **`conversion`**, a closed list the facts checker applies to the quote's literals: `pt_to_px` (× 96 / 72),
-  `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `s_to_ms` (× 1000); a member is
-  added to this list and the checker together.
+- **Fields.** `key`, `value`, `rows` and at least one `cite` are required; `when` is optional (no condition).
+  `rows` lists gap-map row IDs as the gap maps write them (`†` included), and is `[]` only for a state-model
+  combination no row names. Per citation, by `kind`:
+
+  | `kind` | required | optional | not allowed |
+  |---|---|---|---|
+  | `published` | `source`, `quote` | `conversion`, `absent` | `evidence`, `tolerance` |
+  | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent` |
+  | `measured` | `evidence`, `tolerance` | `conversion` | `source`, `quote`, `absent` |
+
+  A `measured` citation names no `source`: its evidence run's README names the harness and its commit.
+- **Sources** are pinned in `docs/facts/sources.toml`, one entry per source and release, keyed `<project>@<ref>` (the
+  release tag, or the commit where the project has no tags), with the commit, the generations (preset IDs) it serves
+  and, for a web page, its public source repository's commit or else a dated snapshot with its SHA-256. A citation's
+  `source` is `<entry> <path>:<line or range>`, and it serves every generation its entry lists. An Apple page
+  snapshot serves the release it was taken in; for an older generation it serves only as an archived snapshot from
+  that release's lifetime, and is otherwise cited beside the pinned SDK headers or a measurement (D12). Cited code
+  that is not a platform source (the toolkits, the project's own files) is listed there as not pinned, with its reason.
+- **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. Every literal of `value`
+  (S2.2's numeric, length, duration, angle and colour literals; references and names are left to the verifier)
+  equals a literal of the quote, as written or after the citation's `conversion`, which the checker applies to the
+  quote's literals. Units are normalised within a dimension while parsing (`0.2s` is `200ms`); numbers are equal to a
+  relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3. `conversion` is a list from a closed set, applied
+  in order: `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x); a member is added here
+  and to the checker together. A point size stays a point size (S9.4 converts it by the preset's font DPI).
+- **Absence.** A value that states an absence (`absent`, an empty list, `available = false`, a variant or size the
+  platform lacks) cites the enclosing definition as `quote` (the selector block, the class's declaration in the
+  pinned headers, the control's style) and names in `absent` the platform's name for what is missing; the checker
+  verifies that the name does not occur in the cited lines, and the verifier that the lines are the whole definition.
+- **`read`** facts state the reference the key takes from a reader input (`value = "= input.accent"`); the quote is the
+  API's declaration at the pinned source or SDK; the gate checks them as derivations (the perturbed run changes the
+  input).
 - **`evidence`** (`measured`): a committed file under `docs/evidence/<harness>/<date>-run-<id>/<image>/` and the path
-  of the value inside it; for a value read from an image, the committed output of a committed analysis script naming
-  its input image and the pixels it reads. The value there equals the fact's after `conversion`, within `tolerance`,
-  and the file records the generation and the toolkit's exact builds. Every evidence file is cited by a fact.
+  of the value inside it, in the file type's form (a dotted key in TOML, a JSON pointer in JSON, `Group/Key` in an INI
+  file such as kdeglobals, `<first column>/<header>` in CSV); for a value read from an image, the committed output of
+  a committed analysis script naming its input image and the pixels it reads. The value there equals the fact's,
+  after `conversion`, within `tolerance`, and the file records the generation and the toolkit's exact builds. Every
+  evidence file is cited by a fact, a state-model entry or a vector table (S2.2, S13); a run's README is not evidence;
+  the runs the 0.8.0 plan lists as legacy count as cited until its M4.
 - **Generations.** Facts are one directory per platform. A fact for one generation carries `preset:<id>` (S7.1) in
-  its `when`; a fact without one has a citation for each generation its directory covers among the presets that
-  exist, the generation of a citation being its pin's (`sources.toml`) or its evidence file's.
+  its `when`, and every citation of it serves that generation; a fact without one has citations that together serve
+  each generation its directory covers among the presets that exist, a citation's generations being its source
+  entry's or its evidence file's. Where two generations' sources order the facts differently, the facts are split by
+  `preset:`.
+- **The gate's tolerance** for a key is the tolerance of the citation serving the resolved preset's generation; a
+  `published` or `read` citation compares at the quote check's precision.
 
 `docs/platform-facts.md` is generated from these files (a script), and the two existing scripts read the data.
 
@@ -2571,13 +2608,19 @@ tolerance = 0.0                                   # measured: the measurement's 
 draws (states × conditions × containers × variants × sizes, R4), the exclusive groups' order of precedence, and the
 source of each (the catalogue's "state-model source" line points here). They also state each preset's declarations
 (availability, variants, sizes, container sizes, S10), and the gate checks each preset's declarations against them
-(ADD-A116).
+(ADD-A116). Each entry carries `rows` and `cite` tables of the facts' form, checked like a fact's.
+
+**Palette facts** (`docs/facts/palettes/<project>.toml`, S14): the colours a project publishes, one fact per colour
+and flavour, keyed `<project>.<flavour>.<the project's name>` (`catppuccin.mocha.surface0`), with a colour literal and
+the facts' citations; they have no `when` and no generations, their source entry being the project's at its pin.
+`check_facts.py` checks their keys against the bundled palettes' `[palette.sources]`, not against the catalogue.
 
 **Which fact applies.** Facts in a file are ordered as the platform's source orders them (CSS order for libadwaita,
 visual-state order for WinUI, branch order for Breeze), so their order is the platform's, independent of the preset's
 rule order. For a key and a combination, the fact that applies is the **last** in file order whose `when` holds, after
 the exclusive groups' reduction (S10). Where the platform states a combination ({checked, hover} in GN-1.29), its
-facts state it, and a preset that forgot it fails.
+facts state it, and a preset that forgot it fails. A fact with `scheme_file` and `accent` (below) applies only in the
+accent run, for that scheme file and accent; the other runs consider only facts without them.
 
 **The gate** (`native-theme/tests/facts_gate.rs`): it resolves each platform preset with a stand-in `ReaderState` and no
 reader, so the machine's own settings never enter: by default the no-reader state's conditions (S16) under each
@@ -2585,7 +2628,8 @@ scheme in turn, factor 1 and no font DPI of its own (`font_dpi: None`, so the pr
 every combination of its state model, it replaces the stand-in with one holding the combination's reader conditions (and
 passes its window conditions in `WindowConditions`), resolves, and queries the element, and compares each key with the
 fact that applies (within tolerance); a key and combination with no fact fails (R4). It compares every token,
-colour-role and input fact the same way, under its `when`.
+colour-role and input fact the same way, under its `when`. While 0.8.0 is built, the gate skips a fact whose key the
+model does not hold yet (the 0.8.0 plan enables its units one by one); 0.8.0 is released with none skipped.
 
 **The perturbed run** (R4's derivation check) repeats this with the stand-in's layer stating, under each scheme, a
 fixed colour for every declared input and for each colour role a derivation fact names as an operand, the colours
@@ -2602,7 +2646,8 @@ with that scheme's inputs in force (the preset's own for its files; for every ot
 `Palette::from_port` and applied, under the scheme the facts name for it) and the accent set through `set_accent`, and compares every accent-dependent role, every inactive input
 role and the four `wm_*` keyed roles with the facts recorded from Plasma with that scheme and accent applied (kind
 `measured`: `applyScheme()`'s output in kdeglobals, read back as the KDE reader reads kdeglobals). Each such fact names, beside
-its `when`, the scheme file and the accent it was measured with (`scheme_file = "<file>"`, `accent = "<colour>"`). The
+its `when`, the scheme file and the accent it was measured with (fact-level `scheme_file = "<file>"` and
+`accent = "<colour>"`, both or neither, in the `kde` directory only). The
 schemes include at least one that tints, one with the accent-coloured title bar option and a `Header` group, one with
 that option and no `Header` group, and one that lacks a colour group the others have; the value phase chooses the
 files and the accents and records them as sources.
@@ -2620,13 +2665,16 @@ files and the accents and records them as sources.
   it is run by hand while they change and is not part of `scripts/check_release.sh`; it is deleted when the
   documents are archived.
 - The showcases' element lists and parity gates follow the connectors (R21).
-- `scripts/check_spec_names.py`, `scripts/check_spec_entries.py` and the catalogue parser they share,
-  `scripts/spec_catalogue.py`: run by hand as `check_spec_trace.py` is, deleted when the documents are archived.
+- `scripts/check_spec_names.py`, `scripts/check_spec_entries.py`: run by hand as `check_spec_trace.py` is; the
+  catalogue parser they share, `scripts/spec_catalogue.py`, is also imported by `generate_widgets.py` and
+  `check_facts.py`; all deleted when the documents are archived.
 - `scripts/generate_widgets.py` (S6.1), `scripts/check_facts.py` (the facts' form), `scripts/check_fact_citations.py`
-  (S17's quote, evidence and citation rules), `scripts/check_function_vectors.py` (S2.2, S13),
+  (S17's quote, absence, evidence and citation rules), `scripts/check_facts_trace.py` (every live trace row of an
+  enabled unit in a fact's `rows` or carrying a verdict, S20), `scripts/check_function_vectors.py` (S2.2, S13),
   `scripts/check_sources.py` and `scripts/update_sources.sh` (S17's sources), `scripts/generate_platform_facts.py`
-  (`platform-facts.md` from the facts): new, in `scripts/check_release.sh` as the 0.8.0 plan's table of scripts states
-  (ADD-A117).
+  (`platform-facts.md` from the facts), and the one-off converters `scripts/import_platform_facts.py` (today's rows
+  as lane input) and `scripts/convert_inheritance_rules.py` (S19.2): new, in `scripts/check_release.sh` or not as
+  the 0.8.0 plan's table of scripts states (ADD-A117).
 - `scripts/check_connector_parity.py`: rewritten to apply its naming and sibling rules over the new resolved types'
   leaves.
 
@@ -2683,8 +2731,9 @@ every resolved field it receives, with the toolkit lines that draw it, or the re
 draws instead; the element tree it builds for the query (S8); the window conditions it supplies and how it reads
 them. A connector test fails when a resolved field is neither mapped nor listed. The connectors' milestones apply it
 (R21). While 0.8.0 is built, a table may hold `pending` entries, resolved fields the connector does not map yet, which
-the test accepts; a commit that adds a resolved field adds it to every connector's table, mapped or `pending`, and
-0.8.0 is released with none (ADD-A118).
+the test accepts; from the connectors' port to the model (the 0.8.0 plan's M2.1) a commit that adds a resolved field
+adds it to every connector's table, mapped or `pending` (the generator lists the new fields), and 0.8.0 is released
+with none (ADD-A118).
 
 ## S22. Additions register
 
