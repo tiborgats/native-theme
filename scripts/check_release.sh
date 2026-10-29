@@ -30,7 +30,8 @@
 #                  (the release-tag check, the gpui connector's tests on GPUI
 #                  Fast, native-theme's ignored stem-index test, docs.rs
 #                  emulation, packaging, semver checks, outdated
-#                  dependencies, and the visual-asset and compatibility stamp
+#                  dependencies, the 0.8.0 ledger's triage check, and the
+#                  visual-asset and compatibility stamp
 #                  checks), each printing "skipped (--commit mode)", and names
 #                  them in the final summary. The security audit runs in it
 #                  too, and offline falls back to the cached advisory
@@ -55,8 +56,8 @@ Usage: scripts/check_release.sh [--commit]
                  a warning); skips the release-tag check, the gpui
                  connector's tests on GPUI Fast, native-theme's ignored
                  stem-index test, docs.rs emulation, packaging, semver
-                 checks, outdated dependencies, and the visual-asset and
-                 compatibility stamp checks
+                 checks, outdated dependencies, the 0.8.0 ledger's triage
+                 check, and the visual-asset and compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -1047,6 +1048,19 @@ run_check "data documents: preset comments cite their platform-facts rows" \
     python3 scripts/check_preset_citations.py
 run_check "data documents: preset citations self-test" \
     python3 scripts/check_preset_citations.py --self-test
+# The 0.8.0 ledger's triage: every open item of docs/todo.md, the catalogue's
+# open items, ROADMAP's later work and the two connector plans has one
+# destination (docs/todo_v0.7.1_model-completeness-plan.md, M0). The full run
+# only: closing a todo item between full runs removes its row in the same
+# milestone. Its --final mode joins at M4.
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "0.8.0 ledger triage"
+else
+    run_check "data documents: the 0.8.0 ledger triages every open item" \
+        python3 scripts/check_ledger.py
+fi
+run_check "data documents: 0.8.0 ledger self-test" \
+    python3 scripts/check_ledger.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
