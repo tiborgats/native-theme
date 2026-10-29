@@ -104,8 +104,14 @@ the model changes):
   materials, motion, focus, the caret, selection, window chrome, size
   variants), each with where its value will come from: read at run time,
   published, or measured;
-- the rationale, which decides how the model covers each gap;
-- the specification of the model changes.
+- the rationale, [`docs/todo_v0.7.1_model-completeness-rationale.md`](docs/todo_v0.7.1_model-completeness-rationale.md),
+  which decides how the model covers each gap;
+- the specification of the model changes,
+  [`docs/todo_v0.7.1_model-completeness-spec.md`](docs/todo_v0.7.1_model-completeness-spec.md), with its widget
+  catalogue and one traceability file per platform mapping every row of the map.
+
+All three are done (2026-10-29). Next is the value phase: the facts for every preset, measured where no
+document states them, then the model's implementation and the 0.8.0 release.
 
 Their implementation, the presets' values and the readers follow in the
 release the specification names.
