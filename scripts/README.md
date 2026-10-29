@@ -805,6 +805,38 @@ python3 scripts/check_spec_trace.py
 python3 scripts/check_spec_trace.py --self-test
 ```
 
+## check_ledger.py
+
+Checks the 0.8.0 ledger's triage (`## Triage` in
+`docs/todo_v0.7.1_model-completeness-ledger.md`): it extracts every open item
+of the five sources the plan's M0 names (`docs/todo.md`'s `- [ ]` items, the
+catalogue's *Open items*, ROADMAP's *Later — the connectors* and *Also in the
+0.7.x releases*, and a fixed list of the two connector plans' items) and
+requires exactly one row per item, matched by source, heading and opening
+words, and exactly one item per row, so a closed or moved item's row is a
+finding; each destination must be one the plan names, and a row going
+`after 0.8.0`, `not this plan's work` or `settled by the model` needs a
+reason. The script's docstring states the whole rule. `--final` adds the
+plan's M4 gate: `docs/facts/imported/` empty, S19.2's staged file (named by
+`--staged-file PATH`, which `--final` requires) gone, the `LEGACY_EVIDENCE`
+list of `check_fact_citations.py` empty, and no unmeasured-register row
+without a decision; the drift comparison of every measured fact has no ledger
+table to read yet, so `--final` reports it as a finding until it has one.
+Prints one line per finding (file:line: what) and a summary with the counts,
+and exits 0 when there is none, 1 when there are some, 2 on an input it
+cannot read or a wrong command line. `--ledger PATH` checks a copy of the
+ledger. `--self-test` runs each rule on synthetic sources and a ledger.
+`check_release.sh` does not run it yet; the plan adds it to the full run,
+with `--final` from M4.
+
+Requires Python 3.11+ (for `tomllib`).
+
+```sh
+python3 scripts/check_ledger.py
+python3 scripts/check_ledger.py --self-test
+python3 scripts/check_ledger.py --final --staged-file <path>
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
