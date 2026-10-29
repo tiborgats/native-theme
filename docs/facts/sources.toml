@@ -1,6 +1,7 @@
 # The pinned platform sources of the 0.8.0 model (plan D1, specification S17).
 #
-# One [[source]] per platform source and generation, frozen until 0.8.0 unless the ledger records a re-pin. A fact
+# One [[source]] per platform source and generation (a page snapshot: one per page, keyed by its id), frozen until
+# 0.8.0 unless the ledger records a re-pin. A fact
 # cites a source as `source = "<id> <path>:<lines>"`, the id being `<name>@<version>`: the release's version as its
 # project names it (`breeze@6.8.2` for the tag v6.8.2), or the commit's first eight hex digits where the project has
 # no tag for the release (`tag = "commit"`, the reason in `note`).
