@@ -1077,7 +1077,7 @@ note = "Each page as its DocC JSON (https://developer.apple.com/tutorials/data/d
 project = "developer.apple.com HIG"
 url = "https://developer.apple.com/design/human-interface-guidelines/"
 method = "snapshot"
-note = "Each page as its DocC JSON (tutorials/data/design/human-interface-guidelines/<page>.json); the HIG has no versions, so its snapshot serves the newest generation only (D1)."
+note = "Each page as its DocC JSON (tutorials/data/design/human-interface-guidelines/<page>.json), a snapshot entry with `describes` (spec S17): the HIG has no versions, so a page serves only presets describing the release current when it was taken (D1, D12)."
 
 [[site]]
 project = "developer.apple.com WWDC videos"

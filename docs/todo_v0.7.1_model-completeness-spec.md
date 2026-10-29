@@ -388,8 +388,9 @@ platform publishes a table (Apple's tracking), that table is the vector table, i
 S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`) are checked the same way. The model's own arithmetic
 (`alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `pick`) is not a platform function: its unit tests
 follow this section's definitions; every other function of the table above is one. A vector table is a TSV file,
-`native-theme/tests/vectors/<function>.tsv`, whose header names the route, the reference's `sources.toml` entry and
-the generator, and whose measured or published rows each carry their evidence path or citation (S17's forms); a
+`native-theme/tests/vectors/<function>.tsv`, whose leading `# <name>: <value>` lines name the route, the reference's
+`sources.toml` entry and the generator, followed by a column header row, and whose measured or published rows each
+carry their evidence path or citation (S17's forms; its output columns are the literals checked); a
 test evaluates the function over its table. `scripts/check_function_vectors.py` checks the tables' form, that every
 platform function of the table above, every function implementing S9.4's curves and every `pub` or `pub(crate)`
 function of the `platform` module has a table and a test, and that every platform function a fact or a preset names
@@ -2580,9 +2581,10 @@ tolerance = <t>
 by a reference (S2.2: `= token.focus`). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
   sketches as `scripts/check_spec_names.py` reads them) until `docs/property-registry.toml` is generated (S18), and
-  the registry's from then on. A value is S2.2's literal or expression in S2.2's units (`"4px"`, `"150ms"`; a unitless
-  number or fraction is a TOML number, everything else a string), or S11's spelling of `absent`, `auto`, `none`, a
-  name or a list.
+  the registry's from then on. A value is spelled as S11's **Spelling** table spells it in a preset, as a TOML value
+  (a number a TOML number, a bool a TOML bool, a variant with data a one-key table, a list of layers a list of
+  tables), with lengths, durations and angles in S2.2's units (`"4px"`, `"150ms"`) since the key carries no suffix;
+  the quote check compares its numeric and colour leaves.
 - **Fields.** `key`, `value`, `rows` and at least one `cite` are required; `when` is optional (no condition);
   `scheme_file` (`<entry> <path>`, a `sources.toml` entry and the scheme file's path in it) and `accent` (a colour
   literal) are the accent run's, both or neither, in the `kde` directory only. `rows` lists gap-map row IDs as the
@@ -2595,39 +2597,44 @@ by a reference (S2.2: `= token.focus`). The
   | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent` |
   | `measured` | `evidence`, `tolerance` | `conversion` | `source`, `quote`, `absent` |
 
-  A `measured` citation names no `source`: its evidence run's README names the harness and its commit. A colour's
-  `tolerance` is per 8-bit channel, alpha included.
+  A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
+  a number in the value's canonical unit (a colour's per 8-bit channel, alpha included); where several `measured`
+  citations serve one generation, each must hold.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
   kind `git` (a repository at a release's commit, id `<name>@<version>`, or the commit's first eight hex digits where
   the project has no tag for the release), `sdk` (an SDK on a CI runner image, id `xcode@<version>`, not fetched; its
   citations are checked by `os-probe.yml`'s macOS job at that Xcode, not by the local runs) and `distribution` (a
-  dated package snapshot the harnesses install), each listing the generations (preset IDs) it serves; `[[site]]`
-  documentation sites with their pinning method (their source repositories at a commit, or snapshots); and
-  `[[not_pinned]]` cited code that is not a platform source (the toolkits, the project's own files), with its reason.
-  A page snapshot is its own entry, id `<site>@<date>/<page>`, with its SHA-256, the release its page describes
-  (`describes`; Apple's pages describe the newest release when taken) and the generations it serves, which are only
-  presets describing that release: a page snapshotted while 27 is current serves no 26 preset, an archived snapshot
-  from 26's lifetime serves `macos-tahoe` and `ios-26` (D12). A citation's `source` is `<id> <path>:<line or range>`
-  (a JSON page: `<id> #<JSON pointer>`), and it serves every generation its entry lists. `check_sources.py` checks the
-  form, that a snapshot's generations describe its `describes`, and that every cited project is pinned, a site or not
-  pinned.
+  dated package snapshot the harnesses install, which no citation names), each listing the generations (preset IDs)
+  it serves; `[[site]]` documentation sites with their pinning method (their source repositories at a commit, or
+  snapshots); `[[not_pinned]]` cited code that is not a platform source (the toolkits, the project's own files), with
+  its reason; and a `[presets]` table naming the release each preset describes (`macos-tahoe = "macOS 26"`). A page
+  snapshot is a `[[source]]` of kind `snapshot`, one per page, with its site, URL, date, SHA-256 and `describes` (a
+  release as `[presets]` writes them; Apple's pages describe the newest release when taken), and its generations are
+  only presets describing that release: a page snapshotted while 27 is current serves no 26 preset, an archived
+  snapshot from 26's lifetime serves `macos-tahoe` and `ios-26` (D12). A palette project's entry serves no generation
+  (`generations = []`, `palette = true`). A citation's `source` is `<id> <path>:<line or range>` (a JSON page:
+  `<id> #<JSON pointer>`; an `sdk` header: a path from the Xcode's `Contents/Developer/Platforms/`, which names the SDK),
+  and it serves every generation its entry lists. `check_sources.py` checks the form (its docstring holds the id
+  pattern and each kind's fields), that a snapshot's generations describe its `describes`, and that every cited
+  project is pinned, a site or not pinned; it gains the `snapshot` kind, palette entries and `[presets]` when the
+  first of them is written.
 - **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. For each generation the
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
   `value` (S2.2's numeric, length, duration, angle, font size and colour literals; references and names are left to
   the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
-  held by the evidence check alone. The quote's literals are read by the source file's notation: numbers
-  `-?(\d+(\.\d*)?|\.\d+)` with an optional unit or `%`; XAML's `TimeSpan` `[h]h:mm:ss[.f]`, read as milliseconds;
-  colours `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` (in `.xaml` files `#argb` and `#aarrggbb`), CSS `rgb()` and
-  `rgba()`, `Qt.rgba()`, `QColor(r, g, b[, a])` and a C++ initialiser `{r, g, b[, a]}` of bytes, and an `r,g,b[,a]`
-  byte list as the value of a key in an INI file (`.colors` files, kdeglobals); a notation is added here and to the
-  checker together. A literal without a unit takes the value literal's dimension in its canonical unit (px, ms, deg,
-  pt, or a plain number); a literal with a unit must be of the value's dimension, px and pt being distinct, and is
-  normalised within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with
-  alpha to 1e-3. `conversion` is a list from a closed set, applied in order: `percent_to_fraction` (÷ 100),
-  `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, for a unitless number of seconds); a
-  member is added here and to the checker together. A point size stays a point size (S9.4 converts it by the
-  preset's font DPI).
+  held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
+  that `scripts/check_fact_citations.py` holds, documents in its docstring and tests in its self-test: the number
+  form (bounded by non-identifier characters, so `Qt6` holds no number), the colour notations (CSS, SCSS, XAML's
+  `#argb` and `#aarrggbb`, Qt's and C++'s byte forms, an INI key's `r,g,b[,a]`), XAML's `TimeSpan` `[d.]h:m:s[.f]`, and
+  each unit's dimension (`px`, `dp` and logical points as px; `pt`, and `sp` as a font size; `ms` and `s`; `deg`); a
+  member is added to a list as a class 1 change. A literal without a unit takes the value literal's dimension in its
+  canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
+  within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
+  1e-3. `conversion` is a list from a closed set, applied in order: `percent_to_fraction` (÷ 100), `byte_to_fraction`
+  (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, for a unitless number of seconds). A point size stays a
+  point size (S9.4 converts it by the preset's font DPI). A JSON-pointer citation's quote occurs in the string value
+  at the pointer.
 - **Absence.** A value that states an absence (`absent`, an empty list, `available = false`, a variant or size the
   platform lacks) cites the whole enclosing definition as its `source` range (the selector block, the class's
   declaration in the pinned headers, the control's style), quotes its head, and names in `absent` the platform's
@@ -2643,9 +2650,10 @@ by a reference (S2.2: `= token.focus`). The
   INI file such as kdeglobals, a nested group written as its bracketed names joined by `][`,
   `Colors:Header][Inactive/BackgroundNormal`; `<first column>/<header>` in CSV); for a value read from an image, the committed output of
   a committed analysis script naming its input image and the pixels it reads. The value there, after `conversion`
-  (applied to it, read as the quote's literals are), equals the fact's within `tolerance`; the file records the OS
-  and toolkit's exact builds, and the run folder's `run.toml` maps each image folder to the preset it serves
-  (`[images] os-probe-macos-26 = "macos-tahoe"`). Every evidence file is cited by a fact, a state-model entry or a
+  (applied to it, read as the quote's literals are), equals the fact's within `tolerance`. The run folder's
+  `run.toml` maps each image folder to the preset it serves and records its exact builds (`[images.os-probe-macos-26]
+  preset = "macos-tahoe"`, `os = "<build>"`, `toolkit = "<build>"`); the checker requires both and that the preset
+  is among the generations of the `sources.toml` entry the builds belong to. Every evidence file is cited by a fact, a state-model entry or a
   vector table (S2.2, S13); a run's README and `run.toml` are not evidence;
   the runs the 0.8.0 plan lists as legacy count as cited until its M4.
 - **Generations.** Facts are one directory per platform, covering its presets: `gnome` (`adwaita`), `kde`
@@ -2664,19 +2672,14 @@ by a reference (S2.2: `= token.focus`). The
 **State models** (`docs/facts/<platform>/state-models.toml`, cited): per widget, the combinations the platform
 draws (states × conditions × contexts × variants × sizes, R4), the exclusive groups' order of precedence, and the
 source of each (the catalogue's "state-model source" line points here). They also state each preset's declarations
-(S10's `[declare.widget.<w>]` keys, S11: availability, variants, sizes, densities, container sizes, flags, …), and
-the gate checks each preset's declarations against them (ADD-A116), each entry citing as a fact does:
+(S10's `[declare.widget.<w>]` keys, S11, a closed list `check_facts.py` takes from S10), and the gate checks each
+preset's declarations against them (ADD-A116), each entry citing as a fact does:
 
 ```toml
 [[model]]
 widget = "pull_to_refresh"                        # a typed widget, or "component.<key>"
 when = { conditions = ["preset:macos-tahoe"] }    # optional: one generation's (or flavour's, `flavor:`) entry
-available = false                                 # S10's declarations; the others only where available
-variants = []
-sizes = []
-axes = { states = [], conditions = [], contexts = [] }   # what the platform's drawing distinguishes
-not_drawn = []                                    # combinations of the axes the platform does not draw, as `when`s
-exclusive = []                                    # the exclusive groups, each in its order of precedence (S10)
+available = false                                 # S10's declarations; with `false`, no other key
 rows = ["MAC-N24"]
 
 [[model.cite]]
@@ -2686,9 +2689,15 @@ quote = "<the @interface line>"
 absent = ["refreshController"]
 ```
 
-A combination is a subset of `axes.states` (each state a flag) reduced by `exclusive` (S10), with a subset of
-`axes.conditions`, at most one of `axes.contexts` (S7.1's context selectors, the containers among them), one of
-`variants` or none, and one of `sizes` (none where the list is empty), less those `not_drawn` names. An entry with
+An available widget's entry also states `variants`, `sizes`, `densities` (S10), `axes = { states, conditions,
+contexts }` (what the platform's drawing distinguishes: states by S1's `StateFlag` names, conditions by S7.1's,
+contexts as S11's context selectors), `exclusive` (the exclusive groups, each in its order of precedence, S10) and
+`not_drawn` (combinations the platform does not draw, as `when`s). A combination is a subset of `axes.states` (each
+state a flag) reduced by `exclusive`, with, from `axes.conditions`, one value or none per condition kind (a
+container size being a condition, one size or none per container), at most one of `axes.contexts`, one of `variants`
+or none, one of `densities` or none, and one of `sizes` (none where the list is empty), less those `not_drawn`
+names; the gate also resolves each fact's own `when`, so a fact naming a size class, a position or a direction is
+checked too. An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
 `rows`.
