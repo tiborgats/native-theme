@@ -389,7 +389,8 @@ S9.4's scaling curves (`AndroidNonLinear`, `DynamicType`) are checked the same w
 (`alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `pick`) is not a platform function: its unit tests
 follow this section's definitions; every other function of the table above is one. A vector table is a TSV file,
 `native-theme/tests/vectors/<function>.tsv`, whose leading `# <name>: <value>` lines name the route, the reference's
-`sources.toml` entry, the generator and the output columns (`# outputs:`), followed by a column header row, and whose measured or published rows each
+`sources.toml` entry, the generator, the output columns (`# outputs:`) and, for measured rows, each output column's
+tolerance (`# tolerance: <column> = <t>`, as S17's), followed by a column header row, and whose measured or published rows each
 carry their evidence path or citation (S17's forms; its output columns are the literals checked); a
 test evaluates the function over its table. `scripts/check_function_vectors.py` checks the tables' form, that every
 platform function of the table above, every function implementing S9.4's curves and every `pub` or `pub(crate)`
@@ -2579,8 +2580,7 @@ tolerance = <t>
   and `component.<key>.values.<name>` for a keyed one (S5.1), and S2.2's reference forms for colour roles, tokens and
   inputs (`role.…`, `token.…`, `input.…`); a struct block field is stated per leaf (`….text.font.size`) or as a
 whole by a reference (S2.2: `= token.focus`), an enum block (`Timing`, S2.2) as a whole, by a reference or S11's
-spelling of its variant (`{ cubic_bezier = […] }`); which fields are blocks, and so stated per leaf, the registry's
-keys decide (the derive's field registry, S6.1). The
+spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct blocks the valid keys decide (below). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
   sketches as `scripts/check_spec_names.py` reads them) until `docs/property-registry.toml` is generated (S18), and
   the registry's from then on. A value is spelled as S11's **Spelling** table spells it in a preset, as a TOML value
@@ -2591,8 +2591,8 @@ keys decide (the derive's field registry, S6.1). The
 - **Fields.** `key`, `value`, `rows` and at least one `cite` are required; `when` is optional (no condition);
   `scheme_file` (`<entry> <path>`, a `sources.toml` entry and the scheme file's path in it) and `accent` (a colour
   literal) are the accent run's, both or neither, in the `kde` directory only. `rows` lists gap-map row IDs as the
-  gap maps write them (`†` included), and is `[]` only for a state-model combination no row names; palette facts have
-  none (below). Per citation, by `kind`:
+  gap maps write them (`†` included), and is `[]` only for a state-model entry or combination no row names; palette facts leave
+  it out (below). Per citation, by `kind`:
 
   | `kind` | required | optional | not allowed |
   |---|---|---|---|
@@ -2601,12 +2601,13 @@ keys decide (the derive's field registry, S6.1). The
   | `measured` | `evidence`, `tolerance` | `conversion` | `source`, `quote`, `absent` |
 
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
-  a number in the value's canonical unit (a colour's per 8-bit channel, alpha included), or, for a value with leaves
-  of several units (a shadow's layers), a table from every leaf's path in the value as S11 spells it to its number
-  (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); such a value's `evidence` path names a table of the evidence
-  file shaped like the value, each leaf compared within its own tolerance. Where several `measured` citations serve
-  one generation, each must hold; where a generation has `published` or `read` citations too, both checks must hold
-  and the gate uses the measured tolerance.
+  a number in the value's canonical unit (a colour's per 8-bit channel, alpha included). For a value with leaves (a
+  shadow's layers, a curve), the `evidence` path names a table of the evidence file shaped like the value, and
+  `tolerance` is one number for every numeric leaf or a table from each numeric leaf's path in the value as S11
+  spells it to its number (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); leaves that are not numbers or
+  colours (a bool, a name) compare exactly. Where several `measured` citations serve one generation, each must hold
+  and the gate uses the smallest tolerance; where a generation has `published` or `read` citations too, both checks
+  must hold and the gate uses the measured tolerance.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
   kind `git` (a repository at a release's commit, id `<name>@<version>`, or the commit's first eight hex digits where
   the project has no tag for the release), `sdk` (an SDK or a runner image on CI, id `<sdk or image>@<version>`,
@@ -2639,7 +2640,8 @@ keys decide (the derive's field registry, S6.1). The
   each unit's dimension (`px`, `dp`, `sp` and logical points as px, `sp` being Android's text size before its
   scaling, S9.4; `pt`; `ms` and `s`; `deg`; `rem` and `em` have none, so a value written in them is cited where the
   platform states it in px, or measured); a member is added to a list, or to the conversions below, as a class 1
-  change. A literal without a unit takes the value literal's dimension in its
+  change; a span one notation reads (a `TimeSpan`, a byte list) is not read again by the number form. A literal
+  without a unit takes the value literal's dimension in its
   canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
   within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
   1e-3. `conversion` is a list from a closed set, applied in order: `percent_to_fraction` (÷ 100), `byte_to_fraction`
@@ -2694,7 +2696,7 @@ declarations against them (ADD-A116), each entry citing as a fact does:
 [[model]]
 widget = "pull_to_refresh"                        # a typed widget, or "component.<key>"
 when = { conditions = ["preset:macos-tahoe"] }    # optional: one generation's (or flavour's, `flavor:`) entry
-available = false                                 # S10's declarations; with `false`, no other key
+available = false                                 # S10's declarations; with `false`, no other declaration
 rows = []
 
 [[model.cite]]
@@ -2707,8 +2709,9 @@ absent = ["refreshController"]
 An available widget's entry also states `variants`, `sizes`, `densities` (S10), `axes = { states, conditions,
 contexts }` (what the platform's drawing distinguishes: states by S1's `StateFlag` names, conditions by S7.1's,
 contexts as S11's context selectors), `exclusive` (the exclusive groups, each in its order of precedence, S10) and
-`not_drawn` (combinations the platform does not draw, as `when`s); a declaration it leaves out is stated as none
-(no flags, no `requires_variants`, …) and checked so. Flavours are not an axis: a preset with flavours is checked
+`not_drawn` (combinations the platform does not draw, as `when`s); `available` is always stated, and a declaration
+it leaves out is stated as none (no flags, no `requires_variants`, no `default_size` where `sizes` is empty, …) and
+checked so. Flavours are not an axis: a preset with flavours is checked
 once per flavour (below). A combination is a subset of `axes.states` (each
 state a flag) reduced by `exclusive`, with, from `axes.conditions`, one value or none per condition kind (a
 container size being a condition, one size per container), at most one of `axes.contexts`, one of `variants` or none,

@@ -10,7 +10,8 @@
 #   kind          (snapshot entries, `describes`, palette entries and the [presets] table come with the first of
 #                 them, spec S17)
 #                 "git": a repository fetched at `commit` by scripts/update_sources.sh into <cache>/<id>/;
-#                 "sdk": an SDK on a CI runner image (Apple's headers exist only on macOS runners), not fetched;
+#                 "sdk": an SDK or a runner image on CI (Apple's headers exist only on macOS runners; a runner or
+#                 emulator image another harness measures), not fetched;
 #                 "distribution": a dated package snapshot the KDE and GNOME harnesses install, not fetched.
 #   project       the name scripts/citations.py gives the project's citations (absent where none cites it).
 #   repository    the canonical repository; tag, its tag ("commit" where none); commit, the full SHA (an annotated
@@ -1074,7 +1075,7 @@ note = "The cited pages' sources are in these repositories; pages with no public
 project = "developer.apple.com documentation"
 url = "https://developer.apple.com/documentation/"
 method = "snapshot"
-note = "Each page as its DocC JSON (https://developer.apple.com/tutorials/data/documentation/<path>.json), a snapshot entry with `describes` (spec S17): the pages are unversioned and describe the newest release when taken, so a snapshot serves only presets describing that release; an archived snapshot from 26's lifetime serves macos-tahoe and ios-26 (D12)."
+note = "Each page as its DocC JSON (https://developer.apple.com/tutorials/data/documentation/<path>.json; an archived snapshot is the archive's copy of that JSON, the HTML shell carrying no content), a snapshot entry with `describes` (spec S17): the pages are unversioned and describe the newest release when taken, so a snapshot serves only presets describing that release; an archived snapshot from 26's lifetime serves macos-tahoe and ios-26 (D12)."
 
 [[site]]
 project = "developer.apple.com HIG"
