@@ -10,10 +10,12 @@
 //! or `not probed: …`) and the run goes on. On any other OS the probe prints
 //! that it supports macOS and Windows only and exits with success.
 //!
-//! Usage: `native-theme-os-probe [--out <dir>] [--not-key]`. `--out` (or
-//! `--out=<dir>`) names the output directory, `os-probe-out` by default;
-//! `--not-key`, macOS only, makes the key-window section capture its window
-//! after a second window has taken the key.
+//! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass]`.
+//! `--out` (or `--out=<dir>`) names the output directory, `os-probe-out` by
+//! default; `--not-key`, macOS only, makes the key-window section capture its
+//! window after a second window has taken the key; `--button-pass`, macOS
+//! only, runs the button pass alone: push buttons in a key window, captured
+//! per state, control size and appearance.
 
 #![deny(unsafe_code)]
 #![deny(
@@ -49,7 +51,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key]   (default: os-probe-out; --not-key, macOS only: the key-window section captures its window after another window took the key)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass]   (default: os-probe-out; --not-key, macOS only: the key-window section captures its window after another window took the key; --button-pass, macOS only: the button pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -59,6 +61,8 @@ struct Options {
     /// Whether the macOS key-window section captures its window after a
     /// second window has taken the key.
     not_key: bool,
+    /// Whether the macOS probe runs the button pass alone.
+    button_pass: bool,
 }
 
 /// The options from the command line, or the usage error.
@@ -73,11 +77,13 @@ fn parse_args() -> Result<Options, String> {
 fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<Options, String> {
     let mut out = PathBuf::from("os-probe-out");
     let mut not_key = false;
+    let mut button_pass = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some(s) if s.starts_with("-psn_") => {}
             Some("--not-key") => not_key = true,
+            Some("--button-pass") => button_pass = true,
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
                 None => return Err(format!("--out needs a directory\n{USAGE}")),
@@ -94,7 +100,11 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             }
         }
     }
-    Ok(Options { out, not_key })
+    Ok(Options {
+        out,
+        not_key,
+        button_pass,
+    })
 }
 
 fn main() -> ExitCode {
@@ -127,7 +137,11 @@ fn run(options: &Options) -> ExitCode {
 
     let mut doc = toml::Table::new();
     #[cfg(target_os = "macos")]
-    macos::probe(&mut doc, out_dir, options.not_key);
+    if options.button_pass {
+        macos::button_probe(&mut doc, out_dir);
+    } else {
+        macos::probe(&mut doc, out_dir, options.not_key);
+    }
     #[cfg(target_os = "windows")]
     windows::probe(&mut doc);
 
@@ -180,6 +194,7 @@ mod tests {
         Ok(Options {
             out: PathBuf::from(out),
             not_key,
+            button_pass: false,
         })
     }
 
@@ -223,5 +238,20 @@ mod tests {
             parse(&["-psn_0_7", "--not-key", "--out=/tmp/nk"]),
             options("/tmp/nk", true)
         );
+    }
+
+    /// `--button-pass` is taken before or after `--out`.
+    #[test]
+    fn button_pass_is_taken_in_any_order() {
+        let pass = |out: &str| -> Result<Options, String> {
+            Ok(Options {
+                out: PathBuf::from(out),
+                not_key: false,
+                button_pass: true,
+            })
+        };
+        assert_eq!(parse(&["--button-pass"]), pass("os-probe-out"));
+        assert_eq!(parse(&["--out", "/tmp/bp", "--button-pass"]), pass("/tmp/bp"));
+        assert_eq!(parse(&["--button-pass", "--out=/tmp/bp"]), pass("/tmp/bp"));
     }
 }

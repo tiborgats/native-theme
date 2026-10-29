@@ -2,9 +2,11 @@
 //! sizes and cell geometry for every NSControlSize, PNG renders of each
 //! control at regular size, and, last, a key window's captures: a sidebar
 //! material, a table header and a selected segment, sampled per appearance.
-//! The calls objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has
-//! none.
+//! With `--button-pass`, only the push buttons in a key window per state
+//! ([`buttons`]). The calls objc2-app-kit 0.3 marks `unsafe` are in [`ffi`];
+//! this file has none.
 
+mod buttons;
 mod ffi;
 
 use std::cell::RefCell;
@@ -110,6 +112,40 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
             out::put(&mut mac, "metrics", reason.clone());
             out::put(&mut mac, "controls", reason.clone());
             out::put(&mut mac, "key_window", reason);
+        }
+    }
+    out::put_table(doc, "macos", mac);
+}
+
+/// `--button-pass`: fill `doc` with `[os]`, `[probe]`, the environment and
+/// the button pass only; its captures go under `out_dir/<appearance>`.
+pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path) {
+    let (os, version) = os_table();
+    out::put_table(doc, "os", os);
+    out::put_table(doc, "probe", crate::probe_table());
+    let mut mac = Table::new();
+    match MainThreadMarker::new() {
+        Some(mtm) => {
+            let app = NSApplication::sharedApplication(mtm);
+            let mut env = Table::new();
+            out::put(
+                &mut env,
+                "effectiveAppearance",
+                out::text(app.effectiveAppearance().name().to_string()),
+            );
+            out::put_table(&mut env, "mainScreen", screen_table(mtm));
+            out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut mac, "environment", env);
+            out::put_table(
+                &mut mac,
+                "button_pass",
+                buttons::button_pass_table(mtm, &app, out_dir, &version),
+            );
+        }
+        None => {
+            let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
+            out::put(&mut mac, "environment", reason.clone());
+            out::put(&mut mac, "button_pass", reason);
         }
     }
     out::put_table(doc, "macos", mac);
@@ -2161,22 +2197,7 @@ fn capture(
     expected: &[(String, String)],
 ) {
     let path = dir.join(format!("{key}.png"));
-    let child = std::process::Command::new("screencapture")
-        .arg("-x")
-        .arg("-o")
-        .arg("-l")
-        .arg(window.windowNumber().to_string())
-        .arg(&path)
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn();
-    let failure = match child {
-        Ok(child) => wait_or_kill(child)
-            .err()
-            .map(|reason| format!("screencapture {reason}")),
-        Err(e) => Some(format!("cannot run screencapture: {e}")),
-    };
-    if let Some(reason) = failure {
+    if let Err(reason) = screencapture(window.windowNumber(), &path) {
         out::put(run, "capture", out::unavailable(reason));
         return;
     }
@@ -2271,6 +2292,24 @@ fn capture(
         out::put_table(&mut calibration, name, s);
     }
     out::put_table(run, "calibration", calibration);
+}
+
+/// Capture the window numbered `window_number`, without its shadow, to
+/// `path` with `screencapture`; `Err` says why it failed.
+fn screencapture(window_number: isize, path: &Path) -> Result<(), String> {
+    let child = std::process::Command::new("screencapture")
+        .arg("-x")
+        .arg("-o")
+        .arg("-l")
+        .arg(window_number.to_string())
+        .arg(path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    match child {
+        Ok(child) => wait_or_kill(child).map_err(|reason| format!("screencapture {reason}")),
+        Err(e) => Err(format!("cannot run screencapture: {e}")),
+    }
 }
 
 /// How the capture's bytes are laid out, which `raw` reads them by, and the

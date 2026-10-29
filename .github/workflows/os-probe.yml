@@ -51,16 +51,19 @@ jobs:
       # The probe's window section captures its window with `screencapture -l`,
       # which needs kTCCServiceScreenCapture on macOS 14+, and the extra passes
       # below write com.apple.universalaccess, which needs Full Disk Access
-      # (kTCCServiceSystemPolicyAllFiles): both granted to the shells that run
-      # the steps, as screenshots.yml grants the first. Each insert reports its
-      # own failure and the step fails nothing, so a TCC schema an image does
-      # not share leaves the probe to record what it then cannot do.
+      # (kTCCServiceSystemPolicyAllFiles), and the button pass posts mouse
+      # events, which needs Accessibility and PostEvent access: all granted to
+      # the shells that run the steps, as screenshots.yml grants the first.
+      # Each insert reports its own failure and the step fails nothing, so a
+      # TCC schema an image does not share leaves the probe to record what it
+      # then cannot do.
       - name: Grant screen recording and Full Disk Access (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
           set +e
-          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles; do
+          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles \
+                         kTCCServiceAccessibility kTCCServicePostEvent; do
             for client in /bin/bash /bin/zsh; do
               sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
                 "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
@@ -70,6 +73,38 @@ jobs:
           done
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
+      # The button pass (spike M of the 0.8.0 plan), with the image's own
+      # settings, into button-pass/: only push buttons, in a key window, per
+      # state, control size and appearance; it moves the cursor and clicks
+      # with posted CGEvents, so Accessibility and PostEvent access are also
+      # granted to the built probe's path. environment.txt records the OS, the
+      # selected Xcode and its SDK, the SDK the probe was built against
+      # (vtool), the Rust toolchain and the display adapter.
+      - name: Run the button pass (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass
+          probe="$PWD/target/release/native-theme-os-probe"
+          mkdir -p "$out"
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            echo "xcrun SDK: $(xcrun --show-sdk-version) build $(xcrun --show-sdk-build-version)"
+            vtool -show-build "$probe"; echo "vtool -show-build: exit $?"
+            rustc -V
+            system_profiler SPDisplaysDataType; echo "system_profiler SPDisplaysDataType: exit $?"
+            for service in kTCCServiceAccessibility kTCCServicePostEvent; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$probe', 1, 2, 4, 1);"
+              echo "grant $service to $probe: exit $?"
+            done
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
       # The image's own accessibility settings, wallpaper tinting and accent,
       # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
       # pair "does not exist", xcode-27 "Could not find key"), or what the read
