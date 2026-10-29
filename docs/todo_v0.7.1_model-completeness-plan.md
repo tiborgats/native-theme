@@ -1,7 +1,7 @@
 # v0.7.1 → 0.8.0 — Model completeness: Plan
 
-**Status:** draft 11, 2026-10-29, for the maintainer's approval. Ten independent reviews; this draft consolidates their
-fixes into one text and adds no mechanism the tenth review did not ask for.
+**Status:** draft 12, 2026-10-29, for the maintainer's approval. Eleven independent reviews; draft 11 consolidated
+their fixes into one text, and draft 12 applies the eleventh review's.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
@@ -83,8 +83,10 @@ its milestone. The plan's examples:
   - `macos.rs` keeps `system_ui_font`, which `fonts.rs` calls (so no new `unsafe` file arises);
   - `kde/` keeps `kdeglobals_path`, `read_kcmfonts_key` and `kdeglobals_icon_theme`; `gnome/` keeps
     `detect_portal_backend`; `windows.rs` its DPI constant;
-  - `pipeline.rs` keeps `OsVersion` and `macos_generation` (its types repointed) and loses its system entry points;
-  - `icons.rs` and `freedesktop.rs` lose the indicator loaders for good (S2.7) and their links to `SystemTheme`.
+  - `pipeline.rs` keeps what linked code calls (its types repointed) and loses its system entry points;
+  - `icons.rs` and `freedesktop.rs` lose the indicator loaders for good (S2.7) and their links to `SystemTheme`;
+  - a split keeps only what linked code calls; an item whose only callers are unlinked goes with the reader part, so
+    clippy's `-D warnings` finds no dead code.
 - **Deleted** at the switch: today's `model/` (but `icons.rs`), `resolve/`, the preset table, `documented_sizes.rs`,
   `ThemeWidget`, `SystemTheme`, `AccessibilityPreferences` and their tests; `AnimatedIcon`, `spinners.rs` and the
   loaders that return it (S2.7, S19.3), with the READMEs' spinner animations, `scripts/generate_gifs_spinners.py` and
@@ -121,13 +123,16 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
 - One variable in `scripts/check_release.sh` names each excluded step and the milestone that brings it back; the
   summary prints it, and excluded steps are skipped by name. A step that covers several crates (`check_features.sh`,
   the per-crate loops) skips only the listed crates, so `native-theme`, `-derive` and `-build` stay checked.
-- The ledger states the expected list before the switch, by `check_release.sh`'s section names:
-  - until M2.1: the connectors' steps, the "iced connector configurations" and "egui connector configurations"
-    sections, and connector parity (`check_connector_parity.py` is rewritten there);
+- The ledger states the expected list before the switch, by step (a section of `check_release.sh` can mix steps of
+  different fates, so steps are named, not sections):
+  - until M2.1: the connectors' library, test, docs and package steps, the "iced connector configurations" and "egui
+    connector configurations" sections, and the connector-parity step (`check_connector_parity.py` is rewritten there);
   - until M2.6: `check_platform_facts_rows.py`, `check_preset_citations.py`, `check_todo_citations.py`,
     `check_section_refs.py`;
-  - until M5: `tools/showcase-support`'s steps, "Showcases in CI's runner environment", "Widget coverage" and
-    "Showcase parity (static)".
+  - until M5: every step that builds a showcase example (the `--example showcase-*` steps in the cross-target and
+    strict-panic sections) and their `ci.yml` copies, `tools/showcase-support`'s steps, "Showcases in CI's runner
+    environment", the widget-coverage step and "Showcase parity (static)";
+  - never: the README-versions check and every other step that does not fail at the switch.
 - The switch's gate: the list equals that expected list. Any other failing step is fixed, or added only with the
   reviewer's agreement and its reason. Each milestone's full run also runs the listed steps once and removes those
   that pass.
@@ -190,16 +195,16 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   - **Location:** `/run/media/tibi/work/native-theme-sources/` (the work SSD that builds already need mounted, outside
     `/home`'s snapshots), read and written by this work and its agents: it needs a read and write grant. Rejected: a
     git-ignored folder inside the project (every fetch of several GB lands in `/home`'s snapshots); the session
-    scratchpad (lost at reboot). Approving now lets M0 seed the cache from this session's scratchpad checkouts whose
+    scratchpad (lost at reboot). The in-project folder would need no grant; the snapshots outweigh that. Approving now lets M0 seed the cache from this session's scratchpad checkouts whose
     commit equals the pin before a reboot clears them.
   - **The release set** per platform: the newest stable at M0 (R1.5), coherent, frozen until 0.8.0 unless the ledger
     records a re-pin. KDE: the Plasma release, KDE Frameworks, Qt, Kirigami and kirigami-addons one dated Arch Linux
     Archive snapshot carries (the container D2 measures in; today Plasma 6.8.2). GNOME: libadwaita, GTK and the
     gsettings schemas (today 1.10.0 and 4.24.1). Material: material-web's token set (the primary reference, R1.6), a
     Compose release, the Android emulator's system image (API level and revision) and material-color-utilities by
-    commit (Compose carries its own colour code). Windows: the microsoft-ui-xaml commit of a Windows App SDK release.
-    Apple: the OS generation (the runners' images move within one, so each evidence file records its exact build) and
-    the Xcode per generation. A newer patch at M0 is fetched instead of today's. Recorded in `docs/facts/sources.toml`,
+    commit (Compose carries its own colour code). Windows: the microsoft-ui-xaml commit of a Windows App SDK release,
+    and the Windows Community Toolkit's release. Apple: as D12 decides, with the Xcode per generation (the runners'
+    images move within a release, so each evidence file records its exact build). A newer patch at M0 is fetched instead of today's. Recorded in `docs/facts/sources.toml`,
     one pin per source and generation. Rejected: `master` commits (code no user runs and no harness can run);
     re-pinning per fact (every lane redoes the mapping and versions mix).
   - **What is pinned:** every platform source the core, the catalogue, the traces, the gap maps and `platform-facts.md`
@@ -225,7 +230,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   change) before `v0.8.0-rc1` is cut, so `main`'s ROADMAP states the next work and the 0.8.0 pull request holds only
   0.8.0's work. The alternative, cutting from `v0.7.1-rc1` and merging both at 0.8.0, also works.
 - **D7 — the budget for M0–M1b:** a cap of +15,000k tokens, which D6 revises. An estimate, not a measurement: one
-  independent review of this plan used about 200k tokens; M0–M1b holds six spikes, eight presets' slice facts with
+  independent review of this plan used 180k to 270k tokens (eleven so far); M0–M1b holds six spikes, eight presets' slice facts with
   their verifiers, two implementation milestones with a reviewer per task, and the reviews.
 - **D9 — the project's own guards** (the maintainer's configuration).
   - `.claude/hooks/no-invented-values.sh` blocks Rust lines with coefficient-like literals (`* 2.0`, `0.299 … 0.587 …
@@ -272,8 +277,23 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
 - **D11 — 0.7.x releases during the work.** Recommended: no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
   are triaged into this plan or carried to after 0.8.0, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
   An emergency (an upstream release breaking 0.7.0, as gpui-kit 0.6.4 broke 0.5.8) is fixed on its own `v0.7.N-rc1`
-  from `main`, released by the maintainer, and `main` is then merged into `v0.8.0-rc1` with its CHANGELOG entry kept
+  from `main` (`v0.7.2-rc1` for the next), released by the maintainer, and `main` is then merged into `v0.8.0-rc1` with its CHANGELOG entry kept
   below `[0.8.0] - Unreleased`. Rejected: planned 0.7.x releases beside the work (two lines of releases for months).
+
+- **D12 — which Apple release `macos-tahoe` and `ios-26` describe.** R1.5 says a preset describes the newest release
+  of its generation, and the gap maps put 27 inside it (`macos-tahoe` "26–27"; rows citing iOS 27.1 and 27.2; 27-only
+  catalogue entries such as pull-to-refresh and `@expanded_interface`). But the specification's `version_match` calls
+  macOS 27 under `macos-tahoe` `PresetOlder` (S16), GitHub offers macOS 27 only as a preview image (`xcode-27`, run with
+  `continue-on-error`), and Apple's unversioned pages, snapshotted at M0, describe 27.
+  - **(a) 26.x** (recommended): measured on the generally available `macos-26` image and its iOS 26 simulator, and
+    consistent with S16. Then R1.5's wording is amended to "the newest release a supported runner measures" (a
+    rationale change, hence the maintainer's), the 27-only catalogue entries move to `docs/todo.md`'s macOS 27 entry
+    (a class 2 spec change), and an Apple page counts for a 26 fact only when an archived snapshot from 26's lifetime,
+    the pinned Xcode 26 headers or a measurement confirms it. Against: a user on 27 gets a preset one release behind,
+    which `version_match` reports.
+  - **(b) 27**: R1.5 as written. Against: measured only on a preview image that fails without failing the run, so
+    facts may describe a beta; S16's `PresetOlder` example and the 26 facts already gathered change.
+  - **(c) both**, a fact per release: the per-release overlay R1.5 rejected.
 
 ### Scheduled
 
@@ -282,7 +302,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     the whole catalogue, and the budget caps per milestone;
   - the evidence's size, extrapolated, and where it lives above a threshold (in the repository; a separate evidence
     repository pinned by commit, recommended above about 500 MB; Git LFS, rejected for its quota and bandwidth costs);
-  - the facts gate's run time, with a budget;
+  - the facts gate's run time, the build's time and the docs.rs build, with a budget;
   - whether each unit's preset rules are generated from its verified facts instead of written (the facts carry S11's
     `when` and the platform's order: less work and no drift, against longer presets and the hand-written parts that
     remain, the `read` inputs and S19.2's bases; decided by how closely the slice's presets transcribe their facts);
@@ -314,7 +334,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   - **Android:** the emulator with KVM, at the pinned system image.
 - **D3 — macOS, iOS and Windows on GitHub's runners.** The repository is public, so hosted runners cost nothing; the
   limits are concurrent macOS jobs (five) and the six-hour job limit. macOS 15 and 26 on `macos-15` and `macos-26`;
-  iOS 18 on `macos-15`'s simulator and iOS 26 on `macos-26`'s (checked by spike I); Windows 11 on `windows-11-arm`,
+  iOS 18 on `macos-15`'s simulator and iOS 26 on `macos-26`'s (checked by spike I), as D12 decides; Windows 11 on `windows-11-arm`,
   which `os-probe.yml` already measures. Every job is in `os-probe.yml`, dispatched by hand, because
   `workflow_dispatch` needs the file on `main` (`--ref` runs the branch's version); a `jobs` input (an `if:` per job)
   and an `images` input (feeding the probe's matrix through `fromJSON`, since an `if:` cannot read the matrix) run only
@@ -558,6 +578,7 @@ dev-dependencies and modules linked again.
 | `repin_citations.py` | M0 | no | deleted |
 | `check_ledger.py` | M0 | full run only; `--final` from M4 | deleted |
 | `import_platform_facts.py` | M1a | no | deleted at M4 |
+| `convert_inheritance_rules.py` (S19.2) | M1a | no | deleted at M4 |
 | `generate_widgets.py` | M1a | `--check` | deleted; the generated code is the source |
 | `check_facts_trace.py` | M1a | `--enabled` | deleted |
 | `check_facts.py` | M0 | yes | kept |
@@ -657,7 +678,7 @@ tasks; the generator's drift check makes the code follow.
 
 ## Checklist
 
-- [ ] D1, D4, D5, D7, D9, D10, D11 decided
+- [ ] D1, D4, D5, D7, D9, D10, D11, D12 decided
 - [ ] M0 setup
 - [ ] Spikes M · G · K · I · W · A
 - [ ] M1a slice core
