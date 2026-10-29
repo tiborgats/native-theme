@@ -1,6 +1,7 @@
 # v0.7.1 → 0.8.0 — Model completeness: Plan
 
-**Status:** draft 12, 2026-10-29, for the maintainer's approval. Eleven independent reviews; draft 11 consolidated
+**Status:** approved 2026-10-29 with the maintainer's decisions D1, D4, D5, D7, D9, D10, D11 and D12 (each marked
+below); draft 12. Eleven independent reviews; draft 11 consolidated
 their fixes into one text, and draft 12 applies the eleventh review's.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
@@ -216,7 +217,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no versions, so its snapshot serves the
     newest generation only. Apple's SDK headers exist only on macOS runners, so their citations are checked by a macOS
     job of `os-probe.yml` at the pinned Xcode.
-- **D4 — `unsafe` and the measurement hosts.**
+- **D4 — `unsafe` and the measurement hosts** (approved by the maintainer, 2026-10-29).
   - The readers' and watchers' new reads (the traces' `reader` lines on macOS and Windows) grow under their existing
     module exceptions (`macos.rs`, `windows.rs`, `watch/macos.rs`, `watch/windows.rs`), in the same form.
   - The probe's measurements grow under its existing exceptions (`tools/os-probe/src/macos/ffi.rs`, `windows/ffi.rs`).
@@ -227,13 +228,13 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     libadwaita's `doc/tools/screenshot.c`; WinUI, a small C# Windows App SDK app, for S13's WinUI placement strategies
     (microsoft-ui-xaml's placement code runs only inside a WinUI app) and for state values if spike W shows the XAML
     does not state them.
-- **D5 — `v0.7.1-rc1` to `main` first** (recommended): the maintainer merges the v0.7.1 documents and scripts (no code
+- **D5 — `v0.7.1-rc1` to `main` first** (approved by the maintainer, 2026-10-29): the maintainer merges the v0.7.1 documents and scripts (no code
   change) before `v0.8.0-rc1` is cut, so `main`'s ROADMAP states the next work and the 0.8.0 pull request holds only
   0.8.0's work. The alternative, cutting from `v0.7.1-rc1` and merging both at 0.8.0, also works.
-- **D7 — the budget for M0–M1b:** a cap of +15,000k tokens, which D6 revises. An estimate, not a measurement: one
+- **D7 — the budget for M0–M1b** (approved by the maintainer, 2026-10-29): a cap of +15,000k tokens, which D6 revises. An estimate, not a measurement: one
   independent review of this plan used 180k to 270k tokens (eleven so far); M0–M1b holds six spikes, eight presets' slice facts with
   their verifiers, two implementation milestones with a reviewer per task, and the reviews.
-- **D9 — the project's own guards** (the maintainer's configuration).
+- **D9 — the project's own guards** (the maintainer's configuration; the recommendations approved, 2026-10-29).
   - `.claude/hooks/no-invented-values.sh` blocks Rust lines with coefficient-like literals (`* 2.0`, `0.299 … 0.587 …
     0.114`), which a faithful implementation of a platform function contains (CAM16, `kde_effects`, Qt's colour
     helpers). Recommended: it exempts the directories holding the platform functions and the placement strategies
@@ -275,7 +276,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     (a); the bundled KDE port files shipped with their licence notices; the tools written from the settings the references pin, not their
     code, though a CI tool may compile a pinned upstream source unchanged to call an internal function (it never ships
     in the crate).
-- **D11 — 0.7.x releases during the work.** Recommended: no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
+- **D11 — 0.7.x releases during the work** (approved by the maintainer, 2026-10-29): no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
   are triaged into this plan or carried to after 0.8.0, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
   An emergency (an upstream release breaking 0.7.0, as gpui-kit 0.6.4 broke 0.5.8) is fixed on its own `v0.7.N-rc1`
   from `main` (`v0.7.2-rc1` for the next), released by the maintainer, and `main` is then merged into `v0.8.0-rc1` with its CHANGELOG entry kept
@@ -678,8 +679,8 @@ tasks; the generator's drift check makes the code follow.
 
 ## Checklist
 
-- [x] D1 (location), D10, D12 decided (2026-10-29)
-- [ ] D4, D5, D7, D9, D11 decided
+- [x] D1, D4, D5, D7, D9, D10, D11, D12 decided (2026-10-29)
+- [ ] `v0.7.1-rc1` merged to `main` by the maintainer (D5)
 - [ ] M0 setup
 - [ ] Spikes M · G · K · I · W · A
 - [ ] M1a slice core
