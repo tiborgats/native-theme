@@ -633,7 +633,7 @@ dev-dependencies and modules linked again.
 
   Where the reference is closed (AppKit and UIKit placement), the measured frames (anchor, size and window in, frame
   out, each with its evidence) are the strategy's vector table; where a platform publishes a table (Apple's tracking),
-  the table itself is the facts; where nothing works, the function goes to the unmeasured register.
+  the table itself is the vector table, its rows carrying their citations; where nothing works, the function goes to the unmeasured register.
   `scripts/generate_qt_color_vectors.py`'s Python transcriptions are replaced (a transcription checks a port against
   another port). The model's own arithmetic has unit tests from the specification's definition.
   `check_function_vectors.py` checks that every public function of `platform` and `placement` has a table and a test,
