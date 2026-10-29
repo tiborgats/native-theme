@@ -20,9 +20,22 @@ platform is stated here: values come from the facts (S17) in the value phase.
 |---|---|
 | Core (this document) | drafted |
 | Research the rationale requires first: kirigami-addons survey (R1.2), community ports (R19), Plasma's accent derivation (R2.6) | done; R19 and R25 decided from it |
-| Widget catalogue | merged (84 typed widgets, keyed components per platform) |
+| Widget catalogue | 86 typed widgets, 28 keyed components; `scripts`-style checks in the session scratchpad (names, entries) pass |
 | Traceability | every row of the six platforms traced; `scripts/check_spec_trace.py` passes |
 | Check passes | serious findings per pass, core / catalogue / traces (random sample): 1: 11 / 5 / 9 rows of 256; 2: 10 / 4 / 6.7 % (then every row re-verified); 3: 6 / 5 / 0.8 %; 4: 6 / 12 / 1.25 %; 5: 3 / 4 / 0.4 %; 6: 1 / 5 / 0.4 %; 7: 0 / 5 / 0 %; 8: 0 / 2 / 0 %; 9: 1 / 2 / 0.4 %; 10: 1 / 8 / 0.4 %; 11: 0 / 9 / 2.1 %; each fixed (pass 11: the core's 9 should-fix and 19 minor findings fixed; the catalogue and traces follow) |
+
+**Open after the eleventh check's fix round** (found by the catalogue round, not yet in this core; the next round
+applies them): `keys` declarations for plain `Vec<Key>` values and keys inside list entries, and a flavour's own
+variant set (S10); content variants as (widget or part, variant) pairs (S8, S12); `WidgetValue` members `Vec<char>`,
+`Vec<Key>`, `Vec<MenuEntry>`, `FontSize` (S1); `[WM]` in `kde_accent` or a sibling, `[WM]` scheme inputs, a port's
+`[WM]`, and refusing a `kde-breeze` mapping that leaves the `wm_*` roles (S2.2, S12, S14); S12's stale "the preset's
+`kde_accent` expression" wording (now the preset's Breeze value); a linear gradient's offset (Breeze's busy stripes,
+K1.110) and a paint mask (Apple 26's soft scroll edge) (S2.3); every keyframe of a widget-value loop names its part,
+and `Glyph.fill` may be absent on a stroked-only glyph (S12, S6.3); a glyph sized to a box that is not fixed, and a
+`drawn_as` substitute taking its host's states (S8, S12); whether a font size derived from another style's is scaled
+once, the `line_height` exemption covering `widget.<part>.line_height`, and an *(element)* part reading its host
+part's metric (S2.2, S9.4); a change with no transition is immediate, two edges meeting at a corner paint it once,
+and whether `translate_x` mirrors in right-to-left (S2.7, S2.4, S2.6); `pointer_repeat` among S4.6's groups.
 
 ## S1. Conventions
 

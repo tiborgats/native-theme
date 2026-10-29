@@ -29,11 +29,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-W1 | `window.values.navigation_bar_contrast_scrim` | field |
 | MAT-W1 | - | readers (R18) |
 | MAT-W2 | `window.values.presentations event @predictive_back` | field |
-| MAT-W2 | - (the activity and window transitions the system runs) | out (R1.1) |
+| MAT-W2 | `window.values.presentations events Appear, Disappear` (the activity open and close and window animations the application sets: `android:windowAnimationStyle`, `Window.setWindowAnimations`, `overridePendingTransition`, `overrideActivityTransition`; else the theme's) | field |
+| MAT-W2 | - (cross-task transitions, which `overrideActivityTransition` cannot customise as of Android 11, and the preview phase of the predictive back animation, which the system may control: the Activity reference; whether a theme's task animations still reach cross-task transitions is the value phase's, from the facts) | out (R1.1) |
 | MAT-W4† | `window.values.caption_bar_transparent (the opt-in to a transparent caption bar, APPEARANCE_TRANSPARENT_CAPTION_BAR_BACKGROUND); window.title_bar.fill (the caption's fill taken from the app)` | field |
 | MAT-W4† | `window.title_bar (absent = true) @ !cond freeform` (only a desktop-windowing window has a caption) | rule |
 | MAT-W4† | `reader:android:WindowInsets.Type.captionBar(), the caption's fill taken from the app` | readers (R18) |
-| MAT-W4† | - (the caption buttons, chip, outline and shadow) | out (R1.1) |
+| MAT-W4† | - (the caption buttons, app chip, outline and shadow, which the WM Shell draws in the SystemUI process) | out (R1.1) |
 | MAT-W5† | `window.frame.corners (Radius::Concentric per corner, following the display, the root's container: RootInputs.display_corner_radius, which Android reports, else the four tokens token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left} (per corner), else none; S4.6, S8, R25.11)` | field |
 | MAT-W5† | `window.frame.corners @ cond freeform` (a freeform window's radius in desktop windowing, ADD-A83) | rule |
 | MAT-W5† | - | readers (R18) |
@@ -92,7 +93,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-I14 | `input.floating_label.transitions (Transform, Text); input.placeholder.transitions (Opacity)` | field |
 | MAT-I14 | `input.body.transitions (Stroke: the notch opening)` | field |
 | MAT-I15 | `input.text.text.{letter_spacing,line_height}` | field |
-| MAT-I16 | `text_area.values.min_rows; text_area.values.resize` | field |
+| MAT-I16 | `text_area.body.min_height` (Compose's multi-line TextField keeps the text field's minimum height, TextFieldDefaults.MinHeight, TextField.kt:252-254; its minimum rows are the application's minLines parameter, :354-355, :386, not a theme value) | field |
+| MAT-I16 | - (the resize handle: material-web's textarea; Compose's multi-line TextField draws none) | reference (R1.6) |
 | MAT-I17† | `input.magnifier.{corners,shadow,min_width,min_height}` | field |
 | MAT-I17† | `input.values.magnifier_zoom; input.values.magnifier_offset` | field |
 | MAT-I18† | `input.preedit.text.decoration` | field |
@@ -105,8 +107,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-C2 | `checkbox.state_layer.{fill,opacity}, radio.state_layer.{fill,opacity} @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-C3 | `checkbox.box.fill, checkbox.mark.glyph.fill, checkbox.box.stroke @ {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-C4 | `checkbox.box.stroke @ {hover} / {focus_visible} / {pressed}, each !{checked,indeterminate}` | rule |
-| MAT-C5 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {invalid,checked} / {invalid,checked,hover} / {invalid,checked,focus_visible} / {invalid,checked,pressed}` | rule |
-| MAT-C5 | `checkbox.box.stroke @ {invalid} !{checked}; checkbox.state_layer.fill @ {invalid,hover} / {invalid,focus_visible} / {invalid,pressed}` | rule |
+| MAT-C5 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {invalid,checked} / {invalid,checked,hover} / {invalid,checked,focus_visible} / {invalid,checked,pressed} / {invalid,indeterminate} / {invalid,indeterminate,hover} / {invalid,indeterminate,focus_visible} / {invalid,indeterminate,pressed}` | rule |
+| MAT-C5 | `checkbox.box.stroke @ {invalid} !{checked,indeterminate}; checkbox.state_layer.fill @ {invalid,hover} / {invalid,focus_visible} / {invalid,pressed}` | rule |
 | MAT-C6 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path)` | rule |
 | MAT-C6 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {indeterminate}` | rule |
 | MAT-C7 | `checkbox.box.stroke @ {disabled} !{checked} (colour, width, opacity as the paint's alpha); checkbox.mark.glyph.fill @ {checked,disabled}; checkbox.box.fill @ {checked,disabled} (the container's disabled opacity as the paint's alpha: the box lists no opacity)` | rule |
@@ -160,7 +162,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-S1 | `slider.thumb.{min_width,min_height,corners}` | field |
 | MAT-S1 | `slider.thumb.{min_width,min_height} @ {hover} / {focused} / {pressed} / {disabled}` | rule |
 | MAT-S2 | `slider.values.thumb_track_gap` | field |
-| MAT-S3 | `slider.track.{corners,min_height}; slider.fill.{corners,min_height} (per corner: the outer and the inner ends)` | field |
+| MAT-S3 | `slider.track.{corners,min_height}; slider.value_fill.{corners,min_height} (per corner: the outer and the inner ends)` | field |
 | MAT-S4 | `slider.stop_indicator.{fill,min_width,min_height,corners}` | field |
 | MAT-S4 | `slider.stop_indicator.fill @ !{in_fill} / {in_fill} / {disabled} / {in_fill,disabled}` | rule |
 | MAT-S4 | `slider.values.stop_indicator_gap` | field |
@@ -170,17 +172,18 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-S6 | `slider.values.value_indicator_gap` | field |
 | MAT-S6 | `slider.value_indicator.{transform,transitions}; slider.value_indicator (absent = true) outside the states it shows in` (its show and hide: it enters from transparent and leaves to transparent by its transitions, S2.7) | rule |
 | MAT-S6 | `slider.value_indicator.transitions @ cond reduced_motion` | rule |
-| MAT-S7 | `slider.halo.{fill,min_width,min_height} @ {hover} / {focused} / {pressed}` | rule |
+| MAT-S7 | `slider.state_layer.corners` (the halo's shape) | field |
+| MAT-S7 | `slider.state_layer.{fill,opacity,min_width,min_height} @ {hover} / {focus_visible} / {pressed}` | rule |
 | MAT-S8 | `slider.thumb.fill @ {focused} / {pressed}` | rule |
-| MAT-S8 | `slider.{fill,track}.fill @ {focused} / {pressed}` | rule |
+| MAT-S8 | `slider.{value_fill,track}.fill @ {focused} / {pressed}` | rule |
 | MAT-S9 | `slider.thumb.shadow = Shadow::Elevation(<key>) (its layers' colour the shadow colour)` | field |
 | MAT-S9 | `slider.thumb.shadow @ {disabled}` | rule |
 | MAT-S9 | `slider.track.shadow` (its elevation) | field |
 | MAT-S10 | `slider.thumb.stroke @ {@overlapping}` | rule |
 | MAT-S10 | `slider flags @overlapping` | flag |
-| MAT-S11 | `slider.{track,fill}.{min_height,corners}, slider.thumb.{min_height,corners}, slider.inset_icon.{icon,padding} @ size extra_small / size small / size regular / size large / size extra_large (ADD-A62)` | rule |
+| MAT-S11 | `slider.{track,value_fill}.{min_height,corners}, slider.thumb.{min_height,corners}, slider.inset_icon.{icon,padding} @ size extra_small / size small / size regular / size large / size extra_large (ADD-A62)` | rule |
 | MAT-S11 | `slider.inset_icon.{icon,padding}` | field |
-| MAT-S12 | `slider.{track,fill,thumb}.* @ variant range / variant centered / variant vertical` | rule |
+| MAT-S12 | `slider.{track,value_fill,thumb}.* @ variant range / variant centered / variant vertical` | rule |
 | MAT-P1 | `progress_bar.values.{wave_amplitude,wavelength} @ variant @wavy / {indeterminate} variant @wavy` | rule |
 | MAT-P1 | `progress_bar.{indicator,body}.min_height @ variant @wavy` | rule |
 | MAT-P2 | `progress_bar.values.indicator_track_gap` | field |
@@ -238,7 +241,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TA8† | `menu.* @ context button variant overflow; button.values.menu_placement @ variant overflow context toolbar.bar` | rule |
 | MAT-L1 | `list.row.min_height @ variant with_subtitle / variant three_line` | rule |
 | MAT-L1 | `list.secondary_text.text, list.overline_text.text, list.trailing_text.text` | field |
-| MAT-L2 | `list.leading_icon.{icon,corners,min_width,min_height} @ variant with_avatar / variant with_image / variant with_video` | rule |
+| MAT-L2 | `list.leading_icon.icon` | field |
+| MAT-L2 | `list.leading_icon.{corners,min_width,min_height} @ variant with_image / variant with_video` (under `with_avatar` the leading element is an `avatar`, the next line) | rule |
 | MAT-L2 | `avatar.body.{fill,min_width,min_height,corners}, avatar.initials.text @ context list.row (the leading avatar and its label)` | rule |
 | MAT-L3 | `list.trailing_icon.icon.{size,fill}` | field |
 | MAT-L3 | `list.trailing_icon.icon.fill @ !{selected} / {selected}` | rule |
@@ -250,7 +254,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-L5 | `list.row_background.fill.append @ {selected,hover} / {selected,focus_visible} / {selected,pressed} / {selected,dragged} / {selected,disabled}` | rule |
 | MAT-L5 | `list.row.text.fill, list.overline_text.text.fill, list.secondary_text.text.fill, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {selected} / {selected,hover} / {selected,focus_visible} / {selected,pressed} / {selected,dragged}` | rule |
 | MAT-L5 | `list.row_background.fill, list.row.opacity, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {selected,disabled} (the selected-disabled opacities per part; the background and icons as the paint's alpha)` | rule |
-| MAT-L6 | `list.row_separator.stroke, list.values.row_separator_inset, list.values.row_gap` | field |
+| MAT-L6 | `list.row_separator.{stroke,margin}, list.values.row_gap` | field |
 | MAT-L7 | `list.values.leading_gap` | field |
 | MAT-L8 | `list.row_background.fill, list.values.row_gap @ variant separated cond flavor:expressive` | rule |
 | MAT-L8 | `list.row_background.corners @ cond flavor:expressive (the rest shape)` | rule |
@@ -306,8 +310,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS1 | `token.text.roles.caption (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.caption2 (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.label (= token.text.keyed.<key>)` | token |
-| MAT-TS1 | `token.text.roles.title3 (= token.text.keyed.<key>)` | token |
-| MAT-TS1 | `token.text.roles.footnote (= token.text.keyed.<key>)` | token |
+| MAT-TS1 | `token.text.roles.title3 (= token.text.roles.title2, the slot owning title_large, S4.4)` | token |
+| MAT-TS1 | `token.text.roles.footnote (= token.text.roles.caption, the slot owning body_small, S4.4)` | token |
+| MAT-TS1 | `token.text.roles.numeric (= token.text.roles.body, the slot owning body_medium, S4.4)` | token |
 | MAT-TS2 | `token.text.keyed.display_large.letter_spacing` | token |
 | MAT-TS2 | `token.text.keyed.display_medium.letter_spacing` | token |
 | MAT-TS2 | `token.text.keyed.display_small.letter_spacing` | token |
@@ -354,8 +359,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS4 | `token.text.keyed.label_large_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_medium_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_small_emphasized` | token |
-| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.<key>)` | token |
-| MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.<key>)` | token |
+| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_medium_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.roles.subheadline, the slot owning title_small, S4.4)` | token |
+| MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.body_small_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.keyed.label_medium, which no other slot takes)` | token |
 | MAT-TS5 | `token.text.keyed.display_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-TS5 | `token.text.keyed.display_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-TS5 | `token.text.keyed.display_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
@@ -402,14 +407,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-DG9 | `dialog.{title,message}.text.{letter_spacing,line_height}` | field |
 | MAT-DG10† | `dialog.values.action_layout (alignment, stack_rule WhenOverflowing, stacked_order, row_gap_px, column_gap_px)` | field |
 | MAT-SN1 | `spinner.track.fill` | field |
-| MAT-SN1 | `spinner.values.{stroke_width,track_stroke_width,indicator_track_gap}` | field |
+| MAT-SN1 | `spinner.values.{stroke_width,indicator_track_gap}; spinner.indicator.glyph` (the track's thickness; the indicator's, its glyph's stroke) | field |
 | MAT-SN2 | `spinner.values.{wave_amplitude,wavelength} @ variant @wavy` | rule |
 | MAT-SN2 | `spinner.body.{min_width,min_height} @ variant @wavy` | rule |
-| MAT-SN3 | `spinner.{body.min_width,body.min_height,values.stroke_width,values.track_stroke_width,values.indicator_track_gap} @ variant @thick` | rule |
-| MAT-SN4 | `spinner.values.cap` | field |
+| MAT-SN3 | `spinner.{body.min_width,body.min_height,values.stroke_width,values.indicator_track_gap,indicator.glyph} @ variant @thick` (the track's and the indicator's thickness) | rule |
+| MAT-SN4 | `spinner.indicator.glyph` (its stroke's cap) | field |
 | MAT-SN5 | `spinner.values.loop (colour keyframes) @ variant @four_color` | rule |
 | MAT-SN6 | `spinner.values.loop` | field |
-| MAT-SN6 | `spinner.indicator.transitions (Geometry: the determinate value change)` | field |
+| MAT-SN6 | `spinner.indicator.transitions (Glyph: the determinate arc's extent following a value change)` | field |
 | MAT-CB1 | `combo_box.floating_label.{text,padding,opacity,transform,transitions}; combo_box.supporting_text.{text,padding,opacity}; combo_box.icon.{icon,opacity}; combo_box.values.{supporting_text_gap,notch_padding,floating_label_gap}` | field |
 | MAT-CB1 | `combo_box.body.stroke @ {hover} / {focused} / {invalid} / {disabled} (colour and width)` | rule |
 | MAT-CB1 | `combo_box.{floating_label.text.fill,supporting_text.text.fill,icon.icon.fill} @ {hover} / {focused} / {invalid} / {disabled}; combo_box.floating_label.{text,transform} @ {empty} / {focused} / {open}` (the label resting inside an empty select, floated otherwise) | rule |
@@ -423,9 +428,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-SG2 | `segmented_control.segment.fill.append (state layers), segmented_control.label.text.fill, segmented_control.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}` | rule |
 | MAT-SG3 | `segmented_control.segment.corners @ pos first / pos last / pos only` | rule |
 | MAT-SG4 | `segmented_control.segment.stroke, segmented_control.icon.icon.fill, segmented_control.icon.opacity @ {disabled}` | rule |
-| MAT-CA1 | `card.body.fill, card.body.stroke, card.body.shadow (elevation) @ variant @filled / variant @elevated / variant @outlined` | rule |
+| MAT-CA1 | `card.body.fill, card.body.stroke, card.body.shadow (elevation; the filled card, the base)` | field |
+| MAT-CA1 | `card.body.fill, card.body.stroke, card.body.shadow @ variant @elevated / variant @outlined` | rule |
 | MAT-CA2 | `card.body.fill.append @ {hover} / {focus_visible} / {pressed} / {dragged}` | rule |
-| MAT-CA2 | `card.body.shadow @ {hover} / {focus_visible} / {pressed} / {dragged}, each variant @elevated / variant @filled` | rule |
+| MAT-CA2 | `card.body.shadow @ {hover} / {focus_visible} / {pressed} / {dragged}, each variant @elevated / !variants {@elevated,@outlined}` (the filled card is the base) | rule |
 | MAT-CA2 | `card.body.stroke @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant @outlined` | rule |
 | MAT-CA2 | `card.body.fill, card.body.opacity @ {disabled}` | rule |
 | MAT-CA3 | `card.icon.icon.{size,fill}` | field |
@@ -436,7 +442,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N1 | `button.body.fill, button.icon.icon.fill @ variants {@fab,primary} / variants {@fab,@secondary} / variants {@fab,@tertiary} / variants {@fab,@surface} / variants {@fab,@primary_container} / variants {@fab,@secondary_container} / variants {@fab,@tertiary_container} / variants {@fab,@branded}` (the colour styles, the Expressive container styles, the branded FAB) | rule |
 | MAT-N1 | `button.body.fill.append = alpha(role.@surface_tint, <fraction>) @ variant @fab (the surface tint); the shadow colour as the elevation layers' colour` | rule |
 | MAT-N1 | `button.body.focus @ {focus_visible} variant @fab; button.body.transitions (Shadow) @ variant @fab` | rule |
-| MAT-N2 | `button.label.text, button.values.icon_text_gap, button.body.{padding,min_height,corners} @ variant @extended_fab size small / variant @extended_fab size regular / variant @extended_fab size large` | rule |
+| MAT-N2 | `button.label.text, button.values.icon_text_gap, button.body.{padding,min_height,corners} @ variant @extended_fab size small cond flavor:expressive / variant @extended_fab size regular / variant @extended_fab size large cond flavor:expressive` (small and large Expressive's only, declared under flavour expressive by sizes_by_variant) | rule |
 | MAT-N2 | `button.body.shadow @ variants {@extended_fab,@lowered}; button.body.fill, button.label.text.fill, button.icon.icon.fill @ variants {@extended_fab,primary} / variants {@extended_fab,@secondary} / variants {@extended_fab,@tertiary} / variants {@extended_fab,@surface}` | rule |
 | MAT-N3 | `component.fab_menu.item.{fill,corners,padding,shadow,min_height}, component.fab_menu.item_label.text, component.fab_menu.item_icon.icon, component.fab_menu.values.item_gap, component.fab_menu.values.presentations (events Appear, Disappear: Morph); component.fab_menu.{item.fill,item_label.text,item_icon.icon} @ variant @primary / variant @secondary / variant @tertiary` (the colour styles) | component |
 | MAT-N3 | `button.body.{min_width,min_height,corners,shadow}, button.icon.icon @ variant close context component.fab_menu (the close button)` | rule |
@@ -481,10 +487,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N14 | `button.icon.icon @ variant icon_only context search_field (the trailing icons); avatar.body.{min_width,min_height} @ context search_field` | rule |
 | MAT-N14 | `search_field.bar.{fill,corners,padding}, search_field.body.padding @ variant @contained cond flavor:expressive; search_field.values.presentations (event @view_show, Timing::Spring) @ variant @contained` | rule |
 | MAT-N15 | `search_field.view.{fill,shadow,corners}, search_field.view_header.min_height, search_field.view_divider.stroke @ variant @docked / variant @full_screen` | rule |
-| MAT-N15 | `input.{text.text,placeholder.text} @ context search_field.view; search_field.supporting_text.text` | rule |
-| MAT-N15 | `list.row_background.corners, list.values.row_gap @ context search_field.view variant @contained (the contained bar's results)` | rule |
+| MAT-N15 | `input.{text.text,placeholder.text} @ context search_field.view` (the header's input text, and its supporting text as the placeholder) | rule |
+| MAT-N15 | `list.view.corners @ context search_field.view variants {@contained,@docked} cond flavor:expressive; search_field.values.results_gap @ variants {@contained,@docked} cond flavor:expressive` (the contained docked view's results shape, on the results list's own surface, and the gap between the bar and the results) | rule |
 | MAT-N15 | `search_field.values.presentations (events @view_show, @view_hide)` | field |
-| MAT-N16 | `date_picker.popup.{fill,corners,shadow,min_width,min_height}, date_picker.header.text, date_picker.headline.text, date_picker.supporting_text.text, date_picker.divider.stroke @ variant with_popup / variant @modal / variant @input` | rule |
+| MAT-N16 | `date_picker.popup.{fill,corners,shadow,min_width,min_height} @ variant with_popup / variant @modal / variant @input` | rule |
+| MAT-N16 | `date_picker.popup_header.{min_width,min_height}, date_picker.headline.text, date_picker.supporting_text.text, date_picker.divider.stroke @ variant @modal / variant @input` (the header container holding the headline and supporting text, inside the popup: the modal and input pickers' `header-container-*`, `header-headline-*`, `header-supporting-text-*` tokens; the docked picker's tokens state no such header) | rule |
+| MAT-N16 | `date_picker.{popup_header,headline,supporting_text,divider} (absent = true) @ !{open}; date_picker.{popup_header,headline,supporting_text} (absent = true) @ !variants {@modal,@input}` (nested in the popup, they are absent with it) | rule |
 | MAT-N16 | `calendar.weekday_label.text; calendar.day.{min_width,min_height,corners}; calendar.year.{min_width,min_height,corners,text}` | field |
 | MAT-N16 | `calendar.day.fill, calendar.day_label.text.fill @ {selected} / {today}; calendar.today_marker.stroke @ {today}; calendar.day.opacity @ {other_month}` | rule |
 | MAT-N16 | `calendar.day.fill.append (state layer) @ {hover} / {pressed} / {focus_visible}; calendar.year.fill @ {selected} / {hover} / {pressed} / {focus_visible}` | rule |
@@ -503,7 +511,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N19 | `sheet.body.{fill,corners,shadow}, sheet.body.fill.append (surface tint) @ variants {bottom,@standard} / variants {bottom,@modal} / {minimized} variants {bottom,@standard}` | rule |
 | MAT-N19 | `sheet.handle.{fill,min_width,min_height,opacity}; sheet.handle.focus @ {focus_visible}` | rule |
 | MAT-N19 | `sheet.values.presentations (events Appear, Disappear, @settle: the drag and settle motion)` | field |
-| MAT-N20 | `sheet.body.{fill,corners,shadow,max_width}, sheet.title.text, sheet.divider.stroke @ variants {@side,@standard} / variants {@side,@modal} / variants {@side,@detached}` | rule |
+| MAT-N20 | `sheet.body.{fill,corners,shadow,min_width,max_width}, sheet.title.text, sheet.divider.stroke @ variants {@side,@standard} / variants {@side,@modal} / variants {@side,@detached}` (`min_width` and `max_width` both the docked container width: the side sheet's width is fixed) | rule |
+| MAT-N20 | `sheet.values.anchor @ variant @side` (`Side`: the docked side sheet at a window side, spanning the window's full height, the docked container height) | rule |
 | MAT-N20 | `sheet.body.margin @ variants {@side,@detached}` (the detached side sheet's insets from the window's edges, which set its height) | rule |
 | MAT-N20 | `sheet.handle (absent = true) @ variant @side` (the side sheet draws no drag handle) | rule |
 | MAT-N20 | `button.label.text.fill, button.body.fill.append (state layer) @ {hover} / {focus_visible} / {pressed}, each context sheet.body variant @side (the actions)` | rule |
@@ -586,6 +595,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X18 | `cond contrast_increased (medium)` | condition |
 | MAT-X18 | `cond contrast_high (high)` | condition |
 | MAT-X18 | `token.material.contrast_level @ cond contrast_increased / cond contrast_high (the operand m3_role reads, ADD-A74)` | rule |
+| MAT-X18 | `token.material.contrast_level` (the standard level, stated in the base; never absent, as m3_role reads it, S4.8) | token |
 | MAT-X18 | `reader:android:UiModeManager.getContrast` | readers (R18) |
 | MAT-X19 | `token.text.scaling` (`TextScaling::AndroidNonLinear`: large sizes scale less, S9.4, ADD-A88); `text_scale` (S2.2 operand: lengths that follow text scaling, ADD-A55) | token |
 | MAT-X19 | `cond bold_text` | condition |
@@ -635,7 +645,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X34† | `PartStyle.fill.append @ {focus_visible} (Compose's default focus style: a state-layer opacity)` | rule |
 | MAT-X34† | `FocusIndicator.{width,paint,offset,shadow} (Compose's inset ring: the outer stroke the indicator's width and offset, the inner stroke a shadow layer, R7, ADD-A17)` | field |
 | MAT-X34† | `FocusIndicator.corners` (stated per component: the shape each component supplies, as expressions over `part.corners` and the offsets, cited) | field |
-| MAT-X35† | - | out (R1.1) |
+| MAT-X35† | - (colour inversion and correction, which the system applies to the whole display; high-contrast text and force dark, which Android applies to the app's own drawing (who draws the high-contrast outline or plate: to verify), have no catalogue name yet) | out (R1.1) |
 | MAT-X36† | `token.text.roles.{body,monospace}.font.family` | token |
 | MAT-X36† | `reader:android:Typeface.DEFAULT, Typeface.MONOSPACE` | readers (R18) |
 | MAT-X37† | `split_button.{primary_label,primary_icon}.transform.translate_x = min(mul(token.params.optics.optical_centering, sub(widget.primary.corners.<outer>, widget.primary.corners.<inner>)), <max>); split_button.arrow.transform.translate_x` likewise over `widget.secondary.corners` (ADD-A56, ADD-A80; a transform, which S8's layout restriction does not cover) | field |
@@ -654,7 +664,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-FM02† | `reader:android:AFontMatcher_match per locale` | readers (R18) |
 | MAT-FM03† | `RootInputs.direction, Element.direction (the layout direction, S8)` | field |
 | MAT-FM03† | `PartStyle.corners @ dir rtl (material-web's logical corners start-start … end-end stated as physical corners per direction)` | rule |
-| MAT-FM03† | `slider.{track,fill,thumb}.* @ dir rtl (the active track's clip, the thumb's offset, the inside and outside corners); progress_bar.{indicator,stop_indicator}.* @ dir rtl; tab.indicator.* @ dir rtl; calendar.range_band.* @ dir rtl; text_area.* @ dir rtl (the outlined field's resize handle)` | rule |
+| MAT-FM03† | `slider.{track,value_fill,thumb}.* @ dir rtl (the active track's clip, the thumb's offset, the inside and outside corners); progress_bar.{indicator,stop_indicator}.* @ dir rtl; tab.indicator.* @ dir rtl; calendar.range_band.* @ dir rtl` | rule |
+| MAT-FM03† | - (the outlined text area's resize handle under right-to-left: material-web's textarea; Compose's multi-line TextField draws no resize handle) | reference (R1.6) |
 | MAT-FM03† | `sidebar.values.presentations @ dir rtl (the drawer's swipe and predictive-back origin); search_field.values.presentations @ dir rtl (its predictive-back offset); menu.values.placement (PlacementParams.align, mirrored in RTL, S13)` | rule |
 | MAT-FM03† | `reader:android:Configuration.getLayoutDirection` | readers (R18) |
 | MAT-FM04† | `token.icons.mirroring` (per IconRole: the arrows, undo, redo and the rest of Google's list `Mirroring::Always`; the question-mark icons `Mirroring::ExceptLanguages([he])`, mirrored in Arabic and Farsi, not in Hebrew; S2.9) | token |
@@ -663,7 +674,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-P3-2† | - | out (R1.1) |
 | MAT-P3-3† | - | out (R1.1) |
 | MAT-P3-4† | - | out (R1.1) |
-| MAT-P3-5† | - | out (R1.1) |
+| MAT-P3-5† | - (the cutout's geometry and safe insets, which the windowing system reports, R1.1's safe-area insets, and what the system draws where a window does not extend; the insets an M3 `Scaffold` pads its content by have no catalogue name) | out (R1.1) |
 | MAT-P3-6† | `window.launch_screen.fill` | field |
 | MAT-P3-6† | `window.launch_icon.{icon,fill}` | field |
 | MAT-P3-6† | `window.values.presentations event @launch_exit` | field |
@@ -679,7 +690,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-P3-11† | `role.@popup_menu_background, role.@popup_menu_text` (the platform popup-menu style, `material-3`'s keyed roles) | role |
 | MAT-P3-12† | `segmented_control.values.segment_width (FillEqually)` | field |
 | MAT-P3-12† | `segmented_control.segment.min_width` | field |
-| MAT-P3-13† | `layout.values.{max_panes_horizontal,max_panes_vertical,pane_width,pane_height,avoids_hinge} @ h_size_class compact / h_size_class medium / h_size_class expanded / h_size_class large / h_size_class extra_large / v_size_class <c> / cond posture:tabletop` (the tall single-pane window; two stacked panes in tabletop posture, ADD-A83); `layout.values.vertical_pane_gap` (the vertical spacer) | rule |
+| MAT-P3-13† | `layout.values.{max_panes_horizontal,max_panes_vertical,pane_width,pane_height,avoids_hinge} @ h_size_class compact / h_size_class medium / h_size_class expanded / h_size_class large / h_size_class extra_large / v_size_class expanded h_size_class compact / v_size_class expanded h_size_class medium / cond posture:tabletop` (the tall single-pane window: the expanded height class while one pane fits across, `PaneScaffoldDirective.kt:81-85`; two stacked panes in tabletop posture, ADD-A83); `layout.values.vertical_pane_gap` (the vertical spacer) | rule |
 | MAT-P3-14† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | MAT-P3-14† | `reader:android:ViewConfiguration.getKeyRepeatTimeout, getKeyRepeatDelay` | readers (R18) |
 | MAT-P3-15† | `token.behavior.{hide_pointer_while_typing,hide_pointer_fade}` (its gradual fade-out, ADD-A86) | token |
