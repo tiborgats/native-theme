@@ -30,7 +30,8 @@
 #                  (the release-tag check, the gpui connector's tests on GPUI
 #                  Fast, native-theme's ignored stem-index test, docs.rs
 #                  emulation, packaging, semver checks, outdated
-#                  dependencies, the 0.8.0 ledger's triage check, and the
+#                  dependencies, the 0.8.0 ledger's triage check and source
+#                  cache check, and the
 #                  visual-asset and compatibility stamp
 #                  checks), each printing "skipped (--commit mode)", and names
 #                  them in the final summary. The security audit runs in it
@@ -57,7 +58,8 @@ Usage: scripts/check_release.sh [--commit]
                  connector's tests on GPUI Fast, native-theme's ignored
                  stem-index test, docs.rs emulation, packaging, semver
                  checks, outdated dependencies, the 0.8.0 ledger's triage
-                 check, and the visual-asset and compatibility stamp checks
+                 and source cache checks, and the visual-asset and
+                 compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -1061,6 +1063,21 @@ else
 fi
 run_check "data documents: 0.8.0 ledger self-test" \
     python3 scripts/check_ledger.py --self-test
+# The 0.8.0 plan's pinned sources (docs/facts/sources.toml, D1): every cited
+# project pinned or listed as not pinned, and, in the full run, the source
+# cache's checkouts at their pins (offline; scripts/update_sources.sh fills it).
+run_check "data documents: every cited platform source is pinned" \
+    python3 scripts/check_sources.py
+run_check "data documents: sources self-test" \
+    python3 scripts/check_sources.py --self-test
+run_check "data documents: citation scanner self-test" \
+    python3 scripts/citations.py --self-test
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "0.8.0 source cache"
+else
+    run_check "data documents: the source cache holds every pin" \
+        bash scripts/update_sources.sh --verify
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

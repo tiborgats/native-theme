@@ -26,8 +26,9 @@ Researched 2026-10-29 (the research report's proofs go into `docs/facts/sources.
 the newest stable release set at M0, coherent:
 
 - **KDE:** Plasma 6.8.2, KDE Frameworks 6.31.0, Qt 6.12.0, PySide6 6.12.0, in the Arch Linux Archive snapshot that
-  also carries kirigami-addons 1.16.0 (released 2026-10-29, in Arch's live repository the same evening): 2026/10/30
-  once it exists and is checked, else 2026/10/29 with kirigami-addons 1.15.0.
+  carries them, 2026/10/29 (`archlinux@2026-10-29` in `sources.toml`), with kirigami-addons 1.15.0: 1.16.0 came out
+  the same day and no snapshot carried it when the release set was pinned (the 2026/10/30 snapshot was still not
+  published on 2026-10-30), so it is outside the frozen set.
 - **GNOME:** libadwaita 1.10.0, GTK 4.24.1, gsettings-desktop-schemas 51.0; the same snapshot as KDE carries them.
 - **Material:** material-web v2.5.0; Compose Material 3 1.4.0 (1.5.0 is beta); material-color-utilities by commit (it
   has no tags); the emulator image: Android 17's stable API 37.1 exists only as a 16 KB page-size image, so spike A
