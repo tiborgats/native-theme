@@ -7,7 +7,9 @@
 # no tag for the release (`tag = "commit"`, the reason in `note`).
 #
 # Fields:
-#   kind          "git": a repository fetched at `commit` by scripts/update_sources.sh into <cache>/<id>/;
+#   kind          (snapshot entries, `describes`, palette entries and the [presets] table come with the first of
+#                 them, spec S17)
+#                 "git": a repository fetched at `commit` by scripts/update_sources.sh into <cache>/<id>/;
 #                 "sdk": an SDK on a CI runner image (Apple's headers exist only on macOS runners), not fetched;
 #                 "distribution": a dated package snapshot the KDE and GNOME harnesses install, not fetched.
 #   project       the name scripts/citations.py gives the project's citations (absent where none cites it).
@@ -23,11 +25,11 @@
 # platform at M0 (2026-10-29), coherent. KDE and GNOME: what the Arch Linux Archive snapshot of 2026-10-29 carries
 # (Plasma 6.8.2, KDE Frameworks 6.31.0, KDE Gear 26.08.2, Qt 6.12.0, GNOME 51); the other cited projects of those
 # platforms at the snapshot's version, which is each one's newest stable (git ls-remote of its tags). Material:
-# material-web v2.5.0, Compose Material 3 1.4.0 (androidx), material-color-utilities by commit, Android 17's AOSP
-# tag. The Android emulator's system image (API 37.0 rev 8, 4 KB pages, or API 37.1 rev 9, 16 KB pages only) is
-# decided by spike A and recorded here then. Windows: the Windows App SDK 2.5.1 pair, the Community Toolkit
-# 8.2.251219, Microsoft Learn's public source repositories at a commit. Apple (D12): the GitHub runner images
-# `macos-15` and `macos-26` with their default Xcode.
+# material-web v2.5.0, Compose Material 3 1.5.0-beta02 (androidx; a pre-release, for the Expressive components, as
+# the ledger records), material-color-utilities by commit, Android 17's AOSP tag. The Android emulator's system image
+# (API 37.0 rev 8, 4 KB pages, or API 37.1 rev 9, 16 KB pages only) is decided by spike A and recorded here then.
+# Windows: the Windows App SDK 2.5.1 pair, the Community Toolkit 8.2.251219, Microsoft Learn's public source
+# repositories at a commit. Apple (D12): the GitHub runner images `macos-15` and `macos-26` with their default Xcode.
 #
 # Checked by scripts/check_sources.py (form, and every project the documents cite is pinned, a listed site or
 # [[not_pinned]]); fetched and verified by scripts/update_sources.sh.
@@ -791,18 +793,18 @@ sparse = ["data/fonts", "libs/WindowManager/Shell", "core/java/android/text", "c
 note = "The gap maps read main at 1cdfff55 (2025-03-26); android-17.0.0_r1 is the newest release tag (AOSP publishes no QPR source between its twice-yearly drops)."
 
 [[source]]
-id = "androidx@5113b82a"
+id = "androidx@e4d933c9"
 kind = "git"
 project = "androidx/androidx"
 repository = "https://android.googlesource.com/platform/frameworks/support"
 tag = "commit"
-commit = "5113b82a4ed6416d6344efa50e41db8cb65928ff"
-release = "Compose Material 3 1.4.0 (androidx.compose.material3:material3)"
+commit = "e4d933c98df7baa7ea2b83eea6e086915961e0ff"
+release = "Compose Material 3 1.5.0-beta02 (androidx.compose.material3:material3)"
 generations = ["material-3"]
-researched = "2026-10-29"
-proof = "developer.android.com/jetpack/androidx/releases/compose-material3, Version 1.4.0 (2025-09-24): its log range +log/122e65c9…..5113b82a…/compose/material3 ends at this commit; maven-metadata.xml lists 1.4.0 as the newest stable (1.5.0 is beta)"
+researched = "2026-10-30"
+proof = "developer.android.com/jetpack/androidx/releases/compose-material3, Version 1.5.0-beta02 (2026-10-21): its log range https://android.googlesource.com/platform/frameworks/support/+log/19991f2c0858aadfcb442ce02b2c8e4743c96898..e4d933c98df7baa7ea2b83eea6e086915961e0ff/compose/material3 ends at this commit (1.5.0-beta01's range ends at 19991f2c); maven-metadata.xml (lastUpdated 2026-10-21) lists 1.5.0-beta02 as the newest version, with no 1.5.0-rc; the commit fetched by SHA (git fetch --depth 1 https://android.googlesource.com/platform/frameworks/support e4d933c98df7baa7ea2b83eea6e086915961e0ff)"
 sparse = ["compose/material3", "compose/foundation/foundation", "compose/animation/animation", "compose/ui/ui", "compose/ui/ui-text"]
-note = "androidx has no git tag per artifact, so the pin is the commit the 1.4.0 release notes end at (branch androidx-compose-material3-release, committed 2025-09-17); the GitHub mirror androidx/androidx, which the gap maps cite, holds the same commit. The gap maps read androidx-main at 1e677685."
+note = "A pre-release: R1.6 makes Compose the reference experimental or not, and the Material 3 Expressive components the specification cites (FloatingToolbar, compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingToolbar.kt) exist only in the 1.5.0 pre-releases; a published pre-release is a release a harness can run, which D1's rule against master commits guards (re-pinned 2026-10-30 from 1.4.0 at 5113b82a). androidx has no git tag per artifact, so the pin is the commit the 1.5.0-beta02 release notes end at (branch androidx-compose-material3-release, committed 2026-10-07); the GitHub mirror androidx/androidx, which the gap maps cite, holds the same commits. The gap maps read androidx-main at 1e677685."
 
 [[source]]
 id = "material-color-utilities@bd811e4c"

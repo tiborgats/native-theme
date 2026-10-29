@@ -30,8 +30,12 @@ the newest stable release set at M0, coherent:
   the same day and no snapshot carried it when the release set was pinned (the 2026/10/30 snapshot was still not
   published on 2026-10-30), so it is outside the frozen set.
 - **GNOME:** libadwaita 1.10.0, GTK 4.24.1, gsettings-desktop-schemas 51.0; the same snapshot as KDE carries them.
-- **Material:** material-web v2.5.0; Compose Material 3 1.4.0 (1.5.0 is beta); material-color-utilities by commit (it
-  has no tags); the emulator image: Android 17's stable API 37.1 exists only as a 16 KB page-size image, so spike A
+- **Material:** material-web v2.5.0; Compose Material 3 1.5.0-beta02 (androidx `e4d933c9`, released 2026-10-21;
+  re-pinned on 2026-10-30 from 1.4.0): R1.6 makes Compose the reference "experimental or not (for some Expressive
+  behaviour it is Google's only implementation)", and the Expressive components the specification cites
+  (FloatingToolbar and the others) exist only in the 1.5.0 pre-releases; a published pre-release is a release a
+  harness can run, which is what D1's rule against `master` commits guards; material-color-utilities by commit (it has
+  no tags); the emulator image: Android 17's stable API 37.1 exists only as a 16 KB page-size image, so spike A
   decides between it and API 37.0 (rev 8, 4 KB pages).
 - **Windows:** Windows App SDK 2.5.1 with microsoft-ui-xaml `winui3/release/2.5.1`, the newest pair with a WinUI tag
   (2.6.4 is newer but microsoft-ui-xaml has no tag for it), so the WinUI host builds against 2.5.1 too; the Windows
@@ -87,7 +91,8 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 8 | 1 | catalogue :8328 | `kcolorscheme@8bb948c src/color-schemes/BreezeLight.colors` against the KDE gap map's `breeze@75561b7f colors/BreezeLight.colors`: two copies of one file; the re-pin settles which one Plasma 6.8.2 installs | the first independent check | open, for the re-pin |
 | 9 | 2 | spec S2.2, S11, S14, S17; `sources.toml`; `docs/todo.md` | the third check's fixes: the quote check per generation with a published or read citation (palette facts over all), unitless literals take the value's dimension, XAML `TimeSpan` and `#argb`, C++ and `QColor` byte colours, `seconds_to_ms`; the state model's combinations defined and S10's declaration keys; S17's sources as `sources.toml` defines them (`git`, `sdk`, `distribution`, sites, page snapshots with `describes`, JSON pointers); vector tables' TSV form; nested INI groups; `run.toml` maps images to presets; colour tolerance per channel; the platform directories' presets; palettes' colours in bases only | the third independent check | applied 17e9b9ef; fourth check: 5 serious, 14 minor |
 | 10 | 2 | spec S2.2, S17; `sources.toml` | the fourth check's fixes: the closed lists (notations, units by dimension, the number form) held, documented and self-tested by `check_fact_citations.py`, a member added as a class 1 change; values spelled as S11's Spelling table; `sources.toml` gains the `snapshot` kind, palette entries and `[presets]` (preset to release), `check_sources.py` with them; builds per image in `run.toml`; combinations with one value per condition kind, container sizes as conditions, densities, and each fact's own `when`; tolerance's unit; vector tables' header lines | the fourth independent check | applied d7306bf7; fifth check: 4 serious, 11 minor |
-| 11 | 2 | spec S2.2, S17; `sources.toml` | the fifth check's fixes: an enum block stated whole by S11's spelling; a tolerance table for values of mixed units; `describes` a list of releases, snapshots keyed by id; `run.toml` names the measured entry and records builds without matching them; the declaration keys listed, `requires_variants` and `sizes_by_*` applied, presets checked per flavour; `sp`, `rem`, `em`; vector tables' `# outputs:` | the fifth independent check | applied; sixth check pending |
+| 11 | 2 | spec S2.2, S17; `sources.toml` | the fifth check's fixes: an enum block stated whole by S11's spelling; a tolerance table for values of mixed units; `describes` a list of releases, snapshots keyed by id; `run.toml` names the measured entry and records builds without matching them; the declaration keys listed, `requires_variants` and `sizes_by_*` applied, presets checked per flavour; `sp`, `rem`, `em`; vector tables' `# outputs:` | the fifth independent check | applied e5d76e53; sixth check: 1 serious, 9 minor |
+| 12 | 2 | spec S17; `sources.toml` | the sixth check's fixes: a composite measured value's evidence is a table shaped like it, a tolerance per leaf; blocks per the registry; `sdk` entries for images; `describes` may name releases no preset describes; `toolkit` only where one drew; declarations left out are none; flavours not an axis; mixed citation kinds | the sixth independent check | applied; seventh check pending |
 
 ## Unmeasured register
 

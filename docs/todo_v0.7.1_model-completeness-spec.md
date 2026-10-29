@@ -2579,7 +2579,8 @@ tolerance = <t>
   and `component.<key>.values.<name>` for a keyed one (S5.1), and S2.2's reference forms for colour roles, tokens and
   inputs (`role.…`, `token.…`, `input.…`); a struct block field is stated per leaf (`….text.font.size`) or as a
 whole by a reference (S2.2: `= token.focus`), an enum block (`Timing`, S2.2) as a whole, by a reference or S11's
-spelling of its variant (`{ cubic_bezier = […] }`). The
+spelling of its variant (`{ cubic_bezier = […] }`); which fields are blocks, and so stated per leaf, the registry's
+keys decide (the derive's field registry, S6.1). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
   sketches as `scripts/check_spec_names.py` reads them) until `docs/property-registry.toml` is generated (S18), and
   the registry's from then on. A value is spelled as S11's **Spelling** table spells it in a preset, as a TOML value
@@ -2601,21 +2602,25 @@ spelling of its variant (`{ cubic_bezier = […] }`). The
 
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
   a number in the value's canonical unit (a colour's per 8-bit channel, alpha included), or, for a value with leaves
-  of several units (a shadow's layers), a table from each leaf's path in the value to its number
-  (`{ "0.offset_y" = <t>, "0.color" = <t> }`); where several `measured` citations serve one generation, each must hold.
+  of several units (a shadow's layers), a table from every leaf's path in the value as S11 spells it to its number
+  (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); such a value's `evidence` path names a table of the evidence
+  file shaped like the value, each leaf compared within its own tolerance. Where several `measured` citations serve
+  one generation, each must hold; where a generation has `published` or `read` citations too, both checks must hold
+  and the gate uses the measured tolerance.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
   kind `git` (a repository at a release's commit, id `<name>@<version>`, or the commit's first eight hex digits where
-  the project has no tag for the release), `sdk` (an SDK on a CI runner image, id `xcode@<version>`, not fetched; its
-  citations are checked by `os-probe.yml`'s macOS job at that Xcode, not by the local runs) and `distribution` (a
+  the project has no tag for the release), `sdk` (an SDK or a runner image on CI, id `<sdk or image>@<version>`,
+  not fetched: `xcode@<version>`, whose header citations `os-probe.yml`'s macOS job checks at that Xcode, not the local
+  runs; a runner image or the Android emulator's system image another harness measures) and `distribution` (a
   dated package snapshot the harnesses install, which no citation names), each listing the generations (preset IDs)
   it serves; `[[site]]` documentation sites with their pinning method (their source repositories at a commit, or
   snapshots); `[[not_pinned]]` cited code that is not a platform source (the toolkits, the project's own files), with
   its reason; and a `[presets]` table naming the release each preset describes (`macos-tahoe = "macOS 26"`). A page
   snapshot is a `[[source]]` of kind `snapshot`, one per page and keyed by its id (not by generation), with its site,
   URL, date, SHA-256 and `describes` (the releases, as `[presets]` writes them, its page describes: Apple's pages the
-  newest macOS and iOS releases when taken), and its generations are
-  only presets describing that release: a page snapshotted while 27 is current serves no 26 preset, an archived
-  snapshot from 26's lifetime serves `macos-tahoe` and `ios-26` (D12). A palette project's entry serves no generation
+  newest macOS and iOS releases when taken, which `[presets]` need not name), and its generations are only presets
+  describing one of its `describes`: a page snapshotted while 27 is current serves no preset (`generations = []`), an
+  archived snapshot from 26's lifetime serves `macos-tahoe` and `ios-26` (D12). A palette project's entry serves no generation
   (`generations = []`, `palette = true`). A citation's `source` is `<id> <path>:<line or range>` (a JSON page:
   `<id> #<JSON pointer>`; an `sdk` header: a path from the Xcode's `Contents/Developer/Platforms/`, which names the SDK),
   and it serves every generation its entry lists. `check_sources.py` checks the form (its docstring holds the id
@@ -2660,8 +2665,8 @@ spelling of its variant (`{ cubic_bezier = […] }`). The
   `run.toml` maps each image folder to the preset it serves, the `sources.toml` entry of what it measured (the Xcode,
   the distribution snapshot, the WinUI host's Windows App SDK, the emulator image; a runner image measured with no
   such entry gets one of kind `sdk` naming the image) and its exact builds (`[images.os-probe-macos-26]
-  preset = "macos-tahoe"`, `source = "xcode@26.6"`, `os = "<build>"`, `toolkit = "<build>"`); the checker requires
-  all four and that the preset is among the entry's generations. The builds are recorded, not matched: a runner image
+  preset = "macos-tahoe"`, `source = "xcode@26.6"`, `os = "<build>"`, `toolkit = "<build>"`, the last where a toolkit
+  drew or answered); the checker requires the others and that the preset is among the entry's generations. The builds are recorded, not matched: a runner image
   moves within a release (D1). Every evidence file is cited by a fact, a state-model entry or a
   vector table (S2.2, S13); a run's README and `run.toml` are not evidence;
   the runs the 0.8.0 plan lists as legacy count as cited until its M4.
@@ -2690,7 +2695,7 @@ declarations against them (ADD-A116), each entry citing as a fact does:
 widget = "pull_to_refresh"                        # a typed widget, or "component.<key>"
 when = { conditions = ["preset:macos-tahoe"] }    # optional: one generation's (or flavour's, `flavor:`) entry
 available = false                                 # S10's declarations; with `false`, no other key
-rows = ["MAC-N24"]
+rows = []
 
 [[model.cite]]
 kind = "published"
@@ -2702,7 +2707,9 @@ absent = ["refreshController"]
 An available widget's entry also states `variants`, `sizes`, `densities` (S10), `axes = { states, conditions,
 contexts }` (what the platform's drawing distinguishes: states by S1's `StateFlag` names, conditions by S7.1's,
 contexts as S11's context selectors), `exclusive` (the exclusive groups, each in its order of precedence, S10) and
-`not_drawn` (combinations the platform does not draw, as `when`s). A combination is a subset of `axes.states` (each
+`not_drawn` (combinations the platform does not draw, as `when`s); a declaration it leaves out is stated as none
+(no flags, no `requires_variants`, …) and checked so. Flavours are not an axis: a preset with flavours is checked
+once per flavour (below). A combination is a subset of `axes.states` (each
 state a flag) reduced by `exclusive`, with, from `axes.conditions`, one value or none per condition kind (a
 container size being a condition, one size per container), at most one of `axes.contexts`, one of `variants` or none,
 one of `densities` or none, and one of `sizes` (none where the list is empty), less those `not_drawn` names and
