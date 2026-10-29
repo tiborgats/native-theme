@@ -916,7 +916,7 @@ Tally: a — 38; b — 20 (2 rows added for them: K1.58†, K3.84†; K1.83† a
 
 ### Found wrong in pass 1 (not rewritten here)
 
-- `platform-facts.md:1265` (menu items rectangular) and `:1622` (combo, no shadow) disagree with Breeze's source (K1.60, K1.244 / D5) — for `docs/todo.md`'s list of values against their sources.
+- `platform-facts.md@fc6109d1:1265` (menu items rectangular) and `:1622` (combo, no shadow) disagree with Breeze's source (K1.60, K1.244 / D5) — for `docs/todo.md`'s list of values against their sources.
 - The Link note above cites "Q1.154–Q1.156" for the Quick link rows; they are Q1.134–Q1.136.
 - In `tags-kde.tsv`, several §4.2 rows sit under a control name that is not theirs, which hid them from the cross-check: K2.7 (command link) under "button group/toggle group", K2.15 (KTitleWidget) under "status page/placeholder", K2.16 (KMultiTabBar) under "navigation rail", K2.17 (splitter collapser) under "button group/toggle group", K2.22 (wizard) under "about dialog", Q2.43 (drag handle) under "icon button"; K2.2 (tool button) has no tag line at all, so "tool button" came out as missing for KDE.
 - The cross-check list's "tool button" entry for GNOME is GN-2.42, which is GTK's text selection handles and magnifier.
@@ -1098,7 +1098,7 @@ Pass 3 asks KDE about every row the other five platforms added after pass 1 (IDs
 | W3-52†, MAT-SC4† | 1 | K-P3-18† (smooth wheel, touchpad inertia, touch flick, the overshoot left to Qt Quick) |
 | W3-53† | 2, 1 | K3.14 (KWin effect enablement), K3.31 (Breeze `AnimationsEnabled`, its engines), K3.30 (speed factor); added K-P3-24† (the switch for Qt's own UI effects) |
 | iOS B-18† | 2, 1 | K1.27 (menu indicator), Q1.8; added K-P3-5† (where the menu opens) |
-| MAC-B11† | 2 | `button.min_width_px`: Breeze `Button_MinWidth` = 80 (`platform-facts.md:1182`, `mt:74`) |
+| MAC-B11† | 2 | `button.min_width_px`: Breeze `Button_MinWidth` = 80 (`platform-facts.md@fc6109d1:1182`, `mt:74`) |
 | W-RL02† | 2 | K2.7 (QCommandLinkButton) |
 | iOS CK-2† | 2 | K1.50–K1.57, K1.58†, Q1.20–Q1.22 (states, combinations, check animation) |
 | MAC-I09† | 3 | No autofill in Qt Widgets, KF6 or Kirigami; a KLineEdit offers completion only (K2.29†) |
@@ -1119,7 +1119,7 @@ Pass 3 asks KDE about every row the other five platforms added after pass 1 (IDs
 | GN-1.283† | 2 | K1.83† (Qt wraps a plain tooltip only at the screen width), Q3.29 (Quick: gridUnit × 14) |
 | iOS TT-3† | 2, 1 | K1.83† (fall-asleep delay), Q1.35 (Quick placement); added K-P3-6† (Qt Widgets placement) |
 | MAC-T06† | 2, 3 | Quick: Q1.82 (an elided row shows its full text); Qt Widgets item views hand the tooltip event to the delegate (qtbase v6.10.1 `qabstractitemview.cpp:1753-1765`), which shows the item's own tooltip, no expansion tip (delegate side to verify) |
-| iOS SB-7† | 2, 1 | `scrollbar.min_thumb_length_px` = `ScrollBar_MinSliderHeight` 20 (`platform-facts.md:1308`); hover K1.91; the Quick overshoot K-P3-18† |
+| iOS SB-7† | 2, 1 | `scrollbar.min_thumb_length_px` = `ScrollBar_MinSliderHeight` 20 (`platform-facts.md@fc6109d1:1308`); hover K1.91; the Quick overshoot K-P3-18† |
 | MAT-SC3† | 2 | Q1.41 (touch overlay thumb, hidden after 1000 ms) |
 | W1-152† | 3 | No auto-hide setting: Breeze's scroll-bar keys are the arrow buttons only (`kcfg:72-79`); desktop scroll bars stay (pass 2 table C, `overlay_mode`); touch: Q1.41 |
 | W1-153† | 2 | Q1.45–Q1.47 (qqc2 RangeSlider) |
