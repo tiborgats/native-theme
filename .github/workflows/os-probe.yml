@@ -418,10 +418,18 @@ jobs:
           path: gnome-container
 
   # The GNOME harness (D2, D4, spike G): tools/gnome-host on a headless display
-  # in the GNOME container, per display, each renderer run twice and compared
-  # (tools/gnome-host/run.sh). The pull is tried without credentials first, to
-  # check that the package is public; pull.txt records the result, and the job's
-  # token pulls it where that fails.
+  # in the GNOME container, run twice and compared (tools/gnome-host/run.sh).
+  # The display is mutter's headless mode (spike G): GNOME's own compositor,
+  # GTK's Wayland backend as a GNOME session runs it, byte-identical renders
+  # across runs and runner CPUs. Xvfb rendered byte-identically too, but
+  # through GTK's X11 backend, whose font settings (hinting, DPI) and window
+  # frame are not a GNOME session's; run.sh still takes `xvfb` for a re-check.
+  # The renderer is GTK's GL renderer (GSK_RENDERER=gl, on Mesa's llvmpipe):
+  # the GPU renderers' code path; the cairo fallback's 8-bit values differ from
+  # it by one step in some fills (each renderer byte-identical across runs).
+  # The pull is tried without credentials first,
+  # to check that the package is public; pull.txt records the result, and the
+  # job's token pulls it where that fails.
   gnome-harness:
     name: GNOME harness (${{ matrix.display }})
     needs: gnome-container
@@ -435,7 +443,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        display: [mutter, xvfb]
+        display: [mutter]
     env:
       IMAGE: ghcr.io/tiborgats/native-theme-gnome:2026-10-29
       OUT: gnome-harness-out

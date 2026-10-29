@@ -2,7 +2,7 @@
 # Runs inside the GNOME container (tools/linux-containers/gnome) under
 # dbus-run-session, from the repository's root: builds gnome-host, starts the
 # headless display named by $1 (mutter or xvfb), renders both schemes with
-# each renderer in GNOME_HOST_RENDERERS (default "cairo gl") twice, and
+# each renderer in GNOME_HOST_RENDERERS (default "gl") twice, and
 # checks that the two runs wrote byte-identical files (the coreutils' sha256sum
 # compares them: the image has no diffutils). Writes into $2:
 #   <renderer>/run<N>/<scheme>/  gnome-host's PNGs, index.toml, its output
@@ -11,7 +11,7 @@
 set -u
 display=$1
 out=$2
-renderers=${GNOME_HOST_RENDERERS:-"cairo gl"}
+renderers=${GNOME_HOST_RENDERERS:-gl}
 build=/tmp/gnome-host-build
 mkdir -p "$out"
 log="$out/run.txt"
@@ -91,7 +91,7 @@ for renderer in $renderers; do
     failed=1
   fi
 done
-(cd "$out" && find . \( -name '*.png' -o -name index.toml \) -print | sort | xargs sha256sum) >"$out/sha256.txt"
+(cd "$out" && find . \( -name '*.png' -o -name '*.node' -o -name index.toml \) -print | sort | xargs sha256sum) >"$out/sha256.txt"
 
 kill "$server" 2>/dev/null
 wait "$server" 2>/dev/null

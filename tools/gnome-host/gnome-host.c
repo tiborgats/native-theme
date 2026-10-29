@@ -17,7 +17,9 @@
  * window's GskRenderer. A widget's paintable clips to the widget's bounds,
  * which would cut what a button draws outside them (an outer focus ring), so
  * each button sits in a cell of its own, inside the cell's margin, and the
- * cell is drawn.
+ * cell is drawn. Beside each PNG, a .node file holds the render node the PNG
+ * was rendered from (gsk_render_node_serialize): the stylesheet's colours as
+ * floats and the geometry, before any renderer rounds them.
  *
  * index.toml also records the colour a label with libadwaita's `accent` style
  * class gets from the stylesheet (`--accent-color`, derived from
@@ -334,6 +336,7 @@ static gboolean
 render_to_png (GtkWidget  *widget,
                GskRenderer *renderer,
                const char *path,
+               const char *node_path,
                int        *out_width,
                int        *out_height)
 {
@@ -343,7 +346,7 @@ render_to_png (GtkWidget  *widget,
   GskRenderNode *node;
   GdkTexture *texture;
   int x, y, width, height;
-  gboolean ok;
+  gboolean ok = TRUE;
 
   *out_width = 0;
   *out_height = 0;
@@ -382,11 +385,26 @@ render_to_png (GtkWidget  *widget,
   }
 
   texture = gsk_renderer_render_texture (renderer, node, &GRAPHENE_RECT_INIT (0, 0, width, height));
+
+  {
+    GBytes *bytes = gsk_render_node_serialize (node);
+    GError *error = NULL;
+    gsize size;
+    const char *data = g_bytes_get_data (bytes, &size);
+
+    if (!g_file_set_contents (node_path, data, (gssize) size, &error)) {
+      g_printerr ("gnome-host: %s\n", error->message);
+      g_clear_error (&error);
+      ok = FALSE;
+    }
+    g_bytes_unref (bytes);
+  }
   gsk_render_node_unref (node);
 
-  ok = gdk_texture_save_to_png (texture, path);
-  if (!ok)
+  if (!gdk_texture_save_to_png (texture, path)) {
     g_printerr ("gnome-host: saving %s failed\n", path);
+    ok = FALSE;
+  }
 
   *out_width = gdk_texture_get_width (texture);
   *out_height = gdk_texture_get_height (texture);
@@ -430,9 +448,11 @@ render_all (Host *host)
       GtkStateFlags expected = expected_flags (&states[st]);
       gboolean as_requested = relevant == expected;
       char *file = g_strdup_printf ("%s-%s.png", kinds[k].name, states[st].name);
+      char *node_file = g_strdup_printf ("%s-%s.node", kinds[k].name, states[st].name);
       char *path = g_build_filename (opt_out, file, NULL);
+      char *node_path = g_build_filename (opt_out, node_file, NULL);
 
-      if (!render_to_png (host->cells[k][st], renderer, path, &width, &height))
+      if (!render_to_png (host->cells[k][st], renderer, path, node_path, &width, &height))
         host->status = 1;
 
       if (!as_requested) {
@@ -442,6 +462,7 @@ render_all (Host *host)
 
       g_string_append (images, "\n[[image]]\n");
       toml_kv_string (images, "file", file);
+      toml_kv_string (images, "node", node_file);
       toml_kv_string (images, "kind", kinds[k].name);
       toml_kv_string (images, "state", states[st].name);
       toml_kv_string (images, "widget", G_OBJECT_TYPE_NAME (button));
@@ -461,6 +482,8 @@ render_all (Host *host)
       }
       g_string_append_printf (images, "png_width = %d\npng_height = %d\n", width, height);
 
+      g_free (node_path);
+      g_free (node_file);
       g_free (path);
       g_free (file);
     }
@@ -468,15 +491,18 @@ render_all (Host *host)
 
   {
     char *path = g_build_filename (opt_out, "window.png", NULL);
+    char *node_path = g_build_filename (opt_out, "window.node", NULL);
 
-    if (!render_to_png (host->window, renderer, path, &width, &height))
+    if (!render_to_png (host->window, renderer, path, node_path, &width, &height))
       host->status = 1;
     g_string_append (images, "\n[[image]]\n");
     toml_kv_string (images, "file", "window.png");
+    toml_kv_string (images, "node", "window.node");
     toml_kv_string (images, "kind", "window");
     toml_kv_string (images, "widget", G_OBJECT_TYPE_NAME (host->window));
     toml_flags (images, "flags_rendered", gtk_widget_get_state_flags (host->window));
     g_string_append_printf (images, "png_width = %d\npng_height = %d\n", width, height);
+    g_free (node_path);
     g_free (path);
   }
 
