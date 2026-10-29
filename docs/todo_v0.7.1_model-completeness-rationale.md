@@ -363,16 +363,20 @@ input's base for it. The inputs:
   does not publish (the selection, focus and accent-tinted colours, read through `NSColor`), and the
   separate highlight colour setting; on the `ios-*` presets the tint-dependent roles likewise. On
   `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
-  applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states them as
-  that derivation, a function (R25.1), over Breeze's scheme inputs, and an application changing the accent gets
-  them by the same derivation over the scheme inputs in force, the reader's or those of a palette from a KDE port,
+  applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states Breeze's scheme
+  values as Plasma's default ("Accent color from color scheme") writes them, with no accent derivation, and an
+  application changing the accent gets the accent-dependent roles by that derivation, a function (R25.1), over the
+  scheme inputs in force, the reader's or those of a palette from a KDE port,
   which is a scheme file. A palette that is native-theme's mapping (R19) has no scheme inputs: it states its
   accent-dependent roles itself, following the accent by reference where they follow it, and is refused where it
-  leaves one to the preset's derivation over Breeze's inputs, which would mix the two schemes.
+  leaves one to the preset's Breeze value, which would mix the two schemes.
 - **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles. The preset states
-  each as Plasma's derivation over Breeze's scheme inputs (`kde_accent(…, inactive)`, R25.1: what `applyScheme()`
-  writes for a set whose scheme states an Inactive group, Plasma 6.8 writing Header's, untinted, as a copy of Window's, and the
-  set's active value for one that states none, as KColorScheme reads it); the reader, or a palette from a KDE port,
+  each as Plasma's default path writes it, and an accent the application sets restates each by Plasma's derivation
+  (`kde_accent(…, inactive)`, R25.1: what `applyScheme()`
+  writes for a set whose scheme states an Inactive group, that group's own values tinted toward the accent in a tinting
+  scheme and, in one that does not tint, Header's as a copy of Window's active values (Plasma 6.8) and another set's as
+  stated, Header's background and foreground then replaced under the accent-coloured title bar option; and the set's
+  active value for one that states none, as KColorScheme reads it); the reader, or a palette from a KDE port,
   replaces them with what kdeglobals or the port's scheme states. A mapping palette has no scheme, so it states them
   itself (the project's colours, or each its set's active value, which is how KColorScheme reads a scheme without an
   Inactive group), and is refused where it leaves one to the preset's derivation over Breeze's inputs, which would
@@ -403,7 +407,7 @@ not declare is ignored (R15).
 **R2.8 — Validation and infallible queries.** The project forbids runtime panics, and a query runs inside a
 connector's draw call. Resolution checks every rule's derivations against every base and rule they can apply
 over, and every expression against every binding it can meet: types, references, cycles, and operands that
-could be absent. A preset or layer that fails is an error when it is added, and it is refused (R2.5); so resolution
+could be absent, or automatic where arithmetic would need a number (an automatic size has none). A preset or layer that fails is an error when it is added, and it is refused (R2.5); so resolution
 and the query cannot fail.
 
 ### R3 — State flags
@@ -1004,8 +1008,9 @@ refine decisions above. Each is decided here, with the decision it extends.
 **R25.1 — Plasma's accent (extends R2.6).** Plasma derives every accent-dependent colour once, when the accent or the
 scheme is applied (`plasma-workspace/kcms/colors/colorsapplicator.cpp`, `applyScheme()`, at v6.8.2), and writes the
 results into kdeglobals; no application derives at run time. So the KDE reader reads the results, and on `kde-breeze`
-the accent is the only accent input: the preset's own bases state the accent-dependent roles as Plasma's own
-derivation over Breeze's scheme inputs, and when an application changes the accent, under the reader's scheme or a
+the accent is the only accent input: the preset's own bases state Breeze's scheme as Plasma's default writes it, "Accent color from color scheme",
+which applies no accent derivation (a Breeze blue chosen as the accent does not reproduce it), and when an
+application changes the accent, under the reader's scheme or a
 KDE port palette's (whose scheme inputs the port carries), the model applies that derivation over those inputs, a
 function `kde_accent(scheme, accent)` implemented to `applyScheme()` (the accent copied into
 `ForegroundActive` and the decoration roles of every colour set, the link colour adjusted for contrast, the selection a 0.7 blend over the
@@ -1014,9 +1019,12 @@ accent-coloured title bar options, which become tokens of the preset). Its `sche
 names (`[General] ColorScheme`, found as `color-schemes/<name>.colors`), which the reader reads, since kdeglobals
 holds only the derived values. A mapping palette (R19) has no scheme inputs, so it states its accent-dependent roles
 itself, by reference to the accent where they follow it (R2.6). KDE's stated Inactive values (R2.6) are, in kdeglobals, Plasma's: since
-Plasma 6.8.0, `applyScheme()` writes `[Colors:Header][Inactive]` as a copy of the scheme's active `[Colors:Window]`
-(tinted when the scheme tints), not the scheme's own Header Inactive values; the inactive input roles stay, filled
-from what kdeglobals holds.
+Plasma 6.8.0, `applyScheme()` writes `[Colors:Header][Inactive]`, in a scheme that does not tint, as a copy of the
+scheme's active `[Colors:Window]`, not the scheme's own Header Inactive values; in a tinting scheme it writes every
+set's `[Inactive]` values, Header's included, as the scheme's own tinted toward the accent; and under the
+accent-coloured title bar option it then writes Header's inactive background and foreground from Window's background
+tinted toward the accent (`colorsapplicator.cpp:247-284`). The inactive input roles stay, filled from what kdeglobals
+holds.
 
 **R25.2 — KDE and contrast (confirms R2.3).** One KDE row (K2.23†, the date picker) has code that drops
 hard-coded colours under a high-contrast preference. Plasma reports none (the KDE portal's appearance keys are
@@ -1034,6 +1042,9 @@ expressions may name, with the functions the platforms use over them (`pick(hash
 hash and list, cited). Also element data: a colour the application chose
 for the element that derived values follow (a badge's custom colour, Q2.26), the width of a character of the part's
 font as the toolkit measures it (GTK's `max-width-chars`, KMessageBox's widths in characters, GN-1.283†, K-P3-7†),
+the font's own underline and strikeout position and thickness, from which every target toolkit draws those lines
+(Pango, Qt's `QFontMetrics`, AppKit's `NSFont`, DirectWrite, Android's `Paint`), so a decoration follows the user's
+font rather than one measured number (R10),
 and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
 declares it reads, so the query still cannot fail (R2.8); the connector supplies them and queries again when they
@@ -1130,6 +1141,12 @@ Amended in place after the specification's tenth check:
   port, and stated by a mapping palette itself (refused where it leaves one to the preset), as the accent-dependent
   roles are; their base is no longer "the active value".
 - R19: "of the ten projects" corrected to the seven projects behind the ten community presets.
+
+Amended in place after the specification's eleventh check:
+
+- R2.6, R25.1: what `applyScheme()` writes into `[Inactive]` groups stated once, from `colorsapplicator.cpp:247-284`.
+- R2.8: an operand that can be automatic is refused where arithmetic would need a number.
+- R25.3: the font's underline and strikeout metrics are element data, so decorations follow the font.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
