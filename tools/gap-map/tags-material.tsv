@@ -1,0 +1,275 @@
+MATERIAL	MAT-W1	4.1	[window]	C20,C25,C23	R,M,V	System-bar icon tone and navigation-bar contrast scrim unreadable
+MATERIAL	MAT-W2	4.1	[window]	C14,C20	P,M,V	Predictive-back and window transition motion absent
+MATERIAL	MAT-B1	4.1	[button]	C09,C07,C02,C12	P	Elevated, filled, tonal, outlined, text variants with own colours, outline, elevation
+MATERIAL	MAT-B2	4.1	[button]	C07,C08	P	Filled button hover, focus, pressed, disabled state colours missing
+MATERIAL	MAT-B3	4.1	[button]	C12,C07	P	Outlined button outline colour per state and disabled outline opacity
+MATERIAL	MAT-B4	4.1	[button]	C09,C07,C26	P	Text button own padding, transparent container, per-state label colour
+MATERIAL	MAT-B5	4.1	[button]	C07,C08,C02	P	Focus state layer, focus label colour and focus elevation
+MATERIAL	MAT-B6	4.1	[button]	C02,C07	P	Container elevation per state: rest, hover, focus, pressed, disabled
+MATERIAL	MAT-B7	4.1	[button]	C13,C07,C19	P	Button icon size, per-state icon colour, disabled icon opacity
+MATERIAL	MAT-B8	4.1	[button]	C26	P	Icon-dependent leading padding differs from label-only padding
+MATERIAL	MAT-B9	4.1	[button]	C10,C13,C18	P	Five Expressive sizes with height, icon size, gaps, outline, typescale
+MATERIAL	MAT-B10	4.1	[button]	C11,C09,C07	P	Round vs square shape, selected and pressed shapes
+MATERIAL	MAT-B11	4.1	[button]	C14,C11	P	Corner-size spring (damping, stiffness) on press
+MATERIAL	MAT-B12	4.1	[button]	C07,C08,C13	P	Toggle button unselected colour and selected/unselected state-layer, label, icon colours
+MATERIAL	MAT-B13	4.1	[button]	C14,C02	P	Elevation transition duration and easing
+MATERIAL	MAT-B15	4.1	[button]	C18	P	Label tracking and line height
+MATERIAL	MAT-I1	4.1	[input]	C12,C07	P	Focus, hover, disabled outline widths
+MATERIAL	MAT-I2	4.1	[input]	C12,C07	P	Disabled outline colour and opacity
+MATERIAL	MAT-I3	4.1	[input]	C13,C18,C07	P	Floating label font, per-state colour, padding
+MATERIAL	MAT-I4	4.1	[input]	C13,C12	P	Outline notch gap around floated label
+MATERIAL	MAT-I5	4.1	[input]	C13,C18,C07	P	Supporting text font, per-state colour, spacing
+MATERIAL	MAT-I6	4.1	[input]	C13	P,M,V	Trailing character counter
+MATERIAL	MAT-I7	4.1	[input]	C13,C07	P	Leading/trailing icon size, per-state colour, spacing
+MATERIAL	MAT-I8	4.1	[input]	C13	P,M	Prefix and suffix colours and spacing
+MATERIAL	MAT-I9	4.1	[input]	C07,C16,C13	P	Error outline, caret, text, label, helper, icon colours
+MATERIAL	MAT-I10	4.1	[input]	C07	P	Hover and focus input-text and label colours
+MATERIAL	MAT-I11	4.1	[input]	C09,C08,C11,C13,C07,C12	P	Filled text field container, state layer, top corners, active indicator
+MATERIAL	MAT-I12	4.1	[input]	C16	P,M,V	Caret width and blink timing
+MATERIAL	MAT-I13	4.1	[input]	C13	P,M	Selection handle shape and colour
+MATERIAL	MAT-I14	4.1	[input]	C14	P	Label float, notch and placeholder animation timings
+MATERIAL	MAT-I15	4.1	[input]	C18	P	Input text tracking and line height
+MATERIAL	MAT-I16	4.1	[text_area]	C26	M,V	Minimum rows/height and resize behaviour
+MATERIAL	MAT-C1	4.1	[checkbox]	C09,C07,C13	P	Radio ring and dot colours per state
+MATERIAL	MAT-C2	4.1	[checkbox]	C08,C13,C11	P	Circular state-layer halo size, shape, colour, opacity
+MATERIAL	MAT-C3	4.1	[checkbox]	C07,C13,C12	P	Checkbox selected container, mark, outline per hover/focus/pressed
+MATERIAL	MAT-C4	4.1	[checkbox]	C07,C12	P	Unselected outline colour and width per state
+MATERIAL	MAT-C5	4.1	[checkbox]	C07,C08,C13	P	Error state colours and layers for checkbox
+MATERIAL	MAT-C6	4.1	[checkbox]	C07,C13	P,M,V	Indeterminate dash mark geometry and colours
+MATERIAL	MAT-C7	4.1	[checkbox]	C07	P	Disabled outline, mark, container opacities per part
+MATERIAL	MAT-C8	4.1	[checkbox]	C14	P	Mark enter/exit and radio dot animation timings
+MATERIAL	MAT-C9	4.1	[checkbox]	C10,C26	P	48 px touch-target wrapper margin
+MATERIAL	MAT-M1	4.1	[menu]	C07	P	Selected menu item container, label, icon colours
+MATERIAL	MAT-M2	4.1	[menu]	C07,C08	P	Focus and pressed state layers and label colours
+MATERIAL	MAT-M3	4.1	[menu]	C13,C07,C19	P	Menu item icon colour per state, size, disabled opacity
+MATERIAL	MAT-M4	4.1	[menu]	C13,C18	P	Supporting text and shortcut font and colour
+MATERIAL	MAT-M5	4.1	[menu]	C13,C21	P	Submenu indicator and open/close hover delays
+MATERIAL	MAT-M6	4.1	[menu]	C13,C26	P,M	Menu divider thickness and margins
+MATERIAL	MAT-M7	4.1	[menu]	C26	P	Container top/bottom space as menu property
+MATERIAL	MAT-M8	4.1	[menu]	C26,C10	P,V	Minimum and maximum menu width
+MATERIAL	MAT-M9	4.1	[menu]	C14	P	Menu open/close reveal and stagger motion
+MATERIAL	MAT-M10	4.1	[menu]	C09,C11,C13,C05,C10,C26	P	Expressive menus: shapes, groups, vibrant styles, section labels, item height
+MATERIAL	MAT-M11	4.1	[menu]	C18	P	Menu label tracking and line height
+MATERIAL	MAT-T1	4.1	[tooltip]	C09,C13,C02,C11,C07	P	Rich tooltip subhead, actions, container, elevation, corner
+MATERIAL	MAT-T2	4.1	[tooltip]	C21	P	Auto-hide duration of tooltip
+MATERIAL	MAT-T3	4.1	[tooltip]	C14	P,M,V	Tooltip show/hide fade and scale motion
+MATERIAL	MAT-T4	4.1	[tooltip]	C26,C13	P,V	Anchor spacing and optional pointer caret
+MATERIAL	MAT-T5	4.1	[tooltip]	C10	P	Plain tooltip minimum height
+MATERIAL	MAT-T6	4.1	[tooltip]	C21,C25	R	Long-press delay that shows touch tooltip
+MATERIAL	MAT-T7	4.1	[tooltip]	C18	P	Tooltip tracking and line height
+MATERIAL	MAT-SC1	4.1	[scrollbar]	C21,C25	R,M	Scroll indicator fade delay and duration
+MATERIAL	MAT-SC2	4.1	[scrollbar]	C14	M,V	Stretch overscroll deformation and spring-back
+MATERIAL	MAT-S1	4.1	[slider]	C13,C11,C07,C10	P	Bar handle shape and size changing per state
+MATERIAL	MAT-S2	4.1	[slider]	C13,C26	P	Gap between handle and track halves
+MATERIAL	MAT-S3	4.1	[slider]	C11,C13,C10	P	Track corner radii, inner/outer sizes, active/inactive heights
+MATERIAL	MAT-S4	4.1	[slider]	C13,C07	P	Stop indicator dots size, colour, shape, spacing
+MATERIAL	MAT-S5	4.1	[slider]	C13,C07	P	Tick colours and opacities per track state
+MATERIAL	MAT-S6	4.1	[slider]	C13,C18,C14,C23	P	Value indicator container, font, distance, motion, reduced-motion
+MATERIAL	MAT-S7	4.1	[slider]	C08,C13	P	Halo size, colour, opacity per hover/focus/pressed
+MATERIAL	MAT-S8	4.1	[slider]	C07	P	Focus and pressed handle and track colours
+MATERIAL	MAT-S9	4.1	[slider]	C02	P	Handle and track elevation and shadow colour
+MATERIAL	MAT-S10	4.1	[slider]	C12,C13	P	Outline round overlapping range-slider handle
+MATERIAL	MAT-S11	4.1	[slider]	C10,C13,C11	P	Expressive xsmall to xlarge track, handle, shapes, inset icon
+MATERIAL	MAT-S12	4.1	[slider]	C09,C26	P,M,V	Range, centred, vertical slider layouts
+MATERIAL	MAT-P1	4.1	[progress_bar]	C13,C09	P	Wavy indicator amplitude and wavelength
+MATERIAL	MAT-P2	4.1	[progress_bar]	C13,C26	P	Gap between active indicator and track
+MATERIAL	MAT-P3	4.1	[progress_bar]	C13	P	End stop dot size, colour, shape, space
+MATERIAL	MAT-P4	4.1	[progress_bar]	C10,C09	P	Default and thick thickness variants
+MATERIAL	MAT-P5	4.1	[progress_bar]	C11,C13	P	Indicator shape separate from track shape
+MATERIAL	MAT-P6	4.1	[progress_bar]	C14,C05	P	Indeterminate and determinate animation timings, four-colour set
+MATERIAL	MAT-P7	4.1	[progress_bar]	C13	M,V	Buffer bar and its dots
+MATERIAL	MAT-TB1	4.1	[tab]	C09,C13,C07	P	Secondary tabs with full-width indicator and own colours
+MATERIAL	MAT-TB2	4.1	[tab]	C11,C13	P	Indicator corner radii and length rule
+MATERIAL	MAT-TB3	4.1	[tab]	C07,C08	P	Focus, pressed, active-hover layers and label colours
+MATERIAL	MAT-TB4	4.1	[tab]	C13,C07,C26	P	Tab icon size, per-state colour, height, icon-label gap
+MATERIAL	MAT-TB5	4.1	[tab]	C13,C12	P	Divider line under tab row
+MATERIAL	MAT-TB6	4.1	[tab]	C14,C23	P	Indicator slide timing and reduced-motion variant
+MATERIAL	MAT-TB7	4.1	[tab]	C26	P,V	Leading inset of scrollable tab row
+MATERIAL	MAT-TB8	4.1	[tab]	C18	P	Tab label tracking and line height
+MATERIAL	MAT-SB1	4.1	[sidebar]	C13,C11	P	Active indicator pill shape and size
+MATERIAL	MAT-SB2	4.1	[sidebar]	C07,C08	P	Active/inactive hover, focus, pressed layers, icon, label colours
+MATERIAL	MAT-SB3	4.1	[sidebar]	C13,C07	P	Drawer icon colours active and inactive
+MATERIAL	MAT-SB4	4.1	[sidebar]	C13,C18	P	Section headline font and colour
+MATERIAL	MAT-SB5	4.1	[sidebar]	C13,C18	P	Trailing badge label font and colour
+MATERIAL	MAT-SB6	4.1	[sidebar]	C13,C02,C09	P	Modal drawer container, elevation, scrim
+MATERIAL	MAT-SB7	4.1	[sidebar]	C11,C26	P	Container width, height, end-only corner rounding
+MATERIAL	MAT-SB8	4.1	[sidebar]	C18,C07	P	Different label weight for active item
+MATERIAL	MAT-SB9	4.1	[sidebar]	C14	P,V	Drawer slide and scrim fade timings
+MATERIAL	MAT-TA1	4.1	[toolbar]	C07,C02,C14	P,M	On-scroll container colour, elevation and transition
+MATERIAL	MAT-TA2	4.1	[toolbar]	C13	P	Leading and trailing icon colours
+MATERIAL	MAT-TA3	4.1	[toolbar]	C09,C10,C18,C26	P	Centred, medium, large bars: heights, fonts, alignment, collapse
+MATERIAL	MAT-TA4	4.1	[toolbar]	C13,C18	P	Subtitle font and colour
+MATERIAL	MAT-TA5	4.1	[toolbar]	C13	P	App bar avatar size and shape
+MATERIAL	MAT-TA6	4.1	[toolbar]	C13,C09	P	Embedded search field in app bar
+MATERIAL	MAT-TA7	4.1	[toolbar]	C18	P	Headline tracking and line height
+MATERIAL	MAT-L1	4.1	[list]	C13,C18,C10	P	Two/three-line heights, overline and supporting text styles
+MATERIAL	MAT-L2	4.1	[list]	C13	P	Leading icon, avatar, image, video size, shape, colour
+MATERIAL	MAT-L3	4.1	[list]	C13,C07	P	Trailing icon size and selected/unselected colours
+MATERIAL	MAT-L4	4.1	[list]	C07,C08,C02	P	Focus, pressed, dragged, disabled layers, colours, dragged elevation
+MATERIAL	MAT-L5	4.1	[list]	C07,C08	P	Selected item container and selected-by-state layers and colours
+MATERIAL	MAT-L6	4.1	[list]	C13,C26	P	Divider colour, thickness, insets, item spacing
+MATERIAL	MAT-L7	4.1	[list]	C26	P	Gap between leading element and text
+MATERIAL	MAT-L8	4.1	[list]	C09,C11,C07	P	Segmented list, per-state item shapes
+MATERIAL	MAT-L9	4.1	[list]	C13,C07	P	Expandable item expanded colour and chevron container
+MATERIAL	MAT-L10	4.1	[list]	C07,C13	P	Reorder dragged item and drop-zone colours
+MATERIAL	MAT-L11	4.1	[list]	C13	P	Swipe-reveal action colours and shapes
+MATERIAL	MAT-L12	4.1	[list]	C13,C07	P	Data table header hover, sort icon, footer
+MATERIAL	MAT-L13	4.1	[list]	C07,C12,C11	P	Table row selected colours, outline, container shape
+MATERIAL	MAT-L14	4.1	[list]	C18	P	List label tracking and line height
+MATERIAL	MAT-PO1	4.1	[popover]	C01,C02	P	Level-2 shadow layers and surface-tint layer
+MATERIAL	MAT-SP1	4.1	[splitter]	C13,C11	P	Drag handle width, length, container, shape
+MATERIAL	MAT-SP2	4.1	[splitter]	C07,C08,C02	P	Drag handle focus, pressed colours, layers, elevation
+MATERIAL	MAT-SP3	4.1	[splitter]	C26	P	Pane spacer per window size class
+MATERIAL	MAT-D1	4.1	[separator]	C09,C26	P	Inset, inset-start, inset-end divider variants
+MATERIAL	MAT-TS1	4.1	[text_scale]	C18	P	Eleven of fifteen typescale roles have no slot
+MATERIAL	MAT-TS2	4.1	[text_scale]	C18	P	Letter spacing per role
+MATERIAL	MAT-TS3	4.1	[text_scale]	C18	P	Brand vs plain typeface per role, weight names
+MATERIAL	MAT-TS4	4.1	[text_scale]	C18,C09	P	Fifteen emphasized text roles (Expressive)
+MATERIAL	MAT-TS5	4.1	[text_scale]	C18	P	Per-role variable-font axes
+MATERIAL	MAT-LA1	4.1	[layout]	C26	P,V	Window size class margins, pane spacing, breakpoints
+MATERIAL	MAT-SW1	4.1	[switch]	C07,C13	P	Handle grows while pressed
+MATERIAL	MAT-SW2	4.1	[switch]	C07,C13	P	Handle colours per selection and hover/focus/pressed
+MATERIAL	MAT-SW3	4.1	[switch]	C13,C07,C10	P	Handle icons, per-state colours, size, larger handle
+MATERIAL	MAT-SW4	4.1	[switch]	C08,C13,C07	P	State-layer halo size, shape, colour per state
+MATERIAL	MAT-SW5	4.1	[switch]	C07,C12	P	Focus/pressed track and track outline colours
+MATERIAL	MAT-SW6	4.1	[switch]	C07	P	Disabled handle colours differ per selection
+MATERIAL	MAT-SW7	4.1	[switch]	C02,C13	P	Handle elevation and shadow colour
+MATERIAL	MAT-SW8	4.1	[switch]	C14	P	Handle travel overshoot, size change, fade, icon timings
+MATERIAL	MAT-SW9	4.1	[switch]	C15	P	Switch-specific focus ring offset
+MATERIAL	MAT-DG1	4.1	[dialog]	C26	P	Separate headline, content, action paddings and gaps
+MATERIAL	MAT-DG2	4.1	[dialog]	C13,C26	P,M	Hero icon colour, centred headline with icon
+MATERIAL	MAT-DG3	4.1	[dialog]	C13,C07,C08,C18	P	Action label colour per state, font, layers
+MATERIAL	MAT-DG4	4.1	[dialog]	C13,C12	P	Scroll dividers colour and height
+MATERIAL	MAT-DG6	4.1	[dialog]	C14	P	Dialog open/close container, content, scrim motion
+MATERIAL	MAT-DG7	4.1	[dialog]	C13,C18	P	Subhead font and colour
+MATERIAL	MAT-DG8	4.1	[dialog]	C26	P	Window-edge margin at maximum dialog size
+MATERIAL	MAT-DG9	4.1	[dialog]	C18	P	Dialog headline and body tracking, line height
+MATERIAL	MAT-SN1	4.1	[spinner]	C13	P	Circular track colour, thickness, indicator gap
+MATERIAL	MAT-SN2	4.1	[spinner]	C13,C09	P	Wavy circular amplitude and wavelength
+MATERIAL	MAT-SN3	4.1	[spinner]	C10,C09	P	Thick circular variant sizes and thicknesses
+MATERIAL	MAT-SN4	4.1	[spinner]	C11,C13	P	Stroke cap shape of indicator
+MATERIAL	MAT-SN5	4.1	[spinner]	C05,C13	P	Four indicator colours for four-colour variant
+MATERIAL	MAT-SN6	4.1	[spinner]	C14	P	Indeterminate arc, rotation timings and easing
+MATERIAL	MAT-CB1	4.1	[combo_box]	C13,C09,C07	P	Select needs all text-field parts and filled variant
+MATERIAL	MAT-CB2	4.1	[combo_box]	C13,C07	P	Arrow icon colour per state
+MATERIAL	MAT-CB3	4.1	[combo_box]	C07,C14,C13	P,M	Open state arrow rotation, motion, menu selected colour
+MATERIAL	MAT-SG1	4.1	[segmented_control]	C13,C14	P	Selected check icon size, colour, animation
+MATERIAL	MAT-SG2	4.1	[segmented_control]	C07,C08	P	Selected/unselected hover/focus/pressed layers, label, icon colours
+MATERIAL	MAT-SG3	4.1	[segmented_control]	C11	P	Per-corner radius, outer ends only
+MATERIAL	MAT-SG4	4.1	[segmented_control]	C07,C12	P	Disabled outline and icon colour and opacity
+MATERIAL	MAT-CA1	4.1	[card]	C09,C02,C12	P	Filled, elevated, outlined variants with colour, outline, elevation
+MATERIAL	MAT-CA2	4.1	[card]	C07,C08,C02,C12	P	Interactive state layers, per-state elevation and outline, disabled
+MATERIAL	MAT-CA3	4.1	[card]	C13	P	Card icon colour and size
+MATERIAL	MAT-EX1	4.1	[expander]	C07,C13,C11	P	Expanded fill, chevron container colours, shapes
+MATERIAL	MAT-N1	4.2	FAB	C24,C09,C02,C07,C08,C10,C15,C11,C05	P	Whole FAB: sizes, colour styles, elevation, states, focus
+MATERIAL	MAT-N2	4.2	FAB	C24,C09,C02,C07,C08,C10,C13,C18	P	Extended FAB with label, icon spacing, colour styles
+MATERIAL	MAT-N3	4.2	FAB	C24,C09,C13,C11,C14,C05	P	Expressive FAB menu: close button, items, colours, morph
+MATERIAL	MAT-N4	4.2	icon button	C24,C09,C07,C08,C12,C13,C15	P	Icon button variants, toggle colours, state layers
+MATERIAL	MAT-N5	4.2	icon button	C24,C10,C11,C14,C26	P	Expressive icon button sizes, widths, shapes, spring
+MATERIAL	MAT-N6	4.2	button group/toggle group	C24,C10,C11,C26,C14	P	Button group spacing, connected inner corners, press width spring
+MATERIAL	MAT-N7	4.2	split button	C24,C10,C11,C13,C26,C14	P	Split button spacing, corner sizes, trailing icon rotation
+MATERIAL	MAT-N8	4.2	menu button	C24,C09,C13,C07,C11	P	Button with trailing dropdown icon, per-state colours
+MATERIAL	MAT-N9	4.2	chip	C24,C09,C10,C11,C02,C12,C13,C07,C08,C15	P	Four chip kinds with containers, icons, avatar, states
+MATERIAL	MAT-N10	4.2	badge	C24,C13,C10,C11,C18,C26	P,V	Badge dot and label colour, size, placement
+MATERIAL	MAT-N11	4.2	navigation/app bar	C24,C02,C10,C11,C05	P	Bottom app bar container, height, shape, elevation
+MATERIAL	MAT-N12	4.2	bottom tab bar	C24,C13,C07,C11,C18,C14,C26	P	Navigation bar indicator, item colours, label, badge
+MATERIAL	MAT-N13	4.2	navigation rail	C24,C13,C07,C10,C11,C26,C02	P	Navigation rail container, indicator, colours, expanded variants
+MATERIAL	MAT-N14	4.2	search field	C24,C13,C18,C11,C02,C26,C14	P	Search bar container, text, icons, avatar, Expressive
+MATERIAL	MAT-N15	4.2	search field	C24,C13,C02,C11,C12,C26	P	Search view docked and full-screen container, header, divider
+MATERIAL	MAT-N16	4.2	date picker	C24,C13,C10,C11,C07,C08,C18	P	Date picker container, day cells, range band, year cells
+MATERIAL	MAT-N17	4.2	time picker	C24,C13,C10,C11,C07,C18	P	Time picker dial, selector, period selector, input fields
+MATERIAL	MAT-N18	4.2	carousel	C24,C02,C11,C12,C08,C26,C14	P,M,V	Carousel item container, spacing, masked shape change
+MATERIAL	MAT-N19	4.2	sheet/bottom sheet	C24,C02,C11,C13,C15,C14	P,V	Bottom sheet container, handle, elevation, drag motion
+MATERIAL	MAT-N20	4.2	sheet/bottom sheet	C24,C10,C11,C13,C18,C08,C02	P	Side sheet container, size, headline, actions, elevation
+MATERIAL	MAT-N21	4.2	sheet/bottom sheet	C24,C02,C11	P	Floating sheet container, elevation, shape, tint
+MATERIAL	MAT-N22	4.2	toast/snackbar	C24,C10,C11,C02,C13,C18,C08,C21,C14	P,M	Snackbar container, text, action, close, durations, motion
+MATERIAL	MAT-N23	4.2	banner/inline message	C24,C09,C02,C11,C10,C13,C18,C26	P	Banner container, heights, text, icon, actions, styles
+MATERIAL	MAT-N24	4.2	loading indicator	C24,C13,C11,C09,C14	P,M,V	Expressive loading indicator, container, morphing shapes, timing
+MATERIAL	MAT-N25	4.2	navigation/app bar	C24,C09,C02,C10,C11,C13,C26,C14	P	Expressive docked and floating toolbars, FAB, motion
+MATERIAL	MAT-N26	4.2	full-screen dialog	C24,C02,C11,C13,C07,C08,C12	P	Full-screen dialog container, header, action bar, divider
+MATERIAL	MAT-N27	4.2	autocomplete	C24,C13,C09,C07	P	Text field with attached menu, all parts
+MATERIAL	MAT-N28	4.2	pull-to-refresh	C24,C13,C10,C02,C14	P,M,V	Refresh indicator container, size, elevation, threshold, motion
+MATERIAL	MAT-X1	4.3	colour roles	C05	R,P	Tertiary, containers, fixed, surface ladder, inverse, outline-variant, scrim roles
+MATERIAL	MAT-X2	4.3	shadows	C02	P	Six elevation levels and per-state component level
+MATERIAL	MAT-X3	4.3	shadows	C01,C25	R,P,M,V	Key and ambient shadow layers; Android light-source shadow attributes
+MATERIAL	MAT-X4	4.3	shadows	C02,C07	P	Hover, focus, pressed, dragged, lowered elevation per component
+MATERIAL	MAT-X5	4.3	shadows	C01,C05	P	Shadow colour per component
+MATERIAL	MAT-X6	4.3	materials	C02,C04	P,V	Surface tint colour and tint layer on elevated containers
+MATERIAL	MAT-X7	4.3	motion	C14,C02	P	Shadow transition duration and easing
+MATERIAL	MAT-X8	4.3	motion	C08,C04,C07	P	State-layer opacities and recompositing; focus and dragged states
+MATERIAL	MAT-X9	4.3	motion	C08,C14,C27	P,M	Ripple growth, delays, fade parameters
+MATERIAL	MAT-X10	4.3	focus	C15,C14,C23,C11	P	Inner offset, per-component shape, animation, reduced-motion form
+MATERIAL	MAT-X11	4.3	shape	C11	P	Shape scale steps, per-corner families, full radius
+MATERIAL	MAT-X12	4.3	shape	C11,C14,C07	P,V	State-driven shape morphing, springs, shape library
+MATERIAL	MAT-X13	4.3	motion	C14	P	Duration, easing, spring tokens and motion schemes
+MATERIAL	MAT-X14	4.3	motion	C14	P,M,V	Container transform, shared axis, fade-through patterns
+MATERIAL	MAT-X16	4.3	typography	C18	P	Tracking, line height, variable axes, features, brand typeface
+MATERIAL	MAT-X17	4.3	colour roles	C25,C05	R,V	Dynamic colour scheme read from system, variants
+MATERIAL	MAT-X18	4.3	accessibility	C06,C23,C25	R,P	Medium and high contrast role sets; contrast level reader
+MATERIAL	MAT-X19	4.3	accessibility	C23,C18,C25	R	Non-linear font scaling and bold-text adjustment
+MATERIAL	MAT-X20	4.3	accessibility	C23,C14,C25	R,P,V	Per-animation reduced-motion changes and animator scale
+MATERIAL	MAT-X21	4.3	accessibility	C23	P	Forced-colours rules: parts switching to system colours
+MATERIAL	MAT-X22	4.3	size variants	C10,C26	P,V	Touch target, density scale, Expressive size ladder
+MATERIAL	MAT-X23	4.3	scrim	C04,C05	P	Modal backdrop colour and opacity across surfaces
+MATERIAL	MAT-X24	4.3	colour roles	C07,C04	P	Per-part disabled opacities for container, label, icon, outline
+MATERIAL	MAT-X25	4.3	timings	C21,C25	R,P,V	Tooltip, snackbar, submenu, ripple, long-press, blink, fade timings
+MATERIAL	MAT-X27	4.3	icons	C19,C13	P,V	Symbols axes, filled-when-active icons, per-state icon colours
+MATERIAL	MAT-X29	4.3	size variants	C07,C08,C02	P	Dragged state layer and elevation
+MATERIAL	MAT-X31	4.3	pointer	C22,C10	P,V	Pointer-precision-dependent sizing
+MATERIAL	MAT-W4†	4.1	[window]	C20,C01,C07,C13,C25	R,P,M,V	Desktop-windowing caption bar, buttons, focus states, outline, shadow
+MATERIAL	MAT-W5†	4.1	[window]	C20,C11,C25	R,M,V	Display and freeform-window corner radii per corner
+MATERIAL	MAT-I17†	4.1	[input]	C17,C13,C01,C11	P,M,V	Text magnifier size, corner, elevation, zoom, offset
+MATERIAL	MAT-I18†	4.1	[input]	C17,C13	P,M,V	IME composition underline and spell-check underlines
+MATERIAL	MAT-I19†	4.1	[input]	C13,C21,C25	P,R,V	Password field glyph, last-character reveal timing, show-passwords setting
+MATERIAL	MAT-SC3†	4.1	[scrollbar]	C21,C14,C26,C04,C13	P	Compose M3 visual-only scrollbar: fade delay and duration, track insets, max thumb fraction
+MATERIAL	MAT-SC4†	4.1	[scrollbar]	C14,C13,C25	R,M,V	Pre-Android-12 glow overscroll colour, shape, fade
+MATERIAL	MAT-TA8†	4.1	[toolbar]	C13,C26	P,V	App bar overflow indicator and menu
+MATERIAL	MAT-DG10†	4.1	[dialog]	C26	P	Dialog actions end-aligned, wrap to a column with confirm first, row and column gaps
+MATERIAL	MAT-N30†	4.2	edit menu	C24,C13,C01,C11	P,M	Floating text-selection toolbar drawn by the framework
+MATERIAL	MAT-N31†	4.2	picker wheel	C24,C13,C14,C18,C07,C11	P	Scroll field wheel picker: container, value colours, interpolated text style, snap motion
+MATERIAL	MAT-X32†	4.3	timings	C21,C25	R,V	Touch slop, paging slop, double-tap slop, wheel scroll factor
+MATERIAL	MAT-X33†	4.3	pointer	C22,C07,C25	P,R,V	Cursor per component and state; Android pointer size and colour settings
+MATERIAL	MAT-X34†	4.3	focus	C15,C08,C12,C09	P	Keyboard-only focus ring rule; Compose opacity vs inset two-stroke focus styles
+MATERIAL	MAT-X35†	4.3	accessibility	C23,C25,C06	R,M,V	High-contrast text, colour inversion and correction, force dark
+MATERIAL	MAT-X36†	4.3	typography	C18,C25	R,P,V	Platform default sans and monospace typefaces
+MATERIAL	MAT-X37†	4.3	layout	C26,C11	P	Optical centring of content in asymmetric shapes
+MATERIAL	MAT-X38†	4.3	layout	C26	P,V	Scaffold placement of FAB and snackbar
+MATERIAL	MAT-SF01†	4.1	[dialog]	C26	P,M	Dialog: position
+MATERIAL	MAT-SF02†	4.1	[dialog]	C26,C10	P,V	Dialog: when it becomes full-screen (the breakpoint)
+MATERIAL	MAT-SF03†	4.2	sheet/bottom sheet	C26,C24	P	Modal bottom sheet: position on wide windows
+MATERIAL	MAT-SF04†	4.3	placement	C26	P	Levitated pane (adaptive scaffolds)
+MATERIAL	MAT-RL01†	4.2	wrap box	C26,C24	P,V	Chip set (md-chip-set)
+MATERIAL	MAT-FM01†	4.3	typography	C18,C25	P,R,M	Emoji font
+MATERIAL	MAT-FM02†	4.3	typography	C18,C25	P,R,M	Fallback chain per language
+MATERIAL	MAT-FM03†	4.3	mirroring	C26,C11,C25	R,P,M	Right-to-left layout
+MATERIAL	MAT-FM04†	4.3	mirroring	C19,C26	P,M	Icons in right-to-left
+MATERIAL	MAT-P3-1†	4.1	[window]	C20,C14,C22,C26	P,M(review2026-10-28:markedshell-drawn;scopemainmap§6.1)	Window (Android desktop windowing): resizing, snapping, window states
+MATERIAL	MAT-P3-2†	4.1	[window]	C20,C13,C11,C01,C07	P,M(review2026-10-28:markedshell-drawn)	Window (Android desktop windowing): maximise menu and app handle
+MATERIAL	MAT-P3-3†	4.1	[window]	C20,C13,C14,C01,C11	P,M(review2026-10-28:markedshell-drawn;thecolours'filesettled)	Window (Android split screen): the divider
+MATERIAL	MAT-P3-4†	4.1	[window]	C20,C14,C21	R,M(review2026-10-28:markedsystem-drawn)	Window: system bars hidden (immersive)
+MATERIAL	MAT-P3-5†	4.3	layout	C26,C20,C25	R,P,M(review2026-10-28:whethertheScaffold'sinsetsincludethecutoutsettled)	Display cutout and safe area
+MATERIAL	MAT-P3-6†	4.1	[window]	C20,C13,C14,C25	P,M,V(review2026-10-28:markedshell-drawn,thedrawingclasscited)	Window: the launch splash screen (Android 12+)
+MATERIAL	MAT-P3-7†	4.1	[input]	C07,C13,C04	P,M	Input: autofilled highlight
+MATERIAL	MAT-P3-8†	4.1	[checkbox]	C13,C12	P(review2026-10-28:partialgap,thestrokewidthisinthemodel)	Checkbox: the check mark's geometry
+MATERIAL	MAT-P3-9†	4.1	[combo_box]	C26,C10	P	Select and autocomplete: the menu's size and alignment
+MATERIAL	MAT-P3-10†	4.1	[menu]	C26	P(review2026-10-28:material-web'sfittingrulesettled)	Menu: placement against its anchor
+MATERIAL	MAT-P3-11†	4.1	[menu]	C13,C05,C07,C01,C11	P,M	Text context menu (secondary click on text)
+MATERIAL	MAT-P3-12†	4.1	[segmented_control]	C26,C10	P(review2026-10-28:material-web'sequalwidthscomefromtheset'sgrid,citationcorrected)	Segmented button: the segments' widths
+MATERIAL	MAT-P3-13†	4.1	[layout]	C26,C10	P	Adaptive panes: how many, how wide
+MATERIAL	MAT-P3-14†	4.3	timings	C21,C25	R	Key repeat
+MATERIAL	MAT-P3-15†	4.3	pointer	C22,C21	P,M(review2026-10-28:settledfromAOSPcode;themirrorcitationreplaced)	Pointer hidden while typing
+MATERIAL	MAT-P3-16†	4.3	motion	C14,C21,C25	R,P,M	Scroll physics: the fling and its deceleration
+MATERIAL	MAT-P3-17†	4.3	size variants	C10,C25	R,V	Display density
+MATERIAL	MAT-P3-18†	4.3	motion	C14	R,P,M	Switching between light and dark
+MATERIAL	MAT-P3-19†	4.3	size variants	C09,C25	P	Which Material look: generation, implementation, version
+MATERIAL	MAT-P3-20†	4.2	rich text view	C18,C24	P,M	HTML imported into an AnnotatedString
+MATERIAL	MAT-P3-21†	4.1	[input]	C16,C25	P,R,M	Caret: when it is drawn; the blink setting
+MATERIAL	MAT-P4-1†	4.1	[window]	C20,C13,C11,C01,C14,C21	P,M,V	Window (Android): picture-in-picture
+MATERIAL	MAT-P4-2†	4.3	placement	C26,C14,C25	R,P,M,V	The app window and the on-screen keyboard
+MATERIAL	MAT-P4-3†	4.3	pointer	C22,C07	P,M,V	Pointer during a drag and drop
+MATERIAL	MAT-P4-4†	4.3	accessibility	C23,C06,C25	P,M,V	Display colour transforms beyond inversion and correction
+MATERIAL	MAT-P4-5†	4.3	accessibility	C23,C21,C14,C25	P,R,M,V	Screen flash for notifications
+MATERIAL	MAT-P4-6†	4.1	[tab]	C26,C14,C10	P	Tabs: overflow by scrolling
+MATERIAL	MAT-P4-7†	4.2	toolbars (MAT-N25)	C14,C02,C24	P,M	Floating toolbar: content entering and leaving on expand / collapse
+MATERIAL	MAT-P4-8†	4.3	drag and drop	C14,C07	P,M	Drop outcome on the drag shadow
+MATERIAL	MAT-P4-9†	4.1	[tooltip]	C26	P	Tooltip: placement against its anchor

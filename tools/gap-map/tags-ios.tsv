@@ -1,0 +1,387 @@
+IOS	D-1	4.1	[defaults]	C18	P	Letter spacing (tracking) per point size
+IOS	D-2	4.1	[defaults]	C18	P,M	Optical-size font variants (SF Pro Text/Display)
+IOS	D-3	4.1	[defaults]	C18	R	System font design and width axes
+IOS	D-4	4.1	[defaults]	C18	R	Line height per widget font role
+IOS	D-5	4.1	[defaults]	C18	R,P	Per-style Dynamic Type binding and non-linear ramp instead of fixed size
+IOS	D-6	4.1	[defaults]	C18	R,V	Tight/loose leading variants
+IOS	D-7	4.1	[defaults]	C18	P	Emphasized weight per text style
+IOS	D-8	4.1	[defaults]	C18	R,M,V	OpenType features such as monospaced digits
+IOS	D-9	4.1	[defaults]	C05	R,P	Quaternary label colour; tertiary label conflated with disabled text
+IOS	D-10	4.1	[defaults]	C05	R	Four system fill colours missing
+IOS	D-11	4.1	[defaults]	C05	R,P	Tertiary and grouped background hierarchy colours
+IOS	D-12	4.1	[defaults]	C05	R	Translucent vs opaque separator colours
+IOS	D-13	4.1	[defaults]	C05	R,P	System colour palette beyond five roles, plus greys
+IOS	D-14	4.1	[defaults]	C06	R	Elevated-level variant of background colours
+IOS	D-15	4.1	[defaults]	C06,C23	R,P	Increased-contrast variant of every dynamic colour
+IOS	D-16	4.1	[defaults]	C06	R,M	Dimmed tint adjustment mode colours
+IOS	D-17	4.1	[defaults]	C25,C28	R,P	Wide-gamut (Display P3) colour readout
+IOS	D-18	4.1	[defaults]	C15	R,M	Keyboard focus halo shape and position
+IOS	D-19	4.1	[defaults]	C19	R	Symbol scale and weight per context
+IOS	D-20	4.1	[defaults]	C07	M	Disabled rendering differs per control
+IOS	TS-1	4.1	[text_scale]	C18	P,R	Seven of eleven iOS text styles missing
+IOS	TS-2	4.1	[text_scale]	C18,C23	P,R	Per-content-size-category text tables, xSmall to AX5
+IOS	TS-3	4.1	[text_scale]	C18,C23	R	Bold Text weights per text style
+IOS	TS-4	4.1	[text_scale]	C18	R,V	extraLargeTitle text styles
+IOS	W-1	4.1	[window]	C20	R,M	iPadOS 26 window controls and style variants
+IOS	W-2	4.1	[window]	C20,C01	M	Stage Manager window radius, shadow layers, grabber, inactive look
+IOS	W-3	4.1	[window]	C20	M	Multitasking control at top centre of scene
+IOS	W-4	4.1	[window]	C20,C06	R,M	Inactive-scene appearance of selection, tint and bars
+IOS	W-5	4.1	[window]	C20	R	Status bar content style choice
+IOS	W-6	4.1	[window]	C20,C11	M	Display corner radius as outermost container
+IOS	W-7	4.1	[window]	C26	R	Safe-area insets
+IOS	W-9	4.1	[window]	C20	R,M,V	Scene title and subtitle in iPad title bar
+IOS	B-1	4.1	[button]	C09	R,M	Configuration styles (tinted, gray, filled, bordered...) beyond plain/primary
+IOS	B-2	4.1	[button]	C09,C03	R,M	Glass button styles and press response
+IOS	B-3	4.1	[button]	C10	R,M	Mini/small/medium/large sizes with fonts, insets, radius
+IOS	B-4	4.1	[button]	C11	R,M	Corner styles including dynamic and capsule
+IOS	B-5	4.1	[button]	C07	M	Pressed look of plain button is label alpha dim
+IOS	B-6	4.1	[button]	C07,C09	M	Pressed state per button style and fade-out
+IOS	B-7	4.1	[button]	C07	M	Pressed plus selected combination
+IOS	B-8	4.1	[button]	C13	R,M	Subtitle part font, colour and title padding
+IOS	B-9	4.1	[button]	C13,C26	R	Image placement and symbol configuration
+IOS	B-10	4.1	[button]	C13,C07	R,M	Loading state with spinner replacing image
+IOS	B-11	4.1	[button]	C09	R,M	Role variants: destructive, cancel, SwiftUI roles
+IOS	B-12	4.1	[button]	C09,C13	R,M	System button types: close, info, contact add
+IOS	B-13	4.1	[button]	C18,C09	M	Font weight per button style
+IOS	B-14	4.1	[button]	C07,C09	M	Disabled look per style
+IOS	B-15	4.1	[button]	C23	M	Button Shapes accessibility variant
+IOS	B-16	4.1	[button]	C14,C19	R,M	Symbol content transition on image change
+IOS	B-17	4.1	[button]	C22	M	iPad pointer hover lift/highlight effect
+IOS	I-1	4.1	[input]	C09,C12	R,M	Border style variants none/line/bezel/roundedRect
+IOS	I-2	4.1	[input]	C13	R,M	Clear button part and visibility modes
+IOS	I-3	4.1	[input]	C13,C26	R,M	Leading/trailing overlay views and insets
+IOS	I-4	4.1	[input]	C17	M	Marked text (IME) underline and background
+IOS	I-5	4.1	[input]	C17	M	Spelling and autocorrection underline
+IOS	I-6	4.1	[input]	C13	M	Inline prediction ghost text colour
+IOS	I-7	4.1	[input]	C18	R	Minimum font size when shrinking to fit
+IOS	TA-1	4.1	[text_area]	C09,C11,C12	R,M	Text view border style, radius and colour
+IOS	TA-2	4.1	[text_area]	C17,C14	R,M	Find-and-replace match highlights and bounce
+IOS	TA-3	4.1	[text_area]	C17	R,M	Text highlight styles
+IOS	TA-4	4.1	[text_area]	C14	R,M	Writing Tools in-text glow animation
+IOS	TA-5	4.1	[text_area]	C13	R	Data-detector link text look
+IOS	CK-1	4.1	[checkbox]	C13	R,M	Circular multiselect indicator and checkmark-in-circle glyph, no square checkbox
+IOS	MN-1	4.1	[menu]	C03	M	Menu background blur or glass material
+IOS	MN-2	4.1	[menu]	C01	M	Menu shadow layers
+IOS	MN-3	4.1	[menu]	C26	M	Menu min/max width and maximum height
+IOS	MN-4	4.1	[menu]	C13	M	Item subtitle font and colour
+IOS	MN-5	4.1	[menu]	C13,C26	M,V	Trailing icon side
+IOS	MN-6	4.1	[menu]	C07,C13	R,M	Checked and mixed state glyphs
+IOS	MN-7	4.1	[menu]	C09	R,M	Destructive red items
+IOS	MN-8	4.1	[menu]	C07	M	Touch-drag highlight distinct from hover
+IOS	MN-9	4.1	[menu]	C13	M	Two separator kinds, hairline and thick group
+IOS	MN-10	4.1	[menu]	C13	M	Menu title header font, colour, padding
+IOS	MN-11	4.1	[menu]	C13,C14	M	Submenu chevron, inline expansion and animation
+IOS	MN-12	4.1	[menu]	C09,C13	R,P,M	Element-size rows and palette tiles
+IOS	MN-13	4.1	[menu]	C13	M	Keyboard-shortcut column
+IOS	MN-14	4.1	[menu]	C14	M	Open/close spring or glass morph motion
+IOS	MN-15	4.1	[menu]	C10,C23	M	Row height scaling with Dynamic Type
+IOS	MN-16	4.1	[menu]	C09	R	Rich vs compact context-menu appearance
+IOS	SB-1	4.1	[scrollbar]	C09	R,M	Indicator style variants default/black/white
+IOS	SB-2	4.1	[scrollbar]	C26	R,M	Indicator inset from scroll view edges
+IOS	SB-3	4.1	[scrollbar]	C21,C14	R,M	Auto-hide delay, fade duration, flash
+IOS	SB-4	4.1	[scrollbar]	C07,C13	M	Grabbed state widens indicator
+IOS	SB-5	4.1	[scrollbar]	C11,C12	M	Thumb capsule corner and outline
+IOS	SB-6	4.1	[scrollbar]	C03	M	Indicators with edge effect under bars
+IOS	SL-1	4.1	[slider]	C01	M	Thumb shadow layers and outline
+IOS	SL-2	4.1	[slider]	C11,C13	M	Capsule thumb with width and height
+IOS	SL-3	4.1	[slider]	C07,C03	P,M	Dragging state glass lens, grown thumb
+IOS	SL-4	4.1	[slider]	C11	M	Track corner radius
+IOS	SL-5	4.1	[slider]	C13	R,M	Min/max value images size, colour, gap
+IOS	SL-6	4.1	[slider]	C13	R,M	Tick marks shape, size, colour, placement
+IOS	SL-7	4.1	[slider]	C07	R,M	Disabled sub-range track look
+IOS	SL-8	4.1	[slider]	C09	R,M	Thumbless slider style
+IOS	SL-9	4.1	[slider]	C14	M	Animated value change and tick snap
+IOS	PB-1	4.1	[progress_bar]	C09	R,M	Default vs bar progress style
+IOS	PB-2	4.1	[progress_bar]	C11	M	Fill end rounding separate from track
+IOS	PB-3	4.1	[progress_bar]	C14	M	Animated progress change duration and curve
+IOS	T-1	4.1	[tab]	C03,C07	R,M,V	Bar material and scroll-edge transparent state
+IOS	T-2	4.1	[tab]	C12	R	One-side top hairline
+IOS	T-3	4.1	[tab]	C13,C09	R,M	Stacked/inline/compact item layouts with own metrics
+IOS	T-4	4.1	[tab]	C07	R,M	Unselected item colour
+IOS	T-5	4.1	[tab]	C13,C07,C19	M	Selected fill symbol variant and title weight
+IOS	T-6	4.1	[tab]	C07	R,M	Disabled and focused item states
+IOS	T-7	4.1	[tab]	C13	R,M	Badge part fill, text, size, position
+IOS	T-8	4.1	[tab]	C13,C14,C03	M	Glass selection pill sliding between items
+IOS	T-9	4.1	[tab]	C11,C01,C26	M	Floating bar inset, capsule radius, shadow, height
+IOS	T-10	4.1	[tab]	C07,C14	R,M	Minimized tab bar state and animation
+IOS	T-11	4.1	[tab]	C13	P,M	Separate circular search tab
+IOS	T-12	4.1	[tab]	C13	R	Bottom accessory inline and expanded environments
+IOS	T-13	4.1	[tab]	C09	R,P,M	iPadOS top tab bar sidebar-adaptable mode
+IOS	T-14	4.1	[tab]	C10	M	Bar height per orientation and size class
+IOS	T-15	4.1	[tab]	C14	M	Tab selection and hide/show motion
+IOS	T-16	4.1	[tab]	C09	R,M	Prominent tab look
+IOS	SD-1	4.1	[sidebar]	C03	R,M	Sidebar background material, not colour
+IOS	SD-2	4.1	[sidebar]	C11,C07	M	Selected row inset rounded platter and icon tint
+IOS	SD-3	4.1	[sidebar]	C06,C07	M	Selected row when focus is elsewhere
+IOS	SD-4	4.1	[sidebar]	C13,C18	R	Section header font, colour and disclosure chevron
+IOS	SD-5	4.1	[sidebar]	C13,C19	R	Row image size and tint, accompanied cell variants
+IOS	SD-6	4.1	[sidebar]	C11,C01,C26	R,M	Floating inset glass sidebar geometry and shadow
+IOS	SD-7	4.1	[sidebar]	C14	M	Show/hide and tab-bar to sidebar morph motion
+IOS	SD-8	4.1	[sidebar]	C10	M	Sidebar row height
+IOS	TB-1	4.1	[toolbar]	C03,C07	R,M	Material background and scroll-edge transparency
+IOS	TB-2	4.1	[toolbar]	C12	R	One-side top hairline
+IOS	TB-3	4.1	[toolbar]	C10	M	Compact landscape height
+IOS	TB-4	4.1	[toolbar]	C09	R,M	Bar item styles plain/done/prominent
+IOS	TB-5	4.1	[toolbar]	C13,C11,C03,C01	R,M	Grouped glass capsules for shared item backgrounds
+IOS	TB-6	4.1	[toolbar]	C07,C14	M	Item pressed state dim or glass
+IOS	TB-7	4.1	[toolbar]	C13	R,M	Bar item badge
+IOS	TB-8	4.1	[toolbar]	C26	M	Fixed and flexible space widths
+IOS	L-1	4.1	[list]	C09	R	Appearance variants plain/grouped/insetGrouped/sidebar
+IOS	L-2	4.1	[list]	C11,C26	M	Inset-grouped platter radius and inset
+IOS	L-3	4.1	[list]	C13,C26	R	Separator inset and per-section visibility
+IOS	L-4	4.1	[list]	C09,C18	R	Section header styles with own font, colour, transform
+IOS	L-5	4.1	[list]	C13,C18	R	Section footer font and colour
+IOS	L-6	4.1	[list]	C26	R	Section header top padding
+IOS	L-7	4.1	[list]	C13,C26	R	Cell secondary text, value cell and paddings
+IOS	L-8	4.1	[list]	C13	R	Cell image reserved size, tint, corner
+IOS	L-9	4.1	[list]	C10,C23	M	Row height content-sized, scales with Dynamic Type
+IOS	L-10	4.1	[list]	C07	R,M,V	Cell states: highlighted, focused, swiped, dragging, drop target
+IOS	L-11	4.1	[list]	C14	M	Selection fade-out duration
+IOS	L-12	4.1	[list]	C13	R,M	Cell accessories: disclosure, delete, insert, reorder glyphs
+IOS	L-13	4.1	[list]	C13,C09	R,M	Swipe action buttons fill, font, expansion
+IOS	L-14	4.1	[list]	C14	M	Edit-mode motion
+IOS	L-15	4.1	[list]	C13	R,M	Section index font, colours, tracking background
+IOS	L-16	4.1	[list]	C14	R,M	Row insert/delete animation durations
+IOS	L-17	4.1	[list]	C13	R	Filler rows of plain style
+IOS	L-18	4.1	[list]	C13	P	Model cannot say no alternating rows
+IOS	L-19	4.1	[list]	C23,C26	R,P	Accessibility-size stacked text layout
+IOS	PO-1	4.1	[popover]	C13	R,M	Arrow base, height, tip rounding, side
+IOS	PO-2	4.1	[popover]	C03	M	Popover material
+IOS	PO-3	4.1	[popover]	C01	M	Popover shadow layers
+IOS	PO-4	4.1	[popover]	C26	R	Screen-edge margin
+IOS	PO-5	4.1	[popover]	C14	M	Present/dismiss motion
+IOS	PO-6	4.1	[popover]	C06	R	Elevated background colours inside
+IOS	SP-1	4.1	[splitter]	C12	M	Column divider colour, width, next to floating sidebar
+IOS	SP-2	4.1	[splitter]	C07	R,M	User column resize handle states
+IOS	SP-3	4.1	[splitter]	C14	M	Column show/hide motion
+IOS	SE-1	4.1	[separator]	C12	R	One-physical-pixel hairline at any scale
+IOS	SE-2	4.1	[separator]	C05,C04	R	Translucent vs opaque and vibrant separator
+IOS	SW-1	4.1	[switch]	C01	M	Thumb shadow layers
+IOS	SW-2	4.1	[switch]	C07,C03	P,M	Pressed thumb stretch or glass lens
+IOS	SW-3	4.1	[switch]	C11,C13	M	Capsule thumb width, height and radius
+IOS	SW-4	4.1	[switch]	C13,C23	R,M	On/Off label glyphs on track
+IOS	SW-5	4.1	[switch]	C14	M	Thumb slide spring and track cross-fade
+IOS	SW-6	4.1	[switch]	C23,C12	M	Increase Contrast off-track outline
+IOS	SW-7	4.1	[switch]	C13,C18	M	Switch label font
+IOS	DL-1	4.1	[dialog]	C03	M	Alert platter blur or glass
+IOS	DL-2	4.1	[dialog]	C04,C13	M	Dimming scrim behind alert
+IOS	DL-3	4.1	[dialog]	C26	M	Title and message alignment
+IOS	DL-4	4.1	[dialog]	C26	M	Gaps between title, message, buttons, insets
+IOS	DL-5	4.1	[dialog]	C13,C12	M	Button area cells with hairlines vs capsule buttons
+IOS	DL-6	4.1	[dialog]	C26	M	Button layout rule side by side vs stacked
+IOS	DL-7	4.1	[dialog]	C09,C18	R,M	Button text per role: preferred, cancel, destructive
+IOS	DL-8	4.1	[dialog]	C10	M	Alert button height
+IOS	DL-9	4.1	[dialog]	C13	M	Alert text field style
+IOS	DL-10	4.1	[dialog]	C14	M	Entrance scale-down motion, factor, duration, curve
+IOS	DL-11	4.1	[dialog]	C14	M	Exit fade motion
+IOS	DL-12	4.1	[dialog]	C06	R	Elevated colours in platter
+IOS	SP-1a	4.1	[spinner]	C13	M	Spoke indicator count, length, width, opacity ramp
+IOS	SP-2a	4.1	[spinner]	C14	M	Discrete step period of rotation
+IOS	SP-3a	4.1	[spinner]	C10	R,M	Medium and large named sizes
+IOS	SP-4a	4.1	[spinner]	C19	M	No animated icon for SF Symbols spinner
+IOS	SP-5a	4.1	[spinner]	C14	M	Start/stop fade
+IOS	CB-1	4.1	[combo_box]	C13,C19	R,M	Popup indicator glyph, colour and weight
+IOS	CB-2	4.1	[combo_box]	C09	R	Trigger button style choice
+IOS	CB-3	4.1	[combo_box]	C07	M	Open state of trigger and menu checkmark
+IOS	CB-4	4.1	[combo_box]	C05	V	Text colour label vs tint in 26
+IOS	SG-1	4.1	[segmented_control]	C13,C11,C01,C12	M	Selected thumb as own part with inset, radius, shadow
+IOS	SG-2	4.1	[segmented_control]	C18,C07	R,M	Font weight per state
+IOS	SG-3	4.1	[segmented_control]	C13,C12	M	Divider colour and hiding next to thumb
+IOS	SG-4	4.1	[segmented_control]	C07,C14	M	Pressed thumb shrink or glass lens
+IOS	SG-5	4.1	[segmented_control]	C14	M	Thumb slide and drag motion
+IOS	SG-6	4.1	[segmented_control]	C13	M	Segment image size
+IOS	SG-7	4.1	[segmented_control]	C07	M	Selected text colour meaning differs
+IOS	CD-1	4.1	[card]	C12,C01,C03,C26	R	Stroke outset, background inset, visual effect, shadow geometry
+IOS	EX-1	4.1	[expander]	C13	R,M	Chevron glyph and collapsed/expanded angles
+IOS	EX-2	4.1	[expander]	C14	M	Chevron rotation and child insertion motion
+IOS	EX-3	4.1	[expander]	C09	R	Outline header vs cell style
+IOS	EX-4	4.1	[expander]	C13	M	Chevron tint in header style
+IOS	LK-1	4.1	[link]	C07	M	Pressed grey rounded highlight box
+IOS	LY-1	4.1	[layout]	C26,C10	R	Size-class-dependent margins
+IOS	LY-2	4.1	[layout]	C26	R	Readable content width
+IOS	LY-3	4.1	[layout]	C26,C23	M	System spacing scaling with Dynamic Type
+IOS	LY-4	4.1	[layout]	C26,C23	R	Spacing scaled with text via font metrics
+IOS	C-1	4.2	navigation/app bar	C24,C03,C13,C18,C10,C14	R,M	Heights, appearance backgrounds, titles, subtitle, large-title collapse
+IOS	C-2	4.2	back button	C24,C13,C07,C14	R,M	Back chevron, title truncation, pressed state, transition
+IOS	C-3	4.2	search field	C24,C13,C09,C11,C10	R,P,M	Field fill, cancel, scope bar, tokens, styles
+IOS	C-4	4.2	stepper/spin box	C24,C13,C07,C21	R,M	Two-segment body, glyphs, limits, autorepeat timing
+IOS	C-5	4.2	date picker	C24,C09	R,P,M	Compact pill buttons with accent text
+IOS	C-6	4.2	calendar	C24,C07,C13	R,M	Month header, day cell states, decorations
+IOS	C-7	4.2	picker wheel	C24,C13,C14	R,M	Row height, curvature, selection band, momentum
+IOS	C-8	4.2	colour picker	C24	R,M	Colour well ring and swatch
+IOS	C-9	4.2	page control/pager	C24,C07,C13,C14,C03	R,P,M	Dots, platter backgrounds, scrubbing, timer progress
+IOS	C-10	4.2	pull-to-refresh	C24,C13,C14	R,M	Spokes, trigger distance, title, collapse
+IOS	C-11	4.2	action sheet	C24,C03,C11,C13,C18,C07,C14	P,M	Platters, cancel platter, fonts, slide-up motion
+IOS	C-12	4.2	sheet/bottom sheet	C24,C11,C13,C07,C14,C26	R,M	Radius, grabber, detents, dim, stacked-card effect
+IOS	C-13	4.2	context menu preview	C24,C01,C11,C03,C14	R,P,M	Lifted preview, blur and dim, placement, motion
+IOS	C-14	4.2	edit menu	C24,C03,C13,C18	R,P,M	Compact pill menu, dividers, paging chevrons, arrow
+IOS	C-15	4.2	badge	C24,C13	R,M	Tab-bar, bar-button and list-row badges
+IOS	C-16	4.2	status page/placeholder	C24,C13,C18,C26	R	Content unavailable view image, texts, paddings
+IOS	C-17	4.2	paste control	C24,C09	R,M	Secure paste button display mode, corner, colours
+IOS	C-18	4.2	scroll edge effect	C24,C03	R,P,M	Soft vs hard edge blur under bars
+IOS	C-19	4.2	background extension	C24,C03	R,M	Content mirrored under floating sidebar
+IOS	C-20	4.2	glass container	C24,C03,C09	R	Custom glass element, tint, merging
+IOS	C-21	4.2	bottom accessory	C24,C11,C26,C14	R,P,M	Glass accessory above tab bar, environments
+IOS	C-22	4.2	bottom tab bar	C24,C14,C09	R,P,M	iPad top tab bar to sidebar conversion
+IOS	C-23	4.2	keyboard	C24,C14,C03	R	Keyboard appearance, show/hide motion, accessory background
+IOS	C-24	4.2	drag and drop	C24,C01,C11,C13,C14,C21	R,M	Lift preview, count badge, drop highlight, lift delay
+IOS	C-25	4.2	find bar	C24,C13,C17	R,M	Find bar fields, chevrons, result count
+IOS	C-26	4.2	large content viewer HUD	C24,C03,C11,C13	R,V	Accessibility HUD material, size, radius, symbol
+IOS	C-28	4.2	navigation/app bar	C24,C13	R,M	Title menu chevron and document header
+IOS	C-29	4.2	icon button	C24,C13,C19	R,M	Sidebar toggle button glyph and placement
+IOS	C-30	4.2	level indicator/gauge	C24,C13,C11,C27	M	Circular and linear gauges track, fill, caps
+IOS	C-31	4.2	level indicator/gauge	C24	M,V	Determinate circular progress geometry
+IOS	C-32	4.2	group box/frame	C24,C11,C26,C18	M	GroupBox surface, fill, padding, label font
+IOS	C-33	4.2	writing tools	C24,C14	M,V	Writing Tools glow animation and panel
+IOS	X-SH-1	4.3	shadows	C01	M	Shadow layers, offset, blur, spread, colour per element
+IOS	X-SH-2	4.3	shadows	C01	R	UIShadowProperties defaults per configuration
+IOS	X-SH-3	4.3	shadows	C01,C06	M	Shadow differences per light/dark and contrast
+IOS	X-MT-1	4.3	materials	C03	R,M	Blur materials radius, saturation, tint
+IOS	X-MT-2	4.3	materials	C03	R,M	Which element uses which material
+IOS	X-MT-3	4.3	materials	C03,C23	R,M	Reduce Transparency opaque replacement colours
+IOS	X-MT-4	4.3	materials	C03,C04	R,P,M	Vibrancy styles over materials
+IOS	X-MT-5	4.3	materials	C03	R,P,M	Liquid Glass regular and clear variants
+IOS	X-MT-6	4.3	materials	C03,C05	R,P,M	Glass tint and prominent styling
+IOS	X-MT-7	4.3	materials	C03	P,M	Glass lensing, specular highlight, adaptive flip
+IOS	X-MT-8	4.3	materials	C03,C14	R,M	Interactive glass press response
+IOS	X-MT-9	4.3	materials	C03,C14	R,M	Glass merging and morphing
+IOS	X-MT-10	4.3	materials	C03,C04	P	Clear-glass dimming layer over bright content
+IOS	X-MT-11	4.3	materials	C03,C23,C25	P,V	User Liquid Glass look preference
+IOS	X-MT-12	4.3	materials	C03,C23,C06	P,M	Increase Contrast glass variant
+IOS	X-MT-13	4.3	materials	C25	P,R	Per-app choice of pre-26 vs 26 look
+IOS	X-CR-1	4.3	window chrome	C11	R,M	Continuous vs circular corner curve
+IOS	X-CR-2	4.3	window chrome	C11	R	Concentric corners derived from container
+IOS	X-CR-3	4.3	window chrome	C11	R,M	Per-corner radii
+IOS	X-CR-4	4.3	window chrome	C11,C20	M	Device display corner radius as outermost container
+IOS	X-MO-1	4.3	motion	C14	-	No motion model: duration, easing, spring, delay
+IOS	X-MO-2	4.3	motion	C14	R	UIKit default spring parameters
+IOS	X-MO-3	4.3	motion	C14	M	Navigation push/pop duration, curve, parallax
+IOS	X-MO-4	4.3	motion	C14	R,M	Modal transition styles
+IOS	X-MO-5	4.3	motion	C14	M	Menu, popover, alert appear/disappear motion
+IOS	X-MO-6	4.3	motion	C14	M	Control motions: switch, tabs, press, expand
+IOS	X-MO-8	4.3	motion	C14	R,M	Scroll deceleration, rubber-band, paging snap
+IOS	X-MO-9	4.3	motion	C14,C19	R,M	SF Symbol effects and their timing
+IOS	X-MO-10	4.3	motion	C14,C23	R,M	Reduce Motion alternatives and cross-fade flag
+IOS	X-DT-1	4.3	typography	C18	P,R	Per-style ramps across 12 size categories
+IOS	X-DT-2	4.3	typography	C10,C23	R,M	Control metrics scaling with text
+IOS	X-DT-3	4.3	typography	C23,C26	R,P	Accessibility-size layout changes
+IOS	X-DT-4	4.3	typography	C18,C23	R	Bold Text for every font and symbol weight
+IOS	X-DT-5	4.3	typography	C18	P	Tracking, leading, optical size for every role
+IOS	X-CO-1	4.3	colour roles	C06	R	Variant axes: elevated, increased contrast, inactive
+IOS	X-CO-2	4.3	colour roles	C05	R,P	Semantic colour inventory: labels, fills, backgrounds, greys
+IOS	X-CO-3	4.3	colour roles	C06	R,M	Dimmed tint
+IOS	X-CO-4	4.3	colour roles	C25,C28	R	Wide gamut colour
+IOS	X-CO-5	4.3	colour roles	C05	R,V	Colour prominence API
+IOS	X-CA-1	4.3	caret	C16	R	Caret width, height, end rounding
+IOS	X-CA-2	4.3	caret	C16	M,V	Caret blink timing and non-blinking preference
+IOS	X-CA-3	4.3	caret	C16	M	Caret accessories, floating ghost caret
+IOS	X-SE-1	4.3	selection	C17	R,M	Selection highlight colour, corner, fade
+IOS	X-SE-2	4.3	selection	C17,C13	R,M	Selection handles and loupe
+IOS	X-SE-3	4.3	selection	C17,C07	M	List and grid selection highlight per context
+IOS	X-FO-1	4.3	focus	C15	R,M	Focus halo shape, position, width, colour
+IOS	X-FO-2	4.3	focus	C15,C14	M	Cell focus highlight and movement animation
+IOS	X-PH-1	4.3	pointer	C22	R,M	iPad pointer highlight, lift, hover effects
+IOS	X-PH-2	4.3	pointer	C22	M	Pointer shape, size, colour adaptation
+IOS	X-HL-1	4.3	window chrome	C12	R	One-device-pixel lines everywhere
+IOS	X-SC-1	4.3	shadows	C04,C03	M	Scrims and dims colour, opacity, blur
+IOS	X-BT-1	4.3	timings	C21	R,M	Long-press, touch delay, fade, autorepeat timings
+IOS	X-SV-1	4.3	size variants	C10	R	Size classes and idiom variant axis
+IOS	X-SV-2	4.3	size variants	C10	R,M,V	Control sizes across UIKit and SwiftUI
+IOS	X-SV-3	4.3	size variants	C26	R	Layout direction RTL mirroring
+IOS	X-A11-1	4.3	accessibility	C23,C06	R,P,M	Increase Contrast data: colours, borders, glass
+IOS	X-A11-2	4.3	accessibility	C23,C03	R,M	Reduce Transparency data
+IOS	X-A11-3	4.3	accessibility	C23,C14	R,M	Reduce Motion data
+IOS	X-A11-4	4.3	accessibility	C23,C18	R	Bold Text flag and data
+IOS	X-A11-5	4.3	accessibility	C23,C09	R,M	Button Shapes underline or background
+IOS	X-A11-6	4.3	accessibility	C23,C13	R	On/Off Labels flag
+IOS	X-A11-7	4.3	accessibility	C23	R,M,V	Differentiate Without Color flag and changes
+IOS	X-A11-8	4.3	accessibility	C23	R	Smart Invert per-element exemption
+IOS	X-A11-9	4.3	accessibility	C23,C14	R	Prefer Cross-Fade Transitions flag
+IOS	X-A11-10	4.3	accessibility	C23,C18	R	Content-size category, not just factor
+IOS	X-IC-1	4.3	icons	C19	R,M	Symbol rendering mode per element
+IOS	X-IC-2	4.3	icons	C19	R	Symbol weight and scale per context
+IOS	X-IC-3	4.3	icons	C19	R	Text-style-relative symbol size
+IOS	X-IC-4	4.3	icons	C19,C07	M	Symbol variant per state (fill, circle, slash)
+IOS	X-IC-5	4.3	icons	C19,C13	M	Missing IconRoles for UIKit-drawn glyphs
+IOS	X-IC-6	4.3	icons	C19,C14	R	Symbol effects
+IOS	X-IC-7	4.3	icons	C25	R	No iOS SF Symbols loader
+IOS	X-RD-1	4.3	reader	C25	R	No iOS reader exists
+IOS	X-VR-1	4.3	reader	C25	M	Sub-generation drift inside 13-18 and 26 vs 27.x
+IOS	W-10†	4.1	[window]	C20,C01,C11,C13	P,M	Slide Over panel corners, shadow, grabber; Split View divider
+IOS	W-11†	4.1	[window]	C20,C14,C11,C01	P,M	Window states full screen, windowed, tiled, minimized and their motion
+IOS	B-18†	4.1	[button]	C09,C13	P,R,M	Pull-down button indicator and anchored menu
+IOS	I-9†	4.1	[input]	C13,C07,C21	R,M	Secure entry bullets, last-character reveal, strong-password look
+IOS	I-10†	4.1	[input]	C07,C10	M	Disabled and editing field look, intrinsic height per text size
+IOS	CK-2†	4.1	[checkbox]	C13,C07,C14,C11	R,M	Multiselect circle ring, fill, check, disabled, size, transition
+IOS	MN-17†	4.1	[menu]	C11,C26,C13	M	Item highlight shape, menu inner padding, icon-text gap
+IOS	MN-18†	4.1	[menu]	C07	R,M	Disabled menu item title, subtitle and icon colours
+IOS	SB-7†	4.1	[scrollbar]	C10,C14,C22	M	Indicator minimum length, overscroll compression, pointer hover
+IOS	PB-4†	4.1	[progress_bar]	C13,C18,C26	R,M	SwiftUI progress label and current-value label parts
+IOS	T-17†	4.1	[tab]	C07,C13,C14,C17	R,M	iPadOS 18 tab customization: hiding, placement, drop indicator
+IOS	SD-9†	4.1	[sidebar]	C01,C04,C14,C26	R,M	Overlay and displace split behaviours: shadow, dim, slide
+IOS	SD-10†	4.1	[sidebar]	C26,C10,C25	R	Primary column default, minimum, maximum width
+IOS	L-21†	4.1	[list]	C26,C13	R,P,M	Outline row indentation width per level
+IOS	L-22†	4.1	[list]	C13,C26,C10	P,M	SwiftUI Table headers, sort indicator, compact collapse
+IOS	L-23†	4.1	[list]	C13,C26,C09	R,M	Form rows: labeled values, pickers, switches, steppers in rows
+IOS	PO-7†	4.1	[popover]	C26,C10	R,M	Popover default content size and arrow gap
+IOS	DL-13†	4.1	[dialog]	C10,C26	M	Alert width, scrolling height, accessibility-size width
+IOS	SG-8†	4.1	[segmented_control]	C09,C07,C14	R,M	Momentary segmented mode highlight and fade
+IOS	SG-9†	4.1	[segmented_control]	C26,C10,C07	R,M	Segment width rule, height per text size, disabled segment
+IOS	C-36†	4.2	teaching tip	C24,C13,C03,C11,C18	R,P,M	TipKit inline and popover tips
+IOS	C-37†	4.2	menu bar	C24,C03,C13,C14,C21,C20	P,R,M	iPadOS 26 menu bar
+IOS	C-38†	4.2	autocomplete	C24,C13	R,M	Search suggestions menu or list
+IOS	C-40†	4.2	ink toolbar	C24,C01,C03	R,M	PencilKit tool picker and its light/dark style
+IOS	C-41†	4.2	inspector/utility panel	C24,C03,C26,C14	R,M	Inspector column
+IOS	C-42†	4.2	media transport controls	C24,C03,C13,C07,C14	R,M	AVKit playback controls and AirPlay route button
+IOS	C-43†	4.2	navigation/app bar	C24,C09,C26	R,M	Navigation item styles navigator, browser, editor
+IOS	C-44†	4.2	document launch view	C24,C13	R,M	Document-based app launch view
+IOS	C-45†	4.2	chart	C24,C05,C13,C18	R,P,M	Swift Charts default axis, grid, label and series styling
+IOS	C-46†	4.2	activity rings	C24,C27,C13	R,P,M	HealthKitUI activity rings colours, gradients, geometry
+IOS	C-47†	4.2	rubber band	C24,C17,C12	R,M	Pointer band-selection rectangle
+IOS	C-48†	4.2	carousel	C24,C14,C27	R,M	Page view controller page curl and page spacing
+IOS	C-49†	4.2	editing HUD	C24,C03,C14	V,M	Editing-gesture undo/copy/paste HUD
+IOS	X-MO-11†	4.3	motion	C14	M	Light/dark appearance change transition
+IOS	X-FO-3†	4.3	focus	C15,C23,C25	P,V,M	Full Keyboard Access focus indicator and keyboard-only rule
+IOS	X-BT-2†	4.3	timings	C21	M,V	Double-tap interval and touch slop
+IOS	SF-1†	4.1	[text_area]	C13,C17	P,M,V	Invisibles (TextKit 1)
+IOS	SF-2†	4.2	rich text view	C24	P,V	SwiftUI Text with Markdown: which roles it draws
+IOS	SF-3†	4.2	rich text view	C18,C24	P,M	Inline code in Text
+IOS	SF-4†	4.2	rich text view	C07,C24	M,V	Links in Text Markdown
+IOS	SF-5†	4.1	[text_area]	C18	M,V	UILabel/UITextView given an AttributedString(markdown:)
+IOS	SF-6†	4.2	rich text view	C18,C24	P,M	HTML imported into an attributed string
+IOS	SF-7†	4.1	[dialog]	C26,C10,C25	R,P	Sheet placement per size class
+IOS	SF-8†	4.1	[dialog]	C26,C10	P,M	Default sheet style (.automatic)
+IOS	SF-9†	4.1	[dialog]	C26	M,V	Alert: position
+IOS	RL-1†	4.2	shortcuts dialog	C03,C11,C01,C18,C14,C24	P,M,V	Keyboard-shortcut discoverability HUD (iPad with a hardware keyboard)
+IOS	RL-2†	4.2	editable label	C07,C13,C14,C24	P,M	Navigation title inline rename (UINavigationItem.renameDelegate, 16+)
+IOS	RL-3†	4.1	[layout]	C26	P	Flow layout spacing (UICollectionViewFlowLayout)
+IOS	FM-1†	4.3	typography	C18,C25	R,P,M	Emoji font
+IOS	FM-2†	4.3	typography	C18,C25	R,M	Fallback chain per language
+IOS	P3-1†	4.1	[text_area]	C26,C25	P,R	Text inset of UITextView
+IOS	P3-2†	4.1	[tab]	C13,C26,C14	R,M,V	More tab (UITabBarController)
+IOS	P3-3†	4.1	[toolbar]	C07,C13,C14	R,P,M,V	Selected bar button item
+IOS	P3-4†	4.1	[toolbar]	C14	P,M,V	Bar items changing
+IOS	P3-5†	4.1	[window]	C14,C20	R,M,V	Scene dismissal animations
+IOS	P3-6†	4.1	[dialog]	C26	M,V	Sheets with the keyboard up
+IOS	P3-9†	4.3	caret	C16,C17	R,M,V	Caret visibility and the drop caret
+IOS	P3-10†	4.3	drag and drop	C13,C17,C07	R,M,V	Drop operation feedback
+IOS	P3-11†	4.3	drag and drop	C07,C14,C21	R,M	Spring loading
+IOS	P3-12†	4.3	pointer	C22,C23,C25,C21	P,M,V(review2026-10-28:`UIAccessibility`'smemberlistcheckedforaPointerControlflag:none)	Pointer Control settings (iPad)
+IOS	P3-13†	4.3	timings	C21,C23,C25	P,M,V	Key repeat (hardware keyboard)
+IOS	P3-14†	4.3	icons	C19,C26	P,R,M	Symbols in right-to-left and per script
+IOS	P4-1†	4.1	[window]	C20,C26,C14	P,M,V	Tiling (iPadOS windowed apps)
+IOS	P4-2†	4.1	[window]	C20,C13,C14	P,M	Window controls menu and the full-screen app-name handle (iPadOS)
+IOS	P4-3†	4.1	[window]	C20,C14,C21,C26	R,P,M	System bars hidden: status bar, home indicator, navigation bar and toolbar
+IOS	P4-4†	4.1	[window]	C20,C11,C01,C13,C14	P,M,V	Picture in Picture window
+IOS	P4-5†	4.1	[window]	C20,C14,C25	P,R,M,V	Launch screen and the launch transition
+IOS	P4-6†	4.3	window chrome	C04,C20,C14	P,M,V	Authentication dialog (LocalAuthentication)
+IOS	P4-7†	4.3	pointer	C22,C23,C21,C14,C25	P,R,M,V	AssistiveTouch Dwell Control
+IOS	P4-8†	4.3	accessibility	C23,C06,C25	P,R	Display colour filters: Color Filters, Reduce White Point, Night Shift, True Tone
+IOS	P4-9†	4.3	accessibility	C23,C21,C25	P,M,V	Screen flash for notifications (Flash for Alerts)
+IOS	P4-10†	4.1	[toolbar]	C13,C14,C26	R,P,M	Toolbar customization editor (iPadOS 16+)
+IOS	P4-11†	4.3	timings	C21	M,V	Double-tap distance
+IOS	P4-12†	4.1	[menu]	C26	R,M	Where a button's menu opens, and its width
+IOS	P4-13†	4.1	[text_area]	C16,C17	R,M,V	Several selected ranges (iOS 26)
+IOS	P4-14†	4.1	[menu]	C21	P,M,V	Submenus with a pointer (iPadOS menu bar)
+IOS	P4-16†	4.1	[sidebar]	C26,C10	R,M	Columns shown per app size (UISplitViewController)
+IOS	P4-18†	4.3	placeholder	C07,C13	P,M	SwiftUI placeholder redaction
