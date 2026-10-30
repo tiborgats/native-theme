@@ -1,0 +1,16 @@
+# Two keys for one field: a duplicate key (S11, S12), but for `corners_px`
+# beside `corners.curve`, the one second key S12 accepts.
+# problem: widgets.button.body.corners_px: states the field corners states too
+# problem: widgets.button.body.stroke.left.dash: states the field dash states too
+# problem: widgets.button.label.text.font.size_px: states the field size states too
+
+[widgets.button.body]
+corners_px = 4
+corners.top_left_px = 2
+corners.curve = "circular"
+stroke.dash = "solid"
+stroke.left.dash = "dotted"
+
+[widgets.button.label.text.font]
+size_pt = 10
+size_px = 13

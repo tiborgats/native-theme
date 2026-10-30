@@ -1,0 +1,5 @@
+# TOML that does not parse is one problem, at the root.
+# problem-prefix: not TOML:
+
+[widgets.button.body
+opacity = 1

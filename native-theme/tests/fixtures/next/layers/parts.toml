@@ -1,0 +1,25 @@
+# A part's table: `absent = true` alone, a `drawn_as` with its target, only
+# the fields the catalogue lists for the part (S2.11, S6.1, S6.3).
+# problem: rules[0].set.text: unknown key
+# problem: widgets.button.icon.drawn_as.part: states `part` without `widget`
+# problem: widgets.button.label.fill: a field `button.label` does not have
+# problem: widgets.button.label.shadow: a field `button.label` does not have
+# problem: widgets.button.menu_indicator.absent: expected `true`: the whole part is not drawn
+# problem: widgets.button.subtitle.drawn_as.variants: missing
+
+[widgets.button.label]
+fill = "#000000"
+shadow = "absent"
+
+[widgets.button.icon]
+drawn_as = { part = "label", variants = [] }
+
+[widgets.button.menu_indicator]
+absent = false
+
+[widgets.button.subtitle]
+drawn_as = { widget = "button" }
+
+[[rules]]
+target = "button.subtitle"
+set = { absent = true, text = { case = "upper" } }

@@ -1,0 +1,38 @@
+# Every unknown key is refused, each at its TOML key path (S16).
+# problem: colors.sepia: unknown key
+# problem: inputs.accent.medium: unknown key
+# problem: preset: unknown key
+# problem: rules[0].when.colour: unknown key
+# problem: rules[0].set.halo: unknown key
+# problem: tokens.caret.colour: unknown key
+# problem: widgets.button.body.shine: unknown key
+# problem: widgets.button.body.stroke.top.glow: unknown key
+# problem: widgets.button.values.icon_gap_px: unknown key
+# problem: widgets.toggle: unknown name "toggle"
+
+[preset]
+id = "mine"
+
+[colors.sepia]
+
+[inputs.accent]
+light = "#000000"
+medium = "#000000"
+
+[tokens.caret]
+colour = "#000000"
+
+[widgets.button.body]
+shine = 1
+stroke.top.glow = 2
+
+[widgets.button.values]
+icon_gap_px = 4
+
+[widgets.toggle.body]
+opacity = 1
+
+[[rules]]
+when = { colour = "red" }
+target = "button.body"
+set = { halo = 1 }

@@ -1,0 +1,63 @@
+# An application layer over a preset: bases and rules, every value synthetic
+# (a fixture, not a platform's fact). It has no problem.
+
+[colors.light.surfaces.window]
+background = "#fafafa"
+foreground = "= alpha(input.accent, 0.9)"
+
+[colors.dark.global]
+accent = "= input.accent"
+
+[inputs.accent]
+light = "#3584e4"
+dark = "#78aeed"
+
+[inputs.accent.contrast.increased]
+light = "#1c71d8"
+
+[tokens.caret]
+width_px = 2
+blink_timeout_ms = "none"
+
+[tokens.motion.durations]
+button_ms = 150
+
+[widgets.button.body]
+fill = "= surface.background"
+corners_px = 6
+corners.curve = "circular"
+stroke = { width_px = 1, paint = "#00000020", dash = "solid", snap = "to_device_pixel", position = "inside", outset_px = "absent", fill_clip = "box" }
+padding = { top_px = 4, right_px = 10, bottom_px = 4, left_px = 10 }
+min_height_px = "auto"
+cursor = "pointer"
+
+[widgets.button.label]
+text.case = "mixed"
+text.font.size_pt = 10
+
+[widgets.button.subtitle]
+absent = true
+
+[widgets.button.values]
+icon_text_gap_px = 6
+icon_placement = "leading"
+focus_visible_when = { keyboard = {} }
+
+[[rules]]
+when = { states = ["hover"], not_states = ["disabled"], variants = ["flat"] }
+target = "button.body"
+set = { fill.append = ["= alpha(surface.foreground, 0.08)"] }
+
+[[rules]]
+when = { conditions = ["scheme:dark", "window_inactive"], context = [{ widget = "button", part = "body", states = ["@keyboard_focus_change"] }] }
+target = "button.label"
+set = { text = { replace = { font = { family = "Cantarell", size_pt = 10, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }, scaling_role = "none", letter_spacing = "absent", word_spacing = "absent", line_height = "auto", decoration = "absent", mnemonic_decoration = "absent", case = "mixed", elision = "end", wrap = "word", max_lines = 1, fill = "#000000" } } }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "tokens"
+set = { focus.width_px = 2 }
+
+[[rules]]
+target = "button.values"
+set = { icon_placement = "top" }

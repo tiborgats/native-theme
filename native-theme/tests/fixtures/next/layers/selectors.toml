@@ -1,0 +1,30 @@
+# `when`'s names: conditions, states, variants, sizes, densities and the
+# `context` table's `part` without `widget` (S7, S11, S12).
+# problem: rules[0].when.conditions[0]: unknown name "sepia"
+# problem: rules[0].when.conditions[1]: unknown name "adwaita"
+# problem: rules[0].when.conditions[2]: unknown name "diagonal"
+# problem: rules[0].when.context[0].part: states `part` without `widget`
+# problem: rules[0].when.densities[0]: unknown name "cozy"
+# problem: rules[0].when.direction: unknown name "up"
+# problem: rules[0].when.sizes[0]: unknown name "huge"
+# problem: rules[0].when.states[0]: unknown name "hovering"
+# problem: rules[0].when.variants[0]: unknown name "fancy"
+# problem: rules[1].when.position.previous.part: states `part` without `widget`
+
+[[rules]]
+target = "button.body"
+set = { opacity = 0.5 }
+
+[rules.when]
+conditions = ["scheme:sepia", "preset:adwaita", "tiled:diagonal"]
+context = [{ part = "body" }]
+densities = ["cozy"]
+direction = "up"
+sizes = ["huge"]
+states = ["hovering"]
+variants = ["fancy"]
+
+[[rules]]
+when = { position = { previous = { part = "label" } } }
+target = "button.label"
+set = {}
