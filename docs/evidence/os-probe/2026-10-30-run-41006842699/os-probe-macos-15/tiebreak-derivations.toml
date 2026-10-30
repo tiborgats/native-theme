@@ -1,0 +1,372 @@
+# Written by analysis/tiebreak_derivations.py (its docstring is the method); do not edit.
+
+input_image = [
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/aqua/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/aqua/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/aqua/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/darkAqua/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/darkAqua/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/darkAqua/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/aqua/styles_b/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/aqua/styles_b/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/aqua/styles_b/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/darkAqua/styles_b/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/darkAqua/styles_b/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/darkAqua/styles_b/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/probe.toml",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/aqua/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/aqua/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/aqua/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/darkAqua/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/darkAqua/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/darkAqua/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/aqua/styles_b/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/aqua/styles_b/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/aqua/styles_b/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/darkAqua/styles_b/normal-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/darkAqua/styles_b/pressed-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-accent-red/darkAqua/styles_b/disabled-layer.png",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml",
+  "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml",
+]
+
+[[derivation.caret_color_dark]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:dark"]
+
+[[derivation.caret_color_dark]]
+"input.accent" = "#ff5257"
+result = "#ff5257"
+conditions = ["scheme:dark"]
+
+[[derivation.caret_color_light]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:light"]
+
+[[derivation.caret_color_light]]
+"input.accent" = "#e0383e"
+result = "#e0383e"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_mini]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_mini]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_small]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_small]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_regular]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_regular]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_large]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_light_large]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_dark_mini]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_mini]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_small]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_small]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_regular]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_regular]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_large]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_dark_large]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_mini]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_mini]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_mini]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_mini]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_small]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_small]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_small]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_small]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_regular]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_regular]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_regular]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_regular]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_large]]
+"input.accent" = "#007aff"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_large]]
+"input.accent" = "#e0383e"
+result = "#e5e5e580"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_fill_large]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_fill_large]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_light_mini]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_mini]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_small]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_small]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_regular]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_regular]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_large]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_light_large]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_dark_mini]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_mini]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_small]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_small]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_regular]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_regular]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_large]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_dark_large]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_mini]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_mini]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_mini]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_mini]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_small]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_small]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_small]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_small]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_regular]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_regular]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_regular]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_regular]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_large]]
+"input.accent" = "#007aff"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_large]]
+"input.accent" = "#e0383e"
+result = "#00000040"
+conditions = ["scheme:light"]
+
+[[derivation.checked_disabled_label_large]]
+"input.accent" = "#007aff"
+result = "#ffffff40"
+conditions = ["scheme:dark"]
+
+[[derivation.checked_disabled_label_large]]
+"input.accent" = "#ff5257"
+result = "#ffffff40"
+conditions = ["scheme:dark"]

@@ -1411,7 +1411,7 @@ top_right = { fit_px = 7.0, rms = 0.1708, area_px = 8.031, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1809, area_px = 8.031, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.normal."regular-circular"]
 box = [324, 408, 17, 17]
@@ -1420,7 +1420,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.normal."large-circular"]
 box = [474, 406, 21, 21]
@@ -1627,7 +1627,7 @@ top_right = { fit_px = 7.0, rms = 0.168, area_px = 8.022, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1779, area_px = 8.022, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.pressed."regular-circular"]
 box = [324, 408, 17, 17]
@@ -1636,7 +1636,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0733, area_px = 8.472, masked = 19 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.pressed."large-circular"]
 box = [474, 406, 21, 21]
@@ -1888,7 +1888,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.disabled."regular-circular"]
 box = [324, 408, 17, 17]
@@ -1897,7 +1897,7 @@ top_right = { fit_px = 8.0, rms = 0.077, area_px = 8.499, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0881, area_px = 8.553, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0803, area_px = 8.499, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.disabled."large-circular"]
 box = [474, 406, 21, 21]
@@ -1906,7 +1906,7 @@ top_right = { fit_px = 10.0, rms = 0.0802, area_px = 10.619, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0783, area_px = 10.597, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0821, area_px = 10.619, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.aqua.disabled."extraLarge-circular"]
 box = [624, 402, 29, 29]
@@ -1915,7 +1915,7 @@ top_right = { fit_px = 14.0, rms = 0.0627, area_px = 14.593, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.064, area_px = 14.625, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0634, area_px = 14.593, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.normal."mini-flexible_push"]
 box = [20, 74, 46, 13]
@@ -2140,7 +2140,7 @@ top_right = { fit_px = 7.0, rms = 0.1697, area_px = 8.016, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1797, area_px = 8.016, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.normal."regular-circular"]
 box = [324, 408, 17, 17]
@@ -2149,7 +2149,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.normal."large-circular"]
 box = [474, 406, 21, 21]
@@ -2356,7 +2356,7 @@ top_right = { fit_px = 7.0, rms = 0.1675, area_px = 8.015, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1773, area_px = 8.015, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.pressed."regular-circular"]
 box = [324, 408, 17, 17]
@@ -2365,7 +2365,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0741, area_px = 8.472, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.pressed."large-circular"]
 box = [474, 406, 21, 21]
@@ -2500,7 +2500,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [key.styles_a.darkAqua.disabled."large-shadowless_square"]
 box = [470, 181, 51, 22]
@@ -2509,7 +2509,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [key.styles_a.darkAqua.disabled."extraLarge-shadowless_square"]
 box = [620, 181, 51, 22]
@@ -2518,7 +2518,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [key.styles_a.darkAqua.disabled."mini-accessory_bar"]
 box = [20, 240, 46, 16]
@@ -2662,7 +2662,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.disabled."regular-circular"]
 box = [324, 408, 17, 17]
@@ -2671,7 +2671,7 @@ top_right = { fit_px = 8.0, rms = 0.0735, area_px = 8.471, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0729, area_px = 8.444, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0767, area_px = 8.471, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.disabled."large-circular"]
 box = [474, 406, 21, 21]
@@ -2680,7 +2680,7 @@ top_right = { fit_px = 10.0, rms = 0.0745, area_px = 10.575, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0776, area_px = 10.575, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0763, area_px = 10.575, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_a.darkAqua.disabled."extraLarge-circular"]
 box = [624, 402, 29, 29]
@@ -2689,7 +2689,7 @@ top_right = { fit_px = 14.0, rms = 0.0587, area_px = 14.497, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.0611, area_px = 14.497, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0594, area_px = 14.497, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_b.aqua.normal."mini-help"]
 box = [20, 72, 16, 16]
@@ -4338,7 +4338,7 @@ top_right = { fit_px = 6.0, rms = 0.0873, area_px = 6.551, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.normal."small-capsule"]
 box = [170, 70, 55, 20]
@@ -4428,7 +4428,7 @@ top_right = { fit_px = 7.0, rms = 0.1708, area_px = 8.031, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1809, area_px = 8.031, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.normal."regular-circle"]
 box = [324, 184, 17, 17]
@@ -4437,7 +4437,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.normal."large-circle"]
 box = [474, 182, 21, 21]
@@ -4644,7 +4644,7 @@ top_right = { fit_px = 6.0, rms = 0.0835, area_px = 6.536, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.pressed."small-capsule"]
 box = [170, 70, 55, 20]
@@ -4734,7 +4734,7 @@ top_right = { fit_px = 7.0, rms = 0.168, area_px = 8.022, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1779, area_px = 8.022, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.pressed."regular-circle"]
 box = [324, 184, 17, 17]
@@ -4743,7 +4743,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0733, area_px = 8.472, masked = 19 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.pressed."large-circle"]
 box = [474, 182, 21, 21]
@@ -4950,7 +4950,7 @@ top_right = { fit_px = 6.0, rms = 0.1081, area_px = 6.688, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.disabled."small-capsule"]
 box = [170, 70, 55, 20]
@@ -5040,7 +5040,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.disabled."regular-circle"]
 box = [324, 184, 17, 17]
@@ -5049,7 +5049,7 @@ top_right = { fit_px = 8.0, rms = 0.077, area_px = 8.499, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0881, area_px = 8.553, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0803, area_px = 8.499, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.disabled."large-circle"]
 box = [474, 182, 21, 21]
@@ -5058,7 +5058,7 @@ top_right = { fit_px = 10.0, rms = 0.0802, area_px = 10.619, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0783, area_px = 10.597, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0821, area_px = 10.619, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.disabled."extraLarge-circle"]
 box = [624, 178, 29, 29]
@@ -5067,7 +5067,7 @@ top_right = { fit_px = 14.0, rms = 0.0627, area_px = 14.593, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.064, area_px = 14.625, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0634, area_px = 14.593, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.aqua.disabled."mini-combo_split"]
 box = [20, 240, 62, 16]
@@ -5256,7 +5256,7 @@ top_right = { fit_px = 6.0, rms = 0.0873, area_px = 6.551, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.normal."small-capsule"]
 box = [170, 70, 55, 20]
@@ -5346,7 +5346,7 @@ top_right = { fit_px = 7.0, rms = 0.1697, area_px = 8.016, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1797, area_px = 8.016, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.normal."regular-circle"]
 box = [324, 184, 17, 17]
@@ -5355,7 +5355,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.normal."large-circle"]
 box = [474, 182, 21, 21]
@@ -5562,7 +5562,7 @@ top_right = { fit_px = 6.0, rms = 0.0835, area_px = 6.536, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.pressed."small-capsule"]
 box = [170, 70, 55, 20]
@@ -5652,7 +5652,7 @@ top_right = { fit_px = 7.0, rms = 0.1675, area_px = 8.015, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1773, area_px = 8.015, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.pressed."regular-circle"]
 box = [324, 184, 17, 17]
@@ -5661,7 +5661,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0741, area_px = 8.472, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.pressed."large-circle"]
 box = [474, 182, 21, 21]
@@ -5868,7 +5868,7 @@ top_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.disabled."small-capsule"]
 box = [170, 70, 55, 20]
@@ -5958,7 +5958,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.disabled."regular-circle"]
 box = [324, 184, 17, 17]
@@ -5967,7 +5967,7 @@ top_right = { fit_px = 8.0, rms = 0.0735, area_px = 8.471, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0729, area_px = 8.444, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0767, area_px = 8.471, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.disabled."large-circle"]
 box = [474, 182, 21, 21]
@@ -5976,7 +5976,7 @@ top_right = { fit_px = 10.0, rms = 0.0745, area_px = 10.575, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0776, area_px = 10.575, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0763, area_px = 10.575, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.disabled."extraLarge-circle"]
 box = [624, 178, 29, 29]
@@ -5985,7 +5985,7 @@ top_right = { fit_px = 14.0, rms = 0.0587, area_px = 14.497, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.0611, area_px = 14.497, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0594, area_px = 14.497, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [key.styles_c.darkAqua.disabled."mini-combo_split"]
 box = [20, 240, 62, 16]
@@ -7434,7 +7434,7 @@ top_right = { fit_px = 7.0, rms = 0.1708, area_px = 8.031, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1809, area_px = 8.031, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.normal."regular-circular"]
 box = [324, 408, 17, 17]
@@ -7443,7 +7443,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.normal."large-circular"]
 box = [474, 406, 21, 21]
@@ -7605,7 +7605,7 @@ top_right = { fit_px = 7.0, rms = 0.168, area_px = 8.022, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1779, area_px = 8.022, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.pressed."regular-circular"]
 box = [324, 408, 17, 17]
@@ -7614,7 +7614,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0733, area_px = 8.472, masked = 19 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.pressed."large-circular"]
 box = [474, 406, 21, 21]
@@ -7821,7 +7821,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.disabled."regular-circular"]
 box = [324, 408, 17, 17]
@@ -7830,7 +7830,7 @@ top_right = { fit_px = 8.0, rms = 0.077, area_px = 8.499, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0881, area_px = 8.553, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0803, area_px = 8.499, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.disabled."large-circular"]
 box = [474, 406, 21, 21]
@@ -7839,7 +7839,7 @@ top_right = { fit_px = 10.0, rms = 0.0802, area_px = 10.619, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0783, area_px = 10.597, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0821, area_px = 10.619, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.aqua.disabled."extraLarge-circular"]
 box = [624, 402, 29, 29]
@@ -7848,7 +7848,7 @@ top_right = { fit_px = 14.0, rms = 0.0627, area_px = 14.593, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.064, area_px = 14.625, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0634, area_px = 14.593, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.normal."mini-flexible_push"]
 box = [20, 74, 46, 13]
@@ -8028,7 +8028,7 @@ top_right = { fit_px = 7.0, rms = 0.1697, area_px = 8.016, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1797, area_px = 8.016, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.normal."regular-circular"]
 box = [324, 408, 17, 17]
@@ -8037,7 +8037,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.normal."large-circular"]
 box = [474, 406, 21, 21]
@@ -8199,7 +8199,7 @@ top_right = { fit_px = 7.0, rms = 0.1675, area_px = 8.015, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1773, area_px = 8.015, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.pressed."regular-circular"]
 box = [324, 408, 17, 17]
@@ -8208,7 +8208,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0741, area_px = 8.472, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.pressed."large-circular"]
 box = [474, 406, 21, 21]
@@ -8343,7 +8343,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.disabled."large-shadowless_square"]
 box = [470, 181, 51, 22]
@@ -8352,7 +8352,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.disabled."extraLarge-shadowless_square"]
 box = [620, 181, 51, 22]
@@ -8361,7 +8361,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.disabled."mini-accessory_bar"]
 box = [20, 240, 46, 16]
@@ -8460,7 +8460,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.disabled."regular-circular"]
 box = [324, 408, 17, 17]
@@ -8469,7 +8469,7 @@ top_right = { fit_px = 8.0, rms = 0.0735, area_px = 8.471, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0729, area_px = 8.444, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0767, area_px = 8.471, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.disabled."large-circular"]
 box = [474, 406, 21, 21]
@@ -8478,7 +8478,7 @@ top_right = { fit_px = 10.0, rms = 0.0745, area_px = 10.575, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0776, area_px = 10.575, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0763, area_px = 10.575, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_a.darkAqua.disabled."extraLarge-circular"]
 box = [624, 402, 29, 29]
@@ -8487,7 +8487,7 @@ top_right = { fit_px = 14.0, rms = 0.0587, area_px = 14.497, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.0611, area_px = 14.497, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0594, area_px = 14.497, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_b.aqua.normal."mini-help"]
 box = [20, 72, 16, 16]
@@ -10136,7 +10136,7 @@ top_right = { fit_px = 6.0, rms = 0.0873, area_px = 6.551, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.normal."small-capsule"]
 box = [170, 70, 55, 20]
@@ -10226,7 +10226,7 @@ top_right = { fit_px = 7.0, rms = 0.1708, area_px = 8.031, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1809, area_px = 8.031, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.normal."regular-circle"]
 box = [324, 184, 17, 17]
@@ -10235,7 +10235,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.normal."large-circle"]
 box = [474, 182, 21, 21]
@@ -10442,7 +10442,7 @@ top_right = { fit_px = 6.0, rms = 0.0835, area_px = 6.536, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.pressed."small-capsule"]
 box = [170, 70, 55, 20]
@@ -10532,7 +10532,7 @@ top_right = { fit_px = 7.0, rms = 0.168, area_px = 8.022, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1779, area_px = 8.022, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.pressed."regular-circle"]
 box = [324, 184, 17, 17]
@@ -10541,7 +10541,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0733, area_px = 8.472, masked = 19 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.pressed."large-circle"]
 box = [474, 182, 21, 21]
@@ -10748,7 +10748,7 @@ top_right = { fit_px = 6.0, rms = 0.1081, area_px = 6.688, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.disabled."small-capsule"]
 box = [170, 70, 55, 20]
@@ -10838,7 +10838,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.disabled."regular-circle"]
 box = [324, 184, 17, 17]
@@ -10847,7 +10847,7 @@ top_right = { fit_px = 8.0, rms = 0.077, area_px = 8.499, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0881, area_px = 8.553, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0803, area_px = 8.499, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.disabled."large-circle"]
 box = [474, 182, 21, 21]
@@ -10856,7 +10856,7 @@ top_right = { fit_px = 10.0, rms = 0.0802, area_px = 10.619, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0783, area_px = 10.597, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0821, area_px = 10.619, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.disabled."extraLarge-circle"]
 box = [624, 178, 29, 29]
@@ -10865,7 +10865,7 @@ top_right = { fit_px = 14.0, rms = 0.0627, area_px = 14.593, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.064, area_px = 14.625, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0634, area_px = 14.593, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.aqua.disabled."mini-combo_split"]
 box = [20, 240, 62, 16]
@@ -11054,7 +11054,7 @@ top_right = { fit_px = 6.0, rms = 0.0873, area_px = 6.551, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.normal."small-capsule"]
 box = [170, 70, 55, 20]
@@ -11144,7 +11144,7 @@ top_right = { fit_px = 7.0, rms = 0.1697, area_px = 8.016, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1797, area_px = 8.016, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.normal."regular-circle"]
 box = [324, 184, 17, 17]
@@ -11153,7 +11153,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.normal."large-circle"]
 box = [474, 182, 21, 21]
@@ -11360,7 +11360,7 @@ top_right = { fit_px = 6.0, rms = 0.0835, area_px = 6.536, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.pressed."small-capsule"]
 box = [170, 70, 55, 20]
@@ -11450,7 +11450,7 @@ top_right = { fit_px = 7.0, rms = 0.1675, area_px = 8.015, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1773, area_px = 8.015, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.pressed."regular-circle"]
 box = [324, 184, 17, 17]
@@ -11459,7 +11459,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0741, area_px = 8.472, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.pressed."large-circle"]
 box = [474, 182, 21, 21]
@@ -11666,7 +11666,7 @@ top_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.disabled."small-capsule"]
 box = [170, 70, 55, 20]
@@ -11756,7 +11756,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.disabled."regular-circle"]
 box = [324, 184, 17, 17]
@@ -11765,7 +11765,7 @@ top_right = { fit_px = 8.0, rms = 0.0735, area_px = 8.471, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0729, area_px = 8.444, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0767, area_px = 8.471, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.disabled."large-circle"]
 box = [474, 182, 21, 21]
@@ -11774,7 +11774,7 @@ top_right = { fit_px = 10.0, rms = 0.0745, area_px = 10.575, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0776, area_px = 10.575, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0763, area_px = 10.575, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.disabled."extraLarge-circle"]
 box = [624, 178, 29, 29]
@@ -11783,7 +11783,7 @@ top_right = { fit_px = 14.0, rms = 0.0587, area_px = 14.497, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.0611, area_px = 14.497, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0594, area_px = 14.497, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [not_key.styles_c.darkAqua.disabled."mini-combo_split"]
 box = [20, 240, 62, 16]
@@ -13232,7 +13232,7 @@ top_right = { fit_px = 7.0, rms = 0.1708, area_px = 8.031, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1809, area_px = 8.031, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.normal."regular-circular"]
 box = [324, 408, 17, 17]
@@ -13241,7 +13241,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.normal."large-circular"]
 box = [474, 406, 21, 21]
@@ -13403,7 +13403,7 @@ top_right = { fit_px = 7.0, rms = 0.168, area_px = 8.022, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1779, area_px = 8.022, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.pressed."regular-circular"]
 box = [324, 408, 17, 17]
@@ -13412,7 +13412,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0733, area_px = 8.472, masked = 19 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.pressed."large-circular"]
 box = [474, 406, 21, 21]
@@ -13619,7 +13619,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.disabled."regular-circular"]
 box = [324, 408, 17, 17]
@@ -13628,7 +13628,7 @@ top_right = { fit_px = 8.0, rms = 0.077, area_px = 8.499, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0881, area_px = 8.553, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0803, area_px = 8.499, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.disabled."large-circular"]
 box = [474, 406, 21, 21]
@@ -13637,7 +13637,7 @@ top_right = { fit_px = 10.0, rms = 0.0802, area_px = 10.619, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0783, area_px = 10.597, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0821, area_px = 10.619, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.aqua.disabled."extraLarge-circular"]
 box = [624, 402, 29, 29]
@@ -13646,7 +13646,7 @@ top_right = { fit_px = 14.0, rms = 0.0627, area_px = 14.593, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.064, area_px = 14.625, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0634, area_px = 14.593, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.normal."mini-flexible_push"]
 box = [20, 74, 46, 13]
@@ -13826,7 +13826,7 @@ top_right = { fit_px = 7.0, rms = 0.1697, area_px = 8.016, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1797, area_px = 8.016, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.normal."regular-circular"]
 box = [324, 408, 17, 17]
@@ -13835,7 +13835,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.normal."large-circular"]
 box = [474, 406, 21, 21]
@@ -13997,7 +13997,7 @@ top_right = { fit_px = 7.0, rms = 0.1675, area_px = 8.015, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1773, area_px = 8.015, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.pressed."regular-circular"]
 box = [324, 408, 17, 17]
@@ -14006,7 +14006,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0741, area_px = 8.472, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.pressed."large-circular"]
 box = [474, 406, 21, 21]
@@ -14141,7 +14141,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.disabled."large-shadowless_square"]
 box = [470, 181, 51, 22]
@@ -14150,7 +14150,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.disabled."extraLarge-shadowless_square"]
 box = [620, 181, 51, 22]
@@ -14159,7 +14159,7 @@ top_right = { fit_px = 4.05, rms = 0.0439, area_px = 3.525, masked = 31 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.disabled."mini-accessory_bar"]
 box = [20, 240, 46, 16]
@@ -14258,7 +14258,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.disabled."regular-circular"]
 box = [324, 408, 17, 17]
@@ -14267,7 +14267,7 @@ top_right = { fit_px = 8.0, rms = 0.0735, area_px = 8.471, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0729, area_px = 8.444, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0767, area_px = 8.471, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.disabled."large-circular"]
 box = [474, 406, 21, 21]
@@ -14276,7 +14276,7 @@ top_right = { fit_px = 10.0, rms = 0.0745, area_px = 10.575, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0776, area_px = 10.575, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0763, area_px = 10.575, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_a.darkAqua.disabled."extraLarge-circular"]
 box = [624, 402, 29, 29]
@@ -14285,7 +14285,7 @@ top_right = { fit_px = 14.0, rms = 0.0587, area_px = 14.497, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.0611, area_px = 14.497, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0594, area_px = 14.497, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_b.aqua.normal."mini-help"]
 box = [20, 72, 16, 16]
@@ -15934,7 +15934,7 @@ top_right = { fit_px = 6.0, rms = 0.0873, area_px = 6.551, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.normal."small-capsule"]
 box = [170, 70, 55, 20]
@@ -16024,7 +16024,7 @@ top_right = { fit_px = 7.0, rms = 0.1708, area_px = 8.031, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1809, area_px = 8.031, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.normal."regular-circle"]
 box = [324, 184, 17, 17]
@@ -16033,7 +16033,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.normal."large-circle"]
 box = [474, 182, 21, 21]
@@ -16240,7 +16240,7 @@ top_right = { fit_px = 6.0, rms = 0.0835, area_px = 6.536, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.pressed."small-capsule"]
 box = [170, 70, 55, 20]
@@ -16330,7 +16330,7 @@ top_right = { fit_px = 7.0, rms = 0.168, area_px = 8.022, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1779, area_px = 8.022, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.pressed."regular-circle"]
 box = [324, 184, 17, 17]
@@ -16339,7 +16339,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0733, area_px = 8.472, masked = 19 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.pressed."large-circle"]
 box = [474, 182, 21, 21]
@@ -16546,7 +16546,7 @@ top_right = { fit_px = 6.0, rms = 0.1081, area_px = 6.688, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.disabled."small-capsule"]
 box = [170, 70, 55, 20]
@@ -16636,7 +16636,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.disabled."regular-circle"]
 box = [324, 184, 17, 17]
@@ -16645,7 +16645,7 @@ top_right = { fit_px = 8.0, rms = 0.077, area_px = 8.499, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0881, area_px = 8.553, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0803, area_px = 8.499, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.disabled."large-circle"]
 box = [474, 182, 21, 21]
@@ -16654,7 +16654,7 @@ top_right = { fit_px = 10.0, rms = 0.0802, area_px = 10.619, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0783, area_px = 10.597, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0821, area_px = 10.619, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.disabled."extraLarge-circle"]
 box = [624, 178, 29, 29]
@@ -16663,7 +16663,7 @@ top_right = { fit_px = 14.0, rms = 0.0627, area_px = 14.593, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.064, area_px = 14.625, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0634, area_px = 14.593, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.aqua.disabled."mini-combo_split"]
 box = [20, 240, 62, 16]
@@ -16852,7 +16852,7 @@ top_right = { fit_px = 6.0, rms = 0.0873, area_px = 6.551, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0822, area_px = 6.476, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.normal."small-capsule"]
 box = [170, 70, 55, 20]
@@ -16942,7 +16942,7 @@ top_right = { fit_px = 7.0, rms = 0.1697, area_px = 8.016, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1797, area_px = 8.016, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1812, area_px = 7.97, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.normal."regular-circle"]
 box = [324, 184, 17, 17]
@@ -16951,7 +16951,7 @@ top_right = { fit_px = 8.0, rms = 0.0738, area_px = 8.491, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0758, area_px = 8.477, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0771, area_px = 8.491, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.normal."large-circle"]
 box = [474, 182, 21, 21]
@@ -17158,7 +17158,7 @@ top_right = { fit_px = 6.0, rms = 0.0835, area_px = 6.536, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.0802, area_px = 6.485, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.pressed."small-capsule"]
 box = [170, 70, 55, 20]
@@ -17248,7 +17248,7 @@ top_right = { fit_px = 7.0, rms = 0.1675, area_px = 8.015, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1773, area_px = 8.015, masked = 16 }
 bottom_left = { fit_px = 7.0, rms = 0.1755, area_px = 7.931, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.pressed."regular-circle"]
 box = [324, 184, 17, 17]
@@ -17257,7 +17257,7 @@ top_right = { fit_px = 8.0, rms = 0.0711, area_px = 8.479, masked = 16 }
 bottom_right = { fit_px = 8.0, rms = 0.0734, area_px = 8.466, masked = 19 }
 bottom_left = { fit_px = 8.0, rms = 0.0741, area_px = 8.472, masked = 20 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.pressed."large-circle"]
 box = [474, 182, 21, 21]
@@ -17464,7 +17464,7 @@ top_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_right = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 bottom_left = { fit_px = 6.0, rms = 0.1068, area_px = 6.653, masked = 0 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.disabled."small-capsule"]
 box = [170, 70, 55, 20]
@@ -17554,7 +17554,7 @@ top_right = { fit_px = 7.0, rms = 0.1868, area_px = 8.163, masked = 12 }
 bottom_right = { fit_px = 7.0, rms = 0.1949, area_px = 8.163, masked = 15 }
 bottom_left = { fit_px = 7.0, rms = 0.1909, area_px = 8.019, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.disabled."regular-circle"]
 box = [324, 184, 17, 17]
@@ -17563,7 +17563,7 @@ top_right = { fit_px = 8.0, rms = 0.0735, area_px = 8.471, masked = 14 }
 bottom_right = { fit_px = 8.0, rms = 0.0729, area_px = 8.444, masked = 18 }
 bottom_left = { fit_px = 8.0, rms = 0.0767, area_px = 8.471, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.disabled."large-circle"]
 box = [474, 182, 21, 21]
@@ -17572,7 +17572,7 @@ top_right = { fit_px = 10.0, rms = 0.0745, area_px = 10.575, masked = 14 }
 bottom_right = { fit_px = 10.0, rms = 0.0776, area_px = 10.575, masked = 18 }
 bottom_left = { fit_px = 10.0, rms = 0.0763, area_px = 10.575, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.disabled."extraLarge-circle"]
 box = [624, 178, 29, 29]
@@ -17581,7 +17581,7 @@ top_right = { fit_px = 14.0, rms = 0.0587, area_px = 14.497, masked = 14 }
 bottom_right = { fit_px = 14.0, rms = 0.0611, area_px = 14.497, masked = 18 }
 bottom_left = { fit_px = 14.0, rms = 0.0594, area_px = 14.497, masked = 18 }
 spread_px = 0.0
-radius = { full = { maximum_px = "absent" } }
+radius = "unfit"
 
 [inactive.styles_c.darkAqua.disabled."mini-combo_split"]
 box = [20, 240, 62, 16]
@@ -20119,7 +20119,7 @@ top_right = { fit_px = 4.05, rms = 0.0441, area_px = 3.525, masked = 32 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [contrast.styles_a.darkAqua.disabled."large-shadowless_square"]
 box = [470, 181, 51, 22]
@@ -20128,7 +20128,7 @@ top_right = { fit_px = 4.05, rms = 0.0441, area_px = 3.525, masked = 32 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [contrast.styles_a.darkAqua.disabled."extraLarge-shadowless_square"]
 box = [620, 181, 51, 22]
@@ -20137,7 +20137,7 @@ top_right = { fit_px = 4.05, rms = 0.0441, area_px = 3.525, masked = 32 }
 bottom_right = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 56 }
 bottom_left = { fit_px = 0.0, rms = 0.0, area_px = 0.0, masked = 61 }
 spread_px = 4.05
-radius = "2px"
+radius = "unfit"
 
 [contrast.styles_a.darkAqua.disabled."mini-accessory_bar"]
 box = [20, 240, 46, 16]
