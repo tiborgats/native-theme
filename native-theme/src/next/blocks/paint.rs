@@ -3,6 +3,7 @@
 use native_theme_derive::ThemeParts;
 
 use crate::next::color::Color;
+use crate::next::error::{LayerError, Problem, ProblemKind};
 use crate::next::key::Key;
 use crate::next::units::{Deg, Fraction, Px, Scalar};
 use crate::next::value::Value;
@@ -20,6 +21,26 @@ pub struct Paint {
     /// The layers, bottom first.
     #[parts(block = "fields")]
     pub layers: Vec<PaintLayer>,
+}
+
+/// A paint of `layers`, bottom first (S1): refused with no layer, or with
+/// a `Mask` at the bottom, which masks nothing (S2.3, S12).
+impl TryFrom<Vec<PaintLayer>> for Paint {
+    type Error = LayerError;
+
+    fn try_from(layers: Vec<PaintLayer>) -> Result<Paint, LayerError> {
+        let problem = match layers.first() {
+            None => Some(Problem::new("layers", ProblemKind::NoLayer)),
+            Some(bottom) if bottom.blend == BlendMode::Mask => {
+                Some(Problem::new("layers[0].blend", ProblemKind::MaskAtBottom))
+            }
+            Some(_) => None,
+        };
+        match problem {
+            Some(problem) => Err(LayerError::Invalid(vec![problem])),
+            None => Ok(Paint { layers }),
+        }
+    }
 }
 
 /// One layer of a paint.
@@ -60,6 +81,7 @@ pub enum PaintKind {
         extent: Option<Value<Px>>,
         /// The stops shifted along the axis by this many px, toward its end
         /// for a positive offset; `None`: not shifted.
+        #[parts(signed)]
         offset: Option<Value<Px>>,
     },
     /// A radial gradient.

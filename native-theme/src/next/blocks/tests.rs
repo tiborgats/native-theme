@@ -892,3 +892,28 @@ fn a_compound_member_takes_its_places_marks() {
         })
     );
 }
+
+#[test]
+fn paint_try_from_refuses_no_layer_and_a_bottom_mask() {
+    use crate::next::error::{LayerError, Problem, ProblemKind};
+    let mask = PaintLayer {
+        blend: BlendMode::Mask,
+        ..color_layer(0.2)
+    };
+    assert_eq!(
+        Paint::try_from(Vec::new()),
+        Err(LayerError::Invalid(vec![Problem::new(
+            "layers",
+            ProblemKind::NoLayer
+        )]))
+    );
+    assert_eq!(
+        Paint::try_from(vec![mask.clone(), color_layer(0.1)]),
+        Err(LayerError::Invalid(vec![Problem::new(
+            "layers[0].blend",
+            ProblemKind::MaskAtBottom
+        )]))
+    );
+    let paint = Paint::try_from(vec![color_layer(0.1), mask]);
+    assert_eq!(paint.map(|paint| paint.layers.len()), Ok(2));
+}
