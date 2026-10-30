@@ -94,7 +94,8 @@ pub(crate) enum Number {
 /// A block or a leaf with constraints of its own (S12), handed to the visit
 /// where the walk meets it. The `ThemeParts` derive hands a block marked
 /// `#[parts(check)]` over as its variant here, so a marked block without a
-/// variant, or a variant no block is handed over as, does not compile.
+/// variant does not compile, and a variant no block is handed over as is
+/// dead code, which the build's `-D warnings` refuses.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Node<'a> {
     /// A paint.

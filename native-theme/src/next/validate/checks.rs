@@ -147,71 +147,267 @@ enum Region {
     Values(WidgetKind),
 }
 
-/// A declaration a keyed name is checked against (S10): its name in
-/// `[declare]`, whether a problem writes the name `@<key>` (an enum's keyed
-/// variant), and whether the name is a map's key, which a base states.
+/// A declaration of S10 a keyed name is checked against.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Decl {
+    /// `color_roles`: the keyed colour roles.
+    ColorRoles,
+    /// `accent_ramp`: the accent ramp's steps.
+    AccentRamp,
+    /// `text_styles`: the keyed text styles.
+    TextStyles,
+    /// `elevation`: the elevation levels.
+    Elevation,
+    /// `durations`: the keyed durations.
+    Durations,
+    /// `timings`: the keyed timings.
+    Timings,
+    /// `drag_cursors`: the drag cursors.
+    DragCursors,
+    /// `status_colors`: an icon's status colours.
+    StatusColors,
+    /// `icon_contexts`: the keyed icon contexts.
+    IconContexts,
+    /// `params`: the parameter groups.
+    Params,
+    /// `symbol_scales`: the symbol scales.
+    SymbolScales,
+    /// `icon_state_effects`: the icon state effects.
+    IconStateEffects,
+    /// `symbol_variants`: the symbol variants.
+    SymbolVariants,
+    /// `rendering_engines`: the text rendering engines.
+    RenderingEngines,
+    /// `lcd_filters`: the LCD filters.
+    LcdFilters,
+    /// `spec_versions`: the material scheme's spec versions.
+    SpecVersions,
+    /// `materials`: the materials.
+    Materials,
+    /// `blend_modes`: the keyed blend modes.
+    BlendModes,
+    /// `focus_kinds`: the keyed focus kinds.
+    FocusKinds,
+    /// `presentation_events`: the keyed presentation events.
+    PresentationEvents,
+    /// `transition_kinds`: the keyed transition kinds.
+    TransitionKinds,
+    /// `presentation_kinds`: the keyed presentation kinds.
+    PresentationKinds,
+}
+
+impl Decl {
+    /// Every declaration.
+    const ALL: [Decl; 22] = [
+        Decl::ColorRoles,
+        Decl::AccentRamp,
+        Decl::TextStyles,
+        Decl::Elevation,
+        Decl::Durations,
+        Decl::Timings,
+        Decl::DragCursors,
+        Decl::StatusColors,
+        Decl::IconContexts,
+        Decl::Params,
+        Decl::SymbolScales,
+        Decl::IconStateEffects,
+        Decl::SymbolVariants,
+        Decl::RenderingEngines,
+        Decl::LcdFilters,
+        Decl::SpecVersions,
+        Decl::Materials,
+        Decl::BlendModes,
+        Decl::FocusKinds,
+        Decl::PresentationEvents,
+        Decl::TransitionKinds,
+        Decl::PresentationKinds,
+    ];
+
+    /// Its name in `[declare]`.
+    fn name(self) -> &'static str {
+        match self {
+            Decl::ColorRoles => "color_roles",
+            Decl::AccentRamp => "accent_ramp",
+            Decl::TextStyles => "text_styles",
+            Decl::Elevation => "elevation",
+            Decl::Durations => "durations",
+            Decl::Timings => "timings",
+            Decl::DragCursors => "drag_cursors",
+            Decl::StatusColors => "status_colors",
+            Decl::IconContexts => "icon_contexts",
+            Decl::Params => "params",
+            Decl::SymbolScales => "symbol_scales",
+            Decl::IconStateEffects => "icon_state_effects",
+            Decl::SymbolVariants => "symbol_variants",
+            Decl::RenderingEngines => "rendering_engines",
+            Decl::LcdFilters => "lcd_filters",
+            Decl::SpecVersions => "spec_versions",
+            Decl::Materials => "materials",
+            Decl::BlendModes => "blend_modes",
+            Decl::FocusKinds => "focus_kinds",
+            Decl::PresentationEvents => "presentation_events",
+            Decl::TransitionKinds => "transition_kinds",
+            Decl::PresentationKinds => "presentation_kinds",
+        }
+    }
+
+    /// The declaration named `name`.
+    fn from_name(name: &str) -> Option<Decl> {
+        Decl::ALL.into_iter().find(|decl| decl.name() == name)
+    }
+
+    /// The keys it lists; `params`' are its groups' names, a keyed kind's
+    /// its kinds'.
+    fn keys(self, decl: &Declarations) -> Vec<&Key> {
+        let keys: &[Key] = match self {
+            Decl::ColorRoles => &decl.color_roles,
+            Decl::AccentRamp => &decl.accent_ramp,
+            Decl::TextStyles => &decl.text_styles,
+            Decl::Elevation => &decl.elevation,
+            Decl::Durations => &decl.durations,
+            Decl::Timings => &decl.timings,
+            Decl::DragCursors => &decl.drag_cursors,
+            Decl::StatusColors => &decl.status_colors,
+            Decl::IconContexts => &decl.icon_contexts,
+            Decl::SymbolScales => &decl.symbol_scales,
+            Decl::IconStateEffects => &decl.icon_state_effects,
+            Decl::SymbolVariants => &decl.symbol_variants,
+            Decl::RenderingEngines => &decl.rendering_engines,
+            Decl::LcdFilters => &decl.lcd_filters,
+            Decl::SpecVersions => &decl.spec_versions,
+            Decl::Materials => &decl.materials,
+            Decl::BlendModes => &decl.blend_modes,
+            Decl::FocusKinds => &decl.focus_kinds,
+            Decl::PresentationEvents => &decl.presentation_events,
+            Decl::TransitionKinds => return decl.transition_kinds.iter().map(|(k, _)| k).collect(),
+            Decl::PresentationKinds => {
+                return decl.presentation_kinds.iter().map(|(k, _)| k).collect();
+            }
+            Decl::Params => return decl.params.iter().map(|(k, _)| k).collect(),
+        };
+        keys.iter().collect()
+    }
+}
+
+/// The declaration of the keyed names of one slot (S10): the slot, a field
+/// or an enum's variant, by its owner and name; whether a problem writes the
+/// name `@<key>` (an enum's keyed variant); whether the slot is a map whose
+/// keys a base states.
 #[derive(Clone, Copy, Debug)]
 struct Declaration {
-    name: &'static str,
+    owner: &'static str,
+    field: &'static str,
+    decl: Decl,
     keyed: bool,
     map: bool,
 }
 
-/// The keyed names' declarations by the slot holding them (S10): the owner
-/// and the field or variant, the declaration, whether a problem writes the
-/// name `@<key>` (an enum's keyed variant), and whether the slot is a map
-/// whose keys a base states. One table for the checks, for what a preset
-/// uses and for a key field's type.
-const DECLARATIONS: [(&str, &str, &str, bool, bool); 25] = [
-    ("ColorRoles", "keyed", "color_roles", false, true),
-    ("GlobalRoles", "accent_ramp", "accent_ramp", false, true),
-    ("TextTokens", "keyed", "text_styles", false, true),
-    ("Tokens", "elevation", "elevation", false, true),
-    ("MotionTokens", "durations", "durations", false, true),
-    ("MotionTokens", "timings", "timings", false, true),
-    ("PointerTokens", "drag_cursors", "drag_cursors", false, true),
-    ("IconStyle", "status_colors", "status_colors", false, true),
-    ("IconSizeTokens", "keyed", "icon_contexts", false, true),
-    ("Tokens", "params", "params", false, true),
-    ("IconStyle", "scale", "symbol_scales", false, false),
-    (
+impl Declaration {
+    /// The declaration's name in `[declare]`.
+    fn name(&self) -> &'static str {
+        self.decl.name()
+    }
+}
+
+/// A slot's declaration.
+const fn row(
+    owner: &'static str,
+    field: &'static str,
+    decl: Decl,
+    keyed: bool,
+    map: bool,
+) -> Declaration {
+    Declaration {
+        owner,
+        field,
+        decl,
+        keyed,
+        map,
+    }
+}
+
+/// The keyed names' declarations by the slot holding them (S10). One table
+/// for the checks, for what a preset uses and for a key field's type.
+const DECLARATIONS: [Declaration; 25] = [
+    row("ColorRoles", "keyed", Decl::ColorRoles, false, true),
+    row("GlobalRoles", "accent_ramp", Decl::AccentRamp, false, true),
+    row("TextTokens", "keyed", Decl::TextStyles, false, true),
+    row("Tokens", "elevation", Decl::Elevation, false, true),
+    row("MotionTokens", "durations", Decl::Durations, false, true),
+    row("MotionTokens", "timings", Decl::Timings, false, true),
+    row(
+        "PointerTokens",
+        "drag_cursors",
+        Decl::DragCursors,
+        false,
+        true,
+    ),
+    row(
+        "IconStyle",
+        "status_colors",
+        Decl::StatusColors,
+        false,
+        true,
+    ),
+    row("IconSizeTokens", "keyed", Decl::IconContexts, false, true),
+    row("Tokens", "params", Decl::Params, false, true),
+    row("IconStyle", "scale", Decl::SymbolScales, false, false),
+    row(
         "IconStyle",
         "state_effect",
-        "icon_state_effects",
+        Decl::IconStateEffects,
         false,
         false,
     ),
-    (
+    row(
         "IconStyle",
         "symbol_variants",
-        "symbol_variants",
+        Decl::SymbolVariants,
         false,
         false,
     ),
-    ("TextRendering", "engine", "rendering_engines", false, false),
-    ("TextRendering", "lcd_filter", "lcd_filters", false, false),
-    (
+    row(
+        "TextRendering",
+        "engine",
+        Decl::RenderingEngines,
+        false,
+        false,
+    ),
+    row(
+        "TextRendering",
+        "lcd_filter",
+        Decl::LcdFilters,
+        false,
+        false,
+    ),
+    row(
         "MaterialScheme",
         "spec_version",
-        "spec_versions",
+        Decl::SpecVersions,
         false,
         false,
     ),
-    ("Material", "identity", "materials", false, false),
-    ("Shadow", "elevation", "elevation", false, false),
-    ("GlobalRole", "accent_ramp", "accent_ramp", false, false),
-    ("BlendMode", "keyed", "blend_modes", true, false),
-    ("FocusKind", "keyed", "focus_kinds", true, false),
-    (
+    row("Material", "identity", Decl::Materials, false, false),
+    row("Shadow", "elevation", Decl::Elevation, false, false),
+    row("GlobalRole", "accent_ramp", Decl::AccentRamp, false, false),
+    row("BlendMode", "keyed", Decl::BlendModes, true, false),
+    row("FocusKind", "keyed", Decl::FocusKinds, true, false),
+    row(
         "PresentationEvent",
         "keyed",
-        "presentation_events",
+        Decl::PresentationEvents,
         true,
         false,
     ),
-    ("RoleRef", "keyed", "color_roles", true, false),
-    ("TransitionKind", "key", "transition_kinds", true, false),
-    ("PresentationKind", "key", "presentation_kinds", true, false),
+    row("RoleRef", "keyed", Decl::ColorRoles, true, false),
+    row("TransitionKind", "key", Decl::TransitionKinds, true, false),
+    row(
+        "PresentationKind",
+        "key",
+        Decl::PresentationKinds,
+        true,
+        false,
+    ),
 ];
 
 /// The declaration a keyed name in the slot `slot` (a field or an enum's
@@ -221,52 +417,23 @@ fn declaration_of(slot: Option<(&'static str, &'static str)>) -> Option<Declarat
     let (owner, field) = slot?;
     DECLARATIONS
         .iter()
-        .find(|(o, f, ..)| *o == owner && *f == field)
-        .map(|(_, _, name, keyed, map)| Declaration {
-            name,
-            keyed: *keyed,
-            map: *map,
-        })
+        .find(|row| row.owner == owner && row.field == field)
+        .copied()
 }
 
-/// The declaration a `Key` field named `field` holds a key of, whichever
-/// block holds it: a reference to the field has that key's type (S2.2).
-fn declaration_of_field(field: &str) -> Option<&'static str> {
+/// The declaration a `Key` field `field` of the block `owner` holds a key
+/// of: a reference to the field has that key's type (S2.2).
+fn declaration_of_field(owner: &str, field: &str) -> Option<&'static str> {
     DECLARATIONS
         .iter()
-        .find(|(_, f, _, keyed, map)| *f == field && !keyed && !map)
-        .map(|(_, _, name, ..)| *name)
+        .find(|row| row.owner == owner && row.field == field && !row.keyed && !row.map)
+        .map(Declaration::name)
 }
 
-/// The keys the declaration `name` lists; `params`' are its groups' names,
-/// a keyed kind's its kinds'.
+/// The keys the declaration `name` lists; none for a name that is no
+/// declaration of S10's (a widget's `keys` entry is read elsewhere).
 fn declared<'a>(decl: &'a Declarations, name: &str) -> Vec<&'a Key> {
-    let keys: &[Key] = match name {
-        "color_roles" => &decl.color_roles,
-        "accent_ramp" => &decl.accent_ramp,
-        "text_styles" => &decl.text_styles,
-        "elevation" => &decl.elevation,
-        "durations" => &decl.durations,
-        "timings" => &decl.timings,
-        "drag_cursors" => &decl.drag_cursors,
-        "status_colors" => &decl.status_colors,
-        "icon_contexts" => &decl.icon_contexts,
-        "symbol_scales" => &decl.symbol_scales,
-        "icon_state_effects" => &decl.icon_state_effects,
-        "symbol_variants" => &decl.symbol_variants,
-        "rendering_engines" => &decl.rendering_engines,
-        "lcd_filters" => &decl.lcd_filters,
-        "spec_versions" => &decl.spec_versions,
-        "materials" => &decl.materials,
-        "blend_modes" => &decl.blend_modes,
-        "focus_kinds" => &decl.focus_kinds,
-        "presentation_events" => &decl.presentation_events,
-        "transition_kinds" => return decl.transition_kinds.iter().map(|(k, _)| k).collect(),
-        "presentation_kinds" => return decl.presentation_kinds.iter().map(|(k, _)| k).collect(),
-        "params" => return decl.params.iter().map(|(k, _)| k).collect(),
-        _ => &[],
-    };
-    keys.iter().collect()
+    Decl::from_name(name).map_or_else(Vec::new, |d| d.keys(decl))
 }
 
 struct Checker<'a> {
@@ -887,7 +1054,7 @@ impl<'a> Checker<'a> {
     /// declaration, or a widget value's, a key its `keys` entry lists.
     fn key_type(&self, path: &Path) -> Option<Ty> {
         if let Some(declaration) = declaration_of(path.slot()).filter(|d| !d.map) {
-            return Some(Ty::Key(Cow::Borrowed(declaration.name)));
+            return Some(Ty::Key(Cow::Borrowed(declaration.name())));
         }
         match (self.region, path.first_field()) {
             (Region::Values(widget), Some((_, value))) => Some(widget_keys(widget, value)),
@@ -1096,7 +1263,7 @@ impl<'a> Checker<'a> {
             &path.to_string(),
             &spelled_key(key.as_str(), suffix, self.toml),
         );
-        let listed = if declaration.name == "params" {
+        let listed = if declaration.decl == Decl::Params {
             match path.keys().as_slice() {
                 [] => decl.params.iter().any(|(group, _)| *group == key),
                 [group, ..] => decl
@@ -1106,10 +1273,10 @@ impl<'a> Checker<'a> {
                     .is_none_or(|(_, params)| params.keys.contains(&key)),
             }
         } else {
-            declared(decl, declaration.name).contains(&&key)
+            declaration.decl.keys(decl).contains(&&key)
         };
         if !listed {
-            self.undeclared(&at, key.as_str(), declaration.name);
+            self.undeclared(&at, key.as_str(), declaration.name());
         }
     }
 
@@ -1205,13 +1372,13 @@ impl<'a> Checker<'a> {
         let decl = self.decl();
         let at = path.to_string();
         if let Some(declaration) = declaration_of(path.slot()) {
-            if !declared(decl, declaration.name).contains(&key) {
+            if !declaration.decl.keys(decl).contains(&key) {
                 let name = if declaration.keyed {
                     format!("@{key}")
                 } else {
                     key.to_string()
                 };
-                self.undeclared(&at, &name, declaration.name);
+                self.undeclared(&at, &name, declaration.name());
             }
             return;
         }
@@ -1629,13 +1796,43 @@ fn field_type(fields: &'static [FieldInfo], path: &str) -> Option<Ty> {
     let info = registry::find_value(fields, path)?;
     match (info.value)() {
         Some(Ty::Key(set)) if set == KEY_OF_PLACE => {
-            let name = path.rsplit('.').next()?;
-            match declaration_of_field(name) {
+            let (parent, name) = path.rsplit_once('.').unwrap_or(("", path));
+            let owner = registry::find(fields, parent).and_then(|parent| match parent.ty {
+                registry::FieldType::Block { ty, .. } | registry::FieldType::Patch { ty, .. } => {
+                    Some(block_name(ty))
+                }
+                registry::FieldType::Leaf(_) => None,
+            });
+            match owner.and_then(|owner| declaration_of_field(owner, name)) {
                 Some(declaration) => Some(Ty::Key(Cow::Borrowed(declaration))),
                 None => Some(Ty::Key(set)),
             }
         }
         ty => ty,
+    }
+}
+
+/// The block a field's type as written holds (`Value<IconStyle>`,
+/// `Option<TextRendering>`, `Vec<(Key,Shadow)>`, `FontPatch`): its name
+/// without its wrappers and a patch's `Patch`.
+fn block_name(ty: &'static str) -> &'static str {
+    let mut name = ty;
+    loop {
+        let inner = ["Value<", "Option<", "Vec<", "Box<"]
+            .iter()
+            .find_map(|wrapper| name.strip_prefix(wrapper));
+        match inner {
+            Some(inner) => {
+                let inner = inner.strip_suffix('>').unwrap_or(inner);
+                name = match inner.strip_prefix('(') {
+                    Some(pair) => pair
+                        .split_once(',')
+                        .map_or(pair, |(_, value)| value.strip_suffix(')').unwrap_or(value)),
+                    None => inner,
+                };
+            }
+            None => return name.strip_suffix("Patch").unwrap_or(name),
+        }
     }
 }
 
@@ -1798,13 +1995,13 @@ impl Visit for Uses {
         let Some(declaration) = declaration_of(path.last_field()).filter(|d| d.map) else {
             return;
         };
-        if declaration.name == "params" {
+        if declaration.decl == Decl::Params {
             if let Some(group) = path.keys().first() {
                 self.stated.push(("params", format!("{group}.{key}")));
             }
             return;
         }
-        self.stated.push((declaration.name, key.to_owned()));
+        self.stated.push((declaration.name(), key.to_owned()));
     }
 }
 
@@ -2012,25 +2209,26 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId
             unused.push(("declare.presentation_events".to_owned(), event.to_string()));
         }
     }
-    let stated = [
-        "color_roles",
-        "accent_ramp",
-        "text_styles",
-        "elevation",
-        "durations",
-        "timings",
-        "drag_cursors",
-        "icon_contexts",
-        "status_colors",
-    ];
+    // The maps a base states, by the table; `params`' keys are their
+    // groups', below.
+    let mut stated: Vec<Decl> = Vec::new();
+    for row in DECLARATIONS
+        .iter()
+        .filter(|row| row.map && row.decl != Decl::Params)
+    {
+        if !stated.contains(&row.decl) {
+            stated.push(row.decl);
+        }
+    }
     for declaration in stated {
-        for key in declared(decl, declaration) {
+        let name = declaration.name();
+        for key in declaration.keys(decl) {
             let used = uses
                 .stated
                 .iter()
-                .any(|(held, name)| *held == declaration && name == key.as_str());
+                .any(|(held, used)| *held == name && used == key.as_str());
             if !used {
-                unused.push((format!("declare.{declaration}"), key.to_string()));
+                unused.push((format!("declare.{name}"), key.to_string()));
             }
         }
     }
@@ -2558,5 +2756,178 @@ mod tests {
             problems(Some(vec![("mode", vec![key!("compact")])])),
             NO_PROBLEM
         );
+    }
+}
+
+#[cfg(test)]
+mod table_tests {
+    use super::*;
+    use crate::next::registry::FieldType as Registry;
+
+    /// Every `(owner, field)` slot the registry's tables hold, from the
+    /// roots down: a struct block's fields by its name, an enum block's
+    /// variants' fields by the enum's, each path's last segment.
+    fn slots() -> Vec<(&'static str, &'static str)> {
+        fn visit(
+            owner: &'static str,
+            fields: &'static [FieldInfo],
+            out: &mut Vec<(&'static str, &'static str)>,
+            seen: &mut Vec<&'static str>,
+        ) {
+            for field in fields {
+                let name = field.path.rsplit('.').next().unwrap_or(field.path);
+                out.push((owner, name));
+                let (ty, below) = match field.ty {
+                    Registry::Leaf(_) => continue,
+                    Registry::Block { ty, fields, .. } => (ty, fields),
+                    Registry::Patch { ty, fields } => (ty, fields()),
+                };
+                let block = block_name(ty);
+                if !seen.contains(&block) {
+                    seen.push(block);
+                    visit(block, below, out, seen);
+                }
+            }
+        }
+        let mut out = Vec::new();
+        let mut seen = Vec::new();
+        visit("ColorRoles", registry::colors(), &mut out, &mut seen);
+        visit("Tokens", registry::tokens(), &mut out, &mut seen);
+        for widget in registry::widgets() {
+            for part in widget.parts {
+                visit("PartStyle", part.fields, &mut out, &mut seen);
+            }
+            visit("WidgetValues", widget.values, &mut out, &mut seen);
+        }
+        out
+    }
+
+    /// The `Key` slots a walk meets in values holding a keyed variant of a
+    /// leaf enum, which the registry's tables do not reach.
+    fn walked_key_slots() -> Vec<(&'static str, &'static str)> {
+        use crate::next::blocks::focus::{FocusIndicatorPatch, FocusKind};
+        use crate::next::blocks::motion::{
+            PresentationEvent, PresentationKind, PresentationStep, PresentationTransition, Timing,
+            Transition, TransitionKind,
+        };
+        use crate::next::blocks::paint::{BlendMode, Paint, PaintKind, PaintLayer};
+        use crate::next::blocks::part_style::{Binding, RoleRef};
+        use crate::next::roles::GlobalRole;
+        use crate::next::validate::walk::{ExprForm, Form, Node, Number, Path, Visit, Walker};
+
+        struct Slots(Vec<(&'static str, &'static str)>);
+        impl Visit for Slots {
+            fn check(&mut self, path: &Path, node: Node<'_>) {
+                if let (Node::Key(_), Some(slot)) = (node, path.slot()) {
+                    self.0.push(slot);
+                }
+            }
+            fn value(&mut self, _: &Path, _: Form<'_>, _: ExprForm, _: Option<Ty>) {}
+            fn number(&mut self, _: &Path, _: f32, _: Number) {}
+            fn duplicate(&mut self, _: &Path, _: &str, _: &'static str) {}
+            fn map_key(&mut self, _: &Path, _: &str, _: &'static str) {}
+            fn patch(&mut self, _: &Path, _: &'static [&'static str], _: &[&'static str]) {}
+        }
+        let k = || crate::key!("probe");
+        let color = Value::Stated(crate::next::color::Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        });
+        let mut slots = Slots(Vec::new());
+        let mut w = Walker::new("", false, &mut slots);
+        w.walk(&Paint {
+            layers: vec![PaintLayer {
+                kind: PaintKind::Color(color.clone()),
+                blend: BlendMode::Keyed(k()),
+            }],
+        });
+        w.walk(&FocusIndicatorPatch {
+            kind: Some(FocusKind::Keyed(k())),
+            ..FocusIndicatorPatch::default()
+        });
+        w.walk(&vec![
+            Binding::Role {
+                role: RoleRef::Keyed(k()),
+                value: color.clone(),
+            },
+            Binding::Role {
+                role: RoleRef::Global(GlobalRole::AccentRamp(k())),
+                value: color,
+            },
+        ]);
+        w.walk(&Transition {
+            properties: Vec::new(),
+            kind: TransitionKind::Keyed {
+                key: k(),
+                params: Vec::new(),
+            },
+            duration: Value::Absent,
+            delay: Value::Absent,
+            timing: Value::Stated(Timing::Linear),
+            suspended_by_theme_change: false,
+        });
+        w.walk(&PresentationTransition {
+            event: PresentationEvent::Keyed(k()),
+            steps: vec![PresentationStep {
+                part: None,
+                kind: PresentationKind::Keyed {
+                    key: k(),
+                    params: Vec::new(),
+                },
+                duration: Value::Absent,
+                delay: Value::Absent,
+                timing: Value::Stated(Timing::Linear),
+                stagger: Value::Absent,
+            }],
+        });
+        slots.0
+    }
+
+    /// The checks name slots by their owner's and field's names: each named
+    /// slot is one the model has, so a rename fails here instead of
+    /// silently dropping a check.
+    #[test]
+    fn named_slots_exist() {
+        let mut slots = slots();
+        slots.extend(walked_key_slots());
+        for row in &DECLARATIONS {
+            assert!(
+                slots.contains(&(row.owner, row.field)),
+                "{}.{}",
+                row.owner,
+                row.field
+            );
+        }
+        // The slots `value`'s and `number`'s checks name.
+        for slot in [
+            ("TextTokens", "keyed"),
+            ("IconSizeTokens", "keyed"),
+            ("ColorRoles", "surfaces"),
+            ("Tokens", "params"),
+            ("ThemeChange", "duration"),
+            ("Material", "saturation"),
+            ("TextTokens", "font_dpi"),
+            ("TransitionKind", "params"),
+            ("PresentationKind", "params"),
+            ("Material", "params"),
+        ] {
+            assert!(slots.contains(&slot), "{slot:?}");
+        }
+    }
+
+    /// A key field's declaration is its block's: the same field name in
+    /// another block names none.
+    #[test]
+    fn a_key_fields_declaration_is_its_blocks() {
+        assert_eq!(
+            declaration_of_field("IconStyle", "scale"),
+            Some("symbol_scales")
+        );
+        assert_eq!(declaration_of_field("Transform", "scale"), None);
+        assert_eq!(block_name("Value<IconStyle>"), "IconStyle");
+        assert_eq!(block_name("Option<TextRenderingPatch>"), "TextRendering");
+        assert_eq!(block_name("Vec<(Key,Shadow)>"), "Shadow");
     }
 }

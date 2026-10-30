@@ -985,8 +985,8 @@ fn refusal_unused_variants_models_and_maps() {
         [
             "declare.widget.button.variants: `@pill` is declared but unused",
             "declare.device_models: `phone_x` is declared but unused",
-            "declare.icon_contexts: `menu` is declared but unused",
             "declare.status_colors: `error` is declared but unused",
+            "declare.icon_contexts: `menu` is declared but unused",
         ]
     );
     // The rule selects on both; the bases state the context and the colour.
