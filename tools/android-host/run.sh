@@ -2,11 +2,12 @@
 # Runs on an ubuntu runner with KVM, from the repository's root: installs the
 # pinned Android SDK packages into a fresh SDK folder (each archive fetched by
 # its exact name from Google's repository, its SHA-1 checked against the
-# repository's and its SHA-256 recorded; never sdkmanager, which installs only
-# a package's newest revision), builds the host (the pinned Gradle wrapper,
+# repository's and its SHA-256 against the one recorded at the first fetch;
+# never sdkmanager, which installs only a package's newest revision), builds the host (the pinned Gradle wrapper,
 # AGP and Kotlin of gradle/libs.versions.toml), then twice: boots a fresh AVD
 # of the chosen system image (cold boot, wiped data, no window, SwiftShader),
-# runs CaptureTest and pulls its PNGs and index.toml; and checks that the two
+# runs CaptureTest (one test per specimen) and pulls its PNGs and TOML
+# fragments, merged into index.toml; and checks that the two
 # runs wrote byte-identical files (sha256sum).
 #
 #     bash tools/android-host/run.sh <image> <out>
@@ -38,21 +39,24 @@ case "$image" in
   37.1)
     image_path="system-images;android-37.1;google_apis_ps16k;x86_64" image_revision=9
     image_archive=sys-img/google_apis/x86_64-ps16k-37.1_r09.zip
-    image_sha1=35c0da1cd298f3426a5b48233f59515097446a28 ;;
+    image_sha1=35c0da1cd298f3426a5b48233f59515097446a28
+    image_sha256=11b9682183827379e8d415db880a30b9ec84d4032650e08e6149b69b30d545a0 ;;
   37.0)
     image_path="system-images;android-37.0;google_apis;x86_64" image_revision=8
     image_archive=sys-img/google_apis/x86_64-37.0_r08.zip
-    image_sha1=a266cfbcf4d6c769b166c0af4d68eff0e4f4a5e3 ;;
+    image_sha1=a266cfbcf4d6c769b166c0af4d68eff0e4f4a5e3
+    image_sha256= ;;
   *) fail "unknown image $image (37.1 or 37.0)" ;;
 esac
 
 # package path | revision | archive | SHA-1 (repository2-3.xml, read 2026-10-30)
+# | SHA-256 (run 40981395261; empty: recorded, not checked)
 packages=(
-  "platform-tools|37.0.1|platform-tools_r37.0.1-linux.zip|477254aa5f903c15cf51001717bdf347fb6b53e0"
-  "platforms;android-37.1|1|platform-37.1_r01.zip|62aeba1ec09c2b1fdf888e79549daf678fa0d75f"
-  "build-tools;37.0.0|37.0.0|build-tools_r37_linux.zip|70954e99f4c3d9d46ee70fa32624672fe7cd6ebe"
-  "emulator|37.2.13|emulator-linux_x64-16740729.zip|f41f9e31eb5ca64926603c03265c50bbc0ff4172"
-  "$image_path|$image_revision|$image_archive|$image_sha1"
+  "platform-tools|37.0.1|platform-tools_r37.0.1-linux.zip|477254aa5f903c15cf51001717bdf347fb6b53e0|d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1"
+  "platforms;android-37.1|1|platform-37.1_r01.zip|62aeba1ec09c2b1fdf888e79549daf678fa0d75f|cadf0a541847820ea3d8ffc5c192562a18376cf9ba510bf9659c772f9a442184"
+  "build-tools;37.0.0|37.0.0|build-tools_r37_linux.zip|70954e99f4c3d9d46ee70fa32624672fe7cd6ebe|01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060"
+  "emulator|37.2.13|emulator-linux_x64-16740729.zip|f41f9e31eb5ca64926603c03265c50bbc0ff4172|cbc7c3cfb83220b8a0f9c513fdab557712e74d339ec19ddffa43f23350ae9bdd"
+  "$image_path|$image_revision|$image_archive|$image_sha1|$image_sha256"
 )
 
 # The runner's own SDK gives only its accepted licences.
@@ -71,12 +75,13 @@ df -h / "$sdk" | tee -a "$log"
 
 : >"$out/sdk.txt"
 for entry in "${packages[@]}"; do
-  IFS='|' read -r path revision archive sha1 <<<"$entry"
+  IFS='|' read -r path revision archive sha1 pinned_sha256 <<<"$entry"
   zip="$sdk/download.zip"
   curl -sSfL --retry 3 -o "$zip" "$repository/$archive" || fail "download $archive: failed"
   got_sha1=$(sha1sum "$zip" | cut -d' ' -f1)
   sha256=$(sha256sum "$zip" | cut -d' ' -f1)
   [ "$got_sha1" = "$sha1" ] || fail "$archive: SHA-1 $got_sha1, expected $sha1"
+  [ -z "$pinned_sha256" ] || [ "$sha256" = "$pinned_sha256" ] || fail "$archive: SHA-256 $sha256, expected $pinned_sha256"
   echo "$path	$revision	$archive	sha1:$sha1	sha256:$sha256" >>"$out/sdk.txt"
   target="$sdk/${path//;//}"
   unpack=$(mktemp -d "$sdk/unpack.XXXXXX")
@@ -98,8 +103,9 @@ cd "$host" || fail "no $host"
 status=$?
 note "gradlew assembleDebug assembleDebugAndroidTest: exit $status"
 [ $status -eq 0 ] || { tail -n 60 "$out/build.txt"; fail "build failed"; }
-./gradlew --no-daemon :app:dependencies --configuration debugAndroidTestRuntimeClasspath \
-  >"$out/dependencies.txt" 2>&1
+for configuration in debugRuntimeClasspath debugAndroidTestRuntimeClasspath; do
+  ./gradlew --no-daemon :app:dependencies --configuration "$configuration" >>"$out/dependencies.txt" 2>&1
+done
 ./gradlew --no-daemon buildEnvironment >"$out/build-environment.txt" 2>&1
 apk=$host/app/build/outputs/apk/debug/app-debug.apk
 test_apk=$host/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
@@ -108,9 +114,8 @@ cd - >/dev/null || exit 1
 
 adb=$sdk/platform-tools/adb
 emulator=$sdk/emulator/emulator
-"$emulator" -version >"$out/emulator-version.txt" 2>&1
-"$emulator" -accel-check >>"$out/emulator-version.txt" 2>&1
-note "emulator: $(head -n 1 "$out/emulator-version.txt")"
+"$emulator" -accel-check >"$out/accel-check.txt" 2>&1
+note "accel-check: $(tr '\n' ' ' <"$out/accel-check.txt")"
 
 image_dir="${image_path//;//}"
 image_tag=$(echo "$image_path" | cut -d';' -f3)
@@ -168,10 +173,10 @@ EOF
   "$adb" install -r -t "$test_apk" >>"$dir/install.txt" 2>&1
   note "run $run: install $(tr '\r\n' '  ' <"$dir/install.txt")"
   "$adb" logcat -c
-  timeout 1200 "$adb" shell am instrument -w -r -e class dev.nativetheme.androidhost.CaptureTest \
+  timeout 2400 "$adb" shell am instrument -w -r -e class dev.nativetheme.androidhost.CaptureTest \
     dev.nativetheme.androidhost.test/androidx.test.runner.AndroidJUnitRunner >"$dir/instrument.txt" 2>&1
   "$adb" logcat -d >"$dir/logcat.txt" 2>&1
-  if grep -q '^OK (1 test)' "$dir/instrument.txt"; then
+  if grep -q '^OK (50 tests)' "$dir/instrument.txt"; then
     note "run $run: CaptureTest OK"
   else
     note "run $run: CaptureTest failed"
@@ -180,6 +185,8 @@ EOF
   fi
   "$adb" exec-out run-as dev.nativetheme.androidhost tar -cf - -C files capture | tar -xf - -C "$dir"
   note "run $run: $(find "$dir/capture" -name '*.png' | wc -l) PNGs"
+  (cd "$dir/capture" && cat device.toml $(find . -name '*.toml' ! -name device.toml ! -name index.toml | sort) \
+    >index.toml && find . -name '*.toml' ! -name index.toml -delete)
   "$adb" emu kill >/dev/null 2>&1
   for _ in $(seq 60); do kill -0 "$emulator_pid" 2>/dev/null || break; sleep 1; done
   kill -9 "$emulator_pid" 2>/dev/null
@@ -221,7 +228,7 @@ field() { echo "$1" | cut -f"$2"; }
   echo "revision = \"$(field "$emulator_line" 2)\""
   echo "archive = \"$repository/$(field "$emulator_line" 3)\""
   echo "sha256 = \"$(field "$emulator_line" 5 | cut -d: -f2)\""
-  echo "version = \"$(head -n 1 "$out/emulator-version.txt" | tr -d '"')\""
+  echo "version = \"$(grep -m1 -o 'Android emulator version .*' "$out/run1/emulator.txt")\""
   echo "gpu = \"swiftshader_indirect\""
   echo "avd = \"720x1280, 320 dpi\""
   echo
@@ -231,9 +238,9 @@ field() { echo "$1" | cut -f"$2"; }
   done <"$out/sdk.txt"
   echo
   echo "[compose]"
-  grep -oE 'androidx\.compose\.[a-z0-9.]+:[a-z0-9-]+(:[^ ]+)?( -> [^ ]+)?' "$out/dependencies.txt" \
-    | sed -E 's/^([^:]+:[^: ]+)(:([^ ]+))?( -> ([^ ]+))?$/\1 \3 \5/' \
-    | awk '{ v = ($3 != "") ? $3 : $2; print "\"" $1 "\" = \"" v "\"" }' | sort -u
+  grep -E -- '--- androidx\.compose[.:]' "$out/dependencies.txt" | grep -v ' (c)$' | sed -E 's/^[-| +\\]*//' \
+    | awk '{ split($1, c, ":"); v = c[3]; for (i = 2; i < NF; i++) if ($i == "->") v = $(i + 1)
+             print "\"" c[1] ":" c[2] "\" = \"" v "\"" }' | sort -u
   echo
   echo "[build]"
   echo "gradle = \"$(grep -m1 '^Gradle ' "$out/gradle-version.txt" | cut -d' ' -f2)\""
