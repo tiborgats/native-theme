@@ -27,8 +27,8 @@
 # (Plasma 6.8.2, KDE Frameworks 6.31.0, KDE Gear 26.08.2, Qt 6.12.0, GNOME 51); the other cited projects of those
 # platforms at the snapshot's version, which is each one's newest stable (git ls-remote of its tags). Material:
 # material-web v2.5.0, Compose Material 3 1.5.0-beta02 (androidx; a pre-release, for the Expressive components, as
-# the ledger records), material-color-utilities by commit, Android 17's AOSP tag. The Android emulator's system image
-# (API 37.0 rev 8, 4 KB pages, or API 37.1 rev 9, 16 KB pages only) is decided by spike A and recorded here then.
+# the ledger records), material-color-utilities by commit, Android 17's AOSP tag, and the Android emulator's system
+# image API 37.1 rev 9 (16 KB pages, chosen by spike A).
 # Windows: the Windows App SDK 2.5.1 pair, the Community Toolkit 8.2.251219, Microsoft Learn's public source
 # repositories at a commit. Apple (D12): the GitHub runner images `macos-15` and `macos-26` with their default Xcode.
 #
@@ -1028,6 +1028,20 @@ generations = ["macos-tahoe", "ios-26"]
 researched = "2026-10-29"
 proof = "gh api 'repos/actions/runner-images/commits?path=images/macos/macos-26-arm64-Readme.md&sha=9329c776c4a38d3dcb31fc78b8180005041c07fb&per_page=1'; the README: 'OS Version: macOS 26.6.2 (25G83)', 'Image Version: 20261013.0424.1', '26.6 (default) | 17F113', iOS simulator runtimes 26.2, 26.4, 26.5 (Xcode 26.6 uses the iOS 26.5 SDK; no 26.6 runtime)"
 note = "Apple ships macOS 26.7.2 and iOS 26.7.2 (2026-10-26); the image is behind. macOS 27 runs only on the `xcode-27` preview image, outside the release set (D12 a)."
+
+[[source]]
+id = "android-system-image@37.1-r9"
+kind = "sdk"
+package = "system-images;android-37.1;google_apis_ps16k;x86_64"
+revision = "9"
+archive = "sys-img/google_apis/x86_64-ps16k-37.1_r09.zip"
+sha256 = "11b9682183827379e8d415db880a30b9ec84d4032650e08e6149b69b30d545a0"
+fingerprint = "google/sdk_gphone16k_x86_64/emu64xa16k:17/CP31.260623.012/16064790:userdebug/dev-keys"
+release = "Android 17 (API 37.1, the stable release; its google_apis x86_64 image exists with 16 KB pages only), the emulator image the Android host measures (spike A)"
+generations = ["material-3"]
+researched = "2026-10-30"
+proof = "os-probe.yml run 40983911425 (spike A): the archive fetched by exact name and checked by SHA-1 and SHA-256 (sdk.txt), booted under KVM on ubuntu-24.04, the fingerprint read from the running emulator (index.toml)"
+note = "API 37.2 rev 7 (16 KB) was listed stable after the release set was frozen; it is outside the set."
 
 [[source]]
 id = "WebKit@7624.5.1.11.3"

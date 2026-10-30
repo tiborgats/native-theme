@@ -32,9 +32,15 @@ COMMON = {"id", "kind", "release", "generations", "researched", "proof"}
 KINDS = {
     # kind: (required beyond COMMON, optional)
     "git": ({"repository", "tag", "commit"}, {"project", "site", "tag_object", "arch", "sparse", "note"}),
-    "sdk": ({"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit"},
-            {"ios_simulator", "note"}),
+    # An sdk entry is an Xcode on a runner image (its header citations checked by os-probe.yml's macOS job) or a
+    # system image another harness measures (the Android emulator's); SDK_SHAPES holds each one's fields.
+    "sdk": (set(), {"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit",
+                    "ios_simulator", "package", "revision", "archive", "sha256", "fingerprint", "note"}),
     "distribution": ({"url", "lastupdate", "extra_db_sha256", "core_db_sha256"}, {"note"}),
+}
+SDK_SHAPES = {
+    "xcode": {"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit"},
+    "system image": {"package", "revision", "archive", "sha256", "fingerprint"},
 }
 SITE_FIELDS = ({"project", "url", "method"}, {"sources", "note"})
 NOT_PINNED_FIELDS = ({"name", "reason"}, {"project"})
@@ -116,10 +122,19 @@ def source_problems(e):
         if "project" not in e and "site" not in e and "note" not in e:
             out.append(f"{where}: neither a project, a site nor a note saying why it is pinned")
     if kind == "sdk":
-        if not SHA_RX.match(str(e.get("readme_commit", ""))):
-            out.append(f"{where}: readme_commit is not a 40-hex SHA")
-        if m and m.group(2) != str(e.get("xcode")):
-            out.append(f"{where}: the id's version is not the Xcode version")
+        shape = "xcode" if "xcode" in e else "system image"
+        for f in sorted(SDK_SHAPES[shape] - set(e)):
+            out.append(f"{where}: the {shape} sdk entry lacks {f}")
+        if shape == "xcode":
+            if not SHA_RX.match(str(e.get("readme_commit", ""))):
+                out.append(f"{where}: readme_commit is not a 40-hex SHA")
+            if m and m.group(2) != str(e.get("xcode")):
+                out.append(f"{where}: the id's version is not the Xcode version")
+        else:
+            if not SHA256_RX.match(str(e.get("sha256", ""))):
+                out.append(f"{where}: sha256 is not a 64-hex SHA-256")
+            if m and "revision" in e and not m.group(2).endswith(f"-r{e['revision']}"):
+                out.append(f"{where}: a system image's id does not end in -r<revision>")
     if kind == "distribution":
         for f in ("extra_db_sha256", "core_db_sha256"):
             if f in e and not SHA256_RX.match(str(e[f])):
@@ -311,6 +326,27 @@ def self_test() -> int:
         'generations = ["windows-11"]', 'generations = ["kde-breeze"]'),
            ["source breeze@f54166ed: a second pin of breeze for kde-breeze",
             "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id"])
+    image = good + """
+[[source]]
+id = "android-system-image@37.1-r9"
+kind = "sdk"
+package = "system-images;android-37.1;google_apis_ps16k;x86_64"
+revision = "9"
+archive = "sys-img/google_apis/x86_64-ps16k-37.1_r09.zip"
+sha256 = "11b9682183827379e8d415db880a30b9ec84d4032650e08e6149b69b30d545a0"
+fingerprint = "google/sdk_gphone16k_x86_64/emu64xa16k:17/CP31.260623.012/16064790:userdebug/dev-keys"
+release = "Android 17"
+generations = ["material-3"]
+researched = "2026-10-30"
+proof = "spike A"
+"""
+    expect("system image sdk", image, [])
+    expect("system image sha256", edit(image, 'sha256 = "11b96821', 'sha256 = "11b9682'),
+           ["source android-system-image@37.1-r9: sha256 is not a 64-hex SHA-256"])
+    expect("system image revision", edit(image, '37.1-r9"', '37.1-r8"'),
+           ["source android-system-image@37.1-r8: a system image's id does not end in -r<revision>"])
+    expect("system image fields", edit(image, 'fingerprint = "google', 'note = "google'),
+           ["source android-system-image@37.1-r9: the system image sdk entry lacks fingerprint"])
     expect("sdk version", edit(good, 'id = "xcode@26.6"', 'id = "xcode@26.5"'),
            ["source xcode@26.5: the id's version is not the Xcode version"])
     expect("bad method", edit(good, 'method = "snapshot"', 'method = "archive"'),
