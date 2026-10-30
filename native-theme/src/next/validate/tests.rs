@@ -818,6 +818,40 @@ fn availability_is_the_default_flavours() {
     );
 }
 
+/// An entry of a map of bare blocks holds a block: a patch setting one to
+/// a reference, `Absent` or `Auto` is ill-typed, in a base or a rule,
+/// whatever lies below it (S6.1, S12, ADD-A123).
+#[test]
+fn refusal_not_a_block() {
+    let decl = declare(
+        "text_styles = [\"body\"]\nicon_contexts = [\"menu\"]\nsurface_sets = [\"window\"]",
+    );
+    let layer = toml(
+        "[tokens.text.keyed]\nbody = \"= token.text.roles.body\"\n\
+         [tokens.icons.sizes.keyed]\nmenu = \"absent\"\n\
+         [[rules]]\nwhen = { conditions = [\"scheme:dark\"] }\ntarget = \"colors\"\n\
+         set = { surfaces.window = \"= base\" }",
+    );
+    assert_eq!(
+        found(&layer, &decl),
+        [
+            "tokens.text.keyed.body: an entry of a map of blocks holds a block, never a \
+             reference, `absent` or `auto`",
+            "tokens.icons.sizes.keyed.menu: an entry of a map of blocks holds a block, never a \
+             reference, `absent` or `auto`",
+            "rules[0].set.surfaces.window: an entry of a map of blocks holds a block, never a \
+             reference, `absent` or `auto`",
+        ]
+    );
+    let fields = toml("[tokens.text.keyed.body]\nline_height = \"= mul(font_size, 1.2)\"");
+    assert_eq!(found(&fields, &decl), NONE);
+    // A keyed timing is a block stated whole: a reference names no variant.
+    assert!(
+        Layer::from_toml("[tokens.motion.timings]\nfast = \"= token.motion.timings.slow\"")
+            .is_err()
+    );
+}
+
 #[test]
 fn refusal_unit_mismatch() {
     let decl = declare("params = { layout = { unit = \"px\", keys = [\"gap\"] } }");

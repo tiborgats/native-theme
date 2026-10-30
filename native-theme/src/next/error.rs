@@ -231,6 +231,11 @@ pub enum ProblemKind {
         /// The size.
         size: String,
     },
+    /// An entry of a map of bare blocks (`token.text.keyed`,
+    /// `token.icons.sizes.keyed`, `ColorRoles.surfaces`) set to a reference,
+    /// `Absent` or `Auto`, which the entry cannot hold: an ill-typed patch
+    /// (S6.1, S12).
+    NotABlock,
     /// A keyed scalar stated in another unit than its declaration's (S4.6,
     /// S10, S12).
     UnitMismatch {
@@ -322,6 +327,9 @@ impl fmt::Display for ProblemKind {
             ProblemKind::SizeNotTaken { size } => {
                 write!(f, "the variant does not take the size `{size}`")
             }
+            ProblemKind::NotABlock => f.write_str(
+                "an entry of a map of blocks holds a block, never a reference, `absent` or `auto`",
+            ),
             ProblemKind::UnitMismatch { unit } => write!(f, "declared in `{unit}`"),
             ProblemKind::Unused { name } => write!(f, "`{name}` is declared but unused"),
         }

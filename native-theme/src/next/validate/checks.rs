@@ -1213,6 +1213,16 @@ impl Visit for Checker<'_> {
                 .keys()
                 .first()
                 .is_some_and(|group| ABSENT_PARAM_GROUPS.contains(group));
+        let bare_entry = matches!(
+            path.map_entry(),
+            Some(
+                ("TextTokens", "keyed") | ("IconSizeTokens", "keyed") | ("ColorRoles", "surfaces")
+            )
+        );
+        if bare_entry && !matches!(form, Form::Stated) {
+            self.problem(&path.to_string(), ProblemKind::NotABlock);
+            return;
+        }
         match form {
             Form::Absent if !(marks.may_be_absent || absent_param) => {
                 self.problem(&path.to_string(), ProblemKind::AbsentNotAllowed);

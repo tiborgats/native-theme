@@ -243,6 +243,15 @@ impl Path {
         })
     }
 
+    /// The map field whose entry the walk is at: its last step a key, the
+    /// one before it the map's field, owner and name.
+    pub(crate) fn map_entry(&self) -> Option<(&'static str, &'static str)> {
+        match self.steps.as_slice() {
+            [.., Step::Field { owner, name, .. }, Step::Key { .. }] => Some((*owner, *name)),
+            _ => None,
+        }
+    }
+
     /// The keys stated after the innermost field (a map of maps' outer key).
     pub(crate) fn keys(&self) -> Vec<&str> {
         let tail = self

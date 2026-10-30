@@ -30,7 +30,9 @@ pub(crate) enum Below {
     /// invented for the field).
     Missing,
     /// A bare block: a map of bare blocks' entry set to a reference,
-    /// `Absent` or `Auto`, which the entry cannot hold (S12 refuses it).
+    /// `Absent` or `Auto`, which the entry cannot hold. That is no merge
+    /// conflict but an ill-typed patch, refused whatever lies below it when
+    /// the layer is added (S6.1, S12), so no validated layer brings one here.
     Block,
 }
 
