@@ -39,19 +39,27 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:2080-2086"
 quote = "const int animationsDuration = cg.readEntry(\"AnimationDurationFactor\", StyleConfigData::animationsDuration() / 100.0f) * 100; if (animationsDuration > 0) { StyleConfigData::setAnimationsDuration(animationsDuration); StyleConfigData::setAnimationsEnabled(true); } else { StyleConfigData::setAnimationsEnabled(false); }"
 
-# Breeze's state engines (buttons' hover, focus, pressed cross-fades): the factor times 100 ms, truncated to whole
-# ms by the int conversion, while the factor is set; breezerc's AnimationsDuration (100) otherwise, which the
-# factor's default 1 reproduces
+# Breeze's state engines (buttons' hover, focus, pressed cross-fades; also Qt's SH_Widget_Animation_Duration, which
+# breezestyle.cpp:937-938 answers with it): `animations`, S4.1's key for Breeze's Animations class. While kdeglobals
+# sets the factor, the factor times the literal 100 (not breezerc's AnimationsDuration), truncated to whole ms by
+# the int conversion; a positive result turns Breeze's animations on whatever breezerc says, zero (a factor below
+# 0.01, the factor 0 of animations_off) turns them off. While the factor is unset, breezerc's AnimationsDuration
+# (100), which the factor's default 1 reproduces
 
 [[fact]]
-key = "token.motion.durations.breeze_state"
+key = "token.motion.durations.animations"
 value = "= floor(mul(100ms, token.motion.speed_factor))"
 rows = ["K3.31", "K1.30"]
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:2076-2082"
-quote = "if (!cg.hasKey(\"AnimationDurationFactor\")) { return; } const int animationsDuration = cg.readEntry(\"AnimationDurationFactor\", StyleConfigData::animationsDuration() / 100.0f) * 100; if (animationsDuration > 0) { StyleConfigData::setAnimationsDuration(animationsDuration);"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2076-2086"
+quote = "if (!cg.hasKey(\"AnimationDurationFactor\")) { return; } const int animationsDuration = cg.readEntry(\"AnimationDurationFactor\", StyleConfigData::animationsDuration() / 100.0f) * 100; if (animationsDuration > 0) { StyleConfigData::setAnimationsDuration(animationsDuration); StyleConfigData::setAnimationsEnabled(true); } else { StyleConfigData::setAnimationsEnabled(false); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:937-938"
+quote = "case SH_Widget_Animation_Duration: return StyleConfigData::animationsEnabled() ? StyleConfigData::animationsDuration() : 0;"
 
 [[fact.cite]]
 kind = "published"
@@ -62,7 +70,7 @@ quote = "<entry name=\"AnimationsDuration\" type=\"Int\"> <default>100</default>
 # jump-end)
 
 [[fact]]
-key = "token.motion.timings.breeze_state"
+key = "token.motion.timings.animations"
 value = { steps = { count = 10, jump = "jump_end" } }
 rows = ["K3.31"]
 
@@ -96,8 +104,12 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
 quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
 
+# KMessageWidget's timeline (S4.1 step 2, the one class giving its animation the value). KCollapsibleGroupBox's
+# timeline is built at 500 ms too, but each expand or collapse sets it to the style hint's duration, at least 1 ms
+# (kcollapsiblegroupbox.cpp:114-116): Breeze's `animations`, above, no key of its own
+
 [[fact]]
-key = "token.motion.durations.kf_timeline"
+key = "token.motion.durations.message_widget"
 value = "500ms"
 rows = ["K3.37"]
 
@@ -106,18 +118,105 @@ kind = "published"
 source = "kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60"
 quote = "timeLine = new QTimeLine(500, q);"
 
+# the decoration's shadow fade (Breeze's Decoration class, whose shadow fade and active-state fade differ:
+# `decoration_shadow`): the factor times the literal 100, a float that QVariantAnimation::setDuration(int)
+# truncates to whole ms; the active-state animation is set to 0 and unused. The decoration runs in KWin and reads the
+# factor from KSharedConfig::openConfig(), KWin's main config: kwinrc (KWin's about data names it `kwin`, and
+# KConfig's main config is the application name plus `rc`), cascaded over kdeglobals (the globals parsed first, the
+# main config last), 1 where neither sets it. So kwinrc's [KDE] AnimationDurationFactor, where set, wins over
+# kdeglobals' for the decoration alone; `token.motion.speed_factor` is kdeglobals' (the reader's input), equal to
+# the decoration's unless kwinrc sets its own
+
+[[fact]]
+key = "token.motion.durations.decoration_shadow"
+value = "= floor(mul(100ms, token.motion.speed_factor))"
+rows = ["K1.17"]
+
 [[fact.cite]]
 kind = "published"
-source = "kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:48"
-quote = "d->animation = new QTimeLine(500, this); // duration matches kmessagewidget"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:388-389"
+quote = "// But the shadow is fine to animate like this! m_shadowAnimation->setDuration(cg.readEntry(\"AnimationDurationFactor\", 1.0f) * 100.0f);"
 
-# Plasma's longDuration: plasmarc [Units] longDuration (200) times the factor, rounded by qRound (d + 0.5, then
-# the int conversion: floor for d >= 0), at least 1 ms (Kirigami's own units.cpp defaults, 50/100/200/400 ms, are
-# replaced on Plasma by the qqc2-desktop-style integration)
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51"
+quote = "void setDuration(int msecs);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381"
+quote = "KSharedConfig::Ptr config = KSharedConfig::openConfig(); const KConfigGroup cg(config, QStringLiteral(\"KDE\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:139"
+quote = "KAboutData aboutData(QStringLiteral(\"kwin\"), // The program name used internally"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:155"
+quote = "KAboutData::setApplicationData(aboutData);"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/ksharedconfig.cpp:136-139"
+quote = "if (fileName.isEmpty() && !flags.testFlag(KConfig::SimpleConfig)) { // Determine the config file name that KConfig will make up (see KConfigPrivate::changeFileName) fileName = KConfig::mainConfigName(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:648-649"
+quote = "QString appName = QCoreApplication::applicationName(); return appName + QLatin1String(\"rc\");"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:712-731"
+quote = "// Parse all desired files from the least to the most specific. bool globalConfigFileIsImmutable = false; if (d->wantGlobals()) { globalConfigFileIsImmutable = (d->parseGlobalSystemFiles() == KConfigIniBackend::ParseImmutable); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
+
+# Qt's own unscaled timings: the line edit's side-icon fade (QLineEditIconButton), the tab move (QTabBar's
+# ANIMATION_DURATION) and QVariantAnimation's own default, which QTreeView's expand takes (`variant`)
+
+[[fact]]
+key = "token.motion.durations.line_edit_icon_button"
+value = "160ms"
+rows = ["K1.46†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:427-435"
+quote = "void QLineEditIconButton::startOpacityAnimation(qreal endValue) { QPropertyAnimation *animation = new QPropertyAnimation(this, QByteArrayLiteral(\"opacity\"), this); connect(animation, &QPropertyAnimation::finished, this, &QLineEditIconButton::onAnimationFinished); animation->setDuration(160);"
+
+[[fact]]
+key = "token.motion.durations.tab_bar"
+value = "250ms"
+rows = ["K1.133†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtabbar_p.h:30"
+quote = "#define ANIMATION_DURATION 250"
+
+[[fact]]
+key = "token.motion.durations.variant"
+value = "250ms"
+rows = ["K1.185†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153"
+quote = "QVariantAnimationPrivate::QVariantAnimationPrivate() : duration(250), interpolator(&defaultInterpolator)"
+
+# Plasma's longDuration: plasmarc [Units] longDuration (200) times the factor, rounded by qRound (`round`, S2.2: to
+# the nearest integer, a half away from zero), then at least 1 ms by qMax (Kirigami's own units.cpp defaults,
+# 50/100/200/400 ms, are replaced on Plasma by the qqc2-desktop-style integration)
 
 [[fact]]
 key = "token.motion.durations.long"
-value = "= max(1ms, floor(add(mul(200ms, token.motion.speed_factor), 0.5ms)))"
+value = "= max(1ms, round(mul(200ms, token.motion.speed_factor)))"
 rows = ["Q3.23", "Q3.24", "Q3.25"]
 
 [[fact.cite]]
@@ -134,6 +233,11 @@ quote = "int longDuration = cfg.readEntry(\"longDuration\", defaultLongDuration)
 kind = "published"
 source = "qtbase@6.12.0 src/corelib/global/qnumeric.h:546-547"
 quote = "{ return d >= 0.0 ? d + 0.5 : d - 0.5; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/global/qnumeric.h:570-573"
+quote = "constexpr inline int qRound(double d) { return QtPrivate::qCheckedFPConversionToInteger<int>(QtPrivate::QRoundImpl::qRound(d)); }"
 
 [[fact]]
 key = "token.motion.durations.very_short"
@@ -177,10 +281,12 @@ kind = "published"
 source = "kirigami@6.31.0 src/platform/units.cpp:44"
 quote = ", humanMoment(2000)"
 
-# The focus indicator (R12): Breeze's QFocusFrame, shown after a keyboard focus change only (Tab, Backtab,
-# a shortcut), a ring of PM_FocusFrameHMargin filled with Highlight at Blend_Value; its inner edge is the widget's edge
-# in the general branch (push and tool buttons, fields and combo boxes take theirs 1 px inside, their own parts' rule),
-# inner radius Frame_FrameRadius and outer radius that plus the margin: concentric.
+# The focus indicator (R12, S2.10): Breeze's QFocusFrame, shown after a keyboard focus change only (Tab, Backtab,
+# a shortcut), a ring of PM_FocusFrameHMargin filled with Highlight at Blend_Value. The token is Breeze's default
+# branch: the ring's inner edge on the widget's box (offset 0), its inner corners Frame_FrameRadius whatever the
+# widget's radius and its outer corners that plus the margin. Every Breeze focus target has a branch of its own
+# (push and tool buttons, fields and combo boxes 1 px inside the widget; check boxes, radio buttons, sliders, dials,
+# group boxes by their indicator), so each part restates its offset (and the round ones their corners).
 
 [[fact]]
 key = "token.focus.kind"
@@ -237,12 +343,12 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:6776-6779"
 quote = "auto outerColor = _helper->alphaColor(option->palette.highlight().color(), Metrics::Blend_Value); painter->setRenderHint(QPainter::Antialiasing); painter->fillPath(focusFramePath, outerColor);"
 
-# the frame's rect is the widget's grown by PM_FocusFrameHMargin, and the ring is that margin wide inside it:
-# its inner edge is the widget's edge
+# the frame's rect is the widget's grown by PM_FocusFrameHMargin, and the ring is that margin wide inside it: its
+# inner edge is the widget's edge, which the default branch moves by nothing (a zero by omission, S17)
 
 [[fact]]
 key = "token.focus.offset.top"
-value = "= sub(2px, token.focus.width)"
+value = "0px"
 rows = ["K3.20"]
 
 [[fact.cite]]
@@ -264,10 +370,11 @@ quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, 
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
 quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
 
 [[fact]]
 key = "token.focus.offset.right"
-value = "= sub(2px, token.focus.width)"
+value = "0px"
 rows = ["K3.20"]
 
 [[fact.cite]]
@@ -289,10 +396,11 @@ quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, 
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
 quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
 
 [[fact]]
 key = "token.focus.offset.bottom"
-value = "= sub(2px, token.focus.width)"
+value = "0px"
 rows = ["K3.20"]
 
 [[fact.cite]]
@@ -314,10 +422,11 @@ quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, 
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
 quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
 
 [[fact]]
 key = "token.focus.offset.left"
-value = "= sub(2px, token.focus.width)"
+value = "0px"
 rows = ["K3.20"]
 
 [[fact.cite]]
@@ -339,46 +448,70 @@ quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, 
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
 quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
+
+# the ring's inner corners (S2.10: a stated corner is the inner one, its outer corner it plus the width, here
+# innerRadius + vmargin as Breeze draws it)
 
 [[fact]]
 key = "token.focus.corners.top_left"
-value = "follow_part"
+value = "5px"
 rows = ["K3.20"]
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
-quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
 
 [[fact]]
 key = "token.focus.corners.top_right"
-value = "follow_part"
+value = "5px"
 rows = ["K3.20"]
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
-quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
 
 [[fact]]
 key = "token.focus.corners.bottom_right"
-value = "follow_part"
+value = "5px"
 rows = ["K3.20"]
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
-quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
 
 [[fact]]
 key = "token.focus.corners.bottom_left"
-value = "follow_part"
+value = "5px"
 rows = ["K3.20"]
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
-quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
 
 [[fact]]
 key = "token.focus.corners.curve"

@@ -94,7 +94,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W14† | `window.title @ variant @title_hidden` (`absent = true`: the title goes, the bar and its traffic lights stay) | rule |
 | MAC-W14† | `window.title_bar.{fill,stroke,min_height}, window.values.title_alignment @ variant @no_toolbar / @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-W15† | `window.title.text.fill @ cond window_inactive` | rule |
-| MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @recessed / @round_rect / @inline / @textured_rounded / @shadowless_square / flat (borderless)` | rule |
+| MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @shadowless_square / flat (borderless)` | rule |
 | MAC-B01 | `expander.header, expander.arrow @ variant @push_disclosure; expander.arrow (the disclosure bezel, MAC-EX01)` | rule |
 | MAC-B01 | `button.body.*, button.label.* @ {pressed} / {disabled} / {checked} per bezel variant` | rule |
 | MAC-B02 | `button.body.fill, button.label.text.fill @ {default} !cond window_inactive !cond app_inactive` | rule |
@@ -245,7 +245,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SB05 | `list.row_background.fill, list.row.text.fill @ variant sidebar {selected} cond window_inactive` | rule |
 | MAC-SB05 | `reader:macos:unemphasizedSelectedContentBackgroundColor` | reader |
 | MAC-SB06 | `sidebar.pane.{fill,corners,shadow} @ variant floating (material fill, Concentric corners)` | rule |
-| MAC-SB06 | `sidebar.values.floating_inset` | field |
+| MAC-SB06 | `sidebar.pane.margin @ variant floating` (the pane's distance from the window's edges, its `Concentric` corners' inset, S2.4) | rule |
 | MAC-SB06 | `background_extension.extension.fill @ context sidebar.pane variant floating (the content extending under it)` | rule |
 | MAC-SB06 | `reader:macos:effectiveCornerRadii` | reader |
 | MAC-SB07 | `sidebar.pane.fill @ cond window_inactive` | rule |

@@ -80,7 +80,9 @@ absent = ["roundButton"]
 
 # Kirigami (qqc2-desktop-style's Button, ToolButton and RoundButton, Kirigami's and kirigami-addons' buttons): the
 # style item paints with no widget, so its window is always active for the default look (breezestyle.cpp:4563); a
-# disabled item loses the active focus (qquickitem.cpp:6835-6838)
+# disabled item loses the active focus (qquickitem.cpp:6835-6838). Button and ToolButton pass `highlighted` to the
+# style as focus, and Breeze draws that focus's pen only under State_KeyboardFocusChange, which the style item sets
+# from the control's last focus reason, in or out: the flag `@keyboard_focus_change` (Q1.8, Q1.9)
 [[model]]
 widget = "button"
 when = { conditions = ["flavor:kirigami"] }
@@ -88,10 +90,10 @@ available = true
 variants = ["flat", "circular", "toggle", "menu", "tool", "icon_only", "with_icon", "help", "@highlighted", "@ka_floating", "@key_sequence", "@ka_download", "close", "back", "previous", "next", "overflow", "clear_field", "reveal", "remove", "play", "volume"]
 sizes = []
 densities = []
-flags = ["@recording"]
+flags = ["@recording", "@keyboard_focus_change"]
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
-variant_sets = [["flat", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["circular", "flat"], ["circular", "toggle"], ["circular", "flat", "toggle"], ["circular", "@highlighted"], ["circular", "flat", "@highlighted"]]
+variant_sets = [["flat", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["circular", "flat"], ["circular", "toggle"], ["circular", "flat", "toggle"], ["circular", "@highlighted"], ["circular", "flat", "@highlighted"], ["flat", "@highlighted"], ["tool", "@highlighted"], ["tool", "flat", "@highlighted"]]
 not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }]
 rows = ["Q1.8", "Q1.9", "Q2.4", "Q2.48", "K-KA-26†", "K-KA-43†"]
 
@@ -104,6 +106,21 @@ quote = "elementType: \"button\" sunken: controlRoot.down on: controlRoot.checka
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
 quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:55"
+quote = "hasFocus: controlRoot.activeFocus || controlRoot.highlighted"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:60"
+quote = "hasFocus: controlRoot.visualFocus || (!controlRoot.flat && controlRoot.pressed) || controlRoot.highlighted"
+
+[[model.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:42-45"
+quote = "static bool isKeyFocusReason(Qt::FocusReason reason) { return reason == Qt::TabFocusReason || reason == Qt::BacktabFocusReason || reason == Qt::ShortcutFocusReason; }"
 
 [[model.cite]]
 kind = "published"
