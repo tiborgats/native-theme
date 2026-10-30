@@ -15382,10 +15382,9 @@ quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=
 # body is the drawn AppBarButtonInnerBorder, inset 2,6,2,6 from ContentRoot, so the margin from body is 14 and 10.
 # The rule holds in a command bar (`context toolbar.bar`, W1-102): its overflow menu shows OverflowSubItemChevron
 # instead (:275-278). The tabbed command bar's label-beside-icon position (LabelOnRight, margin -7,20,12,0) is
-# InlineTop (ADD-A123), stated after this rule. The glyph's source (U+E974, the XAML character reference
-# `&#xE974;`, in Segoe Fluent Icons, its fallback Segoe MDL2 Assets through token.text.fallbacks.per_family) is
-# held back under both positions: the quote check reads no XAML character reference as a number and no entry of a
-# XAML FontFamily list (`Segoe Fluent Icons,Segoe MDL2 Assets`) as a whole string (reported).
+# InlineTop (ADD-A123), stated after this rule. The glyph's source is U+E974 (the XAML character reference
+# `&#xE974;`) in Segoe Fluent Icons, its fallback Segoe MDL2 Assets through token.text.fallbacks.per_family
+# (tokens.toml), stated under both positions.
 [[fact]]
 key = "button.menu_indicator.glyph.size"
 when = { variants = ["menu", "tool"] }
@@ -15584,6 +15583,38 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:356"
 quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
 
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
+value = { font_code_point = { family = "Segoe Fluent Icons", code_point = 0xE974 } }
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:31"
+quote = "<x:String x:Key=\"AppBarButtonFlyoutGlyph\">&#xE974;</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:66"
+quote = "<x:String x:Key=\"AppBarButtonFlyoutGlyph\">&#xE974;</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:101"
+quote = "<x:String x:Key=\"AppBarButtonFlyoutGlyph\">&#xE974;</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20"
+quote = "<FontFamily x:Key=\"SymbolThemeFontFamily\">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>"
+
+
 # An overlaid indicator's sides it is not placed by (its bottom and start) are stated as the platform writes
 # them (ADD-A123): 0 and -23 in ContentRoot's frame.
 [[fact]]
@@ -15689,6 +15720,38 @@ quote = "<Thickness x:Key=\"AppBarButtonTextLabelOnRightMargin\">8,16,12,10</Thi
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:174-175"
 quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"TextLabel\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{StaticResource AppBarButtonTextLabelOnRightMargin}\" />"
+
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }, { widget = "component.tabbed_command_bar" }] }
+value = { font_code_point = { family = "Segoe Fluent Icons", code_point = 0xE974 } }
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:31"
+quote = "<x:String x:Key=\"AppBarButtonFlyoutGlyph\">&#xE974;</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:66"
+quote = "<x:String x:Key=\"AppBarButtonFlyoutGlyph\">&#xE974;</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:101"
+quote = "<x:String x:Key=\"AppBarButtonFlyoutGlyph\">&#xE974;</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20"
+quote = "<FontFamily x:Key=\"SymbolThemeFontFamily\">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>"
 
 
 [[fact]]
