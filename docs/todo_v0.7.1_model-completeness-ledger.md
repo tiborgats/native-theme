@@ -11,7 +11,7 @@ the triage (every item has a destination) and, from M4, `--final` (the plan's M4
 | D5 `v0.7.1-rc1` merged to `main` | done | fc6109d1 | PR #6, CI 39/39; `main` fast-forwarded on the maintainer's request (2026-10-29) |
 | M0 setup | done | 2026-10-30 | `v0.8.0-rc1` and `v0.8.0-tools` cut from fc6109d1; draft PRs #7 and #8; the gate: spec checkers' self-tests and runs, `check_sources.py`, `update_sources.sh --verify`, the re-pin (no unresolved mapped citation; the rest listed), `check_ledger.py`, all green; the full run green |
 | Spikes M · G · K · I · W · A | done | 2026-10-30 | all six yes (rows below) |
-| M1a slice core | in progress | | [design](todo_v0.7.1_model-completeness-m1a-design.md); lanes gnome and macos started 2026-10-30; code tasks 1–3 done (task 3 at 71de4ecf), task 4 running; ADD-A121 converged (b65102cf), the gnome, kde, windows and material facts reconciling with it; ADD-A122 drafting; the macOS probe and iOS host second extensions running |
+| M1a slice core | in progress | | [design](todo_v0.7.1_model-completeness-m1a-design.md); code tasks 1–6 done and reviewed (task 6 at bf87f89f, gate 152/152 at dc6c23c4), task 7 running with task 6's review fixes; ADD-A121 converged (b65102cf, eight checks) and ADD-A122 converged (c7d2bcdb, ten checks), the checkers following both (dc7d0451; d3f88cdc..1fce34af); the gnome, kde, windows and material slices reconciled with both and audited at the pins (facts-base 5,888 facts, 31 pending, every checker 0); macos-tahoe's second pass (30f8f129) verified (46.6 % agreement) and in tie-break; the iOS host extension running |
 | M1b slice complete | not started | | |
 | D6 checkpoint | not started | | |
 | M2 model core | not started | | |
