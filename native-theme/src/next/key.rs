@@ -43,19 +43,30 @@ impl Key {
         }
     }
 
-    /// Whether `name` is a key: [`key!`](crate::key)'s compile-time check.
-    #[doc(hidden)]
+    /// Whether `name` is in the key grammar; a `const fn`, so
+    /// [`key!`](crate::key) checks its literal at compile time with it.
     #[must_use]
-    pub const fn __is_key(name: &str) -> bool {
+    pub const fn is_valid(name: &str) -> bool {
         is_key(name)
     }
 
-    /// The key a literal names, for [`key!`](crate::key) alone, which has
-    /// checked the literal with [`Key::__is_key`] at compile time.
-    #[doc(hidden)]
+    /// The key a `'static` name names, if it is in the grammar, borrowing the
+    /// name.
+    ///
+    /// ```
+    /// use native_theme::next::Key;
+    ///
+    /// const SHADE: Option<Key> = Key::from_static("shade_light");
+    /// assert_eq!(SHADE.map(|k| k.to_string()), Some("shade_light".to_owned()));
+    /// assert_eq!(Key::from_static("Shade"), None);
+    /// ```
     #[must_use]
-    pub const fn __from_checked_literal(name: &'static str) -> Key {
-        Key(Cow::Borrowed(name))
+    pub const fn from_static(name: &'static str) -> Option<Key> {
+        if is_key(name) {
+            Some(Key(Cow::Borrowed(name)))
+        } else {
+            None
+        }
     }
 
     /// The name.
@@ -117,14 +128,18 @@ const fn is_key(name: &str) -> bool {
 macro_rules! key {
     ($name:literal) => {{
         const _: () = ::core::assert!(
-            $crate::next::Key::__is_key($name),
+            $crate::next::Key::is_valid($name),
             ::core::concat!(
                 "key!(",
                 ::core::stringify!($name),
                 "): not a key, `[a-z0-9][a-z0-9_]*`"
             )
         );
-        $crate::next::Key::__from_checked_literal($name)
+        match $crate::next::Key::from_static($name) {
+            ::core::option::Option::Some(key) => key,
+            // Never taken: the assertion above refuses the literal at compile time.
+            ::core::option::Option::None => loop {},
+        }
     }};
 }
 
@@ -137,6 +152,8 @@ mod tests {
         for name in ["a", "0", "128", "body", "shade_light", "a_", "x9_y"] {
             assert!(is_key(name), "{name}");
             assert_eq!(Key::new(name).map(|k| k.to_string()), Ok(name.to_owned()));
+            assert_eq!(Key::from_static(name), Key::new(name).ok());
+            assert!(Key::is_valid(name));
         }
         for (name, character) in [
             ("", None),
@@ -149,6 +166,8 @@ mod tests {
             ("bodY", Some('Y')),
         ] {
             assert!(!is_key(name), "{name}");
+            assert_eq!(Key::from_static(name), None);
+            assert!(!Key::is_valid(name));
             assert_eq!(
                 Key::new(name),
                 Err(KeyError {

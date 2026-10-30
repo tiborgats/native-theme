@@ -1,11 +1,12 @@
 //! The 0.8.0 model, built beside today's until it replaces it.
 //!
 //! Its re-exports are the shape the crate root takes when this module moves
-//! into place: the units, keys, colours and values every block is made of.
+//! into place: the units, keys, colours and values every block is made of,
+//! and the expressions a value may derive by.
 
 pub mod color;
 mod error;
-mod expr;
+pub mod expr;
 mod key;
 mod roles;
 mod selector;
