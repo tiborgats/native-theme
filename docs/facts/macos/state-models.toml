@@ -21,7 +21,8 @@
 # which draws no bezel; `menu` is NSComboButton in its `.unified` style, another control, whose default `.split`
 # style is the `split_button` widget, ADD-A123: the probe's `combo_unified` buttons, `combo_split` being no button),
 # one border shape, one tint prominence, one image position. The context: a button in a toolbar (`NSToolbarItem`,
-# the probe's toolbar window; not analysed, pending U94). Each variant was measured alone: no variant set is declared
+# the probe's toolbar window, which gives its item views control size extra_large, `view_*_controlSize_raw` 4: their
+# min_height and font are stated, the rest pending U94). Each variant was measured alone: no variant set is declared
 # (the report lists the sets AppKit draws).
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }

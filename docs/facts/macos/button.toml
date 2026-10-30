@@ -17889,7 +17889,183 @@ rows = ["MAC-B09"]
 
 [[fact]]
 key = "button.body.min_height"
-when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "36px"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_push_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_push_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_push_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_push_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_push_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tool"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "36px"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_toolbar_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_toolbar_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_toolbar_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_toolbar_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], not_sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["toggle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
 rows = ["MAC-X16"]
 
@@ -17925,19 +18101,539 @@ rows = ["MAC-X16"]
 
 [[fact]]
 key = "button.label.text.font.family"
-when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_push_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_push_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_push_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_push_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_push_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_toolbar_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_toolbar_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_toolbar_font.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_toolbar_font.familyName"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], not_sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["toggle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.family"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
 rows = ["MAC-X16"]
 
 [[fact]]
 key = "button.label.text.font.size"
-when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "13px"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_push_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_push_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_push_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_push_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_push_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_toolbar_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_toolbar_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_toolbar_font.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_toolbar_font.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], not_sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["toggle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
 rows = ["MAC-X16"]
 
 [[fact]]
 key = "button.label.text.font.weight"
-when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = 400
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_push_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_push_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_push_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_push_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_push_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.toolbar.view_toolbar_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.toolbar.view_toolbar_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.button_pass.toolbar.view_toolbar_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml#macos.button_pass.toolbar.view_toolbar_font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], not_sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["toggle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
 rows = ["MAC-X16"]
 
