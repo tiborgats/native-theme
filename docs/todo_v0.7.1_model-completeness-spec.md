@@ -1284,7 +1284,9 @@ where that widget's entry marks the value `auto`. Each component's part and fiel
 catalogue the same way (S5.1), as data, its parts' styles being `PartStyle`. The derive's input structs, the
 widgets' values structs (`ButtonValues`) and the components' tables are themselves generated from the catalogue by
 `scripts/generate_widgets.py` (ADD-A114), which emits the units its list enables (a unit: a set of catalogue entries
-the list names), so a unit enters the model in the commit whose presets state it; its `--check`
+the list names, less the values it defers to the unit that holds their type — the button's `Placement` values to the
+placement unit, ADD-A120), so a unit enters the model in the commit whose presets state it; token fields are staged
+the same way (`Behavior.scroll` enters with the `scroll_view` unit); its `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
 archived); hand-written entries with no drift check.
@@ -2054,6 +2056,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly; one starting `= ` is an expression, and `"auto"`, `"absent"` and `"none"` are the reserved words above (ADD-A120) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
@@ -2668,11 +2671,17 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
 - **Absence.** A value that states an absence (`absent`, an empty list, `available = false`, a variant or size the
   platform lacks) cites the whole enclosing definition as its `source` range (the selector block, the class's
   declaration in the pinned headers, the control's style), quotes its head, and names in `absent` the platform's
-  names for what is missing (a list); the checker verifies that no name occurs in the cited lines, and the verifier
+  names for what is missing (a list; `[]` where the platform has no name for it because it does not have it at all,
+  ADD-A120); the checker verifies that no name occurs in the cited lines, and the verifier
   that the range is the whole definition and each name the platform's own (taken from where the platform does define
   it, another release or a sibling class). A definition spread over several ranges (an Objective-C class and its
   categories) has one citation per range, the names absent from each. A measured absence is a `measured` citation
   whose evidence records that nothing is drawn (an image analysis's output).
+- **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) cites
+  evidence measured under at least two values of each input it names (the probe's passes with the accent changed):
+  its `evidence` path names a table of rows, each the inputs' values and the measured result; the checker requires
+  the rows and their inputs to differ, and the gate evaluates the expression over each row within `tolerance`
+  (ADD-A120).
 - **`read`** facts state the reference the key takes from a reader input (`value = "= input.accent"`); the quote is the
   API's declaration at the pinned source or SDK; the gate checks them as derivations (the perturbed run changes the
   input).
@@ -3000,6 +3009,7 @@ lines that cite it.
 | ADD-A117 | the 0.8.0 plan's new scripts | S18 |
 | ADD-A118 | a connector contract's `pending` entries while 0.8.0 is built (the 0.8.0 plan) | S21.3 |
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
+| ADD-A120 | a unit may defer named values to the unit that holds their type, and token fields are staged by unit; a text value's spelling; an absence the platform has no name for (`absent = []`); a measured derivation's evidence under two or more input values (M1a's design and its first lanes) | S6.1, S11, S17 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
