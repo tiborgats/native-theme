@@ -385,7 +385,8 @@ quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bou
 # The ring's inner corners (S2.10, ADD-A122): WinUI takes the focus target's CornerRadius less the mean of the two
 # margins at each corner for the outer ring, and that less the outer thickness for the inner border (the outer
 # ring's inner edge), each at least 0 and a square corner kept square: follow_part where the part's corner is
-# rounded and its offsets equal; a part with a square corner states Px(0).
+# rounded and its offsets equal; a part with a square corner states Px(0). Each corner is one arc whose two
+# extents are that one radius (geometry.cpp:986-993, :1148-1159): circular.
 [[fact]]
 key = "token.focus.corners.top_left"
 value = "follow_part"
@@ -475,6 +476,16 @@ rows = ["W3-20"]
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:478-483"
 quote = "XCORNERRADIUS cornerRadius = { options.cornerRadius.topLeft, options.cornerRadius.topRight, options.cornerRadius.bottomRight, options.cornerRadius.bottomLeft };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/geometry.cpp:986-989"
+quote = "fLeftTop = MAX(0.0f, rCornerRadius.topLeft - left); fTopLeft = MAX(0.0f, rCornerRadius.topLeft - top); fTopRight = MAX(0.0f, rCornerRadius.topRight - top); fRightTop = MAX(0.0f, rCornerRadius.topRight - right);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/geometry.cpp:1148-1159"
+quote = "arcSize.width = (corners[4].x - corners[1].x); arcSize.height = (corners[4].y - corners[1].y); arcSize.width = arcSize.width > 0 ? arcSize.width : -arcSize.width; arcSize.height = arcSize.height > 0 ? arcSize.height : -arcSize.height; pSink->AddArc( corners[4], arcSize, 0.0f, TRUE, FALSE );"
 
 
 # The HighVisibility visual's inner ring (ADD-A17): a 1 px border in FocusStrokeColorInner drawn just inside the

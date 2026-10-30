@@ -430,8 +430,10 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themereso
 quote = "BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
 
 # Pending (S17, ADD-A122; register U1): the accent style (`primary`, and the dialog's default button, which takes
-# it), and the app-bar styles (`tool`) set no Padding or BorderThickness; whether DefaultButtonStyle's setters reach
-# them is the WinUI host's measurement.
+# it) sets no Padding or BorderThickness; whether DefaultButtonStyle's setters reach it is the WinUI host's
+# measurement. The app-bar styles are their types' own (TargetType AppBarButton, AppBarToggleButton): the
+# AppBarButton's BorderThickness is the framework's default 0 and the AppBarToggleButton's 1; neither template
+# binds Padding (the content sits by its own margins), so `tool`'s padding stays pending.
 [[fact]]
 key = "button.body.padding.top"
 when = { variants = ["primary"], not_states = ["default"] }
@@ -512,9 +514,50 @@ rows = []
 
 [[fact]]
 key = "button.body.stroke.top.width"
-when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
+value = "0px"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:1089-1090"
+quote = "case KnownTypeIndex::Thickness: defaultValue->WrapThickness((const XTHICKNESS*)&CDependencyObject::DefaultValueRect);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/CDependencyObject.h:1742"
+quote = "static constexpr XRECTF DefaultValueRect = { 0, 0, 0, 0 };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:120"
+quote = "<Style TargetType=\"AppBarButton\" BasedOn=\"{StaticResource DefaultAppBarButtonStyle}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\" Background=\"{TemplateBinding Background}\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
+
+[[fact]]
+key = "button.body.stroke.top.width"
+when = { variants = ["tool", "toggle"], not_states = ["default"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:200"
+quote = "<Thickness x:Key=\"AppBarToggleButtonBorderThemeThickness\">1</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:216"
+quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource AppBarToggleButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:207"
+quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
 
 [[fact]]
 key = "button.body.stroke.top.width"
@@ -530,9 +573,50 @@ rows = []
 
 [[fact]]
 key = "button.body.stroke.right.width"
-when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
+value = "0px"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:1089-1090"
+quote = "case KnownTypeIndex::Thickness: defaultValue->WrapThickness((const XTHICKNESS*)&CDependencyObject::DefaultValueRect);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/CDependencyObject.h:1742"
+quote = "static constexpr XRECTF DefaultValueRect = { 0, 0, 0, 0 };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:120"
+quote = "<Style TargetType=\"AppBarButton\" BasedOn=\"{StaticResource DefaultAppBarButtonStyle}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\" Background=\"{TemplateBinding Background}\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
+
+[[fact]]
+key = "button.body.stroke.right.width"
+when = { variants = ["tool", "toggle"], not_states = ["default"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:200"
+quote = "<Thickness x:Key=\"AppBarToggleButtonBorderThemeThickness\">1</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:216"
+quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource AppBarToggleButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:207"
+quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
 
 [[fact]]
 key = "button.body.stroke.right.width"
@@ -548,9 +632,50 @@ rows = []
 
 [[fact]]
 key = "button.body.stroke.bottom.width"
-when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
+value = "0px"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:1089-1090"
+quote = "case KnownTypeIndex::Thickness: defaultValue->WrapThickness((const XTHICKNESS*)&CDependencyObject::DefaultValueRect);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/CDependencyObject.h:1742"
+quote = "static constexpr XRECTF DefaultValueRect = { 0, 0, 0, 0 };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:120"
+quote = "<Style TargetType=\"AppBarButton\" BasedOn=\"{StaticResource DefaultAppBarButtonStyle}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\" Background=\"{TemplateBinding Background}\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
+
+[[fact]]
+key = "button.body.stroke.bottom.width"
+when = { variants = ["tool", "toggle"], not_states = ["default"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:200"
+quote = "<Thickness x:Key=\"AppBarToggleButtonBorderThemeThickness\">1</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:216"
+quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource AppBarToggleButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:207"
+quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
 
 [[fact]]
 key = "button.body.stroke.bottom.width"
@@ -566,9 +691,50 @@ rows = []
 
 [[fact]]
 key = "button.body.stroke.left.width"
-when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
+when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
+value = "0px"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:1089-1090"
+quote = "case KnownTypeIndex::Thickness: defaultValue->WrapThickness((const XTHICKNESS*)&CDependencyObject::DefaultValueRect);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/CDependencyObject.h:1742"
+quote = "static constexpr XRECTF DefaultValueRect = { 0, 0, 0, 0 };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:120"
+quote = "<Style TargetType=\"AppBarButton\" BasedOn=\"{StaticResource DefaultAppBarButtonStyle}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\" Background=\"{TemplateBinding Background}\" BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
+
+[[fact]]
+key = "button.body.stroke.left.width"
+when = { variants = ["tool", "toggle"], not_states = ["default"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:200"
+quote = "<Thickness x:Key=\"AppBarToggleButtonBorderThemeThickness\">1</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:216"
+quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource AppBarToggleButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:207"
+quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
 
 [[fact]]
 key = "button.body.stroke.left.width"
@@ -15197,7 +15363,7 @@ quote = "Margin=\"8,0,0,0\""
 key = "button.values.menu_indicator_anchor"
 when = { variants = ["menu"], not_variants = ["tool"] }
 value = "inline"
-rows = ["W2-18"]
+rows = []
 
 [[fact.cite]]
 kind = "published"
@@ -15214,7 +15380,8 @@ quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=
 # the top-end corner (TopEnd): its zero-width Auto column is arranged to the column less the margins -23 and 12, so
 # its box is 11 px wide (min_width), the glyph centred in it, 20 px below ContentRoot's top and 12 px in from its end;
 # body is the drawn AppBarButtonInnerBorder, inset 2,6,2,6 from ContentRoot, so the margin from body is 14 and 10.
-# The tabbed command bar's label-beside-icon position (LabelOnRight, margin -7,20,12,0) is not expressible (queue #63):
+# The rule holds in a command bar (`context toolbar.bar`, W1-102): its overflow menu shows OverflowSubItemChevron
+# instead (:275-278). The tabbed command bar's label-beside-icon position (LabelOnRight, margin -7,20,12,0) is not expressible (queue #63):
 # its anchor, margin and box are left out there. The glyph's source (U+E974 in Segoe Fluent Icons, its fallback
 # Segoe MDL2 Assets through token.text.fallbacks.per_family) is left out: the quote check reads no XAML character
 # reference `&#xE974;` as a number, and S11 spells no map entry keyed by a family name (reported).
@@ -15257,7 +15424,7 @@ quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButton
 
 [[fact]]
 key = "button.values.menu_indicator_anchor"
-when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
 value = "top_end"
 rows = ["W1-102"]
 
@@ -15293,7 +15460,7 @@ quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thic
 
 [[fact]]
 key = "button.menu_indicator.min_width"
-when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
 value = "= sub(0px, add(-23px, 12px))"
 rows = ["W1-102"]
 
@@ -15334,7 +15501,7 @@ quote = "horizontalAlignment.Set(DirectUI::HorizontalAlignment::Stretch); IFC(pT
 
 [[fact]]
 key = "button.menu_indicator.min_height"
-when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
 value = "auto"
 rows = ["W1-102"]
 
@@ -15346,7 +15513,7 @@ absent = ["Height", "MinHeight"]
 
 [[fact]]
 key = "button.menu_indicator.margin.top"
-when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
 value = "= sub(20px, 6px)"
 rows = ["W1-102"]
 
@@ -15382,7 +15549,7 @@ quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinH
 
 [[fact]]
 key = "button.menu_indicator.margin.right"
-when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+when = { variants = ["menu", "tool"], context = [{ widget = "toolbar", part = "bar" }], not_context = [{ widget = "component.tabbed_command_bar" }] }
 value = "= sub(12px, 2px)"
 rows = ["W1-102"]
 
