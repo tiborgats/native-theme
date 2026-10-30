@@ -451,7 +451,8 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
 - **Code, beside today's model:** S1; S2's blocks in full with S2.2's grammar, the model's arithmetic and the platform
   functions the two presets' facts use, with their vectors (spike G's generator); S3; S4.1, S4.2 (its `scroll` field staged to the `scroll_view` unit, spec ADD-A120), S4.4, S4.5, and
   S4.6's groups the button and the roles use (`token.params.pointer_repeat`, `token.params.color`,
-  `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts`; S7; S8 without
+  `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts` (its `Placement` values deferred to M3's
+placement unit, spec ADD-A120); S7; S8 without
   S13; S9.1, S9.2, S9.4; S10; S11; S12 for what the model holds, with its refusal test (an exhaustive `match` over
   `LayerError` and `ProblemKind`, one triggering case per variant, so a new variant does not compile without one);
   S21.2's shape from the start (exhaustive enums, `#[non_exhaustive]` structs), so the connectors are written against

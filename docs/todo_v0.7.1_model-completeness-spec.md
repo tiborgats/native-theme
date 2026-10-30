@@ -2060,8 +2060,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
-| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared as S17's quote check compares text (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which
-may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared as S17's quote check compares text (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
@@ -2630,7 +2629,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   shadow's layers, a curve), the `evidence` path names a table of the evidence file shaped like the value, and
   `tolerance` is one number for every numeric leaf or a table from each numeric leaf's path in the value as S11
   spells it to its number (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); leaves that are not numbers or
-  colours (a bool, a name) compare exactly; a colour leaf is numeric for this rule (its tolerance per channel). Where several `measured` citations serve one generation, each must hold
+  colours (a bool, a name, a text value) compare as S11 spells them; a colour leaf is numeric for this rule (its tolerance per channel). Where several `measured` citations serve one generation, each must hold
   and the gate uses the smallest tolerance per leaf; where a generation has `published` or `read` citations too, both checks
   must hold and the gate uses the measured tolerance.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
@@ -2657,7 +2656,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
   `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value, which equals a
   whole string as the source's notation reads it — a quoted string, a list's entry, a font description's family
-  part (Pango's `'Adwaita Sans 11'`), from the checker's closed text notations — whitespace-normalised and
+  part (Pango's `'Adwaita Sans 11'`, read as Pango's font-description parser does), an unquoted INI value
+  (`Theme=breeze`), from the checker's closed text notations — whitespace-normalised and
   case-sensitive; references and names are left to the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
   held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
@@ -2697,7 +2697,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   lists every operand that changes with the varied input. The checker checks the form: for each input and each
   scheme the fact covers, two passes that differ in that input alone, by more than its own type's quote-check precision, and whose results
   differ by more than `tolerance` (a per-leaf table: in some leaf, by more than that leaf's); `inputs` only
-  on an expression value, and an expression value's `measured` citation always with `inputs`. The gate evaluates the
+  on an expression value, an expression value's `measured` citation always with `inputs`, and no `conversion` beside
+  `inputs`. The gate evaluates the
   expression over each pass within `tolerance`. It is the one case where the evidence value is not compared with the
   fact's value directly (ADD-A120).
 - **`read`** facts state the reference the key takes from a reader input (`value = "= input.accent"`); the quote is the
@@ -2791,8 +2792,8 @@ reader, so the machine's own settings never enter: by default the no-reader stat
 scheme in turn, factor 1 and no font DPI of its own (`font_dpi: None`, so the preset's token converts its points). For every widget and
 every combination of its state model, it replaces the stand-in with one holding the combination's reader conditions (and
 passes its window conditions in `WindowConditions`), resolves, and queries the element, and compares each key with the
-fact that applies (within tolerance; a measured derivation by evaluating its expression over each evidence pass, under
-the pass's conditions); a key and combination with no fact fails (R4). It compares every token,
+fact that applies (within tolerance), and, for a measured derivation, also evaluates its expression over each
+evidence pass under the pass's conditions; a key and combination with no fact fails (R4). It compares every token,
 colour-role and input fact the same way, under its `when`. While 0.8.0 is built, the gate skips a fact whose key the
 model does not hold yet (the 0.8.0 plan enables its units one by one); 0.8.0 is released with none skipped.
 
