@@ -1219,23 +1219,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "@osd"], states = ["open"] }
-value = "= alpha(mix(#000000, surface.foreground, 0.2), 0.65)"
-rows = ["GN-1.34", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:136-137"
-quote = "&:checked { background-color: color-mix(in srgb, black calc(0.8 * 65%), currentColor calc(0.2 * 65%));"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["@osd"], states = ["checked", "hover"] }
 value = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 rows = ["GN-1.34"]
@@ -1265,23 +1248,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "@osd"], states = ["open", "hover"] }
-value = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
-rows = ["GN-1.34", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:139-140"
-quote = "&:hover { background-color: color-mix(in srgb, black calc(0.75 * 65%), currentColor calc(0.25 * 65%));"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["@osd"], states = ["checked", "pressed"] }
 value = "= alpha(mix(#000000, surface.foreground, 0.35), 0.65)"
 rows = ["GN-1.34"]
@@ -1308,23 +1274,6 @@ conversion = ["percent_to_fraction"]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { variants = ["back", "@osd"], states = ["open", "pressed"] }
-value = "= alpha(mix(#000000, surface.foreground, 0.35), 0.65)"
-rows = ["GN-1.34", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:143-145"
-quote = "&.keyboard-activating, &:active { background-color: color-mix(in srgb, black calc(0.65 * 65%), currentColor calc(0.35 * 65%));"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.bindings"
@@ -1447,27 +1396,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "primary"], states = ["open"] }
-value = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
-rows = ["GN-1.30", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:225-226"
-quote = "&, &:checked { background-color: var(--accent-bg-color);"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:169-170"
-quote = "&:checked { background-image: image(RGB(0 0 6 / 15%));"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["primary"], states = ["checked", "hover"] }
 value = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 rows = ["GN-1.30"]
@@ -1505,27 +1433,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "primary"], states = ["open", "hover"] }
-value = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
-rows = ["GN-1.30", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:225-226"
-quote = "&, &:checked { background-color: var(--accent-bg-color);"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:172-173"
-quote = "&:hover { background-image: image(RGB(0 0 6 / 5%));"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["primary"], states = ["checked", "pressed"] }
 value = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 rows = ["GN-1.30"]
@@ -1560,27 +1467,6 @@ quote = "&.keyboard-activating, &:active { background-image: image(RGB(0 0 6 / 3
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { variants = ["back", "primary"], states = ["open", "pressed"] }
-value = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
-rows = ["GN-1.30", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:225-226"
-quote = "&, &:checked { background-color: var(--accent-bg-color);"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:176-178"
-quote = "&.keyboard-activating, &:active { background-image: image(RGB(0 0 6 / 30%));"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.bindings"
@@ -1731,33 +1617,6 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
 
-[[fact]]
-key = "button.body.fill"
-when = { variants = ["back", "@opaque"], states = ["open"] }
-value = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
-rows = ["GN-1.32", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:8"
-quote = "$opaque_button_default_bg: color-mix(in srgb, var(--window-bg-color) 85%, var(--window-fg-color));"
-conversion = ["percent_to_fraction", "complement"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:216"
-quote = "background-color: $opaque_button_default_bg;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:169-170"
-quote = "&:checked { background-image: image(RGB(0 0 6 / 15%));"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
 # `button:checked:hover` (0,2,1) outranks `button.opaque` (0,1,1): the raised checked colour stays under the image
 [[fact]]
 key = "button.body.fill"
@@ -1810,33 +1669,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "@opaque"], states = ["open", "hover"] }
-value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
-rows = ["GN-1.32", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:5"
-quote = "$button_checked_hover_color: color-mix(in srgb, currentColor 35%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:47-48"
-quote = "&:hover { background-color: $button_checked_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:172-173"
-quote = "&:hover { background-image: image(RGB(0 0 6 / 5%));"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["@opaque"], states = ["checked", "pressed"] }
 value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 rows = ["GN-1.32"]
@@ -1883,33 +1715,6 @@ quote = "&.keyboard-activating, &:active { background-image: image(RGB(0 0 6 / 3
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { variants = ["back", "@opaque"], states = ["open", "pressed"] }
-value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
-rows = ["GN-1.32", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:6"
-quote = "$button_checked_active_color: color-mix(in srgb, currentColor 40%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:51-53"
-quote = "&.keyboard-activating, &:active { background-color: $button_checked_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:176-178"
-quote = "&.keyboard-activating, &:active { background-image: image(RGB(0 0 6 / 30%));"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 # the accent colours rebound to the destructive ones (its focus ring and drop ring follow), its colour the destructive standalone
 [[fact]]
@@ -2015,28 +1820,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "destructive"], states = ["open"] }
-value = "= alpha(surface.foreground, 0.35)"
-rows = ["GN-1.31", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:13"
-quote = "$destructive_button_checked_color: color-mix(in srgb, currentColor 35%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:199-200"
-quote = "&:checked { background-color: $destructive_button_checked_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["destructive"], states = ["checked", "hover"] }
 value = "= alpha(surface.foreground, 0.4)"
 rows = ["GN-1.31"]
@@ -2076,28 +1859,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "destructive"], states = ["open", "hover"] }
-value = "= alpha(surface.foreground, 0.4)"
-rows = ["GN-1.31", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:14"
-quote = "$destructive_button_checked_hover_color: color-mix(in srgb, currentColor 40%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:202-203"
-quote = "&:hover { background-color: $destructive_button_checked_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["destructive"], states = ["checked", "pressed"] }
 value = "= alpha(surface.foreground, 0.45)"
 rows = ["GN-1.31"]
@@ -2134,28 +1895,6 @@ quote = "&.keyboard-activating, &:active { background-color: $destructive_button
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { variants = ["back", "destructive"], states = ["open", "pressed"] }
-value = "= alpha(surface.foreground, 0.45)"
-rows = ["GN-1.31", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:15"
-quote = "$destructive_button_checked_active_color: color-mix(in srgb, currentColor 45%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:206-208"
-quote = "&.keyboard-activating, &:active { background-color: $destructive_button_checked_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.fill"
@@ -2319,28 +2058,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "flat"], states = ["open"] }
-value = "= alpha(surface.foreground, 0.1)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:270"
-quote = "$selected_color: color-mix(in srgb, currentColor 10%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:259-260"
-quote = "&:checked { background: $selected_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["flat"], states = ["checked", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29"]
@@ -2380,28 +2097,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["back", "flat"], states = ["open", "hover"] }
-value = "= alpha(surface.foreground, 0.13)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:271"
-quote = "$selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:262-263"
-quote = "&:hover { background: $selected_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { variants = ["flat"], states = ["checked", "pressed"] }
 value = "= alpha(surface.foreground, 0.19)"
 rows = ["GN-1.29"]
@@ -2438,28 +2133,6 @@ quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { variants = ["back", "flat"], states = ["open", "pressed"] }
-value = "= alpha(surface.foreground, 0.19)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:272"
-quote = "$selected_active_color: color-mix(in srgb, currentColor 19%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:266-268"
-quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.opacity"

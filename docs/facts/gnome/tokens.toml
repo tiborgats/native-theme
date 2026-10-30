@@ -332,9 +332,10 @@ kind = "published"
 source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
-# the bottom sheet (AdwBottomSheet): clamped when it closes without a bottom bar
+# the bottom sheet (AdwBottomSheet): unclamped when it opens or closes to its bottom bar, clamped when it closes
+# without one (`bottom_sheet_clamped`); the sheet's facts choose by its bottom bar, which no token condition names
 [[fact]]
-key = "token.motion.timings.bottom_sheet_open"
+key = "token.motion.timings.bottom_sheet"
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
 
@@ -374,7 +375,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.bottom_sheet_open"
+key = "token.motion.timings.bottom_sheet"
 when = { conditions = ["reduced_motion"] }
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
@@ -415,7 +416,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.bottom_sheet_close"
+key = "token.motion.timings.bottom_sheet_clamped"
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
 
@@ -455,7 +456,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.bottom_sheet_close"
+key = "token.motion.timings.bottom_sheet_clamped"
 when = { conditions = ["reduced_motion"] }
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
