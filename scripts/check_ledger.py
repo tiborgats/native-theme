@@ -74,9 +74,10 @@ Also:
   it at the top level as `LEGACY_EVIDENCE = <literal list, tuple, set or
   dict>`. A missing script (the plan keeps it from M0 on), a missing or
   non-literal assignment, and a non-empty list are findings.
-- The ledger's `## Unmeasured register` table (`| Key and combination |
-  Attempts and evidence | Options | Decision |`): a row with an empty
-  Decision is a finding, and so is a missing section or table.
+- The ledger's `## Unmeasured register` table (`| Id | Key and combination |
+  Attempts and evidence | Options | Decision |`, the Id `U` and a number, S17's
+  pending facts naming it): a row with an empty Decision is a finding, and so
+  is a missing section or table, an Id not of that form, and an Id used twice.
 - Every measured fact with a drift comparison. A measured fact is a
   `[[fact]]` of `docs/facts/<platform>/*.toml` (not `imported/`, not
   `palettes/`, not `staged/`, S19.2's staged inheritance bases) with a `[[fact.cite]]` of `kind = "measured"`; M4's drift run
@@ -136,7 +137,7 @@ DESTINATIONS = {
     *NEEDS_REASON,
 }
 TRIAGE_HEADER = ["Source", "Heading", "Item", "Destination", "Reason"]
-UNMEASURED_HEADER = ["Key and combination", "Attempts and evidence", "Options", "Decision"]
+UNMEASURED_HEADER = ["Id", "Key and combination", "Attempts and evidence", "Options", "Decision"]
 
 IMPORTED = DOCS / "facts" / "imported"
 FACTS = DOCS / "facts"
@@ -399,7 +400,17 @@ def unmeasured_problems(ledger: str, ledger_text: str) -> list[tuple[str, int, s
         raise InputError(f"{ledger}: {err}") from err
     if rows is None:
         return [(ledger, sec[0][0] - 1, "the unmeasured register has no table")]
-    return [(ledger, n, f"unmeasured {c[0]!r} has no decision") for n, c in rows if not c[3]]
+    found = []
+    seen = set()
+    for n, c in rows:
+        if not re.fullmatch(r"U[1-9][0-9]*", c[0]):
+            found.append((ledger, n, f"unmeasured id {c[0]!r} is not U and a number"))
+        elif c[0] in seen:
+            found.append((ledger, n, f"unmeasured id {c[0]} is used twice"))
+        seen.add(c[0])
+        if not c[4]:
+            found.append((ledger, n, f"unmeasured {c[1]!r} has no decision"))
+    return found
 
 
 def measured_facts(texts: dict[str, str]) -> int:
@@ -507,10 +518,10 @@ and more.
     ledger = """# Ledger
 ## Unmeasured register
 
-| Key and combination | Attempts and evidence | Options | Decision |
-|---|---|---|---|
-| `button.body.fill` {hover} | run 1 | real hardware | catalogue correction |
-| `menu.body.shadow` | run 2 | another image | |
+| Id | Key and combination | Attempts and evidence | Options | Decision |
+|---|---|---|---|---|
+| U1 | `button.body.fill` {hover} | run 1 | real hardware | catalogue correction |
+| U2 | `menu.body.shadow` | run 2 | another image | |
 
 ## Spikes and drift runs
 
@@ -621,6 +632,12 @@ After the table.
     got_unmeasured = unmeasured_problems("L", ledger)
     if got_unmeasured != [("L", 7, "unmeasured '`menu.body.shadow`' has no decision")]:
         failures.append(f"unmeasured: got {got_unmeasured}")
+    ids = ("## Unmeasured register\n\n| Id | Key and combination | Attempts and evidence | Options | Decision |\n"
+           "|---|---|---|---|---|\n| U1 | a | run 1 | none | kept |\n| U1 | b | run 2 | none | kept |\n"
+           "| V3 | c | run 3 | none | kept |\n")
+    if unmeasured_problems("L", ids) != [("L", 6, "unmeasured id U1 is used twice"),
+                                         ("L", 7, "unmeasured id 'V3' is not U and a number")]:
+        failures.append(f"unmeasured ids: got {unmeasured_problems('L', ids)}")
     if unmeasured_problems("L", "# Ledger\n") != [("L", 1, "no `## Unmeasured register` section")]:
         failures.append("unmeasured: a ledger without the section passed")
     if unmeasured_problems("L", "## Unmeasured register\n\nProse.\n")[0][2] != "the unmeasured register has no table":
