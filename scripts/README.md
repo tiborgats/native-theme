@@ -1037,6 +1037,90 @@ python3 scripts/convert_inheritance_rules.py --check
 python3 scripts/convert_inheritance_rules.py --self-test
 ```
 
+## check_function_vectors.py
+
+Holds, documents and checks the vector-table format of the 0.8.0 model's
+platform functions and placement strategies (specification S2.2, S13):
+`native-theme/tests/vectors/<function>.tsv` and `place.<strategy>.tsv`,
+tab-separated, with `# <name>: <value>` header lines (the route, which is
+`public_api`, `observable_behaviour`, `compiled_source`, `measured` or
+`published`; the `sources.toml` entries, the generations, the generator,
+`# inputs:` and `# outputs:` with each column's type, a `# tolerance:`
+per measured output), a column header row, and rows whose cells are
+spelled by their column's type, with `cite` and `quote` (published) or
+`evidence` (measured) where the route needs them. Checks that every `pub`
+or `pub(crate)` function of the `platform` module
+(`native-theme/src/next/platform/`, `src/platform/` after the switch), every
+platform function of S2.2's table that is implemented and, once the
+`placement` module exists, every strategy has a table and a
+`#[test] fn vectors_<fn>` in `native-theme/tests/platform_vectors.rs`; that
+every platform function a preset calls is implemented (one only facts call
+is reported as not yet implemented); and the generations rule: the rows'
+generator pins, citations or evidence serve every generation that calls the
+function with the rows' enum operands. The model's own arithmetic has unit
+tests, not tables. Offline; the docstring states the format and every rule.
+Prints one line per finding, `# ` lines for what is informational, and a
+summary; exits 0, 1, or 2 on an input it cannot read. `--self-test` runs
+each rule on fixture tables, Rust snippets, facts and presets. Enters
+`check_release.sh` at M1a's code tasks (the plan's table of scripts).
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_function_vectors.py
+python3 scripts/check_function_vectors.py --self-test
+```
+
+## check_facts_trace.py
+
+Checks that every live trace row of the checked units (the specification's
+traceability, S20) is in a fact's or a state-model entry's `rows` of its
+platform's `docs/facts/` directory, or carries a verdict, on the platforms
+whose presets exist (the new model's `native-theme/src/next/presets/`).
+`--enabled` checks the units of `scripts/widget_units.toml` (until it
+exists, the slice: `button`, the colour roles and the slice's tokens, with
+button's `Placement` values deferred and `token.behavior.scroll` staged),
+`--unit <unit>` one unit, and no option every trace line. A target lies in
+a unit by its leading paths (braces expanded), and a rule naming a context
+widget waits until that widget is enabled. Prints one line per finding
+(platform, row, target, what), per platform how many of the checked lines
+and rows the facts already carry, and a summary; exits 0, 1, or 2 on an
+input it cannot read or an unknown unit. `--self-test` runs each rule on
+fixture gap maps, traces, facts and units files. `--enabled` enters
+`check_release.sh` at M1a; the script is deleted at M6.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_facts_trace.py --enabled
+python3 scripts/check_facts_trace.py --unit slice
+python3 scripts/check_facts_trace.py
+python3 scripts/check_facts_trace.py --self-test
+```
+
+## generate_platform_facts.py
+
+Generates the platform-facts document from the verified facts
+(`docs/facts/<platform>/*.toml` and `docs/facts/palettes/`; `imported/`
+and `staged/` are no facts): one section per unit (the colour roles, the
+tokens, the inputs, then the widget catalogue's sections), one table per
+widget, colour-role set or token group, a row per key and combination, and
+per preset the value of the fact that applies there (the last in file
+order) with its citations. Writes `--out PATH`, by default
+`docs/platform-facts.generated.md`, and never today's hand-written
+`docs/platform-facts.md`, which its output replaces at the switch;
+`--check` exits 1 when PATH differs from a fresh run (in `check_release.sh`
+from the switch). Offline. `--self-test` compares a fixture's document with
+the expected one and runs `--check`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/generate_platform_facts.py --out docs/platform-facts.generated.md
+python3 scripts/generate_platform_facts.py --check
+python3 scripts/generate_platform_facts.py --self-test
+```
+
 ## update_sources.sh
 
 Fills the source cache, `/run/media/tibi/work/cargo-build/native-theme-sources/`
