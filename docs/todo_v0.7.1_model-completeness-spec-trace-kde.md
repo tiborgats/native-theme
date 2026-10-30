@@ -463,7 +463,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.36 | `tooltip.values.show_on_press, tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode cond flavor:kirigami` | rule |
 | Q1.37 | `tooltip.body.bindings (Surface(Tooltip))` | field |
 | Q1.37 | `tooltip.body.bindings (Surface(Complementary)) @ context any (surface Complementary) (ContextMatch.surface, ADD-A68)` | rule |
-| Q1.38 | `tooltip.body.stroke (mix of background and text by frame contrast)` | field |
+| Q1.38 | `tooltip.body.stroke (kirigami_lerp of background and text by frame contrast, Q3.15)` | field |
 | Q1.39 | `scrollbar.track.padding` | field |
 | Q1.39 | `scrollbar.values.trough_click` | field |
 | Q1.40 | `scrollbar.thumb.transitions, scrollbar.track.transitions (Fill, Opacity: the hover cross-fade; = token.motion.durations.long) @ cond flavor:kirigami` | rule |
@@ -1108,7 +1108,8 @@ rationale, each decided in the core's additions register (S22).
 | Q3.13 | `list.row_background.fill @ pos parity even variant alternating_rows (ADD-B06; Qt's views alternate on current & 1, zero-based)` | rule |
 | Q3.14 | `token.params.color.frame_contrast (ADD-A44)` | token |
 | Q3.14 | `reader:kde:kdeglobals [KDE] frameContrast (store the factor, not only finished colours)` | reader |
-| Q3.15 | `menu.body.stroke, popover.body.stroke, tooltip.body.stroke = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast) @ cond flavor:kirigami` (the frames Kirigami's own QML draws, `Frame.qml:25`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`, ADD-A121; `role.<set>.border` stays Breeze's `kcu_mix`, `breezehelper.cpp:144`, since Breeze draws Kirigami's buttons and fields, `:250`, `:684-706`) | rule |
+| Q3.15 | `role.<set>.border = kcu_mix(background, foreground, token.params.color.frame_contrast)` (Breeze's frame colour, `breezehelper.cpp:144`; Breeze draws Kirigami's buttons and fields with it too, `:250`, `:684-706`) | role |
+| Q3.15 | `group_box.body.stroke @ variant @quick_frame cond flavor:kirigami / menu.body.stroke, popover.body.stroke, tooltip.body.stroke = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast) @ cond flavor:kirigami` (the frames qqc2-desktop-style's own QML draws, `Frame.qml:25`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`, ADD-A121) | rule |
 | Q3.16 | `PartStyle.fill.append = alpha(...) @ {hover} / {pressed} / {checked}` | rule |
 | Q3.17 | `PartStyle.icon.fill (text or highlighted-text role)` | field |
 | Q3.17 | `PartStyle.icon.fill @ {selected}` | rule |

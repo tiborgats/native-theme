@@ -8275,7 +8275,7 @@ the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border
 (`kcu_mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
 `= kcu_mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`; under
 `cond flavor:kirigami` the role stays Breeze's, since Breeze draws Kirigami's buttons and fields; the frames
-Kirigami's own QML draws (Frame, Menu, Popup, ToolTip) stroke with `kirigami_lerp` on those parts (Q3.15, S2.2). On a
+qqc2-desktop-style's own QML draws (Frame, Menu, Popup, ToolTip) stroke with `kirigami_lerp` on those parts (Q3.15, S2.2). On a
 platform that dims by opacity (libadwaita) the record stays absent but for the `View` pair above and the parts' `{disabled}` rules set `opacity`
 from `token.params.opacity` instead [GN-1.271, GN-1.272].
 
