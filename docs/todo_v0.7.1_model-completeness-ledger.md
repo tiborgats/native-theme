@@ -162,12 +162,13 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 ## Unmeasured register
 
 Values that could not be measured: the Id (`U` and a number, never reused; S17's pending facts name it), the key and
-combination, the attempts and their evidence, the options; each is the maintainer's decision.
+combination, the attempts and their evidence, the options; each is the maintainer's decision, and the Decision cell
+stays empty until the maintainer decides (`check_ledger.py --final` fails an empty one).
 
 | Id | Key and combination | Attempts and evidence | Options | Decision |
 |---|---|---|---|---|
-| U1 | `windows-11` slice: `primary` and `tool` buttons' stroke width, padding and focus offset (whether the default style's setters reach `AccentButtonStyle` and the tool styles) (the Windows reconciliation, 2026-10-30) | the XAML at the pin leaves it open | a WinUI host measurement (spike W's host) | pending the host's pass |
-| U2 | `macos-tahoe` slice: button focus, open, window inactive, Increase Contrast; other bezels and border shapes; corners, top/bottom and extra-large padding, `min_width`, default size; label text and font; icon fields; widget values; accent-dependent roles; status and link roles; text weights and styles; `font_dpi`; icon sizes; motion; caret; behaviour (lane report, 2026-10-30) | run 40969040283's button pass and the legacy runs | the probe's second extension (tools branch `v0.8.0-tools-probe-m2`, in progress); Xcode 26.6 header excerpts from the same run for `read` and `published` facts | pending the extension's run |
+| U1 | `windows-11` slice: `primary` and `tool` buttons' stroke width, padding and focus offset (whether the default style's setters reach `AccentButtonStyle` and the tool styles) (the Windows reconciliation, 2026-10-30) | the XAML at the pin leaves it open | a WinUI host measurement (spike W's host); pending the host's pass | |
+| U2 | `macos-tahoe` slice: button focus, open, window inactive, Increase Contrast; other bezels and border shapes; corners, top/bottom and extra-large padding, `min_width`, default size; label text and font; icon fields; widget values; accent-dependent roles; status and link roles; text weights and styles; `font_dpi`; icon sizes; motion; caret; behaviour (lane report, 2026-10-30) | run 40969040283's button pass and the legacy runs | the probe's second extension (tools branch `v0.8.0-tools-probe-m2`, in progress); Xcode 26.6 header excerpts from the same run for `read` and `published` facts; the extension's run 41006842699 done 2026-10-30, the second pass pending | |
 
 ## Verification rates
 
