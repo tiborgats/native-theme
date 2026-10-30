@@ -1,5 +1,5 @@
-# The image folder of run 41006842699 the facts cite (spec S17 *`evidence`*). The builds are the run's own records:
-# os-probe-macos-26/probe.toml `[os]` and `[probe]`, the job's button-pass/environment.txt (sw_vers, xcodebuild
+# The image folders of run 41006842699 the facts cite (spec S17 *`evidence`*). The builds are the run's own records:
+# each folder's probe.toml `[os]` and `[probe]`, the job's button-pass/environment.txt (sw_vers, xcodebuild
 # -version, xcrun's SDK, the probe binary's LC_BUILD_VERSION) and sdk-headers/xcode.txt.
 
 [images.os-probe-macos-26]
@@ -7,3 +7,9 @@ preset = "macos-tahoe"
 source = "xcode@26.6"
 os = "macOS 26.6.2 (25G83), runner image macos26 20261021.0445.8"
 toolkit = "AppKit of macOS 26.6.2; the probe built with Xcode 26.6 (17F113) against the macOS 26.5 SDK (25F70)"
+
+[images.os-probe-macos-15]
+preset = "macos-monterey"
+source = "xcode@16.4"
+os = "macOS 15.7.9 (24G830), runner image macos15 20260907.0337.1"
+toolkit = "AppKit of macOS 15.7.9; the probe built with Xcode 16.4 (16F6) against the macOS 15.5 SDK (24F74)"

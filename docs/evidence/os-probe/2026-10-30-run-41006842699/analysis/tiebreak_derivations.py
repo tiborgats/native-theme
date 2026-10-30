@@ -3,9 +3,12 @@
 the accent-following button looks (S17 *A measured derivation*) that docs/facts/macos/button.toml states as
 expressions over `input.accent`, beside measure_button_layers.py's three (`derivations.toml`).
 
-Run from the repository root (Python 3.11+, the standard library only):
+Run from the repository root (Python 3.11+, the standard library only), once per image folder (IMAGE as
+measure_button_layers.py takes it: `os-probe-macos-26`, the default, or `os-probe-macos-15`, which os-probe-macos-26/
+below stands for; a case or size whose button the image's sheet lacks, macOS 15's `primary`, `tinted` and
+`extraLarge`, is left out, as is a case where a reading is no colour, macOS 15's gradient bezels, `non_uniform`):
 
-    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/tiebreak_derivations.py
+    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/tiebreak_derivations.py [IMAGE]
 
 It reads, under os-probe-macos-26/ of the run, the button passes `button-pass` (the image's accent) and
 `button-pass-accent-red` (AppleAccentColor 0): their probe.toml (each button's frame and cell rects) and the layers
@@ -29,7 +32,9 @@ each name:
 and `[[derivation.<name>_<size>]]`, the same passes of both schemes in one list, for a fact that holds in both; and
 `[[derivation.caret_color_dark]]`: controlAccentColor and textInsertionPointColor of darkAqua in the two probe.toml
 files (no image: the dark caret captures show the caret only while it fades), the colour NSTextInsertionIndicator
-draws by default (`NSTextInsertionIndicator.h:30-32`).
+draws by default (`NSTextInsertionIndicator.h:30-32`); and, where measure_button_layers.py's `derivations.toml` has
+no `caret_color_light` (macOS 15: the key pass's light captures show no caret), `[[derivation.caret_color_light]]`
+the same way from aqua's two colours.
 
 It exits 1, writing nothing, when a file it needs is missing or not as expected.
 """
@@ -89,7 +94,10 @@ def main() -> int:
                         for b, bt in lay["buttons"].items():
                             results[(pname, sheet, ap, st, b)] = m.measure_button(
                                 layer, bt["frame_px_xywh"], s["buttons"][b], None)
-        accents = {}
+        accents, light = {}, []
+        dpath = RUN / "derivations.toml"  # measure_button_layers.py writes none where it has no derivation
+        derived = tomllib.loads(dpath.read_text()).get("derivation", {}) if dpath.is_file() else {}
+        light_from_probe = "caret_color_light" not in derived
         for pname, path in ACCENT_PROBES.items():
             images.append(str(path))
             colors = tomllib.loads(path.read_text())["macos"]["colors"]
@@ -97,10 +105,18 @@ def main() -> int:
             carets = {ap: colors[ap]["textInsertionPointColor"] for ap in APPEARANCES}
             lines += ["[[derivation.caret_color_dark]]", f'"input.accent" = "{accents[pname]["darkAqua"]}"',
                       f'result = "{spell(carets["darkAqua"])}"', 'conditions = ["scheme:dark"]', ""]
+            if light_from_probe:
+                light += ["[[derivation.caret_color_light]]", f'"input.accent" = "{accents[pname]["aqua"]}"',
+                          f'result = "{spell(carets["aqua"])}"', 'conditions = ["scheme:light"]', ""]
+        lines += light
         for name, (sheet, kind, st, field) in CASES.items():
-            both = {size: [] for size in SIZES}
+            sizes = [size for size in SIZES if ("key", sheet, "aqua", st, f"{size}-{kind}") in results]
+            if any(not str(results[(pname, sheet, ap, st, f"{size}-{kind}")].get(field)).startswith("#")
+                   for size in sizes for ap in APPEARANCES for pname in PASSES):
+                continue  # a reading is no colour (macOS 15's gradient bezels): the case is left out
+            both = {size: [] for size in sizes}
             for ap, scheme in APPEARANCES.items():
-                for size in SIZES:
+                for size in sizes:
                     for pname in PASSES:
                         r = results[(pname, sheet, ap, st, f"{size}-{kind}")].get(field)
                         if not isinstance(r, str) or not r.startswith("#"):

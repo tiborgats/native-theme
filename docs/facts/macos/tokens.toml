@@ -8,7 +8,7 @@
 [[fact]]
 key = "token.text.keyed.large_title.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "26pt"
+value = "26px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -29,7 +29,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_1.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "22pt"
+value = "22px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -50,7 +50,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_2.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "17pt"
+value = "17px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -71,7 +71,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_3.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "15pt"
+value = "15px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -92,7 +92,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.headline.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "13pt"
+value = "13px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -113,7 +113,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.subheadline.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "11pt"
+value = "11px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -134,7 +134,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.body.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "13pt"
+value = "13px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -155,7 +155,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.callout.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "12pt"
+value = "12px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -176,7 +176,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.footnote.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -197,7 +197,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.caption_1.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -218,7 +218,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.caption_2.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -239,7 +239,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.label.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS02"]
 
 [[fact.cite]]
@@ -260,7 +260,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.message.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "13pt"
+value = "13px"
 rows = ["MAC-TS02"]
 
 [[fact.cite]]
@@ -281,7 +281,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.palette.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "11pt"
+value = "11px"
 rows = ["MAC-TS02"]
 
 [[fact.cite]]
@@ -302,7 +302,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.menu_bar.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "13pt"
+value = "13px"
 rows = ["MAC-TS02"]
 
 [[fact.cite]]
@@ -323,7 +323,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.control_content.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "12pt"
+value = "12px"
 rows = ["MAC-TS02"]
 
 [[fact.cite]]
@@ -345,7 +345,7 @@ tolerance = 0
 # NSFont.smallSystemFontSize (no family: the probe reads the size alone).
 key = "token.text.keyed.small_system.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "11pt"
+value = "11px"
 rows = ["MAC-TS02"]
 
 [[fact.cite]]
@@ -851,7 +851,7 @@ conversion = ["seconds_to_ms"]
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "26pt"
+value = "26px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -873,7 +873,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "22pt"
+value = "22px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -895,7 +895,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "17pt"
+value = "17px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -917,7 +917,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "15pt"
+value = "15px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -939,7 +939,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.headline_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "13pt"
+value = "13px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -961,7 +961,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "11pt"
+value = "11px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -983,7 +983,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.body_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "13pt"
+value = "13px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -1005,7 +1005,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.callout_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "12pt"
+value = "12px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -1027,7 +1027,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -1049,7 +1049,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -1071,7 +1071,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.font.size"
 when = { conditions = ["preset:macos-tahoe"] }
-value = "10pt"
+value = "10px"
 rows = ["MAC-TS01"]
 
 [[fact.cite]]
@@ -1210,3 +1210,1197 @@ rows = ["MAC-TS01"]
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:200"
 quote = "NSFontTextStyle const NSFontTextStyleCaption2"
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Tokens (macos-monterey), mirroring macos-tahoe's above: the text styles' sizes (logical points, a point a px, S17)
+# and families, NSEvent's intervals, NSButton's periodic delay and NSAnimationContext's duration from the main pass of
+# run 41006842699's macos-15 job (with the Reduce Transparency off and Increase Contrast passes where they read the
+# same); the caret's width from the one capture that shows it (the accent-red pass, light: the key pass's and the
+# dark captures show no caret in either of their two captures, caret.toml), and its colour, the accent, from
+# textInsertionPointColor under both accents (tiebreak-derivations.toml), the colour NSTextInsertionIndicator
+# draws by default.
+
+[[fact]]
+key = "token.text.keyed.large_title.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "26px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "22px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title1.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "17px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title2.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "15px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title3.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "13px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.headline.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "11px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "13px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.body.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "12px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.callout.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.label.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.labelFontOfSize.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.message.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "13px"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.messageFontOfSize.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.palette.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "11px"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.paletteFontOfSize.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.menu_bar.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "13px"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.menuBarFontOfSize.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.control_content.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "12px"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.controlContentFontOfSize.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.small_system.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "11px"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.sizes.smallSystemFontSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.large_title.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.largeTitle.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title1.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title2.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.title3.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.headline.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.subheadline.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.body.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.callout.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.footnote.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption1.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.preferredFontForTextStyle.caption2.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.label.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.labelFontOfSize.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.message.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.messageFontOfSize.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.palette.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.paletteFontOfSize.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.menu_bar.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.menuBarFontOfSize.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.control_content.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.fonts.named.controlContentFontOfSize.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.behavior.double_click_time"
+when = { conditions = ["preset:macos-monterey"] }
+value = "500ms"
+rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.doubleClickInterval_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+when = { conditions = ["preset:macos-monterey"] }
+value = "500ms"
+rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.keyRepeatDelay_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+when = { conditions = ["preset:macos-monterey"] }
+value = "83.333ms"
+rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSEvent.keyRepeatInterval_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.params.pointer_repeat.delay"
+when = { conditions = ["preset:macos-monterey"] }
+value = "400ms"
+rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.default_delay_interval_s.0"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.0"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.params.pointer_repeat.interval"
+when = { conditions = ["preset:macos-monterey"] }
+value = "75ms"
+rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.default_delay_interval_s.1"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSButton_periodic.continuous_delay_interval_s.1"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.caret.width"
+when = { conditions = ["preset:macos-monterey"] }
+value = "2px"
+rows = ["MAC-X14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/caret.toml#caret.accent_red.aqua.width"
+tolerance = 0
+
+[[fact]]
+key = "token.motion.durations.context_default"
+when = { conditions = ["preset:macos-monterey"] }
+value = "250ms"
+rows = ["MAC-X11"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.tokens.NSAnimationContext.currentContext_duration_s"
+tolerance = 0
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "26px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "22px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "17px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "15px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "13px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "11px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "13px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "12px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.font.size"
+when = { conditions = ["preset:macos-monterey"] }
+value = "10px"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.font.family"
+when = { conditions = ["preset:macos-monterey"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.roles.large_title"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.large_title"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact]]
+key = "token.text.roles.title1"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.title_1"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:191"
+quote = "NSFontTextStyle const NSFontTextStyleTitle1"
+
+[[fact]]
+key = "token.text.roles.title2"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.title_2"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:192"
+quote = "NSFontTextStyle const NSFontTextStyleTitle2"
+
+[[fact]]
+key = "token.text.roles.title3"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.title_3"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:193"
+quote = "NSFontTextStyle const NSFontTextStyleTitle3"
+
+[[fact]]
+key = "token.text.roles.headline"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.headline"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:194"
+quote = "NSFontTextStyle const NSFontTextStyleHeadline"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.subheadline"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:195"
+quote = "NSFontTextStyle const NSFontTextStyleSubheadline"
+
+[[fact]]
+key = "token.text.roles.body"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.body"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:196"
+quote = "NSFontTextStyle const NSFontTextStyleBody"
+
+[[fact]]
+key = "token.text.roles.callout"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.callout"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:197"
+quote = "NSFontTextStyle const NSFontTextStyleCallout"
+
+[[fact]]
+key = "token.text.roles.footnote"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.footnote"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:198"
+quote = "NSFontTextStyle const NSFontTextStyleFootnote"
+
+[[fact]]
+key = "token.text.roles.caption"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.caption_1"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:199"
+quote = "NSFontTextStyle const NSFontTextStyleCaption1"
+
+[[fact]]
+key = "token.text.roles.caption2"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.caption_2"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:200"
+quote = "NSFontTextStyle const NSFontTextStyleCaption2"
+
+[[fact]]
+key = "token.caret.color"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "= input.accent"
+rows = ["MAC-X14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/tiebreak-derivations.toml#derivation.caret_color_light"
+tolerance = 0
+inputs = ["input.accent"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTextInsertionIndicator.h:31"
+quote = "Defaults to NSColor.textInsertionPointColor."
+
+[[fact]]
+key = "token.caret.color"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "= input.accent"
+rows = ["MAC-X14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/tiebreak-derivations.toml#derivation.caret_color_dark"
+tolerance = 0
+inputs = ["input.accent"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTextInsertionIndicator.h:31"
+quote = "Defaults to NSColor.textInsertionPointColor."

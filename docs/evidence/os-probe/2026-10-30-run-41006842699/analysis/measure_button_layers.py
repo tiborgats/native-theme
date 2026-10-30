@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Measures the buttons' layers of the os-probe button pass of run 41006842699 (macOS 26.6.2) and writes the values
-the macOS facts cite (docs/facts/macos/button.toml, tokens.toml), as S17's analysis output.
+"""Measures the buttons' layers of the os-probe button pass of run 41006842699 (macOS 26.6.2 in its macos-26 job,
+macOS 15.7.9 in its macos-15 job) and writes the values the macOS facts cite (docs/facts/macos/button.toml,
+tokens.toml), as S17's analysis output.
 
-Run from the repository root (Python 3.11+, the standard library only):
+Run from the repository root (Python 3.11+, the standard library only), once per image folder:
 
-    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/measure_button_layers.py
+    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/measure_button_layers.py [IMAGE]
+
+IMAGE is the run's image folder, `os-probe-macos-26` (the default: macos-tahoe's) or `os-probe-macos-15`
+(macos-monterey's); below, os-probe-macos-26/ stands for it. What one image's probe marks unavailable (macOS 15's
+`extraLarge`, `glass`, `primary`, `tinted` and the border shapes: "unavailable: … needs macOS 26") it does not
+measure: a geometry size that is no table and a derivation whose button the sheet lacks are left out.
 
 It writes its output, in parts, to os-probe-macos-26/ of the run: `layers-<pass>-<sheet>.toml` (the buttons'
 measurements per pass and sheet, the accent-red pass's only through `derivations.toml`), `focus.toml`, `caret.toml`,
@@ -92,7 +98,11 @@ AppleAccentColor 0, accent-red/probe.toml) and `result`, the value measured abov
 `default_fill_<scheme>` (push regular-default normal fill), `primary_fill_<scheme>` (styles_b regular-primary),
 `tinted_label_<scheme>` (styles_b regular-tinted label), `caret_color_light` (the caret's colour at its full
 opacity: the pixel at (46, 58) of the caret capture in which it differs from the text view's background at (43, 58);
-the dark captures of the key pass show the caret only while it fades, so no dark pass is written).
+the dark captures of the key pass show the caret only while it fades, so no dark pass is written). A derivation whose
+button reads no colour in a pass (macOS 15's default push bezel, a gradient: `fill = "non_uniform"`) is not written.
+Where the two
+captures of a pass are identical (macOS 15's key pass and dark passes: the caret shows in neither), `caret.<pass>.
+<appearance>` is `changed_pixels = 0`, `caret = "not_captured"`, and `caret_color_light` is not written.
 
 It exits 1, writing nothing, when a file it needs is missing or not as expected.
 """
@@ -105,7 +115,11 @@ from collections import Counter
 from math import sqrt
 from pathlib import Path
 
-RUN = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26"
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else "os-probe-macos-26"
+if IMAGE not in ("os-probe-macos-26", "os-probe-macos-15"):
+    print(f"measure_button_layers: unknown image folder {IMAGE!r}", file=sys.stderr)
+    sys.exit(2)
+RUN = f"docs/evidence/os-probe/2026-10-30-run-41006842699/{IMAGE}"
 PASSES = {"key": "button-pass", "not_key": "button-pass-not-key", "inactive": "button-pass-inactive",
           "accent_red": "button-pass-accent-red", "contrast": "button-pass-increase-contrast-on"}
 SHEETS = ("push", "styles_a", "styles_b", "styles_c")
@@ -558,6 +572,7 @@ def main():
             emit(lines, f"focus.{ap}.{b}", res)
     # caret
     lines, images = out_file("caret")["lines"], out_file("caret")["images"]
+    no_caret = set()
     for pname in ("key", "accent_red"):
         for ap in APPEARANCES:
             rels = [Path(PASSES[pname]) / ap / "caret" / f"caret-{n}.png" for n in (0, 1)]
@@ -565,7 +580,11 @@ def main():
             images += [f"{RUN}/{r}" for r in rels]
             pts = [(x, y) for y in range(c0.h) for x in range(c0.w) if c0.px(x, y) != c1.px(x, y)]
             if not pts:
-                raise Bad(f"{pname} {ap}: no caret change")
+                # the two captures are identical: the caret shows in neither (macOS 15's key pass), so the pass
+                # gives no caret reading; it is written so, and the derivation below leaves the pass out
+                no_caret.add((pname, ap))
+                emit(lines, f"caret.{pname}.{ap}", {"changed_pixels": 0, "caret": "not_captured"})
+                continue
             x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
             y0, y1 = min(p[1] for p in pts), max(p[1] for p in pts)
             full_cols, colours = 0, Counter()
@@ -598,6 +617,8 @@ def main():
                 g["icon_text_gap"] = f"{t[0] - (i[0] + i[2]):g}px"
             emit(lines, f"geometry.{sheet}.{b}", g)
     for size, gs in kprobe["macos"]["button_pass"]["geometry"]["sizes"].items():
+        if not isinstance(gs, dict):
+            continue  # "unavailable: … needs macOS 26"
         emit(lines, f"geometry.sizes.{size}", {
             "min_width": f"{gs['empty_title']['intrinsicContentSize_wh'][0]:g}px",
             "font_size": gs["font_control_common"]["pointSize"],
@@ -617,6 +638,11 @@ def main():
     for name, (sheet, b, st, field) in {"default_fill": ("push", "regular-default", "normal", "fill"),
                                         "primary_fill": ("styles_b", "regular-primary", "normal", "fill"),
                                         "tinted_label": ("styles_b", "regular-tinted", "normal", "label")}.items():
+        if ("key", sheet, "aqua", st, b) not in results:
+            continue  # the image's sheet lacks the button (macOS 15: no tint prominence)
+        if any(not str(results[(pname, sheet, ap, st, b)].get(field)).startswith("#")
+               for pname in ("key", "accent_red") for ap in APPEARANCES):
+            continue  # no colour read: macOS 15's gradient bezel (fill "non_uniform") has no derivation here
         for ap, scheme in (("aqua", "light"), ("darkAqua", "dark")):
             for pname in ("key", "accent_red"):
                 a = acc[pname]["macos"]["colors"][ap]["controlAccentColor"]
@@ -626,6 +652,8 @@ def main():
                 der.setdefault(f"{name}_{scheme}", []).append(
                     {'"input.accent"': a[:7], "result": r[:7], "conditions": [f"scheme:{scheme}"]})
     for pname, ap in (("key", "aqua"), ("accent_red", "aqua")):
+        if no_caret & {("key", "aqua"), ("accent_red", "aqua")}:
+            break  # a pass shows no caret: no light caret derivation (two passes are needed)
         a = acc[pname]["macos"]["colors"][ap]["controlAccentColor"]
         rel = Path(PASSES[pname]) / ap / "caret"
         c0, c1 = (Layer(root / rel / f"caret-{n}.png") for n in (0, 1))

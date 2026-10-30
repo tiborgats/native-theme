@@ -1,0 +1,3190 @@
+# Output of analysis/measure_button_layers.py (its docstring is the method), file layers-contrast-styles_a.toml.
+# input_image: every file this part reads (layers, captures, and the probe.toml files whose frames,
+# cell rects and colours it takes).
+input_image = [
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/probe.toml",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/aqua/styles_a/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/aqua/styles_a/normal-over-grey.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/aqua/styles_a/pressed-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/aqua/styles_a/pressed-over-grey.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/aqua/styles_a/disabled-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/aqua/styles_a/disabled-over-grey.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/darkAqua/styles_a/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/darkAqua/styles_a/normal-over-grey.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/darkAqua/styles_a/pressed-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/darkAqua/styles_a/pressed-over-grey.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/darkAqua/styles_a/disabled-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/darkAqua/styles_a/disabled-over-grey.png",
+]
+
+[contrast.styles_a.aqua.normal.mini-flexible_push]
+drawn_box = [21, 68, 46, 17, 772]
+fill = "#ffffffff"
+fill_share = 0.756
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#ffffffff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#ffffffff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#ffffffff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [2.319, 1.408, 0.773, 0.412, 0.345, 0.341, 0.341, 0.341, 0.341], radius_px = 4.5, rms_px = 0.31, radius = "4.5px" }
+corner_top_right = { insets_px = [2.313, 1.431, 0.808, 0.412, 0.345, 0.341, 0.341, 0.341, 0.341], radius_px = 4.75, rms_px = 0.315, radius = "4.75px" }
+corner_bottom_right = { insets_px = [3.375, 2.269, 1.365, 0.78, 0.404, 0.341, 0.341, 0.341, 0.341], radius_px = 6.0, rms_px = 0.293, radius = "6px" }
+corner_bottom_left = { insets_px = [3.375, 2.269, 1.341, 0.753, 0.404, 0.341, 0.341, 0.341, 0.341], radius_px = 6.0, rms_px = 0.289, radius = "6px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-flexible_push]
+drawn_box = [172, 67, 53, 19, 987]
+fill = "#ffffffff"
+fill_share = 0.735
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#ffffffff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#ffffffff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#ffffffff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [3.09, 2.063, 1.118, 0.663, 0.376, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 5.75, rms_px = 0.301, radius = "5.75px" }
+corner_top_right = { insets_px = [3.09, 2.063, 1.118, 0.663, 0.373, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 5.75, rms_px = 0.301, radius = "5.75px" }
+corner_bottom_right = { insets_px = [4.125, 3.029, 2.0, 1.086, 0.643, 0.369, 0.341, 0.341, 0.341, 0.341], radius_px = 7.25, rms_px = 0.308, radius = "7.25px" }
+corner_bottom_left = { insets_px = [4.125, 3.029, 2.0, 1.086, 0.643, 0.373, 0.341, 0.341, 0.341, 0.341], radius_px = 7.25, rms_px = 0.308, radius = "7.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-flexible_push]
+drawn_box = [322, 65, 57, 23, 1281]
+fill = "#ffffffff"
+fill_share = 0.756
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#ffffffff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#ffffffff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#ffffffff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [3.94, 2.871, 1.78, 1.02, 0.592, 0.373, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.0, rms_px = 0.313, radius = "7px" }
+corner_top_right = { insets_px = [3.94, 2.871, 1.78, 1.016, 0.592, 0.373, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.0, rms_px = 0.312, radius = "7px" }
+corner_bottom_right = { insets_px = [5.0, 3.857, 2.788, 1.737, 0.992, 0.573, 0.369, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 8.25, rms_px = 0.329, radius = "8.25px" }
+corner_bottom_left = { insets_px = [5.0, 3.857, 2.788, 1.737, 0.992, 0.573, 0.369, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 8.25, rms_px = 0.329, radius = "8.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-flexible_push]
+drawn_box = [472, 61, 57, 31, 1731]
+fill = "#ffffffff"
+fill_share = 0.82
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#ffffffff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#ffffffff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#ffffffff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [4.771, 3.353, 2.114, 1.38, 0.914, 0.557, 0.357, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.75, rms_px = 0.295, radius = "7.75px" }
+corner_top_right = { insets_px = [4.771, 3.353, 2.11, 1.38, 0.914, 0.557, 0.357, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.75, rms_px = 0.294, radius = "7.75px" }
+corner_bottom_right = { insets_px = [6.25, 4.657, 3.259, 2.059, 1.353, 0.882, 0.549, 0.369, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 9.5, rms_px = 0.271, radius = "9.5px" }
+corner_bottom_left = { insets_px = [6.25, 4.657, 3.263, 2.059, 1.353, 0.882, 0.549, 0.353, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 9.5, rms_px = 0.271, radius = "9.5px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.mini-small_square]
+drawn_box = [20, 125, 36, 15, 540]
+fill = "#fafafaff"
+fill_share = 0.369
+fill_grey_delta = 0
+edge_top = ["#595959ff", "#fafafaff"]
+stroke_top = { width = 1, edge = "#595959ff" }
+edge_right = ["#595959ff", "#f8f8f8ff"]
+stroke_right = { width = 1, edge = "#595959ff" }
+edge_bottom = ["#595959ff", "#f5f5f5ff"]
+stroke_bottom = "unclassified"
+edge_left = ["#595959ff", "#f8f8f8ff"]
+stroke_left = { width = 1, edge = "#595959ff" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-small_square]
+drawn_box = [170, 123, 41, 18, 738]
+fill = "#f9f9f9ff"
+fill_share = 0.423
+fill_grey_delta = 0
+edge_top = ["#595959ff", "#fafafaff"]
+stroke_top = { width = 1, edge = "#595959ff" }
+edge_right = ["#595959ff", "#f7f7f7ff"]
+stroke_right = { width = 1, edge = "#595959ff" }
+edge_bottom = ["#595959ff", "#f5f5f5ff"]
+stroke_bottom = "unclassified"
+edge_left = ["#595959ff", "#f7f7f7ff"]
+stroke_left = { width = 1, edge = "#595959ff" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-small_square]
+drawn_box = [320, 122, 47, 20, 940]
+fill = "#f9f9f9ff"
+fill_share = 0.449
+fill_grey_delta = 0
+edge_top = ["#595959ff", "#fafafaff"]
+stroke_top = { width = 1, edge = "#595959ff" }
+edge_right = ["#595959ff", "#f7f7f7ff"]
+stroke_right = { width = 1, edge = "#595959ff" }
+edge_bottom = ["#595959ff", "#f5f5f5ff"]
+stroke_bottom = "unclassified"
+edge_left = ["#595959ff", "#f7f7f7ff"]
+stroke_left = { width = 1, edge = "#595959ff" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-small_square]
+drawn_box = [470, 122, 47, 20, 940]
+fill = "#f9f9f9ff"
+fill_share = 0.449
+fill_grey_delta = 0
+edge_top = ["#595959ff", "#fafafaff"]
+stroke_top = { width = 1, edge = "#595959ff" }
+edge_right = ["#595959ff", "#f7f7f7ff"]
+stroke_right = { width = 1, edge = "#595959ff" }
+edge_bottom = ["#595959ff", "#f5f5f5ff"]
+stroke_bottom = "unclassified"
+edge_left = ["#595959ff", "#f7f7f7ff"]
+stroke_left = { width = 1, edge = "#595959ff" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.mini-shadowless_square]
+drawn_box = [20, 180, 40, 17, 680]
+fill = "non_uniform"
+fill_share = 0.25
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-shadowless_square]
+drawn_box = [170, 178, 45, 20, 900]
+fill = "non_uniform"
+fill_share = 0.261
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-shadowless_square]
+drawn_box = [320, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.247
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-shadowless_square]
+drawn_box = [470, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.247
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.mini-accessory_bar]
+drawn_box = [20, 237, 44, 14, 616]
+fill = "#0c0c0ca6"
+fill_share = 0.632
+fill_grey_delta = 0.514
+stroke = "absent"
+edge_top = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_right = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_bottom = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_left = ["#0c0c0ca6", "#0c0c0ca6"]
+corner_top_left = { insets_px = [1.482, 0.434, 0.072, 0.0, 0.0], radius_px = 3.0, rms_px = 0.017, radius = "3px" }
+corner_top_right = { insets_px = [1.476, 0.464, 0.072, 0.0, 0.0], radius_px = 3.0, rms_px = 0.023, radius = "3px" }
+corner_bottom_right = { insets_px = [1.476, 0.464, 0.072, 0.0, 0.743, 0.234, 0.324], radius_px = 3.0, rms_px = 0.319, radius = "3px" }
+corner_bottom_left = { insets_px = [1.476, 0.434, 0.072, 0.0, 0.71, 0.205, 0.283], radius_px = 3.0, rms_px = 0.299, radius = "3px" }
+label = "#ffffffff"
+label_pixels = 6
+label_grey_delta = 0.882
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-accessory_bar]
+drawn_box = [170, 236, 49, 16, 780]
+fill = "#0c0c0ca6"
+fill_share = 0.602
+fill_grey_delta = 0.514
+stroke = "absent"
+edge_top = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_right = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_bottom = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_left = ["#0c0c0ca6", "#0c0c0ca6"]
+corner_top_left = { insets_px = [2.229, 0.91, 0.319, 0.054, 0.0, 0.508, 0.884, 0.435], radius_px = 4.0, rms_px = 0.392, radius = "4px" }
+corner_top_right = { insets_px = [2.229, 0.91, 0.319, 0.048, 0.0, 0.581, 0.974, 0.486], radius_px = 4.0, rms_px = 0.436, radius = "4px" }
+corner_bottom_right = { insets_px = [2.217, 0.904, 0.319, 0.048, 0.0, 0.652, 0.732, 0.205], radius_px = 4.0, rms_px = 0.354, radius = "4px" }
+corner_bottom_left = { insets_px = [2.217, 0.904, 0.319, 0.054, 0.0, 0.58, 0.65, 0.205], radius_px = 4.0, rms_px = 0.317, radius = "4px" }
+label = "#ffffffff"
+label_pixels = 39
+label_grey_delta = 0.847
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-accessory_bar]
+drawn_box = [320, 235, 55, 18, 978]
+fill = "#0c0c0ca6"
+fill_share = 0.63
+fill_grey_delta = 0.514
+stroke = "absent"
+edge_top = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_right = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_bottom = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_left = ["#0c0c0ca6", "#0c0c0ca6"]
+corner_top_left = { insets_px = [3.0, 1.482, 0.705, 0.253, 0.048, 0.539, 1.393, 0.324, 0.324], radius_px = 5.0, rms_px = 0.521, radius = "5px" }
+corner_top_right = { insets_px = [3.006, 1.482, 0.699, 0.253, 0.048, 0.539, 1.393, 0.324, 0.324], radius_px = 5.0, rms_px = 0.521, radius = "5px" }
+corner_bottom_right = { insets_px = [2.994, 1.482, 0.699, 0.253, 0.048, 0.0, 1.011, 1.224, 0.188], radius_px = 5.0, rms_px = 0.533, radius = "5px" }
+corner_bottom_left = { insets_px = [2.988, 1.482, 0.699, 0.253, 0.048, 0.0, 1.011, 1.224, 0.188], radius_px = 5.0, rms_px = 0.533, radius = "5px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 0.882
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-accessory_bar]
+drawn_box = [470, 230, 55, 28, 1528]
+fill = "#0c0c0ca6"
+fill_share = 0.784
+fill_grey_delta = 0.514
+stroke = "absent"
+edge_top = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_right = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_bottom = ["#0c0c0ca6", "#0c0c0ca6"]
+edge_left = ["#0c0c0ca6", "#0c0c0ca6"]
+corner_top_left = { insets_px = [3.807, 2.078, 1.163, 0.572, 0.217, 0.024, 0.0, 0.0], radius_px = 6.0, rms_px = 0.026, radius = "6px" }
+corner_top_right = { insets_px = [3.807, 2.078, 1.157, 0.572, 0.217, 0.03, 0.0, 0.0], radius_px = 6.0, rms_px = 0.025, radius = "6px" }
+corner_bottom_right = { insets_px = [3.789, 2.078, 1.151, 0.566, 0.217, 0.048, 0.0, 0.0], radius_px = 6.0, rms_px = 0.021, radius = "6px" }
+corner_bottom_left = { insets_px = [3.789, 2.078, 1.157, 0.566, 0.217, 0.024, 0.0, 0.0], radius_px = 6.0, rms_px = 0.02, radius = "6px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 0.882
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.mini-accessory_bar_action]
+drawn_box = [20, 293, 44, 14, 251]
+fill = "absent"
+edge_top = ["#00000099", "#00000000"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#00000000"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#00000000"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#00000000"]
+stroke_left = { width = 1, edge = "#00000099" }
+label = "#000000ff"
+label_pixels = 3
+label_grey_delta = 0.047
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-accessory_bar_action]
+drawn_box = [170, 292, 49, 16, 325]
+fill = "absent"
+edge_top = ["#00000099", "#00000000"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#00000000"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#00000000"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#00000000"]
+stroke_left = { width = 1, edge = "#00000099" }
+label = "#000000ff"
+label_pixels = 25
+label_grey_delta = 0.506
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-accessory_bar_action]
+drawn_box = [320, 291, 55, 18, 395]
+fill = "absent"
+edge_top = ["#00000099", "#00000000"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#00000000"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#00000000"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#00000000"]
+stroke_left = { width = 1, edge = "#00000099" }
+label = "#000000ff"
+label_pixels = 31
+label_grey_delta = 0.525
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-accessory_bar_action]
+drawn_box = [470, 291, 55, 18, 395]
+fill = "absent"
+edge_top = ["#00000099", "#00000000"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#00000000"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#00000000"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#00000000"]
+stroke_left = { width = 1, edge = "#00000099" }
+label = "#000000ff"
+label_pixels = 31
+label_grey_delta = 0.525
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.mini-badge]
+drawn_box = [20, 347, 47, 18, 798]
+fill = "#00000026"
+fill_share = 0.635
+fill_grey_delta = 0.576
+stroke = "absent"
+edge_top = ["#00000026", "#00000026"]
+edge_right = ["#00000024", "#00000026"]
+edge_bottom = ["#00000026", "#00000026"]
+edge_left = ["#00000024", "#00000026"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.303, 3.129], radius_px = 9.75, rms_px = 1.469, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.506, 3.341], radius_px = 9.75, rms_px = 1.561, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 3.38, 3.218, 1.736, 2.681], radius_px = 10.5, rms_px = 1.546, radius = "10.5px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.215, 3.038, 1.528, 2.464], radius_px = 10.25, rms_px = 1.434, radius = "10.25px" }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-badge]
+drawn_box = [170, 347, 47, 18, 798]
+fill = "#00000026"
+fill_share = 0.635
+fill_grey_delta = 0.576
+stroke = "absent"
+edge_top = ["#00000026", "#00000026"]
+edge_right = ["#00000024", "#00000026"]
+edge_bottom = ["#00000026", "#00000026"]
+edge_left = ["#00000024", "#00000026"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.303, 3.129], radius_px = 9.75, rms_px = 1.469, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.506, 3.341], radius_px = 9.75, rms_px = 1.561, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 3.38, 3.218, 1.736, 2.681], radius_px = 10.5, rms_px = 1.546, radius = "10.5px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.215, 3.038, 1.528, 2.464], radius_px = 10.25, rms_px = 1.434, radius = "10.25px" }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-badge]
+drawn_box = [320, 347, 47, 18, 798]
+fill = "#00000026"
+fill_share = 0.635
+fill_grey_delta = 0.576
+stroke = "absent"
+edge_top = ["#00000026", "#00000026"]
+edge_right = ["#00000024", "#00000026"]
+edge_bottom = ["#00000026", "#00000026"]
+edge_left = ["#00000024", "#00000026"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.303, 3.129], radius_px = 9.75, rms_px = 1.469, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.506, 3.341], radius_px = 9.75, rms_px = 1.561, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 3.38, 3.218, 1.736, 2.681], radius_px = 10.5, rms_px = 1.546, radius = "10.5px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.215, 3.038, 1.528, 2.464], radius_px = 10.25, rms_px = 1.434, radius = "10.25px" }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-badge]
+drawn_box = [470, 347, 47, 18, 798]
+fill = "#00000026"
+fill_share = 0.635
+fill_grey_delta = 0.576
+stroke = "absent"
+edge_top = ["#00000026", "#00000026"]
+edge_right = ["#00000024", "#00000026"]
+edge_bottom = ["#00000026", "#00000026"]
+edge_left = ["#00000024", "#00000026"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.303, 3.129], radius_px = 9.75, rms_px = 1.469, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.506, 3.341], radius_px = 9.75, rms_px = 1.561, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.895, 4.053, 2.789, 1.895, 1.263, 3.38, 3.218, 1.736, 2.681], radius_px = 10.5, rms_px = 1.546, radius = "10.5px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.215, 3.038, 1.528, 2.464], radius_px = 10.25, rms_px = 1.434, radius = "10.25px" }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.mini-circular]
+drawn_box = [22, 405, 15, 16, 196]
+fill = "#ffffffff"
+fill_share = 0.409
+fill_grey_delta = 0
+edge_top = ["#000000a3", "#d9d9d9fd"]
+stroke_top = "unclassified"
+edge_right = ["#00000098", "#ecececf7"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000005", "#000000ac"]
+stroke_bottom = "unclassified"
+edge_left = ["#0000009b", "#efefeff8"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [4.627, 3.321, 2.361, 1.737, 1.106, 0.686, 0.424, 0.341], radius_px = 8.0, rms_px = 0.363, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [4.627, 3.321, 2.357, 1.733, 1.106, 0.682, 0.439, 0.357], radius_px = 8.0, rms_px = 0.365, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [7.0, 4.57, 3.277, 2.322, 1.718, 1.078, 0.671, 0.435], radius_px = 10.0, rms_px = 0.1, radius = "10px" }
+corner_bottom_left = { insets_px = [7.0, 4.57, 3.277, 2.322, 1.718, 1.078, 0.667, 0.42], radius_px = 10.0, rms_px = 0.098, radius = "10px" }
+icon = "#393939ff"
+icon_pixels = 1
+icon_grey_delta = 0.388
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.small-circular]
+drawn_box = [172, 403, 18, 19, 280]
+fill = "#ffffffff"
+fill_share = 0.476
+fill_grey_delta = 0.494
+edge_top = ["#000000a3", "#fafafafd"]
+stroke_top = "unclassified"
+edge_right = ["#000000a1", "#f7f7f7fb"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000005", "#000000ab"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a5", "#fbfbfbfd"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [6.128, 4.574, 3.268, 2.318, 1.757, 1.173, 0.78, 0.498, 0.357, 0.353], radius_px = 9.75, rms_px = 0.3, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.128, 4.546, 3.256, 2.318, 1.761, 1.173, 0.78, 0.498, 0.357, 0.369], radius_px = 9.75, rms_px = 0.302, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [9.0, 6.007, 4.466, 3.197, 2.275, 1.722, 1.145, 0.753, 0.494, 0.369], radius_px = 11.75, rms_px = 0.184, radius = "11.75px" }
+corner_bottom_left = { insets_px = [9.0, 6.02, 4.511, 3.209, 2.278, 1.722, 1.145, 0.761, 0.49, 0.353], radius_px = 11.75, rms_px = 0.18, radius = "11.75px" }
+icon = "#1f1f1fff"
+icon_pixels = 1
+icon_grey_delta = 0.843
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.regular-circular]
+drawn_box = [322, 401, 22, 23, 412]
+fill = "#ffffffff"
+fill_share = 0.538
+fill_grey_delta = 0
+edge_top = ["#0000009f", "#f7f7f7fb"]
+stroke_top = "unclassified"
+edge_right = ["#000000a5", "#fbfbfbfd"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000006", "#000000ae"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a1", "#f6f6f6fb"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [7.766, 6.04, 4.82, 3.424, 2.776, 1.918, 1.353, 0.98, 0.667, 0.455, 0.357, 0.369], radius_px = 11.75, rms_px = 0.31, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [7.773, 6.04, 4.816, 3.424, 2.776, 1.914, 1.353, 0.976, 0.659, 0.455, 0.357, 0.353], radius_px = 11.75, rms_px = 0.306, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [11.0, 7.336, 5.97, 4.698, 3.349, 2.725, 1.878, 1.329, 0.953, 0.647, 0.447, 0.353], radius_px = 13.75, rms_px = 0.247, radius = "13.75px" }
+corner_bottom_left = { insets_px = [11.0, 7.336, 5.97, 4.702, 3.349, 2.725, 1.882, 1.333, 0.961, 0.655, 0.478, 0.369], radius_px = 13.75, rms_px = 0.248, radius = "13.75px" }
+icon = "#0d0d0dff"
+icon_pixels = 1
+icon_grey_delta = 0.188
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.normal.large-circular]
+drawn_box = [472, 397, 30, 31, 740]
+fill = "#ffffffff"
+fill_share = 0.661
+fill_grey_delta = 0
+edge_top = ["#000000a3", "#fbfbfbfd"]
+stroke_top = "unclassified"
+edge_right = ["#000000a5", "#fbfbfbfd"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000006", "#000000ad"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a5", "#fbfbfbfd"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [10.969, 8.981, 7.357, 6.039, 4.922, 3.902, 3.043, 2.404, 1.918, 1.388, 1.094, 0.8, 0.576, 0.424, 0.353, 0.353], radius_px = 15.75, rms_px = 0.325, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [10.954, 8.981, 7.357, 6.039, 4.922, 3.898, 3.043, 2.404, 1.914, 1.388, 1.094, 0.8, 0.576, 0.424, 0.353, 0.353], radius_px = 15.75, rms_px = 0.328, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [15.0, 10.851, 8.891, 7.255, 5.933, 4.824, 3.847, 2.992, 2.376, 1.886, 1.361, 1.075, 0.784, 0.565, 0.42, 0.353], radius_px = 18.0, rms_px = 0.317, radius = "18px" }
+corner_bottom_left = { insets_px = [15.0, 10.851, 8.891, 7.255, 5.933, 4.824, 3.847, 3.0, 2.376, 1.886, 1.369, 1.075, 0.776, 0.565, 0.42, 0.353], radius_px = 18.0, rms_px = 0.316, radius = "18px" }
+icon = "#0d0d0dff"
+icon_pixels = 1
+icon_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-flexible_push]
+drawn_box = [21, 68, 46, 17, 772]
+fill = "#d9d9d9ff"
+fill_share = 0.76
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#d9d9d9ff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#d9d9d9ff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#d9d9d9ff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [2.319, 1.408, 0.773, 0.412, 0.345, 0.341, 0.341, 0.341, 0.341], radius_px = 4.5, rms_px = 0.31, radius = "4.5px" }
+corner_top_right = { insets_px = [2.313, 1.431, 0.808, 0.412, 0.345, 0.341, 0.341, 0.341, 0.341], radius_px = 4.75, rms_px = 0.315, radius = "4.75px" }
+corner_bottom_right = { insets_px = [3.375, 2.269, 1.365, 0.78, 0.404, 0.341, 0.341, 0.341, 0.341], radius_px = 6.0, rms_px = 0.293, radius = "6px" }
+corner_bottom_left = { insets_px = [3.375, 2.269, 1.341, 0.753, 0.404, 0.341, 0.341, 0.341, 0.341], radius_px = 6.0, rms_px = 0.289, radius = "6px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-flexible_push]
+drawn_box = [172, 67, 53, 19, 987]
+fill = "#d9d9d9ff"
+fill_share = 0.737
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#d9d9d9ff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#d9d9d9ff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#d9d9d9ff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [3.09, 2.063, 1.118, 0.663, 0.376, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 5.75, rms_px = 0.301, radius = "5.75px" }
+corner_top_right = { insets_px = [3.09, 2.063, 1.118, 0.663, 0.373, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 5.75, rms_px = 0.301, radius = "5.75px" }
+corner_bottom_right = { insets_px = [4.125, 3.029, 2.0, 1.086, 0.643, 0.369, 0.341, 0.341, 0.341, 0.341], radius_px = 7.25, rms_px = 0.308, radius = "7.25px" }
+corner_bottom_left = { insets_px = [4.125, 3.029, 2.0, 1.086, 0.643, 0.373, 0.341, 0.341, 0.341, 0.341], radius_px = 7.25, rms_px = 0.308, radius = "7.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-flexible_push]
+drawn_box = [322, 65, 57, 23, 1281]
+fill = "#d9d9d9ff"
+fill_share = 0.757
+fill_grey_delta = 0
+edge_top = ["#000000a6", "#d9d9d9ff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#d9d9d9ff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#d9d9d9ff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [3.94, 2.871, 1.78, 1.02, 0.592, 0.373, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.0, rms_px = 0.313, radius = "7px" }
+corner_top_right = { insets_px = [3.94, 2.871, 1.78, 1.016, 0.592, 0.373, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.0, rms_px = 0.312, radius = "7px" }
+corner_bottom_right = { insets_px = [5.0, 3.857, 2.788, 1.737, 0.992, 0.573, 0.369, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 8.25, rms_px = 0.329, radius = "8.25px" }
+corner_bottom_left = { insets_px = [5.0, 3.857, 2.788, 1.737, 0.992, 0.573, 0.369, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 8.25, rms_px = 0.329, radius = "8.25px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-flexible_push]
+drawn_box = [472, 61, 57, 31, 1731]
+fill = "#d9d9d9ff"
+fill_share = 0.822
+fill_grey_delta = 0.655
+edge_top = ["#000000a6", "#d9d9d9ff"]
+stroke_top = { width = 1, edge = "#000000a6" }
+edge_right = ["#000000a8", "#d9d9d9ff"]
+stroke_right = { width = 1, edge = "#000000a8" }
+edge_bottom = ["#00000008", "#000000af"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a8", "#d9d9d9ff"]
+stroke_left = { width = 1, edge = "#000000a8" }
+corner_top_left = { insets_px = [4.771, 3.353, 2.114, 1.38, 0.914, 0.557, 0.357, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.75, rms_px = 0.295, radius = "7.75px" }
+corner_top_right = { insets_px = [4.771, 3.353, 2.11, 1.38, 0.914, 0.557, 0.357, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 7.75, rms_px = 0.294, radius = "7.75px" }
+corner_bottom_right = { insets_px = [6.25, 4.657, 3.259, 2.059, 1.353, 0.882, 0.549, 0.369, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 9.5, rms_px = 0.271, radius = "9.5px" }
+corner_bottom_left = { insets_px = [6.25, 4.657, 3.263, 2.059, 1.353, 0.882, 0.549, 0.353, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341, 0.341], radius_px = 9.5, rms_px = 0.271, radius = "9.5px" }
+label = "#000000ff"
+label_pixels = 1
+label_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-small_square]
+drawn_box = [20, 125, 36, 15, 540]
+fill = "non_uniform"
+fill_share = 0.216
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-small_square]
+drawn_box = [170, 123, 41, 18, 738]
+fill = "non_uniform"
+fill_share = 0.245
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-small_square]
+drawn_box = [320, 122, 47, 20, 940]
+fill = "non_uniform"
+fill_share = 0.222
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-small_square]
+drawn_box = [470, 122, 47, 20, 940]
+fill = "non_uniform"
+fill_share = 0.222
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-shadowless_square]
+drawn_box = [20, 180, 40, 17, 680]
+fill = "non_uniform"
+fill_share = 0.246
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-shadowless_square]
+drawn_box = [170, 178, 45, 20, 900]
+fill = "non_uniform"
+fill_share = 0.294
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-shadowless_square]
+drawn_box = [320, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.225
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-shadowless_square]
+drawn_box = [470, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.225
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-accessory_bar]
+drawn_box = [20, 237, 44, 14, 616]
+fill = "#010101bf"
+fill_share = 0.632
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [1.476, 0.435, 0.068, 0.0, 0.0], radius_px = 3.0, rms_px = 0.014, radius = "3px" }
+corner_top_right = { insets_px = [1.476, 0.466, 0.068, 0.0, 0.0], radius_px = 3.0, rms_px = 0.023, radius = "3px" }
+corner_bottom_right = { insets_px = [1.476, 0.461, 0.068, 0.0, 0.51, 0.164, 0.204], radius_px = 3.0, rms_px = 0.217, radius = "3px" }
+corner_bottom_left = { insets_px = [1.476, 0.435, 0.068, 0.0, 0.485, 0.144, 0.179], radius_px = 3.0, rms_px = 0.203, radius = "3px" }
+label = "#ffffffff"
+label_pixels = 6
+label_grey_delta = 0.882
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-accessory_bar]
+drawn_box = [170, 236, 49, 16, 780]
+fill = "#010101bf"
+fill_share = 0.602
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [2.225, 0.911, 0.319, 0.052, 0.0, 0.315, 0.596, 0.281], radius_px = 4.0, rms_px = 0.259, radius = "4px" }
+corner_top_right = { insets_px = [2.225, 0.911, 0.319, 0.047, 0.0, 0.36, 0.654, 0.312], radius_px = 4.0, rms_px = 0.286, radius = "4px" }
+corner_bottom_right = { insets_px = [2.22, 0.906, 0.319, 0.047, 0.0, 0.431, 0.463, 0.0], radius_px = 4.0, rms_px = 0.224, radius = "4px" }
+corner_bottom_left = { insets_px = [2.22, 0.906, 0.319, 0.052, 0.0, 0.381, 0.414, 0.0], radius_px = 4.0, rms_px = 0.199, radius = "4px" }
+label = "#ffffffff"
+label_pixels = 39
+label_grey_delta = 0.918
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-accessory_bar]
+drawn_box = [320, 235, 55, 18, 978]
+fill = "#010101bf"
+fill_share = 0.63
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [3.0, 1.482, 0.702, 0.257, 0.052, 0.36, 0.959, 0.204, 0.204], radius_px = 5.0, rms_px = 0.355, radius = "5px" }
+corner_top_right = { insets_px = [3.005, 1.482, 0.696, 0.257, 0.052, 0.36, 0.959, 0.204, 0.204], radius_px = 5.0, rms_px = 0.355, radius = "5px" }
+corner_bottom_right = { insets_px = [2.995, 1.482, 0.696, 0.257, 0.047, 0.0, 0.654, 0.826, 0.0], radius_px = 5.0, rms_px = 0.352, radius = "5px" }
+corner_bottom_left = { insets_px = [2.995, 1.482, 0.696, 0.257, 0.052, 0.0, 0.654, 0.826, 0.0], radius_px = 5.0, rms_px = 0.352, radius = "5px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 0.933
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-accessory_bar]
+drawn_box = [470, 230, 55, 28, 1528]
+fill = "#010101bf"
+fill_share = 0.784
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [3.817, 2.084, 1.168, 0.571, 0.22, 0.021, 0.0, 0.0], radius_px = 6.0, rms_px = 0.03, radius = "6px" }
+corner_top_right = { insets_px = [3.817, 2.084, 1.157, 0.571, 0.22, 0.026, 0.0, 0.0], radius_px = 6.0, rms_px = 0.029, radius = "6px" }
+corner_bottom_right = { insets_px = [3.791, 2.079, 1.152, 0.571, 0.22, 0.047, 0.0, 0.0], radius_px = 6.0, rms_px = 0.022, radius = "6px" }
+corner_bottom_left = { insets_px = [3.791, 2.084, 1.157, 0.571, 0.22, 0.021, 0.0, 0.0], radius_px = 6.0, rms_px = 0.022, radius = "6px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 0.933
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-accessory_bar_action]
+drawn_box = [20, 293, 44, 14, 616]
+fill = "#0000001a"
+fill_share = 0.677
+fill_grey_delta = 0.553
+edge_top = ["#00000099", "#0000001a"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#0000001a"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#0000001a"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#0000001a"]
+stroke_left = { width = 1, edge = "#00000099" }
+corner_top_left = { insets_px = [1.477, 0.0, 0.0], radius_px = 2.75, rms_px = 0.221, radius = "2.75px" }
+corner_top_right = { insets_px = [1.471, 0.0, 0.0], radius_px = 2.75, rms_px = 0.219, radius = "2.75px" }
+corner_bottom_right = { insets_px = [1.471, 0.0, 0.0], radius_px = 2.75, rms_px = 0.219, radius = "2.75px" }
+corner_bottom_left = { insets_px = [1.471, 0.0, 0.0], radius_px = 2.75, rms_px = 0.219, radius = "2.75px" }
+label = "#000000ff"
+label_pixels = 3
+label_grey_delta = 0.522
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-accessory_bar_action]
+drawn_box = [170, 292, 49, 16, 780]
+fill = "#0000001a"
+fill_share = 0.657
+fill_grey_delta = 0.553
+edge_top = ["#00000099", "#0000001a"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#0000001a"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#0000001a"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#0000001a"]
+stroke_left = { width = 1, edge = "#00000099" }
+corner_top_left = { insets_px = [2.229, 0.115, 0.0, 0.0], radius_px = 3.5, rms_px = 0.348, radius = "3.5px" }
+corner_top_right = { insets_px = [2.229, 0.115, 0.0, 0.0], radius_px = 3.5, rms_px = 0.348, radius = "3.5px" }
+corner_bottom_right = { insets_px = [2.222, 0.077, 0.0, 0.0], radius_px = 3.5, rms_px = 0.361, radius = "3.5px" }
+corner_bottom_left = { insets_px = [2.222, 0.077, 0.0, 0.0], radius_px = 3.5, rms_px = 0.361, radius = "3.5px" }
+label = "#000000ff"
+label_pixels = 25
+label_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-accessory_bar_action]
+drawn_box = [320, 291, 55, 18, 978]
+fill = "#0000001a"
+fill_share = 0.667
+fill_grey_delta = 0.553
+edge_top = ["#00000099", "#0000001a"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#0000001a"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#0000001a"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#0000001a"]
+stroke_left = { width = 1, edge = "#00000099" }
+corner_top_left = { insets_px = [3.0, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.341, radius = "4.5px" }
+corner_top_right = { insets_px = [3.0, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.341, radius = "4.5px" }
+corner_bottom_right = { insets_px = [3.0, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.341, radius = "4.5px" }
+corner_bottom_left = { insets_px = [2.993, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.339, radius = "4.5px" }
+label = "#000000ff"
+label_pixels = 29
+label_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-accessory_bar_action]
+drawn_box = [470, 291, 55, 18, 978]
+fill = "#0000001a"
+fill_share = 0.667
+fill_grey_delta = 0.553
+edge_top = ["#00000099", "#0000001a"]
+stroke_top = { width = 1, edge = "#00000099" }
+edge_right = ["#00000099", "#0000001a"]
+stroke_right = { width = 1, edge = "#00000099" }
+edge_bottom = ["#00000099", "#0000001a"]
+stroke_bottom = { width = 1, edge = "#00000099" }
+edge_left = ["#00000099", "#0000001a"]
+stroke_left = { width = 1, edge = "#00000099" }
+corner_top_left = { insets_px = [3.0, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.341, radius = "4.5px" }
+corner_top_right = { insets_px = [3.0, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.341, radius = "4.5px" }
+corner_bottom_right = { insets_px = [3.0, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.341, radius = "4.5px" }
+corner_bottom_left = { insets_px = [2.993, 1.0, 0.0, 0.0], radius_px = 4.5, rms_px = 0.339, radius = "4.5px" }
+label = "#000000ff"
+label_pixels = 29
+label_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-badge]
+drawn_box = [20, 347, 47, 18, 802]
+fill = "#0000004b"
+fill_share = 0.635
+fill_grey_delta = 0.851
+stroke = "absent"
+edge_top = ["#0000004b", "#0000004b"]
+edge_right = ["#00000046", "#0000004b"]
+edge_bottom = ["#0000004b", "#0000004b"]
+edge_left = ["#00000046", "#0000004b"]
+corner_top_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 0.653, 0.387, 2.128, 1.965], radius_px = 9.5, rms_px = 0.928, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 0.653, 0.387, 2.256, 2.096], radius_px = 9.5, rms_px = 0.988, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 2.294, 2.074, 0.989, 1.52], radius_px = 10.0, rms_px = 0.903, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 2.193, 1.963, 0.875, 1.4], radius_px = 9.75, rms_px = 0.835, radius = { full = { maximum_px = "absent" } } }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-badge]
+drawn_box = [170, 347, 47, 18, 802]
+fill = "#0000004b"
+fill_share = 0.635
+fill_grey_delta = 0.851
+stroke = "absent"
+edge_top = ["#0000004b", "#0000004b"]
+edge_right = ["#00000046", "#0000004b"]
+edge_bottom = ["#0000004b", "#0000004b"]
+edge_left = ["#00000046", "#0000004b"]
+corner_top_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 0.653, 0.387, 2.128, 1.965], radius_px = 9.5, rms_px = 0.928, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 0.653, 0.387, 2.256, 2.096], radius_px = 9.5, rms_px = 0.988, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 2.294, 2.074, 0.989, 1.52], radius_px = 10.0, rms_px = 0.903, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 2.193, 1.963, 0.875, 1.4], radius_px = 9.75, rms_px = 0.835, radius = { full = { maximum_px = "absent" } } }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-badge]
+drawn_box = [320, 347, 47, 18, 802]
+fill = "#0000004b"
+fill_share = 0.635
+fill_grey_delta = 0.851
+stroke = "absent"
+edge_top = ["#0000004b", "#0000004b"]
+edge_right = ["#00000046", "#0000004b"]
+edge_bottom = ["#0000004b", "#0000004b"]
+edge_left = ["#00000046", "#0000004b"]
+corner_top_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 0.653, 0.387, 2.128, 1.965], radius_px = 9.5, rms_px = 0.928, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 0.653, 0.387, 2.256, 2.096], radius_px = 9.5, rms_px = 0.988, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 2.294, 2.074, 0.989, 1.52], radius_px = 10.0, rms_px = 0.903, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 2.193, 1.963, 0.875, 1.4], radius_px = 9.75, rms_px = 0.835, radius = { full = { maximum_px = "absent" } } }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-badge]
+drawn_box = [470, 347, 47, 18, 802]
+fill = "#0000004b"
+fill_share = 0.635
+fill_grey_delta = 0.851
+stroke = "absent"
+edge_top = ["#0000004b", "#0000004b"]
+edge_right = ["#00000046", "#0000004b"]
+edge_bottom = ["#0000004b", "#0000004b"]
+edge_left = ["#00000046", "#0000004b"]
+corner_top_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 0.653, 0.387, 2.128, 1.965], radius_px = 9.5, rms_px = 0.928, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 0.653, 0.387, 2.256, 2.096], radius_px = 9.5, rms_px = 0.988, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.04, 2.773, 1.867, 1.267, 2.294, 2.074, 0.989, 1.52], radius_px = 10.0, rms_px = 0.903, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.027, 2.813, 1.867, 1.267, 2.193, 1.963, 0.875, 1.4], radius_px = 9.75, rms_px = 0.835, radius = { full = { maximum_px = "absent" } } }
+label = "#000000c1"
+label_pixels = 42
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.mini-circular]
+drawn_box = [22, 405, 15, 16, 196]
+fill = "#d9d9d9ff"
+fill_share = 0.409
+fill_grey_delta = 0
+edge_top = ["#000000a3", "#b8b8b8fd"]
+stroke_top = "unclassified"
+edge_right = ["#00000098", "#c9c9c9f7"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000005", "#000000ac"]
+stroke_bottom = "unclassified"
+edge_left = ["#0000009b", "#cbcbcbf8"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [4.627, 3.321, 2.361, 1.737, 1.106, 0.686, 0.424, 0.341], radius_px = 8.0, rms_px = 0.363, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [4.627, 3.321, 2.357, 1.733, 1.106, 0.682, 0.439, 0.357], radius_px = 8.0, rms_px = 0.365, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [7.0, 4.57, 3.277, 2.322, 1.718, 1.078, 0.671, 0.435], radius_px = 10.0, rms_px = 0.1, radius = "10px" }
+corner_bottom_left = { insets_px = [7.0, 4.57, 3.277, 2.322, 1.718, 1.078, 0.667, 0.42], radius_px = 10.0, rms_px = 0.098, radius = "10px" }
+icon = "#313131ff"
+icon_pixels = 1
+icon_grey_delta = 0.325
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.small-circular]
+drawn_box = [172, 403, 18, 19, 280]
+fill = "#d9d9d9ff"
+fill_share = 0.476
+fill_grey_delta = 0.345
+edge_top = ["#000000a3", "#d5d5d5fd"]
+stroke_top = "unclassified"
+edge_right = ["#000000a1", "#d2d2d2fb"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000005", "#000000ab"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a5", "#d6d6d6fd"]
+stroke_left = { width = 1, edge = "#000000a5" }
+corner_top_left = { insets_px = [6.128, 4.574, 3.268, 2.318, 1.757, 1.173, 0.78, 0.498, 0.357, 0.353], radius_px = 9.75, rms_px = 0.3, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.128, 4.546, 3.256, 2.318, 1.761, 1.173, 0.78, 0.498, 0.357, 0.369], radius_px = 9.75, rms_px = 0.302, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [9.0, 6.007, 4.466, 3.197, 2.275, 1.722, 1.145, 0.753, 0.494, 0.369], radius_px = 11.75, rms_px = 0.184, radius = "11.75px" }
+corner_bottom_left = { insets_px = [9.0, 6.02, 4.511, 3.209, 2.278, 1.722, 1.145, 0.761, 0.49, 0.353], radius_px = 11.75, rms_px = 0.18, radius = "11.75px" }
+icon = "#1a1a1aff"
+icon_pixels = 1
+icon_grey_delta = 0.341
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.regular-circular]
+drawn_box = [322, 401, 22, 23, 412]
+fill = "#d9d9d9ff"
+fill_share = 0.538
+fill_grey_delta = 0
+edge_top = ["#0000009f", "#d2d2d2fb"]
+stroke_top = "unclassified"
+edge_right = ["#000000a5", "#d6d6d6fd"]
+stroke_right = { width = 1, edge = "#000000a5" }
+edge_bottom = ["#00000006", "#000000ae"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a1", "#d1d1d1fb"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [7.766, 6.04, 4.82, 3.424, 2.776, 1.918, 1.353, 0.98, 0.667, 0.455, 0.357, 0.369], radius_px = 11.75, rms_px = 0.31, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [7.773, 6.04, 4.816, 3.424, 2.776, 1.914, 1.353, 0.976, 0.659, 0.455, 0.357, 0.353], radius_px = 11.75, rms_px = 0.306, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [11.0, 7.336, 5.97, 4.698, 3.349, 2.725, 1.878, 1.329, 0.953, 0.647, 0.447, 0.353], radius_px = 13.75, rms_px = 0.247, radius = "13.75px" }
+corner_bottom_left = { insets_px = [11.0, 7.336, 5.97, 4.702, 3.349, 2.725, 1.882, 1.333, 0.961, 0.655, 0.478, 0.369], radius_px = 13.75, rms_px = 0.248, radius = "13.75px" }
+icon = "#0b0b0bff"
+icon_pixels = 1
+icon_grey_delta = 0.424
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.pressed.large-circular]
+drawn_box = [472, 397, 30, 31, 740]
+fill = "#d9d9d9ff"
+fill_share = 0.661
+fill_grey_delta = 0
+edge_top = ["#000000a3", "#d6d6d6fd"]
+stroke_top = { width = 1, edge = "#000000a3" }
+edge_right = ["#000000a5", "#d6d6d6fd"]
+stroke_right = { width = 1, edge = "#000000a5" }
+edge_bottom = ["#00000006", "#000000ad"]
+stroke_bottom = "unclassified"
+edge_left = ["#000000a5", "#d6d6d6fd"]
+stroke_left = { width = 1, edge = "#000000a5" }
+corner_top_left = { insets_px = [10.969, 8.981, 7.357, 6.039, 4.922, 3.902, 3.043, 2.404, 1.918, 1.388, 1.094, 0.8, 0.576, 0.424, 0.353, 0.353], radius_px = 15.75, rms_px = 0.325, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [10.954, 8.981, 7.357, 6.039, 4.922, 3.898, 3.043, 2.404, 1.914, 1.388, 1.094, 0.8, 0.576, 0.424, 0.353, 0.353], radius_px = 15.75, rms_px = 0.328, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [15.0, 10.851, 8.891, 7.255, 5.933, 4.824, 3.847, 2.992, 2.376, 1.886, 1.361, 1.075, 0.784, 0.565, 0.42, 0.353], radius_px = 18.0, rms_px = 0.317, radius = "18px" }
+corner_bottom_left = { insets_px = [15.0, 10.851, 8.891, 7.255, 5.933, 4.824, 3.847, 3.0, 2.376, 1.886, 1.369, 1.075, 0.776, 0.565, 0.42, 0.353], radius_px = 18.0, rms_px = 0.316, radius = "18px" }
+icon = "#0b0b0bff"
+icon_pixels = 1
+icon_grey_delta = 0
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-flexible_push]
+drawn_box = [21, 68, 46, 17, 770]
+fill = "#ffffff80"
+fill_share = 0.756
+fill_grey_delta = 0.251
+edge_top = ["#00000053", "#ffffff80"]
+stroke_top = { width = 1, edge = "#00000053" }
+edge_right = ["#00000054", "#ffffff80"]
+stroke_right = { width = 1, edge = "#00000054" }
+edge_bottom = ["#00000004", "#00000058"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000054", "#ffffff80"]
+stroke_left = { width = 1, edge = "#00000054" }
+corner_top_left = { insets_px = [2.313, 1.406, 0.773, 0.414, 0.344, 0.344, 0.354, 0.344, 0.344], radius_px = 4.5, rms_px = 0.314, radius = "4.5px" }
+corner_top_right = { insets_px = [2.301, 1.43, 0.812, 0.414, 0.344, 0.344, 0.354, 0.344, 0.344], radius_px = 4.75, rms_px = 0.32, radius = "4.75px" }
+corner_bottom_right = { insets_px = [23.0, 2.273, 1.391, 0.781, 0.406, 0.344, 0.669, 0.344, 0.344], radius_px = 13.0, rms_px = 5.181, radius = "13px" }
+corner_bottom_left = { insets_px = [23.0, 2.273, 1.367, 0.758, 0.406, 0.344, 0.669, 0.344, 0.344], radius_px = 13.0, rms_px = 5.185, radius = "13px" }
+label = "#0000008f"
+label_pixels = 3
+label_grey_delta = 0.647
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-flexible_push]
+drawn_box = [172, 67, 53, 19, 985]
+fill = "#ffffff80"
+fill_share = 0.735
+fill_grey_delta = 0.251
+edge_top = ["#00000053", "#ffffff80"]
+stroke_top = { width = 1, edge = "#00000053" }
+edge_right = ["#00000054", "#ffffff80"]
+stroke_right = { width = 1, edge = "#00000054" }
+edge_bottom = ["#00000004", "#00000058"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000054", "#ffffff80"]
+stroke_left = { width = 1, edge = "#00000054" }
+corner_top_left = { insets_px = [3.084, 2.086, 1.141, 0.664, 0.398, 0.344, 0.344, 0.354, 0.354, 0.344], radius_px = 5.75, rms_px = 0.31, radius = "5.75px" }
+corner_top_right = { insets_px = [3.084, 2.086, 1.141, 0.664, 0.375, 0.344, 0.344, 0.354, 0.354, 0.344], radius_px = 5.75, rms_px = 0.308, radius = "5.75px" }
+corner_bottom_right = { insets_px = [26.0, 3.034, 2.008, 1.109, 0.641, 0.367, 0.349, 0.344, 0.344, 0.344], radius_px = 14.0, rms_px = 5.596, radius = "14px" }
+corner_bottom_left = { insets_px = [26.0, 3.034, 2.008, 1.109, 0.641, 0.375, 0.349, 0.344, 0.344, 0.344], radius_px = 14.0, rms_px = 5.595, radius = "14px" }
+label = "#0000008f"
+label_pixels = 27
+label_grey_delta = 0.757
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-flexible_push]
+drawn_box = [322, 65, 57, 23, 1279]
+fill = "#ffffff80"
+fill_share = 0.752
+fill_grey_delta = 0.251
+edge_top = ["#00000053", "#ffffff80"]
+stroke_top = { width = 1, edge = "#00000053" }
+edge_right = ["#00000054", "#ffffff80"]
+stroke_right = { width = 1, edge = "#00000054" }
+edge_bottom = ["#00000004", "#00000058"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000054", "#ffffff80"]
+stroke_left = { width = 1, edge = "#00000054" }
+corner_top_left = { insets_px = [3.928, 2.867, 1.781, 1.016, 0.594, 0.375, 0.344, 0.344, 0.344, 0.542, 1.086, 0.344], radius_px = 6.75, rms_px = 0.45, radius = "6.75px" }
+corner_top_right = { insets_px = [3.928, 2.867, 1.781, 1.016, 0.594, 0.375, 0.344, 0.344, 0.344, 0.542, 1.086, 0.344], radius_px = 6.75, rms_px = 0.45, radius = "6.75px" }
+corner_bottom_right = { insets_px = [28.0, 3.864, 2.789, 1.734, 0.992, 0.57, 0.367, 0.606, 0.731, 0.344, 0.344, 0.344], radius_px = 15.0, rms_px = 5.429, radius = "15px" }
+corner_bottom_left = { insets_px = [28.0, 3.864, 2.789, 1.734, 0.992, 0.57, 0.367, 0.606, 0.731, 0.344, 0.344, 0.344], radius_px = 15.0, rms_px = 5.429, radius = "15px" }
+label = "#0000008f"
+label_pixels = 31
+label_grey_delta = 0.757
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-flexible_push]
+drawn_box = [472, 61, 57, 31, 1723]
+fill = "#ffffff80"
+fill_share = 0.817
+fill_grey_delta = 0.255
+edge_top = ["#00000053", "#ffffff80"]
+stroke_top = { width = 1, edge = "#00000053" }
+edge_right = ["#00000054", "#ffffff80"]
+stroke_right = { width = 1, edge = "#00000054" }
+edge_bottom = ["#00000004", "#00000058"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000054", "#ffffff80"]
+stroke_left = { width = 1, edge = "#00000054" }
+corner_top_left = { insets_px = [4.759, 3.359, 2.109, 1.383, 0.914, 0.555, 0.359, 0.344, 0.344, 0.344, 0.344, 0.344, 0.344, 0.542, 1.086, 0.344], radius_px = 7.75, rms_px = 0.407, radius = "7.75px" }
+corner_top_right = { insets_px = [4.759, 3.359, 2.109, 1.383, 0.914, 0.555, 0.359, 0.344, 0.344, 0.344, 0.344, 0.344, 0.344, 0.542, 1.086, 0.344], radius_px = 7.75, rms_px = 0.407, radius = "7.75px" }
+corner_bottom_right = { insets_px = [28.0, 4.659, 3.258, 2.062, 1.352, 0.883, 0.547, 0.367, 0.344, 0.344, 0.344, 0.606, 0.731, 0.344, 0.344, 0.344], radius_px = 15.5, rms_px = 4.595, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [28.0, 4.659, 3.258, 2.062, 1.352, 0.883, 0.547, 0.352, 0.344, 0.344, 0.344, 0.606, 0.731, 0.344, 0.344, 0.344], radius_px = 15.5, rms_px = 4.595, radius = { full = { maximum_px = "absent" } } }
+label = "#0000008f"
+label_pixels = 31
+label_grey_delta = 0.757
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-small_square]
+drawn_box = [20, 125, 36, 15, 540]
+fill = "#f9f9f980"
+fill_share = 0.438
+fill_grey_delta = 0.733
+edge_top = ["#5a5a5a80", "#f9f9f980"]
+stroke_top = { width = 1, edge = "#5a5a5a80" }
+edge_right = ["#5a5a5a80", "#f7f7f780"]
+stroke_right = { width = 1, edge = "#5a5a5a80" }
+edge_bottom = ["#5a5a5a80", "#f5f5f580"]
+stroke_bottom = "unclassified"
+edge_left = ["#5a5a5a80", "#f7f7f780"]
+stroke_left = { width = 1, edge = "#5a5a5a80" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#01010191"
+label_pixels = 1
+label_grey_delta = 1.129
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-small_square]
+drawn_box = [170, 123, 41, 18, 738]
+fill = "#f9f9f980"
+fill_share = 0.421
+fill_grey_delta = 0.267
+edge_top = ["#5a5a5a80", "#f9f9f980"]
+stroke_top = { width = 1, edge = "#5a5a5a80" }
+edge_right = ["#5a5a5a80", "#f7f7f780"]
+stroke_right = { width = 1, edge = "#5a5a5a80" }
+edge_bottom = ["#5a5a5a80", "#f5f5f580"]
+stroke_bottom = "unclassified"
+edge_left = ["#5a5a5a80", "#f7f7f780"]
+stroke_left = { width = 1, edge = "#5a5a5a80" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#01010191"
+label_pixels = 16
+label_grey_delta = 0.737
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-small_square]
+drawn_box = [320, 122, 47, 20, 940]
+fill = "#f9f9f980"
+fill_share = 0.446
+fill_grey_delta = 0.737
+edge_top = ["#5a5a5a80", "#f9f9f980"]
+stroke_top = { width = 1, edge = "#5a5a5a80" }
+edge_right = ["#5a5a5a80", "#f7f7f780"]
+stroke_right = { width = 1, edge = "#5a5a5a80" }
+edge_bottom = ["#5a5a5a80", "#f5f5f580"]
+stroke_bottom = "unclassified"
+edge_left = ["#5a5a5a80", "#f7f7f780"]
+stroke_left = { width = 1, edge = "#5a5a5a80" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#01010191"
+label_pixels = 15
+label_grey_delta = 1.129
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-small_square]
+drawn_box = [470, 122, 47, 20, 940]
+fill = "#f9f9f980"
+fill_share = 0.446
+fill_grey_delta = 0.737
+edge_top = ["#5a5a5a80", "#f9f9f980"]
+stroke_top = { width = 1, edge = "#5a5a5a80" }
+edge_right = ["#5a5a5a80", "#f7f7f780"]
+stroke_right = { width = 1, edge = "#5a5a5a80" }
+edge_bottom = ["#5a5a5a80", "#f5f5f580"]
+stroke_bottom = "unclassified"
+edge_left = ["#5a5a5a80", "#f7f7f780"]
+stroke_left = { width = 1, edge = "#5a5a5a80" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#01010191"
+label_pixels = 15
+label_grey_delta = 1.129
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-shadowless_square]
+drawn_box = [20, 180, 40, 17, 680]
+fill = "non_uniform"
+fill_share = 0.25
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-shadowless_square]
+drawn_box = [170, 178, 45, 20, 900]
+fill = "non_uniform"
+fill_share = 0.261
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-shadowless_square]
+drawn_box = [320, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.247
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-shadowless_square]
+drawn_box = [470, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.247
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-accessory_bar]
+drawn_box = [20, 237, 44, 14, 616]
+fill = "#010101bf"
+fill_share = 0.632
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [1.476, 0.435, 0.068, 0.0, 0.0], radius_px = 3.0, rms_px = 0.014, radius = "3px" }
+corner_top_right = { insets_px = [1.476, 0.466, 0.068, 0.0, 0.0], radius_px = 3.0, rms_px = 0.023, radius = "3px" }
+corner_bottom_right = { insets_px = [1.476, 0.461, 0.068, 0.0, 0.322, 0.0, 0.0], radius_px = 3.0, rms_px = 0.123, radius = "3px" }
+corner_bottom_left = { insets_px = [1.476, 0.435, 0.068, 0.0, 0.307, 0.0, 0.0], radius_px = 3.0, rms_px = 0.116, radius = "3px" }
+label = "#ffffff97"
+label_pixels = 10
+label_grey_delta = 0.796
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-accessory_bar]
+drawn_box = [170, 236, 49, 16, 780]
+fill = "#010101bf"
+fill_share = 0.602
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [2.225, 0.911, 0.319, 0.052, 0.0, 0.213, 0.348, 0.179], radius_px = 4.0, rms_px = 0.158, radius = "4px" }
+corner_top_right = { insets_px = [2.225, 0.911, 0.319, 0.047, 0.0, 0.244, 0.398, 0.199], radius_px = 4.0, rms_px = 0.18, radius = "4px" }
+corner_bottom_right = { insets_px = [2.22, 0.906, 0.319, 0.047, 0.0, 0.278, 0.278, 0.0], radius_px = 4.0, rms_px = 0.14, radius = "4px" }
+corner_bottom_left = { insets_px = [2.22, 0.906, 0.319, 0.052, 0.0, 0.247, 0.247, 0.0], radius_px = 4.0, rms_px = 0.125, radius = "4px" }
+label = "#ffffff97"
+label_pixels = 40
+label_grey_delta = 0.894
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-accessory_bar]
+drawn_box = [320, 235, 55, 18, 978]
+fill = "#010101bf"
+fill_share = 0.63
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [3.0, 1.482, 0.702, 0.257, 0.052, 0.204, 0.618, 0.0, 0.0], radius_px = 5.0, rms_px = 0.218, radius = "5px" }
+corner_top_right = { insets_px = [3.005, 1.482, 0.696, 0.257, 0.052, 0.204, 0.618, 0.0, 0.0], radius_px = 5.0, rms_px = 0.218, radius = "5px" }
+corner_bottom_right = { insets_px = [2.995, 1.482, 0.696, 0.257, 0.047, 0.0, 0.398, 0.51, 0.0], radius_px = 5.0, rms_px = 0.216, radius = "5px" }
+corner_bottom_left = { insets_px = [2.995, 1.482, 0.696, 0.257, 0.052, 0.0, 0.398, 0.51, 0.0], radius_px = 5.0, rms_px = 0.216, radius = "5px" }
+label = "#ffffff97"
+label_pixels = 57
+label_grey_delta = 0.925
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-accessory_bar]
+drawn_box = [470, 230, 55, 28, 1528]
+fill = "#010101bf"
+fill_share = 0.784
+fill_grey_delta = 0.373
+stroke = "absent"
+edge_top = ["#010101bf", "#010101bf"]
+edge_right = ["#010101bf", "#010101bf"]
+edge_bottom = ["#010101bf", "#010101bf"]
+edge_left = ["#010101bf", "#010101bf"]
+corner_top_left = { insets_px = [3.817, 2.084, 1.168, 0.571, 0.22, 0.021, 0.0, 0.0], radius_px = 6.0, rms_px = 0.03, radius = "6px" }
+corner_top_right = { insets_px = [3.817, 2.084, 1.157, 0.571, 0.22, 0.026, 0.0, 0.0], radius_px = 6.0, rms_px = 0.029, radius = "6px" }
+corner_bottom_right = { insets_px = [3.791, 2.079, 1.152, 0.571, 0.22, 0.047, 0.0, 0.0], radius_px = 6.0, rms_px = 0.022, radius = "6px" }
+corner_bottom_left = { insets_px = [3.791, 2.084, 1.157, 0.571, 0.22, 0.021, 0.0, 0.0], radius_px = 6.0, rms_px = 0.022, radius = "6px" }
+label = "#ffffff97"
+label_pixels = 57
+label_grey_delta = 0.925
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-accessory_bar_action]
+drawn_box = [20, 293, 44, 14, 245]
+fill = "absent"
+edge_top = ["#0000004d", "#00000000"]
+stroke_top = { width = 1, edge = "#0000004d" }
+edge_right = ["#0000004d", "#00000000"]
+stroke_right = { width = 1, edge = "#0000004d" }
+edge_bottom = ["#0000004d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#0000004d" }
+edge_left = ["#0000004d", "#00000000"]
+stroke_left = { width = 1, edge = "#0000004d" }
+label = "#0000008f"
+label_pixels = 3
+label_grey_delta = 0.255
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-accessory_bar_action]
+drawn_box = [170, 292, 49, 16, 314]
+fill = "absent"
+edge_top = ["#0000004d", "#00000000"]
+stroke_top = { width = 1, edge = "#0000004d" }
+edge_right = ["#0000004d", "#00000000"]
+stroke_right = { width = 1, edge = "#0000004d" }
+edge_bottom = ["#0000004d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#0000004d" }
+edge_left = ["#0000004d", "#00000000"]
+stroke_left = { width = 1, edge = "#0000004d" }
+label = "#0000008f"
+label_pixels = 28
+label_grey_delta = 0.278
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-accessory_bar_action]
+drawn_box = [320, 291, 55, 18, 390]
+fill = "absent"
+edge_top = ["#0000004d", "#00000000"]
+stroke_top = { width = 1, edge = "#0000004d" }
+edge_right = ["#0000004d", "#00000000"]
+stroke_right = { width = 1, edge = "#0000004d" }
+edge_bottom = ["#0000004d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#0000004d" }
+edge_left = ["#0000004d", "#00000000"]
+stroke_left = { width = 1, edge = "#0000004d" }
+label = "#0000008f"
+label_pixels = 32
+label_grey_delta = 0.278
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-accessory_bar_action]
+drawn_box = [470, 291, 55, 18, 390]
+fill = "absent"
+edge_top = ["#0000004d", "#00000000"]
+stroke_top = { width = 1, edge = "#0000004d" }
+edge_right = ["#0000004d", "#00000000"]
+stroke_right = { width = 1, edge = "#0000004d" }
+edge_bottom = ["#0000004d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#0000004d" }
+edge_left = ["#0000004d", "#00000000"]
+stroke_left = { width = 1, edge = "#0000004d" }
+label = "#0000008f"
+label_pixels = 32
+label_grey_delta = 0.278
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-badge]
+drawn_box = [20, 347, 47, 18, 798]
+fill = "#0000000d"
+fill_share = 0.645
+fill_grey_delta = 0.478
+stroke = "absent"
+edge_top = ["#0000000d", "#0000000d"]
+edge_right = ["#0000000c", "#0000000d"]
+edge_bottom = ["#0000000d", "#0000000d"]
+edge_left = ["#0000000c", "#0000000d"]
+corner_top_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.629, 4.508], radius_px = 9.75, rms_px = 2.098, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.914, 4.815], radius_px = 9.75, rms_px = 2.236, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.77, 4.655, 3.3, 4.277], radius_px = 11.25, rms_px = 2.469, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.541, 4.397, 2.9, 3.936], radius_px = 11.0, rms_px = 2.285, radius = "11px" }
+label = "#000000c1"
+label_pixels = 41
+label_grey_delta = 0.651
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-badge]
+drawn_box = [170, 347, 47, 18, 798]
+fill = "#0000000d"
+fill_share = 0.645
+fill_grey_delta = 0.478
+stroke = "absent"
+edge_top = ["#0000000d", "#0000000d"]
+edge_right = ["#0000000c", "#0000000d"]
+edge_bottom = ["#0000000d", "#0000000d"]
+edge_left = ["#0000000c", "#0000000d"]
+corner_top_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.629, 4.508], radius_px = 9.75, rms_px = 2.098, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.914, 4.815], radius_px = 9.75, rms_px = 2.236, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.77, 4.655, 3.3, 4.277], radius_px = 11.25, rms_px = 2.469, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.541, 4.397, 2.9, 3.936], radius_px = 11.0, rms_px = 2.285, radius = "11px" }
+label = "#000000c1"
+label_pixels = 41
+label_grey_delta = 0.651
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-badge]
+drawn_box = [320, 347, 47, 18, 798]
+fill = "#0000000d"
+fill_share = 0.645
+fill_grey_delta = 0.478
+stroke = "absent"
+edge_top = ["#0000000d", "#0000000d"]
+edge_right = ["#0000000c", "#0000000d"]
+edge_bottom = ["#0000000d", "#0000000d"]
+edge_left = ["#0000000c", "#0000000d"]
+corner_top_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.629, 4.508], radius_px = 9.75, rms_px = 2.098, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.914, 4.815], radius_px = 9.75, rms_px = 2.236, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.77, 4.655, 3.3, 4.277], radius_px = 11.25, rms_px = 2.469, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.541, 4.397, 2.9, 3.936], radius_px = 11.0, rms_px = 2.285, radius = "11px" }
+label = "#000000c1"
+label_pixels = 41
+label_grey_delta = 0.651
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-badge]
+drawn_box = [470, 347, 47, 18, 798]
+fill = "#0000000d"
+fill_share = 0.645
+fill_grey_delta = 0.478
+stroke = "absent"
+edge_top = ["#0000000d", "#0000000d"]
+edge_right = ["#0000000c", "#0000000d"]
+edge_bottom = ["#0000000d", "#0000000d"]
+edge_left = ["#0000000c", "#0000000d"]
+corner_top_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.629, 4.508], radius_px = 9.75, rms_px = 2.098, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 0.615, 0.385, 4.914, 4.815], radius_px = 9.75, rms_px = 2.236, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.77, 4.655, 3.3, 4.277], radius_px = 11.25, rms_px = 2.469, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.769, 4.0, 2.769, 1.846, 1.231, 4.541, 4.397, 2.9, 3.936], radius_px = 11.0, rms_px = 2.285, radius = "11px" }
+label = "#000000c1"
+label_pixels = 41
+label_grey_delta = 0.651
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.mini-circular]
+drawn_box = [22, 405, 15, 15, 193]
+fill = "#ffffff80"
+fill_share = 0.446
+fill_grey_delta = 0.251
+edge_top = ["#00000052", "#d8d8d888"]
+stroke_top = "unclassified"
+edge_right = ["#00000052", "#fbfbfb7f"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000056", "#fbfbfb7f"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000054", "#ffffff80"]
+stroke_left = { width = 1, edge = "#00000054" }
+corner_top_left = { insets_px = [4.618, 3.319, 2.359, 1.742, 1.273, 1.173, 0.43, 0.344], radius_px = 8.0, rms_px = 0.462, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [4.618, 3.319, 2.359, 1.734, 1.209, 0.963, 0.438, 0.359], radius_px = 8.0, rms_px = 0.416, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [4.574, 3.276, 2.32, 1.719, 1.078, 0.672, 0.438, 0.359], radius_px = 7.75, rms_px = 0.37, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [4.574, 3.276, 2.32, 1.719, 1.078, 0.664, 0.422, 0.344], radius_px = 7.75, rms_px = 0.366, radius = { full = { maximum_px = "absent" } } }
+icon = "#0000006e"
+icon_pixels = 1
+icon_grey_delta = 1.094
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.small-circular]
+drawn_box = [172, 403, 18, 18, 276]
+fill = "#ffffff80"
+fill_share = 0.51
+fill_grey_delta = 0.255
+edge_top = ["#00000052", "#fbfbfb7f"]
+stroke_top = "unclassified"
+edge_right = ["#00000051", "#f7f7f77e"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000056", "#f7f7f77e"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000053", "#fbfbfb7f"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [6.127, 4.565, 3.268, 2.32, 1.758, 1.172, 0.781, 0.987, 0.707], radius_px = 9.75, rms_px = 0.416, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.127, 4.537, 3.244, 2.32, 1.766, 1.172, 0.781, 0.987, 0.707], radius_px = 9.75, rms_px = 0.417, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.0, 4.468, 3.189, 2.273, 1.85, 1.148, 0.758, 0.5, 0.367], radius_px = 9.5, rms_px = 0.321, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [6.013, 4.514, 3.205, 2.281, 1.85, 1.148, 0.758, 0.492, 0.352], radius_px = 9.5, rms_px = 0.318, radius = { full = { maximum_px = "absent" } } }
+icon = "#0101017e"
+icon_pixels = 1
+icon_grey_delta = 1.094
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.regular-circular]
+drawn_box = [322, 401, 22, 22, 402]
+fill = "#ffffff80"
+fill_share = 0.568
+fill_grey_delta = 0.255
+edge_top = ["#00000050", "#f7f7f77e"]
+stroke_top = "unclassified"
+edge_right = ["#00000053", "#fbfbfb7f"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000057", "#fbfbfb7f"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000051", "#f7f7f77e"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [7.775, 6.036, 4.82, 3.422, 2.781, 1.922, 1.359, 0.977, 1.712, 0.534, 0.359], radius_px = 11.75, rms_px = 0.484, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [7.775, 6.036, 4.812, 3.422, 2.781, 1.914, 1.359, 0.977, 1.658, 0.534, 0.359], radius_px = 11.75, rms_px = 0.471, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [7.654, 5.965, 4.703, 3.352, 2.727, 1.875, 1.328, 0.953, 0.648, 0.445, 0.352], radius_px = 11.5, rms_px = 0.313, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [7.654, 5.965, 4.711, 3.352, 2.727, 1.883, 1.336, 0.961, 0.656, 0.477, 0.367], radius_px = 11.5, rms_px = 0.319, radius = { full = { maximum_px = "absent" } } }
+icon = "#01010189"
+icon_pixels = 1
+icon_grey_delta = 0.831
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.aqua.disabled.large-circular]
+drawn_box = [472, 397, 30, 30, 736]
+fill = "#ffffff80"
+fill_share = 0.686
+fill_grey_delta = 0.255
+edge_top = ["#00000052", "#fbfbfb7f"]
+stroke_top = "unclassified"
+edge_right = ["#00000053", "#fbfbfb7f"]
+stroke_right = "unclassified"
+edge_bottom = ["#00000057", "#fbfbfb7f"]
+stroke_bottom = "unclassified"
+edge_left = ["#00000053", "#fbfbfb7f"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [10.969, 8.972, 7.359, 6.039, 4.93, 3.906, 3.047, 2.398, 1.914, 1.391, 1.094, 0.805, 0.578, 0.43, 0.352], radius_px = 15.75, rms_px = 0.325, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [10.954, 8.972, 7.359, 6.039, 4.93, 3.898, 3.047, 2.398, 1.914, 1.391, 1.094, 0.805, 0.578, 0.43, 0.352], radius_px = 15.75, rms_px = 0.328, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [10.845, 8.882, 7.25, 5.938, 4.828, 3.852, 2.992, 2.375, 1.883, 1.359, 1.07, 0.789, 0.57, 0.422, 0.352], radius_px = 15.5, rms_px = 0.328, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [10.845, 8.882, 7.25, 5.938, 4.828, 3.852, 3.0, 2.375, 1.883, 1.375, 1.07, 0.781, 0.57, 0.422, 0.352], radius_px = 15.5, rms_px = 0.328, radius = { full = { maximum_px = "absent" } } }
+icon = "#01010189"
+icon_pixels = 1
+icon_grey_delta = 0.831
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-flexible_push]
+drawn_box = [21, 68, 46, 16, 732]
+fill = "#ffffff40"
+fill_share = 0.714
+fill_grey_delta = 0.627
+edge_top = ["#ffffffa6", "#ffffff40"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff40"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff40"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff40"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [2.349, 0.609, 0.0, 0.0], radius_px = 3.75, rms_px = 0.225, radius = "3.75px" }
+corner_top_right = { insets_px = [2.343, 0.688, 0.0, 0.0], radius_px = 4.0, rms_px = 0.203, radius = "4px" }
+corner_bottom_right = { insets_px = [2.343, 0.672, 0.0, 0.0], radius_px = 4.0, rms_px = 0.207, radius = "4px" }
+corner_bottom_left = { insets_px = [2.343, 0.609, 0.0, 0.0], radius_px = 3.75, rms_px = 0.223, radius = "3.75px" }
+label = "#ffffffff"
+label_pixels = 10
+label_grey_delta = 0.549
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-flexible_push]
+drawn_box = [172, 67, 53, 18, 942]
+fill = "#ffffff40"
+fill_share = 0.684
+fill_grey_delta = 0.627
+edge_top = ["#ffffffa6", "#ffffff40"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff40"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff40"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff40"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.108, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.253, radius = "4.75px" }
+corner_top_right = { insets_px = [3.108, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.253, radius = "4.75px" }
+corner_bottom_right = { insets_px = [3.102, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.252, radius = "4.75px" }
+corner_bottom_left = { insets_px = [3.102, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.252, radius = "4.75px" }
+label = "#ffffffff"
+label_pixels = 40
+label_grey_delta = 0.549
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-flexible_push]
+drawn_box = [322, 65, 57, 22, 1234]
+fill = "#ffffff40"
+fill_share = 0.723
+fill_grey_delta = 0.627
+edge_top = ["#ffffffa6", "#ffffff40"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff40"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff40"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff40"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.97, 1.719, 1.0, 0.141, 0.0, 0.0], radius_px = 5.75, rms_px = 0.239, radius = "5.75px" }
+corner_top_right = { insets_px = [3.97, 1.719, 1.0, 0.141, 0.0, 0.0], radius_px = 5.75, rms_px = 0.239, radius = "5.75px" }
+corner_bottom_right = { insets_px = [3.964, 1.719, 1.0, 0.141, 0.0, 0.0], radius_px = 5.75, rms_px = 0.237, radius = "5.75px" }
+corner_bottom_left = { insets_px = [3.964, 1.719, 1.0, 0.141, 0.0, 0.0], radius_px = 5.75, rms_px = 0.237, radius = "5.75px" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.533
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-flexible_push]
+drawn_box = [472, 61, 57, 30, 1686]
+fill = "#ffffff40"
+fill_share = 0.803
+fill_grey_delta = 0.627
+edge_top = ["#ffffffa6", "#ffffff40"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff40"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff40"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff40"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [4.807, 2.0, 1.0, 0.938, 0.0, 0.0], radius_px = 6.5, rms_px = 0.381, radius = "6.5px" }
+corner_top_right = { insets_px = [4.807, 2.0, 1.0, 0.922, 0.0, 0.0], radius_px = 6.5, rms_px = 0.38, radius = "6.5px" }
+corner_bottom_right = { insets_px = [4.789, 2.0, 1.0, 0.922, 0.0, 0.0], radius_px = 6.5, rms_px = 0.375, radius = "6.5px" }
+corner_bottom_left = { insets_px = [4.789, 2.0, 1.0, 0.922, 0.0, 0.0], radius_px = 6.5, rms_px = 0.375, radius = "6.5px" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.533
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-small_square]
+drawn_box = [20, 125, 36, 15, 540]
+fill = "non_uniform"
+fill_share = 0.349
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-small_square]
+drawn_box = [170, 123, 41, 18, 738]
+fill = "#ffffff25"
+fill_share = 0.351
+fill_grey_delta = 1.075
+edge_top = ["#ffffffa6", "#ffffff26"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff22"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff1f"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffffa6", "#ffffff22"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffffff"
+label_pixels = 39
+label_grey_delta = 0.518
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-small_square]
+drawn_box = [320, 122, 47, 20, 940]
+fill = "#ffffff25"
+fill_share = 0.362
+fill_grey_delta = 0.576
+edge_top = ["#ffffffa6", "#ffffff26"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff22"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff1f"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffffa6", "#ffffff22"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 0.533
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-small_square]
+drawn_box = [470, 122, 47, 20, 940]
+fill = "#ffffff25"
+fill_share = 0.362
+fill_grey_delta = 0.576
+edge_top = ["#ffffffa6", "#ffffff26"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff22"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff1f"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffffa6", "#ffffff22"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 0.533
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-shadowless_square]
+drawn_box = [20, 180, 40, 17, 680]
+fill = "non_uniform"
+fill_share = 0.338
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-shadowless_square]
+drawn_box = [170, 178, 45, 20, 900]
+fill = "non_uniform"
+fill_share = 0.282
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-shadowless_square]
+drawn_box = [320, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.345
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-shadowless_square]
+drawn_box = [470, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.345
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-accessory_bar]
+drawn_box = [20, 237, 44, 14, 265]
+fill = "absent"
+edge_top = ["#ffffffa6", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+label = "#ffffffb3"
+label_pixels = 11
+label_grey_delta = 0.349
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-accessory_bar]
+drawn_box = [170, 236, 49, 16, 355]
+fill = "absent"
+edge_top = ["#ffffffa6", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+label = "#ffffffb3"
+label_pixels = 44
+label_grey_delta = 0.349
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-accessory_bar]
+drawn_box = [320, 235, 55, 18, 421]
+fill = "absent"
+edge_top = ["#ffffffa6", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+label = "#ffffffb3"
+label_pixels = 59
+label_grey_delta = 0.349
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-accessory_bar]
+drawn_box = [470, 230, 55, 28, 449]
+fill = "absent"
+edge_top = ["#ffffffa6", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+label = "#ffffffb3"
+label_pixels = 59
+label_grey_delta = 0.349
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-accessory_bar_action]
+drawn_box = [20, 293, 44, 14, 264]
+fill = "absent"
+edge_top = ["#ffffff4d", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+label = "#ffffffff"
+label_pixels = 10
+label_grey_delta = 0.49
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-accessory_bar_action]
+drawn_box = [170, 292, 49, 16, 355]
+fill = "absent"
+edge_top = ["#ffffff4d", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+label = "#ffffffff"
+label_pixels = 40
+label_grey_delta = 0.498
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-accessory_bar_action]
+drawn_box = [320, 291, 55, 18, 420]
+fill = "absent"
+edge_top = ["#ffffff4d", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.498
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-accessory_bar_action]
+drawn_box = [470, 291, 55, 18, 420]
+fill = "absent"
+edge_top = ["#ffffff4d", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.498
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-badge]
+drawn_box = [20, 347, 47, 18, 798]
+fill = "#ffffff26"
+fill_share = 0.611
+fill_grey_delta = 0.424
+stroke = "absent"
+edge_top = ["#ffffff26", "#ffffff26"]
+edge_right = ["#ffffff24", "#ffffff26"]
+edge_bottom = ["#ffffff26", "#ffffff26"]
+edge_left = ["#ffffff24", "#ffffff26"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.398, 3.688], radius_px = 9.75, rms_px = 1.623, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.735, 3.955], radius_px = 9.75, rms_px = 1.759, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 3.544, 3.76, 2.592, 3.14], radius_px = 10.75, rms_px = 1.843, radius = "10.75px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.4, 3.635, 2.408, 2.988], radius_px = 10.5, rms_px = 1.754, radius = "10.5px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-badge]
+drawn_box = [170, 347, 47, 18, 798]
+fill = "#ffffff26"
+fill_share = 0.611
+fill_grey_delta = 0.424
+stroke = "absent"
+edge_top = ["#ffffff26", "#ffffff26"]
+edge_right = ["#ffffff24", "#ffffff26"]
+edge_bottom = ["#ffffff26", "#ffffff26"]
+edge_left = ["#ffffff24", "#ffffff26"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.398, 3.688], radius_px = 9.75, rms_px = 1.623, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.735, 3.955], radius_px = 9.75, rms_px = 1.759, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 3.544, 3.76, 2.592, 3.14], radius_px = 10.75, rms_px = 1.843, radius = "10.75px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.4, 3.635, 2.408, 2.988], radius_px = 10.5, rms_px = 1.754, radius = "10.5px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-badge]
+drawn_box = [320, 347, 47, 18, 798]
+fill = "#ffffff26"
+fill_share = 0.611
+fill_grey_delta = 0.424
+stroke = "absent"
+edge_top = ["#ffffff26", "#ffffff26"]
+edge_right = ["#ffffff24", "#ffffff26"]
+edge_bottom = ["#ffffff26", "#ffffff26"]
+edge_left = ["#ffffff24", "#ffffff26"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.398, 3.688], radius_px = 9.75, rms_px = 1.623, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.735, 3.955], radius_px = 9.75, rms_px = 1.759, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 3.544, 3.76, 2.592, 3.14], radius_px = 10.75, rms_px = 1.843, radius = "10.75px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.4, 3.635, 2.408, 2.988], radius_px = 10.5, rms_px = 1.754, radius = "10.5px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-badge]
+drawn_box = [470, 347, 47, 18, 798]
+fill = "#ffffff26"
+fill_share = 0.611
+fill_grey_delta = 0.424
+stroke = "absent"
+edge_top = ["#ffffff26", "#ffffff26"]
+edge_right = ["#ffffff24", "#ffffff26"]
+edge_bottom = ["#ffffff26", "#ffffff26"]
+edge_left = ["#ffffff24", "#ffffff26"]
+corner_top_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 0.658, 0.395, 3.398, 3.688], radius_px = 9.75, rms_px = 1.623, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 0.658, 0.395, 3.735, 3.955], radius_px = 9.75, rms_px = 1.759, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.868, 4.053, 2.789, 1.895, 1.263, 3.544, 3.76, 2.592, 3.14], radius_px = 10.75, rms_px = 1.843, radius = "10.75px" }
+corner_bottom_left = { insets_px = [6.947, 4.026, 2.789, 1.842, 1.263, 3.4, 3.635, 2.408, 2.988], radius_px = 10.5, rms_px = 1.754, radius = "10.5px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.627
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.mini-circular]
+drawn_box = [22, 405, 15, 15, 193]
+fill = "#ffffff40"
+fill_share = 0.446
+fill_grey_delta = 0.373
+edge_top = ["#ffffffa2", "#ffffff5c"]
+stroke_top = "unclassified"
+edge_right = ["#ffffffa2", "#ffffff42"]
+stroke_right = { width = 1, edge = "#ffffffa2" }
+edge_bottom = ["#ffffffa2", "#ffffff42"]
+stroke_bottom = { width = 1, edge = "#ffffffa2" }
+edge_left = ["#ffffffa6", "#ffffff40"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [4.633, 2.704, 1.484, 1.0, 0.579, 1.268, 0.0, 0.0], radius_px = 7.25, rms_px = 0.393, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [4.633, 2.704, 1.484, 1.0, 0.579, 0.675, 0.0, 0.0], radius_px = 7.0, rms_px = 0.195, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [4.633, 2.704, 1.562, 1.0, 0.444, 0.0, 0.0], radius_px = 7.0, rms_px = 0.081, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [4.633, 2.704, 1.562, 1.0, 0.444, 0.0, 0.0], radius_px = 7.0, rms_px = 0.081, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffffc6"
+icon_pixels = 1
+icon_grey_delta = 0.416
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.small-circular]
+drawn_box = [172, 403, 18, 18, 276]
+fill = "#ffffff40"
+fill_share = 0.51
+fill_grey_delta = 0.373
+edge_top = ["#ffffffa1", "#ffffff43"]
+stroke_top = { width = 1, edge = "#ffffffa1" }
+edge_right = ["#ffffff9e", "#ffffff45"]
+stroke_right = "unclassified"
+edge_bottom = ["#ffffff9f", "#ffffff44"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffffa2", "#ffffff42"]
+stroke_left = { width = 1, edge = "#ffffffa2" }
+corner_top_left = { insets_px = [6.144, 3.708, 2.172, 1.547, 1.0, 0.562, 0.0, 1.122, 0.0], radius_px = 8.5, rms_px = 0.396, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.144, 3.677, 2.141, 1.562, 1.0, 0.562, 0.0, 1.081, 0.0], radius_px = 8.5, rms_px = 0.387, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.109, 3.677, 2.141, 1.678, 1.085, 0.752, 0.0, 0.0], radius_px = 8.5, rms_px = 0.204, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [6.116, 3.708, 2.172, 1.678, 1.085, 0.752, 0.0, 0.0], radius_px = 8.5, rms_px = 0.199, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffffe0"
+icon_pixels = 1
+icon_grey_delta = 0.545
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.regular-circular]
+drawn_box = [322, 401, 22, 22, 408]
+fill = "#ffffff40"
+fill_share = 0.568
+fill_grey_delta = 0.627
+edge_top = ["#ffffff9e", "#ffffff45"]
+stroke_top = "unclassified"
+edge_right = ["#ffffffa2", "#ffffff42"]
+stroke_right = { width = 1, edge = "#ffffffa2" }
+edge_bottom = ["#ffffffa3", "#ffffff42"]
+stroke_bottom = { width = 1, edge = "#ffffffa3" }
+edge_left = ["#ffffff9e", "#ffffff45"]
+stroke_left = "unclassified"
+corner_top_left = { insets_px = [7.8, 5.26, 3.672, 2.672, 2.0, 1.0, 0.938, 0.078, 2.5, 0.0, 0.0], radius_px = 10.75, rms_px = 0.708, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [7.807, 5.26, 3.672, 2.672, 2.0, 1.0, 0.938, 0.062, 2.364, 0.0, 0.0], radius_px = 10.75, rms_px = 0.669, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [7.793, 5.237, 3.562, 2.672, 2.0, 1.0, 0.952, 0.388, 0.0, 0.0], radius_px = 10.5, rms_px = 0.169, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [7.793, 5.237, 3.578, 2.672, 2.0, 1.0, 0.962, 0.398, 0.0, 0.0], radius_px = 10.5, rms_px = 0.168, radius = { full = { maximum_px = "absent" } } }
+icon = "#fffffff2"
+icon_pixels = 1
+icon_grey_delta = 0.545
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.normal.large-circular]
+drawn_box = [472, 397, 30, 30, 732]
+fill = "#ffffff40"
+fill_share = 0.704
+fill_grey_delta = 0.627
+edge_top = ["#ffffffa2", "#ffffff42"]
+stroke_top = { width = 1, edge = "#ffffffa2" }
+edge_right = ["#ffffffa2", "#ffffff42"]
+stroke_right = { width = 1, edge = "#ffffffa2" }
+edge_bottom = ["#ffffffa2", "#ffffff42"]
+stroke_bottom = { width = 1, edge = "#ffffffa2" }
+edge_left = ["#ffffffa2", "#ffffff42"]
+stroke_left = { width = 1, edge = "#ffffffa2" }
+corner_top_left = { insets_px = [10.984, 8.138, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.984, 0.359, 0.0, 0.0], radius_px = 14.25, rms_px = 0.201, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [10.977, 8.138, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.984, 0.359, 0.0, 0.0], radius_px = 14.25, rms_px = 0.2, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [10.977, 8.126, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.984, 0.359, 0.0, 0.0], radius_px = 14.25, rms_px = 0.199, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [10.977, 8.126, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.984, 0.359, 0.0, 0.0], radius_px = 14.25, rms_px = 0.199, radius = { full = { maximum_px = "absent" } } }
+icon = "#fffffff2"
+icon_pixels = 1
+icon_grey_delta = 0.545
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-flexible_push]
+drawn_box = [21, 68, 46, 16, 732]
+fill = "#ffffff5c"
+fill_share = 0.714
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [2.349, 0.728, 0.0, 0.0], radius_px = 4.0, rms_px = 0.195, radius = "4px" }
+corner_top_right = { insets_px = [2.343, 0.783, 0.033, 0.0, 0.0], radius_px = 4.0, rms_px = 0.152, radius = "4px" }
+corner_bottom_right = { insets_px = [2.343, 0.772, 0.033, 0.0, 0.0], radius_px = 4.0, rms_px = 0.153, radius = "4px" }
+corner_bottom_left = { insets_px = [2.343, 0.728, 0.0, 0.0], radius_px = 4.0, rms_px = 0.193, radius = "4px" }
+label = "#ffffffff"
+label_pixels = 10
+label_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-flexible_push]
+drawn_box = [172, 67, 53, 18, 942]
+fill = "#ffffff5c"
+fill_share = 0.684
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.108, 1.054, 0.522, 0.0, 0.0], radius_px = 4.75, rms_px = 0.211, radius = "4.75px" }
+corner_top_right = { insets_px = [3.108, 1.054, 0.522, 0.0, 0.0], radius_px = 4.75, rms_px = 0.211, radius = "4.75px" }
+corner_bottom_right = { insets_px = [3.102, 1.054, 0.522, 0.0, 0.0], radius_px = 4.75, rms_px = 0.209, radius = "4.75px" }
+corner_bottom_left = { insets_px = [3.102, 1.054, 0.522, 0.0, 0.0], radius_px = 4.75, rms_px = 0.209, radius = "4.75px" }
+label = "#ffffffff"
+label_pixels = 40
+label_grey_delta = 0.533
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-flexible_push]
+drawn_box = [322, 65, 57, 22, 1234]
+fill = "#ffffff5c"
+fill_share = 0.723
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.97, 1.804, 1.0, 0.402, 0.0, 0.0], radius_px = 6.0, rms_px = 0.181, radius = "6px" }
+corner_top_right = { insets_px = [3.97, 1.804, 1.0, 0.402, 0.0, 0.0], radius_px = 6.0, rms_px = 0.181, radius = "6px" }
+corner_bottom_right = { insets_px = [3.964, 1.804, 1.0, 0.402, 0.0, 0.0], radius_px = 6.0, rms_px = 0.18, radius = "6px" }
+corner_bottom_left = { insets_px = [3.964, 1.804, 1.0, 0.402, 0.0, 0.0], radius_px = 6.0, rms_px = 0.18, radius = "6px" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.529
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-flexible_push]
+drawn_box = [472, 61, 57, 30, 1686]
+fill = "#ffffff5c"
+fill_share = 0.803
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [4.807, 2.283, 1.283, 0.957, 0.228, 0.0, 0.0], radius_px = 6.75, rms_px = 0.233, radius = "6.75px" }
+corner_top_right = { insets_px = [4.807, 2.283, 1.272, 0.946, 0.228, 0.0, 0.0], radius_px = 6.75, rms_px = 0.234, radius = "6.75px" }
+corner_bottom_right = { insets_px = [4.789, 2.272, 1.261, 0.946, 0.217, 0.0, 0.0], radius_px = 6.75, rms_px = 0.234, radius = "6.75px" }
+corner_bottom_left = { insets_px = [4.789, 2.283, 1.272, 0.946, 0.217, 0.0, 0.0], radius_px = 6.75, rms_px = 0.23, radius = "6.75px" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.529
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-small_square]
+drawn_box = [20, 125, 36, 15, 540]
+fill = "non_uniform"
+fill_share = 0.318
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-small_square]
+drawn_box = [170, 123, 41, 18, 738]
+fill = "non_uniform"
+fill_share = 0.286
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-small_square]
+drawn_box = [320, 122, 47, 20, 940]
+fill = "non_uniform"
+fill_share = 0.297
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-small_square]
+drawn_box = [470, 122, 47, 20, 940]
+fill = "non_uniform"
+fill_share = 0.297
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-shadowless_square]
+drawn_box = [20, 180, 40, 17, 680]
+fill = "non_uniform"
+fill_share = 0.235
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-shadowless_square]
+drawn_box = [170, 178, 45, 20, 900]
+fill = "non_uniform"
+fill_share = 0.271
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-shadowless_square]
+drawn_box = [320, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.254
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-shadowless_square]
+drawn_box = [470, 177, 51, 22, 1122]
+fill = "non_uniform"
+fill_share = 0.254
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-accessory_bar]
+drawn_box = [20, 237, 44, 14, 616]
+fill = "#ffffff5c"
+fill_share = 0.64
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [1.482, 0.0, 0.0], radius_px = 2.75, rms_px = 0.222, radius = "2.75px" }
+corner_top_right = { insets_px = [1.476, 0.033, 0.0, 0.0], radius_px = 2.75, rms_px = 0.177, radius = "2.75px" }
+corner_bottom_right = { insets_px = [1.476, 0.033, 0.0, 0.0], radius_px = 2.75, rms_px = 0.177, radius = "2.75px" }
+corner_bottom_left = { insets_px = [1.476, 0.0, 0.0], radius_px = 2.75, rms_px = 0.22, radius = "2.75px" }
+label = "#ffffffff"
+label_pixels = 10
+label_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-accessory_bar]
+drawn_box = [170, 236, 49, 16, 780]
+fill = "#ffffff5c"
+fill_share = 0.606
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [2.229, 0.728, 0.0, 0.0], radius_px = 3.75, rms_px = 0.164, radius = "3.75px" }
+corner_top_right = { insets_px = [2.229, 0.728, 0.0, 0.0], radius_px = 3.75, rms_px = 0.164, radius = "3.75px" }
+corner_bottom_right = { insets_px = [2.217, 0.717, 0.0, 0.0], radius_px = 3.75, rms_px = 0.161, radius = "3.75px" }
+corner_bottom_left = { insets_px = [2.217, 0.717, 0.0, 0.0], radius_px = 3.75, rms_px = 0.161, radius = "3.75px" }
+label = "#ffffffff"
+label_pixels = 40
+label_grey_delta = 0.533
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-accessory_bar]
+drawn_box = [320, 235, 55, 18, 978]
+fill = "#ffffff5c"
+fill_share = 0.63
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.0, 1.065, 0.467, 0.0, 0.0], radius_px = 4.75, rms_px = 0.18, radius = "4.75px" }
+corner_top_right = { insets_px = [3.006, 1.065, 0.457, 0.0, 0.0], radius_px = 4.75, rms_px = 0.183, radius = "4.75px" }
+corner_bottom_right = { insets_px = [2.994, 1.065, 0.457, 0.0, 0.0], radius_px = 4.75, rms_px = 0.18, radius = "4.75px" }
+corner_bottom_left = { insets_px = [2.988, 1.065, 0.457, 0.0, 0.0], radius_px = 4.75, rms_px = 0.178, radius = "4.75px" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.529
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-accessory_bar]
+drawn_box = [470, 230, 55, 28, 1528]
+fill = "#ffffff5c"
+fill_share = 0.784
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.807, 1.804, 0.957, 0.228, 0.0, 0.0], radius_px = 5.75, rms_px = 0.163, radius = "5.75px" }
+corner_top_right = { insets_px = [3.807, 1.804, 0.946, 0.228, 0.0, 0.0], radius_px = 5.75, rms_px = 0.164, radius = "5.75px" }
+corner_bottom_right = { insets_px = [3.789, 1.804, 0.946, 0.217, 0.0, 0.0], radius_px = 5.75, rms_px = 0.162, radius = "5.75px" }
+corner_bottom_left = { insets_px = [3.789, 1.804, 0.946, 0.217, 0.0, 0.0], radius_px = 5.75, rms_px = 0.162, radius = "5.75px" }
+label = "#ffffffff"
+label_pixels = 55
+label_grey_delta = 0.529
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-accessory_bar_action]
+drawn_box = [20, 293, 44, 14, 612]
+fill = "#ffffff1a"
+fill_share = 0.637
+fill_grey_delta = 13.055
+edge_top = ["#ffffff4d", "#ffffff1a"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff1a"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff1a"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#ffffff1a"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [1.468, 0.0, 0.0], radius_px = 2.75, rms_px = 0.218, radius = "2.75px" }
+corner_top_right = { insets_px = [1.468, 0.0, 0.0], radius_px = 2.75, rms_px = 0.218, radius = "2.75px" }
+corner_bottom_right = { insets_px = [1.468, 0.0, 0.0], radius_px = 2.75, rms_px = 0.218, radius = "2.75px" }
+corner_bottom_left = { insets_px = [1.468, 0.0, 0.0], radius_px = 2.75, rms_px = 0.218, radius = "2.75px" }
+label = "#ffffffff"
+label_pixels = 6
+label_grey_delta = 1.475
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-accessory_bar_action]
+drawn_box = [170, 292, 49, 16, 780]
+fill = "#ffffff1a"
+fill_share = 0.606
+fill_grey_delta = 13.055
+edge_top = ["#ffffff4d", "#ffffff1a"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff1a"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff1a"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#ffffff1a"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [2.234, 0.538, 0.0, 0.0], radius_px = 3.75, rms_px = 0.202, radius = "3.75px" }
+corner_top_right = { insets_px = [2.234, 0.538, 0.0, 0.0], radius_px = 3.75, rms_px = 0.202, radius = "3.75px" }
+corner_bottom_right = { insets_px = [2.221, 0.538, 0.0, 0.0], radius_px = 3.75, rms_px = 0.198, radius = "3.75px" }
+corner_bottom_left = { insets_px = [2.221, 0.538, 0.0, 0.0], radius_px = 3.75, rms_px = 0.198, radius = "3.75px" }
+label = "#ffffffff"
+label_pixels = 39
+label_grey_delta = 1.957
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-accessory_bar_action]
+drawn_box = [320, 291, 55, 18, 978]
+fill = "#ffffff1a"
+fill_share = 0.627
+fill_grey_delta = 13.055
+edge_top = ["#ffffff4d", "#ffffff1a"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff1a"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff1a"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#ffffff1a"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [3.013, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.275, radius = "4.5px" }
+corner_top_right = { insets_px = [3.013, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.275, radius = "4.5px" }
+corner_bottom_right = { insets_px = [3.0, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.271, radius = "4.5px" }
+corner_bottom_left = { insets_px = [2.987, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.267, radius = "4.5px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 1.957
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-accessory_bar_action]
+drawn_box = [470, 291, 55, 18, 978]
+fill = "#ffffff1a"
+fill_share = 0.627
+fill_grey_delta = 13.055
+edge_top = ["#ffffff4d", "#ffffff1a"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff1a"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff1a"]
+stroke_bottom = { width = 1, edge = "#ffffff4d" }
+edge_left = ["#ffffff4d", "#ffffff1a"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [3.013, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.275, radius = "4.5px" }
+corner_top_right = { insets_px = [3.013, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.275, radius = "4.5px" }
+corner_bottom_right = { insets_px = [3.0, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.271, radius = "4.5px" }
+corner_bottom_left = { insets_px = [2.987, 1.0, 0.115, 0.0, 0.0], radius_px = 4.5, rms_px = 0.267, radius = "4.5px" }
+label = "#ffffffff"
+label_pixels = 52
+label_grey_delta = 1.957
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-badge]
+drawn_box = [20, 347, 47, 18, 802]
+fill = "#55555554"
+fill_share = 0.601
+fill_grey_delta = 0.667
+stroke = "absent"
+edge_top = ["#55555554", "#55555554"]
+edge_right = ["#5454544f", "#55555554"]
+edge_bottom = ["#55555554", "#55555554"]
+edge_left = ["#5454544f", "#55555554"]
+corner_top_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 0.655, 0.393, 2.061, 2.303], radius_px = 9.5, rms_px = 0.995, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 0.643, 0.393, 2.26, 2.472], radius_px = 9.5, rms_px = 1.078, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 2.288, 2.419, 1.4, 1.779], radius_px = 10.0, rms_px = 1.05, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 2.216, 2.346, 1.309, 1.697], radius_px = 10.0, rms_px = 1.003, radius = "10px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.969
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-badge]
+drawn_box = [170, 347, 47, 18, 802]
+fill = "#55555554"
+fill_share = 0.601
+fill_grey_delta = 0.667
+stroke = "absent"
+edge_top = ["#55555554", "#55555554"]
+edge_right = ["#5454544f", "#55555554"]
+edge_bottom = ["#55555554", "#55555554"]
+edge_left = ["#5454544f", "#55555554"]
+corner_top_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 0.655, 0.393, 2.061, 2.303], radius_px = 9.5, rms_px = 0.995, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 0.643, 0.393, 2.26, 2.472], radius_px = 9.5, rms_px = 1.078, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 2.288, 2.419, 1.4, 1.779], radius_px = 10.0, rms_px = 1.05, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 2.216, 2.346, 1.309, 1.697], radius_px = 10.0, rms_px = 1.003, radius = "10px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.969
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-badge]
+drawn_box = [320, 347, 47, 18, 802]
+fill = "#55555554"
+fill_share = 0.601
+fill_grey_delta = 0.667
+stroke = "absent"
+edge_top = ["#55555554", "#55555554"]
+edge_right = ["#5454544f", "#55555554"]
+edge_bottom = ["#55555554", "#55555554"]
+edge_left = ["#5454544f", "#55555554"]
+corner_top_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 0.655, 0.393, 2.061, 2.303], radius_px = 9.5, rms_px = 0.995, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 0.643, 0.393, 2.26, 2.472], radius_px = 9.5, rms_px = 1.078, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 2.288, 2.419, 1.4, 1.779], radius_px = 10.0, rms_px = 1.05, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 2.216, 2.346, 1.309, 1.697], radius_px = 10.0, rms_px = 1.003, radius = "10px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.969
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-badge]
+drawn_box = [470, 347, 47, 18, 802]
+fill = "#55555554"
+fill_share = 0.601
+fill_grey_delta = 0.667
+stroke = "absent"
+edge_top = ["#55555554", "#55555554"]
+edge_right = ["#5454544f", "#55555554"]
+edge_bottom = ["#55555554", "#55555554"]
+edge_left = ["#5454544f", "#55555554"]
+corner_top_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 0.655, 0.393, 2.061, 2.303], radius_px = 9.5, rms_px = 0.995, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 0.643, 0.393, 2.26, 2.472], radius_px = 9.5, rms_px = 1.078, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.893, 4.048, 2.786, 1.869, 1.262, 2.288, 2.419, 1.4, 1.779], radius_px = 10.0, rms_px = 1.05, radius = "10px" }
+corner_bottom_left = { insets_px = [6.893, 4.024, 2.81, 1.857, 1.274, 2.216, 2.346, 1.309, 1.697], radius_px = 10.0, rms_px = 1.003, radius = "10px" }
+label = "#ffffffb3"
+label_pixels = 58
+label_grey_delta = 0.969
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.mini-circular]
+drawn_box = [22, 405, 15, 15, 193]
+fill = "#ffffff5c"
+fill_share = 0.446
+fill_grey_delta = 0.318
+edge_top = ["#ffffffa2", "#ffffff74"]
+stroke_top = "unclassified"
+edge_right = ["#ffffffa2", "#ffffff5e"]
+stroke_right = { width = 1, edge = "#ffffffa2" }
+edge_bottom = ["#ffffffa2", "#ffffff5e"]
+stroke_bottom = { width = 1, edge = "#ffffffa2" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [4.633, 2.876, 1.641, 1.0, 0.664, 1.14, 0.0, 0.0], radius_px = 7.25, rms_px = 0.336, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [4.633, 2.876, 1.641, 1.0, 0.664, 0.678, 0.0, 0.0], radius_px = 7.25, rms_px = 0.182, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [4.633, 2.71, 1.696, 1.0, 0.596, 0.068, 0.0, 0.0], radius_px = 7.0, rms_px = 0.069, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [4.633, 2.71, 1.696, 1.0, 0.596, 0.068, 0.0, 0.0], radius_px = 7.0, rms_px = 0.069, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffffc7"
+icon_pixels = 1
+icon_grey_delta = 0.588
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.small-circular]
+drawn_box = [172, 403, 18, 18, 276]
+fill = "#ffffff5c"
+fill_share = 0.51
+fill_grey_delta = 0.318
+edge_top = ["#ffffffa1", "#ffffff5e"]
+stroke_top = { width = 1, edge = "#ffffffa1" }
+edge_right = ["#ffffff9e", "#ffffff60"]
+stroke_right = "unclassified"
+edge_bottom = ["#ffffff9f", "#ffffff5f"]
+stroke_bottom = { width = 1, edge = "#ffffff9f" }
+edge_left = ["#ffffffa2", "#ffffff5e"]
+stroke_left = { width = 1, edge = "#ffffffa2" }
+corner_top_left = { insets_px = [6.144, 3.808, 2.424, 1.685, 1.0, 0.696, 0.0, 0.982, 0.0], radius_px = 8.75, rms_px = 0.328, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.144, 3.75, 2.402, 1.696, 1.0, 0.696, 0.0, 0.951, 0.0], radius_px = 8.75, rms_px = 0.322, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.109, 3.738, 2.402, 1.739, 1.211, 0.788, 0.0, 0.0], radius_px = 8.75, rms_px = 0.166, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [6.116, 3.796, 2.424, 1.739, 1.211, 0.788, 0.0, 0.0], radius_px = 8.75, rms_px = 0.158, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffffe0"
+icon_pixels = 1
+icon_grey_delta = 0.565
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.regular-circular]
+drawn_box = [322, 401, 22, 22, 408]
+fill = "#ffffff5c"
+fill_share = 0.568
+fill_grey_delta = 0.682
+edge_top = ["#ffffff9e", "#ffffff60"]
+stroke_top = "unclassified"
+edge_right = ["#ffffffa2", "#ffffff5e"]
+stroke_right = { width = 1, edge = "#ffffffa2" }
+edge_bottom = ["#ffffffa3", "#ffffff5d"]
+stroke_bottom = { width = 1, edge = "#ffffffa3" }
+edge_left = ["#ffffff9e", "#ffffff5f"]
+stroke_left = { width = 1, edge = "#ffffff9e" }
+corner_top_left = { insets_px = [7.8, 5.373, 3.772, 2.772, 2.0, 1.141, 0.957, 0.359, 2.191, 0.0, 0.0], radius_px = 10.75, rms_px = 0.597, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [7.807, 5.373, 3.772, 2.772, 2.0, 1.13, 0.957, 0.348, 2.077, 0.0, 0.0], radius_px = 10.75, rms_px = 0.564, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [7.793, 5.362, 3.696, 2.772, 2.0, 1.13, 0.96, 0.504, 0.0, 0.0], radius_px = 10.75, rms_px = 0.133, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [7.793, 5.362, 3.707, 2.772, 2.0, 1.141, 0.968, 0.512, 0.0, 0.0], radius_px = 10.75, rms_px = 0.13, radius = { full = { maximum_px = "absent" } } }
+icon = "#fffffff2"
+icon_pixels = 1
+icon_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.pressed.large-circular]
+drawn_box = [472, 397, 30, 30, 732]
+fill = "#ffffff5c"
+fill_share = 0.706
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa2", "#ffffff5e"]
+stroke_top = { width = 1, edge = "#ffffffa2" }
+edge_right = ["#ffffffa2", "#ffffff5e"]
+stroke_right = { width = 1, edge = "#ffffffa2" }
+edge_bottom = ["#ffffffa2", "#ffffff5e"]
+stroke_bottom = { width = 1, edge = "#ffffffa2" }
+edge_left = ["#ffffffa2", "#ffffff5e"]
+stroke_left = { width = 1, edge = "#ffffffa2" }
+corner_top_left = { insets_px = [10.984, 8.312, 6.315, 5.076, 4.0, 3.033, 2.315, 1.978, 1.196, 0.989, 0.554, 0.033, 0.0, 0.0], radius_px = 14.5, rms_px = 0.125, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [10.977, 8.312, 6.315, 5.076, 4.0, 3.022, 2.315, 1.978, 1.196, 0.989, 0.554, 0.033, 0.0, 0.0], radius_px = 14.5, rms_px = 0.126, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [10.977, 8.303, 6.304, 5.022, 4.0, 3.022, 2.304, 1.978, 1.196, 0.989, 0.554, 0.033, 0.0, 0.0], radius_px = 14.5, rms_px = 0.126, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [10.977, 8.303, 6.304, 5.022, 4.0, 3.022, 2.304, 1.978, 1.196, 0.989, 0.554, 0.022, 0.0, 0.0], radius_px = 14.5, rms_px = 0.128, radius = { full = { maximum_px = "absent" } } }
+icon = "#fffffff2"
+icon_pixels = 1
+icon_grey_delta = 0.537
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-flexible_push]
+drawn_box = [21, 68, 46, 16, 732]
+fill = "#ffffff20"
+fill_share = 0.714
+fill_grey_delta = 0.565
+edge_top = ["#ffffff53", "#ffffff20"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff20"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff20"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff20"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [2.349, 0.594, 0.0, 0.0], radius_px = 3.75, rms_px = 0.228, radius = "3.75px" }
+corner_top_right = { insets_px = [2.337, 0.688, 0.0, 0.0], radius_px = 4.0, rms_px = 0.202, radius = "4px" }
+corner_bottom_right = { insets_px = [2.337, 0.656, 0.0, 0.0], radius_px = 4.0, rms_px = 0.211, radius = "4px" }
+corner_bottom_left = { insets_px = [2.337, 0.594, 0.0, 0.0], radius_px = 3.75, rms_px = 0.224, radius = "3.75px" }
+label = "#ffffff80"
+label_pixels = 10
+label_grey_delta = 0.282
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-flexible_push]
+drawn_box = [172, 67, 53, 18, 942]
+fill = "#ffffff20"
+fill_share = 0.684
+fill_grey_delta = 0.565
+edge_top = ["#ffffff53", "#ffffff20"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff20"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff20"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff20"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [3.096, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.25, radius = "4.75px" }
+corner_top_right = { insets_px = [3.096, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.25, radius = "4.75px" }
+corner_bottom_right = { insets_px = [3.096, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.25, radius = "4.75px" }
+corner_bottom_left = { insets_px = [3.096, 1.0, 0.312, 0.0, 0.0], radius_px = 4.75, rms_px = 0.25, radius = "4.75px" }
+label = "#ffffff80"
+label_pixels = 40
+label_grey_delta = 0.282
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-flexible_push]
+drawn_box = [322, 65, 57, 22, 1234]
+fill = "#ffffff20"
+fill_share = 0.723
+fill_grey_delta = 0.565
+edge_top = ["#ffffff53", "#ffffff20"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff20"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff20"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff20"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [3.964, 1.719, 1.0, 0.125, 0.0, 0.0], radius_px = 5.75, rms_px = 0.24, radius = "5.75px" }
+corner_top_right = { insets_px = [3.964, 1.719, 1.0, 0.125, 0.0, 0.0], radius_px = 5.75, rms_px = 0.24, radius = "5.75px" }
+corner_bottom_right = { insets_px = [3.952, 1.719, 1.0, 0.125, 0.0, 0.0], radius_px = 5.75, rms_px = 0.237, radius = "5.75px" }
+corner_bottom_left = { insets_px = [3.952, 1.719, 1.0, 0.125, 0.0, 0.0], radius_px = 5.75, rms_px = 0.237, radius = "5.75px" }
+label = "#ffffff80"
+label_pixels = 57
+label_grey_delta = 0.282
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-flexible_push]
+drawn_box = [472, 61, 57, 30, 1678]
+fill = "#ffffff20"
+fill_share = 0.803
+fill_grey_delta = 0.565
+edge_top = ["#ffffff53", "#ffffff20"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff20"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff20"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff20"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [4.831, 2.0, 1.0, 0.938, 0.0, 0.0], radius_px = 6.5, rms_px = 0.388, radius = "6.5px" }
+corner_top_right = { insets_px = [4.831, 2.0, 1.0, 0.906, 0.0, 0.0], radius_px = 6.5, rms_px = 0.386, radius = "6.5px" }
+corner_bottom_right = { insets_px = [4.783, 2.0, 1.0, 0.906, 0.0, 0.0], radius_px = 6.5, rms_px = 0.372, radius = "6.5px" }
+corner_bottom_left = { insets_px = [4.783, 2.0, 1.0, 0.906, 0.0, 0.0], radius_px = 6.5, rms_px = 0.372, radius = "6.5px" }
+label = "#ffffff80"
+label_pixels = 57
+label_grey_delta = 0.282
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-small_square]
+drawn_box = [20, 125, 36, 15, 540]
+fill = "#ffffff13"
+fill_share = 0.426
+fill_grey_delta = 0.533
+edge_top = ["#ffffff53", "#ffffff13"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff11"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff10"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff11"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff7f"
+label_pixels = 10
+label_grey_delta = 0.749
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-small_square]
+drawn_box = [170, 123, 41, 18, 738]
+fill = "#ffffff13"
+fill_share = 0.402
+fill_grey_delta = 0.961
+edge_top = ["#ffffff53", "#ffffff13"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff11"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff10"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff11"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff7f"
+label_pixels = 39
+label_grey_delta = 0.745
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-small_square]
+drawn_box = [320, 122, 47, 20, 940]
+fill = "#ffffff13"
+fill_share = 0.443
+fill_grey_delta = 0.965
+edge_top = ["#ffffff53", "#ffffff13"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff11"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff10"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff11"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff7f"
+label_pixels = 56
+label_grey_delta = 0.749
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-small_square]
+drawn_box = [470, 122, 47, 20, 940]
+fill = "#ffffff13"
+fill_share = 0.443
+fill_grey_delta = 0.965
+edge_top = ["#ffffff53", "#ffffff13"]
+stroke_top = { width = 1, edge = "#ffffff53" }
+edge_right = ["#ffffff53", "#ffffff11"]
+stroke_right = { width = 1, edge = "#ffffff53" }
+edge_bottom = ["#ffffff53", "#ffffff10"]
+stroke_bottom = { width = 1, edge = "#ffffff53" }
+edge_left = ["#ffffff53", "#ffffff11"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff7f"
+label_pixels = 56
+label_grey_delta = 0.749
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-shadowless_square]
+drawn_box = [20, 180, 40, 17, 680]
+fill = "#ffffff0e"
+fill_share = 0.385
+fill_grey_delta = 0.969
+edge_top = ["#ffffff4d", "#ffffff0e"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff10"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff13"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffff4d", "#ffffff10"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff81"
+label_pixels = 12
+label_grey_delta = 0.749
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-shadowless_square]
+drawn_box = [170, 178, 45, 20, 900]
+fill = "#ffffff0e"
+fill_share = 0.378
+fill_grey_delta = 0.969
+edge_top = ["#ffffff4d", "#ffffff0e"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff10"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff13"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffff4d", "#ffffff10"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff81"
+label_pixels = 46
+label_grey_delta = 0.749
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-shadowless_square]
+drawn_box = [320, 177, 51, 22, 1122]
+fill = "#ffffff0f"
+fill_share = 0.479
+fill_grey_delta = 0.533
+edge_top = ["#ffffff4d", "#ffffff0e"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff10"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff13"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffff4d", "#ffffff10"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff81"
+label_pixels = 57
+label_grey_delta = 0.765
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-shadowless_square]
+drawn_box = [470, 177, 51, 22, 1122]
+fill = "#ffffff0f"
+fill_share = 0.479
+fill_grey_delta = 0.533
+edge_top = ["#ffffff4d", "#ffffff0e"]
+stroke_top = { width = 1, edge = "#ffffff4d" }
+edge_right = ["#ffffff4d", "#ffffff10"]
+stroke_right = { width = 1, edge = "#ffffff4d" }
+edge_bottom = ["#ffffff4d", "#ffffff13"]
+stroke_bottom = "unclassified"
+edge_left = ["#ffffff4d", "#ffffff10"]
+stroke_left = { width = 1, edge = "#ffffff4d" }
+corner_top_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_top_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_right = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+corner_bottom_left = { insets_px = [0.0, 0.0], radius_px = 0.25, rms_px = 0.009, radius = "0.25px" }
+label = "#ffffff81"
+label_pixels = 57
+label_grey_delta = 0.765
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-accessory_bar]
+drawn_box = [20, 237, 44, 14, 616]
+fill = "#ffffff5c"
+fill_share = 0.657
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [1.482, 0.0, 0.0], radius_px = 2.75, rms_px = 0.222, radius = "2.75px" }
+corner_top_right = { insets_px = [1.476, 0.033, 0.0, 0.0], radius_px = 2.75, rms_px = 0.177, radius = "2.75px" }
+corner_bottom_right = { insets_px = [1.476, 0.033, 0.0, 0.0], radius_px = 2.75, rms_px = 0.177, radius = "2.75px" }
+corner_bottom_left = { insets_px = [1.476, 0.0, 0.0], radius_px = 2.75, rms_px = 0.22, radius = "2.75px" }
+label = "#ffffff4d"
+label_pixels = 17
+label_grey_delta = 0.765
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-accessory_bar]
+drawn_box = [170, 236, 49, 16, 780]
+fill = "#ffffff5c"
+fill_share = 0.633
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [2.229, 0.728, 0.0, 0.0], radius_px = 3.75, rms_px = 0.164, radius = "3.75px" }
+corner_top_right = { insets_px = [2.229, 0.728, 0.0, 0.0], radius_px = 3.75, rms_px = 0.164, radius = "3.75px" }
+corner_bottom_right = { insets_px = [2.217, 0.717, 0.0, 0.0], radius_px = 3.75, rms_px = 0.161, radius = "3.75px" }
+corner_bottom_left = { insets_px = [2.217, 0.717, 0.0, 0.0], radius_px = 3.75, rms_px = 0.161, radius = "3.75px" }
+label = "#ffffff74"
+label_pixels = 39
+label_grey_delta = 0.325
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-accessory_bar]
+drawn_box = [320, 235, 55, 18, 978]
+fill = "#ffffff5c"
+fill_share = 0.651
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.0, 1.065, 0.467, 0.0, 0.0], radius_px = 4.75, rms_px = 0.18, radius = "4.75px" }
+corner_top_right = { insets_px = [3.006, 1.065, 0.457, 0.0, 0.0], radius_px = 4.75, rms_px = 0.183, radius = "4.75px" }
+corner_bottom_right = { insets_px = [2.994, 1.065, 0.457, 0.0, 0.0], radius_px = 4.75, rms_px = 0.18, radius = "4.75px" }
+corner_bottom_left = { insets_px = [2.988, 1.065, 0.457, 0.0, 0.0], radius_px = 4.75, rms_px = 0.178, radius = "4.75px" }
+label = "#ffffff74"
+label_pixels = 45
+label_grey_delta = 0.325
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-accessory_bar]
+drawn_box = [470, 230, 55, 28, 1528]
+fill = "#ffffff5c"
+fill_share = 0.797
+fill_grey_delta = 0.682
+edge_top = ["#ffffffa6", "#ffffff5c"]
+stroke_top = { width = 1, edge = "#ffffffa6" }
+edge_right = ["#ffffffa6", "#ffffff5c"]
+stroke_right = { width = 1, edge = "#ffffffa6" }
+edge_bottom = ["#ffffffa6", "#ffffff5c"]
+stroke_bottom = { width = 1, edge = "#ffffffa6" }
+edge_left = ["#ffffffa6", "#ffffff5c"]
+stroke_left = { width = 1, edge = "#ffffffa6" }
+corner_top_left = { insets_px = [3.807, 1.804, 0.957, 0.228, 0.0, 0.0], radius_px = 5.75, rms_px = 0.163, radius = "5.75px" }
+corner_top_right = { insets_px = [3.807, 1.804, 0.946, 0.228, 0.0, 0.0], radius_px = 5.75, rms_px = 0.164, radius = "5.75px" }
+corner_bottom_right = { insets_px = [3.789, 1.804, 0.946, 0.217, 0.0, 0.0], radius_px = 5.75, rms_px = 0.162, radius = "5.75px" }
+corner_bottom_left = { insets_px = [3.789, 1.804, 0.946, 0.217, 0.0, 0.0], radius_px = 5.75, rms_px = 0.162, radius = "5.75px" }
+label = "#ffffff4d"
+label_pixels = 66
+label_grey_delta = 0.765
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-accessory_bar_action]
+drawn_box = [20, 293, 44, 14, 251]
+fill = "absent"
+edge_top = ["#ffffff26", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff26" }
+edge_right = ["#ffffff26", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff26" }
+edge_bottom = ["#ffffff26", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff26" }
+edge_left = ["#ffffff26", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff26" }
+label = "#ffffff80"
+label_pixels = 12
+label_grey_delta = 0.271
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-accessory_bar_action]
+drawn_box = [170, 292, 49, 16, 340]
+fill = "absent"
+edge_top = ["#ffffff26", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff26" }
+edge_right = ["#ffffff26", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff26" }
+edge_bottom = ["#ffffff26", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff26" }
+edge_left = ["#ffffff26", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff26" }
+label = "#ffffff80"
+label_pixels = 46
+label_grey_delta = 0.267
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-accessory_bar_action]
+drawn_box = [320, 291, 55, 18, 408]
+fill = "absent"
+edge_top = ["#ffffff26", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff26" }
+edge_right = ["#ffffff26", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff26" }
+edge_bottom = ["#ffffff26", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff26" }
+edge_left = ["#ffffff26", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff26" }
+label = "#ffffff80"
+label_pixels = 60
+label_grey_delta = 0.271
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-accessory_bar_action]
+drawn_box = [470, 291, 55, 18, 408]
+fill = "absent"
+edge_top = ["#ffffff26", "#00000000"]
+stroke_top = { width = 1, edge = "#ffffff26" }
+edge_right = ["#ffffff26", "#00000000"]
+stroke_right = { width = 1, edge = "#ffffff26" }
+edge_bottom = ["#ffffff26", "#00000000"]
+stroke_bottom = { width = 1, edge = "#ffffff26" }
+edge_left = ["#ffffff26", "#00000000"]
+stroke_left = { width = 1, edge = "#ffffff26" }
+label = "#ffffff80"
+label_pixels = 60
+label_grey_delta = 0.271
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-badge]
+drawn_box = [20, 347, 47, 18, 798]
+fill = "#ffffff13"
+fill_share = 0.611
+fill_grey_delta = 0.961
+stroke = "absent"
+edge_top = ["#ffffff13", "#ffffff13"]
+edge_right = ["#ffffff12", "#ffffff13"]
+edge_bottom = ["#ffffff13", "#ffffff13"]
+edge_left = ["#ffffff12", "#ffffff13"]
+corner_top_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.271, 4.495], radius_px = 9.75, rms_px = 2.009, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.694, 4.828], radius_px = 10.0, rms_px = 2.184, radius = "10px" }
+corner_bottom_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.429, 4.567, 3.582, 4.099], radius_px = 11.25, rms_px = 2.398, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.247, 4.411, 3.327, 3.901], radius_px = 11.0, rms_px = 2.279, radius = "11px" }
+label = "#ffffffb2"
+label_pixels = 58
+label_grey_delta = 0.667
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-badge]
+drawn_box = [170, 347, 47, 18, 798]
+fill = "#ffffff13"
+fill_share = 0.611
+fill_grey_delta = 0.961
+stroke = "absent"
+edge_top = ["#ffffff13", "#ffffff13"]
+edge_right = ["#ffffff12", "#ffffff13"]
+edge_bottom = ["#ffffff13", "#ffffff13"]
+edge_left = ["#ffffff12", "#ffffff13"]
+corner_top_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.271, 4.495], radius_px = 9.75, rms_px = 2.009, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.694, 4.828], radius_px = 10.0, rms_px = 2.184, radius = "10px" }
+corner_bottom_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.429, 4.567, 3.582, 4.099], radius_px = 11.25, rms_px = 2.398, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.247, 4.411, 3.327, 3.901], radius_px = 11.0, rms_px = 2.279, radius = "11px" }
+label = "#ffffffb2"
+label_pixels = 58
+label_grey_delta = 0.667
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-badge]
+drawn_box = [320, 347, 47, 18, 798]
+fill = "#ffffff13"
+fill_share = 0.611
+fill_grey_delta = 0.961
+stroke = "absent"
+edge_top = ["#ffffff13", "#ffffff13"]
+edge_right = ["#ffffff12", "#ffffff13"]
+edge_bottom = ["#ffffff13", "#ffffff13"]
+edge_left = ["#ffffff12", "#ffffff13"]
+corner_top_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.271, 4.495], radius_px = 9.75, rms_px = 2.009, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.694, 4.828], radius_px = 10.0, rms_px = 2.184, radius = "10px" }
+corner_bottom_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.429, 4.567, 3.582, 4.099], radius_px = 11.25, rms_px = 2.398, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.247, 4.411, 3.327, 3.901], radius_px = 11.0, rms_px = 2.279, radius = "11px" }
+label = "#ffffffb2"
+label_pixels = 58
+label_grey_delta = 0.667
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-badge]
+drawn_box = [470, 347, 47, 18, 798]
+fill = "#ffffff13"
+fill_share = 0.611
+fill_grey_delta = 0.961
+stroke = "absent"
+edge_top = ["#ffffff13", "#ffffff13"]
+edge_right = ["#ffffff12", "#ffffff13"]
+edge_bottom = ["#ffffff13", "#ffffff13"]
+edge_left = ["#ffffff12", "#ffffff13"]
+corner_top_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.271, 4.495], radius_px = 9.75, rms_px = 2.009, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 0.632, 0.368, 4.694, 4.828], radius_px = 10.0, rms_px = 2.184, radius = "10px" }
+corner_bottom_right = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.429, 4.567, 3.582, 4.099], radius_px = 11.25, rms_px = 2.398, radius = "11.25px" }
+corner_bottom_left = { insets_px = [6.842, 4.053, 2.789, 1.895, 1.263, 4.247, 4.411, 3.327, 3.901], radius_px = 11.0, rms_px = 2.279, radius = "11px" }
+label = "#ffffffb2"
+label_pixels = 58
+label_grey_delta = 0.667
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.mini-circular]
+drawn_box = [22, 405, 15, 15, 193]
+fill = "#ffffff20"
+fill_share = 0.446
+fill_grey_delta = 0.063
+edge_top = ["#ffffff51", "#ffffff30"]
+stroke_top = "unclassified"
+edge_right = ["#ffffff51", "#ffffff21"]
+stroke_right = { width = 1, edge = "#ffffff51" }
+edge_bottom = ["#ffffff51", "#ffffff21"]
+stroke_bottom = { width = 1, edge = "#ffffff51" }
+edge_left = ["#ffffff53", "#ffffff20"]
+stroke_left = { width = 1, edge = "#ffffff53" }
+corner_top_left = { insets_px = [4.636, 2.694, 1.469, 1.0, 0.6, 1.419, 0.0, 0.0], radius_px = 7.25, rms_px = 0.445, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [4.636, 2.694, 1.469, 1.0, 0.6, 0.779, 0.0, 0.0], radius_px = 7.0, rms_px = 0.233, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [4.636, 2.694, 1.562, 1.0, 0.459, 0.0, 0.0], radius_px = 7.0, rms_px = 0.081, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [4.636, 2.694, 1.562, 1.0, 0.459, 0.0, 0.0], radius_px = 7.0, rms_px = 0.081, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffff63"
+icon_pixels = 1
+icon_grey_delta = 0.282
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.small-circular]
+drawn_box = [172, 403, 18, 18, 276]
+fill = "#ffffff20"
+fill_share = 0.515
+fill_grey_delta = 0.435
+edge_top = ["#ffffff51", "#ffffff22"]
+stroke_top = { width = 1, edge = "#ffffff51" }
+edge_right = ["#ffffff4f", "#ffffff23"]
+stroke_right = { width = 1, edge = "#ffffff4f" }
+edge_bottom = ["#ffffff50", "#ffffff22"]
+stroke_bottom = { width = 1, edge = "#ffffff50" }
+edge_left = ["#ffffff51", "#ffffff21"]
+stroke_left = { width = 1, edge = "#ffffff51" }
+corner_top_left = { insets_px = [6.143, 3.708, 2.156, 1.531, 1.0, 0.562, 0.0, 1.284, 0.0], radius_px = 8.5, rms_px = 0.446, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [6.143, 3.667, 2.125, 1.562, 1.0, 0.562, 0.0, 1.247, 0.0], radius_px = 8.5, rms_px = 0.437, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [6.101, 3.667, 2.125, 1.667, 1.075, 0.762, 0.0, 0.0], radius_px = 8.5, rms_px = 0.207, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [6.116, 3.708, 2.156, 1.667, 1.075, 0.762, 0.0, 0.0], radius_px = 8.5, rms_px = 0.203, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffff70"
+icon_pixels = 1
+icon_grey_delta = 0.741
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.regular-circular]
+drawn_box = [322, 401, 22, 22, 400]
+fill = "#ffffff20"
+fill_share = 0.577
+fill_grey_delta = 0.565
+edge_top = ["#ffffff4f", "#ffffff23"]
+stroke_top = { width = 1, edge = "#ffffff4f" }
+edge_right = ["#ffffff51", "#ffffff21"]
+stroke_right = { width = 1, edge = "#ffffff51" }
+edge_bottom = ["#ffffff52", "#ffffff21"]
+stroke_bottom = { width = 1, edge = "#ffffff52" }
+edge_left = ["#ffffff4f", "#ffffff23"]
+stroke_left = { width = 1, edge = "#ffffff4f" }
+corner_top_left = { insets_px = [7.8, 5.26, 3.656, 2.656, 2.0, 1.0, 0.938, 0.062, 2.655, 0.0, 0.0], radius_px = 10.75, rms_px = 0.754, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [7.8, 5.26, 3.656, 2.656, 2.0, 1.0, 0.938, 0.062, 2.521, 0.0, 0.0], radius_px = 10.75, rms_px = 0.715, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [7.795, 5.245, 3.562, 2.656, 2.0, 1.0, 0.945, 0.423, 0.0, 0.0], radius_px = 10.5, rms_px = 0.169, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [7.795, 5.245, 3.562, 2.656, 2.0, 1.0, 0.964, 0.423, 0.0, 0.0], radius_px = 10.5, rms_px = 0.17, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffff79"
+icon_pixels = 1
+icon_grey_delta = 0.271
+shadow = "absent"
+shadow_pixels = 0
+
+[contrast.styles_a.darkAqua.disabled.large-circular]
+drawn_box = [472, 397, 30, 30, 732]
+fill = "#ffffff20"
+fill_share = 0.709
+fill_grey_delta = 0.565
+edge_top = ["#ffffff51", "#ffffff21"]
+stroke_top = { width = 1, edge = "#ffffff51" }
+edge_right = ["#ffffff51", "#ffffff21"]
+stroke_right = { width = 1, edge = "#ffffff51" }
+edge_bottom = ["#ffffff51", "#ffffff21"]
+stroke_bottom = { width = 1, edge = "#ffffff51" }
+edge_left = ["#ffffff51", "#ffffff21"]
+stroke_left = { width = 1, edge = "#ffffff51" }
+corner_top_left = { insets_px = [10.969, 8.136, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.969, 0.344, 0.0, 0.0], radius_px = 14.25, rms_px = 0.199, radius = { full = { maximum_px = "absent" } } }
+corner_top_right = { insets_px = [10.969, 8.136, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.969, 0.344, 0.0, 0.0], radius_px = 14.25, rms_px = 0.199, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_right = { insets_px = [10.969, 8.114, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.969, 0.344, 0.0, 0.0], radius_px = 14.25, rms_px = 0.197, radius = { full = { maximum_px = "absent" } } }
+corner_bottom_left = { insets_px = [10.969, 8.114, 6.0, 5.0, 4.0, 3.0, 2.0, 1.969, 1.0, 0.969, 0.344, 0.0, 0.0], radius_px = 14.25, rms_px = 0.197, radius = { full = { maximum_px = "absent" } } }
+icon = "#ffffff79"
+icon_pixels = 1
+icon_grey_delta = 0.271
+shadow = "absent"
+shadow_pixels = 0

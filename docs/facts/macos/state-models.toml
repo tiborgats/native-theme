@@ -248,3 +248,250 @@ tolerance = 0
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_controlSize_raw"
 tolerance = 0
+
+
+[[model]]
+# macos-monterey (macOS 15.7.9, run 41006842699's macos-15 job, the probe built with Xcode 16.4 against the macOS
+# 15.5 SDK). sizes: NSControlSize's four values in the macOS 15.5 SDK (no NSControlSizeExtraLarge, which the 26.5 SDK
+# adds for macOS 26; the probe drew no extraLarge: "unavailable: extraLarge needs macOS 26"), read back from each
+# sheet's button; the default a new button's (controlSize 0, regular). As on macOS 26: hover draws nothing (every
+# hovered push button differs from its normal capture in 0 pixels), a click draws as `highlight:` (the clicked
+# capture differs from the pressed one in 0 pixels), Full Keyboard Access by itself changes no pixel (the focus pass's
+# unfocused layers are byte-identical with the key pass's), `checked` is pushOnPushOff's on state, and the window
+# conditions are those of macos-tahoe's entry (another window key: `window_inactive`, `not_main`; the application
+# inactive: `app_inactive` with both). The variants are tahoe's less what macOS 15 does not draw: no `glass`
+# (NSBezelStyle has no glass member in the 15.5 SDK), no tint prominence (`primary`, `tinted`: NSButton declares no
+# tintProminence) and no border shapes (`pill`, `@rounded_rectangle`: no NSControlBorderShape), so the shape group
+# of tahoe's exclusive_variants is gone and `circular` is the bezel style alone. Reduce Transparency is on in every
+# pass (the runner image's setting); no macOS 15 pass draws the buttons with it off.
+widget = "button"
+when = { conditions = ["preset:macos-monterey"] }
+available = true
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "destructive", "menu", "icon_only", "with_icon"]
+sizes = ["mini", "small", "regular", "large"]
+default_size = "regular"
+densities = []
+axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+exclusive = []
+exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "menu"], ["icon_only", "with_icon"]]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }]
+rows = ["MAC-B01", "MAC-B02", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:91-96"
+quote = "typedef NS_ENUM(NSUInteger, NSControlSize) {"
+absent = ["NSControlSizeExtraLarge"]
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.extraLarge"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.geometry.standard_button.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:29-76"
+quote = "typedef NS_ENUM(NSUInteger, NSBezelStyle) {"
+absent = []
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.glass"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:104"
+quote = "The bezel style is not used if the `bordered` property is set to `NO`."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = ["tintProminence", "NSTintProminence"]
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.primary"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.tinted"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSControl.h:1-155"
+quote = "@interface NSControl : NSView"
+absent = ["NSControlBorderShape"]
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.capsule"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.rounded_rectangle"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.circle"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:87"
+quote = "@property BOOL hasDestructiveAction API_AVAILABLE(macos(11.0));"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:48-58"
+quote = "typedef NS_ENUM(NSUInteger, NSCellImagePosition) {"
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_on.state"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-not-key/probe.toml#macos.button_pass.sheets.push.isKeyWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-not-key/probe.toml#macos.button_pass.sheets.push.isMainWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-inactive/probe.toml#macos.button_pass.sheets.push.isKeyWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-inactive/probe.toml#macos.button_pass.sheets.push.isMainWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-inactive/probe.toml#macos.button_pass.sheets.push.NSApp_isActive"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-focus/probe.toml#macos.button_pass.isFullKeyboardAccessEnabled"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-increase-contrast-on/probe.toml#macos.environment.accessibility.accessibilityDisplayShouldIncreaseContrast"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.hovered.regular-plain.diff_from_normal.regular-plain.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.hovered.regular-default.diff_from_normal.regular-default.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.hovered.regular-toggle_off.diff_from_normal.regular-toggle_off.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.hovered.regular-toggle_on.diff_from_normal.regular-toggle_on.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.clicked.regular-plain.diff_from_pressed.regular-plain.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.clicked.regular-default.diff_from_pressed.regular-default.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.darkAqua.hovered.regular-plain.diff_from_normal.regular-plain.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.darkAqua.hovered.regular-default.diff_from_normal.regular-default.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.darkAqua.hovered.regular-toggle_off.diff_from_normal.regular-toggle_off.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.darkAqua.hovered.regular-toggle_on.diff_from_normal.regular-toggle_on.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.darkAqua.clicked.regular-plain.diff_from_pressed.regular-plain.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.darkAqua.clicked.regular-default.diff_from_pressed.regular-default.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:71-73"
+quote = "NSBezelStyleTexturedRounded API_DEPRECATED_WITH_REPLACEMENT(\"NSBezelStyleToolbar\", macos(10.0, API_TO_BE_DEPRECATED)) = NSBezelStyleToolbar, NSBezelStyleRoundRect API_DEPRECATED_WITH_REPLACEMENT(\"NSBezelStyleAccessoryBarAction\", macos(10.0, API_TO_BE_DEPRECATED)) = NSBezelStyleAccessoryBarAction, NSBezelStyleRecessed API_DEPRECATED_WITH_REPLACEMENT(\"NSBezelStyleAccessoryBar\", macos(10.0, API_TO_BE_DEPRECATED)) = NSBezelStyleAccessoryBar,"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:18"
+quote = "NSButtonTypePushOnPushOff = 1,"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:23"
+quote = "@interface NSComboButton : NSControl"
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_controlSize_raw"
+tolerance = 0

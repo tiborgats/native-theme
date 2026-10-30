@@ -4,9 +4,11 @@ the macOS facts (docs/facts/macos/button.toml) cite, replacing the per-row circl
 which the tie-break between the lane and the verifier found unstable (fits of 7.5 to 9.25 px on a 13 px high capsule,
 a different radius per corner of one symmetric button, rms up to 2.6 px).
 
-Run from the repository root (Python 3.11+, the standard library only), after measure_button_layers.py:
+Run from the repository root (Python 3.11+, the standard library only), after measure_button_layers.py, once per
+image folder (IMAGE as measure_button_layers.py takes it: `os-probe-macos-26`, the default, or `os-probe-macos-15`,
+which os-probe-macos-26/ below stands for):
 
-    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/tiebreak_corners.py
+    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/tiebreak_corners.py [IMAGE]
 
 It reads, under os-probe-macos-26/ of the run, the analysis output `layers-<pass>-<sheet>.toml` (each button's
 `drawn_box` and `fill`, measure_button_layers.py's) and the layers `<pass dir>/<appearance>/[<sheet>/]<state>-layer.png`
@@ -51,7 +53,11 @@ import zlib
 from math import pi, sqrt
 from pathlib import Path
 
-RUN = Path("docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26")
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else "os-probe-macos-26"
+if IMAGE not in ("os-probe-macos-26", "os-probe-macos-15"):
+    print(f"tiebreak_corners: unknown image folder {IMAGE!r}", file=sys.stderr)
+    sys.exit(2)
+RUN = Path(f"docs/evidence/os-probe/2026-10-30-run-41006842699/{IMAGE}")
 PASSES = {"key": "button-pass", "not_key": "button-pass-not-key", "inactive": "button-pass-inactive",
           "contrast": "button-pass-increase-contrast-on"}
 SHEETS = ("push", "styles_a", "styles_b", "styles_c")
