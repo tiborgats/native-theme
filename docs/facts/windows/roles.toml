@@ -4013,6 +4013,290 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:413"
 quote = "<SolidColorBrush x:Key=\"SystemColorGrayTextColorBrush\" Color=\"#FF00FF\" />"
 
+
+# The framework's SystemControl* brushes the controls' HighContrast dictionaries name (generic.xaml's
+# HighContrast dictionary; SystemControlTransparentBrush is the controls' own): each names a system colour.
+# Only their high-contrast values are stated: the slice's parts use them only there.
+
+[[fact]]
+key = "role.@system_control_background_base_low"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_face"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2010"
+quote = "<SolidColorBrush x:Key=\"SystemControlBackgroundBaseLowBrush\" Color=\"{ThemeResource SystemColorButtonFaceColor}\" />"
+
+[[fact]]
+key = "role.@system_control_background_base_medium_low"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_face"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2013"
+quote = "<SolidColorBrush x:Key=\"SystemControlBackgroundBaseMediumLowBrush\" Color=\"{ThemeResource SystemColorButtonFaceColor}\" />"
+
+[[fact]]
+key = "role.@system_control_background_chrome_white"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_face"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2020"
+quote = "<SolidColorBrush x:Key=\"SystemControlBackgroundChromeWhiteBrush\" Color=\"{ThemeResource SystemColorButtonFaceColor}\" />"
+
+[[fact]]
+key = "role.@system_control_disabled_base_medium_low"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_gray_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2026"
+quote = "<SolidColorBrush x:Key=\"SystemControlDisabledBaseMediumLowBrush\" Color=\"{ThemeResource SystemColorGrayTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_disabled_transparent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_gray_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2032"
+quote = "<SolidColorBrush x:Key=\"SystemControlDisabledTransparentBrush\" Color=\"{ThemeResource SystemColorGrayTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_foreground_accent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2036"
+quote = "<SolidColorBrush x:Key=\"SystemControlForegroundAccentBrush\" Color=\"{ThemeResource SystemColorButtonTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_foreground_base_high"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2039"
+quote = "<SolidColorBrush x:Key=\"SystemControlForegroundBaseHighBrush\" Color=\"{ThemeResource SystemColorButtonTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_foreground_transparent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2054"
+quote = "<SolidColorBrush x:Key=\"SystemControlForegroundTransparentBrush\" Color=\"{ThemeResource SystemColorButtonTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_accent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2055"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightAccentBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_alt_accent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2056"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightAltAccentBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_alt_base_high"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2058"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightAltBaseHighBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_alt_chrome_white"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2067"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightAltChromeWhiteBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_alt_transparent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2068"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightAltTransparentBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_base_high"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2069"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightBaseHighBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_base_medium_low"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2073"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightBaseMediumLowBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_list_low"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2080"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightListLowBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_list_medium"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2079"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightListMediumBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_highlight_transparent"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2082"
+quote = "<SolidColorBrush x:Key=\"SystemControlHighlightTransparentBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_hyperlink_text"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_hotlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2083"
+quote = "<SolidColorBrush x:Key=\"SystemControlHyperlinkTextBrush\" Color=\"{ThemeResource SystemColorHotlightColor}\" />"
+
+[[fact]]
+key = "role.@system_control_transparent"
+when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+value = "#ffffff00"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:6"
+quote = "<SolidColorBrush x:Key=\"SystemControlTransparentBrush\" Color=\"Transparent\" />"
+
+[[fact]]
+key = "role.@system_control_transparent"
+when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+value = "#ffffff00"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:20"
+quote = "<SolidColorBrush x:Key=\"SystemControlTransparentBrush\" Color=\"Transparent\" />"
+
+[[fact]]
+key = "role.@system_control_transparent"
+when = { conditions = ["contrast_high"] }
+value = "#ffffff00"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:34"
+quote = "<SolidColorBrush x:Key=\"SystemControlTransparentBrush\" Color=\"Transparent\" />"
+
+
+# The elevation borders' high-contrast brushes. Their light and dark brushes are LinearGradientBrushes, which a
+# colour role cannot hold: a part states such a gradient as its own Linear paint.
+
+[[fact]]
+key = "role.@control_elevation_border"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_window_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:506"
+quote = "<SolidColorBrush x:Key=\"ControlElevationBorderBrush\" Color=\"{ThemeResource SystemColorWindowTextColor}\" />"
+
+[[fact]]
+key = "role.@circle_elevation_border"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_window_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:507"
+quote = "<SolidColorBrush x:Key=\"CircleElevationBorderBrush\" Color=\"{ThemeResource SystemColorWindowTextColor}\" />"
+
+[[fact]]
+key = "role.@accent_control_elevation_border"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_window_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:508"
+quote = "<SolidColorBrush x:Key=\"AccentControlElevationBorderBrush\" Color=\"{ThemeResource SystemColorWindowTextColor}\" />"
+
 # The accent and its ramp: WinUI's SystemAccentColor and SystemAccentColorLight1-3 / Dark1-3 resources hold
 # UISettings.GetColorValue's UIColorType_Accent* values (read facts).
 
@@ -4657,6 +4941,22 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBox_themeresources.xaml:146"
 quote = "<StaticResource x:Key=\"TextControlSelectionHighlightColor\" ResourceKey=\"AccentFillColorSelectedTextBackgroundBrush\" />"
 
+[[fact]]
+key = "role.global.selection_text_background"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_control_highlight_accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBox_themeresources.xaml:183"
+quote = "<Setter Property=\"SelectionHighlightColor\" Value=\"{ThemeResource TextControlSelectionHighlightColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2666"
+quote = "<StaticResource x:Key=\"TextControlSelectionHighlightColor\" ResourceKey=\"SystemControlHighlightAccentBrush\" />"
+
 # macOS's unemphasised selected text alone (the catalogue)
 [[fact]]
 key = "role.global.selection_text_foreground_unfocused"
@@ -4699,13 +4999,34 @@ rows = ["W3-11"]
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:149"
-quote = "<SolidColorBrush x:Key=\"SmokeFillColorDefaultBrush\" Color=\"{StaticResource SmokeFillColorDefault}\" />"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:7"
+quote = "<StaticResource x:Key=\"ContentDialogSmokeFill\" ResourceKey=\"SmokeFillColorDefaultBrush\" />"
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:353"
-quote = "<SolidColorBrush x:Key=\"SmokeFillColorDefaultBrush\" Color=\"{StaticResource SmokeFillColorDefault}\" />"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:41"
+quote = "<StaticResource x:Key=\"ContentDialogSmokeFill\" ResourceKey=\"SmokeFillColorDefaultBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:222"
+quote = "<Rectangle x:Name=\"SmokeLayerBackground\" Fill=\"{ThemeResource ContentDialogSmokeFill}\" />"
+
+[[fact]]
+key = "role.global.scrim"
+when = { conditions = ["contrast_high"] }
+value = "= alpha(role.@system_window, 0.8)"
+rows = ["W3-11"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:24"
+quote = "<SolidColorBrush x:Key=\"ContentDialogSmokeFill\" Color=\"{ThemeResource SystemColorWindowColor}\" Opacity=\"0.8\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:222"
+quote = "<Rectangle x:Name=\"SmokeLayerBackground\" Fill=\"{ThemeResource ContentDialogSmokeFill}\" />"
 
 # The Window set: the page background and default text WinUI states (Common_themeresources.xaml), the
 # text tiers, the controls' stroke; the status text colours refer to the global status roles (the catalogue's rule
@@ -4725,6 +5046,12 @@ quote = "<SolidColorBrush x:Key=\"ApplicationPageBackgroundThemeBrush\" Color=\"
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:27"
 quote = "<SolidColorBrush x:Key=\"ApplicationPageBackgroundThemeBrush\" Color=\"{StaticResource SolidBackgroundFillColorBase}\" />"
+
+[[fact]]
+key = "role.window.background"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_window"
+rows = []
 
 [[fact.cite]]
 kind = "published"
@@ -4775,6 +5102,17 @@ quote = "<StaticResource x:Key=\"HyperlinkButtonForeground\" ResourceKey=\"Accen
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/HyperlinkButton_themeresources.xaml:20"
 quote = "<StaticResource x:Key=\"HyperlinkButtonForeground\" ResourceKey=\"AccentTextFillColorPrimaryBrush\" />"
+
+[[fact]]
+key = "role.window.link"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_control_hyperlink_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/HyperlinkButton_themeresources.xaml:35"
+quote = "<StaticResource x:Key=\"HyperlinkButtonForeground\" ResourceKey=\"SystemControlHyperlinkTextBrush\" />"
 
 [[fact]]
 key = "role.window.negative"
@@ -5428,6 +5766,22 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorSelectedTextBackgroundBrush\" C
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:328"
 quote = "<SolidColorBrush x:Key=\"AccentFillColorSelectedTextBackgroundBrush\" Color=\"{ThemeResource SystemAccentColor}\" />"
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_control_highlight_accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBox_themeresources.xaml:183"
+quote = "<Setter Property=\"SelectionHighlightColor\" Value=\"{ThemeResource TextControlSelectionHighlightColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2666"
+quote = "<StaticResource x:Key=\"TextControlSelectionHighlightColor\" ResourceKey=\"SystemControlHighlightAccentBrush\" />"
 
 [[fact]]
 key = "role.selection.foreground"

@@ -8,10 +8,10 @@ available = true
 variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat"]
 sizes = []
 densities = []
-axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [] }
-exclusive = [["disabled", "pressed", "hover"]]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["checked", "indeterminate"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { variants = ["primary", "flat"] }, { variants = ["primary", "toggle"] }, { variants = ["primary", "menu"] }, { variants = ["primary", "tool"] }, { variants = ["primary", "@repeat"] }, { variants = ["flat", "toggle"] }, { variants = ["flat", "menu"] }, { variants = ["flat", "tool"] }, { variants = ["flat", "@repeat"] }, { variants = ["toggle", "menu"] }, { variants = ["toggle", "@repeat"] }, { variants = ["menu", "@repeat"] }, { variants = ["tool", "@repeat"] }]
-rows = ["W1-018", "W1-019", "W1-022"]
+axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ widget = "dialog", part = "action_area" }] }
+exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }, { variants = ["primary", "flat"] }, { variants = ["primary", "toggle"] }, { variants = ["primary", "menu"] }, { variants = ["primary", "tool"] }, { variants = ["primary", "@repeat"] }, { variants = ["flat", "toggle"] }, { variants = ["flat", "menu"] }, { variants = ["flat", "tool"] }, { variants = ["flat", "@repeat"] }, { variants = ["toggle", "menu"] }, { variants = ["toggle", "@repeat"] }, { variants = ["menu", "@repeat"] }, { variants = ["tool", "@repeat"] }]
+rows = ["W1-018", "W1-019", "W1-020", "W1-022"]
 
 [[model.cite]]
 kind = "published"
@@ -103,3 +103,13 @@ quote = "<ResourceDictionary x:Key=\"Light\">"
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:53"
 quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-118"
+quote = "if (!spIsCheckedReference) { if (!bIsEnabled) { IFC(GoToState(bUseTransitions, L\"IndeterminateDisabled\", &bIgnored)); } else if (bIsPressed) { IFC(GoToState(bUseTransitions, L\"IndeterminatePressed\", &bIgnored)); } else if (bIsPointerOver) { IFC(GoToState(bUseTransitions, L\"IndeterminatePointerOver\", &bIgnored)); } else { IFC(GoToState(bUseTransitions, L\"Indeterminate\", &bIgnored)); } } else if (bIsChecked)"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:194-198"
+quote = "<VisualStateGroup x:Name=\"DefaultButtonStates\"> <VisualState x:Name=\"NoDefaultButton\" /> <VisualState x:Name=\"PrimaryAsDefaultButton\"> <VisualState.Setters> <Setter Target=\"PrimaryButton.Style\" Value=\"{StaticResource AccentButtonStyle}\" />"

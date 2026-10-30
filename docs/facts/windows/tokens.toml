@@ -113,6 +113,49 @@ kind = "published"
 source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-systemparametersinfoa.md:1294"
 quote = "Retrieves the number of lines to scroll when the vertical mouse wheel is moved. The <i>pvParam</i> parameter must point to a <b>UINT</b> variable that receives the number of lines. The default value is 3."
 
+
+# Shape: WinUI's two corner radii (CornerRadius_themeresources.xaml), the same in every theme.
+
+[[fact]]
+key = "token.params.shape.control_corner_radius"
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:5"
+quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:9"
+quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:13"
+quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
+
+[[fact]]
+key = "token.params.shape.overlay_corner_radius"
+value = "8px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:6"
+quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:10"
+quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:14"
+quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
+
 # The focus indicator: the HighVisibility system focus visual (the default FocusVisualKind), a 2 px outer ring
 # in FocusStrokeColorOuter at the element's FocusVisualMargin (0 unless a style sets it).
 
