@@ -28,8 +28,10 @@ Checks, per `published` and `read` citation (of a fact, a palette fact or a stat
 - a citation of an `sdk` entry (`xcode@…`) is not checked here: it is listed (`# sdk:`), as `os-probe.yml`'s macOS job
   checks it at that Xcode; a `distribution` entry is never cited (S17).
 
-Per fact, the quote check (S17 *The quote check*): for each generation the fact covers (check_facts.Context.covered)
-with `published` or `read` citations, and for a palette fact once over all its citations, every literal of `value`
+Per fact, the quote check (S17 *The quote check*): for each generation the fact covers that its `published` or `read`
+citations serve (served_generations: its `preset:` generation, or each generation of its directory its citations'
+entries serve, a `preset:` in `not_conditions` taken out; whether or not the preset's file exists yet, which only
+check_facts.py's generation rule asks), and for a palette fact once over all its citations, every literal of `value`
 equals a literal of the union of those citations' quotes, as written or after the citation's `conversion`. A value's
 literals are S2.2's (a TOML number; the colour, length, duration, angle and font-size literals of a string or an
 expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's.
@@ -733,6 +735,17 @@ def compare(fact_value, ev_value, tolerance, conversion, notation, apple=False) 
     return out
 
 
+def served_generations(item) -> set:
+    """The generations a fact covers for the quote check, independent of the presets that exist (S17
+    *Generations*): its `preset:` generation, else its directory's, less a `preset:` in `not_conditions`."""
+    when = item.data.get("when") if isinstance(item.data.get("when"), dict) else {}
+    conds = when.get("conditions") if check_facts.str_list(when.get("conditions")) else []
+    nots = when.get("not_conditions") if check_facts.str_list(when.get("not_conditions")) else []
+    pres = [c[7:] for c in conds if c.startswith("preset:")]
+    out = set(pres[:1]) if pres else set(check_facts.PLATFORMS.get(item.platform, ()))
+    return out - {c[7:] for c in nots if c.startswith("preset:")}
+
+
 def same_value(x, y) -> bool:
     """Two values spelled as a fact's are the same: the same leaves, literals equal at the quote check's precision,
     other leaves exactly."""
@@ -917,9 +930,8 @@ class Run:
         if item.palette:
             groups = [("all its citations", textual)] if textual else []
         else:
-            covered, _ = self.ctx.covered(item)
             groups = []
-            for g in sorted(covered):
+            for g in sorted(served_generations(item)):
                 cs = [c for c in textual if g in self.ctx.cite_generations(c.data)]
                 if cs:
                     groups.append((g, cs))
@@ -1638,8 +1650,23 @@ def self_test() -> int:
             if label == "good":
                 if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 6:
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
-        # an uncommitted evidence file, and the vacuous run
+        # the quote check does not depend on the presets that exist: none exist, a wrong literal still fails
         root = base / "case0"
+        for f in (root / check_facts.PRESET_DIRS[0]).glob("*.toml"):
+            f.unlink()
+        buttons = root / "docs/facts/gnome/buttons.toml"
+        buttons.write_text(buttons.read_text(encoding="utf-8").replace("0.07)", "0.08)"), encoding="utf-8")
+        committed = {p.relative_to(root).as_posix() for p in (root / "docs/evidence").rglob("*") if p.is_file()}
+        ctx = check_facts.Context(root, core_text=check_facts.SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
+                                  sources_text=(root / check_facts.SOURCES).read_text(encoding="utf-8"),
+                                  rows=check_facts.SELF_TEST_ROWS)
+        run = Run(ctx, root / "cache", committed, check_heads=False)
+        run.check()
+        got = [w for _, _, w in run.findings]
+        if ctx.presets or got != ["the value's literal 0.08 is in no quote serving adwaita (as written or converted)"]:
+            failures.append(f"no presets: got {got} with presets {sorted(ctx.presets)}")
+        buttons.write_text(buttons.read_text(encoding="utf-8").replace("0.08)", "0.07)"), encoding="utf-8")
+        # an uncommitted evidence file, and the vacuous run
         run = Run(check_facts.fixture_context(root), root / "cache", set(), check_heads=False)
         run.check()
         if sum("is not committed" in w for _, _, w in run.findings) != 6:
