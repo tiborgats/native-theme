@@ -7082,3 +7082,107 @@ quote = "groupWMOut.writeEntry(coloritem, groupWMTheme.readEntry(coloritem, defa
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:99-103"
 quote = "KConfigGroup globalGroup(_config->group(QStringLiteral(\"WM\")));"
+
+# KDE's 3-D shades (Qt's Light … Shadow): createApplicationPalette computes them per colour group from the Window
+# set's background with the scheme's contrast (KColorScheme::shade(role) is shade(background(), role, contrastF()));
+# role.window.background carries the group (its window_inactive rule), so the one expression serves both
+
+[[fact]]
+key = "role.@shade_light"
+value = "= kde_shade(role.window.background, light, token.params.color.contrast)"
+rows = ["K3.53"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:683"
+quote = "palette.setColor(state, QPalette::Light, schemeWindow.shade(KColorScheme::LightShade));"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:556-559"
+quote = "QColor KColorScheme::shade(ShadeRole role) const { return shade(background().color(), role, d->contrast()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:354"
+quote = "_contrast = KColorScheme::contrastF(config);"
+
+[[fact]]
+key = "role.@shade_midlight"
+value = "= kde_shade(role.window.background, midlight, token.params.color.contrast)"
+rows = ["K3.53"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:684"
+quote = "palette.setColor(state, QPalette::Midlight, schemeWindow.shade(KColorScheme::MidlightShade));"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:556-559"
+quote = "QColor KColorScheme::shade(ShadeRole role) const { return shade(background().color(), role, d->contrast()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:354"
+quote = "_contrast = KColorScheme::contrastF(config);"
+
+[[fact]]
+key = "role.@shade_mid"
+value = "= kde_shade(role.window.background, mid, token.params.color.contrast)"
+rows = ["K3.53", "K1.184†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:685"
+quote = "palette.setColor(state, QPalette::Mid, schemeWindow.shade(KColorScheme::MidShade));"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:556-559"
+quote = "QColor KColorScheme::shade(ShadeRole role) const { return shade(background().color(), role, d->contrast()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:354"
+quote = "_contrast = KColorScheme::contrastF(config);"
+
+[[fact]]
+key = "role.@shade_dark"
+value = "= kde_shade(role.window.background, dark, token.params.color.contrast)"
+rows = ["K3.53", "K1.184†", "K-RL01†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:686"
+quote = "palette.setColor(state, QPalette::Dark, schemeWindow.shade(KColorScheme::DarkShade));"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:556-559"
+quote = "QColor KColorScheme::shade(ShadeRole role) const { return shade(background().color(), role, d->contrast()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:354"
+quote = "_contrast = KColorScheme::contrastF(config);"
+
+[[fact]]
+key = "role.@shade_shadow"
+value = "= kde_shade(role.window.background, shadow, token.params.color.contrast)"
+rows = ["K3.53", "K-RL01†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:687"
+quote = "palette.setColor(state, QPalette::Shadow, schemeWindow.shade(KColorScheme::ShadowShade));"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:556-559"
+quote = "QColor KColorScheme::shade(ShadeRole role) const { return shade(background().color(), role, d->contrast()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:354"
+quote = "_contrast = KColorScheme::contrastF(config);"

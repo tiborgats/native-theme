@@ -1,6 +1,8 @@
 # kde-breeze's state models (S17): the combinations Breeze 6.8.2 and qqc2-desktop-style 6.31.0 draw. Written by the
 # KDE facts lane. States combine (no exclusive group): renderButtonFrame reads each flag on its own and decides by
 # branch order (down, checked, default, rest), which the facts' order carries, not a group (K1.29).
+# Variants combine; `variant_sets` lists the sets the facts state values for, and the checkable (`toggle`) sets
+# their `checked` facts need, never every combination of the declared variants (S17, ADD-A121).
 
 # Qt Widgets (the default flavour): QPushButton and QToolButton through Breeze's QStyle. The variants are the
 # catalogue's that Breeze and the KDE frameworks draw (the identities and keyed variants in their hosts' contexts:
@@ -14,8 +16,9 @@ variants = ["flat", "warning", "circular", "toggle", "menu", "tool", "icon_only"
 sizes = []
 densities = []
 flags = ["@recording"]
-axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }] }
 exclusive = []
+variant_sets = [["flat", "toggle"], ["flat", "warning"], ["warning", "toggle"], ["flat", "warning", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["tool", "@inline_small"], ["tool", "@inline_small", "flat"], ["tool", "@inline_large"], ["tool", "@inline_large", "flat"]]
 not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { variants = ["circular", "tool"] }]
 rows = ["K1.20", "K1.21", "K1.22", "K1.24", "K1.25", "K1.26", "K1.29", "K1.152", "K-RL02†"]
 
@@ -88,6 +91,7 @@ densities = []
 flags = ["@recording"]
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
+variant_sets = [["flat", "toggle"], ["menu", "flat"], ["tool", "flat"], ["tool", "toggle"], ["tool", "flat", "toggle"], ["circular", "flat"], ["circular", "toggle"], ["circular", "flat", "toggle"], ["circular", "@highlighted"], ["circular", "flat", "@highlighted"]]
 not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }]
 rows = ["Q1.8", "Q1.9", "Q2.4", "Q2.48", "K-KA-26†", "K-KA-43†"]
 
