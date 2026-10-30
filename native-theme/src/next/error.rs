@@ -33,7 +33,10 @@ impl std::error::Error for KeyError {}
 /// Adding a layer, or reading one, failed (S1, S12).
 #[derive(Clone, Debug, PartialEq)]
 pub enum LayerError {
-    /// Every problem found, not the first only.
+    /// Every problem found, not the first only: S12's checks', and the TOML
+    /// reader's own (S11: text that is not TOML, an unknown key, a mistyped
+    /// value, an unknown name, a key outside the key grammar, an expression
+    /// that does not parse), each a [`ProblemKind`].
     Invalid(Vec<Problem>),
 }
 
