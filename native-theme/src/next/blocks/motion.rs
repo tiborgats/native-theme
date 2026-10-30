@@ -92,17 +92,6 @@ pub fn damping_coefficient(mass: f32, stiffness: f32, damping_ratio: f32) -> Opt
     Some(damping_ratio * critical).filter(|c| c.is_finite())
 }
 
-/// The damping ratio of a spring a source states by its damping coefficient
-/// (libadwaita's `adw_spring_params_new_full`, AppKit's
-/// `CASpringAnimation.damping`): [`damping_coefficient`]'s inverse,
-/// `coefficient / (2·√(mass · stiffness))`. `None` where `mass · stiffness`
-/// is not above zero or the result is not finite.
-#[must_use]
-pub fn damping_ratio(mass: f32, stiffness: f32, coefficient: f32) -> Option<f32> {
-    let critical = critical_damping(mass, stiffness).filter(|c| *c > 0.0)?;
-    Some(coefficient / critical).filter(|r| r.is_finite())
-}
-
 /// `2·√(mass · stiffness)`, the critical damping; `None` where it is not a
 /// finite number.
 fn critical_damping(mass: f32, stiffness: f32) -> Option<f32> {

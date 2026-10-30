@@ -6,7 +6,6 @@ use super::icon::{Glyph, GlyphStroke, IconStyle};
 use super::motion::{
     Keyframe, Loop, PresentationEvent, PresentationKind, PresentationStep, PresentationTransition,
     PropertyGroup, ResolvedTiming, Timing, Transition, TransitionKind, damping_coefficient,
-    damping_ratio,
 };
 use super::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Radius, concentric, follow_part, full,
@@ -956,19 +955,21 @@ fn presentations_merge_by_event() {
 }
 
 #[test]
-fn spring_by_damping_ratio_round_trips() {
-    for (mass, stiffness, ratio) in [(1.0, 100.0, 0.5), (2.0, 300.0, 1.0), (0.5, 50.0, 1.5)] {
-        let coefficient = damping_coefficient(mass, stiffness, ratio);
-        let back = coefficient.and_then(|c| damping_ratio(mass, stiffness, c));
+fn spring_damping_coefficient_from_its_ratio() {
+    for (mass, stiffness, ratio, coefficient) in [
+        (1.0, 100.0, 0.5, 10.0),
+        (1.0, 100.0, 1.0, 20.0),
+        (0.5, 50.0, 1.5, 15.0),
+        (1.0, 0.0, 1.0, 0.0),
+    ] {
+        let found = damping_coefficient(mass, stiffness, ratio);
         assert!(
-            back.is_some_and(|back| (back - ratio).abs() < 1e-6),
-            "{mass} {stiffness} {ratio}: {coefficient:?} {back:?}"
+            found.is_some_and(|c| (c - coefficient).abs() < 1e-5),
+            "{mass} {stiffness} {ratio}: {found:?}"
         );
     }
-    let coefficient = damping_coefficient(1.0, 100.0, 1.0);
-    assert!(coefficient.is_some_and(|c| (c - 20.0).abs() < 1e-5));
     assert_eq!(damping_coefficient(-1.0, 100.0, 1.0), None);
-    assert_eq!(damping_ratio(0.0, 100.0, 1.0), None);
+    assert_eq!(damping_coefficient(f32::MAX, f32::MAX, 1.0), None);
     let Timing::Spring { damping_ratio, .. } = spring(0.7) else {
         panic!("a spring");
     };

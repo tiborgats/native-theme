@@ -46,7 +46,7 @@ pub mod shapes {
 pub mod timing {
     //! Springs stated by their damping ratio (S2.7).
 
-    pub use super::blocks::motion::{damping_coefficient, damping_ratio};
+    pub use super::blocks::motion::damping_coefficient;
 }
 
 pub use blocks::focus::{
