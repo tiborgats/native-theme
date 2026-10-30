@@ -5672,8 +5672,8 @@ spaces:
 - **Available:** every preset but `windows-11`, `material-3` (`available = false`: no titled frame in their rows).
 - **Parts:**
   - `body` — the frame (the root; KDE's frame background and its hover and focus outline, K2.8, K2.21; iOS's
-    surface, C-32; Breeze's keyboard focus frame, which K3.20 lists for group boxes): `fill`, `stroke`, `corners`,
-    `padding`, `focus` (K3.20)
+    surface, C-32; Breeze rings only a checkable title's checkbox, a `checkbox`, K3.20): `fill`, `stroke`, `corners`,
+    `padding`
   - `title` — the title (GN-2.32, K2.8, Q2.13, MAC-BX01): `text`
   - `focus_line` — KDE's faded line under a focused title (K2.8): `stroke` (the line, its top edge), `transitions`
     (its fade, K2.8)
