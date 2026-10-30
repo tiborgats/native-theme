@@ -538,6 +538,7 @@ note = "Not cited: the KDE harness's Qt Widgets runtime (D4), pinned with the re
 id = "develop-kde-org@6abc3286"
 kind = "git"
 project = "KDE/develop-kde-org"
+site = "develop.kde.org"
 repository = "https://invent.kde.org/documentation/develop-kde-org.git"
 tag = "commit"
 commit = "6abc32860bf19c4a449b74bd831321f3dbfa8283"

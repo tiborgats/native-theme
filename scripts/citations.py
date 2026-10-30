@@ -365,8 +365,11 @@ def classify_url(url):
     if m:
         host, repo, verb, ref, rest, anchor = m.groups()
         if host == "raw.githubusercontent.com":
-            parts = (rest or "").lstrip("/").split("/", 1)
-            ref, rest = verb or ref, "/" + (parts[1] if len(parts) > 1 else "")
+            # raw.githubusercontent.com/<owner>/<repo>/<ref>/<path>, the ref a name, a SHA or refs/heads|tags/<name>
+            tail = (f"/{verb}" + (f"/{ref}" if ref else "") if verb else "") + (rest or "")
+            parts = tail.lstrip("/").split("/")
+            n = 3 if parts[0] == "refs" and len(parts) > 3 else 1
+            ref, rest = "/".join(parts[:n]), "/" + "/".join(parts[n:])
         if host == "chromium.googlesource.com" and ref == "refs":
             ref = "refs/heads/main"
         proj = repo
@@ -1243,6 +1246,17 @@ def self_test() -> int:
         got = [c.ref for c in scan(text, doc, Index(), defs)]
         if got != want:
             failures.append(f"scan with the documents' definitions, {text!r}: got {got}, want {want}")
+    for url, want in (
+            ("https://raw.githubusercontent.com/KDE/breeze/c97883a8fe41bce774835c25d7f7e321c71fa618/kstyle/x.cpp",
+             ("code", "KDE/breeze", "c97883a8fe41bce774835c25d7f7e321c71fa618", "kstyle/x.cpp", "",
+              "raw.githubusercontent.com")),
+            ("https://raw.githubusercontent.com/o/r/refs/tags/v1.2/src/a.rs",
+             ("code", "o/r", "refs/tags/v1.2", "src/a.rs", "", "raw.githubusercontent.com")),
+            ("https://raw.githubusercontent.com/o/r/blob/x.md",
+             ("code", "o/r", "blob", "x.md", "", "raw.githubusercontent.com"))):
+        got = classify_url(url)
+        if got != want:
+            failures.append(f"classify_url({url!r}): got {got}, want {want}")
     for label, doc, text, files, want in SELF_TEST:
         own = files.get(OWN, [])
         index = Index(own, {p: (fs, "") for p, fs in files.items() if p != OWN})

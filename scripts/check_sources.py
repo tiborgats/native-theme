@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """The source cache's list, docs/facts/sources.toml (plan D1, specification S17): well formed, and complete.
 
-Form: every field is a string, `generations`, `sparse` and `sources` lists of strings (a field of another type is
-reported and left out of the other checks); every [[source]] has the fields of its kind and no others; ids are unique
-and `<name>@<version>` (for a commit pin, `tag = "commit"`, the version is the commit's first eight hex digits); SHAs
-are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin per name and generation. Every [[site]]
-names its method, and a "repository" site the [[source]] ids of its repositories. Every [[not_pinned]] gives its
-reason. A project is named by one list only.
+Form: every field is a string, none blank, `generations`, `sparse` and `sources` lists of strings (a field of another
+type is reported and left out of the other checks); every [[source]] has the fields of its kind and no others; ids are
+unique and `<name>@<version>` (for a commit pin, `tag = "commit"`, the version is the commit's first eight hex
+digits); SHAs are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin per name and generation.
+A git entry's repository is an https URL with a path, its tag a tag name that is the id's version (after a `v` or a
+prefix ending in `/`, `_` or `-`), its sparse folders relative paths without spaces, `..` or a leading `-`. Every
+[[site]] names its method, and a "repository" site the git [[source]] ids of its repositories, each naming the site
+as its `site`; a source's `site` is a listed [[site]]. Every [[not_pinned]] gives its reason. A project is named by
+one list only. scripts/update_sources.sh refuses to act on a sources.toml with any of these problems.
 
 Completeness: every project scripts/citations.py finds cited in the core, the catalogue, the traces, the gap maps and
 docs/platform-facts.md (citations.SOURCES_SCOPE; quotes of other documents' cells left out) is the `project` of a
@@ -24,10 +27,13 @@ from pathlib import Path
 import citations
 
 PRESETS = ("adwaita", "kde-breeze", "macos-monterey", "macos-tahoe", "ios-13", "ios-26", "windows-11", "material-3")
-ID_RX = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._+-]*)@([A-Za-z0-9][A-Za-z0-9._+-]*)$")
-SHA_RX = re.compile(r"^[0-9a-f]{40}$")
-SHA256_RX = re.compile(r"^[0-9a-f]{64}$")
-DATE_RX = re.compile(r"^\d{4}-\d\d-\d\d$")
+ID_RX = re.compile(r"([A-Za-z0-9][A-Za-z0-9._+-]*)@([A-Za-z0-9][A-Za-z0-9._+-]*)")
+SHA_RX = re.compile(r"[0-9a-f]{40}")
+SHA256_RX = re.compile(r"[0-9a-f]{64}")
+DATE_RX = re.compile(r"\d{4}-\d\d-\d\d")
+REPOSITORY_RX = re.compile(r"https://[A-Za-z0-9.-]+(?::\d+)?/[A-Za-z0-9._~/@+-]*[A-Za-z0-9_~+-]")
+TAG_RX = re.compile(r"[A-Za-z0-9@_][A-Za-z0-9._+/@-]*")
+SPARSE_RX = re.compile(r"[A-Za-z0-9._+@][A-Za-z0-9._+@/-]*")
 COMMON = {"id", "kind", "release", "generations", "researched", "proof"}
 KINDS = {
     # kind: (required beyond COMMON, optional)
@@ -85,6 +91,16 @@ def fields_problems(where, entry, required, optional):
     return out
 
 
+def blank_problems(where, entry):
+    return [f"{where}: field `{k}` is empty" for k, v in entry.items() if isinstance(v, str) and not v.strip()]
+
+
+def tag_names_version(tag, version):
+    """Whether `tag` is the release `version` as its project tags it: the version itself, after a `v`, or after a
+    prefix ending in `/`, `_` or `-` (`v6.8.2`, `1.10.0`, `winui3/release/2.5.1`, `WebKit-7624.5.1.11.3`)."""
+    return re.fullmatch(r"(?:.*[/_-])?v?" + re.escape(version), tag) is not None
+
+
 def source_problems(e):
     sid = e.get("id", "?")
     where = f"source {sid}"
@@ -93,7 +109,7 @@ def source_problems(e):
         return [f"{where}: kind {kind!r} is not one of {', '.join(KINDS)}"]
     required, optional = KINDS[kind]
     out = fields_problems(where, e, COMMON | required, optional)
-    m = ID_RX.match(sid)
+    m = ID_RX.fullmatch(sid)
     if not m:
         out.append(f"{where}: id is not `<name>@<version>`")
     gens = e.get("generations")
@@ -103,21 +119,30 @@ def source_problems(e):
         out += [f"{where}: generation {g!r} is not a preset id" for g in gens if g not in PRESETS]
         if len(set(gens)) != len(gens):
             out.append(f"{where}: a generation is listed twice")
-    if "researched" in e and not DATE_RX.match(str(e["researched"])):
+    out += blank_problems(where, e)
+    if "researched" in e and not DATE_RX.fullmatch(str(e["researched"])):
         out.append(f"{where}: researched {e['researched']!r} is not a YYYY-MM-DD date")
     if kind == "git":
         for f in ("commit", "tag_object"):
-            if f in e and not SHA_RX.match(str(e[f])):
+            if f in e and not SHA_RX.fullmatch(str(e[f])):
                 out.append(f"{where}: {f} {e[f]!r} is not a 40-hex SHA")
-        if not str(e.get("repository", "")).startswith("https://"):
-            out.append(f"{where}: repository is not an https URL")
-        if e.get("tag") == "commit":
+        if "repository" in e and not REPOSITORY_RX.fullmatch(e["repository"]):
+            out.append(f"{where}: repository {e['repository']!r} is not an https URL of a repository")
+        tag = e.get("tag")
+        if tag == "commit":
             if "tag_object" in e:
                 out.append(f"{where}: a commit pin has a tag_object")
-            if m and SHA_RX.match(str(e.get("commit", ""))) and m.group(2) != e["commit"][:8]:
+            if m and SHA_RX.fullmatch(str(e.get("commit", ""))) and m.group(2) != e["commit"][:8]:
                 out.append(f"{where}: a commit pin's version is not its commit's first eight hex digits")
+        elif tag is not None:
+            if not TAG_RX.fullmatch(tag) or ".." in tag or tag.endswith((".", "/")):
+                out.append(f"{where}: tag {tag!r} is not a tag name")
+            elif m and not tag_names_version(tag, m.group(2)):
+                out.append(f"{where}: tag {tag!r} is not the id's version {m.group(2)!r}")
+        if e.get("sparse") == []:
+            out.append(f"{where}: sparse is an empty list")
         for p in e.get("sparse", []):
-            if not p or p.startswith("/") or ".." in p.split("/"):
+            if not SPARSE_RX.fullmatch(p) or p.endswith("/") or ".." in p.split("/") or "//" in p:
                 out.append(f"{where}: sparse path {p!r} is not a relative folder")
         if "project" not in e and "site" not in e and "note" not in e:
             out.append(f"{where}: neither a project, a site nor a note saying why it is pinned")
@@ -126,18 +151,18 @@ def source_problems(e):
         for f in sorted(SDK_SHAPES[shape] - set(e)):
             out.append(f"{where}: the {shape} sdk entry lacks {f}")
         if shape == "xcode":
-            if not SHA_RX.match(str(e.get("readme_commit", ""))):
+            if not SHA_RX.fullmatch(str(e.get("readme_commit", ""))):
                 out.append(f"{where}: readme_commit is not a 40-hex SHA")
             if m and m.group(2) != str(e.get("xcode")):
                 out.append(f"{where}: the id's version is not the Xcode version")
         else:
-            if not SHA256_RX.match(str(e.get("sha256", ""))):
+            if not SHA256_RX.fullmatch(str(e.get("sha256", ""))):
                 out.append(f"{where}: sha256 is not a 64-hex SHA-256")
             if m and "revision" in e and not m.group(2).endswith(f"-r{e['revision']}"):
                 out.append(f"{where}: a system image's id does not end in -r<revision>")
     if kind == "distribution":
         for f in ("extra_db_sha256", "core_db_sha256"):
-            if f in e and not SHA256_RX.match(str(e[f])):
+            if f in e and not SHA256_RX.fullmatch(str(e[f])):
                 out.append(f"{where}: {f} is not a 64-hex SHA-256")
     return out
 
@@ -173,10 +198,13 @@ def check_form(data):
             projects.setdefault(e["project"], []).append(e.get("id", "?"))
     for p, which in projects.items():
         cover(p, "source " + ", ".join(which))
+    by_id = {e["id"]: e for e in sources if "id" in e}
     seen_sites = set()
+    listed = {}
     for s in sites:
         where = f"site {s.get('project', '?')}"
         out += fields_problems(where, s, *SITE_FIELDS)
+        out += blank_problems(where, s)
         if s.get("project") in seen_sites:
             out.append(f"{where}: listed twice")
         seen_sites.add(s.get("project"))
@@ -185,11 +213,24 @@ def check_form(data):
         if s.get("method") == "repository":
             if not s.get("sources"):
                 out.append(f"{where}: a repository site names no sources")
-            out += [f"{where}: source {x} is not a [[source]] id" for x in s.get("sources", []) if x not in ids]
+            for x in s.get("sources", []):
+                listed.setdefault(x, []).append(s.get("project"))
+                if x not in ids:
+                    out.append(f"{where}: source {x} is not a [[source]] id")
+                elif by_id[x].get("kind") != "git":
+                    out.append(f"{where}: source {x} is not a git [[source]]")
+                elif by_id[x].get("site") != s.get("project"):
+                    out.append(f"{where}: source {x} does not name it as its site")
         elif "sources" in s:
             out.append(f"{where}: a snapshot site names sources")
         if "project" in s:
             cover(s["project"], "a site")
+    for e in sources:
+        if "site" in e:
+            if e["site"] not in seen_sites:
+                out.append(f"source {e.get('id', '?')}: site {e['site']!r} is not a [[site]]")
+            elif e["site"] not in listed.get(e.get("id"), []):
+                out.append(f"source {e.get('id', '?')}: site {e['site']!r} does not list it among its sources")
     names = set()
     for n in not_pinned:
         where = f"not_pinned {n.get('name', '?')}"
@@ -306,7 +347,8 @@ def self_test() -> int:
     expect("duplicate id", edit(good, 'id = "docs@f54166ed"', 'id = "breeze@6.8.2"'),
            ["source breeze@6.8.2: a commit pin's version is not its commit's first eight hex digits",
             "source breeze@6.8.2: id not unique",
-            "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id"])
+            "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id",
+            "source breeze@6.8.2: site 'learn.microsoft.com' does not list it among its sources"])
     expect("id form", edit(good, 'id = "breeze@6.8.2"', 'id = "breeze 6.8.2"'),
            ["source breeze 6.8.2: id is not `<name>@<version>`"])
     expect("short SHA", edit(good, 'commit = "c97883a8fe41bce774835c25d7f7e321c71fa618"', 'commit = "c97883a8"'),
@@ -320,12 +362,14 @@ def self_test() -> int:
            ["source breeze@6.8.2: unknown field `tga`"])
     expect("commit pin's version", edit(good, 'id = "docs@f54166ed"', 'id = "docs@main"'),
            ["source docs@main: a commit pin's version is not its commit's first eight hex digits",
-            "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id"])
+            "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id",
+            "source docs@main: site 'learn.microsoft.com' does not list it among its sources"])
     expect("second pin per generation", edit(good, 'id = "docs@f54166ed"\nkind = "git"\nsite = "learn.microsoft.com"',
                                               'id = "breeze@f54166ed"\nkind = "git"\nsite = "learn.microsoft.com"').replace(
         'generations = ["windows-11"]', 'generations = ["kde-breeze"]'),
            ["source breeze@f54166ed: a second pin of breeze for kde-breeze",
-            "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id"])
+            "site learn.microsoft.com: source docs@f54166ed is not a [[source]] id",
+            "source breeze@f54166ed: site 'learn.microsoft.com' does not list it among its sources"])
     image = good + """
 [[source]]
 id = "android-system-image@37.1-r9"
@@ -362,9 +406,37 @@ proof = "spike A"
            ["source docs@f54166ed: generations is not a list of strings",
             "source docs@f54166ed: generations is not a non-empty list"])
     expect("a site not a table", 'site = 3\n' + good.split("[[site]]")[0],
-           ["`site` is not an array of [[site]] tables", "cited project 'learn.microsoft.com' (1 citations, first "
+           ["`site` is not an array of [[site]] tables", "source docs@f54166ed: site 'learn.microsoft.com' is not a "
+            "[[site]]", "cited project 'learn.microsoft.com' (1 citations, first "
             "gap-map-windows.md:35) is neither pinned, a listed site nor not_pinned", "cited project 'native-theme "
             "(own)' (2 citations, first spec.md:4) is neither pinned, a listed site nor not_pinned"])
+    expect("trailing newline in a SHA", edit(good, 'c97883a8fe41bce774835c25d7f7e321c71fa618"',
+                                             'c97883a8fe41bce774835c25d7f7e321c71fa618\\n"'),
+           ["source breeze@6.8.2: commit 'c97883a8fe41bce774835c25d7f7e321c71fa618\\n' is not a 40-hex SHA"])
+    expect("trailing newline in an id", edit(good, 'id = "breeze@6.8.2"', 'id = "breeze@6.8.2\\n"'),
+           ["source breeze@6.8.2\n: id is not `<name>@<version>`"])
+    expect("tag not the id's version", edit(good, 'tag = "v6.8.2"', 'tag = "v6.9.0"'),
+           ["source breeze@6.8.2: tag 'v6.9.0' is not the id's version '6.8.2'"])
+    expect("tag as an option", edit(good, 'tag = "v6.8.2"', 'tag = "--upload-pack=x"'),
+           ["source breeze@6.8.2: tag '--upload-pack=x' is not a tag name"])
+    expect("repository without a path", edit(good, '"https://invent.kde.org/plasma/breeze.git"', '"https://"'),
+           ["source breeze@6.8.2: repository 'https://' is not an https URL of a repository"])
+    expect("empty field", edit(good, 'release = "Plasma 6.8.2"', 'release = ""'),
+           ["source breeze@6.8.2: field `release` is empty"])
+    for bad in ("hub/apps design", "--no-cone", "../up", "hub/"):
+        expect(f"sparse {bad!r}", edit(good, 'sparse = ["hub/apps/design"]', f'sparse = ["{bad}"]'),
+               [f"source docs@f54166ed: sparse path {bad!r} is not a relative folder"])
+    expect("sparse empty", edit(good, 'sparse = ["hub/apps/design"]', 'sparse = []'),
+           ["source docs@f54166ed: sparse is an empty list"])
+    expect("a source's unknown site", edit(good, 'site = "learn.microsoft.com"', 'site = "nowhere.example"'),
+           ["site learn.microsoft.com: source docs@f54166ed does not name it as its site",
+            "source docs@f54166ed: site 'nowhere.example' is not a [[site]]"])
+    expect("a source without its site", edit(good, 'site = "learn.microsoft.com"\n', 'note = "Learn"\n'),
+           ["site learn.microsoft.com: source docs@f54166ed does not name it as its site"])
+    expect("a site's sdk source", edit(good, 'sources = ["docs@f54166ed"]', 'sources = ["docs@f54166ed", "xcode@26.6"]'),
+           ["site learn.microsoft.com: source xcode@26.6 is not a git [[source]]"])
+    expect("tag forms", edit(good, 'id = "breeze@6.8.2"', 'id = "breeze@2.5.1"').replace(
+        'tag = "v6.8.2"', 'tag = "winui3/release/2.5.1"'), [])
     expect("cited, in no list", good, ["cited project 'GNOME/gtk' (5 citations, first gap-map-gnome.md:14) is neither "
                                        "pinned, a listed site nor not_pinned"],
            dict(SELF_TEST_CITED, **{"GNOME/gtk": (5, "gap-map-gnome.md:14")}))

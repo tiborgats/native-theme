@@ -307,7 +307,9 @@ combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
 widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the
-data documents' five checks, docs and the archive index, then the docs.rs emulation,
+data documents' checks (the five on the registry, the inheritance rules, the
+presets and `docs/todo.md`, then the 0.8.0 plan's: the ledger's triage, the
+pinned sources and their cache, the facts and their citations), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -325,6 +327,24 @@ where no cached database loads, warns that the audit did not run.
 The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
+
+`PLAN_EXCLUDED`, an associative array near the top of the script, names the
+steps the 0.8.0 plan's transition breaks, each by its description, with the
+milestone that brings it back (the plan's *What cannot build meanwhile*; the
+ledger records the list). `--commit` skips each listed step and says so; the
+full run still runs each once, in a subshell, and reports a pass (remove it
+from the list) or a failure (its milestone) as a warning, never a failure. A
+listed description that no step of the full run used is a warning too, and
+while the list is not empty the full run's banner says
+`not ready: N plan-excluded steps` instead of `ready for release`. The
+per-crate loops name one step per crate (`check (<crate>)`, `test (<crate>)`,
+`examples (<crate>)`, …), so a crate is excluded alone; the feature
+combinations take the crate-level key `feature combinations (<crate>)`,
+which runs `check_features.sh --skip <crate>` for the others and
+`--only <crate>` as that crate's own step. `ci.yml` marks its matching
+exclusions with a YAML comment that is exactly
+`# PLAN_EXCLUDED: <description>`, and the first section fails unless the
+marks and the list name the same set.
 
 ```sh
 ./scripts/check_release.sh --commit
@@ -370,14 +390,18 @@ dependencies are not rebuilt. Colour is turned off inside the script, and so
 is cargo's future-incompatibility notice, a `warning:` line about a
 dependency rather than a workspace crate. Prints one line per combination
 with an excerpt under each failure; exits 1 when any fails, naming each
-failure at the end, and 2 when `jq` is missing. `scripts/check_release.sh` (a
-hard failure), `ci.yml` (and through it `publish.yml`'s CI run) and
-`dependency-canary.yml` run it.
+failure at the end, and 2 when `jq` is missing. `--skip CRATE` leaves a
+crate out and `--only CRATE` checks the named crates alone (both repeatable;
+a name that is not a workspace crate with a library exits 2), for a
+crate-level `PLAN_EXCLUDED` key of `check_release.sh`.
+`scripts/check_release.sh` (a hard failure), `ci.yml` (and through it
+`publish.yml`'s CI run) and `dependency-canary.yml` run it.
 
 Requires jq.
 
 ```sh
 ./scripts/check_features.sh
+./scripts/check_features.sh --skip native-theme-gpui
 ```
 
 ## check_strict_panic.sh
@@ -826,8 +850,8 @@ Prints one line per finding (file:line: what) and a summary with the counts,
 and exits 0 when there is none, 1 when there are some, 2 on an input it
 cannot read or a wrong command line. `--ledger PATH` checks a copy of the
 ledger. `--self-test` runs each rule on synthetic sources and a ledger.
-`check_release.sh` does not run it yet; the plan adds it to the full run,
-with `--final` from M4.
+`check_release.sh` runs it in the full run (`--commit` skips it) and its
+self-test in both modes; the plan adds `--final` from M4.
 
 Requires Python 3.11+ (for `tomllib`).
 
@@ -873,11 +897,15 @@ python3 scripts/citations.py --self-test
 Checks `docs/facts/sources.toml`, the pinned platform sources of the 0.8.0
 model (plan D1): every `[[source]]` has the fields of its kind (a git
 repository at a commit, an SDK on a runner image, a dated distribution
-snapshot), a unique `<name>@<version>` id (a commit pin's version is its
-commit's first eight hex digits), full SHAs, preset ids as generations and
-one pin per name and generation; every `[[site]]` names its pinning method
-(its source repositories, or snapshots); every `[[not_pinned]]` gives its
-reason. Then, through `citations.py`, every project the core, the catalogue,
+snapshot), no blank field, a unique `<name>@<version>` id (a commit pin's
+version is its commit's first eight hex digits), full SHAs, preset ids as
+generations and one pin per name and generation; a git entry's repository is
+an https URL, its tag the id's version as the project tags it (`v6.8.2` for
+`breeze@6.8.2`), its `sparse` folders relative paths without spaces, `..` or
+a leading `-`; every `[[site]]` names its pinning method (its git source
+repositories, each naming the site back as its `site`, or snapshots), and a
+source's `site` is a listed site; every `[[not_pinned]]` gives its reason.
+`update_sources.sh` refuses a file with any of these problems. Then, through `citations.py`, every project the core, the catalogue,
 the traces, the gap maps and `docs/platform-facts.md` cite must be a source, a
 site or not pinned. Offline: it reads the documents and the repository's file
 list, not the source cache. Prints the counts and one line per problem, and
@@ -961,12 +989,18 @@ fetch by SHA), as a partial clone of the entry's `sparse` folders only where
 it lists them (androidx, AOSP, WebKit, the documentation repositories). A
 checkout already at its commit is skipped, so a run after an edit of
 `sources.toml` fetches only what changed; a new checkout is built beside its
-final folder and renamed once at its commit. `--seed DIR` copies a clean,
-complete checkout at the commit from `DIR/<repository name>` instead of
-fetching it, `--jobs N` sets how many fetches run at once (4). `--verify` runs
-offline and exits 1 unless every entry's checkout is at its commit with no
-tracked file changed; both modes report cache folders no entry names. The SDK
-and distribution entries are not fetched.
+final folder and renamed once at its commit. A checkout counts as current
+when it is at its commit with exactly the entry's `sparse` folders (a changed
+list fetches it again); a changed tracked file in it is reset to the commit.
+`--seed DIR` fetches a complete entry from the checkout `DIR/<repository
+name>` instead, when that checkout's HEAD is the commit (its tracked files
+only), `--jobs N` sets how many fetches run at once (4, at least 1).
+`--verify` runs offline and exits 1 unless every entry's checkout is at its
+commit with its sparse folders and no tracked file changed; both modes report
+cache folders no entry names. Before anything else both modes check
+`sources.toml` with `check_sources.py`'s form rules and exit 2 on a problem,
+and every path the script writes or removes must resolve to a folder directly
+inside the cache. The SDK and distribution entries are not fetched.
 
 Requires git and Python 3.11; network access unless `--verify`.
 

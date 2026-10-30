@@ -32,7 +32,8 @@ Items
 docs/todo.md: each `- [ ]` line, indented or not. Its heading is the nearest
 `### ` line since the last `## ` line, else that `## ` line; `####` and
 deeper start no heading. Its words are the line's after the box and the
-`[tag]`.
+`[tag]` (a `[...]` not followed by `(`: a leading Markdown link is words).
+An item with no words is a finding of its own: no row can name it.
 
 catalogue (docs/todo_v0.7.1_model-completeness-spec-widgets.md): each line
 starting `- ` in `## Open items` (to the next `## ` line), under the heading
@@ -143,7 +144,7 @@ CITATIONS = Path("scripts/check_fact_citations.py")
 LEGACY = "LEGACY_EVIDENCE"
 
 TODO_ITEM = re.compile(r"^\s*- \[ \] ?(.*)$")
-TAG = re.compile(r"^\[[^\]]+\]\s*(.*)$")
+TAG = re.compile(r"^\[[^\]]+\](?!\()\s*(.*)$")
 QUOTED = re.compile(r"^“([^”]*)”(?: · l\. \d+)?$")
 LABEL = re.compile(r"^\(.+\)$")
 NAME = re.compile(r"`[^`]+`")
@@ -350,7 +351,10 @@ def problems(ledger: str, rows: list[Row], items: list[Item]) -> list[tuple[str,
         elif row.destination in NEEDS_REASON and not row.reason:
             found.append((ledger, row.line, f"destination {row.destination!r} without a reason"))
     for item, n in zip(items, hits):
-        if n != 1:
+        if not item.words and not item.label:
+            found.append((str(SOURCES[item.source]), item.line, f"an open item with no words under {item.heading!r}: "
+                                                                 "no row can name it (write it out or remove it)"))
+        elif n != 1:
             what = "no triage row" if n == 0 else f"{n} triage rows"
             found.append((str(SOURCES[item.source]), item.line, f"{what}: {describe(item)}"))
     return found
@@ -460,6 +464,9 @@ def self_test() -> int:
 ## Section two
 ### Beta
 - [ ] Beta item without a row
+- [ ] [`docs/x.md`](docs/x.md) needs a rewrite
+- [ ] [v0.7.x] [the guide](g.md) is stale
+- [ ]
 """
     cat = """## Entry format
 - `not_open`: outside the section
@@ -527,6 +534,8 @@ Prose with | a bar.
 | docs/todo_iced-full-theme-geometry.md | ### Spacing Helpers | (spacing) | D6 | |
 | docs/elsewhere.md | ### Alpha | “Research” | M0 | |
 | docs/todo.md | ### Alpha | Research the thing | lane kde | |
+| docs/todo.md | ### Beta | “[`docs/x.md`](docs/x.md) needs” | M0 | |
+| docs/todo.md | ### Beta | “[the guide](g.md) is” | M0 | |
 
 After the table.
 """
@@ -540,6 +549,9 @@ After the table.
         ("docs/todo.md", "### Alpha", 7, "Indented item"),
         ("docs/todo.md", "### Alpha", 9, "Deeper heading"),
         ("docs/todo.md", "### Beta", 13, "Beta item"),
+        ("docs/todo.md", "### Beta", 14, "[`docs/x.md`](docs/x.md) needs"),
+        ("docs/todo.md", "### Beta", 15, "[the guide](g.md)"),
+        ("docs/todo.md", "### Beta", 16, ""),
         ("catalogue", "## Open items", 5, "`context_help`"),
         ("catalogue", "## Open items", 7, "`ink_toolbar`"),
         ("ROADMAP.md", "### Sub one", 5, "(subsection)"),
@@ -552,7 +564,7 @@ After the table.
     if got_items != want_items:
         failures.append(f"items: got {got_items}, want {want_items}")
     rows = triage_rows(ledger)
-    if rows[9].reason != "The | model carries it." or len(rows) != 20:
+    if rows[9].reason != "The | model carries it." or len(rows) != 22:
         failures.append(f"rows: got {len(rows)}, the tenth {rows[9]}")
     got = problems("L", rows, items)
     todo_md, cat_md = str(SOURCES["docs/todo.md"]), str(SOURCES["catalogue"])
@@ -574,6 +586,7 @@ After the table.
         ("L", 36, "item 'Research the thing' is neither “opening words” nor a (label)"),
         (todo_md, 9, "2 triage rows: ### Alpha “Deeper heading keeps the alpha heading”"),
         (todo_md, 13, "no triage row: ### Beta “Beta item without a row”"),
+        (todo_md, 16, "an open item with no words under '### Beta': no row can name it (write it out or remove it)"),
         (cat_md, 7, "no triage row: ## Open items “`ink_toolbar`”"),
         (str(SOURCES["docs/todo_gpui-full-theme.md"]), 3, "no triage row: ### Execution plan (Option F2, Steps 1–5)"),
     ]

@@ -109,19 +109,26 @@ SCRIPT_START=$SECONDS
 # milestone (docs/todo_v0.7.1_model-completeness-plan.md, "What cannot build
 # meanwhile"), keyed by the step's description, valued by the milestone that
 # brings it back. The --commit run skips them by name. The full run still runs
-# each once: a failure is a warning naming its milestone, a pass a warning to
-# remove the step from this list. .github/workflows/ci.yml marks its matching
-# exclusions `# PLAN_EXCLUDED: <description>`, and the "Plan exclusions"
-# section checks that both name the same set. Empty at M0 and again at M5.
+# each once, in a subshell: a failure is a warning naming its milestone, a pass
+# a warning to remove the step from this list; a key that names no step the
+# full run reached is a warning too, and while the list is not empty the full
+# run's banner says the tree is not ready for release.
+#
+# The per-crate loops name one step per crate (`check (<crate>)`, `test
+# (<crate>)`, ...), so listing that description skips that crate alone. The
+# feature-combination step covers every crate in one script: its crate-level
+# key is `feature combinations (<crate>)`, which runs scripts/check_features.sh
+# for the other crates (`--skip <crate>`) and for that crate as a step of its
+# own (`--only <crate>`).
+#
+# .github/workflows/ci.yml marks its matching exclusions with a comment that is
+# exactly `# PLAN_EXCLUDED: <description>` (a whole-line comment or one after
+# the YAML on its line), and the "Plan exclusions" section checks that both
+# name the same set. Empty at M0 and again at M5.
 # ─────────────────────────────────────────────────────────────────────────────
 declare -A PLAN_EXCLUDED=()
+declare -A PLAN_USED=()
 PLAN_SKIPPED=()
-
-# Prints the milestone and returns 0 when $1 is a plan-excluded step.
-plan_excluded_milestone() {
-    [[ -n "${PLAN_EXCLUDED[$1]+set}" ]] || return 1
-    printf "%s" "${PLAN_EXCLUDED[$1]}"
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Output primitives
@@ -247,15 +254,19 @@ plan_excluded_step() {
     local description="$1"
     shift
     local milestone
-    milestone=$(plan_excluded_milestone "$description") || return 1
+    [[ -n "${PLAN_EXCLUDED[$description]+set}" ]] || return 1
+    PLAN_USED[$description]=1
+    milestone=${PLAN_EXCLUDED[$description]}
     PLAN_SKIPPED+=("$description (until $milestone)")
     if [[ $COMMIT_MODE ]]; then
         printf "${DIM}   %s: skipped (PLAN_EXCLUDED until %s)${NC}\n" "$description" "$milestone"
         return 0
     fi
+    # A subshell, as run_check's `$(...)`: an `exit`, a `cd` or a `set -u`
+    # error in the step stays in it.
     local status=0
     set +e
-    "$@" >/dev/null 2>&1
+    ("$@") >/dev/null 2>&1
     status=$?
     set -e
     if [ "$status" -eq 0 ]; then
@@ -389,7 +400,11 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Plan exclusions"
 PLAN_LISTED=$(for k in "${!PLAN_EXCLUDED[@]}"; do printf "%s\n" "$k"; done | sort -u)
-PLAN_MARKED=$(sed -nE 's/.*# PLAN_EXCLUDED: (.*[^ ])[[:space:]]*$/\1/p' .github/workflows/ci.yml | sort -u)
+# A mark is a YAML comment that is exactly `# PLAN_EXCLUDED: <description>`:
+# no `#` before it on its line, a space or the line start right before it;
+# trailing spaces, tabs and a CR are not part of the description.
+PLAN_MARKED=$(sed -nE 's/^([^#]*[[:space:]])?# PLAN_EXCLUDED: (.*[^[:space:]])[[:space:]]*$/\2/p' \
+    .github/workflows/ci.yml | sort -u)
 if [ "$PLAN_LISTED" = "$PLAN_MARKED" ]; then
     print_ok "PLAN_EXCLUDED and ci.yml's marks agree ($(grep -c . <<<"$PLAN_LISTED" || true) steps)"
 else
@@ -509,7 +524,26 @@ done
 # script.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Feature combinations"
-run_check "feature combinations (every crate)" bash scripts/check_features.sh
+# A crate-level PLAN_EXCLUDED key, `feature combinations (<crate>)`, takes that
+# crate out of the run over every crate and makes it a step of its own.
+FEATURES_EXCLUDED=()
+for crate in $WORKSPACE_CRATES; do
+    if [[ -n "${PLAN_EXCLUDED["feature combinations ($crate)"]+set}" ]]; then
+        FEATURES_EXCLUDED+=("$crate")
+    fi
+done
+if [ "${#FEATURES_EXCLUDED[@]}" -eq 0 ]; then
+    run_check "feature combinations (every crate)" bash scripts/check_features.sh
+else
+    FEATURES_SKIP=()
+    for crate in "${FEATURES_EXCLUDED[@]}"; do
+        FEATURES_SKIP+=(--skip "$crate")
+    done
+    run_check "feature combinations (the other crates)" bash scripts/check_features.sh "${FEATURES_SKIP[@]}"
+    for crate in "${FEATURES_EXCLUDED[@]}"; do
+        run_check "feature combinations ($crate)" bash scripts/check_features.sh --only "$crate"
+    done
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: system-icons on macOS and Windows
@@ -1014,7 +1048,7 @@ run_check "showcase parity: comparator self-test" \
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: data documents
 #
-# The five checks of the data documents, under the Python floor above
+# The five original checks of the data documents, under the Python floor above
 # (check_wrong_safety_nets.py, check_todo_citations.py and
 # check_preset_citations.py import `tomllib`), each with its self-test:
 # scripts/check_platform_facts_rows.py fails on a docs/property-registry.toml
@@ -1028,6 +1062,7 @@ run_check "showcase parity: comparator self-test" \
 # names no key of its preset, or a preset line citation no commit dates;
 # scripts/check_preset_citations.py on a preset comment whose
 # `platform-facts.md:N` row is not the value below it. CI runs the same ten.
+# The 0.8.0 plan's checks follow them, each with its note.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Data documents"
 run_check "data documents: every registry field has a platform-facts row" \
@@ -1450,6 +1485,18 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PLAN_EXCLUDED keys no step used: a renamed step, or one the full run did not
+# reach (--commit leaves out the release-only steps, so it does not check).
+# ─────────────────────────────────────────────────────────────────────────────
+if [[ ! $COMMIT_MODE ]]; then
+    for key in "${!PLAN_EXCLUDED[@]}"; do
+        if [[ -z "${PLAN_USED[$key]+set}" ]]; then
+            print_warn "PLAN_EXCLUDED names no step of this run: $key"
+        fi
+    done
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Final summary
 # ─────────────────────────────────────────────────────────────────────────────
 TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT))
@@ -1465,6 +1512,9 @@ if [[ $COMMIT_MODE ]]; then
     else
         printf "${BOLD}${GREEN}${ICON_PARTY} PASS WITH WARNINGS${NC} · native-theme v%s per-commit subset (not a release check)\n" "$CURRENT_VERSION"
     fi
+elif [ "$FAIL_COUNT" -eq 0 ] && [ "${#PLAN_EXCLUDED[@]}" -gt 0 ]; then
+    printf "${BOLD}${YELLOW}${ICON_WARN} PASS WITH WARNINGS${NC} · native-theme v%s not ready: %d plan-excluded steps\n" \
+        "$CURRENT_VERSION" "${#PLAN_EXCLUDED[@]}"
 elif [ "$FAIL_COUNT" -eq 0 ]; then
     if [ "$WARN_COUNT" -eq 0 ]; then
         printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s ready for release\n" "$CURRENT_VERSION"
@@ -1515,6 +1565,9 @@ if [[ $COMMIT_MODE ]]; then
         exit 0
     fi
     exit 1
+elif [ "$FAIL_COUNT" -eq 0 ] && [ "${#PLAN_EXCLUDED[@]}" -gt 0 ]; then
+    printf "\n   No release while PLAN_EXCLUDED lists steps (the 0.8.0 plan's transition; M5 empties it).\n\n"
+    exit 0
 elif [ "$FAIL_COUNT" -eq 0 ]; then
     printf "\n${BOLD}${BLUE}Next steps:${NC}\n"
     printf "   1. Review the changes once more\n"
