@@ -8020,6 +8020,100 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezemetrics.h:84"
 quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
 
+# the push button's arrow (`Inline`, its margin a margin in the row, S2.11, ADD-A123): Breeze sizes the button with
+# the arrow and its spacing inside Button_MarginWidth, but draws the arrow at the end of the label's contents rect
+# (the widget rect less Frame_FrameWidth), past that margin, and vertically centred in it. So the start margin
+# Button_MarginWidth and the end margin its negative move the arrow's box that far toward the end and leave the
+# row's size alone; top and bottom are zero, the arrow centred on the row as `Inline` centres it. The same label code
+# draws Kirigami's Button, whose style item sets HasMenu
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "0px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "-6px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556"
+quote = "const bool hasMenu(buttonOption->features & QStyleOptionButton::HasMenu); if (hasMenu) { size.rwidth() += Metrics::MenuButton_IndicatorWidth; if (hasText || hasIcon) { size.rwidth() += Metrics::Button_ItemSpacing; } } // expand with buttons margin size = expandSize(size, Metrics::Button_MarginWidth);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:75"
+quote = "static constexpr int Button_MarginWidth = 6;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "0px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "6px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556"
+quote = "const bool hasMenu(buttonOption->features & QStyleOptionButton::HasMenu); if (hasMenu) { size.rwidth() += Metrics::MenuButton_IndicatorWidth; if (hasText || hasIcon) { size.rwidth() += Metrics::Button_ItemSpacing; } } // expand with buttons margin size = expandSize(size, Metrics::Button_MarginWidth);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:75"
+quote = "static constexpr int Button_MarginWidth = 6;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
 [[fact]]
 key = "button.menu_indicator.margin.top"
 when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
