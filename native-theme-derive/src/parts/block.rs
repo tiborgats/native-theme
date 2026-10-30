@@ -548,7 +548,9 @@ fn type_string(ty: &Type) -> String {
     quote!(#ty).to_string().split_whitespace().collect()
 }
 
-/// The resolved form of a type: each `Value<T>` to `Option<T>`, a
+/// The resolved form of a type: each `Value<T>` to `Option<T>`, an
+/// `Option<Value<T>>` to `Option<T>` too, its `None` keeping the field's
+/// meaning (S6.1), a
 /// `Value<FontSize>` to `Option<Px>` (converted from points and scaled,
 /// S9.4), a `Value<Px>` or `Value<FontSize>` that may be `Auto` to
 /// `Option<Length>` (S6.1), the block `block` to its resolved type, through
@@ -576,6 +578,9 @@ fn resolved_ty(ty: &Type, block: Option<&BlockRef>, auto: bool) -> TokenStream {
         return quote!(#m::SurfaceMap<#inner>);
     }
     if let Some(inner) = generic_arg(ty, "Option") {
+        if generic_arg(inner, "Value").is_some() {
+            return resolved_ty(inner, block, auto);
+        }
         let inner = resolved_ty(inner, block, auto);
         return quote!(#o<#inner>);
     }
@@ -626,6 +631,15 @@ pub(super) fn parse_field(field: &syn::Field) -> Result<BlockField> {
     let held = compound.as_ref().map_or(&ty, |c| &*c.inner);
     if attrs.keyed && generic_arg(&ty, "Vec").is_none() {
         return Err(Error::new_spanned(&field.ty, "keyed marks a `Vec`"));
+    }
+    if (attrs.may_be_absent || attrs.auto)
+        && generic_arg(held, "Option").is_some_and(|inner| generic_arg(inner, "Value").is_some())
+    {
+        return Err(Error::new_spanned(
+            &field.ty,
+            "an `Option<Value<T>>` resolves to `Option<T>`, its `None` a meaning of its own: \
+             its `Value` is never `Absent` or `Auto`",
+        ));
     }
     if attrs.may_be_absent && !holds_value(held, None) {
         return Err(Error::new_spanned(

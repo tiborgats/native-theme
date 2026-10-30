@@ -621,9 +621,18 @@ fn resolved_types_map_values_to_options() {
         stops: Vec::new(),
         repeat: false,
         extent: None,
-        offset: Some(Some(Px(2.0))),
+        offset: Some(Px(2.0)),
     };
-    assert!(matches!(linear, ResolvedPaintKind::Linear { .. }));
+    // An `Option<Value<T>>` resolves to `Option<T>`, its `None` the field's
+    // own meaning (over the box), never "not drawn" (S6.1).
+    assert!(matches!(
+        linear,
+        ResolvedPaintKind::Linear {
+            extent: None,
+            offset: Some(Px(2.0)),
+            ..
+        }
+    ));
     let shadow: ResolvedShadow = Vec::new();
     assert!(shadow.is_empty());
     assert_eq!(Probe::FIELDS.len(), 2);

@@ -268,6 +268,34 @@ mod tests {
     }
 
     #[test]
+    fn an_optional_value_resolves_to_an_option_of_its_type() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub extent: Option<Value<Px>>,
+            }
+        });
+        assert!(
+            out.contains("pub extent : :: core :: option :: Option < Px >"),
+            "{out}"
+        );
+        for mark in [quote::quote!(may_be_absent), quote::quote!(auto)] {
+            let input = syn::parse_quote! {
+                #[parts(block)]
+                pub struct Probe {
+                    #[parts(#mark)]
+                    pub extent: Option<Value<Px>>,
+                }
+            };
+            assert_eq!(
+                refused(input),
+                "an `Option<Value<T>>` resolves to `Option<T>`, its `None` a meaning of its own: \
+                 its `Value` is never `Absent` or `Auto`"
+            );
+        }
+    }
+
+    #[test]
     fn a_surface_map_of_blocks_patches_set_by_set() {
         let out = expand(syn::parse_quote! {
             #[parts(block)]
