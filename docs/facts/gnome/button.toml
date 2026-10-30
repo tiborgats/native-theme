@@ -2444,6 +2444,30 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:670-679"
 quote = "arrow = gtk_builtin_icon_new (\"arrow\");"
 
+# a menu button hides its arrow unless the arrow is its only child (`icon_only`) or it shows it beside its content
+# (`@with_arrow`): a label with direction `none`, an icon, AdwButtonContent or a custom child without
+# `always-show-arrow`
+[[fact]]
+key = "button.menu_indicator"
+when = { variants = ["menu"], not_variants = ["@with_arrow", "icon_only"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:658-666"
+quote = "set_arrow_type (menu_button->arrow_widget, menu_button->arrow_type, has_only_arrow || ((is_text_button || menu_button->always_show_arrow) && (menu_button->arrow_type != GTK_ARROW_NONE)));"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:623"
+quote = "gtk_widget_set_visible (arrow, visible);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:644-647"
+quote = "if (has_arrow && !has_only_arrow) gtk_widget_add_css_class (menu_button->button, \"arrow-button\");"
+
 [[fact]]
 key = "button.menu_indicator.glyph.size"
 when = { variants = ["menu"] }

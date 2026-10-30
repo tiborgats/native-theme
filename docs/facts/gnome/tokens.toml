@@ -156,8 +156,9 @@ source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:1091-1092"
 quote = "if (timestamp == 0) return g_object_ref (source->style);"
 
 # libadwaita's springs (AdwSpringAnimation), by damping ratio, mass and stiffness as `adw_spring_params_new` takes them;
-# each widget's own epsilon and clamp, its initial velocity 0 where no gesture hands one over (a swipe's release
-# velocity at run time), and skipped (time scale 0) when animations are off. The floating sheet (AdwDialog's
+# each widget's own epsilon and clamp, its initial velocity 0 until a gesture hands one over (a swipe's release
+# velocity, a run-time input the model cannot state, which the bottom sheet keeps for its later runs,
+# adw-bottom-sheet.c:1096), and skipped (time scale 0) when animations are off. The floating sheet (AdwDialog's
 # floating presentation): clamped on close only
 [[fact]]
 key = "token.motion.timings.floating_sheet_open"
