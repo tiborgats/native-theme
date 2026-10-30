@@ -97,10 +97,29 @@ pub(crate) fn toml_key(key: &str) -> String {
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
     if bare {
-        key.to_owned()
-    } else {
-        format!("{key:?}")
+        return key.to_owned();
     }
+    // A TOML basic string: `"` and `\` escaped, the control characters by
+    // their short escapes or `\uXXXX` (TOML 1.0, *String*).
+    let mut out = String::with_capacity(key.len().saturating_add(2));
+    out.push('"');
+    for c in key.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\u{8}' => out.push_str("\\b"),
+            '\t' => out.push_str("\\t"),
+            '\n' => out.push_str("\\n"),
+            '\u{c}' => out.push_str("\\f"),
+            '\r' => out.push_str("\\r"),
+            c if c.is_control() && u32::from(c) <= 0x7f => {
+                out.push_str(&format!("\\u{:04X}", u32::from(c)));
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }
 
 /// `at.key`, or `key` at the root; a key that is no bare TOML key is quoted.

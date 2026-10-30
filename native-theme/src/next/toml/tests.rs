@@ -1269,3 +1269,17 @@ fn a_part_ref_value_names_its_widget_outside_a_widgets_table() {
     let named = layer(&keyframe("button.icon"));
     assert!(named.bases.tokens.icons.is_some());
 }
+
+/// A key that is no bare TOML key is a TOML basic string, escaped as TOML
+/// escapes it, which TOML reads back as the key (S11, S17).
+#[test]
+fn toml_key_escapes_as_toml_does() {
+    use crate::next::toml::read::toml_key;
+    assert_eq!(toml_key("Segoe UI"), "\"Segoe UI\"");
+    assert_eq!(toml_key("a\u{7f}b"), "\"a\\u007Fb\"");
+    assert_eq!(toml_key("q\"\\\t"), "\"q\\\"\\\\\\t\"");
+    for key in ["Segoe UI", "a\u{7f}b", "q\"\\\t\u{1}", "é ü"] {
+        let table: ::toml::Table = format!("{} = 1", toml_key(key)).parse().unwrap();
+        assert!(table.contains_key(key), "{key:?}");
+    }
+}
