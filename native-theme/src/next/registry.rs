@@ -121,6 +121,36 @@ pub(crate) const fn absent_but<const N: usize>(
     out
 }
 
+/// Whether every name in `required` is a `Value` field of `fields`: the
+/// derive asserts it at compile time beside each [`absent_but`], so a
+/// misspelled `required` name does not compile.
+pub(crate) const fn names_values(fields: &[FieldInfo], required: &[&str]) -> bool {
+    let mut rest = required;
+    while let Some((name, tail)) = rest.split_first() {
+        let mut found = false;
+        let mut held = fields;
+        while let Some((field, others)) = held.split_first() {
+            let written = match field.ty {
+                FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => {
+                    ty
+                }
+            };
+            if field.path.len() == name.len()
+                && starts_with(field.path, name)
+                && starts_with(written, "Value<")
+            {
+                found = true;
+            }
+            held = others;
+        }
+        if !found {
+            return false;
+        }
+        rest = tail;
+    }
+    true
+}
+
 /// Whether `text` starts with `prefix`, byte by byte so it runs at compile
 /// time.
 const fn starts_with(text: &str, prefix: &str) -> bool {

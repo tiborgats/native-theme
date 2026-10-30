@@ -313,6 +313,9 @@ mod tests {
             "const MARKED : [crate :: next :: registry :: FieldInfo ; LEN] = crate :: next :: registry :: \
              absent_but (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"size\"]) ;",
             "absent_but (< StatusColors as crate :: next :: blocks :: Table > :: FIELDS , & []) ;",
+            "const _ : () = :: core :: assert ! (crate :: next :: registry :: names_values \
+             (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"size\"]) , \
+             \"required names a field of `IconStyle` that is not a `Value`\") ;",
             "may_be_absent : true , auto : false",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");

@@ -52,13 +52,6 @@ pub trait Block: sealed::Sealed {
 
 /// A block's field table, which the `ThemeParts` derive generates, for the
 /// field-path registry.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "read by S11's reader and the facts gate (M1a tasks 7 and 14)"
-    )
-)]
 pub(crate) trait Table {
     /// The block's fields.
     const FIELDS: &'static [FieldInfo];

@@ -518,6 +518,21 @@ fn icon_size_context_fields_but_size_may_be_absent() {
 }
 
 #[test]
+fn absent_but_required_names_value_fields_only() {
+    assert!(registry::names_values(IconStyle::FIELDS, &["size"]));
+    assert!(registry::names_values(
+        IconStyle::FIELDS,
+        &["size", "weight"]
+    ));
+    assert!(registry::names_values(IconStyle::FIELDS, &[]));
+    assert!(!registry::names_values(IconStyle::FIELDS, &["sise"]));
+    assert!(!registry::names_values(
+        IconStyle::FIELDS,
+        &["size", "axes"]
+    ));
+}
+
+#[test]
 fn icon_theme_fallback_may_be_absent() {
     assert!(marked(IconTokens::FIELDS, "theme_fallback"));
 }

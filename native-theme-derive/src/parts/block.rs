@@ -419,7 +419,15 @@ impl BlockField {
                 let inner = &block.ty;
                 let fields = if self.attrs.inner_may_be_absent {
                     let required = &self.attrs.required;
+                    let message = format!(
+                        "required names a field of `{}` that is not a `Value`",
+                        block.name
+                    );
                     quote! {{
+                        const _: () = ::core::assert!(
+                            #r::names_values(<#inner as #b::Table>::FIELDS, &[#(#required),*]),
+                            #message
+                        );
                         const LEN: usize = <#inner as #b::Table>::FIELDS.len();
                         const MARKED: [#r::FieldInfo; LEN] =
                             #r::absent_but(<#inner as #b::Table>::FIELDS, &[#(#required),*]);
