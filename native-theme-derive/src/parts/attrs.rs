@@ -37,6 +37,13 @@ pub(crate) struct FieldAttrs {
     /// `#[parts(keyed)]`: a list whose items merge by their own key (S6.1:
     /// the bindings by role or surface, the transitions by property group).
     pub keyed: bool,
+    /// `#[parts(inner_may_be_absent)]`: in this place every `Value` field of
+    /// the struct block the field holds may be `Absent`, a mark holding here
+    /// only (S6.3: `IconStyle`'s fields in an icon-size context).
+    pub inner_may_be_absent: bool,
+    /// `#[parts(required = "size")]`, beside `inner_may_be_absent`: the
+    /// block's fields the mark leaves out.
+    pub required: Vec<LitStr>,
 }
 
 fn flag(slot: &mut bool, meta: &syn::meta::ParseNestedMeta<'_>) -> Result<()> {
@@ -75,6 +82,11 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
                 flag(&mut out.auto, &meta)
             } else if meta.path.is_ident("keyed") {
                 flag(&mut out.keyed, &meta)
+            } else if meta.path.is_ident("inner_may_be_absent") {
+                flag(&mut out.inner_may_be_absent, &meta)
+            } else if meta.path.is_ident("required") {
+                out.required.push(meta.value()?.parse()?);
+                Ok(())
             } else if meta.path.is_ident("block") {
                 if out.block.is_some() {
                     return Err(meta.error("duplicate parts attribute"));
@@ -96,7 +108,8 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
                 Ok(())
             } else {
                 Err(meta.error(
-                    "unknown parts field attribute: expected may_be_absent, auto, keyed or block",
+                    "unknown parts field attribute: expected may_be_absent, auto, keyed, \
+                     inner_may_be_absent, required or block",
                 ))
             }
         })?;

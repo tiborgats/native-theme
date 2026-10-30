@@ -230,6 +230,85 @@ mod tests {
     }
 
     #[test]
+    fn a_surface_map_of_blocks_patches_set_by_set() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(block = "fields")]
+                pub surfaces: SurfaceMap<SurfaceRoles>,
+            }
+        });
+        for expected in [
+            "pub surfaces : :: core :: option :: Option < crate :: next :: SurfaceMap < SurfaceRolesPatch >>",
+            "pub surfaces : crate :: next :: SurfaceMap < ResolvedSurfaceRoles >",
+            "crate :: next :: blocks :: merge_slot_surfaces (& mut self . surfaces , surfaces) \
+             . map_err (| c | c . under (\"surfaces\")) ?",
+            "crate :: next :: blocks :: apply_surfaces (& mut self . surfaces , sets)",
+            "fields : < SurfaceRoles as crate :: next :: blocks :: Table > :: FIELDS",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn a_map_of_maps_merges_by_key_twice() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub params: Vec<(Key, Vec<(Key, Value<Scalar>)>)>,
+                pub per_language: Vec<(LanguageTag, Vec<String>)>,
+            }
+        });
+        for expected in [
+            "crate :: next :: blocks :: merge_slot_by_key_nested (& mut self . params , params)",
+            "crate :: next :: blocks :: merge_by_key_nested (& mut self . params , entries)",
+            "pub params : :: std :: vec :: Vec < (Key , :: std :: vec :: Vec < (Key , :: core :: option :: Option < Scalar >) >) >",
+            "crate :: next :: blocks :: merge_slot_by_key (& mut self . per_language , per_language)",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn a_map_of_block_lists_resolves_them() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(block = "fields")]
+                pub elevation: Vec<(Key, Vec<ShadowLayer>)>,
+            }
+        });
+        for expected in [
+            "pub elevation : :: std :: vec :: Vec < (Key , :: std :: vec :: Vec < ResolvedShadowLayer >) >",
+            "fields : < ShadowLayer as crate :: next :: blocks :: Table > :: FIELDS",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn inner_may_be_absent_marks_the_place() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(block = "fields", may_be_absent, inner_may_be_absent, required = "size")]
+                pub toolbar: Value<IconStyle>,
+                #[parts(block = "fields", inner_may_be_absent)]
+                pub success: StatusColors,
+            }
+        });
+        for expected in [
+            "const LEN : usize = < IconStyle as crate :: next :: blocks :: Table > :: FIELDS . len () ;",
+            "const MARKED : [crate :: next :: registry :: FieldInfo ; LEN] = crate :: next :: registry :: \
+             absent_but (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"size\"]) ;",
+            "absent_but (< StatusColors as crate :: next :: blocks :: Table > :: FIELDS , & []) ;",
+            "may_be_absent : true , auto : false",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
     fn append_block_expands_set_and_append() {
         let out = expand(syn::parse_quote! {
             #[parts(block, append)]
@@ -368,6 +447,20 @@ mod tests {
                     pub struct Probe { #[parts(auto)] pub gap: Sides<Value<Deg>> }
                 },
                 "auto marks a field holding a `Value<Px>` or a `Value<FontSize>`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "fields", required = "size")] pub x: IconStyle }
+                },
+                "required names the fields an `inner_may_be_absent` mark leaves out",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "set", inner_may_be_absent)] pub x: Timing }
+                },
+                "inner_may_be_absent marks a field holding a struct block, `block = \"fields\"`",
             ),
             (
                 syn::parse_quote! {
