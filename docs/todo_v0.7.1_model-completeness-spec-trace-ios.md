@@ -184,13 +184,14 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | W-10† | - | out (R1.1) |
 | W-11† | `window.frame.corners @ cond full_screen / cond tiled:<edges>` (the radius the content is clipped to per state) | rule |
 | W-11† | - (the shadow per state, the window controls and the open, minimize and arrange motion, which the system draws, as W-2; the close is the scene's dismissal animation, P3-5†) | out (R1.1) |
-| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ variant flat / variant @gray / variant tinted / variant primary / variant @borderless / variant @bordered / variants {@bordered,tinted} / variants {@bordered,primary}` (plain, gray, tinted, filled, borderless, bordered, borderedTinted, borderedProminent: fill and foreground) | rule |
-| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ {pressed} variant flat / {pressed} variant @gray / {pressed} variant tinted / {pressed} variant primary / {pressed} variant @borderless / {pressed} variant @bordered / {pressed} variants {@bordered,tinted} / {pressed} variants {@bordered,primary}` (each style's pressed look) | rule |
-| B-2 | `button.body.fill @ variant glass / variants {glass,clear} / variants {glass,primary} / variants {glass,clear,primary}` (a `Material` layer; the prominent styles' tint is the material's `tint`) | rule |
+| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ variant flat / variant @gray / variant tinted / variant primary` (plain, gray, tinted, filled: fill and foreground; borderless, bordered, borderedTinted and borderedProminent draw pixel-identically to these four on iOS 18.6 and 26.5, run 40984711960, so the connector maps them to the same variants: the catalogue) | rule |
+| B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ {pressed} variant flat / {pressed} variant @gray / {pressed} variant tinted / {pressed} variant primary` (each style's pressed look) | rule |
+| B-1 | `[declare.widget.button] exclusive_variants for ios-*: [flat, @gray, tinted, primary], [flat, @gray, tinted, glass, clear]` (one configuration style at a time, S10, ADD-A121) | field |
+| B-2 | `button.body.fill @ variant glass / variant clear / variants {glass,primary} / variants {clear,primary}` (glass, clearGlass, prominentGlass, prominentClearGlass: a `Material` layer; the prominent styles' tint is the material's `tint`) | rule |
 | B-2 | `button.body.{transform,fill} @ {pressed} variant glass` (the interactive press: scale and highlight) | rule |
 | B-2 | `button.body.transitions @ variant glass` (the press response's motion, groups `Transform`, `Fill`) | rule |
 | B-3 | `button.label.text, button.body.padding, button.body.corners, button.body.min_height @ size mini / small / regular (UIKit medium) / large` | rule |
-| B-3 | `[declare.widget.button] sizes for ios-* and its default size` | field |
+| B-3 | `[declare.widget.button] sizes for ios-* and its default size` (`mini` draws as `small` on iPhone: its facts under `idiom:phone` equal `small`'s, the catalogue) | field |
 | B-4 | `button.body.corners @ variant @corner_fixed / variant @corner_small / variant @corner_medium / variant @corner_large / variant pill` (capsule is `pill`) | rule |
 | B-4 | `button.body.corners @ variant @corner_dynamic size mini / variant @corner_dynamic size small / variant @corner_dynamic size regular / variant @corner_dynamic size large` (each radius `= uifm_scaled(<radius>, <text role>)`, following Dynamic Type; ADD-A55) | rule |
 | B-4 | `reader:ios:the Dynamic Type category the dynamic radius follows` | readers (R18) |
@@ -213,7 +214,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-12 | `button.body.fill, button.icon.glyph.fill @ {pressed} variant close / {pressed} variant @info / {pressed} variant @contact_add` | rule |
 | B-13 | `button.label.text.font.weight @ variant primary / variant tinted / variant @gray / variant flat` | rule |
 | B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight) | rule |
-| B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary / @borderless / @bordered / variants {@bordered,tinted} / variants {@bordered,primary} / glass / clear / variants {glass,primary} / variants {clear,primary}` (the disabled look per declared style) | rule |
+| B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary / glass / clear / variants {glass,primary} / variants {clear,primary}` (the disabled look per declared style) | rule |
 | B-15 | `button.body.fill, button.label.text.decoration @ cond button_shapes` | rule |
 | B-15 | `cond button_shapes (S7.1)` | condition |
 | B-15 | `reader:ios:the Button Shapes setting` | readers (R18) |
@@ -532,7 +533,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SP-4a | `spinner.spoke.fill` | field |
 | SP-5a | `spinner.values.presentations (Appear, Disappear)` | field |
 | CB-1 | `combo_box.arrow.glyph` (the pop-up button's indicator, its `.popup` up/down chevron pair, in the base: its identity, colour and weight; iOS's pull-down button is `button @ variant menu`, B-18†) | field |
-| CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant @borderless / variant @bordered / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
+| CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
 | CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2) | rule |
