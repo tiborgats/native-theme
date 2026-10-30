@@ -83,6 +83,64 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_toggle-group.scss:5-7"
 quote = "$toggle_transition: color 200ms $ease-out-quad, background 200ms $ease-out-quad, box-shadow 200ms $ease-out-quad;"
 
+# the stylesheet's inline transitions, keyed by the widget whose CSS block states them and, where that block states
+# different durations, by the property each is for in the source's words (S4.1 step 2); their curves are the named
+# CSS curves already keyed (`ease_in_out`, `ease_out`, `ease`, `ease_out_quad`, step 1). AdwTabBar's (`tabbar`):
+# the separator's opacity and the tab's background, both 150 ms ease-in-out
+[[fact]]
+key = "token.motion.durations.tab_bar"
+value = "150ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_tab-view.scss:39"
+quote = "transition: opacity 150ms ease-in-out;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_tab-view.scss:59"
+quote = "transition: background 150ms ease-in-out;"
+
+# AdwTabThumbnail's (`tabthumbnail`, the tab overview's thumbnails): its box shadow 200 ms ease-out-quad; its
+# background colour's transition states no duration, so it runs in CSS's initial 0s (instant), a value of that
+# transition, not a motion token
+[[fact]]
+key = "token.motion.durations.tab_thumbnail"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_tab-view.scss:199"
+quote = "transition: box-shadow 200ms $ease-out-quad, background-color $ease-out-quad;"
+
+# AdwBottomSheet's (`bottom-sheet > sheet` and its `outline`): the corners 100 ms ease-out, the shadow 250 ms ease
+[[fact]]
+key = "token.motion.durations.bottom_sheet_border_radius"
+value = "100ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:10"
+quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:30"
+quote = "transition: border-radius 100ms ease-out;"
+
+[[fact]]
+key = "token.motion.durations.bottom_sheet_box_shadow"
+value = "250ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:10"
+quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
+
 [[fact]]
 key = "token.motion.timings.linear"
 value = { cubic_bezier = [0.0, 0.0, 1.0, 1.0] }
@@ -132,6 +190,10 @@ rows = ["GN-3.19"]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:200"
 quote = "{ \"ease\",         TRUE,  FALSE, { 0.25, 0.1, 0.25, 1.0 } },"
+
+# `ease_out_cubic` (AdwTimedAnimation's default easing, `ADW_EASE_OUT_CUBIC`, `adw-timed-animation.c:275`) is left
+# out: libadwaita writes it as the polynomial `p * p * p + 1` (`adw-easing.c:175-181`), which is the cubic Bezier
+# (1/3, 1, 2/3, 1), but the quote check cannot verify that form from the source yet (the ledger's queue #68)
 
 [[fact]]
 key = "token.motion.durations.revealer"
