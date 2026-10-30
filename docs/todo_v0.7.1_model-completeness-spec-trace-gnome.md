@@ -911,7 +911,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
 | GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
-| GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box)` | field |
+| GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |
 | GN-3.31 | `token.focus @ cond contrast_high (paint)` | rule |
