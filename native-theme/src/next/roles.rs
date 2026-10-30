@@ -43,7 +43,7 @@ pub enum SurfaceSet {
 
 impl SurfaceSet {
     /// Every surface set, in declaration order.
-    pub const ALL: [SurfaceSet; 13] = [
+    pub(crate) const ALL: [SurfaceSet; 13] = [
         SurfaceSet::Window,
         SurfaceSet::View,
         SurfaceSet::Button,
@@ -60,7 +60,7 @@ impl SurfaceSet {
     ];
 
     /// Every surface set's name, in [`SurfaceSet::ALL`]'s order.
-    pub const NAMES: [&'static str; 13] = [
+    pub(crate) const NAMES: [&'static str; 13] = [
         "window",
         "view",
         "button",
@@ -78,7 +78,7 @@ impl SurfaceSet {
 
     /// The set's name in TOML and in expressions, its variant in snake_case.
     #[must_use]
-    pub const fn name(self) -> &'static str {
+    pub(crate) const fn name(self) -> &'static str {
         match self {
             SurfaceSet::Window => "window",
             SurfaceSet::View => "view",
@@ -98,7 +98,7 @@ impl SurfaceSet {
 
     /// The set `name` names.
     #[must_use]
-    pub fn from_name(name: &str) -> Option<SurfaceSet> {
+    pub(crate) fn from_name(name: &str) -> Option<SurfaceSet> {
         SurfaceSet::ALL.into_iter().find(|set| set.name() == name)
     }
 }
@@ -374,7 +374,11 @@ macro_rules! role_paths {
 
             /// The role `path` names.
             #[must_use]
-            pub fn from_path(path: &str) -> Option<$name> {
+            #[cfg_attr(
+                not(test),
+                expect(dead_code, reason = "read by S11's reader (M1a task 7)")
+            )]
+            pub(crate) fn from_path(path: &str) -> Option<$name> {
                 Self::ALL.iter().copied().find(|role| role.path() == path)
             }
         }

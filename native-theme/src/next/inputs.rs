@@ -35,7 +35,14 @@ impl InputName {
 
     /// The path's segments.
     #[must_use]
-    pub fn segments(&self) -> &[Key] {
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "read by S11's reader and the evaluator (M1a tasks 7 and 10)"
+        )
+    )]
+    pub(crate) fn segments(&self) -> &[Key] {
         &self.0
     }
 }
@@ -173,7 +180,7 @@ impl KdeSchemeKey {
     ];
 
     /// Every key's name, in [`KdeSchemeKey::ALL`]'s order.
-    pub const NAMES: [&'static str; 12] = [
+    pub(crate) const NAMES: [&'static str; 12] = [
         "background_normal",
         "background_alternate",
         "foreground_normal",
@@ -210,7 +217,14 @@ impl KdeSchemeKey {
     /// The [`SurfaceRoles`](super::roles::SurfaceRoles) field the key names,
     /// by the catalogue's key table.
     #[must_use]
-    pub const fn role(self) -> SurfaceRole {
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "read where KDE's scheme inputs bind their roles (S9.1, the kde-breeze preset)"
+        )
+    )]
+    pub(crate) const fn role(self) -> SurfaceRole {
         match self {
             KdeSchemeKey::BackgroundNormal => SurfaceRole::Background,
             KdeSchemeKey::BackgroundAlternate => SurfaceRole::BackgroundAlternate,
@@ -252,7 +266,7 @@ impl KdeWmKey {
     ];
 
     /// Every key's name, in [`KdeWmKey::ALL`]'s order.
-    pub const NAMES: [&'static str; 4] = [
+    pub(crate) const NAMES: [&'static str; 4] = [
         "active_background",
         "active_foreground",
         "inactive_background",

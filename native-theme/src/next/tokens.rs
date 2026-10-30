@@ -660,7 +660,7 @@ pub enum KdeGroup {
 
 impl KdeGroup {
     /// Every group's name, in declaration order, its variant in snake_case.
-    pub const NAMES: [&'static str; 3] = ["active", "disabled", "inactive"];
+    pub(crate) const NAMES: [&'static str; 3] = ["active", "disabled", "inactive"];
 }
 
 /// The kind of colour role a KDE effect applies to (S4.8).
@@ -676,7 +676,7 @@ pub enum KdeRoleKind {
 
 impl KdeRoleKind {
     /// Every kind's name, in declaration order, its variant in snake_case.
-    pub const NAMES: [&'static str; 3] = ["foreground", "decoration", "background"];
+    pub(crate) const NAMES: [&'static str; 3] = ["foreground", "decoration", "background"];
 }
 
 /// Material's dynamic scheme (S4.8); the seed is `input.accent`.
