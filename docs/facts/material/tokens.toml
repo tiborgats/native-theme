@@ -399,17 +399,23 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:66-67"
 quote = "/// md.sys.motion.easing.standard.decelerate (Easing) $easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);"
 
-# md.sys.motion.easing.emphasized is md.sys.motion.easing.standard; a timing token is a `Timing`, not a `Value`,
-# so it states the curve the source points at (S4.1: `timings: Vec<(Key, Timing)>`)
+# md.sys.motion.easing.emphasized is md.sys.motion.easing.standard; a timing token is a bare `Timing` block, never a
+# reference (S4.1: `timings: Vec<(Key, Timing)>`; S6.1, ADD-A123: a reference to a whole timing is stated where it is
+# used, not as an entry), so it states the curve the source points at, the standard curve
 [[fact]]
 key = "token.motion.timings.emphasized"
-value = "= token.motion.timings.standard"
+value = { cubic_bezier = [0.2, 0, 0, 1] }
 rows = ["MAT-B13", "MAT-X13"]
 
 [[fact.cite]]
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:106-107"
 quote = "/// md.sys.motion.easing.emphasized (Easing) $easing-emphasized: $easing-standard;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:62-63"
+quote = "/// md.sys.motion.easing.standard (Easing) $easing-standard: cubic-bezier(0.2, 0, 0, 1);"
 
 # S4.1 motion: the motion scheme's springs (MAT-X13), each a Compose `spring(dampingRatio, stiffness)` stated by its
 # damping ratio (S2.7, ADD-A121): the standard scheme in the base (material-web's md.sys.motion.spring tokens, Compose's
@@ -6728,3 +6734,34 @@ rows = ["MAT-TS1", "MAT-X16"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
 quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
+
+# ----------------------------------------------------------------------------------------------------
+# S4.2 behaviour: the tap timeout (MAT-X25, ADD-A124). Compose waits TapIndicationDelay before it shows a press inside
+# a scrolling container, for every pointer, and on a release within it emits the press and its release together
+# (Clickable.kt:2074-2082); TapIndicationDelay is ViewConfiguration.getTapTimeout() (Clickable.android.kt:40), the
+# resource config_tapTimeoutMillis, TAP_TIMEOUT where there are no resources (ViewConfiguration.java:1620-1628).
+
+[[fact]]
+key = "token.behavior.touch.delay"
+value = "100ms"
+rows = ["MAT-X25"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/Clickable.android.kt:40"
+quote = "internal actual val TapIndicationDelay: Long = ViewConfiguration.getTapTimeout().toLong()"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:1620-1628"
+quote = "mTapTimeout = resources != null ? resources.getInteger(R.integer.config_tapTimeoutMillis) : TAP_TIMEOUT;"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:3230"
+quote = "<integer name=\"config_tapTimeoutMillis\">100</integer>"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:133"
+quote = "private static final int TAP_TIMEOUT = 100;"
