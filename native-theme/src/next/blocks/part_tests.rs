@@ -986,9 +986,15 @@ fn corner_functions() {
         horizontal: Px(4.0),
         vertical: Px(4.0),
     };
-    assert_eq!(concentric(Px(12.0), even, None), Px(8.0));
-    assert_eq!(concentric(Px(6.0), even, Some(Px(3.0))), Px(3.0));
-    assert_eq!(concentric(Px(0.0), even, None), Px(0.0));
+    assert_eq!(concentric(Px(12.0), even, None), Some(Px(8.0)));
+    assert_eq!(concentric(Px(6.0), even, Some(Px(3.0))), Some(Px(3.0)));
+    assert_eq!(concentric(Px(0.0), even, None), Some(Px(0.0)));
+    let uneven = Axes {
+        horizontal: Px(4.0),
+        vertical: Px(6.0),
+    };
+    assert_eq!(concentric(Px(12.0), uneven, None), None);
+    assert_eq!(concentric(Px(12.0), uneven, Some(Px(3.0))), None);
 }
 
 #[test]

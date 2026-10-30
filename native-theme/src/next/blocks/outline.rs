@@ -271,14 +271,18 @@ pub fn full(width: Px, height: Px, maximum: Option<Px>) -> Px {
 ///
 /// Where the two insets are equal, the result is the larger of
 /// `container_radius` less the inset and `minimum`. Where they differ, the
-/// rule is UIKit's (`UICornerConfiguration`, `UIView.effectiveRadius(corner:)`),
-/// read when the platform's values are; until then this takes the larger
-/// inset, which keeps the corner inside the container's.
+/// rule is UIKit's (`UICornerConfiguration`, `UIView.effectiveRadius(corner:)`,
+/// X-CR-2), read in the value phase; until then such a corner is `None`, no
+/// rule being invented for it.
 #[must_use]
-pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) -> Px {
-    let inset = inset.horizontal.0.max(inset.vertical.0);
+pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) -> Option<Px> {
+    if inset.horizontal != inset.vertical {
+        return None;
+    }
     let floor = minimum.map_or(0.0, |minimum| minimum.0);
-    Px((container_radius.0 - inset).max(floor).max(0.0))
+    Some(Px((container_radius.0 - inset.horizontal.0)
+        .max(floor)
+        .max(0.0)))
 }
 
 /// A `FollowPart` corner: the part's radius plus the indicator's offset, at
