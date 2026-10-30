@@ -65,7 +65,7 @@ tie-breaker, `A` audited), presets (`P`), gate (`G`), connectors (`C`).
 
 | Unit | adwaita | kde-breeze | macos-monterey | macos-tahoe | ios-13 | ios-26 | windows-11 | material-3 | Connectors |
 |---|---|---|---|---|---|---|---|---|---|
-| slice (`button`, colour roles, slice tokens) | F V A (lane c43c85f3, verifier, tie-break f34baa5b; 9 text values await the checkers) | F (1,383, lane ceff2785); verifier running | — | F (188 measured, partial; fills are composites: redone from the probe's two-background pass) | L (button fills only, 104 measured; the rest awaits the iOS host's extension) | L (button fills only, 104 measured; the rest awaits the iOS host's extension) | F (1,074, lane c0256bf1); verifier running | F (1,786, lane d53d245a); verifier running | — |
+| slice (`button`, colour roles, slice tokens) | F V A (lane c43c85f3, verifier, tie-break f34baa5b; reconciled to ADD-A122 at 5dc0b4bc) | F V A (lane ceff2785, verifier, tie-break; reconciled to ADD-A122 at 8c155f13) | L (lane writing from run 41006842699's macos-15 half) | F V A (second pass 30f8f129, verifier, tie-break babb5470) | F V A (second pass 54e40d48, verifier, tie-break d2178ac2) | F V A (second pass 54e40d48, verifier, tie-break d2178ac2) | F V A (lane c0256bf1, verifier, tie-break; reconciled at f50c8186) | F V A (lane d53d245a, verifier, tie-break; reconciled at 01ef6603) | — |
 
 ## Module inventory
 
