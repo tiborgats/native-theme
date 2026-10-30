@@ -1,0 +1,90 @@
+# adwaita's state models (S17): the combinations libadwaita 1.10.0 and GTK 4.24.1 draw. Written by the GNOME facts
+# lane. States combine (no exclusive group: libadwaita's CSS selects each pseudo-class on its own).
+
+[[model]]
+widget = "button"
+available = true
+variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@raised", "@osd", "@opaque", "@card", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }] }
+exclusive = []
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }]
+rows = ["GN-1.26", "GN-3.11"]
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:35-53"
+quote = "&.keyboard-activating, &:active {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:58"
+quote = "&:disabled {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-105"
+quote = "&:drop(active) {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:354"
+quote = "&.has-open-popup"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:431-432"
+quote = "add_or_remove_class (GTK_WIDGET (button), child_type == LABEL_CHILD, \"text-button\"); add_or_remove_class (GTK_WIDGET (button), child_type == ICON_CHILD, \"image-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-button-content.c:115"
+quote = "gtk_widget_add_css_class (self->button, \"image-text-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:644-647"
+quote = "gtk_widget_add_css_class (menu_button->button, \"arrow-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-8"
+quote = "%toolbar {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:77-85"
+quote = "popover {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:14-46"
+quote = "@each $widget, $child in $_linked_widgets {"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwidget.c:8256-8261"
+quote = "if (gtk_widget_is_focus (widget) && !gtk_widget_is_sensitive (widget))"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwidget.c:8295-8312"
+quote = "_gtk_widget_synthesize_crossing (widget, NULL, device,"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktogglebutton.c:441-442"
+quote = "gtk_widget_set_state_flags (GTK_WIDGET (toggle_button), GTK_STATE_FLAG_CHECKED, FALSE);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
+quote = "/* GTK - The GIMP Toolkit"
+absent = ["GTK_STATE_FLAG_CHECKED"]
+
