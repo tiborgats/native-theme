@@ -39,7 +39,8 @@ out=$(cd "$out" && pwd)
 log="$out/run.txt"
 : >"$log"
 note() { echo "$*" | tee -a "$log"; }
-manifest() { (cd "$1" && find . -type f ! -path './sync/*' -print | LC_ALL=C sort | xargs shasum -a 256); }
+# manifest <folder> [<excluded path pattern>]
+manifest() { (cd "$1" && find . -type f ! -path './sync/*' ! -path "${2:-./sync/*}" -print | LC_ALL=C sort | xargs shasum -a 256); }
 bundle=io.github.tiborgats.native-theme.ios-host
 build="${RUNNER_TEMP:-/tmp}/ios-host-build"
 note "quick: $quick"
@@ -225,7 +226,7 @@ serve() {
 # keep <label> <folder>: copies the app's output of a pass into $out/<folder>.
 keep() {
   local label=$1 folder=$2
-  note "$label: $(ls "$sync/../pages" 2>/dev/null | wc -l | tr -d ' ') screenshots, done: $(tr '\n' ' ' <"$sync/done" 2>/dev/null)"
+  note "$label: $(find "$sync/../pages" -name '*.png' 2>/dev/null | wc -l | tr -d ' ') screenshots, done: $(tr '\n' ' ' <"$sync/done" 2>/dev/null)"
   if [ -s "$sync/retakes" ]; then sed "s/^/$label retake: /" "$sync/retakes" | tee -a "$log"; fi
   rm -rf "$out/$folder"
   cp -R "$container/Documents/$folder" "$out/$folder"
@@ -270,12 +271,13 @@ xcrun simctl delete "$udid"
 # drawHierarchy's copies (draw/) of the glass styles by up to three, which are
 # listed in differ-levels.txt and fail nothing (spike I). The press pass's
 # differences are listed in press-differ-levels.txt and fail nothing: its
-# touches and animations are not frame-exact.
-# compare <first> <second> <differ> <levels> [--list-only]
+# touches and animations are not frame-exact; its full screenshots (pages/)
+# are left out, a retaken press adding one.
+# compare <first> <second> <differ> <levels> [--list-only <excluded path pattern>]
 compare() {
-  local first=$1 second=$2 differ=$3 levels=$4 option=${5:-}
-  manifest "$out/$first" >"$out/$first.sha256"
-  manifest "$out/$second" >"$out/$second.sha256"
+  local first=$1 second=$2 differ=$3 levels=$4 option=${5:-} excluded=${6:-}
+  manifest "$out/$first" "$excluded" >"$out/$first.sha256"
+  manifest "$out/$second" "$excluded" >"$out/$second.sha256"
   diff "$out/$first.sha256" "$out/$second.sha256" | sed -n 's/^< [0-9a-f]*  //p' >"$out/$differ"
   if [ ! -s "$out/$first.sha256" ] || [ "$(wc -l <"$out/$first.sha256")" -ne "$(wc -l <"$out/$second.sha256")" ]; then
     note "$first and $second wrote different file sets"
@@ -298,7 +300,7 @@ else
   failed=1
 fi
 if [ -d "$out/press1" ] && [ -d "$out/press2" ]; then
-  compare press1 press2 press-differ.txt press-differ-levels.txt --list-only || failed=1
+  compare press1 press2 press-differ.txt press-differ-levels.txt --list-only './pages/*' || failed=1
 else
   failed=1
 fi

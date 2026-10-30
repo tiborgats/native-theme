@@ -46,7 +46,8 @@
 // screenshot whose page margins are not the plain system background, or whose
 // page code (a row of red and blue squares under the grid, the page's number
 // in binary) is not the page's, was covered by a system banner or is stale: it
-// is taken again (`maxRetakes`), the retakes listed in sync/retakes. index.toml
+// is taken again (`maxRetakes`). A page is kept once two screenshots agree
+// (`maxSettleShots`). The retakes are listed in sync/retakes. index.toml
 // records the simulator, the build (the DT keys Xcode writes into the bundle's
 // Info.plist), the screen, UIKit's values and each cell.
 //
@@ -132,6 +133,15 @@ let overlayLevels = 32
 let overlayPixels = 50
 let maxRetakes = 5
 let retakeDelaySeconds = 6.0
+
+// A page is kept when two screenshots `settleShotSeconds` apart agree within
+// `settledLevels` in every cell, at most `maxSettleShots` screenshots after the
+// first: Liquid Glass adapts to the luminance behind it, and that transition
+// can outlast `settleSeconds` (iOS 26.5, dark glass over white). The activity
+// indicator turns without end, so its pages keep the first screenshot.
+let settledLevels = 1
+let settleShotSeconds = 1.0
+let maxSettleShots = 10
 
 let margin: CGFloat = 16
 let cellHeight: CGFloat = 92
@@ -230,6 +240,9 @@ struct Specimen {
     let sizes: [SizeChoice]
     let states: [ButtonState]
     let make: @MainActor (UIButton.Configuration.Size) -> Sample
+
+    /// Whether the specimen moves without end (the activity indicator).
+    var animated: Bool { variant.contains { $0.key == "activity_indicator" } }
 }
 
 @MainActor
@@ -466,6 +479,9 @@ struct Page {
     let backdrops: [Backdrop]
 
     var path: String { "\(appearance.name)/\(specimen.name)/\(size.name)" }
+
+    /// The page's screenshot, named for the page and its backdrops.
+    var screenshot: String { "pages/\(path)/\(backdrops.first?.fill == .pattern ? "pattern" : "solid").png" }
 }
 
 final class Cell {
@@ -557,8 +573,10 @@ func colorValue(_ color: CGColor?) -> String {
     else { return "{ space = \(quoted(source)), srgb = \(quoted("unconvertible")) }" }
     let values = components.map { String(format: "%.4f", Double($0)) }.joined(separator: ", ")
     var hex = ""
-    if components.allSatisfy({ $0 >= 0 && $0 <= 1 }) {
-        hex = ", hex = " + quoted("#" + components.map { String(format: "%02x", Int(($0 * 255).rounded())) }.joined())
+    // A conversion can land a hair outside 0...1 (white as 1.0000001).
+    if components.allSatisfy({ $0 >= -0.0005 && $0 <= 1.0005 }) {
+        hex = ", hex = " + quoted(
+            "#" + components.map { String(format: "%02x", Int((min(max($0, 0), 1) * 255).rounded())) }.joined())
     }
     return "{ srgb = [\(values)]\(hex), space = \(quoted(source)) }"
 }
@@ -682,6 +700,9 @@ final class HostViewController: UIViewController {
     private var doneLabel: UILabel?
     private var finished = false
     private var screenWritten = false
+    private var overlayRetakes = 0
+    private var settleShots = 0
+    private var previousCrops: [[UInt8]?] = []
 
     // The press mode's state: the cells left to press on this page, the armed
     // cell, its identifier's number, and whether its touch is down.
@@ -818,6 +839,9 @@ final class HostViewController: UIViewController {
         cells = []
         code = []
         focusTarget = nil
+        overlayRetakes = 0
+        settleShots = 0
+        previousCrops = []
         view.window?.overrideUserInterfaceStyle = page.appearance.style
 
         let columns = CGFloat(page.backdrops.count)
@@ -1076,7 +1100,8 @@ final class HostViewController: UIViewController {
         }
         let manager = FileManager.default
         if let reason = overlay(source) {
-            if attempt < maxRetakes {
+            if overlayRetakes < maxRetakes {
+                overlayRetakes += 1
                 try? manager.removeItem(at: screenshot)
                 retakes.append("\(page.path) attempt \(attempt): \(reason)")
                 DispatchQueue.main.asyncAfter(deadline: .now() + retakeDelaySeconds) { [weak self] in
@@ -1087,8 +1112,31 @@ final class HostViewController: UIViewController {
             }
             failures.append("\(page.path): \(reason) after \(maxRetakes) retakes")
         }
+        if !page.specimen.animated {
+            let crops = cells.map { cell in source.cropping(to: pixels(cell)).flatMap { samples($0) } }
+            let settled = previousCrops.count == crops.count && zip(previousCrops, crops).allSatisfy { pair in
+                guard let before = pair.0, let after = pair.1, before.count == after.count else { return false }
+                return zip(before, after).allSatisfy { abs(Int($0.0) - Int($0.1)) <= settledLevels }
+            }
+            if !settled {
+                if settleShots < maxSettleShots {
+                    if !previousCrops.isEmpty { retakes.append("\(page.path) attempt \(attempt): not settled") }
+                    settleShots += 1
+                    previousCrops = crops
+                    try? manager.removeItem(at: screenshot)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + settleShotSeconds) { [weak self] in
+                        guard let self else { return }
+                        self.requestScreenshot(sequence: self.pageIndex, attempt: self.attempt + 1)
+                    }
+                    return
+                }
+                failures.append("\(page.path): not settled after \(maxSettleShots) screenshots")
+            }
+        }
+        let kept = out.appendingPathComponent(page.screenshot)
         do {
-            try manager.moveItem(at: screenshot, to: out.appendingPathComponent("pages/\(pageIndex).png"))
+            try manager.createDirectory(at: kept.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try manager.moveItem(at: screenshot, to: kept)
         } catch {
             failures.append("\(page.path): keep the screenshot: \(error)")
         }
@@ -1103,7 +1151,7 @@ final class HostViewController: UIViewController {
             entries.append(
                 renderEntry(
                     page: page, cell: cell, draw: "draw/\(page.path)/\(cell.name).png", screen: name,
-                    screenshot: "pages/\(pageIndex).png", frame: frame))
+                    screenshot: page.screenshot, frame: frame))
         }
         if !screenWritten {
             screenWritten = true

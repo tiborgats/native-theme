@@ -10,7 +10,8 @@
 // or differs by more than `tolerance`: iOS 26's Liquid Glass edges in the
 // simulator's screenshot vary by a level between runs in a few pixels (spike
 // I); drawHierarchy's copies (draw/) are listed and fail nothing, as is every
-// file under --list-only.
+// file under --list-only and every capture of the activity indicator, which
+// turns without end (a path holding `+activity_indicator_`).
 
 import CoreGraphics
 import Foundation
@@ -44,7 +45,7 @@ let second = URL(fileURLWithPath: arguments[2])
 let list = (try? String(contentsOfFile: arguments[3], encoding: .utf8)) ?? ""
 var failed = false
 for path in list.split(separator: "\n").map(String.init) {
-    let measured = !listOnly && !path.hasPrefix("./draw/")
+    let measured = !listOnly && !path.hasPrefix("./draw/") && !path.contains("+activity_indicator_")
     if !path.hasSuffix(".png") {
         let a = (try? String(contentsOf: first.appendingPathComponent(path), encoding: .utf8)) ?? ""
         let b = (try? String(contentsOf: second.appendingPathComponent(path), encoding: .utf8)) ?? ""
