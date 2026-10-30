@@ -451,7 +451,8 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
 - **Code, beside today's model:** S1; S2's blocks in full with S2.2's grammar, the model's arithmetic and the platform
   functions the two presets' facts use, with their vectors (spike G's generator); S3; S4.1, S4.2 (its `scroll` field staged to the `scroll_view` unit, spec ADD-A120), S4.4, S4.5, and
   S4.6's groups the button and the roles use (`token.params.pointer_repeat`, `token.params.color`,
-  `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts`; S7; S8 without
+  `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts` (its `Placement` values deferred to M3's
+placement unit, spec ADD-A120); S7; S8 without
   S13; S9.1, S9.2, S9.4; S10; S11; S12 for what the model holds, with its refusal test (an exhaustive `match` over
   `LayerError` and `ProblemKind`, one triggering case per variant, so a new variant does not compile without one);
   S21.2's shape from the start (exhaustive enums, `#[non_exhaustive]` structs), so the connectors are written against
@@ -599,7 +600,7 @@ dev-dependencies and modules linked again.
 - **Facts, mechanically** (`check_fact_citations.py`):
   - a `published` or `read` fact's `quote` occurs, whitespace-normalised, in the cited lines of the cited file at its
     pin, and every literal of its `value` (numbers after unit normalisation, colours in any notation, a derivation's
-    operands, a text value as a whole quoted string), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
+    operands, a text value as a whole string, list entry or font family, spec S17), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
   - a `measured` fact's evidence file is committed, the value at its `evidence` path equals the fact's value after its
     `conversion` within its tolerance (a measured derivation: the form of its passes, which the gate evaluates, spec S17), and the file records the pinned generation and toolkit versions (the exact
     builds listed);

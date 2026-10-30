@@ -1284,11 +1284,12 @@ where that widget's entry marks the value `auto`. Each component's part and fiel
 catalogue the same way (S5.1), as data, its parts' styles being `PartStyle`. The derive's input structs, the
 widgets' values structs (`ButtonValues`) and the components' tables are themselves generated from the catalogue by
 `scripts/generate_widgets.py` (ADD-A114), which emits the units its list enables (a unit: a set of catalogue entries
-the list names, less the values it defers, each to a named later unit — the button's `Placement` values to the
+the list names (the list also names the hand-written units, S13's placement among them, each enabled or not), less
+the values it defers, each to a named later unit — the button's `Placement` values to the
 placement unit, ADD-A120 — a deferral ending in that unit's commit, and `--check` refusing a deferral to a unit
 already enabled), so a unit enters the model in the commit whose presets state it; a hand-written token field a
-later unit's type needs is staged with that unit (`Behavior.scroll` with the unit that holds the `scroll_view`
-widget, its `ScrollDecay` variants written then), and that unit's commit adds it to the connectors' tables by hand, as S21.3 requires of
+later unit's type needs is staged with that unit (`Behavior.scroll`, the `ScrollPhysics` and `ScrollDecay` types and
+their functions with the unit that holds the `scroll_view` widget), and that unit's commit adds it to the connectors' tables by hand, as S21.3 requires of
 any new resolved field; its `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
@@ -2059,8 +2060,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
-| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which
-may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared as S17's quote check compares text (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
@@ -2611,7 +2611,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   (a number a TOML number, a bool a TOML bool, a variant with data a one-key table, a list of layers a list of
   tables), with the key's own length, duration or angle in S2.2's units (`"4px"`, `"150ms"`) since the key carries no
   suffix, while tables nested in a value keep S11's suffixed keys (`x_px = <n>`); the quote check compares its
-  numeric and colour leaves.
+  numeric, colour and text leaves.
 - **Fields.** `key`, `value`, `rows` and at least one `cite` are required; `when` is optional (no condition);
   `scheme_file` (`<entry> <path>`, a `sources.toml` entry and the scheme file's path in it) and `accent` (a colour
   literal) are the accent run's, both or neither, in the `kde` directory only. `rows` lists gap-map row IDs as the
@@ -2620,8 +2620,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
 
   | `kind` | required | optional | not allowed |
   |---|---|---|---|
-  | `published` | `source`, `quote` | `conversion`, `absent` | `evidence`, `tolerance` |
-  | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent` |
+  | `published` | `source`, `quote` | `conversion`, `absent` | `evidence`, `tolerance`, `inputs` |
+  | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent`, `inputs` |
   | `measured` | `evidence`, `tolerance` | `conversion`, `inputs` (a measured derivation, below) | `source`, `quote`, `absent` |
 
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
@@ -2629,7 +2629,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   shadow's layers, a curve), the `evidence` path names a table of the evidence file shaped like the value, and
   `tolerance` is one number for every numeric leaf or a table from each numeric leaf's path in the value as S11
   spells it to its number (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); leaves that are not numbers or
-  colours (a bool, a name) compare exactly; a colour leaf is numeric for this rule (its tolerance per channel). Where several `measured` citations serve one generation, each must hold
+  colours (a bool, a name, a text value) compare as S11 spells them; a colour leaf is numeric for this rule (its tolerance per channel). Where several `measured` citations serve one generation, each must hold
   and the gate uses the smallest tolerance per leaf; where a generation has `published` or `read` citations too, both checks
   must hold and the gate uses the measured tolerance.
 - **Sources** are pinned in `docs/facts/sources.toml`, whose header defines its entries: `[[source]]` entries of
@@ -2655,8 +2655,10 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
 - **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. For each generation the
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
   `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value, which equals a
-  whole quoted string or a whole entry of a list in the quote, whitespace-normalised and case-sensitive; references
-  and names are left to the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
+  whole string as the source's notation reads it — a quoted string, a list's entry, a font description's family
+  part (Pango's `'Adwaita Sans 11'`, read as Pango's font-description parser does), an unquoted INI value
+  (`Theme=breeze`), from the checker's closed text notations — whitespace-normalised and
+  case-sensitive; references and names are left to the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
   held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
   that `scripts/check_fact_citations.py` holds, documents in its docstring and tests in its self-test: the number
@@ -2665,7 +2667,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   each unit's dimension (`px`, `dp`, `sp` and logical points as px, `sp` being Android's text size before its
   scaling, S9.4; `pt`; `ms` and `s`; `deg`; `rem` and `em` have none, so a value written in them is cited where the
   platform states it in px, or measured); a member is added to a list, or to the conversions below, as a class 1
-  change; a span one notation reads (a `TimeSpan`, a byte list) is not read again by the number form. A literal
+  change; a span the number, colour or `TimeSpan` notations read (a `TimeSpan`, a byte list) is not read again by the number
+  form, while the text notations only add candidate strings and take no span. A literal
   without a unit takes the value literal's dimension in its
   canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
   within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
@@ -2687,12 +2690,15 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   `measured` citation with `inputs`, the references of its expression the harness varied as written there
   (`inputs = ["input.accent"]`). Its `evidence` path names a list of tables in a TOML evidence file, each a pass:
   the varied references as quoted keys (`"input.accent" = "#ff0000"`), `result` (the value measured) and
-  `conditions` (the pass's conditions, required unless the fact's `when` fixes the scheme), every value spelled as a
-  fact's `value` is (units written: `"4px"`, `"17pt"`); every other operand resolves from the preset under the fact's
-  `when` plus the pass's `conditions`; `conversion` applies to `result`. The checker checks the form: for each input,
-  two passes that differ in that input alone, by more than its own type's quote-check precision, and whose results
+  `conditions` (the pass's conditions, including its `scheme:` condition, required unless the fact's `when` fixes
+  the scheme), every value spelled as a
+  fact's `value` is (units written: `"4px"`, `"17pt"`; `conversion` does not apply to them); every other operand resolves from the preset under the fact's
+  `when` plus the pass's `conditions` (a list of condition strings, as `when.conditions` writes them), so `inputs`
+  lists every operand that changes with the varied input. The checker checks the form: for each input and each
+  scheme the fact covers, two passes that differ in that input alone, by more than its own type's quote-check precision, and whose results
   differ by more than `tolerance` (a per-leaf table: in some leaf, by more than that leaf's); `inputs` only
-  on an expression value, and an expression value's `measured` citation always with `inputs`. The gate evaluates the
+  on an expression value, an expression value's `measured` citation always with `inputs`, and no `conversion` beside
+  `inputs`. The gate evaluates the
   expression over each pass within `tolerance`. It is the one case where the evidence value is not compared with the
   fact's value directly (ADD-A120).
 - **`read`** facts state the reference the key takes from a reader input (`value = "= input.accent"`); the quote is the
@@ -2704,7 +2710,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   `Colors:Header][Inactive/BackgroundNormal`; `<first column>/<header>` in CSV); for a value read from an image, the committed output of
   a committed analysis script naming its input image and the pixels it reads. The value there, after `conversion`
   (applied to it, read as the quote's literals are), equals the fact's within `tolerance` (a measured derivation's
-  rows are checked as its bullet says). The run folder's
+  passes are checked as its bullet says). The run folder's
   `run.toml` maps each image folder to the preset it serves, the `sources.toml` entry of what it measured (the Xcode,
   the distribution snapshot, the WinUI host's Windows App SDK, the emulator image; a runner image measured with no
   such entry gets one of kind `sdk` naming the image) and its exact builds (`[images.os-probe-macos-26]
@@ -2786,7 +2792,8 @@ reader, so the machine's own settings never enter: by default the no-reader stat
 scheme in turn, factor 1 and no font DPI of its own (`font_dpi: None`, so the preset's token converts its points). For every widget and
 every combination of its state model, it replaces the stand-in with one holding the combination's reader conditions (and
 passes its window conditions in `WindowConditions`), resolves, and queries the element, and compares each key with the
-fact that applies (within tolerance); a key and combination with no fact fails (R4). It compares every token,
+fact that applies (within tolerance), and, for a measured derivation, also evaluates its expression over each
+evidence pass under the pass's conditions; a key and combination with no fact fails (R4). It compares every token,
 colour-role and input fact the same way, under its `when`. While 0.8.0 is built, the gate skips a fact whose key the
 model does not hold yet (the 0.8.0 plan enables its units one by one); 0.8.0 is released with none skipped.
 
@@ -3023,7 +3030,7 @@ lines that cite it.
 | ADD-A117 | the 0.8.0 plan's new scripts | S18 |
 | ADD-A118 | a connector contract's `pending` entries while 0.8.0 is built (the 0.8.0 plan) | S21.3 |
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
-| ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S6.1, S11, S17 |
+| ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S4.2, S6.1, S11, S12, S17 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
