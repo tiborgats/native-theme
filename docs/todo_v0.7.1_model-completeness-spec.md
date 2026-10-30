@@ -329,8 +329,9 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 (S12). **Against the merge** (S6.1, ADD-A122): a `Fields` patch or an `Append` that meets a reference is never a merge
 conflict. The merge keeps it on the reference with its position (a base's, in layer order, or its rule's place in the
 stack's order), since evaluation interleaves it with the referenced value's own rules by that position; a later `Set`
-replaces the reference and every patch kept on it. A merge conflict is only a `Fields` patch meeting an `Absent` or
-`Auto` value directly (an `Append` over `Absent` is the appended layers, S6.1, and a paint is never `Auto`); one a
+replaces the reference and every patch kept on it. Over a value, a merge conflict is a `Fields` patch meeting an `Absent` or
+`Auto` value directly (an `Append` over `Absent` is the appended layers, S6.1, and a paint is never `Auto`), or a map
+entry created with a field unset that may not be `Absent` (S6.1); one a
 reference can bring is S12's conservative check, as the merge does not see where the reference leads, so the merge
 refuses nothing that check would pass, and the check refuses what the merge cannot see.
 
@@ -576,7 +577,9 @@ computed for the container's matching corner, which it has, as it lays out and q
 or the display with no radius (S4.6), passes 0, so the corner is its minimum, or square without one. `inset` is, per
 axis, the part's stated distance from the container's edge on that corner's side: the container's `padding` on that
 side, the `margin` and `padding` on that side of every part between them, and the part's own `margin` there, resolved (so mirrored as `Sides`
-are, S2.4), not the part's laid-out position, so every part held in the container's padding follows its corner
+are, S2.4), not the part's laid-out position: a floating part's distance from the window is its `margin` (the
+catalogue's floating sidebar pane, toolbar and tab bar, SD-6, MAC-SB06, MAT-N25, T-9). The connector sums it from the resolved styles it
+queried on its way down, the `Scope` naming the container (S8). So every part held in the container's padding follows its corner
 (libadwaita draws each toggle of a toggle group, the middle ones included, at the group's radius less the group's
 padding, `libadwaita@1.10.0 src/stylesheet/widgets/_toggle-group.scss:10-14`, `:29`, GN-1.239). `concentric` returns the
 larger of `container_radius` less the inset and `minimum` (0 when absent) where the two insets are equal. Concentric
@@ -1100,8 +1103,8 @@ snake_case, as keyed roles are named (S10), from the first of these the source h
    active-state fade differ, `decoration_shadow`);
 3. else (a motion only documentation describes or the facts measure) the motion as the source names it.
 
-In every step the name loses the toolkit's prefix (`Adw`, `Gtk`, `Q`, `K`, `NS`, `UI`, `md.sys.motion.`, a CSS
-variable's `$`, an enum's type, `QEasingCurve::`, `ADW_`) and every word of one closed list, the words that only say the value is a
+In every step the name loses the toolkit's prefix (`Adw`, `Gtk`, `Q`, `K`, `NS`, `UI`, WinUI's core classes' `C`,
+`md.sys.motion.`, a CSS variable's `$` or `$_`, an enum's type, `QEasingCurve::`, `ADW_`, and the class of shared values, `Units.`) and every word of one closed list, the words that only say the value is a
 duration, a curve or a motion: `animation`, `duration`, `time`, `ms`, `transition`, `timing`, `curve`, `easing`,
 `key_spline`, `cubic_bezier` and `spring`, each also in its plural; a name made only of these words keeps them
 (Breeze's `Animations` class, `animations`). `ease` is not in the list: it is part of CSS's and Core Animation's curve
@@ -1113,7 +1116,7 @@ tokens state together (a spring's damping and stiffness) has one key, their shar
 `emphasized_decelerate`, `SpringDefaultSpatialDamping` and `…Stiffness` `default_spatial` (step 1); `GtkRevealer`
 `revealer`, `GtkScrolledWindow`'s `ANIMATION_DURATION` `scrolled_window`, `KMessageWidget` `message_widget`,
 QVariantAnimation's own default `variant`, AdwLeaflet's `mode_transition` `leaflet_mode`, AdwFlap's
-`fold_duration` `flap_fold` (step 2); WinUI's connected animation `connected`, `scroll_into_view`, UIKit's default
+`fold_duration` `flap_fold`, WinUI's `CConnectedAnimationService` `connected_service` (step 2); `scroll_into_view`, UIKit's default
 spring `default` (step 3).
 
 A setting the reader reads (breezerc's `AnimationsDuration`, plasmarc's `longDuration`) is an input to a value, never
@@ -1264,7 +1267,8 @@ chain (per family where the platform keeps one per font), so they are a token an
 glyph's family as it serves a text font's (`GlyphSource::FontCodePoint`, S2.9): WinUI's symbol font is the XAML
 `FontFamily` list `Segoe Fluent Icons,Segoe MDL2 Assets` (`SymbolThemeFontFamily`, `microsoft-ui-xaml@2.5.1
 src/dxaml/xcp/dxaml/themes/generic.xaml:20`), so `windows-11` states the glyph's family `Segoe Fluent Icons` and the
-entry `("Segoe Fluent Icons", ["Segoe MDL2 Assets"])` (ADD-A122).
+entry `("Segoe Fluent Icons", ["Segoe MDL2 Assets"])` (ADD-A122). A family's chain is its `per_family` entry followed by
+`families`, the chain every font ends in (`windows-11`'s holds Segoe UI Symbol, the fallback font for symbols, W-FM01†).
 
 ### S4.5 Icon sizes
 
@@ -1457,7 +1461,8 @@ pub enum PaintPatch { Set(Value<Paint>),                 // a `Value<Paint>` fie
 ```
 
 **Enum blocks** (ADD-A122): an enum block is a model enum (a type a layer states, not an API, selector or error type)
-one of whose variants holds data (a `Value`, a block, a list, a key, a reference, a name or a number). It is stated
+one of whose variants holds any data (a `Value`, a block, a list, a key, a reference, another enum, a name or a number:
+`Pattern`'s `QtBrush(QtBrushStyle)` as much as `Radius`'s `Full { maximum }`). It is stated
 whole, by one variant and that variant's data, never patched field by field, and built by its variants
 (`T::try_from`, S1). They are: `WidgetValue` (S1); the references model values hold, `PartRef`, `TypedPart`,
 `WidgetRef`, `WidgetOrPart` and `VariantRef` (S1, S7); `PaintKind`, `Pattern`, `BlendMode` (S2.3); `Radius`,
@@ -1479,16 +1484,18 @@ the block's `BlockPatch` (`Set | Fields`), merged as a block field's is: a reade
 changes that role alone, and a rule restating `token.text.keyed.body.font.size` the size alone; a map of paints
 (`IconStyle.status_colors`) takes a `PaintPatch` per entry; a map of maps (`token.params`' groups, a `Material`'s or
 a keyed transition's `params` inside a block) merges at each level by this rule; a map of any other values (enums,
-enum blocks, scalars, lists: `token.motion.timings`, `token.elevation`) replaces the entry (ADD-A122). An entry's patch
-for a key the value below lacks (a set's roles patched over a map holding no record for the set) creates the entry
-from the patch, a `Fields` patch giving the fields it sets, its others missing until a layer states them, which S12's
-missing check refuses where none does; it is no merge conflict. A **keyed list** (the bindings by
+enum blocks, scalars, lists: `token.motion.timings`, `token.elevation`) replaces the entry (ADD-A122). An entry for a key
+not yet held is created as follows (ADD-A122). Merging two patches, it holds the later patch as it is. Applying a
+patch over a value (a later layer's patch over the bases below, a set's roles patched over a map holding no record
+for the set), the entry is created only where every field the patch leaves unset may be `Absent` (S6.3's marks,
+their conditions S12's), those fields then `Absent`; where one may not, the patch is a merge conflict, refused when
+the layer is added (S12), and the field is never filled with an invented value. A **keyed list** (the bindings by
 role or surface, every `Surface(_)` binding one key, so a part has one surface binding, a later `Surface(_)` replacing
 an earlier one (ADD-A122), the presentations by event, the transitions by property group, a transition listing several groups
 being split per group first) merges by its items' keys, the later item replacing the earlier whole; any other list (`stops`, `layers`
 set with `Set`, `symbol_variants`, `fallbacks`) is replaced whole, an empty one included; `Append` adds paint layers over `base` (R6), and
 over an `Absent` base gives a paint of the appended layers; over a reference it composes lazily, as a `Fields` patch
-does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is. The one merge conflict is a `Fields` patch meeting an `Absent` or `Auto` value directly (S2.2), refused when the layer is added (S12), so resolution never meets it (S8).
+does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is. The merge conflicts are two: a `Fields` patch meeting an `Absent` or `Auto` value directly (S2.2), and a map entry created over a value with a field unset that may not be `Absent` (above); each is refused when the layer is added (S12), so resolution never meets it (S8).
 
 **S6.2** Inheritance code goes: `inherit_from`, `theme_inherit`, the `[uniform]`, `[per_platform]` and
 `[wrong_safety_nets]` registries and `resolve/inheritance.rs` are removed (R20). Their rules are converted once
@@ -2909,7 +2916,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   (`when = { states = ["pressed"] }`) and its `rows` are any fact's. So the combination no longer falls through to a
   less specific fact (*Which fact applies*, below) and passes the gate silently. `check_facts.py` checks the form
   (exactly one of `value` and `pending`, no `cite` beside `pending`, the id `U` and a number). The plan's
-  `check_ledger.py` checks the register (each Id of that form and used once) and, on every run, each pending fact against it: a
+  Several pending facts may name one row (a combination's keys measured together). `check_ledger.py` checks the register (each Id of that form and used once) and, on every run, each pending fact against it: a
   pending fact whose id names no register row is a finding with or without `--final`; with `--final` every pending
   fact is a finding, whether or not its id names a row, beside the register's undecided rows, and the plan's final
   gate requires no S17 pending fact, so 0.8.0 is not released while one remains (R21). The gate (below) reads no
@@ -3321,7 +3328,7 @@ lines that cite it.
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
 | ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S4.2, S6.1, S11, S12, S17 |
 | ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp` (every Kirigami, qqc2-desktop-style and kirigami-addons `linearInterpolation` the KDE trace states written with it and its operands), `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17, S4.6 |
-| ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; a glyph font's fallback chain; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms; the first check's fixes: the one merge conflict (a `Fields` patch meeting `Absent` or `Auto` directly), the motion keys from a shared name, the one class or the source's words, the pending fact's register Id and a shadowed pending fact failing the gate, two products giving one set, the enum blocks listed, `min_width` and `min_height` as `Option<Length>`, one surface binding per part, `concentric`'s `None` for unequal insets, `damping_coefficient`, `ResolvedPartStylePatch` for a keyframe, a transition with no property group refused; the second check's fixes: the enum blocks defined (a model enum with a variant holding data) and listed, each stated whole; the motion keys' closed list of dropped words applied in every step (UIKit's `default`, QVariantAnimation's `variant`) and the catalogue naming each key or its family; `FontCodePoint`'s chain moved to `token.text.fallbacks.per_family`; a map merging by key with a `BlockPatch` per struct-block entry, an entry for a missing key created from its patch; `GlobalRole::AccentRamp`; `StatusColors` named; `concentric`'s inset from the stated paddings and margins, S12 refusing unequal ones; `Paint::try_from` refusing a bottom `Mask`; a product repeating a variant refused; a pending fact's place in its file; the ring offset on the part's own width | S1, S2.2, S2.4, S2.7, S2.9, S2.10, S3, S3.3, S4.1, S4.4, S6.1, S10, S12, S17, the catalogue |
+| ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; a glyph font's fallback chain; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms; the first check's fixes: the one merge conflict (a `Fields` patch meeting `Absent` or `Auto` directly), the motion keys from a shared name, the one class or the source's words, the pending fact's register Id and a shadowed pending fact failing the gate, two products giving one set, the enum blocks listed, `min_width` and `min_height` as `Option<Length>`, one surface binding per part, `concentric`'s `None` for unequal insets, `damping_coefficient`, `ResolvedPartStylePatch` for a keyframe, a transition with no property group refused; the second check's fixes: the enum blocks defined (a model enum with a variant holding data) and listed, each stated whole; the motion keys' closed list of dropped words applied in every step (UIKit's `default`, QVariantAnimation's `variant`) and the catalogue naming each key or its family; `FontCodePoint`'s chain moved to `token.text.fallbacks.per_family`; a map merging by key with a `BlockPatch` per struct-block entry, an entry for a missing key created from its patch; `GlobalRole::AccentRamp`; `StatusColors` named; `concentric`'s inset from the stated paddings and margins, S12 refusing unequal ones; `Paint::try_from` refusing a bottom `Mask`; a product repeating a variant refused; a pending fact's place in its file; the ring offset on the part's own width; the third check's fixes: a floating part's distance from the window as its `margin` (no `floating_inset` value), the connector summing `inset`; WinUI's `connected_service` by step 2 and the catalogue listing every key the traces use; Breeze's deactivation `out_cubic`; W1-102's indicator box the laid-out glyph; a map entry created over a value only where its unset fields may be `Absent`, else a merge conflict; several pending facts sharing one register row | S1, S2.2, S2.4, S2.7, S2.9, S2.10, S3, S3.3, S4.1, S4.4, S6.1, S10, S12, S17, the catalogue |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

@@ -245,7 +245,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SB05 | `list.row_background.fill, list.row.text.fill @ variant sidebar {selected} cond window_inactive` | rule |
 | MAC-SB05 | `reader:macos:unemphasizedSelectedContentBackgroundColor` | reader |
 | MAC-SB06 | `sidebar.pane.{fill,corners,shadow} @ variant floating (material fill, Concentric corners)` | rule |
-| MAC-SB06 | `sidebar.values.floating_inset` | field |
+| MAC-SB06 | `sidebar.pane.margin @ variant floating` (the pane's distance from the window's edges, its `Concentric` corners' inset, S2.4) | rule |
 | MAC-SB06 | `background_extension.extension.fill @ context sidebar.pane variant floating (the content extending under it)` | rule |
 | MAC-SB06 | `reader:macos:effectiveCornerRadii` | reader |
 | MAC-SB07 | `sidebar.pane.fill @ cond window_inactive` | rule |

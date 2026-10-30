@@ -531,7 +531,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N24 | `spinner.body.{fill,corners,padding} @ variants {@loading_indicator,@contained} (the container's colour, shape and space round the indicator)` | rule |
 | MAT-N24 | `spinner.indicator.shape (a ShapeKind::Material shape, S2.4, ADD-B03, ADD-A99); spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape, with their timing, R25.5)` | rule |
 | MAT-N25 | `toolbar.bar.{fill,min_height,corners,shadow,padding}, toolbar.values.item_gap @ variant @docked / variant floating / variants {floating,@vibrant}` | rule |
-| MAT-N25 | `toolbar.bar.{min_width,min_height} @ variants {floating,vertical} (the floating toolbar's height and width per orientation, R25.14); toolbar.values.floating_inset @ variant floating` | rule |
+| MAT-N25 | `toolbar.bar.{min_width,min_height} @ variants {floating,vertical} (the floating toolbar's height and width per orientation, R25.14); toolbar.bar.margin @ variant floating` (the floating bar's distance from the window's edges) | rule |
 | MAT-N25 | `button.{body.fill,icon.icon.fill,label.text.fill} @ {hover} / {focus_visible} / {pressed} / {disabled}, each context toolbar.bar variant floating / context toolbar.bar variants {floating,@vibrant} / context toolbar.bar variant @docked` | rule |
 | MAT-N25 | `button.{body.min_width,body.min_height,icon.icon.size} @ variant @fab context any toolbar variant floating (the FAB in the toolbar, its sizes)` | rule |
 | MAT-N25 | `toolbar.values.presentations (events Appear, Disappear)` | field |

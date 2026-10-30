@@ -3473,7 +3473,9 @@ spaces:
   - `pane` — the side pane; the Material rail's container (MAT-N13): `fill` (paint: material
     on macOS, iOS, WinUI's overlay acrylic), `stroke` (the inner edge only, flipping with the end variant and the
     direction, GN-1.139; the full frame under KDE's option, K1.140), `corners` (per corner: Material rounds the end
-    corners only, MAT-SB7; floating glass, SD-6, MAC-SB06), `shadow`, `padding`, `min_width`, `max_width`,
+    corners only, MAT-SB7; floating glass, SD-6, MAC-SB06), `shadow`, `padding`, `margin` (the floating pane's
+    distance from the window's edges, by a rule under `floating`, which its `Concentric` corners' inset counts, S2.4;
+    SD-6, MAC-SB06), `min_width`, `max_width`,
     `min_height` (Material's drawer container height, MAT-SB7; Kirigami's top and bottom drawers' minimum, Q1.60),
     `max_height` (Kirigami's top and bottom drawers' cap, Q1.60, below), `bindings` (the surface set it draws on: Kirigami's colour set by modality, Q1.53; GNOME's sidebar set),
     `opacity`, `transitions` (GN-1.136's backdrop transition).
@@ -3518,7 +3520,6 @@ spaces:
   threshold setting the keyed `@collapsed`; their comparisons and widths to verify, as the rows say);
   `resize_grip_width_px: Value<Px>` (Q1.60); `header_icon_gap_px: Value<Px>` (the header's title icon to its title,
   Kirigami's global drawer header, Q1.63);
-  `floating_inset: Sides<Value<Px>>` (the floating sidebar's inset from the window edges, SD-6, MAC-SB06);
   `drag_hover_delay_ms: Value<Ms>` (a drag hovering a sidebar row
   activates it, GN-1.145); `presentations: Vec<PresentationTransition>`: events `Appear`, `Disappear` (the pane
   shown and hidden, a drawer opening and closing; their steps name the parts they present, never the root: the
@@ -3566,8 +3567,7 @@ spaces:
   `ios-*`: GN-1.147, SD-10†; `ios-*` where the value phase states SD-10†'s natural width as a length),
   `width_fraction` (all but `kde-breeze`: Kirigami's cap, Q1.60; `kde-breeze` by a rule `cond flavor:widgets`),
   `collapsed_width_px` (`adwaita`: no collapsed rail, GN-2.19), `resize_grip_width_px` (all but `kde-breeze`:
-  Q1.60), `header_icon_gap_px` (all but `kde-breeze`: Q1.63), `floating_inset` (all but `macos-tahoe`, `ios-26`: 26
-  only, SD-6, MAC-SB06), `drag_hover_delay_ms` (where a drag
+  Q1.60), `header_icon_gap_px` (all but `kde-breeze`: Q1.63), `drag_hover_delay_ms` (where a drag
   hovering a row activates nothing: the value phase names the presets from the facts; `adwaita` states it,
   GN-1.145). The lists are empty, not absent, where the platform has none (`breakpoints`, `presentations`).
 - **State-model source:** `adwaita`: `_sidebars.scss` selectors and the split views' properties
@@ -3617,7 +3617,8 @@ spaces:
     by the scrolled state, the navigation bar's scroll-edge appearance C-1), `stroke` (one edge: KDE's bottom line,
     K1.151; iOS's top or bottom hairline, TB-2, C-1; GNOME's border line, GN-1.154; GtkActionBar's top shade line,
     GN-1.157, GN-2.20), `shadow` (raised bars, GN-1.153; on-scroll elevation, MAT-TA1; the floating bar's, K-KA-28†,
-    MAT-N25; animating between the expanded and collapsed elevations, MAT-P4-7†), `corners`, `padding` (the osd bar,
+    MAT-N25; animating between the expanded and collapsed elevations, MAT-P4-7†), `corners`, `margin` (the floating
+    bar's distance from the window's edges, by a rule under `floating`, MAT-N25), `padding` (the osd bar,
     GN-1.149; the floating bar), `min_height` (per variant: large title, compact, with search or prompt, C-1, TB-3,
     W1-103), `min_width` (the vertical floating toolbar, MAT-N25), `max_height` (Kirigami's global toolbar, Q1.74),
     `bindings` (KDE's Header set by position, Q1.68, Q1.71), `transitions` (MAT-TA1's on-scroll change; the header's
@@ -3647,8 +3648,7 @@ spaces:
 - **Widget values:** `item_gap_px: Value<Px>` (today; GN-1.157); `group_gap_px: Value<Px>` (TB-5, MAC-TL03);
   `fixed_space_width_px: Value<Px>`, `flexible_space_min_width_px: Value<Px>` (TB-8, MAC-TL10†);
   `title_alignment: Value<Alignment>` (MAT-TA3); `collapse_on_scroll: Value<bool>` (MAT-TA3; the large title's
-  collapse, C-1; `false` where the bar does not collapse); `floating_inset: Sides<Value<Px>>` (the floating toolbar's external padding from the window's
-  edges, MAT-N25); `tooltip_shows_shortcut: Value<bool>` (Q1.76; Kirigami's flat tool buttons are `button` rules in
+  collapse, C-1; `false` where the bar does not collapse); `tooltip_shows_shortcut: Value<bool>` (Q1.76; Kirigami's flat tool buttons are `button` rules in
   `context toolbar.bar`);
   `presentations: Vec<PresentationTransition>` (queried with the bar): events `Appear`, `Disappear` (the bar shown and
   hidden: Material's
@@ -3706,7 +3706,7 @@ spaces:
   between capsules is 26 only, TB-5, MAC-TL03), `fixed_space_width_px` (all but `ios-*`, `macos-*`: TB-8,
   MAC-TL10†, whose cross-checks find no fixed space item on KDE or Windows), `flexible_space_min_width_px` (all but
   `ios-*`, `macos-*`: TB-8, MAC-TL10†), `title_alignment` (`adwaita`, `macos-*`, `windows-11`: no title of the
-  bar's own), `floating_inset` (all but `material-3`: MAT-N25).
+  bar's own).
 - **State-model source:** `adwaita`: `_toolbars.scss` selectors (toolbars, action bar, raised and revealed bars);
   `kde-breeze`: Breeze's tool-button and toolbar branches (`st:4572-4619`, `st:5157-5222`, `st:5521-5680`) and qqc2
   and Kirigami toolbar QML (position, flat, display), kirigami-addons' `FloatingToolBar.qml`; `macos-*`: NSToolbar's
@@ -4417,8 +4417,8 @@ spaces:
 - **Parts:**
   - `bar` — the bar (the root): `fill` (paint with material; transparent at the scroll edge by `scrolled`, T-1),
     `stroke`
-    (the top hairline, one edge), `corners`, `shadow` (the floating capsule's, its inset being `floating_inset`,
-    iOS 26, T-9), `min_height` (by size class: T-14, ADD-A20), `padding`.
+    (the top hairline, one edge), `corners`, `shadow` (the floating capsule's, iOS 26, T-9), `margin` (the floating capsule's distance from the window's edges,
+    by a rule under `floating`, T-9), `min_height` (by size class: T-14, ADD-A20), `padding`.
   - `item` *(element)* — one destination: `fill`, `stroke`, `corners`, `padding`, `min_height` (Q2.34), `focus`
     (Q2.36), `bindings` (Kirigami's Window set, Q2.34), `transitions` (Q2.35); per-state colours (normal, selected,
     disabled, focused: T-3, MAT-N12). `item_icon`, `item_label`, `indicator` belong to `item` and are queried with it.
@@ -4434,7 +4434,7 @@ spaces:
     T-12): `fill` (a `Material` paint), `corners` (a capsule), `shadow`, `padding` (its insets), `min_height` (its
     height, C-21). `accessory_content` nests in it.
   - `accessory_content`, in `accessory` — the application's view area in it: `padding`.
-- **Widget values:** `floating_inset: Sides<Value<Px>>` (T-9); `item_gap_px: Value<Px>`, `item_width_px: Value<Px>`,
+- **Widget values:** `item_gap_px: Value<Px>`, `item_width_px: Value<Px>`,
   `item_positioning: Value<Key>` (keys `automatic`, `fill`, `centered`, the cases of `UITabBar.ItemPositioning`,
   T-3); `max_items: Value<u32>` (P3-2†, by size class); `max_content_width_px: Value<Px>` (Q2.33; `auto` where the
   platform sets no maximum, the items spreading over the bar, never `Absent`), `equal_width_items:
@@ -4476,8 +4476,7 @@ spaces:
   `ios-26` by a rule outside `{selected}`), `drop_indicator` (all but `ios-*`: T-17†), `accessory` (all but
   `ios-26`: iOS 26's bottom accessory, C-21, T-12), `accessory_content` (all but `ios-26`: iOS 26's bottom
   accessory, C-21, T-12); fields: `bar.stroke` (`ios-26` by a rule under `floating`: T-2's top hairline is the
-  iOS 13–18 bar's), `bar.shadow` (`kde-breeze`, `ios-13`: their bars are flat); values: `floating_inset` (all but
-  `ios-26`: T-9), `max_items` (all but `ios-*`: P3-2†), `item_positioning` (all but `ios-*`: the keys are
+  iOS 13–18 bar's), `bar.shadow` (`kde-breeze`, `ios-13`: their bars are flat); values: `max_items` (all but `ios-*`: P3-2†), `item_positioning` (all but `ios-*`: the keys are
   `UITabBar.ItemPositioning`'s, T-3), `icon_text_gap_px` (the value phase names the presets from the facts). The
   `equal_width_items` is a `Value<bool>`, stated on every preset, and the `max_content_width_px` a length or `auto`
   (above).
@@ -8807,8 +8806,8 @@ token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 | Platform | Keys (one per duration the platform states) | Rows |
 |---|---|---|
 | libadwaita | the stylesheet's transition variables `backdrop`, `focus`, `button`, `row`, `toggle` (`$backdrop_transition` …, `libadwaita@1.10.0 src/stylesheet/_common.scss:2-7`, `widgets/_lists.scss:1-3`, `widgets/_toggle-group.scss:5-7`), `scrollbar` (`$_scrollbar_transition`, `widgets/_scrolling.scss:4`) and `needs_attention` (the keyframes' name, `_common.scss:114`), and its inline transitions by family (the tab bar's, the bottom sheet's); the timed animations defined in code: AdwToastOverlay's `toast_overlay_show`, `toast_overlay_hide`, `toast_overlay_replace` (`src/adw-toast-overlay.c:20-22`), AdwTab's `tab_close_btn`, `tab_attention_indicator` (`adw-tab.c:19`, `:28`), AdwTabOverview's `tab_overview_scroll` and `tab_overview` (`SCROLL_ANIMATION_DURATION`, `TRANSITION_DURATION`, `adw-tab-overview.c:29-30`), AdwEntryRow's `entry_row` (`adw-entry-row.c:18`), AdwViewStack's `view_stack` (`adw-view-stack.c:1653`), the deprecated AdwFlap's fold, `flap_fold`, and AdwLeaflet's mode transition, `leaflet_mode` (`adw-flap.c:1551`, `adw-leaflet.c:2445`), and the tab box's and tab grid's by family; the revealer and stack defaults, `revealer` and `stack`; the animated scroll, `scrolled_window` (GtkScrolledWindow's `ANIMATION_DURATION`, `gtk@4.24.1 gtk/gtkscrolledwindow.c:189`) | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
-| kde-breeze | `animations` (Breeze's `Animations`, its state engines' duration: while kdeglobals sets `AnimationDurationFactor`, `= floor(mul(<base>, token.motion.speed_factor))`, the factor times the base truncated to whole ms (`breeze@6.8.2 kstyle/breezestyle.cpp:2080`), a positive result turning Breeze's animations on whatever breezerc says (`:2081-2083`) and zero turning them off (`:2085`), so the duration is then zero; while the factor is unset, breezerc's `AnimationsDuration`, zero where its `AnimationsEnabled` is off (`:2076-2078`, `kstyle/animations/breezeanimations.cpp:49-55`); Qt's `SH_Widget_Animation_Duration` too, `breezestyle.cpp:937-938`, which the dock widgets' and toolbars' re-layout and KCollapsibleGroupBox's expansion reference, the last with the source's floor by `max`, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:114-116`); `decoration_shadow` (the decoration's shadow fade, a base times the speed factor, `floor`ed, `kdecoration/breezedecoration.cpp:389`); `line_edit_icon_button` (Qt's side-icon fade, unscaled, `qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:432`); `tab_bar` (Qt's tab move, `ANIMATION_DURATION`, unscaled, `src/widgets/widgets/qtabbar_p.h:30`); `message_widget` (KMessageWidget's timeline, `kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60`); `variant` (QVariantAnimation's own default, unscaled, which QTreeView's expand takes, K1.185†, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`); Kirigami `very_short`, `short`, `long`, `very_long` (derived from `long`, with the source's floor by `max`, ADD-A56) and `human_moment` (unscaled) | K1.17, K1.185†, K3.31, K3.37, K3.38†, Q3.23–Q3.25, Q3.27 |
-| windows-11 | `control_normal`, `control_fast`, `control_fast_after`, `control_faster` (WinUI's `ControlNormalAnimationDuration`, `ControlFastAnimationDuration`, `ControlFastAnimationAfterDuration`, `ControlFasterAnimationDuration`, `Common_themeresources_any.xaml:603-606`); `connected` (the connected animation); one entry per built-in theme transition the facts measure, named as WinUI names its class less `Transition` and `Animation` (`EntranceThemeTransition` `entrance_theme`: entrance, content, add and delete, reorder, reposition, popup, pane, drill in, press tilt, fade, split open and close, drag item) | W3-30, W3-32, W3-33, W3-34 |
+| kde-breeze | `animations` (Breeze's `Animations`, its state engines' duration: while kdeglobals sets `AnimationDurationFactor`, `= floor(mul(<base>, token.motion.speed_factor))`, the factor times the base truncated to whole ms (`breeze@6.8.2 kstyle/breezestyle.cpp:2080`), a positive result turning Breeze's animations on whatever breezerc says (`:2081-2083`) and zero, which a factor below 0.01 gives, turning them off (`:2085`), so the duration is then zero; while the factor is unset, breezerc's `AnimationsDuration`, zero where its `AnimationsEnabled` is off (`:2076-2078`, `kstyle/animations/breezeanimations.cpp:49-55`); Qt's `SH_Widget_Animation_Duration` too, `breezestyle.cpp:937-938`, which the dock widgets' and toolbars' re-layout and KCollapsibleGroupBox's expansion reference, the last with the source's floor by `max`, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:114-116`); `decoration_shadow` (the decoration's shadow fade, a base times the speed factor, `floor`ed, `kdecoration/breezedecoration.cpp:389`); `line_edit_icon_button` (Qt's side-icon fade, unscaled, `qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:432`); `tab_bar` (Qt's tab move, `ANIMATION_DURATION`, unscaled, `src/widgets/widgets/qtabbar_p.h:30`); `message_widget` (KMessageWidget's timeline, `kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60`); `variant` (QVariantAnimation's own default, unscaled, which QTreeView's expand takes, K1.185†, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`); Kirigami `very_short`, `short`, `long`, `very_long` (derived from `long`, with the source's floor by `max`, ADD-A56) and `human_moment` (unscaled) | K1.17, K1.185†, K3.31, K3.37, K3.38†, Q3.23–Q3.25, Q3.27 |
+| windows-11 | `control_normal`, `control_fast`, `control_fast_after`, `control_faster` (WinUI's `ControlNormalAnimationDuration`, `ControlFastAnimationDuration`, `ControlFastAnimationAfterDuration`, `ControlFasterAnimationDuration`, `Common_themeresources_any.xaml:603-606`); `connected_service` (ConnectedAnimationService's default, `src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26`); `scroll_into_view` (the scroll into view, measured, W-P4-3†); one entry per built-in theme transition the facts measure, named as WinUI names its class less `Transition` and `Animation` (`EntranceThemeTransition` `entrance_theme`: entrance, content, add and delete, reorder, reposition, popup, pane, drill in, press tilt, fade, split open and close, drag item) | W3-30, W3-32, W3-33, W3-34, W-P4-3† |
 | macos-* | by family, the facts lanes naming each key: the AppKit durations (`NSAnimationContext`'s default, the window resize time, per-control durations the probe records), `navigation` | MAC-X11 |
 | ios-* | `navigation` (push and pop); by family, the facts lanes naming each key: one per modal transition style by its `UIModalTransitionStyle` case (`cover_vertical`, …), the symbol-effect durations | X-MO-1, X-MO-3, X-MO-4, X-MO-9 |
 | material-3 | the duration tokens `short1`–`short4`, `medium1`–`medium4`, `long1`–`long4`, `extra_long1`–`extra_long4` (`DurationShort1` …, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/MotionTokens.kt:24-39`); by family, the facts lanes naming each key: the ripple's (material-web's `Ripple`), the shadow transition's | MAT-X13, MAT-X9, MAT-X7 |
@@ -8818,17 +8817,20 @@ platform's curve is its own (Kirigami's velocity-based curves, `KirigamiVelocity
 `ease_out_quad` (`$ease-out-quad`, `libadwaita@1.10.0 src/stylesheet/_common.scss:1`), the CSS keyword curves its
 stylesheet uses (`ease_out`, `ease_in`, `ease_in_out`, `ease`, `linear`) and AdwTimedAnimation's default
 `ease_out_cubic` (`ADW_EASE_OUT_CUBIC`, `adw-timed-animation.c:275`) (GN-3.19), and its springs below (GN-3.20);
-on `kde-breeze` Qt's curves by their `QEasingCurve` names: the decoration's activation and deactivation curves
-`out_cubic` and `in_cubic` (`breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:279`, K1.17), `in_out_quad` (the tree
+on `kde-breeze` Qt's curves by their `QEasingCurve` names: the decoration's shadow fade, `out_cubic` both ways
+(`breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:278-279`: the deactivation's in-cubic curve runs backward,
+which in S2.7's forward reading is the out-cubic curve, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:200-202`, K1.17), `in_out_quad` (the tree
 expand, the tab move and the dock-widget and toolbar re-layout, `qtbase@6.12.0 src/widgets/itemviews/qtreeview_p.h:89`,
-`src/widgets/widgets/qtabbar_p.h:144`, `src/widgets/widgets/qwidgetanimator.cpp:61`), Kirigami's and qqc2-desktop-style's
+`src/widgets/widgets/qtabbar_p.h:144`, `src/widgets/widgets/qwidgetanimator.cpp:62`), Kirigami's and qqc2-desktop-style's
 curves in use, `in_out_quad`, `out_cubic`, `in_cubic`, `in_out_cubic`, `out_quad`, `in_quad` (QML's `Easing.<curve>`,
 by search of `kirigami@6.31.0 src` and `qqc2-desktop-style@6.31.0`) and `out_expo` (`kirigami@6.31.0
 src/layouts/columnview.cpp:462`) (Q3.26); Breeze's `animations` (`Timing::Steps`, its count breezerc's `AnimationSteps`, K3.31); `in_out_sine`, Qt's
 default easing curve for its timelines (`QTimeLine`'s, `qtbase@6.12.0 src/corelib/tools/qtimeline.cpp:24-25`, K3.37); WinUI's entering and exiting curves,
 `fast_out_slow_in` and `slow_out_fast_in`, and its control key spline `control_fast_out_slow_in`
-(`ControlFastOutSlowInKeySpline`, `Common_themeresources_any.xaml:602`) (W3-31); UIKit's default
-spring, `default` (X-MO-2), and AppKit's media-timing curves by family (MAC-X11); Material's easing tokens `standard`,
+(`ControlFastOutSlowInKeySpline`, `Common_themeresources_any.xaml:602`) (W3-31), the connected animation's
+`connected_service` (`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:27-28`,
+W3-33) and the scroll into view's `scroll_into_view` (measured, W-P4-3†); UIKit's default
+spring, `default` (X-MO-2), the navigation push and pop's `navigation` (measured, X-MO-3), and AppKit's media-timing curves by family (MAC-X11); Material's easing tokens `standard`,
 `standard_accelerate`, `standard_decelerate`, `emphasized`, `emphasized_accelerate`, `emphasized_decelerate`, `legacy`,
 `legacy_accelerate`, `legacy_decelerate`, `linear` (`EasingStandardCubicBezier` …, `MotionTokens.kt:40-68`) and spring
 tokens `default_spatial`, `default_effects`, `fast_spatial`, `fast_effects`, `slow_spatial`, `slow_effects`
