@@ -1910,8 +1910,10 @@ spaces:
   - `thumb_icon`, in `thumb` — Material's check or close icon on the handle (MAT-SW3): `icon`, `glyph` (the symbol: the check
     under `{checked}`, the close otherwise, MAT-SW3), `opacity` (the disabled icon's opacity, MAT-SW3), `transitions`
     (MAT-SW8's icon transitions).
-  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `fill`, `corners` (its shape), `opacity` (per state, MAT-SW4),
-    `min_width`, `min_height`.
+  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `fill` (a transparent base with the press ripple, role
+    `Ripple`, and over it the hover or focus state layer, role `StateLayer`, appended by rules, each its alpha in its
+    colour: Compose's ripple indication, `Switch.kt:191-198`; S2.3), `corners` (its shape), `min_width`, `min_height`,
+    `transitions` (the layers' fades by role, MAT-X9).
   - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
     Q1.103).
   - `state_label` — WinUI's On/Off content text: `text`.
@@ -1995,8 +1997,10 @@ spaces:
     these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
-  - `state_layer` — Material's halo (MAT-C2): `fill`, `corners` (its shape), `opacity` (per state, MAT-C2),
-    `min_width`, `min_height`.
+  - `state_layer` — Material's halo (MAT-C2): `fill` (a transparent base with the press ripple, role `Ripple`, and over
+    it the hover or focus state layer, role `StateLayer`, appended by rules, each its alpha in its colour: Compose's
+    ripple indication, `Checkbox.kt:554-579`; S2.3), `corners` (its shape), `min_width`, `min_height`, `transitions`
+    (the layers' fades by role, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
   edit mode starts, CK-2†).
@@ -2067,8 +2071,10 @@ spaces:
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
     (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
-  - `state_layer` — Material's halo (MAT-C2): `fill`, `corners` (its shape), `opacity` (per state, MAT-C2),
-    `min_width`, `min_height`.
+  - `state_layer` — Material's halo (MAT-C2): `fill` (a transparent base with the press ripple, role `Ripple`, and over
+    it the hover or focus state layer, role `StateLayer`, appended by rules, each its alpha in its colour: Compose's
+    ripple indication, `RadioButton.kt:160-165`; S2.3), `corners` (its shape), `min_width`, `min_height`, `transitions`
+    (the layers' fades by role, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`.
 - **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
   `checkbox`'s `warning`), the content variant `with_label` (as on `checkbox`, GN-1.61).
@@ -2605,8 +2611,10 @@ spaces:
     `thumb_inner`, `state_layer` belong to `thumb` and are queried with it.
   - `thumb_inner` — WinUI's inner accent dot: `fill` (per state), `corners`, `min_width`, `min_height` (W1-067),
     `transform`, `transitions` (its scale per state and that scale's animation, W1-068).
-  - `state_layer` — Material's halo round the handle (MAT-S7), as `switch`'s, `checkbox`'s and `radio`'s: `fill`,
-    `corners` (its shape), `opacity` (per state, MAT-S7), `min_width`, `min_height`.
+  - `state_layer` — Material's halo round the handle (MAT-S7), named as `switch`'s, `checkbox`'s and `radio`'s: `fill`,
+    `corners` (its shape), `opacity` (per state, MAT-S7), `min_width`, `min_height`. Unlike theirs it is no ripple: at
+    the pin Compose's slider indicates only focus there, a ring with the press, hover and drag indications off
+    (`Slider.kt:930-946`, `:1435-1470`), so the halo is the tokens' and its states an exclusive group (above).
   - `tick` *(element)* — a tick mark (its fill depends on whether it lies within `value_fill`): `fill`, `corners` (a line
     or a dot, MAC-SL04, MAT-S5), `min_width`, `min_height` (today's `tick_mark_length_px`; GN-1.100, SL-6).
   - `stop_indicator` *(element)* — Material's stop dot (MAT-S4): `fill`, `corners`, `min_width`, `min_height`.
