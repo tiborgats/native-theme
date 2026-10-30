@@ -22,6 +22,10 @@ pub(crate) struct TypeAttrs {
     pub append: bool,
     /// `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
     pub own_resolved: bool,
+    /// `#[parts(resolved_patch)]`: a struct block's patch resolved,
+    /// `Resolved<T>Patch`, for a field holding the block's patch (a
+    /// keyframe's part style).
+    pub resolved_patch: bool,
 }
 
 /// The attributes on one field.
@@ -44,6 +48,9 @@ pub(crate) struct FieldAttrs {
     /// `#[parts(required = "size")]`, beside `inner_may_be_absent`: the
     /// block's fields the mark leaves out.
     pub required: Vec<LitStr>,
+    /// `#[parts(patch)]`: the field holds a struct block's patch (`<B>Patch`),
+    /// resolved as `Resolved<B>Patch`, its fields below its path as `B`'s.
+    pub patch: bool,
 }
 
 fn flag(slot: &mut bool, meta: &syn::meta::ParseNestedMeta<'_>) -> Result<()> {
@@ -64,8 +71,13 @@ pub(crate) fn parse_type_attrs(attrs: &[Attribute]) -> Result<TypeAttrs> {
                 flag(&mut out.append, &meta)
             } else if meta.path.is_ident("own_resolved") {
                 flag(&mut out.own_resolved, &meta)
+            } else if meta.path.is_ident("resolved_patch") {
+                flag(&mut out.resolved_patch, &meta)
             } else {
-                Err(meta.error("unknown parts attribute: expected block, append or own_resolved"))
+                Err(meta.error(
+                    "unknown parts attribute: expected block, append, own_resolved or \
+                     resolved_patch",
+                ))
             }
         })?;
     }
@@ -82,6 +94,8 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
                 flag(&mut out.auto, &meta)
             } else if meta.path.is_ident("keyed") {
                 flag(&mut out.keyed, &meta)
+            } else if meta.path.is_ident("patch") {
+                flag(&mut out.patch, &meta)
             } else if meta.path.is_ident("inner_may_be_absent") {
                 flag(&mut out.inner_may_be_absent, &meta)
             } else if meta.path.is_ident("required") {
@@ -109,7 +123,7 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
             } else {
                 Err(meta.error(
                     "unknown parts field attribute: expected may_be_absent, auto, keyed, \
-                     inner_may_be_absent, required or block",
+                     inner_may_be_absent, required, patch or block",
                 ))
             }
         })?;

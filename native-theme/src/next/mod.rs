@@ -77,7 +77,8 @@ pub use blocks::paint::{
     ResolvedStop, Stop, StopPatch,
 };
 pub use blocks::part_style::{
-    Binding, CursorShape, PartStyle, PartStylePatch, ResolvedBinding, ResolvedPartStyle, RoleRef,
+    Binding, CursorShape, PartStyle, PartStylePatch, ResolvedBinding, ResolvedPartStyle,
+    ResolvedPartStylePatch, RoleRef,
 };
 pub use blocks::shadow::{
     ResolvedShadow, ResolvedShadowLayer, Shadow, ShadowLayer, ShadowLayerPatch,

@@ -10,7 +10,7 @@
 
 use native_theme_derive::ThemeParts;
 
-use super::part_style::PartStylePatch;
+use super::part_style::{PartStyle, PartStylePatch, ResolvedPartStylePatch};
 use super::{KeyedItem, merge_by};
 use crate::next::key::Key;
 use crate::next::selector::PartRef;
@@ -391,5 +391,6 @@ pub struct Keyframe {
     #[parts(block = "set", may_be_absent)]
     pub timing: Value<Timing>,
     /// The part's style at this keyframe, a shape included.
+    #[parts(patch)]
     pub patch: PartStylePatch,
 }

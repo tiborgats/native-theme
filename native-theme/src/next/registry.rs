@@ -23,7 +23,7 @@ pub(crate) struct FieldInfo {
 }
 
 /// A field's type, as the registry walks it.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) enum FieldType {
     /// A value with no fields of its own in the registry: the type as written
     /// (`Value<Px>`, `Vec<(Key,Value<Scalar>)>`).
@@ -38,6 +38,36 @@ pub(crate) enum FieldType {
         /// The block's own table.
         fields: &'static [FieldInfo],
     },
+    /// A struct block's patch (a keyframe's `PartStylePatch`), whose fields
+    /// lie below this field's path as the block's do. Its table is reached
+    /// through a function, as the block can hold this field itself (a part
+    /// style's icon animation's keyframes), which a constant cannot.
+    Patch {
+        /// The type as written (`PartStylePatch`).
+        ty: &'static str,
+        /// The block's table.
+        fields: fn() -> &'static [FieldInfo],
+    },
+}
+
+/// Two patches are equal by their written type, which names their block, so
+/// their tables are one: a function's address is no identity to compare.
+impl PartialEq for FieldType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (FieldType::Leaf(a), FieldType::Leaf(b)) => a == b,
+            (
+                FieldType::Block { ty, form, fields },
+                FieldType::Block {
+                    ty: other_ty,
+                    form: other_form,
+                    fields: other_fields,
+                },
+            ) => ty == other_ty && form == other_form && fields == other_fields,
+            (FieldType::Patch { ty, .. }, FieldType::Patch { ty: other, .. }) => ty == other,
+            (FieldType::Leaf(_) | FieldType::Block { .. } | FieldType::Patch { .. }, _) => false,
+        }
+    }
 }
 
 /// Whether a block is a struct or an enum.
@@ -80,7 +110,7 @@ pub(crate) const fn absent_but<const N: usize>(
     {
         *slot = *field;
         let written = match field.ty {
-            FieldType::Leaf(ty) | FieldType::Block { ty, .. } => ty,
+            FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
         };
         if starts_with(written, "Value<") && !names(required, field.path) {
             slot.may_be_absent = true;
@@ -164,6 +194,7 @@ pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static 
         let (ty, below) = match field.ty {
             FieldType::Leaf(ty) => (ty, None),
             FieldType::Block { ty, form, fields } => (ty, Some((form, fields))),
+            FieldType::Patch { ty, fields } => (ty, Some((BlockForm::Struct, fields()))),
         };
         if rest.is_empty() {
             return Some(field);
@@ -191,7 +222,7 @@ pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static 
 /// Every leaf path below `fields`, each prefixed by `prefix`, a map's key
 /// left out; an enum block with unit variants is a leaf itself too, as a
 /// unit variant is stated at its path (`corners.top_left = "follow_part"`,
-/// S11).
+/// S11), and so is a block's patch, whose block can hold it.
 #[cfg(test)]
 pub(crate) fn leaves(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<String>) {
     for field in fields {
@@ -205,7 +236,7 @@ pub(crate) fn leaves(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<S
                 }
                 leaves(&path, fields, out);
             }
-            FieldType::Leaf(_) => out.push(path),
+            FieldType::Leaf(_) | FieldType::Patch { .. } => out.push(path),
         }
     }
 }

@@ -15,7 +15,10 @@
 //!   serialized field names for TOML linting.
 //! - [`ThemeParts`](derive@ThemeParts) generates the 0.8.0 model's blocks'
 //!   patches, resolved types, merges and field tables; its expansions name
-//!   `crate::next::*` paths.
+//!   `crate::next::*` paths (the blocks' traits and merge helpers, the
+//!   field-path registry) that exist only inside `native-theme`, so it too
+//!   compiles nowhere else, and `native-theme` re-exports none of these
+//!   derives.
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -179,6 +182,9 @@ fn gen_inventory_submit(
 /// - `#[parts(block)]`: block mode (required).
 /// - `#[parts(append)]`: a struct block patched by `Set` or `Append`.
 /// - `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
+/// - `#[parts(resolved_patch)]`: a struct block's patch resolved,
+///   `Resolved<T>Patch`, each field `Option<resolved field>` (`None`: the
+///   patch leaves it), for a field holding the block's patch.
 ///
 /// # Field attributes
 ///
@@ -193,6 +199,10 @@ fn gen_inventory_submit(
 ///   or `fields` on an `Option`, would act as `set`, so both are refused.
 /// - `#[parts(keyed)]`: a list whose items merge by their own key, through
 ///   the item type's `KeyedItem` impl.
+/// - `#[parts(patch)]`: the field holds a struct block's patch, `<B>Patch`
+///   (a keyframe's `PartStylePatch`): it resolves to `Resolved<B>Patch`
+///   (`B` marked `resolved_patch`), and its table entry reaches `B`'s table
+///   through a function, as `B` can hold the field itself.
 #[proc_macro_derive(ThemeParts, attributes(parts))]
 pub fn derive_theme_parts(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

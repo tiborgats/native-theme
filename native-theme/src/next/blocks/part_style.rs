@@ -23,7 +23,7 @@ use crate::next::value::Value;
 
 /// The style of one part of a widget.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, resolved_patch)]
 #[non_exhaustive]
 pub struct PartStyle {
     /// The fill; absent on a part that paints nothing at rest.

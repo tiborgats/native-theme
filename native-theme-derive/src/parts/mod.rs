@@ -311,6 +311,47 @@ mod tests {
     }
 
     #[test]
+    fn a_patch_field_resolves_and_points_to_its_blocks_table() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Keyframe {
+                #[parts(patch)]
+                pub patch: PartStylePatch,
+            }
+        });
+        for expected in [
+            "pub patch : ResolvedPartStylePatch",
+            "ty : crate :: next :: registry :: FieldType :: Patch { ty : \"PartStylePatch\" , \
+             fields : { fn fields () -> & 'static [crate :: next :: registry :: FieldInfo] { \
+             < PartStyle as crate :: next :: blocks :: Table > :: FIELDS } fields } , }",
+            "crate :: next :: blocks :: replace_slot (& mut self . patch , patch)",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn resolved_patch_resolves_each_field_as_an_option() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block, resolved_patch)]
+            pub struct Probe {
+                /// The fill.
+                #[parts(block = "append", may_be_absent)]
+                pub fill: Value<Paint>,
+                #[parts(auto)]
+                pub min_width: Value<Px>,
+            }
+        });
+        for expected in [
+            "pub struct ResolvedProbePatch",
+            "pub struct ResolvedProbePatch { # [doc = r\" The fill.\"] pub fill : :: core :: option :: Option < :: core :: option :: Option < ResolvedPaint > >",
+            "pub min_width : :: core :: option :: Option < :: core :: option :: Option < crate :: next :: Length > >",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
     fn append_block_expands_set_and_append() {
         let out = expand(syn::parse_quote! {
             #[parts(block, append)]
@@ -487,10 +528,24 @@ mod tests {
             ),
             (
                 syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(patch)] pub patch: PartStyle }
+                },
+                "patch marks a field holding a struct block's patch, `<B>Patch`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block, resolved_patch)]
+                    pub enum Probe { A, B }
+                },
+                "resolved_patch is a struct block's, patched by fields",
+            ),
+            (
+                syn::parse_quote! {
                     #[parts(widget)]
                     pub struct Probe { pub x: Value<Px> }
                 },
-                "unknown parts attribute: expected block, append or own_resolved",
+                "unknown parts attribute: expected block, append, own_resolved or resolved_patch",
             ),
         ] {
             assert_eq!(refused(input), message);

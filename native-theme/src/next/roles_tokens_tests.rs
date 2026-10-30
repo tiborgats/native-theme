@@ -40,7 +40,7 @@ fn s2_blocks() -> [(&'static str, &'static [FieldInfo]); 6] {
 
 fn written(field: &FieldInfo) -> &'static str {
     match field.ty {
-        FieldType::Leaf(ty) | FieldType::Block { ty, .. } => ty,
+        FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
     }
 }
 
@@ -71,7 +71,7 @@ fn token_paths(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<String>
                 }
                 token_paths(&path, fields, out);
             }
-            FieldType::Leaf(_) => out.push(path),
+            FieldType::Leaf(_) | FieldType::Patch { .. } => out.push(path),
         }
     }
 }

@@ -5,13 +5,16 @@ use super::focus::{FocusIndicator, FocusIndicatorPatch, FocusKind, FocusVisibleW
 use super::icon::{Glyph, GlyphStroke, IconStyle};
 use super::motion::{
     Keyframe, Loop, PresentationEvent, PresentationKind, PresentationStep, PresentationTransition,
-    PropertyGroup, ResolvedTiming, Timing, Transition, TransitionKind, damping_coefficient,
+    PropertyGroup, ResolvedKeyframe, ResolvedTiming, Timing, Transition, TransitionKind,
+    damping_coefficient,
 };
 use super::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Radius, concentric, follow_part, full,
 };
 use super::paint::{BlendMode, Paint, PaintKind, PaintLayer, PaintPatch};
-use super::part_style::{Binding, PartStyle, PartStylePatch, ResolvedPartStyle, RoleRef};
+use super::part_style::{
+    Binding, PartStyle, PartStylePatch, ResolvedPartStyle, ResolvedPartStylePatch, RoleRef,
+};
 use super::text::{
     AxisTag, Decoration, Elision, FadeLength, FeatureTag, Font, LanguageTag, ResolvedElision,
     ResolvedFadeLength, ResolvedTextStyle, TextStyle, TextStylePatch,
@@ -307,6 +310,7 @@ fn table_of(fields: &'static [FieldInfo], path: &str) -> Option<&'static FieldIn
         let rest = path.strip_prefix(field.path)?.strip_prefix('.')?;
         match field.ty {
             FieldType::Block { fields, .. } => table_of(fields, rest),
+            FieldType::Patch { fields, .. } => table_of(fields(), rest),
             FieldType::Leaf(_) => None,
         }
     })
@@ -1114,7 +1118,46 @@ fn language_tags_follow_rfc_5646() {
 }
 
 #[test]
-fn a_keyframe_holds_a_part_style_patch() {
+fn a_keyframes_patch_resolves_field_by_field() {
+    let _ = resolved_keyframe as fn(ResolvedKeyframe);
+    let unset = ResolvedPartStylePatch::default();
+    assert_eq!(
+        (unset.fill, unset.opacity, unset.padding),
+        (None, None, None)
+    );
+    let set = ResolvedPartStylePatch {
+        opacity: Some(Some(Fraction(0.0))),
+        fill: Some(None),
+        ..ResolvedPartStylePatch::default()
+    };
+    assert_eq!(set.opacity, Some(Some(Fraction(0.0))));
+    assert_eq!(set.fill, Some(None));
+
+    let keyframes = table_of(PartStyle::FIELDS, "icon.animation.keyframes.patch");
+    assert!(matches!(
+        keyframes.map(|f| f.ty),
+        Some(FieldType::Patch {
+            ty: "PartStylePatch",
+            ..
+        })
+    ));
+    for path in [
+        "fill.layers.blend",
+        "opacity",
+        "padding.left",
+        "icon.animation.keyframes.patch.min_width",
+    ] {
+        let below = format!("icon.animation.keyframes.patch.{path}");
+        let found = table_of(PartStyle::FIELDS, &below);
+        assert!(found.is_some(), "{below}");
+        assert_eq!(found, table_of(PartStyle::FIELDS, path), "{path}");
+        assert!(
+            crate::next::registry::find(PartStyle::FIELDS, &below).is_some(),
+            "{below}"
+        );
+    }
+    assert!(table_of(PartStyle::FIELDS, "icon.animation.keyframes.patch.nothing").is_none());
+
     let keyframe = Keyframe {
         at: Fraction(0.5),
         part: None,
@@ -1139,4 +1182,15 @@ fn a_keyframe_holds_a_part_style_patch() {
     assert_eq!(glyph_stroke.width, Value::Stated(Px(2.0)));
     let when = FocusVisibleWhen::Keyboard { timeout: None };
     assert_ne!(when, FocusVisibleWhen::Never);
+}
+
+/// Holds a resolved keyframe's patch as S6.1 types it: every field of the
+/// part style resolved, `None` where the patch leaves it.
+fn resolved_keyframe(keyframe: ResolvedKeyframe) {
+    let patch: ResolvedPartStylePatch = keyframe.patch;
+    let _: Option<Option<super::paint::ResolvedPaint>> = patch.fill;
+    let _: Option<Option<Fraction>> = patch.opacity;
+    let _: Option<Option<Length>> = patch.min_width;
+    let _: Option<Sides<Option<Px>>> = patch.padding;
+    let _: Option<Vec<super::part_style::ResolvedBinding>> = patch.bindings;
 }

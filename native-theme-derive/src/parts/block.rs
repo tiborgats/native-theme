@@ -230,6 +230,12 @@ impl BlockField {
     }
 
     fn resolved_ty(&self) -> TokenStream {
+        if self.attrs.patch
+            && let Some(ident) = plain_ident(&self.ty)
+        {
+            let resolved = renamed(&self.ty, &format_ident!("Resolved{ident}"));
+            return quote!(#resolved);
+        }
         resolved_ty(&self.ty, self.block(), self.attrs.auto)
     }
 
@@ -240,8 +246,28 @@ impl BlockField {
         let may_be_absent = self.attrs.may_be_absent;
         let auto = self.attrs.auto;
         let whole = !matches!(self.shape, Shape::Compound(_));
-        let ty = match (self.block(), &self.shape) {
-            (_, Shape::Compound(compound)) => {
+        let patched = self
+            .attrs
+            .patch
+            .then(|| plain_ident(&self.ty))
+            .flatten()
+            .and_then(|ident| ident.to_string().strip_suffix("Patch").map(str::to_owned));
+        let ty = match (self.block(), &self.shape, patched) {
+            (_, _, Some(block)) => {
+                let block = renamed(&self.ty, &format_ident!("{block}"));
+                quote! {
+                    #r::FieldType::Patch {
+                        ty: #written,
+                        fields: {
+                            fn fields() -> &'static [#r::FieldInfo] {
+                                <#block as #b::Table>::FIELDS
+                            }
+                            fields
+                        },
+                    }
+                }
+            }
+            (_, Shape::Compound(compound), None) => {
                 let inner = type_string(&compound.inner);
                 let members = compound.members.iter().map(|member| {
                     quote! {
@@ -261,7 +287,7 @@ impl BlockField {
                     }
                 }
             }
-            (Some(block), _) => {
+            (Some(block), _, None) => {
                 let inner = &block.ty;
                 let fields = if self.attrs.inner_may_be_absent {
                     let required = &self.attrs.required;
@@ -282,7 +308,7 @@ impl BlockField {
                     }
                 }
             }
-            (None, _) => quote!(#r::FieldType::Leaf(#written)),
+            (None, _, None) => quote!(#r::FieldType::Leaf(#written)),
         };
         // A compound value is never absent or `Auto` as a whole: its marks are
         // its members' (S6.3).
@@ -454,6 +480,15 @@ fn parse_field(field: &syn::Field) -> Result<BlockField> {
             "auto marks a field holding a `Value<Px>` or a `Value<FontSize>`",
         ));
     }
+    if attrs.patch
+        && (attrs.block.is_some()
+            || !plain_ident(&ty).is_some_and(|ident| ident.to_string().ends_with("Patch")))
+    {
+        return Err(Error::new_spanned(
+            &field.ty,
+            "patch marks a field holding a struct block's patch, `<B>Patch`",
+        ));
+    }
     if !attrs.required.is_empty() && !attrs.inner_may_be_absent {
         return Err(Error::new_spanned(
             &field.ty,
@@ -568,6 +603,12 @@ pub(crate) fn expand(input: &DeriveInput, type_attrs: &TypeAttrs) -> Result<Toke
     match &input.data {
         Data::Struct(data) => {
             let fields = named_fields(&data.fields, &input.ident)?;
+            if type_attrs.append && type_attrs.resolved_patch {
+                return Err(Error::new_spanned(
+                    &input.ident,
+                    "resolved_patch is a struct block's, patched by fields",
+                ));
+            }
             if type_attrs.append {
                 expand_append(input, type_attrs, &fields)
             } else {
@@ -579,6 +620,12 @@ pub(crate) fn expand(input: &DeriveInput, type_attrs: &TypeAttrs) -> Result<Toke
                 return Err(Error::new_spanned(
                     &input.ident,
                     "append is a struct block's mode",
+                ));
+            }
+            if type_attrs.resolved_patch {
+                return Err(Error::new_spanned(
+                    &input.ident,
+                    "resolved_patch is a struct block's, patched by fields",
                 ));
             }
             expand_enum(input, type_attrs, data)
@@ -739,11 +786,35 @@ fn expand_fields(
             },
         }
     });
+    let resolved_patch = if type_attrs.resolved_patch {
+        let resolved = format_ident!("Resolved{name}Patch");
+        let doc = format!(
+            "[`{name}`]'s patch resolved (S6.1): each field `None` where the patch leaves it \
+             as it is, else its resolved value."
+        );
+        let members = fields.iter().map(|f| {
+            let BlockField {
+                ident, vis, docs, ..
+            } = f;
+            let ty = f.resolved_ty();
+            quote!(#(#docs)* #vis #ident: ::core::option::Option<#ty>,)
+        });
+        quote! {
+            #[doc = #doc]
+            #[derive(Clone, Debug, Default, PartialEq)]
+            #[non_exhaustive]
+            #vis struct #resolved { #(#members)* }
+        }
+    } else {
+        TokenStream::new()
+    };
     quote! {
         #[doc = #doc]
         #[derive(Clone, Debug, Default, PartialEq)]
         #[non_exhaustive]
         #vis struct #patch { #(#members)* }
+
+        #resolved_patch
 
         #common
 
