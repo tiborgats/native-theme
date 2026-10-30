@@ -400,3 +400,48 @@ fn button_values_resolve_by_type() {
         })
     );
 }
+
+#[test]
+fn indicator_anchor_inline_top_reads() {
+    // ADD-A123: an indicator inline with the content, at its top.
+    let layer = crate::next::Layer::from_toml(
+        "[widgets.button.values]\nmenu_indicator_anchor = \"inline_top\"",
+    )
+    .unwrap_or_else(|error| panic!("{error}"));
+    let anchor = layer
+        .bases
+        .widgets
+        .button
+        .and_then(|button| button.values)
+        .and_then(|values| values.menu_indicator_anchor);
+    assert_eq!(anchor, Some(Value::Stated(IndicatorAnchor::InlineTop)));
+}
+
+#[test]
+fn a_drawn_as_part_keeps_its_style_until_brought_back() {
+    // ADD-A123: a `Style` after a `DrawnAs` brings the part back as after
+    // `Absent`, the fields stated before the `DrawnAs` kept.
+    let mut slot = PartSlot::default();
+    assert_eq!(slot.apply(PartPatch::Style(style(0.3))), Ok(()));
+    let drawn_as = PartPatch::DrawnAs {
+        target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
+        variants: Vec::new(),
+    };
+    assert_eq!(slot.apply(drawn_as), Ok(()));
+    assert_eq!(slot.style, Some(style(0.3)));
+    let width = PartStylePatch {
+        min_width: Some(Value::Stated(Px(8.0))),
+        ..PartStylePatch::default()
+    };
+    assert_eq!(slot.apply(PartPatch::Style(width)), Ok(()));
+    assert_eq!(
+        slot,
+        PartSlot {
+            shown: Shown::Drawn,
+            style: Some(PartStylePatch {
+                min_width: Some(Value::Stated(Px(8.0))),
+                ..style(0.3)
+            }),
+        }
+    );
+}

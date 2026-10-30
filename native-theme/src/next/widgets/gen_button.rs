@@ -88,8 +88,7 @@ pub struct ButtonValues {
     pub subtitle_gap: Value<Px>,
     /// Between label and indicator.
     pub menu_indicator_gap: Value<Px>,
-    /// Where the `menu_indicator` lies: `Inline` after the content in the
-    /// layout, `menu_indicator_gap_px` from it.
+    /// Where the `menu_indicator` lies.
     pub menu_indicator_anchor: Value<IndicatorAnchor>,
     /// The touch-and-hold variant.
     #[parts(may_be_absent)]
@@ -140,13 +139,14 @@ pub enum IconPlacement {
 }
 
 /// The values of `button`'s `menu_indicator_anchor`: where the `menu_indicator`
-/// lies: `Inline` after the content in the layout, `menu_indicator_gap_px` from
-/// it.
+/// lies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
 #[parts(toml)]
 pub enum IndicatorAnchor {
     /// Inline.
     Inline,
+    /// Inline top.
+    InlineTop,
     /// Top end.
     TopEnd,
     /// Bottom end.
