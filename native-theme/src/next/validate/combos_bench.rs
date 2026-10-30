@@ -340,6 +340,7 @@ fn checked(layer: &Layer, decl: &Declarations) -> (usize, Duration) {
     let problems = match super::super::check(layer, &cx) {
         Ok(()) => 0,
         Err(crate::next::error::LayerError::Invalid(problems)) => problems.len(),
+        Err(other) => panic!("{other}"),
     };
     (problems, started.elapsed())
 }

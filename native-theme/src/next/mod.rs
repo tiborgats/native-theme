@@ -28,6 +28,7 @@ mod presets;
     )
 )]
 mod registry;
+mod resolve;
 mod roles;
 #[cfg(test)]
 mod roles_tokens_tests;
@@ -112,6 +113,10 @@ pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeK
 pub use key::Key;
 pub use layer::{Bases, Layer};
 pub use presets::PresetId;
+pub use resolve::{
+    Change, ContentSizeCategory, ReaderState, Resolution, ResolvedTheme, WindowConditions,
+    WindowState,
+};
 pub use roles::{
     ColorRoles, ColorRolesPatch, DisabledRoles, DisabledRolesPatch, GlobalRole, GlobalRoles,
     GlobalRolesPatch, ResolvedColorRoles, ResolvedDisabledRoles, ResolvedGlobalRoles,

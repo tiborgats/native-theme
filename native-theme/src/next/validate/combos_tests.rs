@@ -43,6 +43,7 @@ fn over(below: &str, top: &str, decl: &Declarations) -> Vec<String> {
     match check(&toml(top), &cx) {
         Ok(()) => Vec::new(),
         Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+        Err(other) => panic!("{other}"),
     }
 }
 

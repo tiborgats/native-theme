@@ -48,6 +48,7 @@ fn problems(text: &str) -> Vec<String> {
     match Layer::from_toml(text) {
         Ok(_) => Vec::new(),
         Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+        Err(other) => panic!("{other}"),
     }
 }
 
@@ -911,7 +912,9 @@ fn a_presets_tables_are_whole_blocks() {
         "{PRESET_HEAD}[widgets.button.label.text]\ncase = \"upper\""
     ))
     .unwrap_err();
-    let LayerError::Invalid(found) = error;
+    let LayerError::Invalid(found) = error else {
+        panic!("{error}")
+    };
     let found: Vec<String> = found.iter().map(Problem::to_string).collect();
     assert!(
         found.contains(&"widgets.button.label.text.font.size_pt: missing".to_owned()),
@@ -1036,7 +1039,9 @@ fn declarations_refuse_what_s10_does_not_spell() {
          [declare.component.rule_editor]\navailable = true"
     ))
     .unwrap_err();
-    let LayerError::Invalid(found) = error;
+    let LayerError::Invalid(found) = error else {
+        panic!("{error}")
+    };
     let found: Vec<String> = found.iter().map(Problem::to_string).collect();
     assert_eq!(
         found,
@@ -1173,7 +1178,9 @@ fn a_missing_field_is_reported_at_its_key() {
         ..crate::next::FocusIndicatorPatch::default()
     })
     .unwrap_err();
-    let LayerError::Invalid(found) = error;
+    let LayerError::Invalid(found) = error else {
+        panic!("{error}")
+    };
     let found: Vec<String> = found.iter().map(Problem::to_string).collect();
     for key in [
         "width_px",
@@ -1198,7 +1205,9 @@ fn a_breakpoints_part_is_the_widgets_own() {
         .map(|preset| preset.declarations.widgets.len())
     };
     assert_eq!(declare("{ part = \"label\" }"), Ok(1));
-    let LayerError::Invalid(found) = declare("{ part = \"button.label\" }").unwrap_err();
+    let LayerError::Invalid(found) = declare("{ part = \"button.label\" }").unwrap_err() else {
+        panic!("not invalid")
+    };
     assert_eq!(
         found,
         [Problem::new(

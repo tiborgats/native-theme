@@ -35,6 +35,7 @@ fn layer_fixtures_report_their_expected_problems() {
             Err(LayerError::Invalid(problems)) => {
                 problems.iter().map(ToString::to_string).collect()
             }
+            Err(other) => vec![other.to_string()],
         };
         let name = path.display();
         if prefixes.is_empty() {

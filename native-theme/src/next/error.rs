@@ -3,6 +3,7 @@
 use std::fmt;
 
 use super::expr::ParseError;
+use super::inputs::InputName;
 
 /// [`Key::new`](crate::next::Key::new)'s error: the text, and the first
 /// character outside the key grammar `[a-z0-9][a-z0-9_]*`.
@@ -30,7 +31,8 @@ impl fmt::Display for KeyError {
 
 impl std::error::Error for KeyError {}
 
-/// Adding a layer, or reading one, failed (S1, S12).
+/// Adding a layer, or reading one, failed (S1, S12), or a change of the
+/// stack was refused (S8, S9.2).
 #[derive(Clone, Debug, PartialEq)]
 pub enum LayerError {
     /// Every problem found, not the first only: S12's checks', and the TOML
@@ -38,6 +40,11 @@ pub enum LayerError {
     /// value, an unknown name, a key outside the key grammar, an expression
     /// that does not parse), each a [`ProblemKind`].
     Invalid(Vec<Problem>),
+    /// A reader stand-in set while a reader exists (S8, R2.6).
+    ReaderPresent,
+    /// An accent lacking accent inputs the preset declares, which it names
+    /// (S9.2).
+    AccentInputsMissing(Vec<InputName>),
 }
 
 impl fmt::Display for LayerError {
@@ -48,6 +55,13 @@ impl fmt::Display for LayerError {
                 problems
                     .iter()
                     .try_for_each(|problem| write!(f, "\n  {problem}"))
+            }
+            LayerError::ReaderPresent => {
+                f.write_str("a reader stand-in is refused while a reader exists")
+            }
+            LayerError::AccentInputsMissing(names) => {
+                f.write_str("the accent lacks the preset's accent inputs")?;
+                names.iter().try_for_each(|name| write!(f, " `{name}`"))
             }
         }
     }

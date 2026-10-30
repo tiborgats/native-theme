@@ -29,6 +29,14 @@ use crate::next::units::{Fraction, Ms, Px};
 use crate::next::value::Value;
 use crate::next::widgets::{ButtonPatch, PartPatch};
 
+/// A layer's error that is no problem list: none of these fixtures gives
+/// one. Its own frame, so the fixtures' frames stay small.
+#[cold]
+#[inline(never)]
+fn not_invalid(error: &LayerError) -> ! {
+    panic!("not a problem list: {error}")
+}
+
 const PRESET_HEAD: &str = "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n";
 
 /// The declarations a `[declare]` table's body states.
@@ -42,6 +50,7 @@ fn strings(result: Result<(), LayerError>) -> Vec<String> {
     match result {
         Ok(()) => Vec::new(),
         Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+        Err(other) => not_invalid(&other),
     }
 }
 
@@ -1078,6 +1087,7 @@ fn refusal_part_without_widget() {
     let problems = |text: &str| match Layer::from_toml(text) {
         Ok(_) => Vec::new(),
         Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+        Err(other) => not_invalid(&other),
     };
     assert_eq!(
         problems("[widgets.button.icon]\ndrawn_as = { part = \"label\", variants = [] }"),
@@ -2143,6 +2153,7 @@ fn layer_error_every_variant_triggers() {
         match result {
             Ok(()) => Vec::new(),
             Err(LayerError::Invalid(problems)) => problems,
+            Err(other) => not_invalid(&other),
         }
     }
     let over = |layer: &Layer, decl: &Declarations, below: &[Layer]| {
@@ -2166,6 +2177,7 @@ fn layer_error_every_variant_triggers() {
     let read = |text: &str| match Layer::from_toml(text) {
         Ok(layer) => over(&layer, &none, &[]),
         Err(LayerError::Invalid(problems)) => problems,
+        Err(other) => not_invalid(&other),
     };
     let preset_problems = |body: &str| {
         let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();
@@ -2603,9 +2615,49 @@ fn layer_error_every_variant_triggers() {
         .collect();
     assert_eq!(missing, Vec::<usize>::new());
     // `LayerError`'s every variant: `Invalid`, which every fixture above
-    // returns.
-    let error = LayerError::Invalid(Vec::new());
-    match error {
-        LayerError::Invalid(problems) => assert!(problems.is_empty()),
+    // returns, and the stack's refusals (S8, S9.2).
+    every_layer_error();
+}
+
+/// Every `LayerError` variant, each triggered: `Invalid` by a layer's
+/// problem, the others by the stack's refusals. Its own frame, so the
+/// fixtures above keep theirs small.
+#[inline(never)]
+fn every_layer_error() {
+    let none = Declarations::default();
+    let invalid = check(
+        &bare_layer_with_a_problem(),
+        &Context {
+            declarations: &none,
+            preset: None,
+            kind: LayerKind::Application,
+            below: &[],
+        },
+    );
+    let mut errors = crate::next::resolve::refusals();
+    errors.extend(invalid.err());
+    let mut seen = [false; 3];
+    for error in &errors {
+        let index = match error {
+            LayerError::Invalid(found) => {
+                assert!(!found.is_empty());
+                0
+            }
+            LayerError::ReaderPresent => 1,
+            LayerError::AccentInputsMissing(names) => {
+                assert!(!names.is_empty());
+                2
+            }
+        };
+        seen[index] = true;
     }
+    assert_eq!(seen, [true; 3], "{errors:?}");
+}
+
+/// A layer with one structural problem: an opacity outside `0..=1`.
+fn bare_layer_with_a_problem() -> Layer {
+    body(PartStylePatch {
+        opacity: Some(Value::Stated(Fraction(2.0))),
+        ..PartStylePatch::default()
+    })
 }

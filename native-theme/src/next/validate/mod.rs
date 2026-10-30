@@ -41,6 +41,9 @@ pub(crate) enum LayerKind {
     Palette,
     /// Any other application layer.
     Application,
+    /// The accent layer `Theme` derives from the accent (S8, S9.2): its
+    /// bases state the accent inputs.
+    Accent,
 }
 
 /// What a layer is checked against: the current preset's declarations,
