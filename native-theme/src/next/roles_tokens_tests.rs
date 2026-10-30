@@ -537,21 +537,39 @@ fn icon_theme_fallback_may_be_absent() {
     assert!(marked(IconTokens::FIELDS, "theme_fallback"));
 }
 
-#[test]
-fn absent_tokens_by_the_catalogue_table() {
-    for path in [
-        "kde",
-        "material",
-        "icons.theme",
-        "icons.sizes.toolbar",
-        "icons.sizes.small",
-        "icons.sizes.large",
-        "icons.sizes.dialog",
-        "icons.sizes.panel",
-    ] {
-        assert!(marked(registry::tokens(), path), "{path}");
+/// Every field below `fields`, each prefixed by `prefix`, a map's key left
+/// out, with its marks; a field holding one of S2's blocks is listed and not
+/// walked into, as the blocks' own tests cover their marks.
+fn token_marks(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<(String, bool, bool)>) {
+    for field in fields {
+        let path = join(prefix, field.path);
+        out.push((path.clone(), field.may_be_absent, field.auto));
+        if let FieldType::Block { fields, .. } = field.ty
+            && !s2_blocks()
+                .into_iter()
+                .any(|(_, table)| same_fields(fields, table))
+        {
+            token_marks(&path, fields, out);
+        }
     }
-    assert!(!marked(registry::tokens(), "icons.set"));
+}
+
+#[test]
+fn token_marks_are_exactly_s6_3_and_the_catalogue() {
+    let mut found = Vec::new();
+    token_marks("", registry::tokens(), &mut found);
+    let absent: Vec<&str> = found
+        .iter()
+        .filter(|(_, absent, _)| *absent)
+        .map(|(path, _, _)| path.as_str())
+        .collect();
+    let auto: Vec<&str> = found
+        .iter()
+        .filter(|(_, _, auto)| *auto)
+        .map(|(path, _, _)| path.as_str())
+        .collect();
+    assert_eq!(absent, EXPECTED_ABSENT_TOKENS);
+    assert_eq!(auto, Vec::<&str>::new());
 }
 
 #[test]
@@ -1125,3 +1143,53 @@ fn token_maps_of_blocks_patch_each_entry() {
         )]
     );
 }
+
+/// The token fields that may be `Absent`, in table order: every `TextRendering`
+/// field, `Caret.secondary`, `shown_in_read_only` and `solid_while_typing`,
+/// every `Value` field of `Behavior`, `TouchBehavior` and `PointerTokens`,
+/// `IconTokens.theme_fallback` (S6.3), and the catalogue's table (*Colour roles
+/// and tokens*): `icons.theme`, the icon-size contexts, `kde` and `material`.
+const EXPECTED_ABSENT_TOKENS: &[&str] = &[
+    "text.rendering.engine",
+    "text.rendering.antialiasing",
+    "text.rendering.hinting",
+    "text.rendering.subpixel_order",
+    "text.rendering.lcd_filter",
+    "text.rendering.gamma",
+    "text.rendering.contrast",
+    "icons.theme",
+    "icons.theme_fallback",
+    "icons.sizes.toolbar",
+    "icons.sizes.small",
+    "icons.sizes.large",
+    "icons.sizes.dialog",
+    "icons.sizes.panel",
+    "caret.secondary",
+    "caret.shown_in_read_only",
+    "caret.solid_while_typing",
+    "behavior.double_click_time",
+    "behavior.double_click_distance",
+    "behavior.drag_threshold",
+    "behavior.hover_open_delay",
+    "behavior.scroll_lines_per_step",
+    "behavior.scroll_px_per_step",
+    "behavior.hide_pointer_while_typing",
+    "behavior.hide_pointer_delay",
+    "behavior.hide_pointer_fade",
+    "behavior.long_press",
+    "behavior.spring_loading",
+    "behavior.drag_time",
+    "behavior.single_click_activates",
+    "behavior.double_click_height",
+    "behavior.touch.slop",
+    "behavior.touch.paging_slop",
+    "behavior.touch.double_tap_time",
+    "behavior.touch.double_tap_slop",
+    "behavior.touch.delay",
+    "behavior.focus_visible_when",
+    "pointer.theme",
+    "pointer.size",
+    "pointer.color",
+    "kde",
+    "material",
+];
