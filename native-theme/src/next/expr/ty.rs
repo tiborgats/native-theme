@@ -4,15 +4,16 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use super::eval::Val;
-use super::{ElementDatum, Expr, Func, Literal, Name, Ref};
+use super::eval::{Platform, Val};
+use super::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref};
 use crate::next::key::Key;
 use crate::next::roles::SurfaceSet;
+use crate::next::selector::Scheme;
 use crate::next::units::{FontSize, Ms, Px};
 
 /// An operand's, a result's or a field's type (S2.2).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Ty {
+pub(crate) enum Ty {
     /// A colour.
     Color,
     /// A length, in logical pixels.
@@ -47,41 +48,40 @@ pub enum Ty {
 /// An enum's name and its variants' names in snake_case, as expressions spell
 /// them.
 #[derive(Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct EnumTy {
+pub(crate) struct EnumTy {
     /// The enum's Rust name.
-    pub name: &'static str,
+    pub(crate) name: &'static str,
     /// Its variants, in snake_case.
-    pub variants: &'static [&'static str],
+    pub(crate) variants: &'static [&'static str],
 }
 
 /// `Scheme` (S7.1), the `scheme` operand's type.
-pub static SCHEME: EnumTy = EnumTy {
+pub(crate) static SCHEME: EnumTy = EnumTy {
     name: "Scheme",
-    variants: &["light", "dark"],
+    variants: &Scheme::NAMES,
 };
 
 /// `SurfaceSet` (S3), `kde_accent`'s `set`.
-pub static SURFACE_SET: EnumTy = EnumTy {
+pub(crate) static SURFACE_SET: EnumTy = EnumTy {
     name: "SurfaceSet",
     variants: &SurfaceSet::NAMES,
 };
 
 /// `KdeGroup` (S4.8), `kde_effects`' and `kde_accent`'s `group`.
-pub static KDE_GROUP: EnumTy = EnumTy {
+pub(crate) static KDE_GROUP: EnumTy = EnumTy {
     name: "KdeGroup",
     variants: &["active", "disabled", "inactive"],
 };
 
 /// `KdeRoleKind` (S4.8), `kde_effects`' and `kde_selection_inactive`'s
 /// `role_kind`.
-pub static KDE_ROLE_KIND: EnumTy = EnumTy {
+pub(crate) static KDE_ROLE_KIND: EnumTy = EnumTy {
     name: "KdeRoleKind",
     variants: &["foreground", "decoration", "background"],
 };
 
 /// `KdeSchemeKey` (S4.8), `kde_accent`'s `key`.
-pub static KDE_SCHEME_KEY: EnumTy = EnumTy {
+pub(crate) static KDE_SCHEME_KEY: EnumTy = EnumTy {
     name: "KdeSchemeKey",
     variants: &[
         "background_normal",
@@ -100,7 +100,7 @@ pub static KDE_SCHEME_KEY: EnumTy = EnumTy {
 };
 
 /// `KdeWmKey` (S4.8), `kde_accent_wm`'s `key`.
-pub static KDE_WM_KEY: EnumTy = EnumTy {
+pub(crate) static KDE_WM_KEY: EnumTy = EnumTy {
     name: "KdeWmKey",
     variants: &[
         "active_background",
@@ -111,20 +111,20 @@ pub static KDE_WM_KEY: EnumTy = EnumTy {
 };
 
 /// `TrackingDesign` (S2.2), `sf_tracking`'s `design`.
-pub static TRACKING_DESIGN: EnumTy = EnumTy {
+pub(crate) static TRACKING_DESIGN: EnumTy = EnumTy {
     name: "TrackingDesign",
     variants: &["sf_pro", "sf_pro_rounded", "new_york"],
 };
 
 /// `NameIndexMethod` (S2.2), `name_index`'s `method`.
-pub static NAME_INDEX_METHOD: EnumTy = EnumTy {
+pub(crate) static NAME_INDEX_METHOD: EnumTy = EnumTy {
     name: "NameIndexMethod",
     variants: &["kirigami", "adwaita"],
 };
 
 /// `TextRole` (S1, S4.4): the nineteen `TextRoles` slots, `uifm_scaled`'s
 /// `text_role` beside a declared text style.
-pub static TEXT_ROLE: EnumTy = EnumTy {
+pub(crate) static TEXT_ROLE: EnumTy = EnumTy {
     name: "TextRole",
     variants: &[
         "body",
@@ -150,21 +150,21 @@ pub static TEXT_ROLE: EnumTy = EnumTy {
 };
 
 /// A side of a box, `shadow_extent`'s `side`: the members of `Sides` (S1).
-pub static SIDE: EnumTy = EnumTy {
+pub(crate) static SIDE: EnumTy = EnumTy {
     name: "Side",
     variants: &["top", "right", "bottom", "left"],
 };
 
 /// `uikit_prominence`'s `prominence`, whose values S2.2 does not state yet:
 /// no name is one of them until it does.
-pub static UIKIT_PROMINENCE: EnumTy = EnumTy {
+pub(crate) static UIKIT_PROMINENCE: EnumTy = EnumTy {
     name: "Prominence",
     variants: &[],
 };
 
 /// How a field limits the number an expression gives it (S2.2's *Totality*).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Bound {
+pub(crate) enum Bound {
     /// Any finite value.
     Unbounded,
     /// A negative result is zero: a length or duration that cannot be
@@ -183,25 +183,24 @@ pub enum Bound {
 
 /// The type of the field an expression is stated on.
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct FieldType {
+pub(crate) struct FieldType {
     /// The value's type.
-    pub ty: Ty,
+    pub(crate) ty: Ty,
     /// How the field limits a computed number.
-    pub bound: Bound,
+    pub(crate) bound: Bound,
 }
 
 impl FieldType {
     /// A field of type `ty`, limited by `bound`.
     #[must_use]
-    pub fn new(ty: Ty, bound: Bound) -> FieldType {
+    pub(crate) fn new(ty: Ty, bound: Bound) -> FieldType {
         FieldType { ty, bound }
     }
 }
 
 /// What typing knows of the model: the types of the fields, tokens, roles and
 /// inputs references name, and the keyed names each declaration lists.
-pub trait TypeEnv {
+pub(crate) trait TypeEnv {
     /// The type of what `reference` names, `None` where it names nothing.
     ///
     /// The checker asks for roles, `surface.`, `token.`, `input.`, `part.`,
@@ -218,7 +217,7 @@ pub trait TypeEnv {
 
 /// Why an expression does not type against its field.
 #[derive(Clone, Debug, PartialEq)]
-pub enum TypeError {
+pub(crate) enum TypeError {
     /// The expression's type is not the field's.
     Mismatch {
         /// The field's type.
@@ -309,6 +308,12 @@ pub enum TypeError {
         /// The type expected there, `None` where none is.
         expected: Option<Ty>,
     },
+    /// Calls and `active(…)` nested deeper than [`MAX_DEPTH`] (S12).
+    TooDeep,
+    /// A call of a platform function not implemented yet: each is
+    /// implemented to its source, with its vector table, by the task that
+    /// needs it (S2.2), and refused until then, so evaluation stays total.
+    NotImplemented(Func),
 }
 
 impl fmt::Display for Ty {
@@ -379,6 +384,10 @@ impl fmt::Display for TypeError {
                 Some(ty) => write!(f, "the name `{name}` where a {ty} is expected"),
                 None => write!(f, "the name `{name}` where no name is expected"),
             },
+            TypeError::TooDeep => write!(f, "nested deeper than {MAX_DEPTH}"),
+            TypeError::NotImplemented(func) => {
+                write!(f, "the platform function `{func}` is not implemented yet")
+            }
         }
     }
 }
@@ -388,25 +397,17 @@ impl std::error::Error for TypeError {}
 /// An expression typed against its field, ready to evaluate
 /// ([`TypedExpr::eval`]).
 #[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
-pub struct TypedExpr {
-    pub(super) expr: Expr,
+pub(crate) struct TypedExpr {
     pub(super) node: Node,
     pub(super) ty: Ty,
     pub(super) bound: Bound,
 }
 
 impl TypedExpr {
-    /// The expression as stated.
-    #[must_use]
-    pub fn expr(&self) -> &Expr {
-        &self.expr
-    }
-
     /// The expression's type: the field's, a length where the field is a
     /// font size, or a colour where it is a paint.
     #[must_use]
-    pub fn ty(&self) -> &Ty {
+    pub(crate) fn ty(&self) -> &Ty {
         &self.ty
     }
 }
@@ -431,8 +432,8 @@ pub(super) enum Node {
     Mix(Box<[Node; 3]>),
     /// `pick(index, c0, c1, …)`.
     Pick(Box<Node>, Vec<Node>),
-    /// A platform function's call.
-    Platform(Func, Vec<Node>),
+    /// An implemented platform function's call.
+    Platform(Platform, Vec<Node>),
 }
 
 /// The model's own two-operand arithmetic.
@@ -450,6 +451,9 @@ pub(super) enum BinOp {
 enum Param {
     /// An operand of this type.
     Of(Ty),
+    /// `uifm_scaled`'s `x`: a length, or a font size (a `FontSize` widget
+    /// value a platform scales, S1).
+    LengthOrFontSize,
     /// `uifm_scaled`'s `text_role`: a `TextRoles` slot or a declared text
     /// style.
     SlotOrStyle,
@@ -469,7 +473,11 @@ impl Expr {
     /// The checks that need the whole stack (absent and `Auto` operands,
     /// declared element data, cycles, where an operand may be read) are
     /// S12's, made when the layer is added.
-    pub fn check(&self, field: &FieldType, env: &dyn TypeEnv) -> Result<TypedExpr, TypeError> {
+    pub(crate) fn check(
+        &self,
+        field: &FieldType,
+        env: &dyn TypeEnv,
+    ) -> Result<TypedExpr, TypeError> {
         match (&field.ty, self) {
             (Ty::Block(_) | Ty::Shadow, Expr::Lit(_) | Expr::Call(..)) => {
                 return Err(TypeError::ReferenceOnly {
@@ -487,7 +495,7 @@ impl Expr {
             field: &field.ty,
             env,
         };
-        let (node, ty) = checker.infer(self, Some(&field.ty))?;
+        let (node, ty) = checker.infer(self, Some(&field.ty), 0)?;
         if !accepts(&field.ty, &ty) && !(field.ty == Ty::Paint && ty == Ty::Color) {
             return Err(TypeError::Mismatch {
                 expected: field.ty.clone(),
@@ -495,7 +503,6 @@ impl Expr {
             });
         }
         Ok(TypedExpr {
-            expr: self.clone(),
             node,
             ty,
             bound: field.bound,
@@ -547,13 +554,29 @@ struct Checker<'a> {
 }
 
 impl Checker<'_> {
-    /// The node and type of `expr`, where `expected` is the type its place
-    /// expects: it decides what a name and a `px` literal are.
-    fn infer(&self, expr: &Expr, expected: Option<&Ty>) -> Result<Typed, TypeError> {
+    /// The node and type of `expr` at nesting `depth`, where `expected` is
+    /// the type its place expects: it decides what a name and a `px` literal
+    /// are.
+    ///
+    /// The depth is counted as the parser counts it, so an expression built
+    /// in Rust is held to [`MAX_DEPTH`] too, and refused before it is
+    /// followed deeper.
+    fn infer(&self, expr: &Expr, expected: Option<&Ty>, depth: usize) -> Result<Typed, TypeError> {
         match expr {
             Expr::Lit(literal) => self.literal(literal, expected),
-            Expr::Ref(reference) => Ok((Node::Ref(reference.clone()), self.reference(reference)?)),
-            Expr::Call(func, args) => self.call(*func, args, expected),
+            Expr::Ref(reference) => {
+                if depth.saturating_add(active_depth(reference)) > MAX_DEPTH {
+                    return Err(TypeError::TooDeep);
+                }
+                Ok((Node::Ref(reference.clone()), self.reference(reference)?))
+            }
+            Expr::Call(func, args) => {
+                let depth = depth
+                    .checked_add(1)
+                    .filter(|depth| *depth <= MAX_DEPTH)
+                    .ok_or(TypeError::TooDeep)?;
+                self.call(*func, args, expected, depth)
+            }
         }
     }
 
@@ -633,41 +656,50 @@ impl Checker<'_> {
         }
     }
 
-    fn call(&self, func: Func, args: &[Expr], expected: Option<&Ty>) -> Result<Typed, TypeError> {
+    fn call(
+        &self,
+        func: Func,
+        args: &[Expr],
+        expected: Option<&Ty>,
+        depth: usize,
+    ) -> Result<Typed, TypeError> {
         let color = || Ty::Color;
         match func {
-            Func::Add => self.same_type(func, BinOp::Add, args, expected),
-            Func::Sub => self.same_type(func, BinOp::Sub, args, expected),
-            Func::Min => self.same_type(func, BinOp::Min, args, expected),
-            Func::Max => self.same_type(func, BinOp::Max, args, expected),
-            Func::Mul => self.mul(args, expected),
-            Func::Div => self.div(args, expected),
+            Func::Add => self.same_type(func, BinOp::Add, args, expected, depth),
+            Func::Sub => self.same_type(func, BinOp::Sub, args, expected, depth),
+            Func::Min => self.same_type(func, BinOp::Min, args, expected, depth),
+            Func::Max => self.same_type(func, BinOp::Max, args, expected, depth),
+            Func::Mul => self.mul(args, expected, depth),
+            Func::Div => self.div(args, expected, depth),
             Func::Floor => {
                 let [x] = args else {
                     return Err(arity(func, args));
                 };
-                let (node, ty) = self.infer(x, expected)?;
+                let (node, ty) = self.infer(x, expected, depth)?;
                 arithmetic(func, &ty)?;
                 Ok((Node::Floor(Box::new(node), ty.clone()), ty))
             }
-            Func::Pick => self.pick(args),
+            Func::Pick => self.pick(args, depth),
             Func::Alpha => {
-                let nodes = self.arguments(func, args, &[COLOR, NUMBER])?;
+                let nodes = self.arguments(func, args, depth, &[COLOR, NUMBER])?;
                 let nodes = <[Node; 2]>::try_from(nodes).map_err(|_| arity(func, args))?;
                 Ok((Node::Alpha(Box::new(nodes)), Ty::Color))
             }
             Func::Mix => {
-                let nodes = self.arguments(func, args, &[COLOR, COLOR, NUMBER])?;
+                let nodes = self.arguments(func, args, depth, &[COLOR, COLOR, NUMBER])?;
                 let nodes = <[Node; 3]>::try_from(nodes).map_err(|_| arity(func, args))?;
                 Ok((Node::Mix(Box::new(nodes)), Ty::Color))
             }
-            Func::QtLighter | Func::QtDarker => self.fixed(func, args, &[COLOR, NUMBER], color()),
+            Func::QtLighter | Func::QtDarker => {
+                self.fixed(func, args, depth, &[COLOR, NUMBER], color())
+            }
             Func::KcuMix | Func::KcuTint | Func::KirigamiTint => {
-                self.fixed(func, args, &[COLOR, COLOR, NUMBER], color())
+                self.fixed(func, args, depth, &[COLOR, COLOR, NUMBER], color())
             }
             Func::KdeEffects => self.fixed(
                 func,
                 args,
+                depth,
                 &[
                     COLOR,
                     COLOR,
@@ -679,18 +711,24 @@ impl Checker<'_> {
             Func::KdeSelectionInactive => self.fixed(
                 func,
                 args,
+                depth,
                 &[COLOR, COLOR, COLOR, Param::Of(Ty::Enum(&KDE_ROLE_KIND))],
                 color(),
             ),
             Func::KcuShade | Func::KqcSeriesColor => {
-                self.fixed(func, args, &[COLOR, NUMBER, NUMBER], color())
+                self.fixed(func, args, depth, &[COLOR, NUMBER, NUMBER], color())
             }
-            Func::AdwStandalone => {
-                self.fixed(func, args, &[COLOR, Param::Of(Ty::Enum(&SCHEME))], color())
-            }
+            Func::AdwStandalone => self.fixed(
+                func,
+                args,
+                depth,
+                &[COLOR, Param::Of(Ty::Enum(&SCHEME))],
+                color(),
+            ),
             Func::M3Role => self.fixed(
                 func,
                 args,
+                depth,
                 &[Param::Of(Ty::Key(Cow::Borrowed("color_roles")))],
                 color(),
             ),
@@ -698,17 +736,18 @@ impl Checker<'_> {
             | Func::KirigamiBadgeText
             | Func::KaCardBorder
             | Func::KaBannerLine
-            | Func::KteMinimapMark => self.fixed(func, args, &[COLOR, COLOR], color()),
-            Func::KaContrastText => self.fixed(func, args, &[COLOR], color()),
+            | Func::KteMinimapMark => self.fixed(func, args, depth, &[COLOR, COLOR], color()),
+            Func::KaContrastText => self.fixed(func, args, depth, &[COLOR], color()),
             Func::KteMarkUnderlay | Func::GtkContrastPick => {
-                self.fixed(func, args, &[COLOR, COLOR, COLOR], color())
+                self.fixed(func, args, depth, &[COLOR, COLOR, COLOR], color())
             }
             Func::KirigamiLabelIconSize | Func::GtkWheelStep => {
-                self.fixed(func, args, &[LENGTH], Ty::Length)
+                self.fixed(func, args, depth, &[LENGTH], Ty::Length)
             }
             Func::SfTracking => self.fixed(
                 func,
                 args,
+                depth,
                 &[
                     Param::Of(Ty::FontSize),
                     Param::Of(Ty::Enum(&TRACKING_DESIGN)),
@@ -718,19 +757,28 @@ impl Checker<'_> {
             Func::UikitProminence => self.fixed(
                 func,
                 args,
+                depth,
                 &[COLOR, Param::Of(Ty::Enum(&UIKIT_PROMINENCE))],
                 color(),
             ),
             Func::ShadowExtent => self.fixed(
                 func,
                 args,
+                depth,
                 &[Param::Of(Ty::Shadow), Param::Of(Ty::Enum(&SIDE))],
                 Ty::Length,
             ),
-            Func::UifmScaled => self.fixed(func, args, &[LENGTH, Param::SlotOrStyle], Ty::Length),
+            Func::UifmScaled => self.fixed(
+                func,
+                args,
+                depth,
+                &[Param::LengthOrFontSize, Param::SlotOrStyle],
+                Ty::Length,
+            ),
             Func::KdeAccent => self.fixed(
                 func,
                 args,
+                depth,
                 &[
                     Param::Of(Ty::Enum(&SURFACE_SET)),
                     Param::Of(Ty::Enum(&KDE_SCHEME_KEY)),
@@ -738,12 +786,17 @@ impl Checker<'_> {
                 ],
                 color(),
             ),
-            Func::KdeAccentWm => {
-                self.fixed(func, args, &[Param::Of(Ty::Enum(&KDE_WM_KEY))], color())
-            }
+            Func::KdeAccentWm => self.fixed(
+                func,
+                args,
+                depth,
+                &[Param::Of(Ty::Enum(&KDE_WM_KEY))],
+                color(),
+            ),
             Func::NameIndex => self.fixed(
                 func,
                 args,
+                depth,
                 &[
                     Param::Of(Ty::Text),
                     NUMBER,
@@ -754,16 +807,19 @@ impl Checker<'_> {
         }
     }
 
-    /// A platform function's call, each argument typed against its parameter.
+    /// A platform function's call, each argument typed against its
+    /// parameter; refused where the function is not implemented yet.
     fn fixed(
         &self,
         func: Func,
         args: &[Expr],
+        depth: usize,
         params: &[Param],
         result: Ty,
     ) -> Result<Typed, TypeError> {
-        let nodes = self.arguments(func, args, params)?;
-        Ok((Node::Platform(func, nodes), result))
+        let nodes = self.arguments(func, args, depth, params)?;
+        let platform = Platform::of(func).ok_or(TypeError::NotImplemented(func))?;
+        Ok((Node::Platform(platform, nodes), result))
     }
 
     /// The arguments of a function of fixed parameters, each typed against
@@ -772,6 +828,7 @@ impl Checker<'_> {
         &self,
         func: Func,
         args: &[Expr],
+        depth: usize,
         params: &[Param],
     ) -> Result<Vec<Node>, TypeError> {
         if args.len() != params.len() {
@@ -784,10 +841,15 @@ impl Checker<'_> {
                     Ty::Key(Cow::Borrowed("text_styles"))
                 }
                 (Param::SlotOrStyle, _) => Ty::Enum(&TEXT_ROLE),
+                (Param::LengthOrFontSize, _) => Ty::Length,
                 (Param::Of(ty), _) => ty.clone(),
             };
-            let (node, found) = self.infer(arg, Some(&expected))?;
-            if !accepts(&expected, &found) {
+            let (node, found) = self.infer(arg, Some(&expected), depth)?;
+            let accepted = match param {
+                Param::LengthOrFontSize => matches!(found, Ty::Length | Ty::FontSize),
+                Param::Of(_) | Param::SlotOrStyle => accepts(&expected, &found),
+            };
+            if !accepted {
                 return Err(TypeError::Argument {
                     func,
                     index,
@@ -808,6 +870,7 @@ impl Checker<'_> {
         op: BinOp,
         args: &[Expr],
         expected: Option<&Ty>,
+        depth: usize,
     ) -> Result<Typed, TypeError> {
         let [a, b] = args else {
             return Err(arity(func, args));
@@ -819,17 +882,17 @@ impl Checker<'_> {
                 Ty::Number,
             ),
             (Some(x), None) => {
-                let (right, ty) = self.infer(b, expected)?;
+                let (right, ty) = self.infer(b, expected, depth)?;
                 arithmetic(func, &ty)?;
                 (adopt(x, &ty), right, ty)
             }
             (None, Some(y)) => {
-                let (left, ty) = self.infer(a, expected)?;
+                let (left, ty) = self.infer(a, expected, depth)?;
                 arithmetic(func, &ty)?;
                 (left, adopt(y, &ty), ty)
             }
             (None, None) => {
-                let ((left, left_ty), (right, right_ty)) = self.pair(a, b, expected)?;
+                let ((left, left_ty), (right, right_ty)) = self.pair(a, b, expected, depth)?;
                 arithmetic(func, &left_ty)?;
                 arithmetic(func, &right_ty)?;
                 let ty = unify(&left_ty, &right_ty).ok_or(TypeError::OperandsDiffer {
@@ -845,26 +908,32 @@ impl Checker<'_> {
 
     /// Two operands of one type: the one that is not a literal typed first,
     /// so a `px` literal beside a font size is one too.
-    fn pair(&self, a: &Expr, b: &Expr, expected: Option<&Ty>) -> Result<(Typed, Typed), TypeError> {
+    fn pair(
+        &self,
+        a: &Expr,
+        b: &Expr,
+        expected: Option<&Ty>,
+        depth: usize,
+    ) -> Result<(Typed, Typed), TypeError> {
         if matches!(a, Expr::Lit(_)) && !matches!(b, Expr::Lit(_)) {
-            let right = self.infer(b, expected)?;
-            let left = self.infer(a, Some(&right.1))?;
+            let right = self.infer(b, expected, depth)?;
+            let left = self.infer(a, Some(&right.1), depth)?;
             Ok((left, right))
         } else {
-            let left = self.infer(a, expected)?;
-            let right = self.infer(b, Some(&left.1))?;
+            let left = self.infer(a, expected, depth)?;
+            let right = self.infer(b, Some(&left.1), depth)?;
             Ok((left, right))
         }
     }
 
     /// `mul(T, number)` or `mul(number, T)`: a `T`.
-    fn mul(&self, args: &[Expr], expected: Option<&Ty>) -> Result<Typed, TypeError> {
+    fn mul(&self, args: &[Expr], expected: Option<&Ty>, depth: usize) -> Result<Typed, TypeError> {
         let func = Func::Mul;
         let [a, b] = args else {
             return Err(arity(func, args));
         };
-        let (left, left_ty) = self.infer(a, expected)?;
-        let (right, right_ty) = self.infer(b, expected)?;
+        let (left, left_ty) = self.infer(a, expected, depth)?;
+        let (right, right_ty) = self.infer(b, expected, depth)?;
         arithmetic(func, &left_ty)?;
         arithmetic(func, &right_ty)?;
         let ty = match (&left_ty, &right_ty) {
@@ -884,12 +953,12 @@ impl Checker<'_> {
     }
 
     /// `div(T, number)`: a `T`; `div(T, T)`: a number.
-    fn div(&self, args: &[Expr], expected: Option<&Ty>) -> Result<Typed, TypeError> {
+    fn div(&self, args: &[Expr], expected: Option<&Ty>, depth: usize) -> Result<Typed, TypeError> {
         let func = Func::Div;
         let [a, b] = args else {
             return Err(arity(func, args));
         };
-        let ((left, left_ty), (right, right_ty)) = self.pair(a, b, expected)?;
+        let ((left, left_ty), (right, right_ty)) = self.pair(a, b, expected, depth)?;
         arithmetic(func, &left_ty)?;
         arithmetic(func, &right_ty)?;
         let ty = if right_ty == Ty::Number {
@@ -910,7 +979,7 @@ impl Checker<'_> {
     }
 
     /// `pick(index, c0, c1, …)`: a number and at least one colour.
-    fn pick(&self, args: &[Expr]) -> Result<Typed, TypeError> {
+    fn pick(&self, args: &[Expr], depth: usize) -> Result<Typed, TypeError> {
         let func = Func::Pick;
         let [index, colors @ ..] = args else {
             return Err(arity(func, args));
@@ -918,11 +987,11 @@ impl Checker<'_> {
         if colors.is_empty() {
             return Err(arity(func, args));
         }
-        let index = self.arguments(func, std::slice::from_ref(index), &[NUMBER])?;
+        let index = self.arguments(func, std::slice::from_ref(index), depth, &[NUMBER])?;
         let [index] = <[Node; 1]>::try_from(index).map_err(|_| arity(func, args))?;
         let mut nodes = Vec::with_capacity(colors.len());
         for (position, color) in colors.iter().enumerate() {
-            let (node, found) = self.infer(color, Some(&Ty::Color))?;
+            let (node, found) = self.infer(color, Some(&Ty::Color), depth)?;
             if found != Ty::Color {
                 return Err(TypeError::Argument {
                     func,
@@ -954,6 +1023,18 @@ fn arithmetic(func: Func, ty: &Ty) -> Result<(), TypeError> {
             found: ty.clone(),
         }),
     }
+}
+
+/// How many `active(…)` enclose the reference at the end of `reference`'s
+/// chain, counted without recursion.
+fn active_depth(reference: &Ref) -> usize {
+    let mut depth = 0_usize;
+    let mut reference = reference;
+    while let Ref::Active(inner) = reference {
+        depth = depth.saturating_add(1);
+        reference = inner;
+    }
+    depth
 }
 
 /// An `element.` operand's type.
@@ -1028,12 +1109,15 @@ mod tests {
     }
 
     fn typed(text: &str, ty: Ty) -> Ty {
-        check(text, ty).unwrap_or_else(|e| panic!("{text}: {e}")).ty
+        check(text, ty)
+            .unwrap_or_else(|e| panic!("{text}: {e}"))
+            .ty()
+            .clone()
     }
 
     fn refused(text: &str, ty: Ty) -> TypeError {
         check(text, ty)
-            .map(|t| panic!("{text} typed as {}", t.ty))
+            .map(|t| panic!("{text} typed as {}", t.ty()))
             .unwrap_err()
     }
 
@@ -1349,9 +1433,6 @@ mod tests {
                 name: key!("secondary")
             }
         );
-        assert_eq!(typed("m3_role(@primary)", Ty::Color), Ty::Color);
-        assert_eq!(typed("uifm_scaled(4px, caption2)", Ty::Length), Ty::Length);
-        assert_eq!(typed("uifm_scaled(4px, @body)", Ty::Length), Ty::Length);
         assert_eq!(
             refused("uifm_scaled(4px, @caption)", Ty::Length),
             TypeError::UndeclaredKey {
@@ -1359,29 +1440,142 @@ mod tests {
                 key: key!("caption")
             }
         );
+        // Arguments that type: the call reaches the platform function, not
+        // implemented yet.
+        for (text, ty, func) in [
+            ("m3_role(@primary)", Ty::Color, Func::M3Role),
+            ("uifm_scaled(4px, caption2)", Ty::Length, Func::UifmScaled),
+            ("uifm_scaled(4px, @body)", Ty::Length, Func::UifmScaled),
+            (
+                "kde_accent(header, foreground_link, inactive)",
+                Ty::Color,
+                Func::KdeAccent,
+            ),
+            (
+                "kde_accent_wm(active_background)",
+                Ty::Color,
+                Func::KdeAccentWm,
+            ),
+            (
+                "sf_tracking(17pt, sf_pro_rounded)",
+                Ty::Length,
+                Func::SfTracking,
+            ),
+            (
+                "name_index(element.text, 8, adwaita)",
+                Ty::Number,
+                Func::NameIndex,
+            ),
+            (
+                "adw_standalone(role.global.accent, scheme)",
+                Ty::Color,
+                Func::AdwStandalone,
+            ),
+            (
+                "shadow_extent(widget.frame.shadow, left)",
+                Ty::Length,
+                Func::ShadowExtent,
+            ),
+        ] {
+            assert_eq!(refused(text, ty), TypeError::NotImplemented(func), "{text}");
+        }
+    }
+
+    #[test]
+    fn typing_refuses_platform_function_not_implemented() {
         assert_eq!(
-            typed("kde_accent(header, foreground_link, inactive)", Ty::Color),
-            Ty::Color
+            refused("qt_lighter(surface.foreground, 1.5)", Ty::Color),
+            TypeError::NotImplemented(Func::QtLighter)
         );
         assert_eq!(
-            typed("kde_accent_wm(active_background)", Ty::Color),
-            Ty::Color
+            refused(
+                "mix(kcu_overlay(surface.foreground, #000000), #ffffff, 0.5)",
+                Ty::Color
+            ),
+            TypeError::NotImplemented(Func::KcuOverlay)
         );
+        // The arguments are typed first.
         assert_eq!(
-            typed("sf_tracking(17pt, sf_pro_rounded)", Ty::Length),
-            Ty::Length
+            refused("qt_lighter(4px, 1.5)", Ty::Color),
+            TypeError::Argument {
+                func: Func::QtLighter,
+                index: 0,
+                expected: Ty::Color,
+                found: Ty::Length
+            }
         );
+    }
+
+    #[test]
+    fn uifm_scaled_takes_length_or_font_size() {
+        for text in [
+            "uifm_scaled(4px, body)",
+            "uifm_scaled(token.gap, body)",
+            "uifm_scaled(17pt, body)",
+            "uifm_scaled(token.label_size, body)",
+            "uifm_scaled(add(token.label_size, 2px), @body)",
+        ] {
+            assert_eq!(
+                refused(text, Ty::FontSize),
+                TypeError::NotImplemented(Func::UifmScaled),
+                "{text}"
+            );
+        }
         assert_eq!(
-            typed("name_index(element.text, 8, adwaita)", Ty::Number),
-            Ty::Number
+            refused("uifm_scaled(token.duration, body)", Ty::Length),
+            TypeError::Argument {
+                func: Func::UifmScaled,
+                index: 0,
+                expected: Ty::Length,
+                found: Ty::Duration
+            }
         );
+    }
+
+    /// `floor(…)` around `inner`, `calls` deep, built in Rust.
+    fn floors(calls: usize, inner: Expr) -> Expr {
+        (0..calls).fold(inner, |expr, _| Expr::Call(Func::Floor, vec![expr]))
+    }
+
+    /// `active(…)` around `role.global.accent`, `depth` deep, built in Rust.
+    fn actives(depth: usize) -> Expr {
+        let accent = Ref::GlobalRole(vec![key!("accent")]);
+        Expr::Ref((0..depth).fold(accent, |inner, _| Ref::Active(Box::new(inner))))
+    }
+
+    #[test]
+    fn typing_refuses_depth_33_built_in_rust() {
+        let field = FieldType::new(Ty::Length, Bound::Unbounded);
+        let gap = || Expr::Ref(Ref::Token(vec![key!("gap")]));
+        assert!(floors(MAX_DEPTH, gap()).check(&field, &Fixture).is_ok());
+        for calls in [MAX_DEPTH + 1, 1000] {
+            assert_eq!(
+                floors(calls, gap()).check(&field, &Fixture),
+                Err(TypeError::TooDeep),
+                "{calls}"
+            );
+        }
+        let colour = FieldType::new(Ty::Color, Bound::Unbounded);
         assert_eq!(
-            typed("adw_standalone(role.global.accent, scheme)", Ty::Color),
-            Ty::Color
+            actives(MAX_DEPTH + 1).check(&colour, &Fixture),
+            Err(TypeError::TooDeep)
         );
+        // `active(…)` counts with the calls around it, as the parser counts it.
         assert_eq!(
-            typed("shadow_extent(widget.frame.shadow, left)", Ty::Length),
-            Ty::Length
+            Expr::Call(
+                Func::Alpha,
+                vec![actives(MAX_DEPTH), Expr::Lit(Literal::Number(0.5))]
+            )
+            .check(&colour, &Fixture),
+            Err(TypeError::TooDeep)
+        );
+        assert_ne!(
+            Expr::Call(
+                Func::Alpha,
+                vec![actives(MAX_DEPTH - 1), Expr::Lit(Literal::Number(0.5))]
+            )
+            .check(&colour, &Fixture),
+            Err(TypeError::TooDeep)
         );
     }
 
@@ -1437,9 +1631,73 @@ mod tests {
 
     #[test]
     fn enum_descriptions_match_the_spec_lists() {
+        assert_eq!(SCHEME.variants, Scheme::NAMES);
         assert_eq!(SURFACE_SET.variants, SurfaceSet::NAMES);
-        assert_eq!(TEXT_ROLE.variants.len(), 19);
-        assert_eq!(KDE_SCHEME_KEY.variants.len(), 12);
+        // S4.4's `TextRoles` fields, in order.
+        assert_eq!(
+            TEXT_ROLE.variants,
+            [
+                "body",
+                "body_emphasized",
+                "caption",
+                "caption_emphasized",
+                "caption2",
+                "footnote",
+                "subheadline",
+                "callout",
+                "headline",
+                "title1",
+                "title2",
+                "title3",
+                "large_title",
+                "display_large",
+                "display_medium",
+                "display_small",
+                "label",
+                "monospace",
+                "numeric",
+            ]
+        );
+        // S4.8's enums.
+        assert_eq!(KDE_GROUP.variants, ["active", "disabled", "inactive"]);
+        assert_eq!(
+            KDE_ROLE_KIND.variants,
+            ["foreground", "decoration", "background"]
+        );
+        assert_eq!(
+            KDE_SCHEME_KEY.variants,
+            [
+                "background_normal",
+                "background_alternate",
+                "foreground_normal",
+                "foreground_inactive",
+                "foreground_active",
+                "foreground_link",
+                "foreground_visited",
+                "foreground_negative",
+                "foreground_neutral",
+                "foreground_positive",
+                "decoration_focus",
+                "decoration_hover",
+            ]
+        );
+        assert_eq!(
+            KDE_WM_KEY.variants,
+            [
+                "active_background",
+                "active_foreground",
+                "inactive_background",
+                "inactive_foreground",
+            ]
+        );
+        // S2.2's function table.
+        assert_eq!(
+            TRACKING_DESIGN.variants,
+            ["sf_pro", "sf_pro_rounded", "new_york"]
+        );
+        assert_eq!(NAME_INDEX_METHOD.variants, ["kirigami", "adwaita"]);
+        // S1's `Sides`.
+        assert_eq!(SIDE.variants, ["top", "right", "bottom", "left"]);
         assert!(UIKIT_PROMINENCE.variants.is_empty());
     }
 }

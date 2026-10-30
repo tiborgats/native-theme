@@ -15,7 +15,7 @@ mod value;
 
 pub use color::Color;
 pub use error::KeyError;
-pub use expr::Expr;
+pub use expr::{Expr, ParseError};
 pub use key::Key;
 pub use roles::SurfaceSet;
 pub use selector::Scheme;
