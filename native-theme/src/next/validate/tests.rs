@@ -767,6 +767,57 @@ fn display_params_may_be_absent() {
     );
 }
 
+/// A flavour's section states only the keys that differ; each key it
+/// leaves out is the widget's own (S10).
+#[test]
+fn flavour_sections_inherit_the_widgets_keys() {
+    let entry = "[declare]\nflavors = [\"widgets\", \"kirigami\"]\n[declare.widget.button]\n\
+                 variants = [\"@fab\"]\nsizes = [\"regular\"]\n\
+                 [declare.flavor.kirigami.widget.button]\n\
+                 default_size_by_variant = [{ variant = \"@fab\", size = \"regular\" }]";
+    let rule = "\n[[rules]]\nwhen = { conditions = [\"flavor:kirigami\"], variants = [\"@fab\"] }\n\
+                target = \"button.body\"\nset = { opacity = 0.5 }";
+    assert_eq!(preset(&format!("{entry}{rule}")), NONE);
+    // A flavour's own variant set replaces the widget's under it.
+    let replaced = entry.replace(
+        "[declare.flavor.kirigami.widget.button]\n",
+        "[declare.flavor.kirigami.widget.button]\nvariants = [\"@pill\"]\n",
+    );
+    let pill = "\n[[rules]]\nwhen = { variants = [\"@pill\"] }\ntarget = \"button.body\"\n\
+                set = { opacity = 0.5 }";
+    assert_eq!(
+        preset(&format!("{replaced}{pill}{rule}")),
+        [
+            "declare.flavor.kirigami.widget.button.default_size_by_variant[0].variant: `@fab` is \
+             not declared in `declare.flavor.kirigami.widget.button.variants`"
+        ]
+    );
+}
+
+/// The structural check takes availability from the default flavour's
+/// declarations; a flavour that makes a widget unavailable is S12's
+/// combination check's.
+#[test]
+fn availability_is_the_default_flavours() {
+    let decl = declare(
+        "flavors = [\"widgets\", \"kirigami\"]\n[declare.flavor.kirigami.widget.button]\n\
+         available = false",
+    );
+    let layer = toml(
+        "[[rules]]\nwhen = { conditions = [\"flavor:widgets\"] }\ntarget = \"button.icon\"\n\
+         set = { drawn_as = { widget = \"button\", variants = [] } }",
+    );
+    assert_eq!(found(&layer, &decl), NONE);
+    let unavailable = declare(
+        "flavors = [\"widgets\", \"kirigami\"]\n[declare.flavor.widgets.widget.button]\n\
+         available = false",
+    );
+    assert_eq!(
+        found(&layer, &unavailable),
+        ["rules[0].set.drawn_as.widget: `button` is not available on the preset"]
+    );
+}
+
 #[test]
 fn refusal_unit_mismatch() {
     let decl = declare("params = { layout = { unit = \"px\", keys = [\"gap\"] } }");

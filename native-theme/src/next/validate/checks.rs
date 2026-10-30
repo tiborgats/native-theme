@@ -239,10 +239,7 @@ impl<'a> Checker<'a> {
 
     /// In a preset's own bases, an available widget is stated (S2.2, S10).
     fn widget_missing(&mut self, widget: WidgetKind, at: &str) {
-        let available = !self
-            .widget_decls(widget)
-            .any(|decl| decl.available == Some(false));
-        if self.cx.kind == LayerKind::Preset && available {
+        if self.cx.kind == LayerKind::Preset && self.available(widget) {
             self.problem(at, ProblemKind::Missing);
         }
     }
@@ -327,10 +324,7 @@ impl<'a> Checker<'a> {
             }
         };
         let Some(widget) = widget else { return };
-        if self
-            .widget_decls(widget)
-            .any(|decl| decl.available == Some(false))
-        {
+        if !self.available(widget) {
             self.problem(
                 &target_at,
                 ProblemKind::WidgetUnavailable {
@@ -343,18 +337,17 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// The widget's declarations: its own section and each flavour's.
-    fn widget_decls(&self, widget: WidgetKind) -> impl Iterator<Item = &'a WidgetDecl> + use<'a> {
-        let decl = self.decl();
-        decl.widgets
-            .iter()
-            .chain(
-                decl.flavor
-                    .iter()
-                    .flat_map(|(_, flavor)| flavor.widgets.iter()),
-            )
-            .filter(move |(kind, _)| *kind == widget)
-            .map(|(_, decl)| decl)
+    /// The widget's declarations under each flavour (S10): a name is
+    /// declared where some flavour declares it; which flavour a rule
+    /// applies under is S12's combination check's.
+    fn widget_decls(&self, widget: WidgetKind) -> std::vec::IntoIter<WidgetDecl> {
+        self.decl().in_each_flavor(widget).into_iter()
+    }
+
+    /// Whether the widget is available under the default flavour (S10);
+    /// another flavour's availability is S12's combination check's.
+    fn available(&self, widget: WidgetKind) -> bool {
+        self.decl().in_default_flavor(widget).available != Some(false)
     }
 
     fn variant(&mut self, widget: WidgetKind, variant: &VariantRef, at: &str) {
@@ -988,9 +981,9 @@ impl<'a> Checker<'a> {
             return;
         }
         if let (Region::Values(widget), Some((_, value))) = (self.region, path.first_field()) {
-            let listed: Vec<&Vec<Key>> = self
+            let listed: Vec<Vec<Key>> = self
                 .widget_decls(widget)
-                .flat_map(|decl| decl.keys.iter().flatten())
+                .flat_map(|decl| decl.keys.unwrap_or_default())
                 .filter(|(held, _)| *held == value)
                 .map(|(_, keys)| keys)
                 .collect();
@@ -1283,18 +1276,22 @@ impl Visit for Checker<'_> {
 /// `default_size_by_variant` entry naming an undeclared variant, a size the
 /// variant does not take, or a variant an earlier entry names.
 pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
-    let own = decl
-        .widgets
-        .iter()
-        .map(|(widget, section)| (format!("declare.widget.{}", widget_name(*widget)), section));
+    // Each section's entries against the declarations in force where they
+    // apply: the widget's own under the default flavour, a flavour's
+    // section under that flavour, each key it leaves out the widget's own
+    // (S10).
+    let own = decl.widgets.iter().map(|(widget, section)| {
+        let at = format!("declare.widget.{}", widget_name(*widget));
+        (at, section, decl.in_default_flavor(*widget))
+    });
     let flavors = decl.flavor.iter().flat_map(|(flavor, section)| {
         section.widgets.iter().map(move |(widget, section)| {
             let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
-            (at, section)
+            (at, section, decl.in_flavor(*widget, flavor))
         })
     });
     let mut problems = Vec::new();
-    for (at, section) in own.chain(flavors) {
+    for (at, section, in_force) in own.chain(flavors) {
         for (group_index, group) in section.exclusive_variants.iter().flatten().enumerate() {
             for (index, variant) in group.iter().enumerate() {
                 if group.iter().take(index).any(|earlier| earlier == variant) {
@@ -1319,7 +1316,7 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
                 let kind = ProblemKind::ListedTwice { name: name.clone() };
                 problems.push(Problem::new(&item, kind));
             }
-            let declared = section
+            let declared = in_force
                 .variants
                 .as_ref()
                 .is_some_and(|variants| variants.contains(&entry.variant));
@@ -1328,13 +1325,13 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
                 let kind = ProblemKind::Undeclared { name, declaration };
                 problems.push(Problem::new(&join(&item, "variant"), kind));
             }
-            let sizes = section
+            let sizes = in_force
                 .sizes_by_variant
                 .iter()
                 .flatten()
                 .find(|by| by.variant == entry.variant)
                 .map(|by| &by.sizes)
-                .or(section.sizes.as_ref());
+                .or(in_force.sizes.as_ref());
             if !sizes.is_some_and(|sizes| sizes.contains(&entry.size)) {
                 let size = entry.size.name().to_owned();
                 problems.push(Problem::new(

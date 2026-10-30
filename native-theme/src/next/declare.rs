@@ -162,6 +162,94 @@ pub(crate) struct WidgetDecl {
     pub(crate) breakpoints: Option<Vec<Breakpoint>>,
 }
 
+impl WidgetDecl {
+    /// This section with each key `over` states replacing this one's: a
+    /// flavour's section over the widget's own (S10).
+    pub(crate) fn replaced_by(&self, over: &WidgetDecl) -> WidgetDecl {
+        let WidgetDecl {
+            variants,
+            sizes,
+            densities,
+            flags,
+            exclusive,
+            exclusive_variants,
+            sizes_by_context,
+            sizes_by_variant,
+            default_size,
+            default_size_by_variant,
+            available,
+            requires_variants,
+            data,
+            keys,
+            breakpoints,
+        } = over;
+        fn pick<T: Clone>(over: &Option<T>, own: &Option<T>) -> Option<T> {
+            over.as_ref().or(own.as_ref()).cloned()
+        }
+        WidgetDecl {
+            variants: pick(variants, &self.variants),
+            sizes: pick(sizes, &self.sizes),
+            densities: pick(densities, &self.densities),
+            flags: pick(flags, &self.flags),
+            exclusive: pick(exclusive, &self.exclusive),
+            exclusive_variants: pick(exclusive_variants, &self.exclusive_variants),
+            sizes_by_context: pick(sizes_by_context, &self.sizes_by_context),
+            sizes_by_variant: pick(sizes_by_variant, &self.sizes_by_variant),
+            default_size: pick(default_size, &self.default_size),
+            default_size_by_variant: pick(default_size_by_variant, &self.default_size_by_variant),
+            available: pick(available, &self.available),
+            requires_variants: pick(requires_variants, &self.requires_variants),
+            data: pick(data, &self.data),
+            keys: pick(keys, &self.keys),
+            breakpoints: pick(breakpoints, &self.breakpoints),
+        }
+    }
+}
+
+impl Declarations {
+    /// The widget's own section, empty where it states none.
+    fn own(&self, widget: WidgetKind) -> WidgetDecl {
+        self.widgets
+            .iter()
+            .find(|(held, _)| *held == widget)
+            .map(|(_, section)| section.clone())
+            .unwrap_or_default()
+    }
+
+    /// The widget's declarations in force under `flavor`: its own section,
+    /// each key the flavour's section states replacing its own (S10).
+    pub(crate) fn in_flavor(&self, widget: WidgetKind, flavor: &Key) -> WidgetDecl {
+        let own = self.own(widget);
+        self.flavor
+            .iter()
+            .filter(|(held, _)| held == flavor)
+            .flat_map(|(_, section)| section.widgets.iter())
+            .filter(|(held, _)| *held == widget)
+            .fold(own, |held, (_, section)| held.replaced_by(section))
+    }
+
+    /// The widget's declarations under the default flavour: the first
+    /// declared, or its own section where the preset declares no flavour.
+    pub(crate) fn in_default_flavor(&self, widget: WidgetKind) -> WidgetDecl {
+        match self.flavors.first() {
+            Some(flavor) => self.in_flavor(widget, flavor),
+            None => self.own(widget),
+        }
+    }
+
+    /// The widget's declarations under each flavour, the default first; its
+    /// own section alone where the preset declares no flavour.
+    pub(crate) fn in_each_flavor(&self, widget: WidgetKind) -> Vec<WidgetDecl> {
+        if self.flavors.is_empty() {
+            return vec![self.own(widget)];
+        }
+        self.flavors
+            .iter()
+            .map(|flavor| self.in_flavor(widget, flavor))
+            .collect()
+    }
+}
+
 /// The sizes an element takes in the nearest ancestor of a widget.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SizesByContext {
