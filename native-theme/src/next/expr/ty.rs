@@ -388,8 +388,9 @@ pub(crate) struct TypedExpr {
 }
 
 impl TypedExpr {
-    /// The expression's type: the field's, a length where the field is a
-    /// font size, or a colour where it is a paint.
+    /// The expression's type: the field's, or a length where the field is a
+    /// font size; a colour expression on a paint field is a paint of one
+    /// `Color` layer (S2.2).
     #[must_use]
     pub(crate) fn ty(&self) -> &Ty {
         &self.ty
@@ -420,6 +421,9 @@ pub(super) enum Node {
     Pick(Box<Node>, Vec<Node>),
     /// An implemented platform function's call.
     Platform(Platform, Vec<Node>),
+    /// A colour expression stated on a paint field: one `Color` layer, blend
+    /// `Normal` (S2.2).
+    ColorLayer(Box<Node>),
 }
 
 /// The model's own two-operand arithmetic.
@@ -482,7 +486,14 @@ impl Expr {
             env,
         };
         let (node, ty) = checker.infer(self, Some(&field.ty), 0)?;
-        if !accepts(&field.ty, &ty) && !(field.ty == Ty::Paint && ty == Ty::Color) {
+        if field.ty == Ty::Paint && ty == Ty::Color {
+            return Ok(TypedExpr {
+                node: Node::ColorLayer(Box::new(node)),
+                ty: Ty::Paint,
+                bound: field.bound,
+            });
+        }
+        if !accepts(&field.ty, &ty) {
             return Err(TypeError::Mismatch {
                 expected: field.ty.clone(),
                 found: ty,
@@ -1179,12 +1190,15 @@ mod tests {
 
     #[test]
     fn paint_field_takes_colour_expression() {
-        assert_eq!(typed("#ff0000", Ty::Paint), Ty::Color);
-        assert_eq!(typed("surface.foreground", Ty::Paint), Ty::Color);
+        // A colour expression on a paint field is one colour layer, so the
+        // typed expression is a paint; a paint reference stays one.
+        assert_eq!(typed("#ff0000", Ty::Paint), Ty::Paint);
+        assert_eq!(typed("surface.foreground", Ty::Paint), Ty::Paint);
         assert_eq!(
             typed("mix(surface.foreground, #000000, 0.5)", Ty::Paint),
-            Ty::Color
+            Ty::Paint
         );
+        assert_eq!(typed("token.fill", Ty::Paint), Ty::Paint);
     }
 
     #[test]

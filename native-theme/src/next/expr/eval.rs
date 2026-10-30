@@ -4,6 +4,7 @@
 use super::arith;
 use super::ty::{Bound, Node, Ty, TypedExpr};
 use super::{Func, Name, Ref};
+use crate::next::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::next::color::Color;
 use crate::next::units::{Deg, FontSize, Ms, Px};
 
@@ -29,6 +30,9 @@ pub(crate) enum Val {
     Bool(bool),
     /// An enum variant or a keyed name.
     Name(Name),
+    /// A paint: a paint reference's, or a colour expression's on a paint
+    /// field, one `Color` layer (S2.2).
+    Paint(ResolvedPaint),
     /// A plain reference's `Auto`, on a field that allows it (S2.2).
     Auto,
     /// A plain reference's `Absent`, on a field that may be absent (S2.2).
@@ -134,6 +138,17 @@ fn eval(node: &Node, env: &dyn Env) -> Val {
             Val::Color(arith::pick(index, &colors).unwrap_or_else(transparent))
         }
         Node::Platform(func, args) => func.eval(args, env),
+        Node::ColorLayer(c) => Val::Paint(color_layer(arith::finite_color(color(&eval(c, env))))),
+    }
+}
+
+/// A paint of one colour layer drawn normally (S2.2).
+fn color_layer(c: Color) -> ResolvedPaint {
+    ResolvedPaint {
+        layers: vec![ResolvedPaintLayer {
+            kind: ResolvedPaintKind::Color(Some(c)),
+            blend: BlendMode::Normal,
+        }],
     }
 }
 
@@ -155,7 +170,13 @@ fn number(value: &Val) -> f32 {
         | Val::Duration(Ms(x))
         | Val::Angle(Deg(x))
         | Val::FontSize(Px(x)) => *x,
-        Val::Color(_) | Val::Text(_) | Val::Bool(_) | Val::Name(_) | Val::Auto | Val::Absent => 0.0,
+        Val::Color(_)
+        | Val::Text(_)
+        | Val::Bool(_)
+        | Val::Name(_)
+        | Val::Paint(_)
+        | Val::Auto
+        | Val::Absent => 0.0,
     }
 }
 
@@ -197,7 +218,12 @@ fn map_number(value: Val, f: impl Fn(f32) -> f32) -> Val {
         Val::Angle(Deg(x)) => Val::Angle(Deg(f(x))),
         Val::FontSize(Px(x)) => Val::FontSize(Px(f(x))),
         Val::Color(c) => Val::Color(arith::finite_color(c)),
-        other @ (Val::Text(_) | Val::Bool(_) | Val::Name(_) | Val::Auto | Val::Absent) => other,
+        other @ (Val::Text(_)
+        | Val::Bool(_)
+        | Val::Name(_)
+        | Val::Paint(_)
+        | Val::Auto
+        | Val::Absent) => other,
     }
 }
 
@@ -363,12 +389,12 @@ mod tests {
                 "mix(surface.foreground, role.global.accent, 0.5)",
                 Ty::Paint
             ),
-            Val::Color(Color {
+            Val::Paint(color_layer(Color {
                 r: 1.0 / 3.0,
                 g: 0.0,
                 b: 2.0 / 3.0,
                 a: 0.75
-            })
+            }))
         );
     }
 
