@@ -40,6 +40,9 @@ the newest stable release set at M0, coherent:
 - **Windows:** Windows App SDK 2.5.1 with microsoft-ui-xaml `winui3/release/2.5.1`, the newest pair with a WinUI tag
   (2.6.4 is newer but microsoft-ui-xaml has no tag for it), so the WinUI host builds against 2.5.1 too; the Windows
   Community Toolkit 8.2.251219; Microsoft Learn pages at MicrosoftDocs/windows-dev-docs' commit.
+- **Documentation pages** are snapshotted per page when a lane first cites one (a `snapshot` entry in `sources.toml`,
+  which `check_sources.py` and `update_sources.sh` gain with the first): today's Apple pages describe 27, so for a 26
+  fact only an archived snapshot from 26's lifetime, the pinned Xcode headers or a measurement serves (D12).
 - **Apple (D12):** `macos-26` (macOS 26.6.2, Xcode 26.6, the iOS 26.5 simulator) and `macos-15` (macOS 15.7.9, Xcode
   16.4, the iOS 18.6 simulator); the images move within a release, so each evidence file records its exact build.
 
@@ -118,6 +121,7 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 23 | 1 | Windows gap map W2-19 | RepeatButton's delay and interval: the WinUI host measures 500 and 33 ms (spike W), the row says 250/250 | spike W | open: the windows lane states it from the pin's C++ and the host's measurement |
 | 24 | 1 | `scripts/check_fact_citations.py` | readings the checker took where S17 is silent, to settle in the M0 scripts review: on Apple's sources `pt` is a logical point (px), not a typographic one; an image analysis's output cites the image it names; snapshot cache layout (one file per `<cache>/<id>/`); `absent` names matched as substrings; `rows = []` allowed on a fact for a combination no row names | the facts checkers' author | settled by the M0 scripts review (2026-10-30): Apple's `pt` read as px on Apple sources; an analysis output's `input_image` cites its image; snapshot entries name their `file`; `absent` names at identifier boundaries; `rows = []` allowed, `check_facts_trace.py` to flag it later (M1a) |
 | 25 | 1 | the facts scripts | the first M0 scripts review: 7 serious (uppercase `RGB(`, missing source notations and `.sp`/`.dp` units, Apple `pt`, an analysis output's image, measured shapes, the re-pin not idempotent, suffixed keys), 12 minor | the M0 scripts review (facts) | fixed 169024d8's cherry-pick; the re-pin now idempotent, its 4 remaining reports are the rows queue #16 and the changed list name (kde :535, :536, :1243, :1374) |
+| 26 | 1 | `check_release.sh`, `update_sources.sh`, `check_sources.py`, `check_ledger.py`, `citations.py`, README | the second M0 scripts review: 2 serious (`update_sources.sh` acted on unvalidated `sources.toml` values: a crafted id deleted outside the cache, a commit as a git option ran a command; a changed sparse list was never fetched), 21 minor (PLAN_EXCLUDED steps in a subshell, clean ci.yml marks, the banner, unused keys, crate-level keys; failures inside `fetch_one`; site and tag checks; ledger and citation parsing) | the M0 scripts review (sources, release) | fixed 7d703911's cherry-pick; left: `citations.py` splits a slashed branch ref (`winui3/release/2.5.1` → `winui3`) and does not parse a gitlab.gnome.org URL's ref, to fix before a lane cites such a URL |
 
 ## Unmeasured register
 
