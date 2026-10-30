@@ -152,7 +152,7 @@ fn refusal_absent_not_allowed() {
 fn refusal_auto_not_allowed() {
     assert_eq!(
         bare(&toml("[widgets.button.body]\npadding.top_px = \"auto\"")),
-        ["widgets.button.body.padding.top: may not be auto"]
+        ["widgets.button.body.padding.top_px: may not be auto"]
     );
     assert_eq!(
         bare(&toml("[widgets.button.body]\nmin_width_px = \"auto\"")),
@@ -178,7 +178,7 @@ fn refusal_out_of_range() {
         )),
         [
             "widgets.button.body.opacity: out of range: 0..=1",
-            "widgets.button.body.min_width: out of range: at least zero",
+            "widgets.button.body.min_width_px: out of range: at least zero",
         ]
     );
     // A margin may be negative (S1); an opacity of one is in range.
@@ -341,7 +341,7 @@ fn refusal_zero_duration() {
     };
     assert_eq!(
         bare(&change(0.0)),
-        ["tokens.theme_change.duration: a zero duration is `instant`"]
+        ["tokens.theme_change.suspend.duration: a zero duration is `instant`"]
     );
     assert_eq!(bare(&change(200.0)), NONE);
 }
@@ -559,7 +559,7 @@ fn refusal_undeclared_data() {
     assert_eq!(
         bare(&min_width("= element.progress")),
         [
-            "widgets.button.body.min_width: `element.progress` is element data the part does not declare"
+            "widgets.button.body.min_width_px: `element.progress` is element data the part does not declare"
         ]
     );
     let decl = declare("[declare.widget.button]\ndata = { body = [\"progress\"] }");
@@ -579,8 +579,8 @@ fn refusal_undeclared() {
         bare(&layer),
         [
             "colors.light.keyed.shade: `shade` is not declared in `color_roles`",
-            "rules[0].when.conditions: `@phone_x` is not declared in `device_models`",
-            "rules[0].when.variants: `primary` is not declared in `widget.button.variants`",
+            "rules[0].when.conditions[0]: `@phone_x` is not declared in `device_models`",
+            "rules[0].when.variants[0]: `primary` is not declared in `widget.button.variants`",
         ]
     );
     let decl = declare(
@@ -610,7 +610,7 @@ fn refusal_widget_unavailable() {
     let unavailable = declare("[declare.widget.button]\navailable = false");
     assert_eq!(
         found(&layer, &unavailable),
-        ["widgets.button.icon.target: `button` is not available on the preset"]
+        ["widgets.button.icon.drawn_as.widget: `button` is not available on the preset"]
     );
     assert_eq!(bare(&layer), NONE);
 }
@@ -823,4 +823,155 @@ fn accent_ramp_entries_are_declared() {
         ["colors.light.global.accent_ramp.light9: `light9` is not declared in `accent_ramp`"]
     );
     assert_eq!(found(&ramp("light1"), &decl), NONE);
+}
+
+/// A layer whose bases style `button.body`'s corners by `corners`.
+fn corners(corners: CornersPatch) -> Layer {
+    body(PartStylePatch {
+        corners: Some(BlockPatch::Fields(corners)),
+        ..PartStylePatch::default()
+    })
+}
+
+/// Problems name their places as the layer was written (S1): a layer built
+/// in Rust by the model's paths, an enum's variant a step of its own; one
+/// read from TOML by its keys as written.
+#[test]
+fn problem_paths_spell_the_layer() {
+    let radius = |radius: Radius| {
+        corners(CornersPatch {
+            top_left: Some(radius),
+            ..CornersPatch::default()
+        })
+    };
+    assert_eq!(
+        bare(&radius(Radius::Concentric {
+            minimum: Value::Stated(Px(-1.0))
+        })),
+        ["widgets.button.body.corners.top_left.concentric.minimum: out of range: at least zero"]
+    );
+    assert_eq!(
+        bare(&radius(Radius::Px(Value::Stated(Px(-1.0))))),
+        ["widgets.button.body.corners.top_left.px: out of range: at least zero"]
+    );
+    assert_eq!(
+        bare(&toml(
+            "[widgets.button.body]\ncorners.top_left = { concentric = { minimum_px = -1 } }"
+        )),
+        [
+            "widgets.button.body.corners.top_left.concentric.minimum_px: out of range: at least \
+             zero"
+        ]
+    );
+    assert_eq!(
+        bare(&toml("[widgets.button.body]\ncorners.top_left_px = -1")),
+        ["widgets.button.body.corners.top_left_px: out of range: at least zero"]
+    );
+    // A font size takes its stated variant's suffix, and none for an
+    // expression.
+    assert_eq!(
+        bare(&toml("[widgets.button.label]\ntext.font.size_pt = -1")),
+        ["widgets.button.label.text.font.size_pt: out of range: at least zero"]
+    );
+    // A map entry with a unit takes its suffix in TOML, none in the model.
+    let decl = declare("durations = [\"button\"]");
+    let durations = |text: &str| toml(&format!("[tokens.motion.durations]\n{text}"));
+    assert_eq!(
+        found(&durations("other_ms = 100"), &decl),
+        ["tokens.motion.durations.other_ms: `other` is not declared in `durations`"]
+    );
+    let mut built = Layer::default();
+    built.bases.tokens.motion = Some(MotionTokensPatch {
+        durations: Some(vec![(key!("other"), Value::Stated(Ms(100.0)))]),
+        ..MotionTokensPatch::default()
+    });
+    assert_eq!(
+        found(&built, &decl),
+        ["tokens.motion.durations.other: `other` is not declared in `durations`"]
+    );
+    // A `DrawnAs`'s target: the model's field, TOML's key.
+    let unavailable = declare("[declare.widget.button]\navailable = false");
+    let mut drawn = Layer::default();
+    drawn.bases.widgets.button = Some(ButtonPatch {
+        icon: Some(PartPatch::DrawnAs {
+            target: crate::next::selector::WidgetOrPart::Widget(
+                crate::next::selector::WidgetRef::Typed(crate::next::widgets::WidgetKind::Button),
+            ),
+            variants: Vec::new(),
+        }),
+        ..ButtonPatch::default()
+    });
+    assert_eq!(
+        found(&drawn, &unavailable),
+        ["widgets.button.icon.drawn_as.target: `button` is not available on the preset"]
+    );
+    // A theme change's duration below its variant.
+    assert_eq!(
+        bare(&toml(
+            "[tokens]\ntheme_change = { suspend = { duration_ms = 0 } }"
+        )),
+        ["tokens.theme_change.suspend.duration_ms: a zero duration is `instant`"]
+    );
+}
+
+/// One fault is one problem at one path (S12).
+#[test]
+fn one_problem_per_fault() {
+    let spring = Timing::Spring {
+        mass: f32::NAN,
+        stiffness: 100.0,
+        damping_ratio: 1.0,
+        initial_velocity: 0.0,
+        rest_epsilon: 0.001,
+        clamp: false,
+        time_scale: Value::Stated(1.0),
+    };
+    assert_eq!(
+        bare(&transitions(vec![
+            transition(vec![PropertyGroup::Fill], spring),
+            transition(
+                vec![PropertyGroup::Opacity],
+                Timing::CubicBezier(f32::NAN, 0.0, 0.5, 1.0)
+            ),
+        ])),
+        [
+            "widgets.button.body.transitions[0].timing.spring.mass: not a finite number",
+            "widgets.button.body.transitions[1].timing.cubic_bezier[0]: not a finite number",
+        ]
+    );
+    // A keyed scalar of a `fraction` group that is not finite.
+    let decl = declare("params = { opacity = { unit = \"fraction\", keys = [\"dim\"] } }");
+    let mut layer = Layer::default();
+    layer.bases.tokens.params = Some(vec![(
+        key!("opacity"),
+        vec![(
+            key!("dim"),
+            Value::Stated(crate::next::units::Scalar::Number(f32::NAN)),
+        )],
+    )]);
+    assert_eq!(
+        found(&layer, &decl),
+        ["tokens.params.opacity.dim: not a finite number"]
+    );
+    // An undeclared group is one problem, not one per key.
+    assert_eq!(
+        bare(&toml("[tokens.params.layout]\ngap = 4\nspacing = 2")),
+        ["tokens.params.layout: `layout` is not declared in `params`"]
+    );
+}
+
+/// An `inner_may_be_absent` map keeps its place for each entry: a keyed
+/// icon context's fields but `size` may be absent (S4.5, S6.3).
+#[test]
+fn keyed_icon_context_fields_may_be_absent() {
+    let decl = declare("icon_contexts = [\"menu\"]");
+    let context = |text: &str| toml(&format!("[tokens.icons.sizes.keyed.menu]\n{text}"));
+    assert_eq!(
+        found(&context("size_px = 16\nrendering_mode = \"absent\""), &decl),
+        NONE
+    );
+    assert_eq!(
+        found(&context("size_px = \"absent\""), &decl),
+        ["tokens.icons.sizes.keyed.menu.size_px: may not be absent"]
+    );
 }

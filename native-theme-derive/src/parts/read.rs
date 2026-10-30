@@ -655,7 +655,8 @@ pub(super) fn expand_toml(input: &DeriveInput) -> Result<TokenStream> {
     match &input.data {
         Data::Enum(data) => {
             let read = enum_impl(&input.ident, data)?;
-            let walk = super::walk::enum_walk(&input.ident, data, &super::walk::Expr::NoCalls)?;
+            let walk =
+                super::walk::enum_walk(&input.ident, data, &super::walk::Expr::NoCalls, false)?;
             Ok(quote!(#read #walk))
         }
         Data::Struct(_) | Data::Union(_) => Err(Error::new_spanned(

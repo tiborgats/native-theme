@@ -33,6 +33,18 @@ pub(crate) struct TypeAttrs {
     /// `#[parts(own_toml)]`: a block whose TOML reading is written by hand,
     /// its spelling having a shorthand (S2.4, S11).
     pub own_toml: bool,
+    /// `#[parts(check)]`: a block with constraints of its own (S12), its walk
+    /// (and its patch's) handing it to the visit as its `Node` variant.
+    pub check: bool,
+}
+
+/// The attributes on one variant of an enum.
+#[derive(Debug, Default)]
+pub(crate) struct VariantAttrs {
+    /// `#[parts(suffixed)]`: a one-member tuple variant TOML spells by its
+    /// holder's key and the member's unit suffix (`top_left_px` for
+    /// `Radius::Px`, S11), not as a key of its own.
+    pub suffixed: bool,
 }
 
 /// The attributes on one field.
@@ -90,11 +102,27 @@ pub(crate) fn parse_type_attrs(attrs: &[Attribute]) -> Result<TypeAttrs> {
                 flag(&mut out.toml, &meta)
             } else if meta.path.is_ident("own_toml") {
                 flag(&mut out.own_toml, &meta)
+            } else if meta.path.is_ident("check") {
+                flag(&mut out.check, &meta)
             } else {
                 Err(meta.error(
                     "unknown parts attribute: expected block, widget, append, own_resolved, \
-                     resolved_patch, toml or own_toml",
+                     resolved_patch, toml, own_toml or check",
                 ))
+            }
+        })?;
+    }
+    Ok(out)
+}
+
+pub(crate) fn parse_variant_attrs(attrs: &[Attribute]) -> Result<VariantAttrs> {
+    let mut out = VariantAttrs::default();
+    for attr in attrs.iter().filter(|a| a.path().is_ident("parts")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("suffixed") {
+                flag(&mut out.suffixed, &meta)
+            } else {
+                Err(meta.error("unknown parts variant attribute: expected suffixed"))
             }
         })?;
     }

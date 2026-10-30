@@ -15,7 +15,7 @@ use crate::next::value::Value;
 
 /// A font.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 #[non_exhaustive]
 pub struct Font {
     /// The family; its fallbacks are the text tokens' (S4.4).

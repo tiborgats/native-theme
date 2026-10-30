@@ -15,7 +15,7 @@ use crate::next::value::Value;
 /// ([`PaintPatch`]). A paint is drawn in the box's own coordinates and is
 /// not mirrored in right-to-left.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block, append)]
+#[parts(block, append, check)]
 #[non_exhaustive]
 pub struct Paint {
     /// The layers, bottom first.
@@ -63,7 +63,7 @@ pub struct PaintLayer {
 /// `conic-gradient()`'s `from` angle, its stops running clockwise from it. A
 /// gradient has at least two stops (S12).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 pub enum PaintKind {
     /// One colour.
     Color(Value<Color>),

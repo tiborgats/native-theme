@@ -12,7 +12,7 @@ use crate::next::color::Color;
 use crate::next::declare::Declarations;
 use crate::next::error::{LayerError, Problem, ProblemKind};
 use crate::next::inputs::{Contrast, InputBases, InputName, InputValue};
-use crate::next::layer::{Bases, Layer};
+use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::presets::PresetId;
 use crate::next::registry;
 use crate::next::roles::{ColorRolesPatch, SurfaceSet};
@@ -134,10 +134,11 @@ fn parse(text: &str) -> Result<Table, LayerError> {
 }
 
 /// The layer read, or every problem its reading recorded.
-fn finished(layer: Layer, cx: Reader) -> Result<Layer, LayerError> {
+fn finished(mut layer: Layer, cx: Reader) -> Result<Layer, LayerError> {
     if cx.failed() {
         Err(LayerError::Invalid(cx.into_problems()))
     } else {
+        layer.spelled = Spelled::Toml;
         Ok(layer)
     }
 }

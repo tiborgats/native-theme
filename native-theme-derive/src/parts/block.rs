@@ -907,14 +907,21 @@ fn expand_fields(
     let idents: Vec<_> = fields.iter().map(|f| &f.ident).collect();
     let created = fields.iter().map(BlockField::created);
     let read = super::read::struct_impls(name, fields, type_attrs.own_toml);
-    let walk =
-        super::walk::struct_walk(name, name, fields, false, &super::walk::Expr::ReferenceOnly);
+    let walk = super::walk::struct_walk(
+        name,
+        name,
+        fields,
+        false,
+        &super::walk::Expr::ReferenceOnly,
+        type_attrs.check,
+    );
     let walk_patch = super::walk::struct_walk(
         name,
         &patch,
         fields,
         true,
         &super::walk::Expr::ReferenceOnly,
+        type_attrs.check,
     );
     let merges = fields.iter().map(|f| {
         let ident = &f.ident;
@@ -1095,7 +1102,19 @@ fn expand_append(
          the value below."
     );
     let w = quote!(crate::next::validate::walk);
-    let walk = super::walk::struct_walk(name, name, fields, false, &super::walk::Expr::Calls);
+    let check_patch = if type_attrs.check {
+        quote!(w.check(#w::Node::#patch(self));)
+    } else {
+        TokenStream::new()
+    };
+    let walk = super::walk::struct_walk(
+        name,
+        name,
+        fields,
+        false,
+        &super::walk::Expr::Calls,
+        type_attrs.check,
+    );
     let append_doc = format!(
         "Appends to `{list_name}` over the value below; over `Absent`, the appended items \
          are the whole value. Composed lazily over a reference (S2.2)."
@@ -1134,7 +1153,7 @@ fn expand_append(
 
         impl #w::Walk for #patch {
             fn walk(&self, w: &mut #w::Walker<'_>) {
-                w.node(self);
+                #check_patch
                 match self {
                     #patch::Set(value) => #w::Walk::walk(value, w),
                     #patch::Append(items) => #w::Walk::walk(items, w),
@@ -1261,7 +1280,12 @@ fn expand_enum(
         }
     }
     let form = quote!(#r::BlockForm::Enum { unit_variants: &[#(#units),*] });
-    let walk = super::walk::enum_walk(name, data, &super::walk::Expr::ReferenceOnly)?;
+    let walk = super::walk::enum_walk(
+        name,
+        data,
+        &super::walk::Expr::ReferenceOnly,
+        type_attrs.check,
+    )?;
     let read = if type_attrs.own_toml {
         TokenStream::new()
     } else {

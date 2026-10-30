@@ -9,7 +9,7 @@ use crate::next::value::Value;
 
 /// A part's shadow. No shadow is `Value::Absent`.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block, own_resolved)]
+#[parts(block, own_resolved, check)]
 pub enum Shadow {
     /// Shadow layers; at least one (S12).
     Layers(#[parts(block = "fields")] Vec<ShadowLayer>),

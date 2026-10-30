@@ -21,6 +21,28 @@ pub struct Layer {
     pub for_preset: Vec<(PresetId, Bases)>,
     /// The rules, in stated order.
     pub rules: Vec<Rule>,
+    /// How the layer's problems name their places.
+    pub(crate) spelled: Spelled,
+}
+
+/// How a layer's problems name their places (S1's `Problem.path`): by the
+/// model's paths for a layer built in Rust, by the TOML keys it was read
+/// under for one read from TOML.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) enum Spelled {
+    /// The model's paths.
+    #[default]
+    Model,
+    /// The TOML keys.
+    Toml,
+}
+
+/// How a layer was written is not what it states: two layers stating the
+/// same are equal whichever way each was written.
+impl PartialEq for Spelled {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
 }
 
 impl Layer {

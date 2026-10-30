@@ -34,9 +34,10 @@ pub struct Corners {
 /// A corner's radius. `Full`, `Concentric` and `FollowPart` resolve as they
 /// are; the connector computes each such corner at layout.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block, own_toml)]
+#[parts(block, own_toml, check)]
 pub enum Radius {
-    /// A plain radius.
+    /// A plain radius, `<corner>_px` in TOML (S11).
+    #[parts(suffixed)]
     Px(Value<Px>),
     /// A capsule: half the smaller side of the part's box, at most
     /// `maximum`.

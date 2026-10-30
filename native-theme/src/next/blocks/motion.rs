@@ -19,7 +19,7 @@ use crate::next::value::Value;
 
 /// A timing function.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 pub enum Timing {
     /// CSS's `cubic-bezier(x1, y1, x2, y2)`.
     CubicBezier(f32, f32, f32, f32),
@@ -300,7 +300,7 @@ pub enum PropertyGroup {
 
 /// A transition of a part's property groups.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 #[non_exhaustive]
 pub struct Transition {
     /// The property groups it animates. In a list of transitions it merges by
@@ -353,7 +353,7 @@ fn split_by_group(transitions: Vec<Transition>) -> Vec<Transition> {
 
 /// How a transition draws a change.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 #[expect(
     clippy::large_enum_variant,
     reason = "S2.7's variants as stated; a transition is read once per change, not drawn per frame"
@@ -472,7 +472,7 @@ pub enum RevealOrigin {
 
 /// What a presentation step draws.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 pub enum PresentationKind {
     /// A fade.
     Fade,
@@ -535,7 +535,7 @@ pub enum EdgeSide {
 
 /// A repeating animation.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 #[non_exhaustive]
 pub struct Loop {
     /// The period; never absent, as the keyframes' `at` are fractions of it.

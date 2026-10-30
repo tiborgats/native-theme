@@ -17,7 +17,8 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
             if !type_attrs.append
                 && !type_attrs.own_resolved
                 && !type_attrs.resolved_patch
-                && !type_attrs.own_toml =>
+                && !type_attrs.own_toml
+                && !type_attrs.check =>
         {
             widget::expand(input)
         }
@@ -25,17 +26,18 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
             if !type_attrs.append
                 && !type_attrs.own_resolved
                 && !type_attrs.resolved_patch
-                && !type_attrs.own_toml =>
+                && !type_attrs.own_toml
+                && !type_attrs.check =>
         {
             read::expand_toml(input)
         }
         (false, false, true) => Err(Error::new_spanned(
             &input.ident,
-            "append, own_resolved, resolved_patch and own_toml are a block's",
+            "append, own_resolved, resolved_patch, own_toml and check are a block's",
         )),
         (false, true, false) => Err(Error::new_spanned(
             &input.ident,
-            "append, own_resolved, resolved_patch and own_toml are a block's",
+            "append, own_resolved, resolved_patch, own_toml and check are a block's",
         )),
         _ => Err(Error::new_spanned(
             &input.ident,
@@ -629,6 +631,55 @@ mod tests {
     }
 
     #[test]
+    fn an_enum_walk_steps_through_its_variant_and_a_checked_block_is_handed_over() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block, check)]
+            pub enum Probe {
+                #[parts(suffixed)]
+                Px(Value<Px>),
+                Full { #[parts(may_be_absent)] maximum: Value<Px> },
+                Pair(f32, f32),
+                Round,
+            }
+        });
+        for expected in [
+            "w . check (crate :: next :: validate :: walk :: Node :: Probe (self)) ;",
+            "Probe :: Px (member0) => { w . variant (\"Probe\" , \"px\" , true ,",
+            "Probe :: Full { maximum } => { w . variant (\"Probe\" , \"full\" , false , | w | { \
+             w . field (\"Probe\" , \"maximum\" ,",
+            "crate :: next :: validate :: walk :: Walk :: suffix (maximum)",
+            "w . variant (\"Probe\" , \"pair\" , false , | w | { w . index (0usize ,",
+            "fn suffix (& self) -> & 'static str { match self { Probe :: Px (member0) => \
+             crate :: next :: validate :: walk :: Walk :: suffix (member0) , Probe :: Full { .. } \
+             => \"\" , Probe :: Pair (..) => \"\" , Probe :: Round => \"\" ,",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+        let block = expand(syn::parse_quote! {
+            #[parts(block, check)]
+            pub struct Probe { pub width: Value<Px> }
+        });
+        for expected in [
+            "w . check (crate :: next :: validate :: walk :: Node :: Probe (self)) ;",
+            "w . check (crate :: next :: validate :: walk :: Node :: ProbePatch (self)) ;",
+        ] {
+            assert!(block.contains(expected), "{expected}\n{block}");
+        }
+        let unchecked = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe { pub width: Value<Px> }
+        });
+        assert!(!unchecked.contains("w . check"), "{unchecked}");
+        assert!(
+            refused(syn::parse_quote! {
+                #[parts(block)]
+                pub enum Probe { #[parts(suffixed)] Pair(f32, f32) }
+            })
+            .contains("suffixed marks a tuple variant of one member")
+        );
+    }
+
+    #[test]
     fn own_toml_leaves_the_readers_of_the_whole_block_to_the_hand() {
         let out = expand(syn::parse_quote! {
             #[parts(block, own_toml)]
@@ -710,7 +761,7 @@ mod tests {
                     #[parts(toml, own_toml)]
                     pub enum Probe { A }
                 },
-                "append, own_resolved, resolved_patch and own_toml are a block's",
+                "append, own_resolved, resolved_patch, own_toml and check are a block's",
             ),
             (
                 syn::parse_quote! {
@@ -854,7 +905,7 @@ mod tests {
                     pub struct Probe { pub x: Value<Px> }
                 },
                 "unknown parts attribute: expected block, widget, append, own_resolved, \
-                 resolved_patch, toml or own_toml",
+                 resolved_patch, toml, own_toml or check",
             ),
             (
                 syn::parse_quote! {

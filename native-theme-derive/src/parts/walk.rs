@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Fields, Ident, Result};
 
-use super::block::{BlockField, Shape, parse_field};
+use super::block::{BlockField, Shape, parse_field, snake_case};
 
 /// The module the walk's types live in.
 fn walk() -> TokenStream {
@@ -68,25 +68,50 @@ fn field_walk(f: &BlockField, value: &TokenStream, optional: bool) -> TokenStrea
     }
 }
 
+/// The suffix the field's TOML key takes, `value` a reference to the field's
+/// value: its type's, a map's none (its entries' keys take theirs).
+fn suffix(f: &BlockField, value: &TokenStream) -> TokenStream {
+    let w = walk();
+    match &f.shape {
+        Shape::Map(_) | Shape::NestedMap => quote!(""),
+        _ => quote!(#w::Walk::suffix(#value)),
+    }
+}
+
+/// The hand-over of a block marked `#[parts(check)]` to the visit, as its
+/// `Node` variant `variant`; nothing for an unmarked one.
+fn check(variant: Option<&Ident>) -> TokenStream {
+    let w = walk();
+    match variant {
+        Some(variant) => quote!(w.check(#w::Node::#variant(self));),
+        None => TokenStream::new(),
+    }
+}
+
 /// The walk of a struct block (`patch` false) or of its patch, each field
-/// walked under its name with its marks.
+/// walked under its name with its marks; `checked`: the block is marked
+/// `#[parts(check)]`, handed over as the `Node` variant named as `walked`.
 pub(super) fn struct_walk(
     owner: &Ident,
     walked: &Ident,
     fields: &[BlockField],
     patch: bool,
     expr: &Expr,
+    checked: bool,
 ) -> TokenStream {
     let w = walk();
     let owner_name = owner.to_string();
     let form = expr.tokens();
+    let check = check(checked.then_some(walked));
     let steps = fields.iter().filter_map(|f| {
         let ident = f.ident.as_ref()?;
         let name = ident.to_string();
         let marks = marks(f);
-        let inner = field_walk(f, &quote!(&self.#ident), patch);
+        let value = quote!(&self.#ident);
+        let suffix = suffix(f, &value);
+        let inner = field_walk(f, &value, patch);
         Some(quote! {
-            w.field(#owner_name, #name, #marks, |w| { #inner });
+            w.field(#owner_name, #name, #marks, #suffix, |w| { #inner });
         })
     });
     let patch_fields = if patch {
@@ -122,7 +147,7 @@ pub(super) fn struct_walk(
             const EXPR: #w::ExprForm = #form;
 
             fn walk(&self, w: &mut #w::Walker<'_>) {
-                w.node(self);
+                #check
                 #patch_fields
                 #(#steps)*
             }
@@ -132,18 +157,43 @@ pub(super) fn struct_walk(
     }
 }
 
-/// The walk of an enum: the variant's fields, a struct variant's under their
-/// names, a tuple variant's one value as it is, several by position.
-pub(super) fn enum_walk(name: &Ident, data: &syn::DataEnum, expr: &Expr) -> Result<TokenStream> {
+/// The walk of an enum: a variant with data a step of its own, its fields
+/// below it, a struct variant's under their names, a tuple variant's one
+/// value as it is, several by position; `checked`: the enum is marked
+/// `#[parts(check)]`.
+pub(super) fn enum_walk(
+    name: &Ident,
+    data: &syn::DataEnum,
+    expr: &Expr,
+    checked: bool,
+) -> Result<TokenStream> {
     let w = walk();
     let owner = name.to_string();
     let form = expr.tokens();
+    let check = check(checked.then_some(name));
     let mut arms = Vec::new();
+    let mut suffixes = Vec::new();
+    let mut any_folded = false;
     for variant in &data.variants {
         let ident = &variant.ident;
+        let snake = snake_case(&ident.to_string());
+        let folded = super::attrs::parse_variant_attrs(&variant.attrs)?.suffixed;
+        if folded
+            && !matches!(&variant.fields, Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1)
+        {
+            return Err(syn::Error::new_spanned(
+                variant,
+                "suffixed marks a tuple variant of one member",
+            ));
+        }
+        any_folded |= folded;
         match &variant.fields {
-            Fields::Unit => arms.push(quote!(#name::#ident => {})),
+            Fields::Unit => {
+                arms.push(quote!(#name::#ident => {}));
+                suffixes.push(quote!(#name::#ident => "",));
+            }
             Fields::Named(named) => {
+                suffixes.push(quote!(#name::#ident { .. } => "",));
                 let fields = named
                     .named
                     .iter()
@@ -154,10 +204,16 @@ pub(super) fn enum_walk(name: &Ident, data: &syn::DataEnum, expr: &Expr) -> Resu
                     let ident = f.ident.as_ref()?;
                     let field = ident.to_string();
                     let marks = marks(f);
-                    let inner = field_walk(f, &quote!(#ident), false);
-                    Some(quote!(w.field(#owner, #field, #marks, |w| { #inner });))
+                    let value = quote!(#ident);
+                    let suffix = suffix(f, &value);
+                    let inner = field_walk(f, &value, false);
+                    Some(quote!(w.field(#owner, #field, #marks, #suffix, |w| { #inner });))
                 });
-                arms.push(quote!(#name::#ident { #(#idents),* } => { #(#steps)* }));
+                arms.push(quote! {
+                    #name::#ident { #(#idents),* } => {
+                        w.variant(#owner, #snake, false, |w| { #(#steps)* });
+                    }
+                });
             }
             Fields::Unnamed(unnamed) => {
                 let fields = unnamed
@@ -169,18 +225,34 @@ pub(super) fn enum_walk(name: &Ident, data: &syn::DataEnum, expr: &Expr) -> Resu
                     .map(|i| format_ident!("member{i}"))
                     .collect();
                 let steps = match (fields.as_slice(), members.as_slice()) {
-                    ([only], [member]) => vec![field_walk(only, &quote!(#member), false)],
-                    _ => fields
-                        .iter()
-                        .zip(&members)
-                        .enumerate()
-                        .map(|(i, (f, member))| {
-                            let inner = field_walk(f, &quote!(#member), false);
-                            quote!(w.index(#i, |w| { #inner });)
-                        })
-                        .collect(),
+                    ([only], [member]) => {
+                        if folded {
+                            let value = quote!(#member);
+                            let suffix = suffix(only, &value);
+                            suffixes.push(quote!(#name::#ident(#member) => #suffix,));
+                        } else {
+                            suffixes.push(quote!(#name::#ident(..) => "",));
+                        }
+                        vec![field_walk(only, &quote!(#member), false)]
+                    }
+                    _ => {
+                        suffixes.push(quote!(#name::#ident(..) => "",));
+                        fields
+                            .iter()
+                            .zip(&members)
+                            .enumerate()
+                            .map(|(i, (f, member))| {
+                                let inner = field_walk(f, &quote!(#member), false);
+                                quote!(w.index(#i, |w| { #inner });)
+                            })
+                            .collect()
+                    }
                 };
-                arms.push(quote!(#name::#ident(#(#members),*) => { #(#steps)* }));
+                arms.push(quote! {
+                    #name::#ident(#(#members),*) => {
+                        w.variant(#owner, #snake, #folded, |w| { #(#steps)* });
+                    }
+                });
             }
         }
     }
@@ -189,14 +261,27 @@ pub(super) fn enum_walk(name: &Ident, data: &syn::DataEnum, expr: &Expr) -> Resu
     } else {
         quote!(match self { #(#arms)* })
     };
+    let suffix_fn = if any_folded {
+        quote! {
+            fn suffix(&self) -> &'static str {
+                match self {
+                    #(#suffixes)*
+                }
+            }
+        }
+    } else {
+        TokenStream::new()
+    };
     Ok(quote! {
         impl #w::Walk for #name {
             const EXPR: #w::ExprForm = #form;
 
             fn walk(&self, w: &mut #w::Walker<'_>) {
-                w.node(self);
+                #check
                 #body
             }
+
+            #suffix_fn
         }
     })
 }

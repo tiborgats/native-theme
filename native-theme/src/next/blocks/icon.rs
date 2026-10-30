@@ -18,7 +18,7 @@ use crate::next::value::Value;
 
 /// How a part draws its icon.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 #[non_exhaustive]
 pub struct IconStyle {
     /// The icon's size.
