@@ -483,11 +483,15 @@ button's).
 - *The state layer as a part of its own.* Against: a part more on every widget that draws one, the ripple still
   sharing its fill.
 - *A block of the part, `interaction`, holding a state layer (colour, alpha) and a ripple (colour, alpha, its
-  geometry), drawn over the part's fill and content, set by field patches, with property groups of its own; its
-  colours change at once by the block's definition and transitions time its alphas.*
+  geometry), drawn over the part's fill and content and beneath its stroke, set by field patches, with property
+  groups of its own; the state layer's colour changes at once and its alpha alone is timed; the ripple is the
+  platform's effect, keeping the colour it was pressed in.* Its cost: a field on a dozen Material parts that every
+  other preset states absent.
 
 **Decision:** the block. It holds one state layer and one ripple by its type, a rule setting the fill cannot touch it,
-and its alpha-only timing follows from its fields; Material's ripple is the `Ripple` group's transition (R9).
+and its timing follows from its fields; its colours reference the content colour, `= surface.foreground`, so they
+follow every rebinding with no rule restating them; Material's ripple is the `Ripple` group's transition (R9), on
+Android the framework's `RippleDrawable`, as Compose draws it there.
 
 ### R4 — The facts gate
 
@@ -617,7 +621,8 @@ A paint is a stack of layers, bottom first: a colour, a linear or radial gradien
 macOS 12–15's checkbox box, MAC-X09, bezels to verify, MAC-B05; WinUI's elevation strokes, W3-04), or a
 material, each with a blend mode (macOS's vibrant foregrounds blend with what is beneath, MAC-X03). Paint fills
 parts, strokes, text, icons and glyphs. A rule sets a part's paint or appends layers over `base`: libadwaita's
-stacked fills (GN-1.30, GN-3.06) and every state layer are appended layers.
+stacked fills (GN-1.30, GN-3.06) and its and the tokens' state layers are appended layers; Material's state layer
+and press ripple are the part's `interaction` block (R3).
 
 **Materials** (MAC-X02, MAC-X03; Liquid Glass, MAC-X04–MAC-X06, X-MT-5–X-MT-13; Mica, Mica Alt, Acrylic,
 W3-06–W3-10; KWin's blur, K3.11):
@@ -737,13 +742,12 @@ MAT-X13–MAT-X15, X-MO-1).
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
   edge, scale, shape morph, clip reveal (WinUI's combo box opens by revealing from the selected item, W1-136),
   and the rest. `dialog.entrance` becomes one of them.
-- **Ripple:** the `Ripple` group's transition of the part's `interaction` ripple into `{pressed}`, whose origin is
-  the point pressed, which the toolkit has from the press itself: the ripple grows from it, by the block's geometry
-  and the transition's fade-in, grow and centre's travel (MAT-X9), its alpha the block's; its fade on release is the transition of the
-  style entered, {hover} if the pointer is still on the control, as the style entered governs: that style's
-  transition `from {pressed}`, an interpolation of the ripple's alpha that starts no sooner than the ripple's
-  minimum press (Compose's: when its grow ends) while the circle grows on, a release during the fade-in setting the
-  alpha to full. One transition governs a property group per change, as in CSS; the state layer and the ripple have
+- **Ripple:** the `Ripple` group's transition of the part's `interaction` ripple into `{pressed}`, a platform's own
+  effect from a closed set implemented once in native-theme to its source, as platform curves are: its origin the
+  point pressed, which the toolkit has from the press itself, and its whole lifecycle, the release's exit included, the
+  effect's own. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
+  whose shader draws a wave with sparkles, so the ripple is that effect, implemented to its source, not a circle with
+  stated durations. One transition governs a property group per change, as in CSS; the state layer and the ripple have
   groups of their own, so neither times the container (R3). A stroke's widths may be timed by a group of their own,
   `StrokeWidth`, which overrides `Stroke` for them where stated, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
   different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
@@ -1307,9 +1311,10 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
   own (CONTRA-7, settled; CONTRA-2's velocity curves stay members), R25.6 following.
 - R3, R9 (the independent checks' fixes): Material's state layer and press ripple a block of the part,
   `interaction`, with groups of its own (replacing paint layers with roles, which needed a compensating rule each
-  round); the press ripple's release fade `from {pressed}`; Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
+  round); Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
   none under Kirigami (qqc2-desktop-style's style item paints with no widget); the press ripple's
-  lifecycle (its fade-in, grow and minimum press before the release fade); the checkbox's, radio's and switch's
+  effect (Android's patterned `RippleDrawable`, a closed set of effects implemented to their sources, the ripple keeping
+  its pressed colour); the press delay a touch behaviour (`token.behavior.touch.delay`, `delay_every_pointer`); the checkbox's, radio's and switch's
   `state_layer` parts holding the block, their per-state opacity dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
   property group that overrides `Stroke` where stated; a stroke becoming absent interpolating to zero width.
 

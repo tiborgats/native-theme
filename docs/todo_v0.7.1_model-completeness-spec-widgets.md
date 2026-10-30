@@ -241,18 +241,19 @@ Each `### <widget>` section states, in this order:
   starts in. `pressed` is no member: Compose draws the press ripple apart from the state layer (`Ripple.kt:241-248`,
   `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
   focused shows both, two states drawn together (R3). Both are the part's `interaction` block (S2.12), never a paint
-  layer: the rest style states its alphas 0 and its colours the content colour, which every rule changing the content
-  colour restates (MAT-X8), the `{pressed}` rule `ripple`, each
-  state-layer rule `state_layer`, a `{checked}`, `{selected}` or `{invalid}` twin written after its plain rule so its
-  colour is the one drawn, and the block's colours change at once while only its alphas are timed, as Compose draws
-  them in the current content colour (`material3-ripple/…/Ripple.kt:380-385`, `CommonRipple.kt:56-68`). It draws over
-  the part's content, as the ripple node does (`Ripple.kt:373-377`). Only the state layer (the `interaction` block's,
+  layer: the base states its alphas (the state layer's 0) and its colours `= surface.foreground`, the content colour
+  that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and the `{pressed}` rule the
+  `Ripple` transition; the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
+  it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour it was pressed in,
+  as Android's `RippleDrawable` does (`Ripple.android.kt:79-82`). It draws over the part's content and beneath its
+  stroke, as the ripple node and `Modifier.surface`'s border do (`Ripple.kt:373-377`, `Surface.kt:562-564`,
+  `Border.kt:212-214`). Only the state layer (the `interaction` block's,
   on the part or on a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`: a
-  hover, focus or press that Compose draws as a `Surface`'s or clickable's ripple is a state layer wherever the row
-  writes it, a whole `fill` included (the year cell, `DatePicker.kt:2414-2428`, whose container follows `selected`
+  hover, focus or press that Compose draws as a `Surface`'s or clickable's ripple is the `interaction` block wherever
+  the row writes it, a whole `fill` included (the year cell, `DatePicker.kt:2414-2428`, whose container follows `selected`
   alone; the time picker's selectors, `TimePicker.kt:3089-3095`, `:3018`; the toolbar's buttons, whose tokens state
   the hovered state layer, `material-web@2.5.0 tokens/versions/latest/sass/_md-comp-toolbar-vibrant.scss:48-51`), and
-  is written as one. Every other field a state changes (a label's colour, a stroke, a shape) follows its own code or
+  is written in the block. Every other field a state changes (a label's colour, a stroke, a shape) follows its own code or
   tokens, which have no notion of order, so it is a plain `{hover}`, `{focus_visible}`, `{dragged}` or `{pressed}` rule,
   those rules combining: in the source's precedence where it has one, the later winning (the Expressive list item's
   shape, pressed over dragged over selected over focused over hovered, `ListItemDefaults.kt:1144-1152`; its colours,
@@ -281,12 +282,12 @@ Each `### <widget>` section states, in this order:
   `:463-483`): by the interaction entered, or, going to none, by the one left, all linear. So the rest style states the
   outgoing fade with no `from`, then the drag's outgoing one `from {dragged}` where the set holds `dragged`, both of
   the `StateLayer` group; each state-layer rule states its incoming fade; the `{pressed}` rule the press ripple's
-  `Ripple` transition and the rest style its release fade `from {pressed}`, an `Interpolate` of the `Ripple` group
-  (S2.7's press ripple: the fade waits for the grow, Compose's `RippleAnimation.kt:76-104`); and the container's
+  `Ripple` transition, Android's patterned `RippleDrawable` effect, whose release is its own exit (S2.7's press
+  ripple); and the container's
   `Fill` takes no transition where Compose snaps it (a selected chip's, `Chip.kt:4070-4076`; a checked toggle
   button's, `ToggleButton.kt:178`, `:1446-1452`; a checked icon button's, `IconButton.kt:1428-1436`). So a toggle
   clicked while hovered snaps its container, its state layer taking the checked colour at once at its alpha
-  unchanged, and its ripple, its grow done, fading in the checked content colour; a hover that ends while the press
+  unchanged, and its ripple running its effect on in the colour it was pressed in; a hover that ends while the press
   holds fades the state layer's alpha by the outgoing spec while the ripple holds (MAT-X9). Where Compose animates a
   container or content colour itself, the part's `Fill`, or its text or icon, take that transition (`animateColorAsState`, `animateColor`: the list item, the date picker's cells,
   the selectable menu item, the tab's and the navigation bar's content, the toggle's outline; MAT-L, MAT-N16, MAT-M1,
@@ -1123,13 +1124,13 @@ spaces:
     menu's surface set where the platform states one; on `ios-*` no elevated set: UIMenu's box is drawn with a material, not
     the elevated background level that `dialog`, `sheet` and `popover` bind, D-14; the value phase confirms it from
     the MN rows' measurements), `transitions`.
-  - `item` *(element)*, in `group` — one row: `fill` (highlight; appended state layers), `stroke` (KDE's outline),
+  - `item` *(element)*, in `group` — one row: `fill` (highlight; libadwaita's and the tokens' state layers, appended paint layers; Material's are `interaction`), `stroke` (KDE's outline),
     `corners` (the highlight's own radius), `shadow` (GNOME's HC inset ring), `padding`, `margin`
     (the space
     round each item, WinUI's `MenuFlyoutItemMargin`, W1-045), `min_width`, `min_height`, `opacity`, `focus`,
-    `transitions`. `item_label`, `item_subtitle`, `item_icon`, `item_trailing_icon`, `accelerator`, `check_indicator`,
+    `transitions`, `interaction` (Material's state layer and press ripple, S2.12). `item_label`, `item_subtitle`, `item_icon`, `item_trailing_icon`, `accelerator`, `check_indicator`,
     `submenu_arrow`, `split_chevron`, `split_divider`, `item_selection_indicator`, `found_item_pointer` belong to
-    `item`, nest in it and are queried with it (`split_chevron` as an element of its own inside it), `interaction` (Material's state layer and press ripple, S2.12).
+    `item`, nest in it and are queried with it (`split_chevron` as an element of its own inside it).
   - `item_label` — `text` (font, tracking, line height, fill per state), `stroke` (KDE's weak-focus line, drawn a gap
     under the text's own bounding box, not the item's: its bottom edge, position `Outside`, the gap its `outset`,
     `breezehelper.cpp:406-421`, K1.62, K3.21; the other edges `Absent`).
@@ -1332,7 +1333,7 @@ spaces:
   reveal buttons, media controls, edit-menu commands).
 - **Available:** every preset.
 - **Parts:**
-  - `body` — the bezel or container (the root): `fill` (state layers are appended paint layers, R3; an expression on
+  - `body` — the bezel or container (the root): `fill` (libadwaita's state layers are appended paint layers, R3, Material's the `interaction` block, S2.12; an expression on
     `element.color` where the application tints the button: AppKit's `bezelColor`, a toolbar item's
     `backgroundTintColor`, MAC-B07, MAC-TL04, ADD-B16; the parts declare that data, `data = { body = ["color"],
     label = ["color"], icon = ["color"] }`, S8, S10), `stroke`, `corners`, `shadow` (layers or an elevation entry),
@@ -1687,9 +1688,10 @@ spaces:
     `qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:48`); `help` takes the
     cursor `WhatsThis` (ADD-A59); Material's icon buttons are `icon_only` with `primary`, `tinted` and `@outlined`
     (MAT-N4, MAT-N5, C-29).
-  - Material's state layer and press ripple are `body.interaction` (S2.12), drawn over the label and icon as Compose's
-    ripple node draws them (it draws the content first, `Ripple.kt:373-377`), so the label's and icon's colours are
-    stated as the tokens give them, with no composite under the layer (ADD-A121's `mix` there gone, ADD-A124).
+  - Material's state layer and press ripple are `body.interaction` (S2.12), drawn over the label and icon and beneath
+    the outline, as Compose's ripple node and its surface's border draw them (`Ripple.kt:373-377`, `Surface.kt:562-564`,
+    `Border.kt:212-214`), so the label's and icon's colours are stated as the tokens give them, with no composite
+    under the layer (ADD-A121's `mix` there gone, ADD-A124).
   - Material Expressive's buttons, toggle buttons and icon buttons morph only their corners on press and selection
     (Compose animates a `RoundedCornerShape` or `CornerBasedShape`, `Button.kt:1921-1938`, `ToggleButton.kt:1714-1717`,
     `IconButton.kt:1632`, `:1652`): `body.corners` with a `Corners` spring transition (MAT-B11, MAT-X12); `button` has
@@ -1788,8 +1790,8 @@ spaces:
   - `segment` *(element)* — one segment (its own hover, pressed, selected, disabled, focus): `fill`, `stroke`,
     `corners` (concentric with the track, or rounded only at the ends by position), `padding`, `min_width`,
     `min_height`, `shadow`, `opacity`, `focus`, `bindings` (GNOME's OSD selected toggle rebinding the accent and status
-    roles, GN-1.247), `transitions`. `label`, `icon`, `indicator`, `check`, `menu_indicator` belong to `segment` and
-    are queried with it, `interaction` (Material's state layer and press ripple, S2.12).
+    roles, GN-1.247), `transitions`, `interaction` (Material's state layer and press ripple, S2.12). `label`, `icon`, `indicator`, `check`, `menu_indicator` belong to `segment`
+    and are queried with it.
   - `label` — a segment's text: `text`, `opacity` (the dimmed label of a disabled group, GN-1.242), `transitions`
     (kirigami-addons' selected label turning to its selected text style, K-KA-25†).
   - `icon` — a segment's image: `icon` (its tint per state, MAC-SG10†; kirigami-addons' radio selector's size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100), K-KA-25†), `opacity` (the dimmed image of a disabled
@@ -2614,7 +2616,7 @@ spaces:
   - `state_layer` — Material's halo round the handle (MAT-S7), named as `switch`'s, `checkbox`'s and `radio`'s: `fill`,
     `corners` (its shape), `opacity` (per state, MAT-S7), `min_width`, `min_height`. Unlike theirs it is no ripple: at
     the pin Compose's slider draws no indication on the handle under the default ripple theme
-    (`OpacityFocusThemeConfiguration`, `Ripple.kt:359`), and only an inset focus ring, with the press, hover and drag
+    (`OpacityFocusThemeConfiguration`, `Ripple.kt:360`), and only an inset focus ring, with the press, hover and drag
     indications off, under an inset-ring theme (`Slider.kt:930-946`, `:1435-1470`), so the halo is the tokens' and its
     states an exclusive group (above).
   - `tick` *(element)* — a tick mark (its fill depends on whether it lies within `value_fill`): `fill`, `corners` (a line
@@ -3164,7 +3166,8 @@ spaces:
     Material's navigation rail and drawer active indicator (MAT-N13, rename row 18): `fill`, `corners`, `min_width`,
     `min_height`, `opacity` (the rail's, zero with the width outside `{selected}`, as Compose grows and fades it in,
     MAT-N13), `transitions` (absent where the row's state shows none, it enters from transparent and leaves to
-    transparent by these, S2.7; its slide between rows is the event `@indicator_move`).
+    transparent by these, S2.7; its slide between rows is the event `@indicator_move`, `Instant` on `material-3`'s rail, whose items grow and fade
+    their own, MAT-N13).
   - `row_separator` *(element)*, in `section` (beside the rows, so they are its siblings; queried in the view's scope
     where no section is drawn, as the rows) — the line between two rows, an element whose previous and next siblings
     are rows (it hides beside a hovered, selected or dragged row: GN-1.162, L-3, MAT-L6, boxed-list separators GN-1.165,
@@ -3448,9 +3451,9 @@ spaces:
     `stroke` (W1-086's gradient border on the sides and top; GN-1.135's
     high-contrast inset border), `corners` (K1.121 on the bar side only), `padding`, `min_width`, `max_width`,
     `min_height`, `max_height` (W1-085, GN-1.129), `opacity`, `shadow` (dragged, GN-1.133), `focus` (AdwTabBar's focus
-    ring on the tab, GN-1.134), `transitions` (hover fade K1.132; GN-1.131's background transition; X-MO-6). `label`,
+    ring on the tab, GN-1.134), `transitions` (hover fade K1.132; GN-1.131's background transition; X-MO-6), `interaction` (Material's state layer and press ripple, S2.12). `label`,
     `icon`, `indicator` and `attention_indicator`
-    belong to it and are queried with it, `interaction` (Material's state layer and press ripple, S2.12).
+    belong to it and are queried with it.
   - `label` — the tab's label: `text` (font, elision: per platform, a fade at the edges on GNOME
     GN-1.129), `focus` (the focus indicator of kind Underline where focus is a line under the label, K1.129), `transitions` (Material's content colour fade, MAT-TB1).
   - `icon` — the tab's icon: `icon` (its style per state, W1-081, K1.130, MAT-TB4), `transitions` (Material's content colour fade, MAT-TB1).
@@ -4592,7 +4595,8 @@ spaces:
   supplies the bar's item count as that element's `item_count` (`ElementData`, S8, R25.3), so the values and the
   bar's events below are the bar's; `presentations: Vec<PresentationTransition>` (queried with the bar): events
   `@indicator_move` (the selection changing: a step on the item's part `indicator`, the selection slide, Morph, T-8,
-  MAT-N12, and the items' own change, T-15),
+  and the items' own change, T-15; `Instant` on `material-3`, whose items grow and fade their own indicators,
+  MAT-N12),
   `Appear`, `Disappear` (the bar shown and hidden, `setTabBarHidden(_:animated:)`, T-15; AdwViewSwitcherBar's reveal,
   GN-2.15), `@minimize` (T-10), `@customize` (T-17†, P3-2†), `@tab_sidebar_morph` (iPad's tab bar becoming a sidebar, C-22; one occasion with `sidebar`'s),
   `@spring_load` (an item a drag hovers switching to it, P3-11†), `@accessory_environment` (the bottom accessory
@@ -4723,8 +4727,8 @@ spaces:
   - `week_number` — `text`.
   - `day` *(element)* — a day cell: `fill`, `corners`, `stroke`, `padding` (GN-2.25, W2-02), `min_width`,
     `min_height` (Material's cell size, MAT-N16), `opacity` (other-month days: K-KA-21†, MAT-N16), `focus` (GN-2.25,
-    K-KA-21†). `day_label`, `today_marker`, `decoration`, `range_band` belong to `day`, nest in it and are queried
-    with it, `transitions` (Material's container colour animated into a selection, MAT-N16), `interaction` (Material's state layer and press ripple, S2.12).
+    K-KA-21†), `transitions` (the `interaction` block's fades; Material's container switches at once, MAT-N16), `interaction` (Material's state layer and press ripple, S2.12).
+    `day_label`, `today_marker`, `decoration`, `range_band` belong to `day`, nest in it and are queried with it.
   - `day_label` — its number: `text` (tabular figures, GN-2.25; iOS's `fontDesign`, C-6; Windows' blackout
     strikethrough, W2-02, a `Strike` decoration under `{@blackout}` whose `thickness` and `offset` the value phase
     states from CalendarView's source: references to `element.font_strikeout_thickness` and
@@ -7255,10 +7259,10 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `dial_center`, in `popup` — the selector centre, MAT-N17: `fill`, `corners`, `min_width`, `min_height`.
   - `dial_label` *(element)*, in `popup` — MAT-N17's dial labels; the one under the selector is `selected`: `text`.
   - `selector_cell` *(element)*, in `popup` — MAT-N17's time selector cells (the dial picker's hour and minute):
-    `fill`, `stroke`, `corners`, `min_width`, `min_height`, `text`. The time input's hour and minute fields are
-    `input` elements (Nested controls, below), `interaction` (Material's state layer and press ripple, S2.12).
+    `fill`, `stroke`, `corners`, `min_width`, `min_height`, `text`, `transitions` (the `interaction` block's fades,
+    MAT-N17), `interaction` (Material's state layer and press ripple, S2.12). The time input's hour and minute fields are `input` elements (Nested controls, below).
   - `period_selector` *(element)*, in `popup` — MAT-N17's AM/PM selector: `fill`, `stroke`, `corners`, `min_width`,
-    `min_height`, `text`, `interaction` (Material's state layer and press ripple, S2.12).
+    `min_height`, `text`, `transitions` (the `interaction` block's fades, MAT-N17), `interaction` (Material's state layer and press ripple, S2.12).
   - `headline`, in `popup` — MAT-N17: `text`.
   - `time_separator`, in `popup` — Material's separator, MAT-N17; kirigami-addons' ":", K-KA-23†: `text`. The parts
     in `popup` are its content: they nest in it on every preset, so the popup's entering and leaving carry them, and
@@ -8351,8 +8355,8 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Parts:**
   - `body` — the root, the menu's box: `padding`.
   - `item` *(element; states hover, pressed, focus_visible)* — a menu item: `fill`, `corners`, `padding`, `shadow`,
-    `min_height` (its height, MAT-N3), `transitions`. `item_label` and `item_icon` belong to it and are queried with
-    it, `interaction` (Material's state layer and press ripple, S2.12).
+    `min_height` (its height, MAT-N3), `transitions`, `interaction` (Material's state layer and press ripple, S2.12). `item_label` and `item_icon` belong to it and are
+    queried with it.
   - `item_label`, in `item` — `text`.
   - `item_icon`, in `item` — `icon`.
   Its close button is `button @ variant close context component.fab_menu`.

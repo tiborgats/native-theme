@@ -746,7 +746,8 @@ pub enum PropertyGroup { Fill, Stroke, StrokeWidth, Corners, Shape, Shadow, Opac
 pub struct Transition {
     pub properties: Vec<PropertyGroup>,
     pub kind: TransitionKind,
-    pub duration: Value<Ms>,                 // may be absent: for a spring, whose time is its own (S2.7)
+    pub duration: Value<Ms>,                 // may be absent: a spring's, whose time is its own; with
+                                              // `delay` and `timing`, a ripple effect's (S2.7)
     pub delay: Value<Ms>,
     pub timing: Value<Timing>,                // a timing, or a reference to a timing token
     pub suspended_by_theme_change: bool,      // libadwaita's CSS transitions are, its AdwAnimations are not
@@ -754,14 +755,12 @@ pub struct Transition {
 }
 pub enum TransitionKind {
     Interpolate,
-    Ripple { fade_in: Value<Ms>,              // the ripple's alpha rising, linearly, from 0 to its own
-             origin_timing: Value<Timing>,    // its centre's travel from the point pressed to the box's centre
-             min_press: Value<Ms>,            // the soonest after the press its release fade may start
-             press_delay: Value<Ms> },        // how long the press waits before it shows, where the platform
-                                              // delays it; 0: none (S2.12; MAT-X9, MAT-X25, ADD-A124)
+    Ripple(RippleEffect),                     // the press ripple, a platform's effect, its whole lifecycle
+                                              // its own (below; S2.12; MAT-X9, ADD-A124)
     FocusMove,                                // the indicator travelling between elements (ADD-A19)
     Keyed { key: Key, params: Vec<(Key, Value<Scalar>)> },   // SF Symbols' content transitions and effects,
 }                                             // WinUI's AnimatedIcon states; values measured (ADD-A27, R25.12)
+pub enum RippleEffect { AndroidPatterned }   // closed; each implemented once in native-theme to its source
 pub struct PresentationTransition {          // one event's presentation: its steps run together (R25.6)
     pub event: PresentationEvent,             // Appear, Disappear, Move, and widget-specific keyed events
     pub steps: Vec<PresentationStep>,
@@ -799,9 +798,13 @@ after the change governs, both directions; among that style's transitions for a 
 below), the later in stated order wins, a later rule's over an earlier one's and over the base's; a property
 whose group has no transition that applies in that style takes its new value at once, in the frame of the change (no
 transition is no animation, never a toolkit's default one); appearing
-layers interpolate from zero alpha, layers match by stack position, colours interpolate in premultiplied sRGB; a
-stroke that becomes absent interpolates to one of zero width in its colour at zero alpha, and one that appears from
-it, as a layer does (ADD-A124); a
+layers interpolate from zero alpha, layers match by stack position, colours interpolate in premultiplied sRGB (Compose's
+own colour animations interpolate in Oklab with straight alpha, `androidx@e4d933c9
+compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/ColorVectorConverter.kt:31-48`, which the
+model does not state yet: the ledger's queue #80); a
+stroke, an edge or an edge's paint that becomes absent interpolates to zero width in its paint at zero alpha, and one
+that appears from it, as a layer does, a width interpolated to zero or below ending it (Compose drops a border whose
+width reaches zero, `ToggleButton.kt:1739-1741`; ADD-A124); a
 timing maps the elapsed fraction `t` to the fraction of the way from the old value to the new, its **forward
 reading**, so a platform that reaches the new value by running an animation backward, from its end value (the old
 value) to its start value (the new), with a curve `f` (Qt's `Backward` direction, which applies `f` to the time
@@ -834,8 +837,8 @@ states its 120 ms one with no `from`, and the disabled rule a zero one. Its stat
 way (`compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:313-322`,
 `:463-483`, all linear: in 15 ms to hover, 45 ms to focus or drag; out 15 ms from hover or focus, 150 ms from drag):
 the rest style states a 15 ms `StateLayer` transition and then 150 ms `from {dragged}`, each state-layer rule its
-incoming one, the `{pressed}` rule the press ripple's `Ripple` transition and the rest style its release fade
-`from {pressed}` (an `Interpolate` of the `Ripple` group, S2.12), while the container's `Fill` takes no transition
+incoming one, and the `{pressed}` rule the press ripple's `Ripple` transition, whose release is its own (below),
+while the container's `Fill` takes no transition
 where Compose snaps it (a checked toggle's, `ToggleButton.kt:178`, `:1446-1452`). Breeze fades a button's pen only on leaving hover, visible focus or press, and its fill only on
 leaving press, into whatever state follows, checked included, while checked, default and window-activation changes
 are instant (`breeze@6.8.2 kstyle/breezehelper.cpp:655-725`, `kstyle/breezestyle.cpp:4546-4549`): the base states its
@@ -862,30 +865,31 @@ alike states `Stroke` alone. Rejected: a transition naming the fields it times w
 field-path list on every transition, its grammar and its checks, for the one pair the sources part); the width as
 `Geometry` (it would move with the layout, which a border's width does not change in Compose's drawn border).
 
-**The press ripple** (`TransitionKind::Ripple`, R9, ADD-A124) is the `Ripple` group's transition into `{pressed}`,
-on `PartStyle.interaction.ripple` (S2.12): from the press, delayed by `press_delay` where the platform delays it, the
-ripple's circle grows from its start radius to its end radius (the block's geometry) over the transition's `duration`
-and `timing`, its centre moving from the point pressed (which the toolkit has from the press) to the box's centre over
-that duration by `origin_timing`, and its alpha rises from 0 to `ripple.alpha` over `fade_in`, linearly. A release
-ends the press: the release transition is the `Ripple` group's transition that applies in the style after (`from
-{pressed}`, an `Interpolate`), which fades the alpha to the style after's `ripple.alpha`, its `duration` and `timing`
-the fade's and its `delay` counted from the fade's start. The fade starts at the later of the release and `min_press`
-after the press, the circle meanwhile growing on to its end; a release before the fade-in ends sets the alpha to the
-press's `ripple.alpha` at once. The connector keeps the press transition's values (its grow, `fade_in`, `min_press`)
-for the ripple it started until that ripple ends, as the style after no longer states them. Compose: start radius 0.3
-of the larger side, end radius half the diagonal plus 10 dp where bounded (`getRippleStartRadius`,
-`getRippleEndRadius`, `material3-ripple/…/RippleAnimation.kt:161-178`), a 225 ms `FastOutSlowInEasing` grow with the
-centre's travel linear, a 75 ms fade-in, and a fade-out that waits for the whole fade-in (`animate()`, `:76-104`, the
-constants `:180-182`), so `min_press` is the grow's 225 ms, the fade 150 ms linear (`:106-115`), and a release
-mid-fade-in jumps to full alpha (`:133-139`). Its clickables delay the press by `TapIndicationDelay` inside a
-scrollable container, for any pointer, a press cancelled within it showing nothing
-(`compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Clickable.kt:2019-2027`, `:2111-2117`,
-`:2146-2147`); that delay is `ViewConfiguration.getTapTimeout()`
-(`compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/Clickable.android.kt:40`), whose
-value lies in `frameworks-base`'s `core/java/android/view/ViewConfiguration.java`, outside the source cache's sparse
-paths, so `press_delay` is stated by a rule in `context any scroll_view` and its value is pending (the ledger's queue
-#45). A new press while a ripple fades starts another, the earlier ones finishing (`CommonRipple.kt:33-48`): the
-connector draws each out, the resolved block holding one.
+**The press ripple** (`TransitionKind::Ripple`, R9, ADD-A124) is the `Ripple` group's transition, stated by a rule
+under `{pressed}`, on `PartStyle.interaction.ripple` (S2.12). Its effect is a platform's own, one of a closed set
+implemented once in native-theme to its source, as platform curves and shapes are (R9, R25.5): its progress over the
+press and after the release, its centre's travel and radius, and its colour at each point, which a connector draws by
+that function or as closely as its toolkit can (R23). The effect runs from the press, takes the ripple's colour,
+alpha and geometry from the style the press enters and keeps them for its life, and ends by its own exit after the
+release; the transition's `duration`, `delay` and `timing` are stated `Absent`, the effect's time being its own (a
+spring's `duration` is absent likewise), and no other
+transition of the `Ripple` group exists (S12). `AndroidPatterned` is Android's `RippleDrawable`, which Compose draws
+the press with on Android (`androidx@e4d933c9
+compose/material3/material3-ripple/src/androidMain/kotlin/androidx/compose/material3/ripple/Ripple.android.kt:35-46`;
+its common `CommonRippleNode` is Compose Multiplatform's, not drawn on Android), in the patterned style the framework
+forces (`frameworks-base@android-17.0.0_r1 graphics/java/android/graphics/drawable/RippleDrawable.java:161`, `:1336`):
+an enter animation of its progress from 0 to 0.5 over 450 ms by `(0.4, 0, 0.2, 1)` and an exit from there to 1 over
+375 ms linear that starts no sooner than the enter's end (`RippleAnimationSession.java:42-48`, `:113-206`), a noise phase looping over 7000 ms, and `RippleShader.java`'s colour at each point: the wave's fade-in and
+fade-out and its sparkles over that progress, its centre moving from the touch point to the box's centre
+(`RippleShader.java:102-122`), its colour and its sparkle colour (the framework's default, `RippleDrawable.java:159`,
+`:1334`) fixed when the press starts (`RippleDrawable.java:986-1018`; `Ripple.android.kt:79-82`: a colour change
+reaches no ripple already drawn). Compose passes its colour as the ripple's colour with its pressed alpha, the bound
+or unbound circle's radius (`RippleHostView.android.kt:124-188`, `Ripple.android.kt:103-138`, the radius the common node's,
+`commonMain/…/ripple/Ripple.kt:189-201`, `RippleAnimation.kt:168-178`: half the diagonal, plus 10 dp where bounded), and the touch point:
+the point pressed where the ripple is bounded, the box's centre where it is not (`RippleHostView.android.kt:141-152`).
+A new press while a ripple runs adds another, every running one exiting on the release (`RippleDrawable.java:886-953`,
+at most ten, `:157`): the connector draws each out, the resolved block holding one. The ripple's motion, a function of the
+effect, is checked against the Android host's capture (U70), not stated as facts per frame.
 
 **A curve is stated as its source states it** (ADD-A123; R9, CONTRA-7, settled in ADD-A124): a curve whose control points the source writes (CSS's
 keyword curves, libadwaita's `ADW_EASE`, `ADW_EASE_IN`, `ADW_EASE_OUT` and `ADW_EASE_IN_OUT`, whose points
@@ -1168,42 +1172,40 @@ window's stays (ADD-A59). Every widget's "when focus becomes visible" value is a
 pub struct Interaction { pub state_layer: StateLayerStyle, pub ripple: RippleStyle }
 pub struct StateLayerStyle { pub color: Value<Color>, pub alpha: Value<Fraction> }
 pub struct RippleStyle { pub color: Value<Color>, pub alpha: Value<Fraction>,
+                         pub bounded: bool,              // clipped to the outline, from the point pressed; false:
+                                                         // from the box's centre, unclipped
                          pub max_radius: Value<Px>,      // the end radius; absent: half the box's diagonal plus
-                                                         // `padding`
-                         pub initial_scale: Value<f32>,  // the start radius, a fraction of the box's larger side
-                         pub padding: Value<Px>,         // added to half the diagonal where `max_radius` is absent
-                         pub soft_edge: Value<Px> }      // a soft outer edge this wide; 0: a hard circle
+                         pub padding: Value<Px> }        // `padding`
 ```
 
 `PartStyle.interaction` is Compose's ripple node on a part (R3, ADD-A124): one state layer, the hover, focus or drag
 feedback, and the press ripple, a block of the part apart from its paints, as Compose draws its indication apart from
 the container (`androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Surface.kt:246-262`).
-It is drawn over the part's fill, stroke and the parts nested in it, the ripple beneath the state layer, as the
-ripple node draws its content first and then its ripples and its state layer
-(`compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:373-377`),
-clipped to the part's outline (an unbounded halo is a part of its own whose outline is its circle: the checkbox's,
-the radio's and the switch's `state_layer` parts, the catalogue). The state layer fills the outline in `color` at
-`alpha` (the colour's own alpha replaced, as Compose's `copy(alpha = …)` does, `Ripple.kt:380-385`); the ripple is
-drawn only while a press's ripple runs (S2.7's press ripple), a circle in `color` reaching `alpha`. Its colours are
-not interpolated: a change of `state_layer.color` or `ripple.color` takes effect in the frame of the change, as
-Compose redraws both in the current colour every frame (`Ripple.kt:380-385`, `CommonRipple.kt:56-68`; the colour
-`LocalContentColor`'s where the widget gives none,
-`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Ripple.kt:768-781`), and only the alphas
-are timed: the `StateLayer` group's transitions time `state_layer.alpha`, the `Ripple` group's the ripple (S2.7).
-Rules set its fields by `Fields` patches (S6.1), so a rule that sets the part's `fill` leaves it as it is, and a
-`{checked}` or `{selected}` rule written after its plain twin sets the colour drawn. Its colours follow the content
-state, as Compose's follow the content colour: the base states them and every rule that changes the content colour
-(a variant, `{checked}`, `{selected}`, `{invalid}`, `{disabled}`) restates them, so a state layer fading out or a
-ripple released into another state fades in that state's colour; its alphas follow the interaction flags. The ripple's geometry is
-Compose's reading: material-web's ripple sizes a square from `INITIAL_ORIGIN_SCALE` of the larger side and computes
-its soft edge from the box (`material-web@2.5.0 ripple/internal/ripple.ts:17-22`, `:279-286`), values that do not map
-onto `initial_scale` and `soft_edge` unconverted. `interaction` may be absent: a part draws it where its platform has
-a ripple node (Material's parts the catalogue lists it on), and every other preset states it `Absent` there.
-GTK's and libadwaita's state layers are no such block: they are CSS background layers, paint layers of the `fill`
-animated as CSS animates them (R6). Weighed: the state layer and ripple as paint layers with roles (a role per
-layer, a one-layer-per-role rule, alpha-only timing for role layers and their restatement at rest, each needed to
-hold what this block holds by its type, and a rule that sets the fill dropping them); the state layer as a part of
-its own (a part more on every widget, the ripple still sharing its fill).
+It is drawn over the part's fill and the parts nested in it and beneath its stroke, the ripple beneath the state
+layer: the ripple node draws its content first and then its ripples and its state layer
+(`compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:373-377`), and
+`Modifier.surface` draws the border over the indication, the border node drawing its content first
+(`Surface.kt:562-564`; `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Border.kt:212-214`,
+`:282-286`). The state layer fills the part's outline in `color` at `alpha` (the colour's own alpha replaced, as
+`copy(alpha = …)` does, `Ripple.kt:380-385`); the ripple is drawn while a press's effect runs (S2.7's press ripple),
+bounded or not as `bounded` says (an unbounded halo is a part of its own, the checkbox's, the radio's and the switch's
+`state_layer` parts, the catalogue). The state layer's colour is not interpolated: a change of `state_layer.color`
+takes effect in the frame of the change, as the ripple node draws the state layer in the current colour every frame
+(`Ripple.kt:373-386`, common code that runs on Android), and the `StateLayer` group's transitions time its alpha alone.
+The ripple keeps the colour, alpha and geometry the press began with for its life, as Android's `RippleDrawable` fixes
+them when the ripple starts (S2.7; `compose/material3/material3-ripple/src/androidMain/kotlin/androidx/compose/material3/ripple/Ripple.android.kt:79-82`).
+The colours are references to the content colour, `= surface.foreground`, stated once in the base and so following
+every rebinding of the part's surface (Material's facts bind `surface.foreground` to the content colour per state, as
+`LocalContentColor`, `compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Ripple.kt:768-781`),
+and are restated only where the tokens give another colour (R1.6). Rules set the block's fields by `Fields` patches
+(S6.1), so a rule that sets the part's `fill` leaves it as it is. `interaction` may be absent: a part draws it where its
+platform has a ripple node (Material's parts the catalogue lists it on), and every other preset states it `Absent`
+there. GTK's and libadwaita's state layers are no such block: they are CSS background layers, paint layers of the
+`fill` animated as CSS animates them (R6). Weighed: the state layer and ripple as paint layers with roles (a role per
+layer, a one-layer-per-role rule, alpha-only timing for role layers and their restatement at rest, each needed to hold
+what this block holds by its type, and a rule that sets the fill dropping them); the state layer as a part of its own
+(a part more on every widget, the ripple still sharing its fill). The block's own costs: a field on a dozen Material
+parts that every other preset states `Absent`.
 
 ## S3. Colour roles (R5.1–R5.3)
 
@@ -1377,7 +1379,9 @@ pub struct Behavior { pub double_click_time: Value<Ms>, pub double_click_distanc
                        pub focus_visible_when: Value<FocusVisibleWhen> }
 pub struct KeyRepeat { pub delay: Value<Ms>, pub interval: Value<Ms> }   // neither may be absent
 pub struct TouchBehavior { pub slop: Value<Px>, pub paging_slop: Value<Px>, pub double_tap_time: Value<Ms>,
-                            pub double_tap_slop: Value<Px>, pub delay: Value<Ms> }
+                            pub double_tap_slop: Value<Px>,
+                            pub delay: Value<Ms>,             // before a press shows inside a scrolling container
+                            pub delay_every_pointer: Value<bool> }   // true: for every pointer, not touches alone
 pub enum Mnemonics { Never, OnAlt { delay: Value<Ms> }, Always }
 pub struct ScrollPhysics { pub deceleration: Value<ScrollDecay>, pub overscroll: Value<Timing>,
                            pub overscroll_effect: OverscrollEffect, pub overscroll_extent: Value<Px>,  // ADD-A29
@@ -1398,6 +1402,19 @@ pub enum OverscrollEffect { None, RubberBand, Stretch, Glow }   // None: the pla
 pub enum ScrollDecay { /* closed: one variant per platform deceleration, each holding the parameters its source
                           defines as stated `Value` fields, written in the value phase (below) */ }
 ```
+
+`TouchBehavior.delay` is how long a press waits before it shows inside a scrolling container, so a scroll can claim
+the gesture first (ADD-A124): the connector sets the element's `pressed` flag only after it, for touches alone or,
+where `delay_every_pointer` holds, for every pointer; a release within it sets `pressed` and clears it in successive
+frames, so the press still shows; a cancel within it sets nothing. iOS's is `UIScrollView.delaysContentTouches`'
+(X-BT-1). Compose withholds the press interaction itself, for every pointer, while an ancestor gesture is still waiting
+or the Compose root lies in a scrolling View (`androidx@e4d933c9
+compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Clickable.kt:2034-2045`, `:2074-2082`,
+`:2111-2117`, `:2146-2147`, `:2170-2180`), by `ViewConfiguration.getTapTimeout()`
+(`compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/Clickable.android.kt:40`), the
+resource `config_tapTimeoutMillis`, 100 ms (`frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:3230`;
+`core/java/android/view/ViewConfiguration.java:1620-1628`, its fallback `TAP_TIMEOUT`, `:133`), which the Android
+reader reads (R18): every pressed visual waits with it, the ripple, the elevation and the shape alike.
 
 A deceleration is a platform's own code, not one number with one meaning: the platforms' decelerations are
 different physical models (a per-millisecond rate, a friction, a constant deceleration, a spline), so one `f32` read
@@ -1760,8 +1777,8 @@ beyond the content") and `max_width` and `max_height` ("no maximum") on every pa
 
 **May be absent, in the core's blocks** (the first source; wherever the block appears unless a mark names its place,
 because some platform has no
-counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`; `Ripple`'s values; `PartStyle.interaction` as a whole,
-and `RippleStyle.max_radius` (S2.12); a `FocusIndicator`'s
+counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`; `PartStyle.interaction` as a whole, and
+`RippleStyle.max_radius` (S2.12); a `FocusIndicator`'s
 `shadow` and `transition` (its `dash` is stated, `solid` included, S2.4); `IconStyle.state_effect`, `weight`, `scale`,
 `animation`, and `fill` where `rendering_mode` is `Original` only (S2.9);
 `Glyph.stroke`, `draw_extent`, and `fill` on a stroked-only path (a spinner's arc, whose paint is its `stroke`'s;
@@ -2659,8 +2676,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   declare, or a flag that is not a member of it (S7.2; ADD-A124);
 - a `Transition.from` is an empty list (it would apply from no state), names a flag twice, or names a keyed flag the
   widget of the element it is queried with does not declare (S2.7; ADD-A124);
-- a `Ripple` transition's `properties` are not exactly `[Ripple]` (S2.7, S2.12;
-  ADD-A124);
+- a `Ripple` transition's `properties` are not exactly `[Ripple]`, its `duration`, `delay` or `timing` is not `Absent`, or
+  the rule stating it can apply where `pressed` is not held; a `Ripple`-group transition is of another kind; a
+  `StateLayer` or `Ripple` transition is stated on a part whose fields lack `interaction` (S2.7, S2.12; ADD-A124);
 - an expression nests deeper than 32, or a chain of references is longer than 32;
 - a `Fields` patch can meet an `Absent` or `Auto` block under some combination of the rules before it, following
   references (S2.2; checked conservatively), or `base` or `Append` appears in a layer's bases;
@@ -3666,7 +3684,7 @@ lines that cite it.
 | ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp` (every Kirigami, qqc2-desktop-style and kirigami-addons `linearInterpolation` the KDE trace states written with it and its operands), `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17, S4.6 |
 | ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; a glyph font's fallback chain; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms; the first check's fixes: the one merge conflict (a `Fields` patch meeting `Absent` or `Auto` directly), the motion keys from a shared name, the one class or the source's words, the pending fact's register Id and a shadowed pending fact failing the gate, two products giving one set, the enum blocks listed, `min_width` and `min_height` as `Option<Length>`, one surface binding per part, `concentric`'s `None` for unequal insets, `damping_coefficient`, `ResolvedPartStylePatch` for a keyframe, a transition with no property group refused; the second check's fixes: the enum blocks defined (a model enum with a variant holding data) and listed, each stated whole; the motion keys' closed list of dropped words applied in every step (UIKit's `default`, QVariantAnimation's `variant`) and the catalogue naming each key or its family; `FontCodePoint`'s chain moved to `token.text.fallbacks.per_family`; a map merging by key with a `BlockPatch` per struct-block entry, an entry for a missing key created from its patch; `GlobalRole::AccentRamp`; `StatusColors` named; `concentric`'s inset from the stated paddings and margins, S12 refusing unequal ones; `Paint::try_from` refusing a bottom `Mask`; a product repeating a variant refused; a pending fact's place in its file; the ring offset on the part's own width; the third check's fixes: a floating part's distance from the window as its `margin` (no `floating_inset` value), the connector summing `inset`; WinUI's `connected_service` by step 2 and the catalogue listing every key the traces use; Breeze's deactivation `out_cubic`; W1-102's indicator box the laid-out glyph; a map entry created over a value only where its unset fields may be `Absent`, else a merge conflict; several pending facts sharing one register row; the fourth check's fixes: W1-102's `min_width` from WinUI's arrange of its zero-width column, S12's map-entry conflict, S2.7's forward reading defined, the floating margins' reference edges and Material's offset on the anchored edge only, a register Id unique among rows, the tab's declared `width` and `height`, the W spike's `connected_service`; the fifth check's fixes: W1-102 limited to the default label position, the label-beside-icon position recorded as not expressible, S12's map-entry check on bases and on rules conservatively, the backward-run wording; the sixth check's fixes: W1-102 excluding the tabbed command bar, where the label-beside-icon chevron is not expressible, and covering the icon-only position; every focus corner the ring's inner corner (S2.10), W3-20 and MAT-X10 from their sources; AdwTabBox's and AdwTabGrid's keys named; `for_preset` bases in S12's map-entry check; the seventh check's fixes: Breeze's focus corners stated as it draws them (`Frame_FrameRadius`, circular for radio, slider and dial), MAT-X10's `inward-offset` and system `inner-offset` told apart, a `FollowPart` ring's outer corner `follow_part(r, offset + width)`, a square part's ring kept square on GTK and WinUI, WinUI's Reveal and DottedLine corners square; the eighth check's fixes: Breeze's focus offsets per part (frames and the dial inset, the checkbox and radio flush with the drawn indicator), the group box's ring the title checkbox's, a ring's `Full` corner on its inner box; the ninth check's fixes: `group_box.body` without `focus`, S8's focus-corner operand on the ring's inner box, `token.focus`'s offset and the slider's inset stated; the tenth check's minors: `Full` on a ring's inner box, the slider's and dial's handle rect, Breeze's default branch unused, the `animations` base the literal | S1, S2.2, S2.4, S2.7, S2.9, S2.10, S3, S3.3, S4.1, S4.4, S6.1, S10, S12, S17, the catalogue |
 | ADD-A123 | the third spec batch (queue #56, #62, #63, #64, #65–#71): a curve a toolkit computes in code is `Timing::Platform` (provisional, CONTRA-7; settled in ADD-A124), `PlatformCurve::Qt(QtEasing)` and `PlatformCurve::Adw(AdwEasing)` beside `KirigamiVelocity`, a curve whose control points the source writes a `CubicBezier`, and the facts quote the curve's name; `with_alpha(c, a)`, which sets the alpha as `Qt.alpha` and CSS's relative colour do, beside the multiplying `alpha` (Q2.5's RoundButton fill); `requires_variants` meaning any one of its forms; `MotionTokens`' Rust sketch; S2.8's weight the CSS weight and the `ns_font_weight` conversion (WebKit's thresholds for AppKit's `NSFontWeight`); a map keyed by text spelt as a TOML table with the text as its keys (`per_family`), its fact keyed by the quoted key; the macOS accent inputs named (`highlight` from `selectedTextBackgroundColor`, `selected_content_background`, `keyboard_focus_indicator`, `selected_control`; `highlightColor` a literal); a `Style` after a `DrawnAs` restoring the part as after `Absent`; a bare block's map entry set to a reference, `Absent` or `Auto` an ill-typed patch; `PlatformCurve` an enum block; the catalogue's `IndicatorAnchor::InlineTop` and an inline indicator's `margin` a margin in the row, an overlaid one's unused sides stated as written (W1-102's tabbed command bar now stated); adwaita's arrow absence rule `@ variants {menu} !variants {@arrow_only,@with_arrow}`; libadwaita's inline transition keys `tab_bar`, `tab_thumbnail`, `bottom_sheet_border_radius`, `bottom_sheet_box_shadow`; `token.params.motion.kwin_speed_factor` (the decoration's factor, kwinrc over kdeglobals); K3.20's offsets; macOS's circular bezel and circle shape one variant (probe-confirmed), `NSComboButton.unified` as `menu`, `automatic` no variant until measured, a size's font `systemFontSizeForControlSize:`'s, the accent-following fills as `mix`; Material's `@extended_fab` `regular` the unsized composable and Expressive's sizes `small`, `large`, `extra_large`, the extended FAB's and Expressive `with_icon` paddings traced, `token.material.variant`'s default not pinned, the dialog title's precision-pointer case an application opt-in with no rule; the first check's fixes: `@with_arrow` and `@arrow_only` content variants the connector sets by GTK's rule (keyed content variants, S8), CONTRA-7 recording the platform-curve reading, K3.20 split (a positive offset on buttons and non-editable combo boxes, the inset inward on line edits, text areas, spin boxes and editable combo boxes), W1-102's `InlineTop` row with its glyph and gap, `ns_font_weight` the model's own conversion, the bare-block entry (`token.motion.timings` too) an ill-typed patch, not a merge conflict, text map keys equal as TOML keys, the unit suffix on map entry keys and none on `Scalar` entries, `"auto"`/`"none"`/`"absent"` exact, `selected_content_background`'s row, `kwin_speed_factor`'s default, an inline row's spare width, libadwaita's `expander_row`, `places_view`, `toggle_group` and `AdwEasing`'s in-cubic and expo members, `context.scope` defaulting to any ancestor, a `PartRef` value's spelling, `LayerError`'s variants by owner; the second check's fixes: S11's example duration key suffixed (`button_ms`), `AdwEasing::EaseInOutSine` (AdwSpinner's arc) and the key `ease_in_out_sine`, every `ADW_EASE_*` the code uses accounted for, CONTRA-7 after CONTRA-6 with `ease_in_cubic`'s Bézier and the sine curves, keyed content variants as one platform's meaning, `@with_arrow`'s other content and `always-show-arrow` as the connector's option, `Problem`'s kinds, `tab_thumbnail` without the instant background change | S1, S2.2, S2.7, S2.8, S4.1, S4.4, S6.1, S6.3, S8, S9.1, S10, S11, S12, S17, the catalogue |
-| ADD-A124 | the fourth spec batch (queue #42, #49, #60, #73, decided from the sources): recency (CONTRA-6, settled): a widget's named `recency` sets (S10), the selector term `Selector.latest` (S11 `latest = { <set> = "<flag>" }`, the notation `latest s:f`), `Element.state_order` (the order the connector last set the flags in, element data beside the flags, R25.3), unreported flags by the set's stated order, its first the latest, a widget's sets agreeing on their orders, the validation's latest atoms, the state models' `recency` and the gate's combinations per order of the present flags, the facts' `when.latest`; Material's state-layer exclusive groups replaced by its sets `state_layer` and `elevation` (the catalogue's Material recency sets; Compose's `Ripple.kt:250-280`, `Button.kt:1703-1747`, `Card.kt`, `Chip.kt`, `FloatingActionButton.kt`, `ToggleButton.kt`); `Radius::Ellipse` (R7): a quarter of the box's inscribed ellipse, on all four corners with `Circular` curves, `corners::ellipse`, a shadow and a `FollowPart` ring following the ellipse of their own boxes, insets per axis, no corner operand, no shape, no `Concentric` inside it; `kde-breeze`'s QWidget `circular` `Ellipse` and Kirigami's RoundButton `Full` (K1.26); `Transition.from` (R9): a transition applying from any state or from the states it names, matched against the flags before the change after the exclusive drop (`ResolvedTheme::kept_states`, `transitions::governing`), the later applying transition winning, the transitions a keyed list by group and `from` (S6.1), Compose's elevation and Breeze's button fades stated (MAT-B13, MAT-N1, MAT-N9, MAT-CA2, MAT-X7, K1.30); R9's platform curves widened to the curves a toolkit computes by a function of its own (CONTRA-7, settled); the first check's fixes: only the state layer and the shadow follow Material's sets, every other field on plain flags in its source's precedence (the list item's, `ListItemDefaults.kt:1144-1152`); the split button's halves' elevation (`shadow`, the set `elevation`) and the outlined card's hovered and dragged ones; Breeze's base zero transitions `from {disabled}` (Qt keeps a disabled widget's hover) and none under `flavor:kirigami` (qqc2's style item paints with no widget); Compose's state-layer fades and the press ripple's release fade by `from`; S6.1's merged order stated; Qt's clamp cited on the paint engine's path; R7's shape option; "kept" flags in S7.2 and S12; the connector recording the order; an `Ellipse` corner's outward radii; the gate's n! bound; the second check's fixes: `PaintLayer.role` (`LayerRole::StateLayer`, `Ripple`) and `Transition.layer`, a fill's layers timed per role (`transitions::governing` by role, S6.1's key, S12's checks), so a `Ripple` times the press ripple alone and Compose's snapped containers take no transition (toggles, chips, icon buttons); the year cell's, the time picker's and the toolbar buttons' state layers restored; the split button's and the FAB menu's state-layer rows; Material's split-button forms (`tinted`, `@outlined`, `@elevated`) with their shadows; the list's colour order and MAT-L10's corners dropped; the row order where a source ranks no states; the checkbox's, radio's and switch's `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state `opacity` dropped; the third check's fixes: one layer per role (a later rule's role layer replacing the earlier in its place, S6.1, S12), role layers timed by their alpha alone and stated at rest at zero alpha, the press ripple's lifecycle in `TransitionKind::Ripple` (`fade_in`, `origin_timing`, the release an `Interpolate` starting no sooner than `min_press`; `opacity` and `fade` gone), the disabled layer without a role, Compose's colour transitions (the Expressive list item, the date picker's cells, the selectable menu item, the tab's and navigation bar's content, the outlined toggle's border, the split button's corners), the slider's ripple theme, the split button's variant group; Material's navigation items' ripple pill, `bottom_tab_bar.state_layer` and `list.row_state_layer` (the rail; the drawer's on `row_background`), with the bar's, rail's and Expressive items' indicator and content transitions; `PropertyGroup::StrokeWidth`, the stroke's widths timed apart from its colour (the text field, the exposed dropdown and the outlined toggle); the fourth check's fixes: Material's state layer and press ripple a block of the part, `PartStyle.interaction` (`Interaction`, `StateLayerStyle`, `RippleStyle`, S2.12) with the property groups `StateLayer` and `Ripple`, replacing the second and third checks' paint layers with roles (`PaintLayer.role`, `Transition.layer`, one layer per role, role layers stated at rest: gone), drawn over the part's content as Compose's ripple node draws it, ADD-A121's composite under the label gone; the ripple's geometry in the block and its timings in `TransitionKind::Ripple` (`press_delay` for Compose's delay in a scrollable container, its value pending, queue #45); `StrokeWidth` an override of `Stroke`; a stroke becoming absent interpolating to zero width, the checked outlined toggle's border absent; the navigation indicators drawn at rest at zero width and alpha (`opacity`); the Expressive items' unanimated content, the drawer's rows, the text field's container, the date picker's day, re-enabling, the notch, the release fade's start, the checkbox's and radio's ripple colour, citations | S2.3, S2.4, S2.5, S2.7, S2.10, S2.11, S2.12, S6.1, S7, S7.2, S8, S10, S11, S12, S17, S22, the catalogue, the KDE and Material traces |
+| ADD-A124 | the fourth spec batch (queue #42, #49, #60, #73, decided from the sources): recency (CONTRA-6, settled): a widget's named `recency` sets (S10), the selector term `Selector.latest` (S11 `latest = { <set> = "<flag>" }`, the notation `latest s:f`), `Element.state_order` (the order the connector last set the flags in, element data beside the flags, R25.3), unreported flags by the set's stated order, its first the latest, a widget's sets agreeing on their orders, the validation's latest atoms, the state models' `recency` and the gate's combinations per order of the present flags, the facts' `when.latest`; Material's state-layer exclusive groups replaced by its sets `state_layer` and `elevation` (the catalogue's Material recency sets; Compose's `Ripple.kt:250-280`, `Button.kt:1703-1747`, `Card.kt`, `Chip.kt`, `FloatingActionButton.kt`, `ToggleButton.kt`); `Radius::Ellipse` (R7): a quarter of the box's inscribed ellipse, on all four corners with `Circular` curves, `corners::ellipse`, a shadow and a `FollowPart` ring following the ellipse of their own boxes, insets per axis, no corner operand, no shape, no `Concentric` inside it; `kde-breeze`'s QWidget `circular` `Ellipse` and Kirigami's RoundButton `Full` (K1.26); `Transition.from` (R9): a transition applying from any state or from the states it names, matched against the flags before the change after the exclusive drop (`ResolvedTheme::kept_states`, `transitions::governing`), the later applying transition winning, the transitions a keyed list by group and `from` (S6.1), Compose's elevation and Breeze's button fades stated (MAT-B13, MAT-N1, MAT-N9, MAT-CA2, MAT-X7, K1.30); R9's platform curves widened to the curves a toolkit computes by a function of its own (CONTRA-7, settled); the first check's fixes: only the state layer and the shadow follow Material's sets, every other field on plain flags in its source's precedence (the list item's, `ListItemDefaults.kt:1144-1152`); the split button's halves' elevation (`shadow`, the set `elevation`) and the outlined card's hovered and dragged ones; Breeze's base zero transitions `from {disabled}` (Qt keeps a disabled widget's hover) and none under `flavor:kirigami` (qqc2's style item paints with no widget); Compose's state-layer fades and the press ripple's release fade by `from`; S6.1's merged order stated; Qt's clamp cited on the paint engine's path; R7's shape option; "kept" flags in S7.2 and S12; the connector recording the order; an `Ellipse` corner's outward radii; the gate's n! bound; the second check's fixes: `PaintLayer.role` (`LayerRole::StateLayer`, `Ripple`) and `Transition.layer`, a fill's layers timed per role (`transitions::governing` by role, S6.1's key, S12's checks), so a `Ripple` times the press ripple alone and Compose's snapped containers take no transition (toggles, chips, icon buttons); the year cell's, the time picker's and the toolbar buttons' state layers restored; the split button's and the FAB menu's state-layer rows; Material's split-button forms (`tinted`, `@outlined`, `@elevated`) with their shadows; the list's colour order and MAT-L10's corners dropped; the row order where a source ranks no states; the checkbox's, radio's and switch's `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state `opacity` dropped; the third check's fixes: one layer per role (a later rule's role layer replacing the earlier in its place, S6.1, S12), role layers timed by their alpha alone and stated at rest at zero alpha, the press ripple's lifecycle in `TransitionKind::Ripple` (`fade_in`, `origin_timing`, the release an `Interpolate` starting no sooner than `min_press`; `opacity` and `fade` gone), the disabled layer without a role, Compose's colour transitions (the Expressive list item, the date picker's cells, the selectable menu item, the tab's and navigation bar's content, the outlined toggle's border, the split button's corners), the slider's ripple theme, the split button's variant group; Material's navigation items' ripple pill, `bottom_tab_bar.state_layer` and `list.row_state_layer` (the rail; the drawer's on `row_background`), with the bar's, rail's and Expressive items' indicator and content transitions; `PropertyGroup::StrokeWidth`, the stroke's widths timed apart from its colour (the text field, the exposed dropdown and the outlined toggle); the fourth check's fixes: Material's state layer and press ripple a block of the part, `PartStyle.interaction` (`Interaction`, `StateLayerStyle`, `RippleStyle`, S2.12) with the property groups `StateLayer` and `Ripple`, replacing the second and third checks' paint layers with roles (`PaintLayer.role`, `Transition.layer`, one layer per role, role layers stated at rest: gone), drawn over the part's content as Compose's ripple node draws it, ADD-A121's composite under the label gone; the ripple's geometry in the block and its timings in `TransitionKind::Ripple` (`press_delay` for Compose's delay in a scrollable container, its value pending, queue #45); `StrokeWidth` an override of `Stroke`; a stroke becoming absent interpolating to zero width, the checked outlined toggle's border absent; the navigation indicators drawn at rest at zero width and alpha (`opacity`); the Expressive items' unanimated content, the drawer's rows, the text field's container, the date picker's day, re-enabling, the notch, the release fade's start, the checkbox's and radio's ripple colour, citations; the fifth check's fixes: the press ripple Android's `RippleDrawable` (`TransitionKind::Ripple(RippleEffect)`, `RippleEffect::AndroidPatterned` implemented to `RippleDrawable`, `RippleAnimationSession` and `RippleShader` at the pin, its lifecycle and release its own, its colour kept from the press; `fade_in`, `origin_timing`, `min_press`, `press_delay`, `RippleStyle.initial_scale` and `soft_edge` gone, `RippleStyle.bounded` added); the block beneath the part's stroke (`Surface.kt:562-564`, `Border.kt:212-214`); its colours `= surface.foreground`; the press delay `TouchBehavior.delay` with `delay_every_pointer` (Android's tap timeout, `config.xml:3230`); a stroke, edge or paint becoming absent and a width reaching zero; S12's `Ripple` and `StateLayer` checks; the filled field's unanimated hover layer; `@indicator_move` `Instant` on Material's bar and rail; Compose's Oklab interpolation noted for queue #80 | S2.3, S2.4, S2.5, S2.7, S2.10, S2.11, S2.12, S6.1, S7, S7.2, S8, S10, S11, S12, S17, S22, the catalogue, the KDE and Material traces |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
