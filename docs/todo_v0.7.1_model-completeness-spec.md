@@ -1284,9 +1284,11 @@ where that widget's entry marks the value `auto`. Each component's part and fiel
 catalogue the same way (S5.1), as data, its parts' styles being `PartStyle`. The derive's input structs, the
 widgets' values structs (`ButtonValues`) and the components' tables are themselves generated from the catalogue by
 `scripts/generate_widgets.py` (ADD-A114), which emits the units its list enables (a unit: a set of catalogue entries
-the list names, less the values it defers to the unit that holds their type — the button's `Placement` values to the
-placement unit, ADD-A120), so a unit enters the model in the commit whose presets state it; token fields are staged
-the same way (`Behavior.scroll` enters with the `scroll_view` unit); its `--check`
+the list names, less the values it defers, each to a named later unit — the button's `Placement` values to the
+placement unit, ADD-A120 — a deferral ending in that unit's commit, and `--check` refusing a deferral to a unit
+already enabled), so a unit enters the model in the commit whose presets state it; a hand-written token field a
+later unit's type needs is staged with that unit (`Behavior.scroll` with the `scroll_view` unit, its `ScrollDecay`
+variants written then); its `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
 archived); hand-written entries with no drift check.
@@ -2056,7 +2058,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
-| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly; one starting `= ` is an expression, and `"auto"`, `"absent"` and `"none"` are the reserved words above (ADD-A120) |
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly; in a `Value` field a string starting `=` is an expression, and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
@@ -2618,7 +2620,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   |---|---|---|---|
   | `published` | `source`, `quote` | `conversion`, `absent` | `evidence`, `tolerance` |
   | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent` |
-  | `measured` | `evidence`, `tolerance` | `conversion` | `source`, `quote`, `absent` |
+  | `measured` | `evidence`, `tolerance` | `conversion`, `inputs` (a measured derivation, below) | `source`, `quote`, `absent` |
 
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
   a number in the value's canonical unit (a colour's per 8-bit channel, alpha included). For a value with leaves (a
@@ -2650,8 +2652,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   first of them is written.
 - **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. For each generation the
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
-  `value` (S2.2's numeric, length, duration, angle, font size and colour literals; references and names are left to
-  the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
+  `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value as written;
+  references and names are left to the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
   held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
   that `scripts/check_fact_citations.py` holds, documents in its docstring and tests in its self-test: the number
@@ -2672,15 +2674,19 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   platform lacks) cites the whole enclosing definition as its `source` range (the selector block, the class's
   declaration in the pinned headers, the control's style), quotes its head, and names in `absent` the platform's
   names for what is missing (a list; `[]` where the platform has no name for it because it does not have it at all,
-  ADD-A120); the checker verifies that no name occurs in the cited lines, and the verifier
-  that the range is the whole definition and each name the platform's own (taken from where the platform does define
+  ADD-A120, citing the definition it would belong to: the widget's style block, the class's declaration); the
+  checker verifies that no name occurs in the cited lines, and the verifier, by its own derivation, that the thing
+  is missing and that the range is the whole definition and each name the platform's own (taken from where the platform does define
   it, another release or a sibling class). A definition spread over several ranges (an Objective-C class and its
   categories) has one citation per range, the names absent from each. A measured absence is a `measured` citation
   whose evidence records that nothing is drawn (an image analysis's output).
-- **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) cites
-  evidence measured under at least two values of each input it names (the probe's passes with the accent changed):
-  its `evidence` path names a table of rows, each the inputs' values and the measured result; the checker requires
-  the rows and their inputs to differ, and the gate evaluates the expression over each row within `tolerance`
+- **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) has a
+  `measured` citation with `inputs`, the references of its expression the harness varied as written there
+  (`inputs = ["input.accent"]`); every other operand is resolved from the preset under the fact's `when`. Its
+  `evidence` path names a list of tables, each keyed by those references (their values in that pass) and `result`
+  (the value measured), `conversion` applying to `result`. The checker checks the form: two or more rows whose
+  inputs differ by more than `tolerance` and whose results do too; the gate evaluates the expression over each row
+  within `tolerance`. It is the one case where the evidence value is not compared with the fact's value directly
   (ADD-A120).
 - **`read`** facts state the reference the key takes from a reader input (`value = "= input.accent"`); the quote is the
   API's declaration at the pinned source or SDK; the gate checks them as derivations (the perturbed run changes the
@@ -2690,7 +2696,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   INI file such as kdeglobals, a nested group written as its bracketed names joined by `][`,
   `Colors:Header][Inactive/BackgroundNormal`; `<first column>/<header>` in CSV); for a value read from an image, the committed output of
   a committed analysis script naming its input image and the pixels it reads. The value there, after `conversion`
-  (applied to it, read as the quote's literals are), equals the fact's within `tolerance`. The run folder's
+  (applied to it, read as the quote's literals are), equals the fact's within `tolerance` (a measured derivation's
+  rows are checked as its bullet says). The run folder's
   `run.toml` maps each image folder to the preset it serves, the `sources.toml` entry of what it measured (the Xcode,
   the distribution snapshot, the WinUI host's Windows App SDK, the emulator image; a runner image measured with no
   such entry gets one of kind `sdk` naming the image) and its exact builds (`[images.os-probe-macos-26]
