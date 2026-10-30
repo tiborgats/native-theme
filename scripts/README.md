@@ -844,8 +844,10 @@ catalogue, the six traces, the gap maps, `docs/platform-facts.md` and
 `docs/todo.md`) and resolves each to a project and a ref where the documents
 let it: Markdown links and bare URLs to code hosts and documentation sites,
 `name@sha path:L`, the abbreviations the gap maps define (`st:5327`,
-`A/w/_buttons.scss:328`, `kwin src/x.cpp:140`, with the document line that
-defines each), bare `file:L` names, `:L` continuations, `platform-facts.md`
+`A/w/_buttons.scss:328`, `kwin src/x.cpp:140`, each with the ref its
+definition in the documents states now, read from the document line that
+defines it, so a re-pinned definition is read as it stands), bare `file:L`
+names, `:L` continuations, `platform-facts.md`
 line references, Apple documentation paths and pages named by title. Each
 record gives the document, line, syntax, project, ref, path as written, the
 repository path where the rules give one, the lines and a status (resolved,
@@ -896,7 +898,8 @@ Checks the form of the 0.8.0 facts (specification S17): every
 each platform's `state-models.toml` and the palette facts in
 `docs/facts/palettes/`; `docs/facts/imported/` is lane input and skipped.
 A fact has a key the catalogue (through `spec_catalogue.py`) or the core (its
-Rust sketches, as `check_spec_names.py` reads them) defines, a value spelled
+Rust sketches, as `check_spec_names.py` reads them) defines, without TOML's
+unit suffix (`button.body.min_width`, not `min_width_px`), a value spelled
 as a preset spells it (of the key's dimension where the sketches type it, an
 expression in S2.2's grammar), gap-map row IDs, a `when` as S11's, citations
 with the fields of their kind and a pinned source, `scheme_file` and `accent`
@@ -923,13 +926,16 @@ python3 scripts/check_facts.py --self-test
 Checks what the 0.8.0 facts' citations say, against the source cache
 (`update_sources.sh`; `--cache DIR` or `NATIVE_THEME_SOURCES` overrides it)
 and `docs/evidence/`: each quote occurs, whitespace-normalised, in the cited
-lines at the pin (a JSON page: in the string at the pointer); no `absent`
-name occurs there; per generation, every literal of the value equals a
-literal of its citations' quotes, read by the cited file's notation and
-converted as the citation says; a measured value equals the committed
-evidence within its tolerance, leaf by leaf, and the run's `run.toml` maps
-the image to a preset its source serves; every evidence file is cited,
-except READMEs, `run.toml` and the legacy runs (`LEGACY_EVIDENCE`, which
+lines at the pin (a JSON page: in the string at the pointer, in the snapshot
+file its `sources.toml` entry names with `file`); no `absent` name occurs
+there as an identifier; per generation, every literal of the value equals a
+literal of its citations' quotes, read by the cited file's notation (on
+Apple's sources a point is a logical point, px) and converted as the
+citation says; a measured value has the committed evidence's shape and
+equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
+the image to a preset its source serves; every evidence file is cited (an
+image by the analysis output that names it in `input_image`), except
+READMEs, `run.toml` and the legacy runs (`LEGACY_EVIDENCE`, which
 `check_ledger.py --final` reads). SDK-header citations are listed, not
 checked: `os-probe.yml`'s macOS job checks them at their Xcode. The
 docstring holds the closed lists (notations, units, conversions, evidence
@@ -988,7 +994,11 @@ the moved, unchanged and present citations in place, line numbers and ref in
 the document's own syntax (an abbreviation's definition line gets the pin's
 commit and tag), and lists the lines that still name an old commit; changed,
 vanished and unmappable citations stay as they are for a reader to correct.
-`--docs DIR` works on a copy of the documents. Git runs offline. Exits 0 when
+A citation already at its pin is unchanged, and the abbreviations' refs are
+read from the documents' definitions, so a second run over re-pinned
+documents changes nothing; a bare citation whose ref comes from another
+citation is rewritten only with it. `--docs DIR` works on a copy of the
+documents. Git runs offline. Exits 0 when
 no changed, vanished or error citation remains, 1 when some do, 2 on
 unreadable input. `--self-test` runs every status and rewrite on two commits
 of a fixture repository.

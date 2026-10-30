@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """The source cache's list, docs/facts/sources.toml (plan D1, specification S17): well formed, and complete.
 
-Form: every [[source]] has the fields of its kind and no others; ids are unique and `<name>@<version>` (for a commit
-pin, `tag = "commit"`, the version is the commit's first eight hex digits); SHAs are 40 hex (SHA-256s 64); every
-generation is a preset id of the plan; one pin per name and generation. Every [[site]] names its method, and a
-"repository" site the [[source]] ids of its repositories. Every [[not_pinned]] gives its reason. A project is named
-by one list only.
+Form: every field is a string, `generations`, `sparse` and `sources` lists of strings (a field of another type is
+reported and left out of the other checks); every [[source]] has the fields of its kind and no others; ids are unique
+and `<name>@<version>` (for a commit pin, `tag = "commit"`, the version is the commit's first eight hex digits); SHAs
+are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin per name and generation. Every [[site]]
+names its method, and a "repository" site the [[source]] ids of its repositories. Every [[not_pinned]] gives its
+reason. A project is named by one list only.
 
 Completeness: every project scripts/citations.py finds cited in the core, the catalogue, the traces, the gap maps and
 docs/platform-facts.md (citations.SOURCES_SCOPE; quotes of other documents' cells left out) is the `project` of a
@@ -37,10 +38,43 @@ KINDS = {
 }
 SITE_FIELDS = ({"project", "url", "method"}, {"sources", "note"})
 NOT_PINNED_FIELDS = ({"name", "reason"}, {"project"})
+LIST_FIELDS = {"generations", "sparse", "sources"}   # lists of strings; every other field is a string
+
+
+class Entry(dict):
+    """A table of sources.toml without its fields of the wrong type (`bad`, reported by entries())."""
+    bad = frozenset()
+
+
+def typed(key, value):
+    if key in LIST_FIELDS:
+        return isinstance(value, list) and all(isinstance(x, str) for x in value)
+    return isinstance(value, str)
+
+
+def entries(data, table, out):
+    """The [[table]] entries, each field of its type: a field that is not is reported, and left out."""
+    raw = data.get(table, [])
+    if not isinstance(raw, list):
+        out.append(f"`{table}` is not an array of [[{table}]] tables")
+        return []
+    got = []
+    for i, e in enumerate(raw):
+        if not isinstance(e, dict):
+            out.append(f"{table} #{i + 1} is not a table")
+            continue
+        ok = Entry((k, v) for k, v in e.items() if typed(k, v))
+        ok.bad = frozenset(e.keys() - ok.keys())
+        label = ok.get("id") or ok.get("project") or ok.get("name") or f"#{i + 1}"
+        out += [f"{table} {label}: {k} is not {'a list of strings' if k in LIST_FIELDS else 'a string'}"
+                for k in sorted(ok.bad)]
+        got.append(ok)
+    return got
 
 
 def fields_problems(where, entry, required, optional):
-    out = [f"{where}: missing field `{f}`" for f in sorted(required - entry.keys())]
+    bad = getattr(entry, "bad", frozenset())
+    out = [f"{where}: missing field `{f}`" for f in sorted(required - entry.keys() - bad)]
     out += [f"{where}: unknown field `{f}`" for f in sorted(entry.keys() - required - optional)]
     return out
 
@@ -96,7 +130,7 @@ def source_problems(e):
 def check_form(data):
     """Problems in sources.toml's form, and the projects it covers (project -> which list names it)."""
     out = [f"unknown table `{k}`" for k in data if k not in ("source", "site", "not_pinned")]
-    sources, sites, not_pinned = data.get("source", []), data.get("site", []), data.get("not_pinned", [])
+    sources, sites, not_pinned = (entries(data, t, out) for t in ("source", "site", "not_pinned"))
     ids = set()
     pairs = set()
     covered = {}
@@ -121,7 +155,7 @@ def check_form(data):
     projects = {}
     for e in sources:
         if "project" in e:
-            projects.setdefault(e["project"], []).append(e.get("id"))
+            projects.setdefault(e["project"], []).append(e.get("id", "?"))
     for p, which in projects.items():
         cover(p, "source " + ", ".join(which))
     seen_sites = set()
@@ -286,6 +320,15 @@ def self_test() -> int:
            ["project 'KDE/breeze' named by source breeze@6.8.2 and by not_pinned",
             "cited project 'native-theme (own)' (2 citations, first spec.md:4) is neither pinned, a listed site nor "
             "not_pinned"])
+    expect("a field of another type", edit(good, 'tag = "v6.8.2"', 'tag = 6'),
+           ["source breeze@6.8.2: tag is not a string"])
+    expect("generations not a list", edit(good, 'generations = ["windows-11"]', 'generations = "windows-11"'),
+           ["source docs@f54166ed: generations is not a list of strings",
+            "source docs@f54166ed: generations is not a non-empty list"])
+    expect("a site not a table", 'site = 3\n' + good.split("[[site]]")[0],
+           ["`site` is not an array of [[site]] tables", "cited project 'learn.microsoft.com' (1 citations, first "
+            "gap-map-windows.md:35) is neither pinned, a listed site nor not_pinned", "cited project 'native-theme "
+            "(own)' (2 citations, first spec.md:4) is neither pinned, a listed site nor not_pinned"])
     expect("cited, in no list", good, ["cited project 'GNOME/gtk' (5 citations, first gap-map-gnome.md:14) is neither "
                                        "pinned, a listed site nor not_pinned"],
            dict(SELF_TEST_CITED, **{"GNOME/gtk": (5, "gap-map-gnome.md:14")}))

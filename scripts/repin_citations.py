@@ -8,17 +8,19 @@ file's quotes of platform-facts cells.
 
 For each citation in scope:
 
-1. The "from" ref, the commit the citation was read at: the ref citations.py resolves for it. Where the citation states
-   none (a bare `file:L`), names several projects, or names none, the ref comes from the gap-map row it belongs to:
-   the row IDs in the same table row or sentence (`GN-…` GNOME, `K1.2`/`Q1.2`/`K-…` KDE, `W1-…`/`W-…` Windows,
-   `MAT-…` Material, `MAC-…` macOS) name the platform's gap map, and when that row's citations, else the whole file's,
-   cite the file name from one project at one ref, or (for a citation naming one project) the file cites that project
-   at one ref only, that is the ref. Otherwise the citation is **unmappable**; a file mention (no line numbers) of one
-   pinned project needs no from ref and is still checked at the pin.
+1. The "from" ref, the commit the citation was read at: the ref citations.py resolves for it (an abbreviation's as its
+   definition in the documents states it now, citations.definitions()). Where the citation states none (a bare
+   `file:L`), names several projects, or names none, the ref comes from the gap-map row it belongs to: the row IDs in
+   the same table row or sentence (`GN-…` GNOME, `K1.2`/`Q1.2`/`K-…` KDE, `W1-…`/`W-…` Windows, `MAT-…` Material,
+   `MAC-…` macOS) name the platform's gap map, and when that row's citations, else the whole file's, cite the file
+   name from one project at one ref, or (for a citation naming one project) the file cites that project at one ref
+   only, that is the ref. Otherwise the citation is **unmappable**; a file mention (no line numbers) of one pinned
+   project needs no from ref and is still checked at the pin.
 2. The "to" pin: the sources.toml entry of the same project; where a project has several (GTK 4 and GTK 3), the one
    whose commit or tag the from ref names, else the one of the same major version, else the one serving the citing
    document's platform generation.
-3. The same commit (or tag) at both ends: **unchanged**.
+3. The same commit (or tag) at both ends: **unchanged**. A citation an earlier `--apply` re-pinned names its pin (or
+   its definition does), so it is unchanged: a second run over re-pinned documents changes nothing.
 4. Otherwise the cited file is read at both commits (the from commit from a checkout under `--from`, the pin from the
    source cache) and its lines mapped by difflib's opcodes over the whole file. A file missing at the pin is looked
    for by its name (a rename or a move); when the citation's own path text no longer names it, the citation is
@@ -34,14 +36,14 @@ For each citation in scope:
 `--apply` rewrites, in the documents, the moved, unchanged and present citations only: the line numbers in place
 (`path:L`, `:L` continuations, a link's text and `#L` anchor), and the ref where the citation carries it (`name@sha`,
 `file@sha`, a link's or URL's ref, `qtbase v6.10.1`, `at <ref>`), each in the citation's own syntax (a SHA keeps its
-length). A citation whose ref comes from a definition (an abbreviation, a document's citation base) has that
-definition rewritten instead, at the lines citations.ABBR names: the from SHA becomes the pin's commit and the from
-tag the pin's tag, or the pin's tag is added after the SHA. A carried path or a `:L` continuation follows its head
-citation; a head that carries its own ref and its followers are rewritten together or not at all (a changed follower
-keeps the head's old ref, and the report lists the group as held). A citation whose ref the document leaves implicit
-(a bare file name) gets its line numbers only. Changed, vanished, unmappable and error citations are left as they are
-and listed; a definition rewritten for some citations leaves the others under it with their old lines (the report says
-so).
+length). A citation whose ref comes from a definition (an abbreviation, a document's citation base) has that definition
+rewritten instead, at the lines citations.ABBR names: the from SHA becomes the pin's commit and the from tag the pin's
+tag, or the pin's tag is added after the SHA. A carried path or a `:L` continuation follows its head citation; a head
+that carries its own ref and its followers are rewritten together or not at all (a changed follower keeps the head's old
+ref, and the report lists the group as held). A citation whose ref the document leaves implicit (a bare file name) gets
+its line numbers only, and only when the citations its ref was taken from (its row's, or its file's) are rewritten too,
+so that a later run takes the pin from them. Changed, vanished, unmappable and error citations are left as they are and
+listed; a definition rewritten for some citations leaves the others under it with their old lines (the report says so).
 After `--apply`, the summary lists the lines that still name a re-pinned from commit.
 
     python3 scripts/repin_citations.py [--docs DIR] [--from DIR ...] [--cache DIR] [--sources FILE]
@@ -89,7 +91,6 @@ ROW_PLATFORM = (("GN-", "gnome"), ("K", "kde"), ("Q", "kde"), ("W", "windows"), 
 RE_SHA = re.compile(r"\b[0-9a-f]{7,40}\b")
 RE_TAG = re.compile(r"(?<![\w.])v?\d+\.\d+(?:\.\d+)*(?![\w.]*\d)")
 RE_RANGE = re.compile(r"(\d+)(?:([-–])L?(\d+))?")
-RE_LOC = re.compile(r"(?:([\w.-]+\.md))?:(\d+)(?:-(\d+))?")
 RE_TOKEN_NAME = re.compile(r"[a-z][a-z0-9.-]*\*?")
 FIELDS = ["document", "line", "citation", "project", "from", "to", "status", "old_lines", "new_lines", "note", "file",
           "apply"]
@@ -177,17 +178,24 @@ class Pin:
 def load_pins(sources, cache):
     data = tomllib.loads(Path(sources).read_text(encoding="utf-8"))
     pins = []
-    for e in data.get("source", []):
-        if e.get("kind") != "git" or not e.get("project"):
+    entries = data.get("source", [])
+    for e in entries if isinstance(entries, list) else []:
+        if not isinstance(e, dict) or e.get("kind") != "git" or not e.get("project"):
             continue
+        bad = [k for k in ("id", "project", "repository", "tag", "commit") if not isinstance(e.get(k), str)]
+        if bad:
+            raise ValueError(f"{sources}: [[source]] {e.get('id')!r}: {', '.join(bad)} not a string "
+                             f"(check_sources.py)")
         name = re.sub(r"\.git$", "", e["repository"].rstrip("/")).rsplit("/", 1)[-1].lower()
-        pin = Pin(e["id"], e["project"], e["tag"], e["commit"], e.get("generations", []), name)
+        gens = e.get("generations") if isinstance(e.get("generations"), list) else []
+        pin = Pin(e["id"], e["project"], e["tag"], e["commit"], gens, name)
         co = Checkout.open(Path(cache) / e["id"]) if (Path(cache) / e["id"]).is_dir() else None
         if co is not None and co.head == e["commit"]:
             pin.checkout = co
         pins.append(pin)
-    not_pinned = {n["project"] for n in data.get("not_pinned", []) if n.get("project")}
-    sites = {s["project"] for s in data.get("site", [])}
+    not_pinned = {n["project"] for n in data.get("not_pinned", []) if isinstance(n, dict)
+                  and isinstance(n.get("project"), str)}
+    sites = {s["project"] for s in data.get("site", []) if isinstance(s, dict) and isinstance(s.get("project"), str)}
     return pins, not_pinned, sites
 
 
@@ -359,6 +367,7 @@ class Result:
     cls: str = ""          # the unmappable or error class
     anchor: str = ""       # inline | definition | head | none
     head: int = -1
+    deps: list = field(default_factory=list)   # the records an implicit ref was taken from (from_row)
     moved_dir: tuple = ()  # (from folder, to folder) when the file moved
     apply: str = ""
     applied: bool = False
@@ -384,13 +393,7 @@ def def_locations(c):
     if not re.match(r"(path-prefix abbreviation|line abbreviation|word abbreviation|project word; commit from|"
                     r"document citation base)", m):
         return []
-    inner = m[m.find("(") + 1:]
-    out, doc = [], ""
-    for d, a, b in RE_LOC.findall(inner):
-        doc = d or doc
-        if doc:
-            out += [(doc, i) for i in range(int(a), int(b or a) + 1)]
-    return out
+    return [(doc, i) for doc, a, b in citations.locations(m[m.find("(") + 1:]) for i in range(a, b + 1)]
 
 
 def cited_rel(c):
@@ -457,8 +460,9 @@ class Run:
         self.resolver = Resolver(pins, checkouts)
         self.maps = {}
         self.records = []
+        defs = citations.definitions(docs)
         for d, t in docs.items():
-            self.records += citations.scan(t, d, index)
+            self.records += citations.scan(t, d, index, defs)
         self.results = []
         self.platform_refs = {}
 
@@ -476,13 +480,14 @@ class Run:
             p in self.not_pinned or p in self.sites or p.startswith((citations.OWN, "toolkit")) for p in projs)
 
     def platform_sources(self, doc):
-        """For a platform gap map: project -> from keys, file name -> (project, from) pairs, and per row ID the
-        (project, from, file name) of the citations on its table row."""
+        """For a platform gap map: project -> from key -> (from, records), file name -> (project, from key) ->
+        (project, from, records), and per row ID the (project, from, file name, record) of the citations on its table
+        row; records are indices into self.records."""
         if doc in self.platform_refs:
             return self.platform_refs[doc]
         by_proj, by_name = collections.defaultdict(dict), collections.defaultdict(dict)
         by_line = collections.defaultdict(list)
-        for c in self.records:
+        for i, c in enumerate(self.records):
             if c.doc != doc or c.quote or "|" in c.project or not c.project or not c.ref:
                 continue
             if c.status not in ("resolved", "heuristic") or c.kind != "code repo":
@@ -490,11 +495,11 @@ class Run:
             f = self.resolver.from_ref(c.project, c.ref)
             if f.kind not in ("pin", "checkout"):
                 continue
-            by_proj[c.project][f.key] = f
+            by_proj[c.project].setdefault(f.key, (f, []))[1].append(i)
             name = c.file.rsplit("/", 1)[-1] if c.file else ""
             if name:
-                by_name[name][(c.project, f.key)] = (c.project, f)
-            by_line[c.line].append((c.project, f, name))
+                by_name[name].setdefault((c.project, f.key), (c.project, f, []))[2].append(i)
+            by_line[c.line].append((c.project, f, name, i))
         rows = {}
         for ln, s in enumerate(self.lines[doc], 1):
             m = re.match(r"\|\s*`?([^|`†]+?)†?`?\s*\|", s)
@@ -504,8 +509,9 @@ class Run:
         return self.platform_refs[doc]
 
     def from_row(self, c):
-        """(project, From, note) from the row's platform gap map, or (None, None, why): the row's own citations of
-        the file name (or of the project) first, then the whole file's."""
+        """(project, From, note, records) from the row's platform gap map, or (None, None, why, []): the row's own
+        citations of the file name (or of the project) first, then the whole file's; records are the citations the
+        ref was taken from."""
         lines = self.lines[c.doc]
         needle = c.path.rsplit("/", 1)[-1] if c.path else (":" + c.lines)
         sent = sentence_of(lines, c.line, needle)
@@ -514,7 +520,7 @@ class Run:
             ids[row_platform(m.group(1))].add(m.group(1))
         ids.pop("", None)
         if not ids:
-            return None, None, "no row ID in its table row or sentence"
+            return None, None, "no row ID in its table row or sentence", []
         name = c.file.rsplit("/", 1)[-1] if c.file else ""
         projs = set(citations.projects(c))
         answers = {}
@@ -524,25 +530,28 @@ class Run:
                 continue
             by_proj, by_name, rows = self.platform_sources(doc)
             on_rows = [x for i in sorted(rowids) for x in rows.get(i, [])]
-            hits = {(pr, f.key): (pr, f) for pr, f, n in on_rows
-                    if (name and n == name or not name) and (not projs or pr in projs)}
+            hits = {}
+            for pr, f, n, i in on_rows:
+                if (name and n == name or not name) and (not projs or pr in projs):
+                    hits.setdefault((pr, f.key), (pr, f, []))[2].append(i)
             where = f"{doc} row {', '.join(sorted(rowids))}"
             if len(hits) != 1:
                 hits = {k: v for k, v in by_name.get(name, {}).items() if not projs or v[0] in projs} if name else {}
                 where = doc
             if len(hits) == 1:
-                proj, f = next(iter(hits.values()))
-                answers[(proj, f.key)] = (proj, f, f"ref from {where}, which cites {name or proj} at that ref only")
+                proj, f, recs = next(iter(hits.values()))
+                answers[(proj, f.key)] = (proj, f, f"ref from {where}, which cites {name or proj} at that ref only",
+                                          recs)
             elif len(projs) == 1 and len(by_proj.get(next(iter(projs)), {})) == 1:
                 proj = next(iter(projs))
-                f = next(iter(by_proj[proj].values()))
-                answers[(proj, f.key)] = (proj, f, f"ref from {doc}, which cites {proj} at that ref only")
+                f, recs = next(iter(by_proj[proj].values()))
+                answers[(proj, f.key)] = (proj, f, f"ref from {doc}, which cites {proj} at that ref only", recs)
         if len(answers) == 1:
             return next(iter(answers.values()))
         if not answers:
             return None, None, f"the row's platform file ({', '.join(PLATFORM_DOC[p] for p in sorted(ids))}) " \
-                               f"names no single source for it"
-        return None, None, "the row IDs' platform files disagree"
+                               f"names no single source for it", []
+        return None, None, "the row IDs' platform files disagree", []
 
     def lmap(self, frm, fpath, pin, tpath):
         key = (frm.head, fpath, pin.commit, tpath)
@@ -567,19 +576,13 @@ class Run:
             project = projs[0]
             frm = self.resolver.from_ref(project, c.ref)
         if frm is None or (frm.kind == "unmappable" and "section" in frm.note):
-            p2, f2, why = self.from_row(c)
+            p2, f2, why, deps = self.from_row(c)
             if f2 is not None:
                 project, frm = p2, f2
-                r.note = why
+                r.note, r.deps = why, deps
             elif frm is None:
                 r.status, r.project = "unmappable", c.project
                 r.cls = ("no project" if not projs else "several projects" if len(projs) > 1 else "no commit")
-                if c.syntax.startswith("brace-list"):
-                    r.cls = "brace list"
-                elif c.syntax.startswith(":L") and not projs:
-                    r.cls = "continuation without a head"
-                elif c.syntax.startswith("elided"):
-                    r.cls = "elided path"
                 r.note = why
                 if not c.lines and len(projs) == 1:
                     self.presence_without_from(r, projs[0])
@@ -972,13 +975,21 @@ def apply(run):
     """Plan every edit; returns the documents' new texts and the definitions rewritten."""
     ed = Editor(run)
     defs = collections.defaultdict(dict)   # (doc, line) -> {(from key, pin id): (from, pin)}
-    for r in run.results:
+    # a citation whose implicit ref comes from other citations (from_row) goes last: it is rewritten only when they
+    # are, so that a later run reads its ref at the pin too
+    for r in sorted(run.results, key=lambda r: r.anchor == "none" and bool(r.deps)):
         if r.status not in REWRITE or r.apply.startswith(("keep", "nothing")):
             r.applied = False
             continue
         h = run.by_idx.get(r.head) if r.anchor == "head" else None
         if h is not None and h.anchor == "inline" and not h.applied:
             r.apply = f"keep: its head (line {h.c.line}) was not rewritten"
+            continue
+        held = [d for d in r.deps if r.anchor == "none" and r.frm is not None and r.frm.kind == "checkout"
+                and not (run.by_idx.get(d) is not None and run.by_idx[d].applied)]
+        if held:
+            src = run.records[held[0]]
+            r.apply = f"keep: {src.doc}:{src.line}, which its ref comes from, was not rewritten"
             continue
         ok = ed.citation(r) if (r.status == "moved" or r.anchor == "inline") else True
         if not ok:
@@ -1016,9 +1027,7 @@ def remaining_mentions(texts, results):
 # -- output -----------------------------------------------------------------------------------------------------------
 
 def fmt_ranges(r):
-    if not r.new_ranges or any(lo is None for lo, _ in r.new_ranges):
-        return ", ".join("-" if lo is None else (f"{lo}-{hi}" if hi != lo else str(lo)) for lo, hi in r.new_ranges)
-    return ", ".join(f"{lo}-{hi}" if hi != lo else str(lo) for lo, hi in r.new_ranges)
+    return ", ".join("-" if lo is None else (f"{lo}-{hi}" if hi != lo else str(lo)) for lo, hi in r.new_ranges)
 
 
 def write_report(path, results):
@@ -1099,7 +1108,7 @@ def main(argv):
     if a.self_test:
         return self_test()
     repo = citations.REPO
-    cache = Path(a.cache or os.environ.get("NATIVE_THEME_SOURCES") or citations.DEFAULT_CACHE)
+    cache = citations.cache_dir(a.cache)
     sources = Path(a.sources) if a.sources else repo / citations.SOURCES_TOML
     docs_dir = Path(a.docs) if a.docs else repo / "docs"
     try:
@@ -1110,7 +1119,7 @@ def main(argv):
         for k in citations.REPIN_SCOPE:
             p = docs_dir / Path(citations.DOCUMENTS[k]).name
             docs[citations.short_name(p)] = p.read_text(encoding="utf-8")
-    except (OSError, tomllib.TOMLDecodeError) as e:
+    except (OSError, UnicodeDecodeError, ValueError) as e:
         print(f"repin_citations: {e}", file=sys.stderr)
         return 2
     checkouts = load_from_checkouts(a.from_dirs, pins)
@@ -1193,6 +1202,7 @@ SELF_TEST_DOCS = {
 | K1.13 | `breeze@{A8} kstyle/m.scss` (`container-height`) |
 | K1.14 | `breeze@{A8} kstyle/m.scss` (`container-width`) |
 | K1.15 | `breeze@{A8} kstyle/a.cpp:3-4`, `kstyle/a.cpp:3` |
+| K1.16 | `zz:9` |
 """,
     "gap-map.md": "Here `breeze@{B8} kstyle/a.cpp:5` is at the pin.\n",
     "spec-widgets.md": """| entry | source |
@@ -1201,6 +1211,7 @@ SELF_TEST_DOCS = {
 | y | no row: `a.cpp:4` |
 | z | `nosuch.cpp:3` |
 | w | K1.3: `b.cpp:3` |
+| v | K1.10: `a.cpp:5` |
 """,
 }
 
@@ -1226,11 +1237,13 @@ SELF_TEST_WANT = [
     ("gap-map-kde.md", 20, "vanished", ""),
     ("gap-map-kde.md", 21, "moved", "5-6"),
     ("gap-map-kde.md", 21, "moved", "5"),
+    ("gap-map-kde.md", 22, "moved", "11"),
     ("gap-map.md", 1, "unchanged", ""),
     ("spec-widgets.md", 3, "moved", "12-13"),
     ("spec-widgets.md", 4, "unmappable", ""),
     ("spec-widgets.md", 5, "unmappable", ""),
     ("spec-widgets.md", 6, "moved", "3"),
+    ("spec-widgets.md", 7, "moved", "7"),
 ]
 
 SELF_TEST_APPLIED = {
@@ -1244,7 +1257,9 @@ SELF_TEST_APPLIED = {
     ("gap-map-kde.md", 14): "| K1.8 | `zz:7` and `zz:7` |",
     ("gap-map-kde.md", 16): "| K1.10 | `breeze@{A8} kstyle/a.cpp:9`; `kstyle/b.cpp:2` |",
     ("gap-map-kde.md", 21): "| K1.15 | `breeze@{B8} kstyle/a.cpp:5-6`, `kstyle/a.cpp:5` |",
+    ("gap-map-kde.md", 22): "| K1.16 | `zz:11` |",
     ("spec-widgets.md", 3): "| x | K1.1: `a.cpp:12-13` |",
+    ("spec-widgets.md", 7): "| v | K1.10: `a.cpp:5` |",
 }
 
 
@@ -1294,6 +1309,18 @@ def self_test():
                 have = texts[d].split("\n")[ln - 1]
                 if have != want.format(**fmt):
                     failures.append(f"--apply {d}:{ln}: got {have!r}, want {want.format(**fmt)!r}")
+            # a second run over the rewritten documents finds every rewritten citation at its pin, and changes nothing
+            again = Run(texts, pins, not_pinned, sites, checkouts, index)
+            again.run()
+            texts2, _ = apply(again)
+            for d in texts:
+                for ln, (x, y) in enumerate(zip(texts[d].split("\n"), texts2[d].split("\n")), 1):
+                    if x != y:
+                        failures.append(f"second --apply {d}:{ln}: {x!r} became {y!r}")
+            done = {(r.c.doc, r.c.line, r.c.raw) for r in results if r.applied}
+            for r in again.results:
+                if (r.c.doc, r.c.line, r.c.raw) in done and r.status not in ("unchanged", "present"):
+                    failures.append(f"second run {r.c.doc}:{r.c.line}: {r.status}, not at its pin")
             for co in checkouts + [p.checkout for p in pins]:
                 co.close()
         finally:

@@ -26,13 +26,14 @@ A `[[fact]]` (S17 *Fields*):
 - `key`, `value`, `rows` and at least one `[[fact.cite]]` are required; `when` is optional; `scheme_file` and
   `accent` come both or neither, in `kde/` only (`scheme_file = "<sources.toml id> <path>"`, `accent` a colour
   literal). Any other field is a finding.
-- `key` is a field path without TOML's unit suffix: `<widget>.<part>.<field>[.<leaf>…]` and
-  `<widget>.values.<name>[.<leaf>…]`, `component.<key>.<part>.<field>…` and `component.<key>.values.<name>…`, where
-  the widget or component is a catalogue entry, the part one of its parts, the field one of that part's fields
-  (the catalogue's list) and the leaves the core's sub-fields (check_spec_names.Checker.field_ok), the value one of
-  the entry's widget values (its unit suffix ignored; a value whose type is not a `Value<…>` may name leaves,
-  unchecked); `role.<set>.<role>`, `role.<set>.disabled.<role>`, `role.global.<path>`, `role.@<key>` (Checker.role_ok);
-  `token.<path>` (Checker.token_ok); `input.<path>`, where `input.kde_scheme.<set>.<key>`,
+- `key` is a field path without TOML's unit suffix (a segment ending in `_px`, `_ms`, `_deg` or `_pt` is a finding):
+  `<widget>.<part>.<field>[.<leaf>…]` and `<widget>.values.<name>[.<leaf>…]`, `component.<key>.<part>.<field>…`
+  and `component.<key>.values.<name>…`, where the widget or component is a catalogue entry, the part one of its
+  parts, the field one of that part's fields (the catalogue's list) and the leaves the core's sub-fields
+  (check_spec_names.Checker.field_ok), the value one of the entry's widget values (the catalogue's name without its
+  unit suffix; a value whose type is not a `Value<…>` may name leaves, unchecked); `role.<set>.<role>`,
+  `role.<set>.disabled.<role>`, `role.global.<path>`, `role.@<key>` (Checker.role_ok); `token.<path>`
+  (Checker.token_ok); `input.<path>`, where `input.kde_scheme.<set>.<key>`,
   `.<set>.inactive.<key>`, `.wm.<key>`, `.groups`, `.inactive_groups`, `.unset_keys` and `input.inactive.<set>.<key>`
   are checked against the core's surface sets, and any other input name only for its form: the presets declare their
   inputs (S9.1, S10), and the registry (S18) will hold them. `input.<part>…` and `input.values…` are the `input`
@@ -325,6 +326,8 @@ def items_of(file: str, platform: str, text: str, data: dict, table: str) -> lis
         cites = []
         raw_cites = entry.get("cite", []) if isinstance(entry, dict) else []
         for c in raw_cites if isinstance(raw_cites, list) else []:
+            if not isinstance(c, dict):
+                continue   # a finding of fact_problems / model_problems
             if pos < len(spans) and spans[pos][1]:
                 cites.append(Cite(spans[pos][0], c, spans[pos][2]))
                 pos += 1
@@ -374,7 +377,10 @@ class Context:
         self.entries = {e.name: e for e in spec_catalogue.entries(cat_text)}
         self.structs = core_structs(core_text)
         self.functions = core_functions(core_text)
-        self.sources = {e.get("id"): e for e in self.sources_data.get("source", []) if isinstance(e, dict)}
+        entries = self.sources_data.get("source", [])
+        if not isinstance(entries, list):
+            raise InputError(f"{SOURCES}: `source` is not an array of [[source]] tables")
+        self.sources = {e["id"]: e for e in entries if isinstance(e, dict) and isinstance(e.get("id"), str)}
         self.presets = existing_presets(self.root) if presets is None else set(presets)
         self.rows = gap_map_rows(self.root) if rows is None else rows
         self._runs = {}
@@ -404,7 +410,7 @@ class Context:
         src = parse_source(cite.get("source"))
         entry = self.sources.get(src[0]) if src else None
         gens = entry.get("generations", []) if entry else []
-        return set(gens) if isinstance(gens, list) else set()
+        return {g for g in gens if isinstance(g, str)} if isinstance(gens, list) else set()
 
     def covered(self, item: Item):
         """(the generations the item covers, its `preset:` generation or None)."""
@@ -450,7 +456,10 @@ def load(ctx: Context):
                 findings.append((frel, 1, "not a fact file (`<directory>/<area>.toml`)"))
                 continue
             nfiles += 1
-            text = f.read_text(encoding="utf-8")
+            try:
+                text = f.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as err:
+                raise InputError(f"{frel}: cannot be read: {err}") from err
             try:
                 data = tomllib.loads(text)
             except tomllib.TOMLDecodeError as err:
@@ -477,6 +486,10 @@ def key_info(ctx: Context, key: str):
     segs = key.split(".")
     if not all(SEG.match(s) for s in segs):
         return f"key {key!r} is not a dotted path of snake_case segments", None, None, None
+    suffixed = next((s for s in segs[1:] if s.endswith(tuple(SUFFIX_DIMS))), None)
+    if suffixed:
+        return (f"key {key!r}: `{suffixed}` carries TOML's unit suffix (a key names the field, the value carries "
+                f"the unit, S17)"), None, None, None
     ck = ctx.ck
     if segs[0] == "role":
         rest = ".".join(segs[1:])
@@ -904,7 +917,7 @@ def cite_problems(ctx, item: Item, cite: Cite) -> list:
     c = cite.data
     out = []
     kind = c.get("kind")
-    if kind not in CITE_FIELDS:
+    if not isinstance(kind, str) or kind not in CITE_FIELDS:
         return [(cite.ln("kind"), f"citation kind {kind!r} is not one of {', '.join(CITE_FIELDS)}")]
     required, optional = CITE_FIELDS[kind]
     out += [(cite.line, f"{kind} citation: missing `{f}`") for f in sorted(required - c.keys())]
@@ -1037,13 +1050,20 @@ def fact_problems(ctx, item: Item) -> list:
             v = d.get("value")
             if not (isinstance(v, str) and re.fullmatch(r"=\s*input\.[a-z0-9_.@]+\s*", v)):
                 out.append((item.ln("value"), "a fact with a `read` citation states a plain `= input.…` reference"))
-    if not isinstance(d.get("cite"), list) or not d.get("cite"):
-        if "cite" in d:
-            out.append((item.line, "no [[fact.cite]]"))
+    out += cite_list_problems(item, "fact")
     for c in item.cites:
         out += cite_problems(ctx, item, c)
     out += generation_problems(ctx, item)
     return out
+
+
+def cite_list_problems(item: Item, table: str) -> list:
+    raw = item.data.get("cite")
+    if "cite" not in item.data:
+        return []
+    if not isinstance(raw, list) or not all(isinstance(c, dict) for c in raw):
+        return [(item.ln("cite"), f"cite is not an array of [[{table}.cite]] tables")]
+    return [] if raw else [(item.line, f"no [[{table}.cite]]")]
 
 
 def model_problems(ctx, item: Item) -> list:
@@ -1075,8 +1095,8 @@ def model_problems(ctx, item: Item) -> list:
         out += [(item.line, f"missing `{k}` (an available widget's entry states it)")
                 for k in sorted(MODEL_AVAILABLE_REQUIRED - d.keys())]
         ck = ctx.ck
-        variants = d.get("variants", [])
-        sizes = d.get("sizes", [])
+        variants = d.get("variants", []) if str_list(d.get("variants", [])) else []
+        sizes = d.get("sizes", []) if str_list(d.get("sizes", [])) else []
         if "variants" in d:
             out += [(item.ln("variants"), p) for p in names_problems(variants, "variants",
                                                                        lambda s: ck.variant_ok(s, ws), "a variant")]
@@ -1149,9 +1169,7 @@ def model_problems(ctx, item: Item) -> list:
                     out.append((item.ln(k), f"{k}: {x[sub]!r} is not a catalogue entry"))
                 out += [(item.ln(k), p) for p in names_problems(x["sizes"], f"{k}.sizes", lambda s: s in sizes,
                                                                   "among sizes")]
-    if not isinstance(d.get("cite"), list) or not d.get("cite"):
-        if "cite" in d:
-            out.append((item.line, "no [[model.cite]]"))
+    out += cite_list_problems(item, "model")
     for c in item.cites:
         out += cite_problems(ctx, item, c)
     out += generation_problems(ctx, item)
@@ -1191,7 +1209,7 @@ def palette_problems(path, text, data, fact_keys) -> list:
     stated = colour_strings(data)
     out = []
     for k, v in sources.items():
-        if v not in fact_keys:
+        if not isinstance(v, str) or v not in fact_keys:
             out.append((path, ln(f'"{k}"'), f"[palette.sources] {k!r} = {v!r} is not a palette-fact key"))
     for name, table in (("sources", sources), ("picks", picks)):
         for k in table:
@@ -1369,6 +1387,7 @@ generations = ["kde-breeze", "adwaita"]
 id = "hig-typography@2026-10-29"
 kind = "snapshot"
 generations = ["macos-tahoe", "ios-26"]
+file = "page.json"
 
 [[source]]
 id = "catppuccin@1.7.1"
@@ -1619,6 +1638,10 @@ SELF_TEST_CASES = [
      ["is not a value as S11 spells it"]),
     ("WinUI: an unknown widget value", "docs/facts/windows/buttons.toml", "button.values.repeat_delay",
      "button.values.repeat_pause", ["`repeat_pause` is not a widget value of button"]),
+    ("WinUI: a key with its unit suffix", "docs/facts/windows/buttons.toml", '"button.body.min_width"',
+     '"button.body.min_width_px"', ["`min_width_px` carries TOML's unit suffix"]),
+    ("WinUI: a widget value with its unit suffix", "docs/facts/windows/buttons.toml", '"button.values.repeat_delay"',
+     '"button.values.repeat_delay_ms"', ["`repeat_delay_ms` carries TOML's unit suffix"]),
     ("WinUI: a length as a number", "docs/facts/windows/buttons.toml", 'value = "80px"', "value = 80",
      ["a length is spelled with its unit"]),
     ("WinUI: a number in a string", "docs/facts/windows/buttons.toml", 'value = "80px"', 'value = "80"',

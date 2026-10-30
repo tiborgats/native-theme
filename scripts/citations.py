@@ -27,6 +27,12 @@ The rules, in the order resolve_token applies them to a path token:
    path into the 0.8.0 session's scratchpad checkouts (`src/breeze/…`) takes that checkout's commit (SCRATCHPAD);
    then a trailing `at <ref>` or `, vX.Y` sets the ref where the citation gave none.
 
+An abbreviation's ref (rules 3-5, 8, and the projects of DOCDEFS) is the one its definition states where the
+documents are read (scan_documents(), or definitions() handed to scan()): definitions() reads, at the definition's
+lines (ABBR's "defined at"), the first SHA and tag after the token in its clause, else the last before it; a
+definition naming no ref ("same commit") takes the one of the nearest definition of the same project above it. So a
+re-pinned definition is read as it stands; the tables' refs serve only where no document is read.
+
 A `:L` continuation inherits the file of the citation before it in text order (a link, a platform-facts reference or a
 path). A table whose header's first column is "platform-facts line" or "Line(s)" (the gap maps) has platform-facts
 line numbers in that column. Every table cell is a unit of its own; a prose paragraph is one unit. Records of the
@@ -50,7 +56,10 @@ API (run from the repository root):
     REPIN_SCOPE                the documents whose citations are re-pinned (repin_citations.py)
     ABBR                       (token, kind, project, ref, root, defined at): the documents' abbreviations
     Index.of_repo(), Index.of_cache(sources=SOURCES_TOML, cache=None)
-    scan(text, doc, index) -> list[Citation]      one document's text; doc is its short name ("gap-map-kde.md")
+    cache_dir(path=None)       the source cache: path, else `NATIVE_THEME_SOURCES`, else DEFAULT_CACHE
+    definitions(texts)         the abbreviations' refs as the documents' definitions state them
+    scan(text, doc, index, defs=None) -> list[Citation]   one document's text; doc is its short name
+                                                          ("gap-map-kde.md"); defs from definitions()
     scan_documents(keys=None, index=None) -> list[Citation]
     projects(citation) -> list[str]               the project names a record names ("A | B" split)
 
@@ -70,6 +79,11 @@ REPO = Path(__file__).resolve().parent.parent
 SOURCES_TOML = Path("docs/facts/sources.toml")
 DEFAULT_CACHE = "/run/media/tibi/work/cargo-build/native-theme-sources"
 
+
+def cache_dir(path=None):
+    """The source cache: path, else `NATIVE_THEME_SOURCES`, else DEFAULT_CACHE."""
+    return Path(path or os.environ.get("NATIVE_THEME_SOURCES") or DEFAULT_CACHE)
+
 PREFIX = "todo_v0.7.1_model-completeness-"
 PLATFORMS = ("gnome", "ios", "kde", "macos", "material", "windows")
 DOCUMENTS = {"spec": f"docs/{PREFIX}spec.md", "spec-widgets": f"docs/{PREFIX}spec-widgets.md"}
@@ -86,86 +100,96 @@ PF = "native-theme (own): docs/platform-facts.md"
 # The documents' abbreviations: (token, kind, project, ref, root, defined at). kind: "line" = the token directly
 # followed by :L (st:123); "path" = the token is a path prefix (A/w/F:L); "word" = the token, a space, then a path
 # (kwin src/x.cpp:L). A ref of "SECTION" depends on the heading (heading_qt_ref); "URL" means the link carries it.
+# The ref is the one the definition states at "defined at", read from the documents when they are scanned
+# (definitions()); the ref here is what it states as of this table's last edit, used where no document is read.
 KDE = "gap-map-kde.md:9-31"
 ABBR = [
     # the KDE file's table
-    ("st", "line", "KDE/breeze", "75561b7f", "kstyle/breezestyle.cpp", KDE),
-    ("hp", "line", "KDE/breeze", "75561b7f", "kstyle/breezehelper.cpp", KDE),
-    ("hp.h", "line", "KDE/breeze", "75561b7f", "kstyle/breezehelper.h", KDE),
-    ("mt", "line", "KDE/breeze", "75561b7f", "kstyle/breezemetrics.h", KDE),
-    ("kcfg", "line", "KDE/breeze", "75561b7f", "kstyle/breeze.kcfg", KDE),
-    ("shd", "line", "KDE/breeze", "75561b7f", "kstyle/breezeshadowhelper.cpp", KDE),
-    ("anim", "line", "KDE/breeze", "75561b7f", "kstyle/animations/breezeanimations.cpp", KDE),
-    ("tam", "line", "KDE/breeze", "75561b7f", "kstyle/breezetoolsareamanager.cpp", KDE),
-    ("deco", "line", "KDE/breeze", "75561b7f", "kdecoration/breezedecoration.cpp", KDE),
-    ("deco.h", "line", "KDE/breeze", "75561b7f", "kdecoration/breeze.h", KDE),
-    ("dbtn", "line", "KDE/breeze", "75561b7f", "kdecoration/breezebutton.cpp", KDE),
-    ("dkcfg", "line", "KDE/breeze", "75561b7f", "kdecoration/breezesettingsdata.kcfg", KDE),
-    ("kcs", "line", "KDE/kcolorscheme", "8bb948c4", "src/kcolorscheme.cpp", KDE),
-    ("khint", "line", "KDE/plasma-integration", "46eddde9", "qt6/src/platformtheme/khintssettings.cpp", KDE),
-    ("kfont", "line", "KDE/plasma-integration", "46eddde9", "qt6/src/platformtheme/kfontsettingsdata.cpp", KDE),
-    ("kmw", "line", "KDE/kwidgetsaddons", "17cca25b", "src/kmessagewidget.cpp", KDE),
-    ("kie", "line", "KDE/kiconthemes", "60bdbcdd", "src/kiconeffect.cpp", KDE),
-    ("kit", "line", "KDE/kiconthemes", "60bdbcdd", "src/kicontheme.cpp", KDE),
-    ("ktb", "line", "KDE/kxmlgui", "b5aa1026", "src/ktoolbar.cpp", KDE),
-    ("kwa", "word", "KDE/kwidgetsaddons", "17cca25b", "src/", KDE),
-    ("kwin", "word", "KDE/kwin", "625e3132", "", KDE),
-    ("KWin", "word", "KDE/kwin", "625e3132", "", "gap-map-kde.md:1291"),
-    ("kirigami", "word", "KDE/kirigami", "81ada72b", "", KDE),
-    ("qqc2", "word", "KDE/qqc2-desktop-style", "305eb2c4", "", KDE),
-    ("kqc", "word", "KDE/kquickcharts", "c66e21b5", "", "gap-map-kde.md:1078"),
+    ("st", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezestyle.cpp", KDE),
+    ("hp", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezehelper.cpp", KDE),
+    ("hp.h", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezehelper.h", KDE),
+    ("mt", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezemetrics.h", KDE),
+    ("kcfg", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breeze.kcfg", KDE),
+    ("shd", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezeshadowhelper.cpp", KDE),
+    ("anim", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/animations/breezeanimations.cpp", KDE),
+    ("tam", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezetoolsareamanager.cpp", KDE),
+    ("deco", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kdecoration/breezedecoration.cpp", KDE),
+    ("deco.h", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kdecoration/breeze.h", KDE),
+    ("dbtn", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kdecoration/breezebutton.cpp", KDE),
+    ("dkcfg", "line", "KDE/breeze", "c97883a8 (v6.8.2)", "kdecoration/breezesettingsdata.kcfg", KDE),
+    ("kcs", "line", "KDE/kcolorscheme", "b01fde30 (v6.31.0)", "src/kcolorscheme.cpp", KDE),
+    ("khint", "line", "KDE/plasma-integration", "b8233c2a (v6.8.2)", "qt6/src/platformtheme/khintssettings.cpp",
+     KDE),
+    ("kfont", "line", "KDE/plasma-integration", "b8233c2a (v6.8.2)", "qt6/src/platformtheme/kfontsettingsdata.cpp",
+     KDE),
+    ("kmw", "line", "KDE/kwidgetsaddons", "259b994c (v6.31.0)", "src/kmessagewidget.cpp", KDE),
+    ("kie", "line", "KDE/kiconthemes", "420364ec (v6.31.0)", "src/kiconeffect.cpp", KDE),
+    ("kit", "line", "KDE/kiconthemes", "420364ec (v6.31.0)", "src/kicontheme.cpp", KDE),
+    ("ktb", "line", "KDE/kxmlgui", "e47ccaf5 (v6.31.0)", "src/ktoolbar.cpp", KDE),
+    ("kwa", "word", "KDE/kwidgetsaddons", "259b994c (v6.31.0)", "src/", KDE),
+    ("kwin", "word", "KDE/kwin", "f130ab33 (v6.8.2)", "", KDE),
+    ("KWin", "word", "KDE/kwin", "f130ab33", "", "gap-map-kde.md:1291"),
+    ("kirigami", "word", "KDE/kirigami", "eecf183a (v6.31.0)", "", KDE),
+    ("qqc2", "word", "KDE/qqc2-desktop-style", "2efe38d5 (v6.31.0)", "", KDE),
+    ("kqc", "word", "KDE/kquickcharts", "61fc0d8d (v6.31.0)", "", "gap-map-kde.md:1078"),
     ("ka/", "path", "KDE/kirigami-addons", "4668f4ca (v1.15.0)", "src/", "gap-map-kde.md:1316-1320"),
-    ("qtbase", "word", "qt/qtbase", "v6.10.1", "", "gap-map-kde.md:756"),
-    ("qtdeclarative", "word", "qt/qtdeclarative", "v6.10.1", "", "gap-map-kde.md:1029"),
+    ("qtbase", "word", "qt/qtbase", "v6.12.0", "", "gap-map-kde.md:756"),
+    ("qtdeclarative", "word", "qt/qtdeclarative", "v6.12.0", "", "gap-map-kde.md:1029"),
     # the GNOME file's table and its later tables
-    ("A/w/", "path", "GNOME/libadwaita", "1.10.0 (c9ab1186)", "src/stylesheet/widgets/", "gap-map-gnome.md:11"),
-    ("A/s/", "path", "GNOME/libadwaita", "1.10.0 (c9ab1186)", "src/stylesheet/", "gap-map-gnome.md:12"),
-    ("A/c/", "path", "GNOME/libadwaita", "1.10.0 (c9ab1186)", "src/", "gap-map-gnome.md:13"),
-    ("A/", "path", "GNOME/libadwaita", "1.10.0 (c9ab1186)", "", "gap-map-gnome.md:1003 (A/NEWS)"),
-    ("GDK/", "path", "GNOME/gtk", "4.24.1 (2ea935e3)", "gdk/", "gap-map-gnome.md:15"),
+    ("A/w/", "path", "GNOME/libadwaita", "c9ab1186 (1.10.0)", "src/stylesheet/widgets/", "gap-map-gnome.md:11"),
+    ("A/s/", "path", "GNOME/libadwaita", "c9ab1186 (1.10.0)", "src/stylesheet/", "gap-map-gnome.md:12"),
+    ("A/c/", "path", "GNOME/libadwaita", "c9ab1186 (1.10.0)", "src/", "gap-map-gnome.md:13"),
+    ("A/", "path", "GNOME/libadwaita", "c9ab1186 (1.10.0)", "", "gap-map-gnome.md:1003 (A/NEWS)"),
+    ("GDK/", "path", "GNOME/gtk", "2ea935e3 (4.24.1)", "gdk/", "gap-map-gnome.md:15"),
     ("G3/", "path", "GNOME/gtk", "3.24.52", "gtk/", "gap-map-gnome.md:1002"),
-    ("G/", "path", "GNOME/gtk", "4.24.1 (2ea935e3)", "gtk/", "gap-map-gnome.md:14"),
+    ("G/", "path", "GNOME/gtk", "2ea935e3 (4.24.1)", "gtk/", "gap-map-gnome.md:14"),
     ("S/", "path", "GNOME/gsettings-desktop-schemas", "51.0", "schemas/", "gap-map-gnome.md:16"),
-    ("M/", "path", "GNOME/mutter", "51.0 (138a14fb)", "", "gap-map-gnome.md:17; gap-map-seeds.md:587"),
-    ("GS-data/", "path", "GNOME/gnome-shell", "51.0 (2177bdf9)", "data/", "gap-map-gnome.md:17; gap-map-seeds.md:588"),
-    ("GS/", "path", "GNOME/gnome-shell", "51.0 (2177bdf9)", "js/ui/", "gap-map-gnome.md:17, :685"),
+    ("M/", "path", "GNOME/mutter", "9134e3a5 (51.1)", "", "gap-map-gnome.md:17; gap-map-seeds.md:587"),
+    ("GS-data/", "path", "GNOME/gnome-shell", "33da0685 (51.1)", "data/",
+     "gap-map-gnome.md:17; gap-map-seeds.md:588"),
+    ("GS/", "path", "GNOME/gnome-shell", "33da0685 (51.1)", "js/ui/", "gap-map-gnome.md:17, :685"),
     ("LS/", "path", "GNOME/libspelling", "0.4.10", "", "gap-map-gnome.md:1004"),
-    ("GSD/", "path", "GNOME/gnome-settings-daemon", "51.0 (7f7913cc)", "", "gap-map-gnome.md:1238"),
-    ("XDPG/", "path", "GNOME/xdg-desktop-portal-gnome", "51.0 (99446c9c)", "", "gap-map-gnome.md:1239"),
-    ("gsv/", "path", "GNOME/gtksourceview", "5.22.0 (c7b52cf9)", "", "gap-map-seeds.md:545"),
-    ("LP/", "path", "GNOME/libpanel", "1.9.0 (0dbdbf6e)", "src/", "gap-map-seeds.md:589"),
-    ("P/", "path", "GNOME/pango", "1.58.2 (d360f140)", "pango/", "gap-map-seeds.md:610"),
-    ("fc/", "path", "fontconfig", "2.15.0", "conf.d/", "gap-map-seeds.md:608"),
+    ("GSD/", "path", "GNOME/gnome-settings-daemon", "4a75955f (51.1)", "", "gap-map-gnome.md:1238"),
+    ("XDPG/", "path", "GNOME/xdg-desktop-portal-gnome", "99446c9c (51.0)", "", "gap-map-gnome.md:1239"),
+    ("gsv/", "path", "GNOME/gtksourceview", "c7b52cf9 (5.22.0)", "", "gap-map-seeds.md:545"),
+    ("LP/", "path", "GNOME/libpanel", "ed3e78f3 (1.10.4)", "src/", "gap-map-seeds.md:589"),
+    ("P/", "path", "GNOME/pango", "d360f140 (1.58.2)", "pango/", "gap-map-seeds.md:610"),
+    ("fc/", "path", "fontconfig", "2.18.3", "conf.d/", "gap-map-seeds.md:608"),
     # the seeds file's tables (KDE side)
-    ("ksh/", "path", "KDE/syntax-highlighting", "v6.31.0 (6d8ab794)", "", "gap-map-seeds.md:546"),
-    ("kte/", "path", "KDE/ktexteditor", "v6.31.0 (ea14509c)", "", "gap-map-seeds.md:547"),
+    ("ksh/", "path", "KDE/syntax-highlighting", "6d8ab794 (v6.31.0)", "", "gap-map-seeds.md:546"),
+    ("kte/", "path", "KDE/ktexteditor", "ea14509c (v6.31.0)", "", "gap-map-seeds.md:547"),
     ("qt/", "path", "qt/qtbase", "SECTION", "",
-     "gap-map-seeds.md:548 (v6.11.2, src/gui/text/) / :578 (v6.10.1, src/widgets/) / :609 (v6.10.1, src/gui/text/)"),
-    ("kate/", "path", "KDE/kate", "8f4e08cc", "apps/lib/", "gap-map-seeds.md:582"),
-    ("konsole/", "path", "KDE/konsole", "8907008c", "src/", "gap-map-seeds.md:583"),
-    ("kdenlive/", "path", "KDE/kdenlive", "680c1922", "", "gap-map-seeds.md:584"),
-    ("kddw/", "path", "KDAB/KDDockWidgets", "v2.5.1 (674f2845)", "src/", "gap-map-seeds.md:585"),
-    ("kwin/", "path", "KDE/kwin", "625e3132", "src/", "gap-map-seeds.md:580"),
+     "gap-map-seeds.md:548 (src/gui/text/) / :578 (src/widgets/) / :609 (src/gui/text/)"),
+    ("kate/", "path", "KDE/kate", "2b6465a8 (v26.08.2)", "apps/lib/", "gap-map-seeds.md:582"),
+    ("konsole/", "path", "KDE/konsole", "c21993d0 (v26.08.2)", "src/", "gap-map-seeds.md:583"),
+    ("kdenlive/", "path", "KDE/kdenlive", "ef543982 (v26.08.2)", "", "gap-map-seeds.md:584"),
+    ("kddw/", "path", "KDAB/KDDockWidgets", "674f2845 (v2.5.1)", "src/", "gap-map-seeds.md:585"),
+    ("kwin/", "path", "KDE/kwin", "f130ab33 (v6.8.2)", "src/", "gap-map-seeds.md:580"),
     # Windows
-    ("MUX/", "path", "microsoft/microsoft-ui-xaml", "8463f451", "controls/dev/", "gap-map-windows.md:9"),
-    ("MUX", "word", "microsoft/microsoft-ui-xaml", "8463f451", "controls/dev/", "gap-map-windows.md:9"),
-    ("CTK", "word", "CommunityToolkit/Windows", "a6b4dc45 (v8.2.251219)", "components/", "gap-map-windows.md:433"),
-    ("labs/", "path", "CommunityToolkit/Labs-Windows", "27ef7604", "components/MarkdownTextBlock/src/",
-     "gap-map-seeds.md:551"),
+    ("MUX/", "path", "microsoft/microsoft-ui-xaml", "ba3a8d59 (winui3/release/2.5.1)", "controls/dev/",
+     "gap-map-windows.md:9"),
+    ("MUX", "word", "microsoft/microsoft-ui-xaml", "ba3a8d59 (winui3/release/2.5.1)", "controls/dev/",
+     "gap-map-windows.md:9"),
+    ("CTK", "word", "CommunityToolkit/Windows", "a6b4dc45 (v8.2.251219)", "components/",
+     "gap-map-windows.md:433-434"),
+    ("labs/", "path", "CommunityToolkit/Labs-Windows", "d620e8b5 (release/weekly/251217)",
+     "components/MarkdownTextBlock/src/", "gap-map-seeds.md:551"),
     # Material
-    ("v0_192/", "path", "material-components/material-web", "cbd34a89", "tokens/versions/v0_192/",
+    ("v0_192/", "path", "material-components/material-web", "b4de401e (v2.5.0)", "tokens/versions/v0_192/",
      "gap-map-material.md:12"),
-    ("latest/", "path", "material-components/material-web", "cbd34a89", "tokens/versions/latest/sass/",
+    ("latest/", "path", "material-components/material-web", "b4de401e (v2.5.0)", "tokens/versions/latest/sass/",
      "gap-map-material.md:13"),
-    ("mw/", "path", "material-components/material-web", "cbd34a89", "", "gap-map-material.md:14"),
-    ("compose-android/", "path", "androidx/androidx", "1e677685",
+    ("mw/", "path", "material-components/material-web", "b4de401e (v2.5.0)", "", "gap-map-material.md:14"),
+    ("compose-android/", "path", "androidx/androidx", "e4d933c9",
      "compose/material3/material3/src/androidMain/kotlin/androidx/compose/material3/", "gap-map-material.md:16"),
-    ("compose/", "path", "androidx/androidx", "1e677685",
+    ("compose/", "path", "androidx/androidx", "e4d933c9",
      "compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/", "gap-map-material.md:15"),
-    ("ax/", "path", "androidx/androidx", "1e677685", "", "gap-map-material.md:789"),
-    ("fb/", "path", "AOSP platform/frameworks/base", "1cdfff55", "", "gap-map-material.md:790"),
-    ("wms/", "path", "AOSP platform/frameworks/base", "1cdfff55", "libs/WindowManager/Shell/", "gap-map-material.md:791"),
-    ("aosp/", "path", "AOSP platform/frameworks/base", "1cdfff55", "data/fonts/", "gap-map-seeds.md:613"),
+    ("ax/", "path", "androidx/androidx", "e4d933c9", "", "gap-map-material.md:789"),
+    ("fb/", "path", "AOSP platform/frameworks/base", "94b4c163 (android-17.0.0_r1)", "", "gap-map-material.md:790"),
+    ("wms/", "path", "AOSP platform/frameworks/base", "94b4c163 (android-17.0.0_r1)", "libs/WindowManager/Shell/",
+     "gap-map-material.md:791"),
+    ("aosp/", "path", "AOSP platform/frameworks/base", "94b4c163 (android-17.0.0_r1)", "data/fonts/",
+     "gap-map-seeds.md:613"),
     ("mdc/", "path", "material-components/material-components-android", "URL", "",
      "platform-facts.md link texts only"),
 ]
@@ -174,7 +198,13 @@ LINE_ABBR = {a[0]: a for a in ABBR if a[1] == "line"}
 PATH_ABBR = sorted([a for a in ABBR if a[1] == "path"], key=lambda a: -len(a[0]))
 
 # A project named without a commit at the citation, whose commit the KDE file defines elsewhere.
-DOCDEFS = {"kiconthemes": ("60bdbcdd", "gap-map-kde.md:27"), "xdg-desktop-portal-kde": ("936476a5", "gap-map-kde.md:756")}
+DOCDEFS = {"kiconthemes": ("420364ec", "gap-map-kde.md:27"), "xdg-desktop-portal-kde": ("5b33864b", "gap-map-kde.md:756")}
+
+# The seeds file's sections that define `qt/` (heading_qt_ref): the words of the heading, the definition's line.
+QT_SECTIONS = ((("code editor", "rich text"), "Code editor and rich text", 548),
+               (("drop zone", "dialog placement"), "Drop zones and dialog placement", 578),
+               (("font", "mirroring"), "Fonts and mirroring", 609))
+QT_TABLE_REF = {548: "v6.12.0", 578: "v6.12.0", 609: "v6.12.0"}
 
 # name@sha and Org/name @ sha: the short names (gap-map-kde.md:1029, :1281-1286; WebKit: gap-map-macos.md:989)
 ALIAS = {
@@ -357,15 +387,126 @@ def classify_url(url):
     return ("other", host, "", url, "", "web page")
 
 
-def heading_qt_ref(headings):
+def heading_qt_ref(headings, defs=None):
     h = " ".join(headings).lower()
-    if "code editor" in h or "rich text" in h:
-        return "v6.11.2", 'section "Code editor and rich text" (seeds :548)'
-    if "drop zone" in h or "dialog placement" in h:
-        return "v6.10.1", 'section "Drop zones and dialog placement" (seeds :578)'
-    if "font" in h or "mirroring" in h:
-        return "v6.10.1", 'section "Fonts and mirroring" (seeds :609)'
-    return "v6.10.1 | v6.11.2", "qt/ outside a seeds-defined section"
+    defs = defs or {}
+    for words, title, line in QT_SECTIONS:
+        if any(w in h for w in words):
+            return defs.get(("qt/", line), QT_TABLE_REF[line]), f'section "{title}" (seeds :{line})'
+    refs = sorted({defs.get(("qt/", line), QT_TABLE_REF[line]) for _, _, line in QT_SECTIONS})
+    return " | ".join(refs), "qt/ outside a seeds-defined section"
+
+
+# -- the documents' definitions ----------------------------------------------------------------------------------------
+
+LOC_RX = re.compile(r"(?:([\w.-]+\.md))?:(\d+)(?:-(\d+))?")
+RE_DEF_SHA = re.compile(r"(?<![\w@])([0-9a-f]{7,40})(?!\w)")
+RE_DEF_TAG = re.compile(r"\btag\s+[`*]*(v?[\w.+/-]*\d[\w.+/-]*?)[`*]*(?=[\s,;:)]|$)|\*\*(v?\d+(?:\.\d+)+)\*\*")
+
+
+def locations(where):
+    """[(document, first line, last line)] of a `defined at` text: `gap-map-kde.md:9-31`, `x.md:17, :685`."""
+    out, doc = [], ""
+    for d, a, b in LOC_RX.findall(where or ""):
+        doc = d or doc
+        if doc:
+            out.append((doc, int(a), int(b or a)))
+    return out
+
+
+def _token_at(lines, token):
+    """(line index, column) of the token's first occurrence, a backticked one preferred, or None. A path
+    abbreviation (`MUX/`) may be defined by its name alone (`"MUX" = …`)."""
+    rxs = [re.compile(r"`" + re.escape(token) + (r"" if token.endswith("/") else r"`")),
+           re.compile((r"(?<![\w/.@-])" if token.endswith("/") else r"(?<![\w.@-])") + re.escape(token)
+                      + (r"" if token.endswith("/") else r"(?![\w-])"))]
+    if token.endswith("/"):
+        rxs.append(re.compile(r"(?<![\w/.@-])" + re.escape(token[:-1]) + r"(?![\w/-])"))
+    for rx in rxs:
+        for i, s in enumerate(lines):
+            m = rx.search(s)
+            if m:
+                return i, m.start()
+    return None
+
+
+def _ref_near(lines, i, col):
+    """The SHA and the tag a definition states for the token at lines[i][col]: the first after it in its clause
+    (to a `;` or a sentence's end, a table row's end), else the last before it (a glued `name@sha` and a `tag
+    object` SHA name something else)."""
+    after = lines[i][col:] if lines[i].lstrip().startswith("|") else lines[i][col:] + "\n" + "\n".join(lines[i + 1:])
+    after = re.split(r";|\.\s", after, maxsplit=1)[0]
+    before = "\n".join(lines[:i]) + "\n" + lines[i][:col]
+
+    def shas(text):
+        return [m.group(1) for m in RE_DEF_SHA.finditer(text) if not text[:m.start()].rstrip("` ").endswith("object")]
+
+    def tags(text):
+        return [m.group(1) or m.group(2) for m in RE_DEF_TAG.finditer(text)]
+
+    a_sha, a_tag = shas(after), tags(after)
+    if a_sha or a_tag:
+        sha, tag = (a_sha or [""])[0], (a_tag or [""])[0]
+    else:
+        sha, tag = (shas(before) or [""])[-1], (tags(before) or [""])[-1]
+    if sha and tag:
+        return f"{sha[:8]} ({tag})"
+    return sha[:8] or tag
+
+
+def read_ref(texts, where, token):
+    """(ref, (document, line)) the documents' definition at `where` states for token: the first location naming the
+    token with a SHA, else the first naming it with a tag; (None, (document, line)) where it names the token and no
+    ref; (None, None) where no location names it. texts: short name -> text."""
+    found, at = [], None
+    for doc, a, b in locations(where):
+        if doc not in texts:
+            continue
+        lines = texts[doc].split("\n")[a - 1:b]
+        hit = _token_at(lines, token)
+        if hit is None:
+            continue
+        at = at or (doc, a + hit[0])
+        ref = _ref_near(lines, *hit)
+        if ref:
+            found.append((ref, (doc, a + hit[0])))
+    with_sha = [f for f in found if ref_has_sha(f[0])]
+    if with_sha or found:
+        return (with_sha or found)[0]
+    return None, at
+
+
+def ref_has_sha(ref):
+    return bool(RE_DEF_SHA.search(ref or ""))
+
+
+def definitions(texts):
+    """The refs the documents' definitions state now (texts: short name -> text), so that a re-pinned definition is
+    read as it stands: token -> ref for every abbreviation of WORD_ABBR, LINE_ABBR and PATH_ABBR and every DOCDEFS
+    project, and ("qt/", line) for each seeds section of QT_SECTIONS. A definition that names its token and no ref
+    ("same commit", "its …") takes the ref of the nearest definition of the same project above it in the same
+    document; a token no document defines keeps the table's ref (ABBR, DOCDEFS)."""
+    out, placed = {}, []
+    entries = [(a[0], a[2], a[5]) for a in list(WORD_ABBR.values()) + list(LINE_ABBR.values()) + PATH_ABBR
+               if a[3] not in ("SECTION", "URL")]
+    entries += [(w, ALIAS[w], d[1]) for w, d in DOCDEFS.items()]
+    pending = []
+    for token, project, where in entries:
+        ref, at = read_ref(texts, where, token)
+        if ref:
+            out[token] = ref
+            placed.append((at, project, ref))
+        elif at:
+            pending.append((token, project, at))
+    for token, project, (doc, line) in pending:
+        above = [(ln, ref) for (d, ln), p, ref in placed if d == doc and p == project and ln < line]
+        if above:
+            out[token] = max(above)[1]
+    for _, _, line in QT_SECTIONS:
+        ref, _ = read_ref(texts, f"gap-map-seeds.md:{line}", "qt/")
+        if ref:
+            out[("qt/", line)] = ref
+    return out
 
 
 class Index:
@@ -429,7 +570,7 @@ class Index:
     def of_cache(cls, sources=SOURCES_TOML, cache=None, repo=REPO):
         """This repository and every source-cache checkout (`<cache>/<id>`) under its entry's project."""
         import tomllib
-        cache = Path(cache or os.environ.get("NATIVE_THEME_SOURCES") or DEFAULT_CACHE)
+        cache = cache_dir(cache)
         index = cls.of_repo(repo)
         path = sources if Path(sources).is_absolute() else Path(repo) / sources
         data = tomllib.loads(Path(path).read_text())
@@ -449,9 +590,10 @@ class Unit:
 
 
 class Scanner:
-    def __init__(self, doc, index):
+    def __init__(self, doc, index, defs=None):
         self.doc = doc
         self.index = index
+        self.defs = defs or {}
         self.records = []
         self.section = ""
         self.linectx = ""
@@ -466,6 +608,10 @@ class Scanner:
             note = "QUOTE of a platform-facts cell (excerpt, may be cut mid-URL); " + note
         self.records.append(Citation(self.doc, ln, syntax, project, ref, path, lines, status, kind, refkind(ref), method,
                                      note, raw.strip()[:200].replace("\t", " "), path if file is None else file, quote))
+
+    def ref(self, a):
+        """An abbreviation's ref: its definition's in the documents (definitions()), else the table's."""
+        return self.defs.get(a[0], a[3])
 
     # -- path tokens --------------------------------------------------------------------------------------------------
 
@@ -543,14 +689,15 @@ class Scanner:
                     proj, syntax = ALIAS[w], "project-word path:L"
                     d = DOCDEFS.get(w)
                     if d:
-                        ref, method = d[0], f"project word; commit from the KDE file's definitions ({d[1]})"
+                        ref = self.defs.get(w, d[0])
+                        method = f"project word; commit from the KDE file's definitions ({d[1]})"
                         note = "the commit is defined for the project elsewhere in the KDE file, not at the citation"
                     else:
                         method, status = "project word (no commit)", "unresolved"
                         note = "project named without commit; no definition of a commit for it in the gap maps"
                 else:
                     a = WORD_ABBR[w]
-                    proj, ref, root = a[2], a[3], a[4]
+                    proj, ref, root = a[2], self.ref(a), a[4]
                     if w == "MUX" and base.startswith("dxaml/"):
                         root = ""
                     if wm.group("ver"):
@@ -563,7 +710,7 @@ class Scanner:
             if em:
                 for a in PATH_ABBR:
                     if em.group(1) == a[0]:
-                        proj, ref, root = a[2], a[3], ""
+                        proj, ref, root = a[2], self.ref(a), ""
                         method, syntax = f"path-prefix abbreviation before an ellipsis ({a[0]}, {a[5]})", \
                             "elided path …/x:L"
                         note = "path elided: the middle of the path is not given; match by suffix"
@@ -572,10 +719,10 @@ class Scanner:
         if not proj:
             for a in PATH_ABBR:
                 if base.startswith(a[0]):
-                    proj, ref, root = a[2], a[3], a[4]
+                    proj, ref, root = a[2], self.ref(a), a[4]
                     method, syntax = f"path-prefix abbreviation ({a[0]}, {a[5]})", "abbrev-path/F:L"
                     if ref == "SECTION":
-                        ref, note = heading_qt_ref(headings)
+                        ref, note = heading_qt_ref(headings, self.defs)
                         method += "; ref by section heading"
                         if "|" in ref:
                             status = "ambiguous"
@@ -586,7 +733,7 @@ class Scanner:
         # 5. a line abbreviation (st:L)
         if not proj and base in LINE_ABBR and lines:
             a = LINE_ABBR[base]
-            proj, ref, root = a[2], a[3], ""
+            proj, ref, root = a[2], self.ref(a), ""
             method, syntax = f"line abbreviation ({base} = {a[4]}, {a[5]})", "abbrev:L"
             file = a[4]
         # 6. this repository's own files
@@ -625,13 +772,14 @@ class Scanner:
             a = idx.path_in("microsoft/microsoft-ui-xaml", base, "controls/dev") or \
                 idx.path_in("microsoft/microsoft-ui-xaml", base)
             c = idx.path_in("CommunityToolkit/Windows", base, "components")
+            mux, ctk = WORD_ABBR["MUX"], WORD_ABBR["CTK"]
             if a and not c:
-                proj, ref, method, syntax = "microsoft/microsoft-ui-xaml", "8463f451", \
-                    "document citation base (MUX, gap-map-windows.md:9; verified in checkout)", "bare path (document base)"
+                proj, ref, method, syntax = mux[2], self.ref(mux), \
+                    f"document citation base (MUX, {mux[5]}; verified in checkout)", "bare path (document base)"
                 file = base if base.startswith("dxaml/") else join("controls/dev", base)
             elif c and not a:
-                proj, ref, method, syntax = "CommunityToolkit/Windows", "a6b4dc45 (v8.2.251219)", \
-                    "document citation base (CTK, gap-map-windows.md:433; verified in checkout)", "bare path (document base)"
+                proj, ref, method, syntax = ctk[2], self.ref(ctk), \
+                    f"document citation base (CTK, {ctk[5]}; verified in checkout)", "bare path (document base)"
                 file = join("components", base)
             elif a and c:
                 proj, method, syntax, status = "microsoft/microsoft-ui-xaml | CommunityToolkit/Windows", \
@@ -949,18 +1097,26 @@ def short_name(path):
     return Path(path).name.replace(PREFIX, "")
 
 
-def scan(text, doc, index):
-    """The citations of one document's text; doc is its short name ("gap-map-kde.md", "platform-facts.md")."""
-    return Scanner(doc, index).scan(text)
+def scan(text, doc, index, defs=None):
+    """The citations of one document's text; doc is its short name ("gap-map-kde.md", "platform-facts.md"); defs
+    the refs definitions() read from the documents (none: the tables')."""
+    return Scanner(doc, index, defs).scan(text)
 
 
 def scan_documents(keys=None, index=None, repo=REPO):
+    """The citations of the documents (keys of DOCUMENTS or paths), the abbreviations' refs read from every document
+    of DOCUMENTS that exists."""
     index = index or Index.of_repo(repo)
+    texts = {}
+    for p in DOCUMENTS.values():
+        if (Path(repo) / p).is_file():
+            texts[short_name(p)] = (Path(repo) / p).read_text(encoding="utf-8")
+    defs = definitions(texts)
     out = []
     for k in keys or DOCUMENTS:
         path = Path(DOCUMENTS.get(k, k))
         path = path if path.is_absolute() else Path(repo) / path
-        out += scan(path.read_text(encoding="utf-8"), short_name(path), index)
+        out += scan(path.read_text(encoding="utf-8"), short_name(path), index, defs)
     return out
 
 
@@ -983,16 +1139,16 @@ SELF_TEST = [
     ("A7 project tag path", "gap-map-kde.md", "frameworkintegration v6.31.0 `src/kstyle/kstyle.cpp:424-427`", {},
      [("project tag `path:L`", "KDE/frameworkintegration", "v6.31.0", "src/kstyle/kstyle.cpp", "424-427", "resolved")]),
     ("B1 line abbreviation and continuation", "gap-map-kde.md", "pub `hp:678-695`, `:700`", {},
-     [("abbrev:L", "KDE/breeze", "75561b7f", "kstyle/breezehelper.cpp", "678-695", "resolved"),
-      (":L continuation", "KDE/breeze", "75561b7f", "kstyle/breezehelper.cpp", "700", "resolved")]),
+     [("abbrev:L", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezehelper.cpp", "678-695", "resolved"),
+      (":L continuation", "KDE/breeze", "c97883a8 (v6.8.2)", "kstyle/breezehelper.cpp", "700", "resolved")]),
     ("B2 path abbreviation", "gap-map-gnome.md", "`A/w/_buttons.scss:328-365`", {},
-     [("abbrev-path/F:L", "GNOME/libadwaita", "1.10.0 (c9ab1186)", "src/stylesheet/widgets/_buttons.scss", "328-365",
+     [("abbrev-path/F:L", "GNOME/libadwaita", "c9ab1186 (1.10.0)", "src/stylesheet/widgets/_buttons.scss", "328-365",
        "resolved")]),
     ("B3 word abbreviation", "gap-map-windows.md", "P: MUX `CommonStyles/ScrollBar_themeresources.xaml:681-689`", {},
-     [("abbrev-word path:L", "microsoft/microsoft-ui-xaml", "8463f451",
+     [("abbrev-word path:L", "microsoft/microsoft-ui-xaml", "ba3a8d59 (winui3/release/2.5.1)",
        "controls/dev/CommonStyles/ScrollBar_themeresources.xaml", "681-689", "resolved")]),
     ("B4 project word, commit defined elsewhere", "gap-map-kde.md", "`kiconthemes src/kiconloader.h:193`", {},
-     [("project-word path:L", "KDE/kiconthemes", "60bdbcdd", "src/kiconloader.h", "193", "resolved")]),
+     [("project-word path:L", "KDE/kiconthemes", "420364ec", "src/kiconloader.h", "193", "resolved")]),
     ("B5 gallery", "gap-map-gnome.md", "seen in GTKgal", {},
      [("titled page (GTKgal abbreviation …)", "GNOME/gtk", "4.24.1", "docs/reference/gtk/visual_index.md", "",
        "resolved")]),
@@ -1004,12 +1160,12 @@ SELF_TEST = [
     ("C3 document base", "gap-map-windows.md", "(`CommonStyles/Button_themeresources.xaml:38`)",
      {"microsoft/microsoft-ui-xaml": ["controls/dev/CommonStyles/Button_themeresources.xaml"],
       "CommunityToolkit/Windows": ["components/Segmented/src/Segmented.xaml"]},
-     [("bare path (document base)", "microsoft/microsoft-ui-xaml", "8463f451",
+     [("bare path (document base)", "microsoft/microsoft-ui-xaml", "ba3a8d59 (winui3/release/2.5.1)",
        "controls/dev/CommonStyles/Button_themeresources.xaml", "38", "resolved")]),
     ("C4 section-scoped qt/", "gap-map-seeds.md", "`qt/qtextedit.cpp:10`", {},
-     [("abbrev-path/F:L", "qt/qtbase", "v6.10.1 | v6.11.2", "qtextedit.cpp", "10", "ambiguous")]),
+     [("abbrev-path/F:L", "qt/qtbase", "v6.12.0", "qtextedit.cpp", "10", "resolved")]),
     ("C5 elided path", "gap-map-material.md", "`ax/…/material3/Menu.kt:2390-2391`", {},
-     [("elided path …/x:L", "androidx/androidx", "1e677685", "", "2390-2391", "resolved")]),
+     [("elided path …/x:L", "androidx/androidx", "e4d933c9", "", "2390-2391", "resolved")]),
     ("C6 brace list", "gap-map-material.md", "`_md-comp-icon-button-{standard,filled}.scss`", {},
      [("brace-list path {a,b}.ext:L", "", "", "", "", "unresolved")]),
     ("C7 platform-facts column", "gap-map-gnome.md",
@@ -1057,8 +1213,36 @@ SELF_TEST = [
 ]
 
 
+# The definitions as the documents state them after a re-pin: (document, line) -> text; definitions() reads them.
+SELF_TEST_DEFS = {
+    ("gap-map-kde.md", 11): "| `st` | `kstyle/breezestyle.cpp` | KDE/breeze @ `aaaaaaaa11` (tag `v9.9.9`) |",
+    ("gap-map-kde.md", 12): "| `hp` / `hp.h` | `kstyle/breezehelper.cpp` / `.h` | KDE/breeze @ `bbbbbbbb` |",
+    ("gap-map-kde.md", 1317): "**v1.15.0** (tag object `dddddddd`, commit",
+    ("gap-map-kde.md", 1318): "`eeeeeeee`, read from the server. **`ka/F:L`** = file `F`, line(s) `L`, at that commit.",
+    ("gap-map-kde.md", 1319): "Comparisons cite `kirigami@ffffffff`.",
+    ("gap-map-material.md", 15): "| `compose/` | androidx `cccccccc`, `compose/…/material3/` |",
+    ("gap-map-material.md", 16): "| `compose-android/` | same commit, `…/androidMain/…` |",
+    ("gap-map-seeds.md", 548): "| `qt/F:L` | qtbase tag **v6.11.2**, `src/gui/text/F` |",
+}
+SELF_TEST_DEFS_WANT = {"st": "aaaaaaaa (v9.9.9)", "hp": "bbbbbbbb", "hp.h": "bbbbbbbb", "ka/": "eeeeeeee (v1.15.0)",
+                       "compose/": "cccccccc", "compose-android/": "cccccccc", ("qt/", 548): "v6.11.2"}
+
+
 def self_test() -> int:
     failures = []
+    texts = collections.defaultdict(lambda: [""] * 1400)
+    for (doc, ln), line in SELF_TEST_DEFS.items():
+        texts[doc][ln - 1] = line
+    texts = {d: "\n".join(lines) for d, lines in texts.items()}
+    defs = definitions(texts)
+    if defs != SELF_TEST_DEFS_WANT:
+        failures.append(f"definitions: got {defs}, want {SELF_TEST_DEFS_WANT}")
+    for doc, text, want in (("gap-map-kde.md", "`hp:678`; `mt:5`", ["bbbbbbbb", LINE_ABBR["mt"][3]]),
+                            ("gap-map-material.md", "`compose-android/Menu.android.kt:3`", ["cccccccc"]),
+                            ("gap-map-seeds.md", "`qt/qtextedit.cpp:10`", ["v6.11.2 | v6.12.0"])):
+        got = [c.ref for c in scan(text, doc, Index(), defs)]
+        if got != want:
+            failures.append(f"scan with the documents' definitions, {text!r}: got {got}, want {want}")
     for label, doc, text, files, want in SELF_TEST:
         own = files.get(OWN, [])
         index = Index(own, {p: (fs, "") for p, fs in files.items() if p != OWN})
