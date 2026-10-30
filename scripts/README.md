@@ -889,6 +889,62 @@ python3 scripts/check_sources.py
 python3 scripts/check_sources.py --self-test
 ```
 
+## check_facts.py
+
+Checks the form of the 0.8.0 facts (specification S17): every
+`docs/facts/<platform>/*.toml` (gnome, kde, macos, ios, windows, material),
+each platform's `state-models.toml` and the palette facts in
+`docs/facts/palettes/`; `docs/facts/imported/` is lane input and skipped.
+A fact has a key the catalogue (through `spec_catalogue.py`) or the core (its
+Rust sketches, as `check_spec_names.py` reads them) defines, a value spelled
+as a preset spells it (of the key's dimension where the sketches type it, an
+expression in S2.2's grammar), gap-map row IDs, a `when` as S11's, citations
+with the fields of their kind and a pinned source, `scheme_file` and `accent`
+both or neither in `kde/` only, and the generation rule: without `preset:`,
+its citations together serve each preset of its directory that exists. A
+state-model entry's declarations are checked against the catalogue's entry,
+a palette fact's key against its file, and a bundled palette's
+`[palette.sources]` and `[palette.picks]` against the palette facts and the
+colours it states. Offline. The docstring states every rule and list. Prints
+one line per finding (file:line: what) and a summary with the counts, and
+exits 0 when there is none, 1 when there are some, 2 on an input it cannot
+read or a wrong command line. `--self-test` walks the specification's
+example facts, each with a broken variant.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_facts.py
+python3 scripts/check_facts.py --self-test
+```
+
+## check_fact_citations.py
+
+Checks what the 0.8.0 facts' citations say, against the source cache
+(`update_sources.sh`; `--cache DIR` or `NATIVE_THEME_SOURCES` overrides it)
+and `docs/evidence/`: each quote occurs, whitespace-normalised, in the cited
+lines at the pin (a JSON page: in the string at the pointer); no `absent`
+name occurs there; per generation, every literal of the value equals a
+literal of its citations' quotes, read by the cited file's notation and
+converted as the citation says; a measured value equals the committed
+evidence within its tolerance, leaf by leaf, and the run's `run.toml` maps
+the image to a preset its source serves; every evidence file is cited,
+except READMEs, `run.toml` and the legacy runs (`LEGACY_EVIDENCE`, which
+`check_ledger.py --final` reads). SDK-header citations are listed, not
+checked: `os-probe.yml`'s macOS job checks them at their Xcode. The
+docstring holds the closed lists (notations, units, conversions, evidence
+path forms, `run.toml`'s fields). Prints one line per finding and a summary,
+and exits 0, 1, or 2 when the cache is missing or an input cannot be read;
+`check_release.sh --commit` skips it only when the cache folder is absent.
+`--self-test` runs every notation and the example facts on a fixture cache.
+
+Requires Python 3.11 and git.
+
+```sh
+python3 scripts/check_fact_citations.py
+python3 scripts/check_fact_citations.py --self-test
+```
+
 ## update_sources.sh
 
 Fills the source cache, `/run/media/tibi/work/cargo-build/native-theme-sources/`

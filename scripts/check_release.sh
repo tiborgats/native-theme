@@ -1078,6 +1078,22 @@ else
     run_check "data documents: the source cache holds every pin" \
         bash scripts/update_sources.sh --verify
 fi
+# The 0.8.0 facts (docs/facts/<platform>/, specification S17): their form,
+# offline, and what their citations say, against the source cache and the
+# committed evidence. The full run fails without the cache; --commit mode
+# skips the citation check, by name, only when the cache folder is absent.
+run_check "data documents: the facts are well formed" \
+    python3 scripts/check_facts.py
+run_check "data documents: facts self-test" \
+    python3 scripts/check_facts.py --self-test
+if [[ $COMMIT_MODE && ! -d "${NATIVE_THEME_SOURCES:-/run/media/tibi/work/cargo-build/native-theme-sources}" ]]; then
+    print_skipped "0.8.0 facts' citations (no source cache)"
+else
+    run_check "data documents: the facts' citations hold at their pins" \
+        python3 scripts/check_fact_citations.py
+fi
+run_check "data documents: fact citations self-test" \
+    python3 scripts/check_fact_citations.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

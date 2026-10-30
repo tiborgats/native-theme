@@ -1,0 +1,1094 @@
+#!/usr/bin/env python3
+"""What the facts' citations say (specification S17; the 0.8.0 plan's *How values are checked*). Needs the source cache.
+
+Reads the facts as scripts/check_facts.py does (that script checks their form; this one assumes it and skips what it
+cannot read), the source cache (`NATIVE_THEME_SOURCES`, else scripts/citations.py's DEFAULT_CACHE, or `--cache DIR`;
+one checkout per `docs/facts/sources.toml` id, filled by scripts/update_sources.sh) and `docs/evidence/`.
+
+Run from the repository root:
+
+    python3 scripts/check_fact_citations.py [--cache DIR]
+    python3 scripts/check_fact_citations.py --self-test
+
+It prints one line per finding, `<file>:<line>: <what>`, a `# sdk:` line per citation of an SDK header, and a summary
+line with the counts (on stderr). Exit 0 when there is no finding, 1 when there are some, 2 when the source cache
+is missing, an input cannot be read or the command line is wrong. The full run of scripts/check_release.sh needs the
+cache; its `--commit` mode skips this check, by name, only when the cache folder is absent.
+
+Checks, per `published` and `read` citation (of a fact, a palette fact or a state-model entry):
+
+- the quote occurs, whitespace-normalised (every run of whitespace one space, both ends trimmed), in the cited lines
+  `l1..l2` of `<cache>/<id>/<path>`, the checkout being at its entry's commit (`git rev-parse HEAD`); for a
+  `<id> #<JSON pointer>` source, in the string at the pointer of the snapshot's one file (`<cache>/<id>/` holds
+  exactly one file);
+- `absent`: no listed name occurs (as a substring) in the cited lines;
+- a citation of an `sdk` entry (`xcode@…`) is not checked here: it is listed (`# sdk:`), as `os-probe.yml`'s macOS job
+  checks it at that Xcode; a `distribution` entry is never cited (S17).
+
+Per fact, the quote check (S17 *The quote check*): for each generation the fact covers (check_facts.Context.covered)
+with `published` or `read` citations, and for a palette fact once over all its citations, every literal of `value`
+equals a literal of the union of those citations' quotes, as written or after the citation's `conversion`. A value's
+literals are S2.2's (a TOML number; the colour, length, duration, angle and font-size literals of a string or an
+expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's.
+
+Per `measured` citation: the evidence file is committed (`git ls-files`) and exists, the run folder's `run.toml` has an
+entry for the image, and the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
+scalar as one literal, a value with leaves leaf by leaf (the evidence path names a table shaped like the value; a
+numeric or colour leaf within its tolerance, one number for all or a table from each leaf's path, every such leaf
+needing one; a bool or a name exactly). The evidence's literals are read as a quote's are (its file type's notation),
+then converted. A state-model entry's measured citation needs its path to exist.
+
+`run.toml` (RUN_FIELDS), in every run folder that holds evidence or is cited, legacy runs excepted:
+`[images.<image>]` per image folder of the run, each with `preset`, `source` and `os`, and `toolkit` where a toolkit
+drew or answered; no other key, no entry without its folder. `source` is a `sources.toml` entry and `preset` one of
+its generations. The builds are recorded, not matched (D1).
+
+Every evidence file (a file under `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/`, on disk or committed) is
+cited by a fact's or a state-model entry's measured citation, or by a vector table (vector_table_evidence(), the hook
+scripts/check_function_vectors.py's format fills at M1a; until then it counts none). Not evidence: any README.md,
+a run's `run.toml`, and the files of the runs LEGACY_EVIDENCE lists (the plan's *What carries over*: cited until M4,
+which empties the list; scripts/check_ledger.py --final reads it by name). Any other file under `docs/evidence/`
+outside a run's image folder is a finding.
+
+The closed lists (S17 leaves them to this script; a member is added as a class 1 change):
+
+- Notations, by the cited file's type (notation_of): `css` (.css, .scss, .sass, .less, .html, .svg), `xaml` (.xaml),
+  `ini` (.colors, .ini, .conf, `kdeglobals`, a name ending in `rc` without a suffix), `cpp` (.c, .cc, .cpp, .cxx, .h,
+  .hh, .hpp, .m, .mm), `qml` (.qml, .js), `data` (.toml, .json, .csv: an evidence file's), `text` (any other file, a
+  JSON page's string). Each reads, in this order, and no span is read twice:
+  - hex colours (every notation masks a `#<hex digits>` run): `#rgb`, `#rrggbb` everywhere; `#rgba`, `#rrggbbaa`
+    (RGBA) in `css` and `data`; `#argb`, `#aarrggbb` (ARGB) in `xaml`; other lengths read nothing;
+  - `css`: `rgb(r, g, b)`, `rgba(r, g, b, a)`, `rgb(r g b / a)` (channels 0-255 or `%`, alpha 0-1 or `%`), SCSS's
+    `rgba(<hex>, a)`, and the names `black`, `white`, `transparent`;
+  - `qml`: `Qt.rgba(r, g, b, a)` (fractions); `cpp`: `QColor(r, g, b[, a])` and the C++ initialiser `{r, g, b[, a]}`
+    (bytes); `ini`: a key's `r,g,b[,a]` (bytes);
+  - `xaml`: a `TimeSpan` `[d.]h:m:s[.f]` (a duration);
+  - the number form, everywhere: `[-]digits[.digits]` or `.digits`, bounded by non-identifier characters (`Qt6`
+    holds no number), with an optional unit attached; a unit outside UNITS makes it no literal.
+- Units (UNITS) by dimension: px, dp, sp (Android's text size before its scaling) are px; pt; ms and s (×1000) are
+  ms; deg; rem and em have none (a literal in them is no literal). A literal without a unit takes the value
+  literal's dimension; with one it must be of it, px and pt being distinct. Logical points have no notation of their
+  own here: Apple's sources state them unitless.
+- Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
+  `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, the
+  result a duration).
+- Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17); `srgb(…)` and
+  `display_p3(…)` literals in their own space (no quote notation reads Display P3).
+- Evidence path forms (S17 *`evidence`*), by the file's type: TOML a dotted key (a digit segment indexes an array),
+  JSON a JSON pointer, INI `<group>/<key>` (a nested group as its bracketed names joined by `][`:
+  `Colors:Header][Inactive/BackgroundNormal`), CSV `<first column>/<header>`.
+- `run.toml` (RUN_FIELDS): `[images.<image>]` tables only, each `preset`, `source`, `os` required, `toolkit` optional.
+"""
+import csv
+import io
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import tomllib
+from dataclasses import dataclass
+from pathlib import Path
+
+import check_facts
+import citations
+
+LEGACY_EVIDENCE = [
+    "docs/evidence/os-probe/2026-10-11-run-38129819806",
+    "docs/evidence/os-probe/2026-10-14-run-38478334574",
+    "docs/evidence/os-probe/2026-10-26-run-40320895749",
+    "docs/evidence/os-probe/2026-10-26-run-40324458365",
+    "docs/evidence/os-probe/2026-10-26-run-40348854007",
+]
+
+CONVERSIONS = {
+    "percent_to_fraction": lambda x: x / 100,
+    "byte_to_fraction": lambda x: x / 255,
+    "complement": lambda x: 1 - x,
+    "seconds_to_ms": lambda x: x * 1000,
+}
+# unit -> (dimension, factor to the dimension's canonical unit); None: no dimension (no literal)
+UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("pt", 1), "ms": ("duration", 1),
+         "s": ("duration", 1000), "deg": ("angle", 1), "rem": None, "em": None}
+VALUE_UNITS = {"px": "length", "pt": "pt", "ms": "duration", "deg": "angle"}
+SUFFIX_DIMS = {"_px": "length", "_ms": "duration", "_deg": "angle", "_pt": "pt"}
+RUN_FIELDS = ({"preset", "source", "os"}, {"toolkit"})
+NUMBER_EQ = 1e-4
+COLOUR_EQ = 1e-3
+CSS_NAMES = {"black": (0, 0, 0, 255), "white": (255, 255, 255, 255), "transparent": (0, 0, 0, 0)}
+RUN_RX = re.compile(r"^\d{4}-\d\d-\d\d-run-.+$")
+
+NOTATIONS = {
+    "css": (".css", ".scss", ".sass", ".less", ".html", ".svg"),
+    "xaml": (".xaml",),
+    "ini": (".colors", ".ini", ".conf"),
+    "cpp": (".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".m", ".mm"),
+    "qml": (".qml", ".js"),
+    "data": (".toml", ".json", ".csv"),
+}
+
+
+@dataclass(frozen=True)
+class Lit:
+    """A literal: a number (`dim`: None for unitless, "length", "pt", "duration", "angle", "number") or a colour
+    (`dim`: "srgb" or "p3", `value`: four channels on the 0-255 scale)."""
+    kind: str
+    dim: str | None
+    value: object
+
+    def __str__(self):
+        if self.kind == "colour":
+            return f"{self.dim}({', '.join(f'{c:g}' for c in self.value)})"
+        unit = {"length": "px", "pt": "pt", "duration": "ms", "angle": "deg"}.get(self.dim, "")
+        return f"{self.value:g}{unit}"
+
+
+def notation_of(path: str) -> str:
+    name = path.rsplit("/", 1)[-1].lower()
+    suffix = "." + name.rsplit(".", 1)[1] if "." in name else ""
+    for n, suffixes in NOTATIONS.items():
+        if suffix in suffixes:
+            return n
+    if name == "kdeglobals" or (not suffix and name.endswith("rc")):
+        return "ini"
+    return "text"
+
+
+# ------------------------------------------------------------------------------------------------- literals
+
+def _hex(digits, order):
+    if len(digits) in (3, 4):
+        digits = "".join(c * 2 for c in digits)
+    vals = [int(digits[i:i + 2], 16) for i in range(0, len(digits), 2)]
+    if len(vals) == 3:
+        return tuple(vals) + (255,)
+    if order == "argb":
+        return tuple(vals[1:]) + (vals[0],)
+    return tuple(vals)
+
+
+def _channel(s, alpha=False):
+    s = s.strip()
+    if s.endswith("%"):
+        return float(s[:-1]) * 255 / 100
+    return float(s) * 255 if alpha else float(s)
+
+
+NUM = r"-?(?:\d+(?:\.\d+)?|\.\d+)"
+HEX_RX = re.compile(r"(?<![\w&])#([0-9a-fA-F]+)\b")
+CSS_FUNC_RX = re.compile(r"\brgba?\(\s*([^()]*)\)")
+QT_RGBA_RX = re.compile(rf"\bQt\.rgba\(\s*({NUM})\s*,\s*({NUM})\s*,\s*({NUM})\s*,\s*({NUM})\s*\)")
+QCOLOR_RX = re.compile(r"\bQColor\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d{1,3})\s*)?\)")
+BRACE_RX = re.compile(r"\{\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d{1,3})\s*)?\}")
+BYTES_RX = re.compile(r"(?<![\w.,])(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d{1,3}))?(?![\w.,])")
+TIMESPAN_RX = re.compile(r"(?<![\w:.])(?:(\d+)\.)?(\d+):(\d+):(\d+(?:\.\d+)?)(?![\w:])")
+NUMBER_RX = re.compile(r"(?<![\w.])(-(?=[\d.]))?(\d+(?:\.\d+)?|\.\d+)([A-Za-z]*)(?!\w)")
+NAMES_RX = re.compile(r"(?<![\w-])(black|white|transparent)(?![\w-])")
+
+
+def quote_literals(text: str, notation: str) -> list:
+    """Every literal of `text` read by `notation` (the closed lists of the docstring), in text order."""
+    found = []   # (start, end, Lit or None): None masks a span that reads nothing
+    taken = []
+
+    def free(a, b):
+        return all(b <= x or a >= y for x, y in taken)
+
+    def add(a, b, lit):
+        if free(a, b):
+            taken.append((a, b))
+            found.append((a, lit))
+
+    for m in HEX_RX.finditer(text):
+        d = m.group(1)
+        lit = None
+        if len(d) in (3, 6):
+            lit = Lit("colour", "srgb", _hex(d, "rgba"))
+        elif len(d) in (4, 8) and notation in ("css", "data"):
+            lit = Lit("colour", "srgb", _hex(d, "rgba"))
+        elif len(d) in (4, 8) and notation == "xaml":
+            lit = Lit("colour", "srgb", _hex(d, "argb"))
+        add(m.start(), m.end(), lit)
+    if notation in ("css", "data"):
+        for m in CSS_FUNC_RX.finditer(text):
+            args = m.group(1).strip()
+            hm = re.fullmatch(rf"#([0-9a-fA-F]{{3}}|[0-9a-fA-F]{{6}})\s*,\s*({NUM}%?)", args)
+            if hm:
+                rgb = _hex(hm.group(1), "rgba")[:3]
+                taken[:] = [(x, y) for x, y in taken if not (m.start() <= x and y <= m.end())]
+                found[:] = [(p, lit) for p, lit in found if not (m.start() <= p < m.end())]
+                add(m.start(), m.end(), Lit("colour", "srgb", rgb + (_channel(hm.group(2), True),)))
+                continue
+            parts = [p for p in re.split(r"\s*[,/]\s*|\s+", args) if p]
+            if len(parts) in (3, 4) and all(re.fullmatch(rf"{NUM}%?", p) for p in parts):
+                ch = [_channel(p) for p in parts[:3]]
+                a = _channel(parts[3], True) if len(parts) == 4 else 255
+                add(m.start(), m.end(), Lit("colour", "srgb", tuple(ch) + (a,)))
+        if notation == "css":
+            for m in NAMES_RX.finditer(text):
+                add(m.start(), m.end(), Lit("colour", "srgb", CSS_NAMES[m.group(1)]))
+    if notation == "qml":
+        for m in QT_RGBA_RX.finditer(text):
+            add(m.start(), m.end(), Lit("colour", "srgb", tuple(float(g) * 255 for g in m.groups())))
+    if notation == "cpp":
+        for rx in (QCOLOR_RX, BRACE_RX):
+            for m in rx.finditer(text):
+                vals = [float(g) for g in m.groups() if g is not None]
+                if all(v <= 255 for v in vals):
+                    add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
+                                                                                     else (255,))))
+    if notation == "ini":
+        for m in BYTES_RX.finditer(text):
+            vals = [float(g) for g in m.groups() if g is not None]
+            if all(v <= 255 for v in vals):
+                add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
+                                                                                 else (255,))))
+    if notation == "xaml":
+        for m in TIMESPAN_RX.finditer(text):
+            d, h, mi, s = m.groups()
+            ms = ((int(d or 0) * 24 + int(h)) * 60 + int(mi)) * 60000 + float(s) * 1000
+            add(m.start(), m.end(), Lit("num", "duration", ms))
+    for m in NUMBER_RX.finditer(text):
+        if not free(m.start(), m.end()):
+            continue
+        x = float((m.group(1) or "") + m.group(2))
+        unit = m.group(3)
+        if not unit:
+            found.append((m.start(), Lit("num", None, x)))
+        elif unit in UNITS and UNITS[unit] is not None:
+            dim, factor = UNITS[unit]
+            found.append((m.start(), Lit("num", dim, x * factor)))
+    return [lit for _, lit in sorted(found, key=lambda t: t[0]) if lit is not None]
+
+
+VALUE_TOKEN_RX = re.compile(rf"(?P<colour>\b(?:srgb|display_p3)\(\s*{NUM}\s*,\s*{NUM}\s*,\s*{NUM}\s*"
+                            rf"(?:,\s*{NUM}\s*)?\))"
+                            r"|(?P<hex>#[0-9a-fA-F]+)"
+                            r"|(?P<path>@?[a-z_][a-z0-9_]*(?:\.@?[a-z0-9_][a-z0-9_]*)*)"
+                            rf"|(?P<num>(?<![\w.]){NUM}(?:px|ms|deg|pt)?(?![\w.]))")
+
+
+def string_literals(s: str) -> list:
+    out = []
+    for m in VALUE_TOKEN_RX.finditer(s):
+        if m.lastgroup == "colour":
+            name, args = m.group("colour").split("(", 1)
+            vals = [float(x) for x in args.rstrip(")").split(",")]
+            vals = vals + [1.0] if len(vals) == 3 else vals
+            out.append(Lit("colour", "srgb" if name == "srgb" else "p3", tuple(v * 255 for v in vals)))
+        elif m.lastgroup == "hex":
+            d = m.group("hex")[1:]
+            if len(d) in (6, 8):
+                out.append(Lit("colour", "srgb", _hex(d, "rgba")))
+        elif m.lastgroup == "num":
+            t = m.group("num")
+            u = re.search(r"(px|ms|deg|pt)$", t)
+            out.append(Lit("num", VALUE_UNITS[u.group(1)] if u else "number", float(t[:u.start()] if u else t)))
+    return out
+
+
+def value_literals(value, dim=None) -> list:
+    """S2.2's literals of a fact's value (references and names left out)."""
+    if isinstance(value, bool):
+        return []
+    if isinstance(value, (int, float)):
+        return [Lit("num", dim or "number", float(value))]
+    if isinstance(value, str):
+        return string_literals(value)
+    if isinstance(value, list):
+        return [lit for v in value for lit in value_literals(v)]
+    if isinstance(value, dict):
+        out = []
+        for k, v in value.items():
+            sub = next((d for suf, d in SUFFIX_DIMS.items() if k.endswith(suf)), None)
+            out += value_literals(v, sub)
+        return out
+    return []
+
+
+def convert(lits, names) -> list:
+    """The literals as written and, for each unitless number, after the conversions in order."""
+    out = list(lits)
+    if not names:
+        return out
+    for lit in lits:
+        if lit.kind != "num" or lit.dim is not None:
+            continue
+        x, dim = lit.value, None
+        for n in names:
+            x = CONVERSIONS[n](x)
+            if n == "seconds_to_ms":
+                dim = "duration"
+        out.append(Lit("num", dim, x))
+    return out
+
+
+def converted_only(lits, names):
+    """The literals after the conversions (an evidence value: the converted value replaces the read one)."""
+    if not names:
+        return list(lits)
+    return [x for x in convert(lits, names)[len(lits):]] + [x for x in lits if x.kind != "num" or x.dim is not None]
+
+
+def equal(v: Lit, q: Lit) -> bool:
+    if v.kind != q.kind:
+        return False
+    if v.kind == "colour":
+        return v.dim == q.dim and all(abs(a - b) <= COLOUR_EQ for a, b in zip(v.value, q.value))
+    if q.dim is not None and q.dim != v.dim:
+        return False
+    a, b = v.value, q.value
+    return a == b or abs(a - b) <= NUMBER_EQ * max(abs(a), abs(b))
+
+
+def within(v: Lit, e: Lit, tol: float) -> bool:
+    if v.kind != e.kind:
+        return False
+    if v.kind == "colour":
+        return v.dim == e.dim and all(abs(a - b) <= tol + 1e-9 for a, b in zip(v.value, e.value))
+    if e.dim is not None and e.dim != v.dim:
+        return False
+    return abs(v.value - e.value) <= tol + 1e-9 * max(1.0, abs(v.value))
+
+
+def normalise(s: str) -> str:
+    return " ".join(s.split())
+
+
+# ------------------------------------------------------------------------------------------------- evidence
+
+class EvidenceError(Exception):
+    pass
+
+
+def json_pointer(doc, pointer: str):
+    if pointer == "":
+        return doc
+    cur = doc
+    for raw in pointer.split("/")[1:]:
+        tok = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(cur, list):
+            if not tok.isdigit() or int(tok) >= len(cur):
+                raise EvidenceError(f"no element {tok!r}")
+            cur = cur[int(tok)]
+        elif isinstance(cur, dict):
+            if tok not in cur:
+                raise EvidenceError(f"no key {tok!r}")
+            cur = cur[tok]
+        else:
+            raise EvidenceError(f"{tok!r} below a scalar")
+    return cur
+
+
+def evidence_value(path: Path, form: str):
+    """The value at `form` in the evidence file (by its type), or raise EvidenceError."""
+    name = path.name
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as err:
+        raise EvidenceError(str(err)) from err
+    kind = notation_of(name)
+    if name.endswith(".toml"):
+        try:
+            cur = tomllib.loads(text)
+        except tomllib.TOMLDecodeError as err:
+            raise EvidenceError(f"not valid TOML: {err}") from err
+        for seg in form.split("."):
+            if isinstance(cur, list) and seg.isdigit() and int(seg) < len(cur):
+                cur = cur[int(seg)]
+            elif isinstance(cur, dict) and seg in cur:
+                cur = cur[seg]
+            else:
+                raise EvidenceError(f"no {seg!r} at {form!r}")
+        return cur
+    if name.endswith(".json"):
+        try:
+            return json_pointer(json.loads(text), form)
+        except json.JSONDecodeError as err:
+            raise EvidenceError(f"not valid JSON: {err}") from err
+    if name.endswith(".csv"):
+        first, sep, header = form.rpartition("/")
+        rows = list(csv.reader(io.StringIO(text)))
+        if not sep or not rows or header not in rows[0]:
+            raise EvidenceError(f"no column {header!r}")
+        col = rows[0].index(header)
+        for row in rows[1:]:
+            if row and row[0] == first:
+                if col >= len(row):
+                    raise EvidenceError(f"row {first!r} has no {header!r} cell")
+                return row[col]
+        raise EvidenceError(f"no row {first!r}")
+    if kind == "ini":
+        group, sep, key = form.rpartition("/")
+        if not sep:
+            raise EvidenceError(f"{form!r} is not `<group>/<key>`")
+        cur = None
+        for line in text.splitlines():
+            s = line.strip()
+            if s.startswith("[") and s.endswith("]"):
+                cur = s[1:-1]
+            elif cur == group and "=" in s and not s.startswith(("#", ";")):
+                k, v = s.split("=", 1)
+                if k.strip() == key:
+                    return v.strip()
+        raise EvidenceError(f"no key {key!r} in group [{group}]")
+    raise EvidenceError(f"{name}: not an evidence file type (TOML, JSON, INI, CSV)")
+
+
+def leaves(value, prefix="", dim=None):
+    """(path as S11 spells it, leaf, dimension) of every leaf of a value."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            sub = next((d for suf, d in SUFFIX_DIMS.items() if k.endswith(suf)), None)
+            yield from leaves(v, f"{prefix}.{k}" if prefix else k, sub)
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from leaves(v, f"{prefix}.{i}" if prefix else str(i), None)
+    else:
+        yield prefix, value, dim
+
+
+def at(value, path):
+    cur = value
+    for seg in path.split(".") if path else []:
+        if isinstance(cur, list) and seg.isdigit() and int(seg) < len(cur):
+            cur = cur[int(seg)]
+        elif isinstance(cur, dict) and seg in cur:
+            cur = cur[seg]
+        else:
+            raise KeyError(path)
+    return cur
+
+
+def fact_leaf_literal(leaf, dim):
+    """The leaf's literal, or None when it compares exactly (a bool, a name, a keyword)."""
+    if isinstance(leaf, bool):
+        return None
+    if isinstance(leaf, (int, float)):
+        return Lit("num", dim or "number", float(leaf))
+    if isinstance(leaf, str):
+        lits = string_literals(leaf)
+        if len(lits) == 1 and (check_facts.HEX_LITERAL.match(leaf) or check_facts.FUNC_COLOUR.match(leaf)
+                               or check_facts.UNIT_LITERAL.match(leaf)):
+            return lits[0]
+    return None
+
+
+def compare(fact_value, ev_value, tolerance, conversion, notation) -> list:
+    """Problems of a measured value against the evidence (S17 *Fields*)."""
+    out = []
+    items = list(leaves(fact_value))
+    scalar = len(items) == 1 and items[0][0] == ""
+    numeric = {p for p, leaf, d in items if fact_leaf_literal(leaf, d) is not None}
+    if isinstance(tolerance, dict):
+        if scalar:
+            return ["a value without leaves takes one tolerance number"]
+        out += [f"tolerance {k!r} is not a numeric or colour leaf of the value" for k in tolerance if k not in numeric]
+        out += [f"no tolerance for the leaf {p!r}" for p in sorted(numeric - tolerance.keys())]
+    for p, leaf, d in items:
+        try:
+            ev = at(ev_value, p)
+        except KeyError:
+            out.append(f"the evidence has no leaf {p!r}")
+            continue
+        where = f"leaf {p!r}: " if p else ""
+        flit = fact_leaf_literal(leaf, d)
+        if flit is None:
+            if ev != leaf:
+                out.append(f"{where}the evidence holds {ev!r}, the fact {leaf!r}")
+            continue
+        if isinstance(ev, bool) or not isinstance(ev, (int, float, str)):
+            out.append(f"{where}the evidence holds {ev!r}, not a number or a colour")
+            continue
+        elits = [Lit("num", None, float(ev))] if isinstance(ev, (int, float)) else quote_literals(ev, notation)
+        elits = converted_only(elits, conversion)
+        if len(elits) != 1:
+            out.append(f"{where}the evidence value {ev!r} holds {len(elits)} literals, not one")
+            continue
+        tol = tolerance.get(p) if isinstance(tolerance, dict) else tolerance
+        if not isinstance(tol, (int, float)) or isinstance(tol, bool):
+            continue
+        if not within(flit, elits[0], tol):
+            out.append(f"{where}the evidence holds {elits[0]}, the fact {flit} (tolerance {tol:g})")
+    return out
+
+
+def vector_table_evidence(root: Path) -> set:
+    """The evidence files the vector tables under native-theme/tests/vectors/ cite (S2.2 *Checked against their
+    references*). The tables' format is scripts/check_function_vectors.py's (M1a), and its measured rows' evidence
+    counts as cited here then; until the format exists no table cites any."""
+    return set()
+
+
+# ------------------------------------------------------------------------------------------------- checks
+
+class Run:
+    def __init__(self, ctx, cache: Path, committed=None, check_heads=True):
+        self.ctx = ctx
+        self.cache = Path(cache)
+        self.check_heads = check_heads
+        self.committed = committed if committed is not None else self.git_files()
+        self._heads = {}
+        self.findings = []
+        self.sdk = []
+        self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0}
+
+    def git_files(self):
+        try:
+            out = subprocess.run(["git", "-C", str(self.ctx.root), "ls-files", "-z", "docs/evidence"],
+                                 capture_output=True, text=True, check=True).stdout
+        except (OSError, subprocess.CalledProcessError) as err:
+            raise check_facts.InputError(f"git ls-files: {err}") from err
+        return {p for p in out.split("\0") if p}
+
+    def add(self, file, line, what):
+        self.findings.append((file, line, what))
+
+    def head_problem(self, sid, entry):
+        if not self.check_heads:
+            return None
+        if sid not in self._heads:
+            d = self.cache / sid
+            if not (d / ".git").exists():
+                self._heads[sid] = f"{sid} has no checkout in the source cache ({d}; scripts/update_sources.sh)"
+            else:
+                try:
+                    head = subprocess.run(["git", "-C", str(d), "rev-parse", "HEAD"], capture_output=True, text=True,
+                                          check=True).stdout.strip()
+                except (OSError, subprocess.CalledProcessError):
+                    head = "?"
+                want = entry.get("commit")
+                self._heads[sid] = None if head == want else (f"{sid}'s checkout is at {head}, not at its pin {want} "
+                                                              f"(scripts/update_sources.sh)")
+        return self._heads[sid]
+
+    def cited_text(self, item, cite):
+        """The text the citation's source names, or None (a finding added, or an SDK citation listed)."""
+        c = cite.data
+        src = check_facts.parse_source(c.get("source"))
+        if not src or src[0] not in self.ctx.sources:
+            return None
+        sid, path, l1, l2, pointer = src
+        entry = self.ctx.sources[sid]
+        kind = entry.get("kind")
+        if kind == "sdk":
+            self.sdk.append((item.file, cite.line, c["source"]))
+            return None
+        if kind == "distribution":
+            self.add(item.file, cite.ln("source"), f"{sid} is a distribution snapshot, which no citation names")
+            return None
+        if kind == "git":
+            problem = self.head_problem(sid, entry)
+            if problem:
+                self.add(item.file, cite.ln("source"), problem)
+                return None
+        base = self.cache / sid
+        if pointer is not None:
+            files = [p for p in base.iterdir() if p.is_file()] if base.is_dir() else []
+            if len(files) != 1:
+                self.add(item.file, cite.ln("source"), f"{sid}: the cache holds {len(files)} files, not the one "
+                                                       f"snapshot a JSON pointer reads")
+                return None
+            try:
+                v = json_pointer(json.loads(files[0].read_text(encoding="utf-8")), pointer)
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError, EvidenceError) as err:
+                self.add(item.file, cite.ln("source"), f"{c['source']}: {err}")
+                return None
+            if not isinstance(v, str):
+                self.add(item.file, cite.ln("source"), f"{c['source']}: the pointer names no string")
+                return None
+            return v, "text"
+        f = base / path
+        try:
+            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            self.add(item.file, cite.ln("source"), f"{sid}: no file {path} at the pin")
+            return None
+        if l2 > len(lines):
+            self.add(item.file, cite.ln("source"), f"{c['source']}: lines {l1}-{l2} beyond the file's {len(lines)}")
+            return None
+        return "\n".join(lines[l1 - 1:l2]), notation_of(path)
+
+    def check_published(self, item, cite):
+        c = cite.data
+        got = self.cited_text(item, cite)
+        if got is None:
+            return
+        text, _ = got
+        quote = c.get("quote")
+        if isinstance(quote, str) and quote.strip():
+            self.counts["quotes"] += 1
+            if normalise(quote) not in normalise(text):
+                self.add(item.file, cite.ln("quote"), f"the quote is not in {c['source']} at the pin")
+        for name in c.get("absent", []) if isinstance(c.get("absent"), list) else []:
+            if isinstance(name, str) and name and name in text:
+                self.add(item.file, cite.ln("absent"), f"absent name {name!r} occurs in {c['source']}")
+
+    def check_quote_literals(self, item):
+        if item.table == "model" or "value" not in item.data:
+            return
+        vlits = value_literals(item.data["value"])
+        if not vlits:
+            return
+        textual = [c for c in item.cites if c.data.get("kind") in ("published", "read")]
+        if item.palette:
+            groups = [("all its citations", textual)] if textual else []
+        else:
+            covered, _ = self.ctx.covered(item)
+            groups = []
+            for g in sorted(covered):
+                cs = [c for c in textual if g in self.ctx.cite_generations(c.data)]
+                if cs:
+                    groups.append((g, cs))
+        for g, cs in groups:
+            self.counts["generations"] += 1
+            union = []
+            for c in cs:
+                src = check_facts.parse_source(c.data.get("source"))
+                notation = "text" if not src or src[4] is not None else notation_of(src[1])
+                conv = c.data.get("conversion") if isinstance(c.data.get("conversion"), list) else []
+                conv = [n for n in conv if n in CONVERSIONS]
+                quote = c.data.get("quote") if isinstance(c.data.get("quote"), str) else ""
+                union += convert(quote_literals(quote, notation), conv)
+            for v in vlits:
+                if not any(equal(v, q) for q in union):
+                    self.add(item.file, item.ln("value"), f"the value's literal {v} is in no quote serving {g} (as "
+                                                          f"written or converted)")
+
+    def check_measured(self, item, cite, runs):
+        c = cite.data
+        ev = check_facts.parse_evidence(c.get("evidence"))
+        if not ev:
+            return
+        self.counts["measured"] += 1
+        file, form, harness, run, image = ev
+        runs.setdefault((harness, run), []).append((item, cite))
+        if file not in self.committed:
+            self.add(item.file, cite.ln("evidence"), f"{file} is not committed")
+        p = self.ctx.root / file
+        if not p.is_file():
+            self.add(item.file, cite.ln("evidence"), f"{file} does not exist")
+            return
+        rt = self.ctx.run_toml(harness, run)
+        images = rt.get("images") if isinstance(rt, dict) else None
+        if not isinstance(images, dict) or image not in images:
+            self.add(item.file, cite.ln("evidence"), f"the run's run.toml maps no image {image!r}")
+        try:
+            value = evidence_value(p, form)
+        except EvidenceError as err:
+            self.add(item.file, cite.ln("evidence"), f"{file}#{form}: {err}")
+            return
+        if item.table == "model" or "value" not in item.data:
+            return
+        conv = [n for n in c.get("conversion", []) if n in CONVERSIONS] if isinstance(c.get("conversion"),
+                                                                                      list) else []
+        notation = "ini" if notation_of(p.name) == "ini" else "data"
+        for problem in compare(item.data["value"], value, c.get("tolerance", 0), conv, notation):
+            self.add(item.file, cite.ln("evidence"), f"{file}#{form}: {problem}")
+
+    def check_run_toml(self, harness, run):
+        rel = f"docs/evidence/{harness}/{run}/run.toml"
+        p = self.ctx.root / rel
+        if not p.is_file():
+            self.add(rel, 1, "missing: a run's run.toml maps each image folder to its preset (S17)")
+            return
+        text = p.read_text(encoding="utf-8")
+
+        def ln(needle):
+            return next((i for i, line in enumerate(text.splitlines(), 1) if needle in line), 1)
+
+        data = self.ctx.run_toml(harness, run)
+        if data is None:
+            self.add(rel, 1, "not valid TOML")
+            return
+        for k in data:
+            if k != "images":
+                self.add(rel, ln(k), f"unknown table `{k}` (run.toml holds [images.<image>] only)")
+        images = data.get("images", {}) if isinstance(data.get("images"), dict) else {}
+        folder = self.ctx.root / "docs/evidence" / harness / run
+        on_disk = {d.name for d in folder.iterdir() if d.is_dir()} if folder.is_dir() else set()
+        required, optional = RUN_FIELDS
+        for image, e in images.items():
+            where = ln(f"[images.{image}]")
+            if image not in on_disk:
+                self.add(rel, where, f"image {image!r} has no folder in the run")
+            if not isinstance(e, dict):
+                self.add(rel, where, f"images.{image} is not a table")
+                continue
+            for f in sorted(required - e.keys()):
+                self.add(rel, where, f"images.{image}: missing `{f}`")
+            for f in sorted(e.keys() - required - optional):
+                self.add(rel, where, f"images.{image}: unknown field `{f}`")
+            src = self.ctx.sources.get(e.get("source"))
+            if "source" in e and src is None:
+                self.add(rel, where, f"images.{image}: source {e['source']!r} is not a [[source]] of sources.toml")
+            elif src is not None and e.get("preset") not in (src.get("generations") or []):
+                self.add(rel, where, f"images.{image}: preset {e.get('preset')!r} is not among {e['source']}'s "
+                                     f"generations")
+        for image in sorted(on_disk - images.keys()):
+            self.add(rel, 1, f"image folder {image!r} has no [images.{image}] entry")
+
+    def check_evidence_files(self, cited):
+        root = self.ctx.root
+        base = root / "docs/evidence"
+        files = {p.relative_to(root).as_posix() for p in base.rglob("*") if p.is_file()} if base.is_dir() else set()
+        files |= {p for p in self.committed if p.startswith("docs/evidence/")}
+        legacy = tuple(x.rstrip("/") + "/" for x in LEGACY_EVIDENCE)
+        runs = set()
+        for f in sorted(files):
+            parts = f.split("/")
+            if parts[-1] == "README.md":
+                continue
+            if f.startswith(legacy):
+                self.counts["legacy"] += 1
+                continue
+            if len(parts) == 5 and parts[4] == "run.toml" and RUN_RX.match(parts[3]):
+                runs.add((parts[2], parts[3]))
+                continue
+            if len(parts) < 6 or not RUN_RX.match(parts[3]):
+                self.add(f, 1, "not in a run's image folder (docs/evidence/<harness>/<date>-run-<id>/<image>/)")
+                continue
+            runs.add((parts[2], parts[3]))
+            self.counts["evidence"] += 1
+            if f not in cited:
+                self.add(f, 1, "evidence file cited by no fact, state-model entry or vector table")
+        return runs
+
+    def check(self):
+        items, _, _ = check_facts.load(self.ctx)
+        runs = {}
+        for it in items:
+            for cite in it.cites:
+                kind = cite.data.get("kind")
+                if kind in ("published", "read"):
+                    self.check_published(it, cite)
+                elif kind == "measured":
+                    self.check_measured(it, cite, runs)
+            self.check_quote_literals(it)
+        cited = {check_facts.parse_evidence(c.data.get("evidence"))[0] for it in items for c in it.cites
+                 if c.data.get("kind") == "measured" and check_facts.parse_evidence(c.data.get("evidence"))}
+        cited |= vector_table_evidence(self.ctx.root)
+        all_runs = self.check_evidence_files(cited) | set(runs)
+        legacy = {tuple(x.split("/")[2:4]) for x in LEGACY_EVIDENCE}
+        for harness, run in sorted(all_runs - legacy):
+            self.check_run_toml(harness, run)
+        return items
+
+    def summary(self, items):
+        n = self.counts
+        facts = sum(1 for it in items if it.table == "fact" and not it.palette)
+        models = sum(1 for it in items if it.table == "model")
+        palette = sum(1 for it in items if it.palette)
+        vacuous = "no facts yet: " if not items else ""
+        return (f"{vacuous}{facts} facts, {models} state-model entries, {palette} palette facts: {n['quotes']} quotes "
+                f"checked at their pins, {n['generations']} literal checks per generation, {n['measured']} measured "
+                f"citations, {len(self.sdk)} SDK citations left to os-probe.yml's macOS job; {n['evidence']} evidence "
+                f"files ({n['legacy']} more in {len(LEGACY_EVIDENCE)} legacy runs): {len(self.findings)} findings")
+
+
+# --------------------------------------------------------------------------------------------- self-test
+
+SELF_TEST_EXTRA = {
+    "docs/facts/gnome/more.toml": '''
+[[fact]]
+key = "button.body.shadow"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11"
+quote = "&:hover {"
+absent = ["box-shadow"]
+
+[[fact]]
+key = "button.body.min_width"
+value = "= mul(token.kde.frame_width, 0.5)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:12"
+quote = "opacity: 50%;"
+conversion = ["percent_to_fraction"]
+''',
+    "docs/facts/macos/text.toml": '''
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "17pt"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-10-29 #/sections/1/text"
+quote = "Body 17 pt"
+''',
+    "cache/hig-typography@2026-10-29/page.json": '{"sections": [{"text": "Large Title 26 pt"}, '
+                                                 '{"text": "The   Body 17 pt style."}]}',
+    "cache/libadwaita@1.10.0/src/stylesheet/widgets/_buttons.scss": "\n" * 9 + "  &:hover {\n"
+                                                                    "    background-color: $hover_color; }\n"
+                                                                    "  opacity: 50%;\n",
+    "cache/libadwaita@1.10.0/src/stylesheet/_colors.scss": "// colours\n\n$hover_color: alpha(currentColor, .07);\n",
+    "cache/breeze@6.8.2/colors/BreezeLight.colors": "[ColorEffects:Disabled]\nColor=56,56,56\n\n[Colors:Window]\n"
+                                                    "BackgroundNormal=239,240,241\n",
+    "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Common_themeresources_any.xaml":
+        '<ResourceDictionary>\n  <ResourceDictionary.ThemeDictionaries>\n    <ResourceDictionary x:Key="Dark">\n'
+        '      <Color x:Key="SubtleFillColorSecondary">#0FFFFFFF</Color>\n',
+    "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Button_themeresources.xaml":
+        '<ResourceDictionary>\n\n\n\n\n<VisualState x:Name="PointerOver">\n'
+        '  <DoubleAnimation Storyboard.TargetProperty="Opacity" Duration="0:0:0.083" />\n</VisualState>\n'
+        '<x:Double x:Key="Button_MinWidth">80</x:Double>\n',
+    "cache/catppuccin@1.7.1/palette.json": "\n" * 119 + '        "hex": "#313244",\n',
+    "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml":
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
+    "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml":
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
+    "docs/evidence/os-probe/2026-11-02-run-1/README.md": "The run's harness and commit.\n",
+    "docs/evidence/kde-accent/2026-11-03-run-2/kde-breeze-light/kdeglobals":
+        "[Colors:Header]\nBackgroundNormal=222,224,226\n\n[Colors:Header][Inactive]\nBackgroundNormal=227,229,231\n",
+    "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/shadows.toml": '''
+[button.rest]
+layers = [ { x_px = 0, y_px = 1.2, blur_px = 2.5, spread_px = 0, color = "#00000025", inset = false },
+           { x_px = 0, y_px = 4, blur_px = 8.6, spread_px = 0, color = "#0000001b", inset = false } ]
+''',
+    "docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-15/renders/button.png": "legacy",
+}
+
+# (label, file, old, new, wanted findings as substrings, one per finding); old None: the file is replaced by new
+SELF_TEST_CASES = [
+    ("libadwaita: a literal no quote holds", "docs/facts/gnome/buttons.toml", "0.07)", "0.08)",
+     ["0.08 is in no quote serving adwaita"]),
+    ("libadwaita: the quote at other lines", "docs/facts/gnome/buttons.toml", "_colors.scss:3", "_colors.scss:2",
+     ["the quote is not in libadwaita@1.10.0 src/stylesheet/_colors.scss:2"]),
+    ("libadwaita: lines beyond the file", "docs/facts/gnome/buttons.toml", "_colors.scss:3", "_colors.scss:3-9",
+     ["lines 3-9 beyond the file's 3"]),
+    ("libadwaita: a file not at the pin", "docs/facts/gnome/buttons.toml", "_colors.scss:3", "_colours.scss:3",
+     ["no file src/stylesheet/_colours.scss at the pin"]),
+    ("libadwaita: an absent name present", "docs/facts/gnome/more.toml", 'absent = ["box-shadow"]',
+     'absent = ["box-shadow", "background-color"]', ["absent name 'background-color' occurs"]),
+    ("libadwaita: a percentage without its conversion", "docs/facts/gnome/more.toml",
+     'conversion = ["percent_to_fraction"]\n', "", ["0.5 is in no quote serving adwaita"]),
+    ("Breeze: another colour", "docs/facts/kde/colors.toml", 'value = "#eff0f1"', 'value = "#eff0f2"',
+     ["srgb(239, 240, 242, 255) is in no quote serving kde-breeze"]),
+    ("Breeze: the byte list read as numbers too", "docs/facts/kde/colors.toml", 'value = "#eff0f1"',
+     'value = "= alpha(role.view.background, 240)"', ["240 is in no quote serving kde-breeze"]),
+    ("WinUI: #aarrggbb read as RGBA", "docs/facts/windows/buttons.toml", 'value = "#ffffff0f"', 'value = "#0fffffff"',
+     ["srgb(15, 255, 255, 255) is in no quote serving windows-11"]),
+    ("WinUI: another TimeSpan", "docs/facts/windows/buttons.toml", 'value = "83ms"', 'value = "84ms"',
+     ["84ms is in no quote serving windows-11"]),
+    ("WinUI: a TimeSpan's parts read as numbers", "docs/facts/windows/buttons.toml", 'value = "83ms"',
+     'value = "0ms"', ["0ms is in no quote serving windows-11"]),
+    ("WinUI: another minimum width", "docs/facts/windows/buttons.toml", 'value = "80px"', 'value = "88px"',
+     ["88px is in no quote serving windows-11"]),
+    ("WinUI: a point where the value is px", "docs/facts/windows/buttons.toml", ">80</x:Double>", ">80pt</x:Double>",
+     ["the quote is not in", "80px is in no quote serving windows-11"]),
+    ("shadow: a leaf beyond its tolerance", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
+     "shadows.toml", "y_px = 1.2", "y_px = 1.6", ["leaf 'layers.0.y_px': the evidence holds 1.6"]),
+    ("shadow: a colour beyond its tolerance", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
+     "shadows.toml", '"#0000001b"', '"#0000001e"', ["leaf 'layers.1.color'"]),
+    ("shadow: a bool that differs", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/shadows.toml",
+     "inset = false },\n", "inset = true },\n", ["leaf 'layers.0.inset': the evidence holds True"]),
+    ("shadow: a leaf without its tolerance", "docs/facts/windows/buttons.toml", ', "layers.1.color" = 2 }', " }",
+     ["no tolerance for the leaf 'layers.1.color'"]),
+    ("shadow: a tolerance for no leaf", "docs/facts/windows/buttons.toml", '"layers.1.color" = 2 }',
+     '"layers.1.color" = 2, "layers.2.color" = 2 }', ["tolerance 'layers.2.color' is not a numeric or colour leaf"]),
+    ("shadow: a leaf the evidence lacks", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
+     "shadows.toml", "spread_px = 0, color = \"#00000025\"", "color = \"#00000025\"",
+     ["the evidence has no leaf 'layers.0.spread_px'"]),
+    ("macOS: 26 measures another size", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml",
+     "13.0", "14.0", ["the evidence holds 14, the fact 13pt"]),
+    ("macOS: a path the evidence lacks", "docs/facts/macos/buttons.toml", "macos-26/probe.toml#macos.fonts.sizes."
+     "systemFontSize", "macos-26/probe.toml#macos.fonts.sizes.labelFontSize", ["no 'labelFontSize'"]),
+    ("macOS: run.toml without the build", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", 'os = "25G83"\n', "",
+     ["images.os-probe-macos-26: missing `os`"]),
+    ("macOS: run.toml's preset not the source's", "docs/evidence/os-probe/2026-11-02-run-1/run.toml",
+     'source = "xcode@26.6"', 'source = "xcode@16.4"', ["preset 'macos-tahoe' is not among xcode@16.4's generations"]),
+    ("macOS: run.toml with an unknown field", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", 'os = "25G83"',
+     'os = "25G83"\nxcode = "26.6"', ["unknown field `xcode`"]),
+    ("macOS: an image folder without an entry", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-14/x.toml",
+     None, "a = 1\n", ["evidence file cited by no fact", "image folder 'os-probe-macos-14' has no [images"]),
+    ("macOS: a run without run.toml", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", None, None,
+     ["missing: a run's run.toml", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'"]),
+    ("evidence: an uncited file", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/extra.txt", None, "x\n",
+     ["evidence file cited by no fact"]),
+    ("evidence: a file outside an image folder", "docs/evidence/os-probe/2026-11-02-run-1/notes.txt", None, "x\n",
+     ["not in a run's image folder"]),
+    ("evidence: a legacy file is cited", "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-macos-26/x.png",
+     None, "legacy", []),
+    ("KDE accent: another inactive colour", "docs/evidence/kde-accent/2026-11-03-run-2/kde-breeze-light/kdeglobals",
+     "BackgroundNormal=227,229,231", "BackgroundNormal=227,229,232", ["the evidence holds srgb(227, 229, 232, 255)"]),
+    ("KDE accent: the active group's key", "docs/facts/kde/colors.toml", "Colors:Header][Inactive/BackgroundNormal",
+     "Colors:Header/BackgroundNormal", ["the evidence holds srgb(222, 224, 226, 255)"]),
+    ("KDE accent: a group the file lacks", "docs/facts/kde/colors.toml", "Colors:Header][Inactive/BackgroundNormal",
+     "Colors:View][Inactive/BackgroundNormal", ["no key 'BackgroundNormal' in group [Colors:View][Inactive]"]),
+    ("Catppuccin: another colour", "docs/facts/palettes/catppuccin.toml", 'value = "#313244"', 'value = "#313245"',
+     ["is in no quote serving all its citations"]),
+    ("Catppuccin: a quote not at the pin", "docs/facts/palettes/catppuccin.toml", "palette.json:120",
+     "palette.json:119", ["the quote is not in catppuccin@1.7.1 palette.json:119"]),
+    ("HIG: a pointer to a table", "docs/facts/macos/text.toml", "#/sections/1/text", "#/sections/1",
+     ["the pointer names no string"]),
+    ("HIG: a pointer to nothing", "docs/facts/macos/text.toml", "#/sections/1/text", "#/sections/2/text",
+     ["no element '2'"]),
+    ("HIG: a quote not in the page's string", "docs/facts/macos/text.toml", 'quote = "Body 17 pt"',
+     'quote = "Body 17pt"', ["the quote is not in hig-typography@2026-10-29 #/sections/1/text"]),
+    ("HIG: another size", "docs/facts/macos/text.toml", 'value = "17pt"', 'value = "26pt"',
+     ["26pt is in no quote serving macos-tahoe"]),
+    ("HIG: a snapshot folder with two files", "cache/hig-typography@2026-10-29/other.json", None, "{}",
+     ["the cache holds 2 files"]),
+    ("a distribution cited", "docs/facts/gnome/more.toml", 'source = "libadwaita@1.10.0 src/stylesheet/widgets/'
+     '_buttons.scss:12"', 'source = "archlinux@2026-10-29 x:1"', ["is a distribution snapshot"]),
+]
+
+# (notation, text, the literals read)
+SELF_TEST_NOTATIONS = [
+    ("css", "#eff0f1 #abc", ["srgb(239, 240, 241, 255)", "srgb(170, 187, 204, 255)"]),
+    ("css", "#0000001a #0008", ["srgb(0, 0, 0, 26)", "srgb(0, 0, 0, 136)"]),
+    ("css", "rgba(0, 0, 0, 0.5) rgb(255 0 0 / 50%)", ["srgb(0, 0, 0, 127.5)", "srgb(255, 0, 0, 127.5)"]),
+    ("css", "rgba(#000, .5) white transparent", ["srgb(0, 0, 0, 127.5)", "srgb(255, 255, 255, 255)",
+                                                  "srgb(0, 0, 0, 0)"]),
+    ("css", "alpha(currentColor, .07); margin: -1px", ["0.07", "-1px"]),
+    ("xaml", "#0FFFFFFF #8FFF #eff0f1", ["srgb(255, 255, 255, 15)", "srgb(255, 255, 255, 136)",
+                                         "srgb(239, 240, 241, 255)"]),
+    ("xaml", 'Duration="0:0:0.083" KeyTime="1.0:0:1"', ["83ms", "8.6401e+07ms"]),
+    ("text", "#0FFFFFFF #00000099 white", []),
+    ("qml", "Qt.rgba(1, 0.5, 0, 0.25)", ["srgb(255, 127.5, 0, 63.75)"]),
+    ("cpp", "QColor(61, 174, 233) { 239, 240, 241 } {1, 2, 300}", ["srgb(61, 174, 233, 255)",
+                                                                   "srgb(239, 240, 241, 255)", "1", "2", "300"]),
+    ("ini", "BackgroundNormal=239,240,241,128", ["srgb(239, 240, 241, 128)"]),
+    ("text", "Qt6 holds 6px; 0x1F; v6.8 is 0.2s", ["6px", "200ms"]),
+    ("text", "4dp 2sp 3pt 90deg 1rem 2em 50%", ["4px", "2px", "3pt", "90deg", "50"]),
+]
+
+
+def self_test() -> int:
+    failures = []
+    for notation, text, want in SELF_TEST_NOTATIONS:
+        got = [str(x) for x in quote_literals(text, notation)]
+        if got != want:
+            failures.append(f"{notation} {text!r}: got {got}, want {want}")
+    for names, x, want in ((["percent_to_fraction"], 50, "0.5"), (["byte_to_fraction"], 255, "1"),
+                           (["byte_to_fraction", "complement"], 51, "0.8"), (["seconds_to_ms"], 0.25, "250ms")):
+        got = [str(v) for v in convert([Lit("num", None, x)], names)]
+        if got != [f"{x:g}", want]:
+            failures.append(f"conversion {names}: got {got}")
+    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "percent_to_fraction", "seconds_to_ms"]:
+        failures.append(f"conversions: got {sorted(CONVERSIONS)}")
+    for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
+                       ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),
+                       ("probe.toml", "data"), ("README.md", "text")):
+        if notation_of(path) != want:
+            failures.append(f"notation of {path}: got {notation_of(path)}")
+    if not equal(Lit("num", "number", 1.0), Lit("num", None, 1.00009)) or equal(Lit("num", "number", 1.0),
+                                                                                  Lit("num", None, 1.0002)):
+        failures.append("number equality is not relative 1e-4")
+    if not equal(Lit("colour", "srgb", (1, 2, 3, 4)), Lit("colour", "srgb", (1, 2, 3, 4.0009))) or equal(
+            Lit("colour", "srgb", (1, 2, 3, 4)), Lit("colour", "srgb", (1, 2, 3, 4.002))):
+        failures.append("colour equality is not 1e-3 per channel")
+    if equal(Lit("num", "length", 13.0), Lit("num", "pt", 13.0)):
+        failures.append("px and pt compare equal")
+    if [str(x) for x in value_literals({"layers": [{"y_px": 1, "color": "#00000024", "inset": False}],
+                                        "a": "= mix(token.elevation.1, srgb(1, 0, 0), 0.5)"})] != [
+            "1px", "srgb(0, 0, 0, 36)", "srgb(255, 0, 0, 255)", "0.5"]:
+        failures.append(f"value literals: got {[str(x) for x in value_literals({'a': '= mix(token.elevation.1, x)'})]}")
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        files = {"t.toml": "[a.b]\nc = [1, { d = 2 }]\n", "t.json": '{"a": {"b/c": ["x", "y"]}}',
+                 "kdeglobals": "[Colors:Header]\nA=1\n[Colors:Header][Inactive]\nA=2\n", "t.csv": "key,w,h\nbtn,3,4\n"}
+        for name, text in files.items():
+            (base / name).write_text(text, encoding="utf-8")
+        for name, form, want in (("t.toml", "a.b.c.1.d", 2), ("t.json", "/a/b~1c/1", "y"),
+                                 ("kdeglobals", "Colors:Header][Inactive/A", "2"),
+                                 ("kdeglobals", "Colors:Header/A", "1"),
+                                 ("t.csv", "btn/h", "4")):
+            try:
+                got = evidence_value(base / name, form)
+            except EvidenceError as err:
+                got = err
+            if got != want:
+                failures.append(f"evidence path {name}#{form}: got {got!r}")
+        n = 0
+        for case in [("good", None, None, None, [])] + SELF_TEST_CASES:
+            label, path, old, new, want = case
+            files = dict(check_facts.SELF_TEST_FILES)
+            files.update(SELF_TEST_EXTRA)
+            if path is not None:
+                if old is None:
+                    if new is None:
+                        files.pop(path)
+                    else:
+                        files[path] = new
+                elif old not in files[path]:
+                    failures.append(f"{label}: fixture text {old!r} not found")
+                    continue
+                else:
+                    files[path] = files[path].replace(old, new, 1)
+            root = base / f"case{n}"
+            n += 1
+            check_facts.write_fixture(root, {k: v for k, v in files.items() if not k.startswith("cache/")})
+            for k, v in files.items():
+                if k.startswith("cache/"):
+                    p = root / k
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    p.write_text(v, encoding="utf-8")
+            committed = {p.relative_to(root).as_posix() for p in (root / "docs/evidence").rglob("*") if p.is_file()}
+            run = Run(check_facts.fixture_context(root), root / "cache", committed, check_heads=False)
+            items = run.check()
+            got = [f"{f}:{ln}: {w}" for f, ln, w in run.findings]
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
+                failures.append(f"{label}: got {got}, want {want}")
+            if label == "good":
+                if len(run.sdk) != 2 or run.counts["legacy"] != 1 or run.counts["measured"] != 4:
+                    failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
+        # an uncommitted evidence file, and the vacuous run
+        root = base / "case0"
+        run = Run(check_facts.fixture_context(root), root / "cache", set(), check_heads=False)
+        run.check()
+        if sum("is not committed" in w for _, _, w in run.findings) != 4:
+            failures.append(f"uncommitted: got {run.findings}")
+        root = base / "empty"
+        check_facts.write_fixture(root, {})
+        run = Run(check_facts.fixture_context(root), root / "cache", set(), check_heads=False)
+        items = run.check()
+        if run.findings or not run.summary(items).startswith("no facts yet: 0 facts"):
+            failures.append(f"empty: {run.findings}, {run.summary(items)}")
+    for failure in failures:
+        print(f"self-test FAIL: {failure}", file=sys.stderr)
+    if not failures:
+        print(f"self-test ok ({len(SELF_TEST_NOTATIONS)} notation cases, {len(SELF_TEST_CASES) + 1} fixture cases)")
+    return 1 if failures else 0
+
+
+def main(argv) -> int:
+    args = argv[1:]
+    if args == ["--self-test"]:
+        return self_test()
+    cache = None
+    while args:
+        arg = args.pop(0)
+        if arg == "--cache" and args:
+            cache = Path(args.pop(0))
+        else:
+            print(__doc__, file=sys.stderr)
+            return 2
+    cache = cache or Path(os.environ.get("NATIVE_THEME_SOURCES") or citations.DEFAULT_CACHE)
+    if not cache.is_dir():
+        print(f"error: no source cache at {cache} (scripts/update_sources.sh fills it)", file=sys.stderr)
+        return 2
+    try:
+        run = Run(check_facts.Context(Path(".")), cache)
+        items = run.check()
+    except (OSError, UnicodeDecodeError, check_facts.InputError) as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
+    for f, ln, what in run.findings:
+        print(f"{f}:{ln}: {what}")
+    for f, ln, src in run.sdk:
+        print(f"# sdk: {f}:{ln}: {src} (os-probe.yml's macOS job checks it at that Xcode)")
+    print(run.summary(items), file=sys.stderr)
+    return 1 if run.findings else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
