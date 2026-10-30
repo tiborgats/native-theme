@@ -9,6 +9,13 @@ pub mod color;
 mod error;
 pub mod expr;
 mod key;
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "read by S11's reader and the facts gate (M1a tasks 7 and 14)"
+    )
+)]
 mod registry;
 mod roles;
 mod selector;
@@ -34,7 +41,6 @@ pub use color::Color;
 pub use error::KeyError;
 pub use expr::{Expr, ParseError};
 pub use key::Key;
-pub use registry::{FieldInfo, FieldType};
 pub use roles::SurfaceSet;
 pub use selector::Scheme;
 pub use units::{

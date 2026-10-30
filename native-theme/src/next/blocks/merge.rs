@@ -56,9 +56,14 @@ impl MergeConflict {
     }
 }
 
-/// A later patch merged over an earlier one, so that applying the result
-/// equals applying the two in order. On a conflict `self` is left partly
-/// merged and is to be discarded.
+/// A later patch merged over an earlier one. Where applying the two in order
+/// over a value succeeds, applying the merged patch gives the same value. The
+/// merge does not see that value, so it can succeed where the ordered
+/// application conflicts: a later `Set` drops an earlier `Fields` or `Append`
+/// unchecked, which over an `Absent` or `Auto` value would have conflicted;
+/// such a conflict is the earlier patch's, refused where the layer is
+/// validated (S12). On a conflict `self` is left partly merged and is to be
+/// discarded.
 pub(crate) trait Merge: Sized {
     fn merge(&mut self, later: Self) -> Result<(), MergeConflict>;
 }

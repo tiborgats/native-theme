@@ -19,7 +19,9 @@ pub enum Shadow {
 
 /// A resolved shadow: the query resolves an elevation reference to that
 /// entry's layers, so a connector receives layers only; a reference to an
-/// empty entry resolves to `None`, as `Absent` does (S2.5).
+/// empty entry resolves to `None`, as `Absent` does (S2.5). So a resolved
+/// shadow is never empty: the query turns empty layers into `None`, and a
+/// connector meets no shadow in one form only.
 pub type ResolvedShadow = Vec<ResolvedShadowLayer>;
 
 /// One layer of a shadow.

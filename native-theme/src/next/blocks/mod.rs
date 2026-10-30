@@ -10,7 +10,7 @@
 
 use std::fmt::Debug;
 
-use super::registry::FieldInfo;
+use super::registry::{BlockForm, FieldInfo};
 use super::value::Value;
 
 #[cfg_attr(
@@ -30,13 +30,32 @@ pub(crate) use merge::{
     Apply, Merge, MergeConflict, merge_by_key, merge_slot, merge_slot_by_key, replace_slot,
 };
 
-/// A block: its resolved type and its field table, which the `ThemeParts`
-/// derive generates.
-pub trait Block {
+/// Seals [`Block`]: only the `ThemeParts` derive implements it.
+pub(crate) mod sealed {
+    /// The supertrait no type outside the crate can implement.
+    pub trait Sealed {}
+}
+
+/// A block: its resolved type, which the `ThemeParts` derive generates.
+pub trait Block: sealed::Sealed {
     /// The block with each `Value` evaluated (S6.1).
     type Resolved;
-    /// The block's fields, for the field-path registry.
+}
+
+/// A block's field table, which the `ThemeParts` derive generates, for the
+/// field-path registry.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "read by S11's reader and the facts gate (M1a tasks 7 and 14)"
+    )
+)]
+pub(crate) trait Table {
+    /// The block's fields.
     const FIELDS: &'static [FieldInfo];
+    /// Whether the block is a struct or an enum, and an enum's unit variants.
+    const FORM: BlockForm;
 }
 
 /// A struct block, which a patch sets whole or field by field (S2.2).

@@ -20,6 +20,16 @@ fn blocks() -> TokenStream {
     quote!(crate::next::blocks)
 }
 
+/// The module the expansions name the field-path registry's types by.
+fn registry() -> TokenStream {
+    quote!(crate::next::registry)
+}
+
+/// `Option`, named so that no item at the derive site shadows it.
+fn option() -> TokenStream {
+    quote!(::core::option::Option)
+}
+
 /// Where a block field's block sits in its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Wrap {
@@ -31,19 +41,25 @@ enum Wrap {
     List,
 }
 
+/// A block a field holds: its type as written, and the type's name.
+struct BlockRef {
+    ty: Box<Type>,
+    name: Ident,
+}
+
 /// What a field holds, which decides its patch, its merge and its resolved
 /// type.
 enum Shape {
     /// A value with no fields of its own.
     Leaf,
-    /// A `Vec` of pairs: merged by key.
-    Map,
+    /// A `Vec` of pairs: merged by key; its values a block's where the field
+    /// is marked `block`.
+    Map(Option<BlockRef>),
     /// A block of the model.
     Block {
         kind: BlockKind,
         wrap: Wrap,
-        inner: Box<Type>,
-        name: Ident,
+        block: BlockRef,
     },
 }
 
@@ -68,7 +84,7 @@ impl BlockField {
     fn merge_kind(&self) -> MergeKind {
         match &self.shape {
             Shape::Leaf => MergeKind::Replace,
-            Shape::Map => MergeKind::ByKey,
+            Shape::Map(_) => MergeKind::ByKey,
             Shape::Block {
                 kind: BlockKind::Fields,
                 wrap: Wrap::Bare | Wrap::Value,
@@ -85,58 +101,92 @@ impl BlockField {
 
     fn patch_ty(&self) -> TokenStream {
         let b = blocks();
+        let o = option();
         match &self.shape {
             Shape::Block {
                 kind: BlockKind::Fields,
                 wrap: Wrap::Bare,
-                name,
-                ..
+                block,
             }
             | Shape::Block {
                 kind: BlockKind::Append,
                 wrap: Wrap::Value,
-                name,
-                ..
+                block,
             } => {
-                let patch = format_ident!("{name}Patch");
-                quote!(Option<#patch>)
+                let patch = renamed(&block.ty, &format_ident!("{}Patch", block.name));
+                quote!(#o<#patch>)
             }
             Shape::Block {
                 kind: BlockKind::Fields,
                 wrap: Wrap::Value,
-                inner,
-                ..
-            } => quote!(Option<#b::BlockPatch<#inner>>),
-            Shape::Leaf | Shape::Map | Shape::Block { .. } => {
+                block,
+            } => {
+                let inner = &block.ty;
+                quote!(#o<#b::BlockPatch<#inner>>)
+            }
+            Shape::Leaf | Shape::Map(_) | Shape::Block { .. } => {
                 let ty = &self.ty;
-                quote!(Option<#ty>)
+                quote!(#o<#ty>)
             }
         }
     }
 
+    fn block(&self) -> Option<&BlockRef> {
+        match &self.shape {
+            Shape::Block { block, .. } | Shape::Map(Some(block)) => Some(block),
+            Shape::Leaf | Shape::Map(None) => None,
+        }
+    }
+
     fn resolved_ty(&self) -> TokenStream {
-        let block = match &self.shape {
-            Shape::Block { name, .. } => Some(name),
-            Shape::Leaf | Shape::Map => None,
-        };
-        resolved_ty(&self.ty, block, self.attrs.auto)
+        resolved_ty(&self.ty, self.block(), self.attrs.auto)
     }
 
     fn field_info(&self, path: &str) -> TokenStream {
-        let m = model();
+        let r = registry();
         let b = blocks();
         let written = type_string(&self.ty);
-        let ty = match &self.shape {
-            Shape::Block { inner, .. } => quote! {
-                #m::FieldType::Block { ty: #written, fields: <#inner as #b::Block>::FIELDS }
-            },
-            Shape::Leaf | Shape::Map => quote!(#m::FieldType::Leaf(#written)),
+        let ty = match self.block() {
+            Some(block) => {
+                let inner = &block.ty;
+                quote! {
+                    #r::FieldType::Block {
+                        ty: #written,
+                        form: <#inner as #b::Table>::FORM,
+                        fields: <#inner as #b::Table>::FIELDS,
+                    }
+                }
+            }
+            None => quote!(#r::FieldType::Leaf(#written)),
         };
         let may_be_absent = self.attrs.may_be_absent;
         let auto = self.attrs.auto;
         quote! {
-            #m::FieldInfo { path: #path, ty: #ty, may_be_absent: #may_be_absent, auto: #auto }
+            #r::FieldInfo { path: #path, ty: #ty, may_be_absent: #may_be_absent, auto: #auto }
         }
+    }
+}
+
+/// The type `ty` names, its last segment renamed to `name`, so the path to
+/// it is kept: `paint::Paint` -> `paint::PaintPatch`.
+fn renamed(ty: &Type, name: &Ident) -> Type {
+    let mut out = ty.clone();
+    if let Type::Path(type_path) = &mut out
+        && let Some(seg) = type_path.path.segments.last_mut()
+    {
+        seg.ident = name.clone();
+    }
+    out
+}
+
+/// The pair a `Vec` of pairs holds: `(K, V)` of `Vec<(K, V)>`.
+fn map_pair(ty: &Type) -> Option<(&Type, &Type)> {
+    match generic_arg(ty, "Vec") {
+        Some(Type::Tuple(tuple)) => match tuple.elems.iter().collect::<Vec<_>>().as_slice() {
+            [key, value] => Some((*key, *value)),
+            _ => None,
+        },
+        _ => None,
     }
 }
 
@@ -168,15 +218,19 @@ fn plain_ident(ty: &Type) -> Option<&Ident> {
     None
 }
 
-/// The field's value is a `Value`, or an `Option` of one, holding `inner`
-/// when given.
-fn holds_value(ty: &Type, inner: Option<&str>) -> bool {
+/// The field's value is a `Value`, or an `Option` of one, holding one of
+/// `inner` when given.
+fn holds_value(ty: &Type, inner: Option<&[&str]>) -> bool {
     let ty = generic_arg(ty, "Option").unwrap_or(ty);
     generic_arg(ty, "Value").is_some_and(|held| match inner {
-        Some(name) => plain_ident(held).is_some_and(|ident| ident == name),
+        Some(names) => plain_ident(held).is_some_and(|ident| names.iter().any(|n| ident == n)),
         None => true,
     })
 }
+
+/// The units a value marked `auto` may hold: a length, and a font size (a
+/// line height), both resolving to a `Length` (S6.1).
+const AUTO_UNITS: &[&str] = &["Px", "FontSize"];
 
 /// The type as written, without whitespace: `Value<Px>`.
 fn type_string(ty: &Type) -> String {
@@ -184,24 +238,25 @@ fn type_string(ty: &Type) -> String {
 }
 
 /// The resolved form of a type: each `Value<T>` to `Option<T>` (a `Value<Px>`
-/// that may be `Auto` to `Option<Length>`), the block named `block` to its
-/// resolved type, through `Option`, `Vec` and tuples.
-fn resolved_ty(ty: &Type, block: Option<&Ident>, auto: bool) -> TokenStream {
+/// or `Value<FontSize>` that may be `Auto` to `Option<Length>`), the block
+/// `block` to its resolved type, through `Option`, `Vec` and tuples.
+fn resolved_ty(ty: &Type, block: Option<&BlockRef>, auto: bool) -> TokenStream {
+    let o = option();
     if let Some(inner) = generic_arg(ty, "Value") {
-        if auto && plain_ident(inner).is_some_and(|ident| ident == "Px") {
+        if auto && holds_value(ty, Some(AUTO_UNITS)) {
             let m = model();
-            return quote!(Option<#m::Length>);
+            return quote!(#o<#m::Length>);
         }
         let inner = resolved_ty(inner, block, auto);
-        return quote!(Option<#inner>);
+        return quote!(#o<#inner>);
     }
     if let Some(inner) = generic_arg(ty, "Option") {
         let inner = resolved_ty(inner, block, auto);
-        return quote!(Option<#inner>);
+        return quote!(#o<#inner>);
     }
     if let Some(inner) = generic_arg(ty, "Vec") {
         let inner = resolved_ty(inner, block, auto);
-        return quote!(Vec<#inner>);
+        return quote!(::std::vec::Vec<#inner>);
     }
     if let Type::Tuple(tuple) = ty {
         let elems: Vec<_> = tuple
@@ -214,13 +269,28 @@ fn resolved_ty(ty: &Type, block: Option<&Ident>, auto: bool) -> TokenStream {
             _ => quote!((#(#elems),*)),
         };
     }
-    if let (Some(name), Some(ident)) = (block, plain_ident(ty))
-        && ident == name
+    if let (Some(block), Some(ident)) = (block, plain_ident(ty))
+        && *ident == block.name
     {
-        let resolved = format_ident!("Resolved{name}");
+        let resolved = renamed(ty, &format_ident!("Resolved{ident}"));
         return quote!(#resolved);
     }
     quote!(#ty)
+}
+
+/// The block a block field's type names: `B` of `B`, `Value<B>` or `Vec<B>`.
+fn block_ref(field: &syn::Field, inner: &Type) -> Result<BlockRef> {
+    let name = plain_ident(inner).cloned().ok_or_else(|| {
+        Error::new_spanned(
+            &field.ty,
+            "a block field's type is `B`, `Value<B>`, `Vec<B>` or a map of `B` or `Value<B>`, \
+             `B` a block",
+        )
+    })?;
+    Ok(BlockRef {
+        ty: Box::new(inner.clone()),
+        name,
+    })
 }
 
 fn parse_field(field: &syn::Field) -> Result<BlockField> {
@@ -232,14 +302,18 @@ fn parse_field(field: &syn::Field) -> Result<BlockField> {
             "may_be_absent marks a field holding a `Value`",
         ));
     }
-    if attrs.auto && !holds_value(&ty, Some("Px")) {
+    if attrs.auto && !holds_value(&ty, Some(AUTO_UNITS)) {
         return Err(Error::new_spanned(
             &field.ty,
-            "auto marks a field holding a `Value<Px>`",
+            "auto marks a field holding a `Value<Px>` or a `Value<FontSize>`",
         ));
     }
-    let shape = match attrs.block {
-        Some(kind) => {
+    let shape = match (attrs.block, map_pair(&ty)) {
+        (Some(_), Some((_, value))) => {
+            let inner = generic_arg(value, "Value").unwrap_or(value);
+            Shape::Map(Some(block_ref(field, inner)?))
+        }
+        (Some(kind), None) => {
             let (wrap, inner) = if let Some(inner) = generic_arg(&ty, "Value") {
                 (Wrap::Value, inner)
             } else if let Some(inner) = generic_arg(&ty, "Vec") {
@@ -247,30 +321,17 @@ fn parse_field(field: &syn::Field) -> Result<BlockField> {
             } else {
                 (Wrap::Bare, &ty)
             };
-            let name = plain_ident(inner).cloned().ok_or_else(|| {
-                Error::new_spanned(
-                    &field.ty,
-                    "a block field's type is `B`, `Value<B>` or `Vec<B>`, `B` a block",
-                )
-            })?;
+            let block = block_ref(field, inner)?;
             if kind == BlockKind::Append && wrap == Wrap::Bare {
                 return Err(Error::new_spanned(
                     &field.ty,
                     "an append block is held as `Value<B>` or `Vec<B>`",
                 ));
             }
-            Shape::Block {
-                kind,
-                wrap,
-                inner: Box::new(inner.clone()),
-                name,
-            }
+            Shape::Block { kind, wrap, block }
         }
-        None => {
-            let pairs = generic_arg(&ty, "Vec")
-                .is_some_and(|item| matches!(item, Type::Tuple(t) if t.elems.len() == 2));
-            if pairs { Shape::Map } else { Shape::Leaf }
-        }
+        (None, Some(_)) => Shape::Map(None),
+        (None, None) => Shape::Leaf,
     };
     Ok(BlockField {
         ident: field.ident.clone(),
@@ -347,7 +408,8 @@ fn resolved_doc(name: &Ident) -> String {
     format!("[`{name}`] resolved (S6.1): each `Value` evaluated, `None` where not drawn.")
 }
 
-/// The resolved struct, unless written by hand, and the `Block` impl.
+/// The resolved struct, unless written by hand, and the `Block` and `Table`
+/// impls.
 fn expand_struct_common(
     input: &DeriveInput,
     type_attrs: &TypeAttrs,
@@ -356,7 +418,8 @@ fn expand_struct_common(
     let name = &input.ident;
     let vis = &input.vis;
     let b = blocks();
-    let m = model();
+    let r = registry();
+    let form = quote!(#r::BlockForm::Struct);
     let resolved = format_ident!("Resolved{name}");
     let resolved_struct = if type_attrs.own_resolved {
         TokenStream::new()
@@ -383,9 +446,15 @@ fn expand_struct_common(
     quote! {
         #resolved_struct
 
+        impl #b::sealed::Sealed for #name {}
+
         impl #b::Block for #name {
             type Resolved = #resolved;
-            const FIELDS: &'static [#m::FieldInfo] = &[#(#infos),*];
+        }
+
+        impl #b::Table for #name {
+            const FIELDS: &'static [#r::FieldInfo] = &[#(#infos),*];
+            const FORM: #r::BlockForm = #form;
         }
     }
 }
@@ -426,13 +495,13 @@ fn expand_fields(
         let path = ident.as_ref().map(Ident::to_string).unwrap_or_default();
         match f.merge_kind() {
             MergeKind::Replace => quote! {
-                if let Some(value) = #ident { self.#ident = value; }
+                if let ::core::option::Option::Some(value) = #ident { self.#ident = value; }
             },
             MergeKind::ByKey => quote! {
-                if let Some(entries) = #ident { #b::merge_by_key(&mut self.#ident, entries); }
+                if let ::core::option::Option::Some(entries) = #ident { #b::merge_by_key(&mut self.#ident, entries); }
             },
             MergeKind::Nested => quote! {
-                if let Some(field_patch) = #ident {
+                if let ::core::option::Option::Some(field_patch) = #ident {
                     #b::Apply::apply(&mut self.#ident, field_patch).map_err(|c| c.under(#path))?;
                 }
             },
@@ -454,7 +523,7 @@ fn expand_fields(
             fn merge(&mut self, later: Self) -> ::core::result::Result<(), #b::MergeConflict> {
                 let Self { #(#idents),* } = later;
                 #(#merges)*
-                Ok(())
+                ::core::result::Result::Ok(())
             }
         }
 
@@ -462,7 +531,7 @@ fn expand_fields(
             fn apply(&mut self, patch: #patch) -> ::core::result::Result<(), #b::MergeConflict> {
                 let #patch { #(#idents),* } = patch;
                 #(#applies)*
-                Ok(())
+                ::core::result::Result::Ok(())
             }
         }
     }
@@ -514,13 +583,13 @@ fn expand_append(
                 match later {
                     Self::Set(value) => {
                         *self = Self::Set(value);
-                        Ok(())
+                        ::core::result::Result::Ok(())
                     }
                     Self::Append(items) => match self {
                         Self::Set(value) => #b::Apply::apply(value, Self::Append(items)),
                         Self::Append(held) => {
                             held.extend(items);
-                            Ok(())
+                            ::core::result::Result::Ok(())
                         }
                     },
                 }
@@ -532,18 +601,18 @@ fn expand_append(
                 match patch {
                     #patch::Set(value) => {
                         *self = value;
-                        Ok(())
+                        ::core::result::Result::Ok(())
                     }
                     #patch::Append(items) => match self {
                         #m::Value::Stated(block) => {
                             block.#list.extend(items);
-                            Ok(())
+                            ::core::result::Result::Ok(())
                         }
                         #m::Value::Absent => {
                             *self = #m::Value::Stated(#name { #list: items });
-                            Ok(())
+                            ::core::result::Result::Ok(())
                         }
-                        other => #b::MergeConflict::over(other).map_or(Ok(()), Err),
+                        other => #b::MergeConflict::over(other).map_or(::core::result::Result::Ok(()), ::core::result::Result::Err),
                     },
                 }
             }
@@ -559,10 +628,11 @@ fn expand_enum(
     let name = &input.ident;
     let vis = &input.vis;
     let b = blocks();
-    let m = model();
+    let r = registry();
     let resolved = format_ident!("Resolved{name}");
     let mut variants = Vec::new();
     let mut infos = Vec::new();
+    let mut units = Vec::new();
     for variant in &data.variants {
         let ident = &variant.ident;
         let docs = docs(&variant.attrs);
@@ -600,9 +670,13 @@ fn expand_enum(
                 variants.push(quote!(#(#docs)* #ident(#(#field_docs)* #ty)));
                 infos.push(field.field_info(&snake));
             }
-            Fields::Unit => variants.push(quote!(#(#docs)* #ident)),
+            Fields::Unit => {
+                variants.push(quote!(#(#docs)* #ident));
+                units.push(snake);
+            }
         }
     }
+    let form = quote!(#r::BlockForm::Enum { unit_variants: &[#(#units),*] });
     let resolved_enum = if type_attrs.own_resolved {
         TokenStream::new()
     } else {
@@ -616,9 +690,15 @@ fn expand_enum(
     Ok(quote! {
         #resolved_enum
 
+        impl #b::sealed::Sealed for #name {}
+
         impl #b::Block for #name {
             type Resolved = #resolved;
-            const FIELDS: &'static [#m::FieldInfo] = &[#(#infos),*];
+        }
+
+        impl #b::Table for #name {
+            const FIELDS: &'static [#r::FieldInfo] = &[#(#infos),*];
+            const FORM: #r::BlockForm = #form;
         }
     })
 }

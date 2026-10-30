@@ -14,11 +14,11 @@ use super::paint::{
 };
 use super::shadow::{ResolvedShadow, Shadow, ShadowLayer};
 use super::transform::Transform;
-use super::{Apply, Block, BlockPatch, Merge, MergeConflict};
+use super::{Apply, BlockPatch, Merge, MergeConflict, Table};
 use crate::key;
 use crate::next::color::Color;
 use crate::next::expr::{Expr, Ref};
-use crate::next::registry::{FieldInfo, FieldType};
+use crate::next::registry::{BlockForm, FieldInfo, FieldType};
 use crate::next::units::{Deg, Length, Px, Scalar};
 use crate::next::value::Value;
 
@@ -357,6 +357,109 @@ struct Probe {
     width: Value<Px>,
 }
 
+/// A probe of a map holding blocks, an `auto` font size and a nested block
+/// named by its path.
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block)]
+struct MapProbe {
+    #[parts(block = "append")]
+    paints: Vec<(crate::next::Key, Value<super::paint::Paint>)>,
+    #[parts(block = "set")]
+    shadows: Vec<(crate::next::Key, super::shadow::Shadow)>,
+    #[parts(auto)]
+    line_height: Value<crate::next::FontSize>,
+    #[parts(block = "fields")]
+    edge: super::outline::Edge,
+}
+
+#[test]
+fn a_map_of_blocks_resolves_its_blocks_and_merges_by_key() {
+    let resolved = ResolvedMapProbe {
+        paints: vec![(key!("a"), None)],
+        shadows: vec![(key!("b"), Vec::new())],
+        line_height: Some(Length::Auto),
+        edge: ResolvedEdge {
+            width: None,
+            paint: None,
+            dash: None,
+            snap: PixelSnap::None,
+        },
+    };
+    let _: Vec<(crate::next::Key, Option<super::paint::ResolvedPaint>)> = resolved.paints;
+    let _: Option<Length> = resolved.line_height;
+    let _: Option<super::outline::EdgePatch> = MapProbePatch::default().edge;
+    assert_eq!(
+        field(MapProbe::FIELDS, "paints").map(|f| f.ty),
+        Some(FieldType::Block {
+            ty: "Vec<(crate::next::Key,Value<super::paint::Paint>)>",
+            form: BlockForm::Struct,
+            fields: Paint::FIELDS
+        })
+    );
+    assert_eq!(
+        field(MapProbe::FIELDS, "line_height").map(|f| f.auto),
+        Some(true)
+    );
+
+    let mut earlier = MapProbePatch {
+        paints: Some(vec![
+            (key!("a"), paint(vec![color_layer(0.1)])),
+            (key!("b"), Value::Absent),
+        ]),
+        ..MapProbePatch::default()
+    };
+    let later = MapProbePatch {
+        paints: Some(vec![(key!("b"), paint(vec![color_layer(0.2)]))]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(earlier.merge(later), Ok(()));
+    assert_eq!(
+        earlier.paints,
+        Some(vec![
+            (key!("a"), paint(vec![color_layer(0.1)])),
+            (key!("b"), paint(vec![color_layer(0.2)])),
+        ])
+    );
+}
+
+#[test]
+fn a_merge_can_succeed_where_applying_in_order_conflicts() {
+    let earlier = BlockPatch::Fields(StrokePatch {
+        position: Some(StrokePosition::Center),
+        ..StrokePatch::default()
+    });
+    let later = BlockPatch::Set(Value::Stated(stroke()));
+
+    let mut in_order: Value<Stroke> = Value::Absent;
+    assert_eq!(in_order.apply(earlier.clone()), conflict("", Below::Absent));
+
+    let mut merged = earlier;
+    assert_eq!(merged.merge(later), Ok(()));
+    let mut value: Value<Stroke> = Value::Absent;
+    assert_eq!(value.apply(merged), Ok(()));
+    assert_eq!(value, Value::Stated(stroke()));
+}
+
+#[test]
+fn a_table_names_its_form_and_unit_variants() {
+    assert_eq!(Stroke::FORM, BlockForm::Struct);
+    assert_eq!(
+        Radius::FORM,
+        BlockForm::Enum {
+            unit_variants: &["follow_part"]
+        }
+    );
+    assert_eq!(PaintKind::FORM, BlockForm::Enum { unit_variants: &[] });
+    assert_eq!(
+        field(Corners::FIELDS, "top_left").map(|f| f.ty),
+        Some(FieldType::Block {
+            ty: "Radius",
+            form: Radius::FORM,
+            fields: Radius::FIELDS
+        })
+    );
+}
+
 #[test]
 fn resolved_types_map_values_to_options() {
     let probe = ResolvedProbe {
@@ -513,6 +616,7 @@ fn field_tables_reach_nested_blocks() {
         field(Edge::FIELDS, "paint").map(|f| f.ty),
         Some(FieldType::Block {
             ty: "Value<Paint>",
+            form: BlockForm::Struct,
             fields: Paint::FIELDS
         })
     );
@@ -528,6 +632,7 @@ fn field_tables_reach_nested_blocks() {
         field(Shadow::FIELDS, "layers").map(|f| f.ty),
         Some(FieldType::Block {
             ty: "Vec<ShadowLayer>",
+            form: BlockForm::Struct,
             fields: ShadowLayer::FIELDS
         })
     );
