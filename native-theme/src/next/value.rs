@@ -80,8 +80,9 @@ impl<T> Default for SchemeMap<T> {
     }
 }
 
-/// At most one value per [`SurfaceSet`], in the order they were inserted;
-/// empty by default.
+/// At most one value per [`SurfaceSet`], kept in [`SurfaceSet`]'s order, so
+/// two maps holding the same values are equal however they were filled; empty
+/// by default.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct SurfaceMap<T> {
@@ -92,23 +93,28 @@ impl<T> SurfaceMap<T> {
     /// The value for `set`, if one is held.
     #[must_use]
     pub fn get(&self, set: SurfaceSet) -> Option<&T> {
-        self.entries
-            .iter()
-            .find_map(|(held, value)| (*held == set).then_some(value))
+        let index = self.entries.binary_search_by_key(&set, |(held, _)| *held);
+        index
+            .ok()
+            .and_then(|index| self.entries.get(index))
+            .map(|(_, value)| value)
     }
 
     /// Holds `value` for `set`, returning the value it replaces.
     pub fn insert(&mut self, set: SurfaceSet, value: T) -> Option<T> {
-        match self.entries.iter_mut().find(|(held, _)| *held == set) {
-            Some((_, held)) => Some(std::mem::replace(held, value)),
-            None => {
-                self.entries.push((set, value));
+        match self.entries.binary_search_by_key(&set, |(held, _)| *held) {
+            Ok(index) => self
+                .entries
+                .get_mut(index)
+                .map(|(_, held)| std::mem::replace(held, value)),
+            Err(index) => {
+                self.entries.insert(index, (set, value));
                 None
             }
         }
     }
 
-    /// The sets and their values, in the order they were inserted.
+    /// The sets and their values, in [`SurfaceSet`]'s order.
     pub fn iter(&self) -> impl Iterator<Item = (SurfaceSet, &T)> {
         self.entries.iter().map(|(set, value)| (*set, value))
     }
@@ -142,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn surface_map_replaces_by_key_in_insertion_order() {
+    fn surface_map_replaces_by_key_in_set_order() {
         let mut map = SurfaceMap::default();
         assert_eq!(map.insert(SurfaceSet::View, 1), None);
         assert_eq!(map.insert(SurfaceSet::Window, 2), None);
@@ -150,6 +156,10 @@ mod tests {
         assert_eq!(map.get(SurfaceSet::View), Some(&3));
         assert_eq!(map.get(SurfaceSet::Button), None);
         let order: Vec<_> = map.iter().collect();
-        assert_eq!(order, [(SurfaceSet::View, &3), (SurfaceSet::Window, &2)]);
+        assert_eq!(order, [(SurfaceSet::Window, &2), (SurfaceSet::View, &3)]);
+        let mut other = SurfaceMap::default();
+        other.insert(SurfaceSet::Window, 2);
+        other.insert(SurfaceSet::View, 3);
+        assert_eq!(map, other);
     }
 }
