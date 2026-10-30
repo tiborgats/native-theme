@@ -2,6 +2,8 @@
 //! own, every problem collected, one problem per fault.
 
 use std::borrow::Cow;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use super::walk::{ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker};
 use super::{Context, LayerKind};
@@ -450,6 +452,9 @@ struct Checker<'a> {
     /// The declared parameters of the keyed transition or presentation kind
     /// walked: what its `params` are typed by (S2.7, S10).
     keyed_kind: Option<&'a [(Key, ScalarUnit)]>,
+    /// Each widget's declarations under the flavours checked against,
+    /// computed once.
+    widget_decls: RefCell<Vec<(WidgetKind, Rc<[WidgetDecl]>)>>,
 }
 
 impl<'a> Checker<'a> {
@@ -462,6 +467,7 @@ impl<'a> Checker<'a> {
             toml,
             flavor: None,
             keyed_kind: None,
+            widget_decls: RefCell::new(Vec::new()),
         }
     }
 
@@ -641,11 +647,17 @@ impl<'a> Checker<'a> {
     /// The widget's declarations under each flavour (S10): a name is
     /// declared where some flavour declares it; which flavour a rule
     /// applies under is S12's combination check's.
-    fn widget_decls(&self, widget: WidgetKind) -> std::vec::IntoIter<WidgetDecl> {
-        match self.flavor {
-            Some(flavor) => vec![self.decl().in_flavor(widget, flavor)].into_iter(),
-            None => self.decl().in_each_flavor(widget).into_iter(),
+    fn widget_decls(&self, widget: WidgetKind) -> Rc<[WidgetDecl]> {
+        let mut cache = self.widget_decls.borrow_mut();
+        if let Some((_, decls)) = cache.iter().find(|(held, _)| *held == widget) {
+            return Rc::clone(decls);
         }
+        let decls: Rc<[WidgetDecl]> = match self.flavor {
+            Some(flavor) => Rc::from([self.decl().in_flavor(widget, flavor)]),
+            None => Rc::from(self.decl().in_each_flavor(widget)),
+        };
+        cache.push((widget, Rc::clone(&decls)));
+        decls
     }
 
     /// Whether the widget is available under the default flavour (S10), or
@@ -670,6 +682,7 @@ impl<'a> Checker<'a> {
     fn variant(&mut self, widget: WidgetKind, variant: &VariantRef, at: &str) {
         let declared = self
             .widget_decls(widget)
+            .iter()
             .any(|decl| decl.variants.as_ref().is_some_and(|v| v.contains(variant)));
         if !declared {
             let declaration = self.declaration(widget, "variants");
@@ -683,6 +696,7 @@ impl<'a> Checker<'a> {
         };
         let declared = self
             .widget_decls(widget)
+            .iter()
             .any(|decl| decl.flags.as_ref().is_some_and(|f| f.contains(flag)));
         if !declared {
             let declaration = self.declaration(widget, "flags");
@@ -691,7 +705,7 @@ impl<'a> Checker<'a> {
     }
 
     fn size(&mut self, widget: WidgetKind, size: ControlSize, at: &str) {
-        let declared = self.widget_decls(widget).any(|decl| {
+        let declared = self.widget_decls(widget).iter().any(|decl| {
             decl.sizes.as_ref().is_some_and(|s| s.contains(&size))
                 || decl
                     .sizes_by_context
@@ -713,6 +727,7 @@ impl<'a> Checker<'a> {
     fn density(&mut self, widget: WidgetKind, density: &Density, at: &str) {
         let declared = self
             .widget_decls(widget)
+            .iter()
             .any(|decl| decl.densities.as_ref().is_some_and(|d| d.contains(density)));
         if !declared {
             let name = match density {
@@ -1170,7 +1185,7 @@ impl<'a> Checker<'a> {
             }
             _ => return,
         };
-        let declared = self.widget_decls(widget).any(|decl| {
+        let declared = self.widget_decls(widget).iter().any(|decl| {
             decl.data
                 .iter()
                 .flatten()
@@ -1385,9 +1400,10 @@ impl<'a> Checker<'a> {
         if let (Region::Values(widget), Some((_, value))) = (self.region, path.first_field()) {
             let listed: Vec<Vec<Key>> = self
                 .widget_decls(widget)
-                .flat_map(|decl| decl.keys.unwrap_or_default())
+                .iter()
+                .flat_map(|decl| decl.keys.iter().flatten())
                 .filter(|(held, _)| *held == value)
-                .map(|(_, keys)| keys)
+                .map(|(_, keys)| keys.clone())
                 .collect();
             if !listed.iter().any(|keys| keys.contains(key)) {
                 let declaration = self.declaration(widget, &format!("keys.{value}"));
