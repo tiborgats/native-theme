@@ -249,8 +249,8 @@ final class HostViewController: UIViewController {
         let screenshot = out.appendingPathComponent("sync/screen-\(pageIndex).png")
         if FileManager.default.fileExists(atPath: screenshot.path) {
             crop(screenshot)
-        } else if Date().timeIntervalSince(start) > 60 {
-            failures.append("\(pages[pageIndex].path): no screenshot within 60 s")
+        } else if Date().timeIntervalSince(start) > 300 {
+            failures.append("\(pages[pageIndex].path): no screenshot within 300 s")
             finish()
         } else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in

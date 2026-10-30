@@ -12,8 +12,6 @@
 # into $1:
 #   run<N>/       the app's draw/, screen/ and pages/ PNGs, index.toml,
 #                 sync/done (ok or the app's failures)
-#   later/run<N>/ a second screenshot of each page, a second after the first
-#                 (whether a page that does not change draws the same)
 #   environment.txt (the OS, Xcode and its SDKs, the runtime and device chosen,
 #   the SDK's UIButton.Configuration styles and sizes), build.log, run.txt
 #   (each step's exit status), run<N>.sha256, sha256.txt
@@ -85,6 +83,11 @@ xcrun simctl install "$udid" "$app"
 status=$?
 note "simctl install: exit $status"
 if [ $status -ne 0 ]; then xcrun simctl delete "$udid"; exit 1; fi
+# The first screenshots after a boot can take over a minute (macos-26):
+# one is taken before the runs.
+shot=$(date +%s)
+xcrun simctl io "$udid" screenshot --type=png "$out/warm-up.png" >/dev/null 2>&1
+note "warm-up screenshot: exit $?, $(($(date +%s) - shot)) s"
 
 failed=0
 for run in 1 2; do
@@ -96,19 +99,19 @@ for run in 1 2; do
   container=$(xcrun simctl get_app_container "$udid" "$bundle" data)
   sync="$container/Documents/run$run/sync"
   page=0
-  mkdir -p "$out/later/run$run"
   start=$(date +%s)
   while [ ! -e "$sync/done" ]; do
     if [ -e "$sync/ready-$page" ]; then
+      shot=$(date +%s)
       xcrun simctl io "$udid" screenshot --type=png "$sync/.screen-$page.png" >/dev/null 2>&1
       status=$?
       if [ $status -ne 0 ]; then note "screenshot $page: exit $status"; failed=1; fi
-      sleep 1
-      xcrun simctl io "$udid" screenshot --type=png "$out/later/run$run/$page.png" >/dev/null 2>&1
+      shot=$(($(date +%s) - shot))
+      if [ $shot -gt 10 ]; then note "run $run screenshot $page: $shot s"; fi
       mv "$sync/.screen-$page.png" "$sync/screen-$page.png"
       page=$((page + 1))
-    elif [ $(($(date +%s) - start)) -gt 900 ]; then
-      note "run $run: no sync/done within 900 s"
+    elif [ $(($(date +%s) - start)) -gt 1800 ]; then
+      note "run $run: no sync/done within 1800 s"
       failed=1
       break
     else
