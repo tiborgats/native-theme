@@ -439,7 +439,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-EX1 | `list.disclosure.fill, list.disclosure.corners, list.disclosure.glyph @ {open}` | rule |
 | MAT-N1 | `button.body.{fill,min_width,min_height,corners,shadow}, button.icon.icon.{size,fill} @ variant @fab size small / variant @fab size regular / variant @fab size large cond flavor:expressive / variant @fab size extra_large (shadow Shadow::Elevation; small, standard, Expressive's medium and large FAB, declared by sizes_by_variant, S10)` | rule |
 | MAT-N1 | `button.body.fill.append (state layer), button.body.shadow @ {hover} / {focus_visible} / {pressed}, each variant @fab / variants {@fab,@lowered}; button.body.shadow @ variants {@fab,@lowered}` | rule |
-| MAT-N1 | `button.body.fill, button.icon.icon.fill @ variants {@fab,primary} / variants {@fab,@secondary} / variants {@fab,@tertiary} / variants {@fab,@surface} / variants {@fab,@primary_container} / variants {@fab,@secondary_container} / variants {@fab,@tertiary_container} / variants {@fab,@branded}` (the colour styles, the Expressive container styles, the branded FAB) | rule |
+| MAT-N1 | `button.body.fill, button.icon.icon.fill @ variants {@fab,primary} / variants {@fab,@secondary} / variants {@fab,@tertiary} / variants {@fab,@surface} / variants {@fab,@primary_container} / variants {@fab,@secondary_container} / variants {@fab,@tertiary_container} / variants {@fab,@branded}` (the colour styles; the container styles, `@primary_container` Compose's default FAB in both flavours, `@secondary_container` and `@tertiary_container` Expressive's; the branded FAB) | rule |
+| MAT-N1 | `[declare.widget.button] default_size_by_variant: @fab regular` (the standard FAB, where the Expressive buttons default to `small`; S10, ADD-A121) | field |
 | MAT-N1 | `button.body.fill.append = alpha(role.@surface_tint, <fraction>) @ variant @fab (the surface tint); the shadow colour as the elevation layers' colour` | rule |
 | MAT-N1 | `button.body.focus @ {focus_visible} variant @fab; button.body.transitions (Shadow) @ variant @fab` | rule |
 | MAT-N2 | `button.label.text, button.values.icon_text_gap, button.body.{padding,min_height,corners} @ variant @extended_fab size small cond flavor:expressive / variant @extended_fab size regular / variant @extended_fab size large cond flavor:expressive` (small and large Expressive's only, declared under flavour expressive by sizes_by_variant) | rule |
@@ -555,7 +556,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X1 | `role.@primary_fixed, role.@primary_fixed_dim, role.@on_primary_fixed, role.@on_primary_fixed_variant (and the same for secondary and tertiary)` | role |
 | MAT-X1 | `role.@surface_dim, role.@surface_bright, role.@surface_container_lowest, role.@surface_container_low, role.@surface_container, role.@surface_container_high, role.@surface_container_highest` | role |
 | MAT-X1 | `role.@inverse_surface, role.@inverse_on_surface, role.@inverse_primary, role.@outline_variant, role.@surface_variant, role.@surface_tint, role.@background, role.@on_background` | role |
-| MAT-X1 | `role.global.scrim (= role.@scrim)` | role |
+| MAT-X1 | `role.global.scrim (= alpha(role.@scrim, <fraction>): Compose applies ScrimTokens.ContainerOpacity to the scrim role wherever it draws one)` (`ScrimTokens.kt`, `Scrim.kt:87`, `SheetDefaults.kt:530`; Compose sets the alpha, equal to `alpha()` while `role.@scrim` is opaque) | role |
 | MAT-X2 | `token.elevation.<level0 … level5> (the six levels)` | token |
 | MAT-X2 | `PartStyle.shadow = Shadow::Elevation(<key>) per part and state (each component's level)` | field |
 | MAT-X3 | `token.elevation.<key> layers (material-web's key and ambient ShadowLayers per level)` | token |
@@ -576,8 +577,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |
 | MAT-X11 | `token.params.shape.<scale step> (none … extra_extra_large, ADD-A44)` | token |
 | MAT-X11 | `PartStyle.corners per-corner Radius (the -top, -start, -end families) and Radius::Full { maximum: Absent } (half the smaller side)` | field |
-| MAT-X12 | `button.body.shape @ {pressed} / {selected} / {checked} cond flavor:expressive` (a `ShapeKind::Material` shape in place of the corners' outline; buttons and icon buttons; R25.5, ADD-B03, ADD-A99) | rule |
-| MAT-X12 | `button.body.transitions (Shape, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the morph between the outlines, `native_theme::shapes::morph` over two `Outline`s, so a change between the rest corners and a pressed shape morphs too, S2.4, ADD-A103) | rule |
+| MAT-X12 | `button.body.corners @ {pressed} / {selected} / {checked} cond flavor:expressive` (Compose's buttons, toggle buttons and icon buttons morph only their corners, a `RoundedCornerShape` or `CornerBasedShape` animated, `Button.kt:1921-1938`, `ToggleButton.kt:1714-1717`, `IconButton.kt:1632`; no `shape` on `button`) | rule |
+| MAT-X12 | `button.body.transitions (Corners, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the corners' spring, as MAT-B11's) | rule |
 | MAT-X12 | `ShapeKind::Material(MaterialShape)` (Material's shapes implemented once in code to `androidx.graphics.shapes` and `MaterialShapes.kt` at a pinned commit, `MaterialShape` listing exactly that file's shapes in its order, named in UpperCamelCase, the list written by the value phase, with `native_theme::shapes::outline` and `morph` returning a `Path`; S2.4, R25.5, ADD-A99, ADD-A101, ADD-A103) | field |
 | MAT-X12 | `spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape)` | rule |
 | MAT-X13 | `token.motion.durations.<duration key>` | token |

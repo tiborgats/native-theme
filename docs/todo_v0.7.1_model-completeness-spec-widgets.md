@@ -204,10 +204,12 @@ Each `### <widget>` section states, in this order:
   `slider`, `bottom` on `sheet`, `activatable` on `card`), which the query answers `NotAvailable` for where the preset
   does not declare it (S8). A variant the connector sets from a size
   threshold is set by a `Breakpoint` value (Shared value types), so it may be keyed: the connector reads the variant
-  from the value.
+  from the value. Variants of which the platform draws at most one at a time (iOS's configuration styles) form an
+  `exclusive_variants` group (S10, ADD-A121); others combine.
 - **Sizes and densities** per platform (`ControlSize`, S7.3; Material Expressive's xsmall is `extra_small`); sizes a
   variant alone takes are declared by `sizes_by_variant` (S10: Material's FAB, MAT-N1), and a size a variant does not
-  declare answers `NotAvailable`.
+  declare answers `NotAvailable`; a variant's own default size, where it differs from the widget's, by
+  `default_size_by_variant` (S10, ADD-A121).
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
@@ -215,6 +217,23 @@ Each `### <widget>` section states, in this order:
   state model, which the gate checks (S17), so every entry ends "precedence: state models (S17)". A widget's groups
   apply to each element of the widget, its *(element)* parts included (S8 drops the excluded flags per element), so
   "on `item`" names the element whose states the platform's model groups.
+  **Material's state-layer groups** (each `material-3` entry that names Compose's ripple): Compose's ripple node shows
+  one state layer of hover, focus and drag at a time, the most recent (`androidx@e4d933c9
+  compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-280`), which
+  no fixed precedence states: CONTRA-6 (S22), pending the maintainer. Until it is settled the group is a fixed one,
+  `[dragged, focus_visible, hover]`, or `[focus_visible, hover]` where the widget draws no dragged layer, its order
+  **provisional**: `focus_visible` over `hover` as Material's View library ranks them (an Android `ColorStateList`
+  takes its first matching item, and its ripple colour lists put focused before hovered,
+  `material-components-android@1.14.0 lib/java/com/google/android/material/button/res/color/m3_button_ripple_color.xml:20-21`,
+  `chip/res/color/m3_chip_ripple_color.xml:43-44`); `dragged` keeps the first place the catalogue gave it, as no
+  source ranks it against the other two. `pressed` is no member: Compose draws the press ripple apart from the state
+  layer (`Ripple.kt:241-248`, `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a
+  pressed element hovered or focused shows both, two states drawn together (R3); the preset writes its `{pressed}`
+  rule before the `{hover}`, `{focus_visible}` and `{dragged}` rules, so the press layer is appended first and lies
+  beneath (ADD-A121). The entries' Compose citations (`Menu.kt`, `Surface.kt`, …) are files of `androidx@e4d933c9
+  compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/`. Compose draws no ripple state
+  layer on the slider's handle, the carousel's items or the sheet's drag handle at that pin, so their `material-3`
+  groups, from the published tokens, are not these.
 - **may_be_absent** (S6.3): `parts:` whole parts some preset does not draw, with the presets: the preset's base, or a
   rule under a condition, states the part `absent = true` (`PartPatch::Absent`), and the query answers `NotDrawn` for
   it (an absent part needs no fields); a root part is never listed. A part a platform draws with another widget is
@@ -1136,7 +1155,8 @@ spaces:
   (on the menu).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `item` (MenuFlyoutItem's CommonStates;
   CheckStates is `checked`, SubMenuOpened is `open`, PaddingSizeStates is `opened_by_touch`, none of them a group);
-  `material-3`: `[pressed, focus_visible, hover]` on `item` (state layers; the menu tokens state no dragged layer);
+  `material-3`: `[focus_visible, hover]` on `item`, provisional (Material's state-layer groups, above: Compose's ripple, `Menu.kt:2155-2159`,
+  CONTRA-6; `pressed` combines; the menu tokens state no dragged layer);
   others none (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `item_label` (`kde-breeze` by rules under `@ka_bottom_drawer` and `@ka_dialog`: the form row's own title
@@ -1250,16 +1270,19 @@ spaces:
     `backgroundTintColor`, MAC-B07, MAC-TL04, ADD-B16; the parts declare that data, `data = { body = ["color"],
     label = ["color"], icon = ["color"] }`, S8, S10), `stroke`, `corners`, `shadow` (layers or an elevation entry),
     `padding`, `margin` (a nested button's margins in its host, one negative: GNOME's tab and search-bar close buttons,
-    GN-1.120, GN-2.21, the file chooser's eject button, GN-P3-22†; WinUI's tab close margin, W1-082), `min_width`,
+    GN-1.120, GN-2.21, the file chooser's eject button, GN-P3-22†; WinUI's tab close margin, W1-082; a GTK linked box's
+    overlap, each child's negative start or top margin, GN-1.42), `min_width`,
     `min_height`, `max_width` (ContentDialog's button maximum width, W1-127),
-    `opacity` (today's `disabled_opacity`), `shape` (Material Expressive's shape morphing on press and selection, a
-    `ShapeKind::Material` shape in place of the corners' outline, S2.4, MAT-X12),
-    `transform`, `focus`, `cursor` (`WhatsThis` on `help`, ADD-A59), `touch_target` (Material's
-    minimum interactive size round small buttons and icon buttons, MAT-X22), `bindings` (KDE's tool-button colour
-    set, Window when flat and Button when raised, Q1.9), `transitions`.
+    `opacity` (today's `disabled_opacity`), `transform` (Kirigami's RoundButton translated right and down while
+    pressed or checked: the whole control moves, `qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:27-30`,
+    Q2.7), `focus`, `cursor` (`WhatsThis` on `help`, ADD-A59), `touch_target` (Material's
+    minimum interactive size round small buttons and icon buttons, MAT-X22), `bindings` (Kirigami's tool-button colour
+    set: Button when raised; a flat one binds none and takes its parent's, as `Kirigami.Theme.inherit: flat` makes it
+    share its parent's theme data, `ToolButton.qml:18-19`, `kirigami@6.31.0 src/platform/platformtheme.cpp:1060-1090`,
+    Q1.9), `transitions`.
   - `label` — the title text: `text` (its fill an expression on `element.color` where the application tints the
     content, AppKit's `contentTintColor`, MAC-B07), `padding` (GTK's label padding beside an image or arrow, GN-1.27,
-    GN-1.39), `transform` (the content shifted while a round button is pressed or checked, Q2.7).
+    GN-1.39).
   - `subtitle` — a second text line under the title (iOS `UIButton.Configuration.subtitle`, B-8; KDE's command link
     description, K2.7): `text`.
   - `icon` — the image: `icon` (size, fill per state, rendering mode, weight and scale for SF Symbols; its fill an
@@ -1267,7 +1290,7 @@ spaces:
     chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24), `glyph` (for system button types, B-12),
     `transitions` (state-triggered icon animations, `TransitionKind::Keyed` of group `Icon`: WinUI's AnimatedIcon
     states, W1-024, W3-28; GtkSvg's state transitions, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
-    R25.12), `transform` (as the label's, Q2.7).
+    R25.12).
   - `menu_indicator` — the arrow or chevron of a button that opens a menu (GN-1.40, K1.27, B-18†, MAT-N8; KDE's
     inline small and large arrows, K1.155): `glyph`, `min_width`, `transform` (its rotation, the file chooser's
     server-list arrow turning while `open`, GN-P3-23†), `transitions` (the press animation; that rotation's).
@@ -1348,9 +1371,17 @@ spaces:
     sub-window, K2.11: the meanings `window.caption_button` shares), and `route` (the media output (AirPlay, cast)
     button: AppKit's `AVRoutePickerView`, iOS's `AVRoutePickerView`, WinUI's
     cast button; `route_active` while a route plays, MAC-P3-9†, C-42†, W-P4-18†).
-  - keyed, `adwaita`: `@raised`, `@osd`, `@opaque`, `@card`, `@arrow_only` (`.arrow-button`), `@arrow_up`,
+  - keyed, `adwaita`: `@raised`, `@osd`, `@opaque`, `@card`, `@with_arrow` (`.arrow-button`: a menu button showing
+    its arrow beside an icon, a label or a custom child, `gtk@4.24.1 gtk/gtkmenubutton.c:72-75`, `:644-647`; an
+    arrow-only menu button is `.image-button`, `icon_only`, `:634-637`), `@arrow_up`,
     `@arrow_start`, `@arrow_end`, `@arrow_none` (GtkMenuButton's direction; down is the base), `@tab_button`
-    (AdwTabButton, its counter a `badge` in its context, GN-2.37).
+    (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@custom_child` (a button whose child is neither a
+    label nor an image, so GTK sets neither `.text-button` nor `.image-button`, `gtk/gtkbutton.c:431-432`: the base
+    `button` padding, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:22`, where the base, text only, is
+    `.text-button`'s, `:72-75`), `@image_text_box` (with `with_icon`: an icon and a label in a box the application
+    builds and classes `.image-text-button` or `.text-button.image-button`, whose gap and label padding are
+    `_buttons.scss:77-91`'s; `with_icon` alone is AdwButtonContent's, the libadwaita form, `:626-645`, which differs in
+    gap and label padding, GN-1.27, GN-1.39).
   - keyed, `kde-breeze`: `@highlighted` (QML `Button.highlighted`), `@inline_small`, `@inline_large` (the
     menu indicator's styles of a tool button, K1.155; its split style is `split_button`), `@command_link` (K2.7: its
     title `label`, its description `subtitle`, with `icon`; Windows' command link is Win32, R1.3), `@ka_floating`
@@ -1363,8 +1394,17 @@ spaces:
     borderless is `flat`, circular `circular`, glass `glass`, help `help`, toolbar `tool`; the disclosure bezels are
     `expander`'s, MAC-B01, MAC-EX01); the 26 border shape `@rounded_rectangle` (capsule is `pill`, circle
     `circular`, automatic the base).
-  - keyed, `ios-*`: `@gray`, `@borderless`, `@bordered` (with `tinted` / `primary` for `borderedTinted` /
-    `borderedProminent`; the glass styles are `glass` and `clear`, with `primary` for the prominent ones), the corner
+  - keyed, `ios-*`: `@gray` (UIKit's `plain`, `gray`, `tinted` and `filled` styles are `flat`, `@gray`, `tinted`
+    and `primary`; its `borderless`, `bordered`, `borderedTinted` and `borderedProminent` are the same four, the
+    connector mapping them: the iOS host drew each pixel-identical to its counterpart in every state, size and scheme
+    it captured on iOS 18.6 and 26.5, run [40984711960](https://github.com/tiborgats/native-theme/actions/runs/40984711960),
+    its captures on the lane branch `lane-ios-slice`, so they are no variants
+    of their own until a capture shows a difference; the glass styles are `glass` and `clear`, with `primary` for the
+    prominent ones; the configuration styles are two `exclusive_variants` groups, `[flat, @gray, tinted, primary]`
+    and `[flat, @gray, tinted, glass, clear]`, so `primary` combines with `glass` and `clear` alone, S10; the state
+    model's `variant_sets` lists the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
+    `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
+    corner style or with `toggle`, S17, never every combination of the declared variants), the corner
     styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
     the role `@cancel` (iOS 26's further bar-item roles are an open item, Open items: added
     here when the facts state them); the system types `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
@@ -1377,19 +1417,28 @@ spaces:
     `@wide` (the Expressive icon button's narrow and wide leading and trailing spaces, default the base, under `cond
     flavor:expressive`, MAT-N5), `@fab`, `@extended_fab`, `@lowered` (MAT-N1, MAT-N2), and the FAB's colour styles
     `@secondary`, `@tertiary`, `@surface` (its primary style is the typed `primary`, MAT-N1), the Expressive container
-    styles `@primary_container`, `@secondary_container`, `@tertiary_container` and the branded FAB `@branded`
-    (MAT-N1).
+    styles `@secondary_container`, `@tertiary_container` and the branded FAB `@branded` (MAT-N1), and in both
+    flavours `@primary_container`, Compose's default FAB container colour (`FloatingActionButtonDefaults.containerColor`,
+    `FabPrimaryContainerTokens.ContainerColor` = `PrimaryContainer`,
+    `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1044-1046`,
+    `tokens/FabPrimaryContainerTokens.kt:21-22`).
   - keyed, `windows-11`: `@repeat` (RepeatButton, W2-19), `@query` (AutoSuggestBox's query button, W2-15),
     `@accept`, `@dismiss` (the date and time picker flyouts' accept and dismiss buttons, W2-04), `@first`, `@last`,
     `@page_number` (PagerControl's first- and last-page and number buttons, W2-21), `@zoom_out` (SemanticZoom's
     zoom-out button, W2-34).
 - **Sizes and densities:** `macos-monterey`: `mini`, `small`, `regular`, `large`; `macos-tahoe`: those and
   `extra_large` (`NSControl.ControlSize`; MAC-B08, MAC-B09, MAC-B11†). `ios-*`: `mini`, `small`, `regular` (UIKit
-  `medium`), `large` (`UIButton.Configuration.Size`, B-3). `material-3` flavour `expressive`: `extra_small`,
+  `medium`), `large` (`UIButton.Configuration.Size`, B-3); `mini` draws as `small` on iPhone (the iOS host's captures
+  are byte-identical in every style, state and scheme, iOS 18.6 and 26.5, run
+  [40984711960](https://github.com/tiborgats/native-theme/actions/runs/40984711960) on `lane-ios-slice`), so the facts state
+  `mini`'s values under `idiom:phone` equal to `small`'s, each cited to its own capture, and on `idiom:pad` from its
+  own measurement; no alias is declared (a repeated value is a fact like any other). `material-3` flavour `expressive`: `extra_small`,
   `small`, `regular` (medium), `large`, `extra_large` (xlarge) (MAT-B9); by variant (`sizes_by_variant`, S10): `@fab` `small`,
   `regular` (the standard FAB), `large` (Expressive's medium FAB, declared under flavour `expressive`), `extra_large`
   (the large FAB) (MAT-N1); `@extended_fab` `regular` (medium), and `small`, `large` declared under flavour
-  `expressive` only (Expressive's extended FAB sizes; the baseline's extended FAB has one size) (MAT-N2). Others: none. Which size an element that states none has is declared (ADD-A60). Densities: none from the
+  `expressive` only (Expressive's extended FAB sizes; the baseline's extended FAB has one size) (MAT-N2). Default
+  sizes (`default_size_by_variant`, S10, ADD-A121): `@fab` `regular` in both flavours, the standard FAB, where the
+  Expressive buttons' default is `small`; the other FAB forms' defaults from the facts. Others: none. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
@@ -1400,8 +1449,9 @@ spaces:
   dimming layer where the content beneath is bright, X-MT-10).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the CommonStates of the Button, ToggleButton,
   AppBarButton, AppBarToggleButton, accent and subtle templates; their Checked* and Indeterminate* states name the
-  check state with them, so `checked` and `indeterminate` combine); `material-3`: `[pressed, focus_visible, hover]`
-  (state layers; Material draws no dragged layer on a button, MAT-X29); others none (states combine: libadwaita's CSS
+  check state with them, so `checked` and `indeterminate` combine); `material-3`: `[focus_visible, hover]`,
+  provisional (Material's state-layer groups, above: Compose's ripple, `Button.kt:156-157`, `Surface.kt:253-264`, CONTRA-6; `pressed`
+  combines; Material draws no dragged layer on a button, MAT-X29); others none (states combine: libadwaita's CSS
   and Breeze's branches combine flags; K1.29's
   "pressed wins" is a rule order, not a group); precedence: state models (S17).
 - **may_be_absent:**
@@ -1417,11 +1467,13 @@ spaces:
     K3.65†; Material's buttons show the pointer, MAT-X33†), `icon.glyph` (`adwaita`, `material-3`: their identity
     buttons draw a themed icon, the part's `icon`, GN-2.22, MAT-N13; `kde-breeze`, `macos-*`, `windows-11`, `ios-*`
     by rules outside the identities and system types they draw a glyph for: K1.46†, MAC-N10, W1-011, B-12).
-  - values: `menu_trigger` (all but `ios-*`, `adwaita`), `subtitle_gap_px` (all but `ios-*`), `back_display_mode`
+  - values: `menu_trigger` (all but `ios-*`: `adwaita` states it only where a button opens a menu, AdwBackButton's
+    long press, GN-1.278†, its plain buttons opening none), `subtitle_gap_px` (all but `ios-*`), `back_display_mode`
     (all but `ios-*`), `display_mode` (all but `ios-*`), `scaffold_placement` (all but `material-3`), `shows_icon`
     (all but `kde-breeze`: no other platform has the setting, K1.28), `hit_extension` (all but `kde-breeze`),
-    `repeat_delay_ms` (`adwaita`, `material-3`, `ios-*`: no auto-repeating button), `repeat_interval_ms` (`adwaita`,
-    `material-3`, `ios-*`: no auto-repeating button), `label_position` (`adwaita`, `ios-*`, `material-3`: no tool
+    `repeat_delay_ms` (`adwaita`, `material-3`, `ios-*`: no auto-repeating button; `windows-11` by a rule outside
+    `@repeat`, RepeatButton's alone, W2-19), `repeat_interval_ms` (`adwaita`, `material-3`, `ios-*`: no
+    auto-repeating button; `windows-11` likewise), `label_position` (`adwaita`, `ios-*`, `material-3`: no tool
     button with a label choice). `presentations` is a list: empty, not absent, where the platform has none.
     The two flags of iOS's back title and KDE's help button are false, not absent, where the platform does not
     shorten a back title or show a tooltip on click (a `Value<bool>` the platform does not do).
@@ -1465,10 +1517,24 @@ spaces:
     loading indicator (B-10) is a `spinner` element in `context button {@loading}`; a field's
     `clear_field` and `reveal` in `context input`; `close` in a dialog's, banner's, toast's, sheet's, teaching tip's or
     tab's context; the responses in `context dialog.action_area`.
-  - Group 6: `circular` covers KDE's RoundButton (Q2.4–Q2.8: a gloss as an appended linear paint layer, the content
-    shifted under `{pressed}` / `{checked}` as a transform, the Selection binding under `{focused}`); `help` takes the
+  - Group 6: `circular` covers KDE's RoundButton (Q2.4–Q2.8: a gloss as an appended linear paint layer, the whole
+    button translated under `{pressed}` / `{checked}` as `body.transform`, the Selection binding under `{focused}`);
+    Breeze's round button (K1.26) is drawn with a radius of half its larger side, which Qt clamps per axis to half
+    each side (`breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738`; `qtbase@6.12.0
+    src/gui/painting/qpainterpath.cpp:3457-3470`), so a square box is a circle, `Full`, and a box that is not square
+    an ellipse, which circular corners cannot state (a model question for the maintainer, the ledger's queue #48); `help` takes the
     cursor `WhatsThis` (ADD-A59); Material's icon buttons are `icon_only` with `primary`, `tinted` and `@outlined`
     (MAT-N4, MAT-N5, C-29).
+  - Material's state layers stay appended fill layers (R3) though Compose draws them over the label and icon (its
+    ripple node draws the content first, `Ripple.kt:373-377`): Compose's state-layer colour is the content colour
+    (`LocalContentColor`, `material3/Ripple.kt:770-781`), the colour its label and icon are drawn in, and a layer of
+    a colour over content of that colour changes no pixel, so drawing it under the content gives the same pixels;
+    where a part's content colour differs from the layer's, that part's colour under the state is the composite,
+    `mix(<content colour>, <layer colour>, <layer alpha>)`, exact for an opaque content colour (ADD-A121).
+  - Material Expressive's buttons, toggle buttons and icon buttons morph only their corners on press and selection
+    (Compose animates a `RoundedCornerShape` or `CornerBasedShape`, `Button.kt:1921-1938`, `ToggleButton.kt:1714-1717`,
+    `IconButton.kt:1632`, `:1652`): `body.corners` with a `Corners` spring transition (MAT-B11, MAT-X12); `button` has
+    no `shape` field, the `MaterialShapes` morph being the loading indicator's (MAT-N24).
   - Material's FAB in the floating toolbar is `button @ variant @fab context any toolbar variant floating`, with its
     sizes (MAT-N25). Material's minimum interactive size round small buttons and icon buttons is
     `body.touch_target` (MAT-X22).
@@ -1618,8 +1684,9 @@ spaces:
   current choice among its siblings, `selected` on every platform; under `@select_any` each chosen segment is
   `selected`), disabled, focused, focus_visible.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `segment` (SegmentedItem's CommonStates, which
-  name Selected, PointerOverSelected and PressedSelected with them, so `selected` combines); `material-3`: `[pressed,
-  focus_visible, hover]` on `segment` (state layers); others none (states combine); precedence: state models
+  name Selected, PointerOverSelected and PressedSelected with them, so `selected` combines); `material-3`:
+  `[focus_visible, hover]` on `segment`, provisional (Material's state-layer groups, above: a `Surface`'s ripple, `SegmentedButton.kt:150-166`,
+  CONTRA-6; `pressed` combines); others none (states combine); precedence: state models
   (S17).
 - **may_be_absent:**
   - parts: `indicator` (`adwaita`, `material-3`: the selected segment's own fill; `kde-breeze` by a rule under
@@ -1711,7 +1778,8 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large` (MAC-SW05). Others none.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ToggleSwitch's CommonStates; ToggleStates is
-  `checked`, not a group); `material-3`: `[pressed, focus_visible, hover]` (state layers, MAT-SW4); others
+  `checked`, not a group); `material-3`: `[focus_visible, hover]`, provisional (state layers, MAT-SW4; Material's state-layer groups, above:
+  Compose's ripple on the thumb, `Switch.kt:191-198`, CONTRA-6; `pressed` combines); others
   none (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `track_fill` (all but `kde-breeze`), `on_glyph` (all but `adwaita`, `ios-*`, `macos-*`; on those stated
@@ -1787,8 +1855,9 @@ spaces:
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked,
   indeterminate, invalid (Material's error, MAT-C5).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (CheckBox's CombinedStates, which name the check
-  state with each of them, so `checked` and `indeterminate` combine); `material-3`: `[pressed, focus_visible,
-  hover]` (state layers, MAT-C2); others none (states combine); precedence: state models (S17).
+  state with each of them, so `checked` and `indeterminate` combine); `material-3`: `[focus_visible, hover]`,
+  provisional (state layers, MAT-C2; Material's state-layer groups, above: Compose's ripple, `Checkbox.kt:554-579`, CONTRA-6; `pressed`
+  combines); others none (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
@@ -1852,7 +1921,8 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. Others none.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates; CheckStates is
-  `checked`, not a group); `material-3`: `[pressed, focus_visible, hover]` (state layers); others none
+  `checked`, not a group); `material-3`: `[focus_visible, hover]`, provisional (state layers; Material's state-layer groups, above:
+  Compose's ripple, `RadioButton.kt:160-165`, CONTRA-6; `pressed` combines); others none
   (states combine); precedence: state models (S17).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`).
@@ -1920,7 +1990,8 @@ spaces:
   - `body` — the field's box (the root): `fill`, `stroke` (per side: WinUI's thicker accent bottom edge, Material's
     filled-field active indicator as the bottom edge), `corners`, `shadow` (macOS's inner edge shading and 26 outer
     ring; GNOME's inset drop-target and high-contrast rings), `padding`, `margin` (the space round a field in its
-    host: Kirigami's search dialog field, Q1.118), `min_width`, `min_height`, `max_width`, `opacity` (today's
+    host: Kirigami's search dialog field, Q1.118; a GTK linked box's overlap, each entry's negative start or top
+    margin, GN-1.42), `min_width`, `min_height`, `max_width`, `opacity` (today's
     `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes rebind the accent
     for the subtree), `transitions` (the editable label's title-to-field change, RL-2†).
   - `text` — the entered text: `text`, `transitions` (RL-2†).
@@ -2269,7 +2340,8 @@ spaces:
 - **Available:** every preset.
 - **Parts:**
   - `body` — the trigger box (the root): `fill`, `stroke` (per state), `corners`, `shadow` (Breeze's button shadow on
-    the non-flat, non-editable combo), `padding`, `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
+    the non-flat, non-editable combo), `padding`, `margin` (a GTK linked box's overlap, the drop-down's button's
+    negative start or top margin, GN-1.42), `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
     Button set, View set when editable), `transitions`.
   - `label` — the current value's text: `text`.
   - `placeholder` — WinUI's placeholder text: `text`.
@@ -2307,8 +2379,9 @@ spaces:
   (GN-1.238), `@raised` (the drop-down kept raised in a toolbar, GN-1.151); `macos-*` `@pull_down` (AppKit's
   pull-down `NSPopUpButton`, a pop-up button control with a pull-down menu, MAC-CB01, MAC-N29†: one platform, so keyed;
   iOS's pull-down button is `button` `menu`, B-18†); `kde-breeze` `@dialog_mode`, `@page_mode`
-  (the form combo row's display modes, K-KA-12†); `material-3` `@filled`; `ios-*` `@gray`, `@borderless`, `@bordered`
-  (the trigger's `UIButton.Configuration` styles of B-1, as `button` declares them, CB-2).
+  (the form combo row's display modes, K-KA-12†); `material-3` `@filled`; `ios-*` `@gray`
+  (the trigger's `UIButton.Configuration` styles of B-1, as `button` declares them, with its `exclusive_variants`
+  groups, CB-2).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3`: density (keyed). `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
   Others: none.
 - **Flags:** shared `empty` (Material's select with no value chosen: its label rests inside the field, MAT-CB1); state
@@ -3077,7 +3150,8 @@ spaces:
   own parts by `{redacted}` rules, W-RV-2†; macOS and iOS draw the `redaction` widget in its context, MAC-P4-13†,
   P4-18†; ADD-A14).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ListViewItemPresenter's common states; `selected`
-  combines with them); `material-3`: `[dragged, pressed, focus_visible, hover]` (one state layer at a time); others
+  combines with them); `material-3`: `[dragged, focus_visible, hover]`, provisional (Material's state-layer groups, above: Compose's ripple on
+  a clickable item, `ListItem.kt:1600-1606`, CONTRA-6; `pressed` combines); others
   none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `section` (all but `ios-*`: L-2), `section_index` (all but `ios-*`: L-15),
   `section_footer` (all but `ios-*`: L-5), `accessory` (`adwaita`, `macos-*`, `windows-11`, `material-3`: no system
@@ -3279,7 +3353,8 @@ spaces:
   focus_within (AdwTabBar's focus on the tab box child, GN-1.134), disabled, dragged, drop_target (on the widget's
   element, a drag over the strip).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (TabViewItem CommonStates; `selected` combines with
-  them); others none (states combine); precedence: state models (S17).
+  them); `material-3`: `[focus_visible, hover]` (Compose's ripple state layer, `Tab.kt:166-179`; provisional pending
+  CONTRA-6, as on `button`); others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `attention_indicator` (all but `adwaita`: GN-1.128; `adwaita` by a rule outside
   `{@needs_attention}`), `drop_indicator` (all but `adwaita`: GN-1.127; `adwaita` by a rule `!{drop_target}`),
   `tab_box` (all but `adwaita`: AdwTabBar's, GN-1.125; `adwaita` by a rule outside `document`, GtkNotebook having
@@ -3764,7 +3839,8 @@ spaces:
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: hover, pressed, checked (Q1.126), focus_visible, dragged, disabled
   (MAT-CA2).
-- **Exclusive groups:** `material-3`: `[dragged, pressed, focus_visible, hover]` (MAT-CA2's state layers); others none
+- **Exclusive groups:** `material-3`: `[dragged, focus_visible, hover]`, provisional (MAT-CA2's state layers;
+  Material's state-layer groups, above: a clickable card's `Surface` ripple, `Card.kt:149-150`, CONTRA-6; `pressed` combines); others none
   (states combine; Windows' card surfaces have no states); precedence: state models (S17).
 - **may_be_absent:** parts: `icon` (all but `material-3`: Material's card icon, MAT-CA3), `banner` (all but
   `kde-breeze`: Kirigami's banner, Q1.131; `kde-breeze` by a rule outside `@banner`), `banner_band` (all but
@@ -3860,8 +3936,10 @@ spaces:
   `label_gap_px: Value<Px>` (label to control, per size: MAC-LY01, W1-146); `button_gap_px: Value<Px>` (MAC-LY01,
   W1-146);
   `header_gap_px: Value<Px>` (control to header, W1-146); `surface_text_margin_px: Value<Px>` (W1-146); `item_gap_px`,
-  `line_gap_px: Value<Px>` (flow layouts: GN-2.46, GN-P3-24†, RL-3†, MAC-RL01†, W-P4-9†, MAT-RL01†; `item_gap` negative
-  under `@linked`, GN-1.42); `flow_max_per_line: Option<Value<u32>>` (GN-P3-24†; `None`: no limit); `max_content_width_px`,
+  `line_gap_px: Value<Px>` (flow layouts: GN-2.46, GN-P3-24†, RL-3†, MAC-RL01†, W-P4-9†, MAT-RL01†; a linked box's
+  overlap is not its gap but each child's own margin, `button.body.margin`, `input.body.margin` and
+  `combo_box.body.margin` in `context any layout variant @linked` (the widgets `_linked.scss:1-12` lists),
+  GN-1.42); `flow_max_per_line: Option<Value<u32>>` (GN-P3-24†; `None`: no limit); `max_content_width_px`,
   `tightening_threshold_px: Value<Px>` (the `clamp` layout's: AdwClamp, GN-1.195; iOS's readable width, LY-2);
   `pane_gap_px: Value<Px>` (MAT-LA1, MAT-SP3);
   `vertical_pane_gap_px: Value<Px>` (the spacer between two stacked panes, MAT-P3-13†); `max_panes_horizontal`,
@@ -4347,8 +4425,8 @@ spaces:
 - **Flags:** shared `minimized` (iOS, T-10); state flags used: hover, pressed, selected (the current destination
   on every platform: Kirigami's checked tab button maps to it, Q2.35; S7.2), disabled, focus_visible, dragged,
   drop_target (on `bar`, T-17†), scrolled (T-1).
-- **Exclusive groups:** `material-3`: `[pressed, focus_visible, hover]` (the navigation bar's state layers,
-  MAT-N12); others none (states combine); precedence: state models (S17).
+- **Exclusive groups:** `material-3`: `[focus_visible, hover]`, provisional (the navigation bar's state layers,
+  MAT-N12; Material's state-layer groups, above: Compose's ripple, `NavigationBar.kt:268-271`, CONTRA-6; `pressed` combines); others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `indicator` (`kde-breeze`, `adwaita`: Kirigami's and AdwViewSwitcherBar's items draw
   none, Q2.35, GN-2.15; `ios-13` by a rule outside `@tab_sidebar` and by a rule outside `{selected}`: iPadOS 18's
   top bar marks the selected item, T-13, and the bottom bar draws no indicator before iOS 26, T-8; `material-3`,
@@ -4491,7 +4569,8 @@ spaces:
   out-of-range days, K2.23†, K-KA-21†, C-6), focus_visible, on `day`, `year`, `month`.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (CalendarView items; `selected`, `today`,
   `other_month` and `@blackout` combine, as the template's selected-hover, selected-pressed and selected-disabled
-  states show); `material-3`: `[pressed, focus_visible, hover]` (the date cells' state layers); others none
+  states show); `material-3`: `[focus_visible, hover]`, provisional (the date cells' state layers; Material's state-layer groups, above: a
+  `Surface`'s ripple, `DatePicker.kt:2254-2256`, CONTRA-6; `pressed` combines); others none
   (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `title` (`adwaita`, `kde-breeze`, `windows-11`, `ios-*`: the month and year there are
   `button` elements in `context calendar.header`, GN-2.25, K2.4, W2-02, iOS's month-year toggle, C-6, or
@@ -4643,7 +4722,8 @@ spaces:
   hover, pressed, focus_visible, disabled.
 - **Exclusive groups:** `windows-11`: `[pressed, hover]` (the token's CommonStates: rest, pointer-over, pressed;
   `selected` combines, as its selected-pointer-over and selected-pressed states show, W2-43†); `material-3`:
-  `[dragged, pressed, focus_visible, hover]` (the chips' state layers); others none (states combine); precedence:
+  `[dragged, focus_visible, hover]`, provisional (the chips' state layers; Material's state-layer groups, above: a `Surface`'s ripple,
+  `Chip.kt:3207-3208`, CONTRA-6; `pressed` combines); others none (states combine); precedence:
   state models (S17).
 - **may_be_absent:** parts: `trailing_icon` (all but `material-3`: Material's chips alone draw a trailing icon,
   MAT-N9; Kirigami's and Windows' removing control is a `button`, Q2.24, W2-43†), `leading_icon` (`windows-11`;
@@ -6726,8 +6806,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   hover, disabled, focused, focus_visible and checked on that element (GNOME's divider hidden while the control is
   hovered or focused, GN-2.29; WinUI's checked divider, W2-17; `body.focus`).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `primary` and `secondary` (each part's
-  CommonStates), `checked` combining (`toggle`); `material-3`: `[pressed, focus_visible, hover]` on `primary` and
-  `secondary`; others none (states combine); precedence: state models (S17).
+  CommonStates), `checked` combining (`toggle`); `material-3`: `[focus_visible, hover]` on `primary` and
+  `secondary`, provisional (Material's state-layer groups, above: a `Surface`'s ripple, `SplitButton.kt:702-703`, CONTRA-6; `pressed`
+  combines); others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `arrow` (`kde-breeze` by a rule under `variant @ka_double_floating`: DoubleFloatingButton's
   two halves are two actions, neither opening a menu, K-KA-27†), `divider` (`material-3`: the gap between its
   halves stands for it, MAT-N7; `kde-breeze` by a rule under `variant @ka_double_floating`, the pill drawing no
@@ -7003,7 +7084,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `field_segment` on `macos-*`, MAC-N04), hover, pressed (iOS's pill, C-5), focused, disabled, open (Windows' flyout,
   iOS's popover shown), focus_visible, read_only (kirigami-addons' row drops the field's fill, K-KA-22†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `field` (CommonStates); `material-3`:
-  `[pressed, focus_visible, hover]` on `selector_cell` and `period_selector` (state layers); others none
+  `[focus_visible, hover]` on `selector_cell` and `period_selector`, provisional (state layers; Material's state-layer groups, above: a
+  `Surface`'s ripple, `TimePicker.kt:3089-3095`, and a `TextButton`'s, `:3018`, CONTRA-6; `pressed` combines); others none
   (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `dial` (every preset but `material-3`: the clock dial is Material's, MAT-N17;
   `material-3` by a rule under `variant @input`, the time input drawing no dial, MAT-N17), `dial_selector` (every
@@ -8073,8 +8155,9 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Widget values:** `item_gap: Value<Px>` (declared `"length"`), `presentations: Vec<PresentationTransition>`
   (declared `"presentations"`: events `Appear`, `Disappear`, the menu opening from the FAB and closing, kind `Morph`).
 - **Variants:** keyed `@primary`, `@secondary`, `@tertiary` (its colour styles, MAT-N3). **Sizes:** none.
-- **Flags:** state flags only (above). **Exclusive groups:** `[pressed, focus_visible, hover]` on `item` (Material's
-  state layers); precedence: state models (S17).
+- **Flags:** state flags only (above). **Exclusive groups:** `[focus_visible, hover]` on `item`, provisional
+  (Material's state layers; Material's state-layer groups, above: a `Surface`'s ripple, `FloatingActionButtonMenu.kt:350`, `:381`, CONTRA-6;
+  `pressed` combines); precedence: state models (S17).
 - **may_be_absent:** none beyond S6.3's drawing fields.
 - **State-model source:** `latest/_md-comp-fab-menu.scss:22-50` and the per-style close-button and container token
   files of the primary, secondary and tertiary styles (MAT-N3).
@@ -8144,7 +8227,7 @@ platform:
 | `foreground_inactive` | the platform's secondary (muted) text level | required | KDE `ForegroundInactive`; today's `muted_color` |
 | `foreground_active` | KDE `ForegroundActive`, used as the information colour | may_be_absent on every preset but `kde-breeze` (a KColorScheme role no other platform has) | K3.54, Q3.5 |
 | `link`, `link_visited` | link text, visited link text | `link` required; `link_visited` may_be_absent on `macos-*`, `windows-11`, `ios-*`, `material-3` (no visited state: macOS draws no visited link, gap-map-macos's §2.28 note; WinUI's hyperlinks have none, gap-map-windows' `:1695` note; `link`'s state-model sources for `ios-*` and `material-3` name none) | K3.54, GN-1.265 |
-| `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` required; `neutral` may_be_absent on `material-3`, `positive` may_be_absent on `material-3` (the status each references is absent there: no warning or success role, below) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
+| `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (`windows-11`, which has no standalone status colour, the `fill` instead) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` required; `neutral` may_be_absent on `material-3`, `positive` may_be_absent on `material-3` (the status each references is absent there: no warning or success role, below) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
 | `decoration_focus`, `decoration_hover` | KDE's focus and hover decoration colours of the set | `decoration_focus` may_be_absent on every preset but `kde-breeze`, `decoration_hover` may_be_absent on every preset but `kde-breeze` (KColorScheme's decoration roles; the other platforms state focus by `token.focus` and hover per part) | Q3.11, Q3.12, K3.54 |
 | `border` | the set's stroke colour (translucent where the platform's is) | required | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
 | `shade` | the translucent shade line/overlay of the set (libadwaita `*_shade_color`) | may_be_absent on every preset but `adwaita` (libadwaita's shade colours, no other platform's); on `adwaita` a set GN-1.270 names no shade of states `= role.window.shade` (`--shade-color`) | GN-1.270 |
@@ -8172,7 +8255,11 @@ but `kde-breeze`), `shade` (every preset), `shade_darker` (every preset), `borde
 `background_visited` (every preset but `kde-breeze`), `background_negative` (every preset but `kde-breeze`),
 `background_neutral` (every preset but `kde-breeze`), `background_positive` (every preset but `kde-breeze`). So
 `kde-breeze` states every field whose active field it states (KColorScheme's disabled group, K3.50: `shade` and
-`shade_darker` are not KDE's); `adwaita` leaves every field absent, as libadwaita dims by opacity (below); `macos-*`, `windows-11`,
+`shade_darker` are not KDE's); `adwaita` states only the `View` set's `background` and `foreground`, the `.view:disabled`
+pair (`libadwaita@1.10.0 src/stylesheet/widgets/_views.scss:6-9`, GN-1.176), and leaves every other field and set
+absent, as libadwaita dims by opacity elsewhere (below; libadwaita's GTK 3 compatibility colours `insensitive_bg_color`
+and `insensitive_fg_color`, `_compat-colors.scss:12-13`, name a disabled pair too, which no gap-map row carries yet,
+the ledger's queue #33); `macos-*`, `windows-11`,
 `ios-*` and `material-3` state the disabled text colour, `foreground` (today's `defaults.disabled_text_color`; on `ios-*`
 D-9, D-20), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
 KDE each field but `border` is the KColorScheme disabled effect applied to the active value (`kde_effects(c,
@@ -8186,8 +8273,10 @@ KColorScheme role (below), so no effect applies to it: Breeze computes its frame
 widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`breeze@c97883a kstyle/breezehelper.cpp:142-144`,
 the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border` is the active `border`'s derivation
 (`mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
-`= mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`. On a
-platform that dims by opacity (libadwaita) the record stays absent and the parts' `{disabled}` rules set `opacity`
+`= mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`; under
+`cond flavor:kirigami` the active and disabled `border` are Kirigami's frame colour, which interpolates in HSV, `=
+kirigami_lerp(background, foreground, token.params.color.frame_contrast)` in the set (`Frame.qml:25`, Q3.15, S2.2). On a
+platform that dims by opacity (libadwaita) the record stays absent but for the `View` pair above and the parts' `{disabled}` rules set `opacity`
 from `token.params.opacity` instead [GN-1.271, GN-1.272].
 
 The inactive group is no record field: it is a colour-role rule `@ cond window_inactive` on the active field
@@ -8295,7 +8384,7 @@ six computed backgrounds (`background_active` …) are KColorScheme's tints of t
 | `accent_foreground` | text/glyph on the accent (today's `accent_text_color`) | required | GN-3.14 |
 | `accent_standalone` | accent used as text or icon colour on the surface, distinct from the fill (libadwaita `accent_color`, OKLab-derived: `adw_standalone`); elsewhere `= role.global.accent` | required | GN-1.268, GN-3.13 |
 | `accent_ramp` | keyed: WinUI Light1-3, Dark1-3 | a list: empty where the platform has none | W3-12 (other group) |
-| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset: `error.fill`, `error.standalone`. may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `success.standalone` (`material-3`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset but `windows-11`); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `warning.standalone` (`material-3`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset but `windows-11`); `error.foreground` (`ios-*`; on `macos-*` the value phase names it from the facts), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.background_solid` (every preset but `windows-11`); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset but `windows-11`), `neutral.standalone` (every preset but `windows-11`), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), nor macOS beyond its system palette (no row names one; whether a text-on-status colour exists there is the value phase's); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part of a declared variant refers to an absent status role (a preset declares the typed severity variants, `success` and `warning` of `banner`, `dialog` and the rest, only where it states their role; S12's absent-operand check would refuse such a reference anyway); macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
+| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset: `error.fill`; on every preset but `windows-11`: `error.standalone`. may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset but `windows-11`); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset but `windows-11`); `error.foreground` (`ios-*`; on `macos-*` the value phase names it from the facts), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset but `windows-11`); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset but `windows-11`), `neutral.standalone` (every preset but `windows-11`), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), nor macOS beyond its system palette (no row names one; whether a text-on-status colour exists there is the value phase's); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part of a declared variant refers to an absent status role (a preset declares the typed severity variants, `success` and `warning` of `banner`, `dialog` and the rest, only where it states their role; S12's absent-operand check would refuse such a reference anyway); macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
 | `shadow_reference` | what the platform names as the shadow colour (today's `shadow_color`; macOS `shadowColor`, Material `shadow`) | may_be_absent on `adwaita`, `windows-11`, `ios-*` (no named shadow colour: their shadows state each layer's colour, GN-3.01, W3-01, X-SH-1); `kde-breeze` names one (breezerc `ShadowColor`, K3.1, K3.2) | today's `shadow_color`, MAT-X5, K3.1 |
 | `selection_text_background` | the highlight behind selected text (today's `text_selection_background`) | required on every preset (every platform highlights selected text; a platform that does not distinguish it from selected items states a reference to the `Selection` set, below) | today's fields; GN-3.40, X-SE-1, MAC-X15, W3-25 |
 | `selection_text_foreground` | the selected text's colour (today's `text_selection_color`); absent where the text keeps its own colour | may_be_absent on `adwaita` (GN-3.41), `windows-11` (W3-25), `material-3` (Compose's `TextSelectionColors` holds a handle and a background colour only, gap-map-material's note on `compose/MaterialTheme.kt:279-281`), `ios-*` (X-SE-1 names the highlight colour alone) | today's fields |
@@ -8319,7 +8408,9 @@ rows that need them (the member lists are the facts', the value phase states the
 is `role.window.shade`.)
 
 **KDE (`kde-breeze`).** `shade_light`, `shade_midlight`, `shade_mid`, `shade_dark`, `shade_shadow`: Qt's 3-D frame and
-grid roles, computed from the Window background by `kcu_shade` with `token.params.color.contrast` [K3.53]. They are
+grid roles, `= kde_shade(role.window.background, <role>, token.params.color.contrast)`, KColorScheme's `shade` with
+its luma branches over the Window background, `token.params.color.contrast` holding kdeglobals' `[KDE] contrast` as
+stored (S2.2) [K3.53]. They are
 keyed, not per set: KDE computes them from Window. `wm_active_background`, `wm_active_foreground`,
 `wm_inactive_background`, `wm_inactive_foreground`: the `[WM]` group's title-bar colours Breeze's style reads for its
 MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
