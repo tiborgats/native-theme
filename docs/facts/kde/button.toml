@@ -547,11 +547,18 @@ quote = "void Helper::renderButtonFrame(QPainter *painter,"
 # Frame_FrameRadius, its width the margin), its inner edge 1 px inside the widget's rect; the body box is that rect
 # inset by the margin above (PenWidth::Shadow), so the offset from the body box to the ring's inner edge (S2.10) is
 # the margin less that 1 px: 0.001 px outward
+# (K3.20's positive offset on buttons, ADD-A123). The round button (`circular`) is ringed so too: Breeze's frame is
+# the same rounded rect with Frame_FrameRadius inner corners whatever the button's shape, never its ellipse (ADD-A124)
 
 [[fact]]
 key = "button.body.focus"
 value = "= token.focus"
 rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
 
 [[fact.cite]]
 kind = "published"
@@ -6909,14 +6916,15 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:727-732"
 quote = "if (isActiveWindow && !(flat || down || checked) && enabled) { const qreal shadowRadius = roundButton ? roundRadius : Metrics::Frame_FrameRadius - PenWidth::Shadow / 2; renderRoundedRectShadow(painter, shadowedRect, shadowColor(palette), shadowRadius); }"
 
-# the round button: a radius of half the larger side, which Qt clamps per axis to half each side, so `full` is
-# exact for a square box; a box that is not square Breeze draws as an ellipse, which corners cannot state (the
-# ledger's queue #48)
+# the QWidget round button (_kde_round_button): Breeze passes drawRoundedRect a radius of half the larger side of
+# the button's rect, which Qt's paint engine clamps per axis to half each side of the frame rect it draws (the path
+# fallback likewise): the frame rect's inscribed ellipse, a circle where it is square, so `ellipse` on all four
+# corners (S2.4, ADD-A124), the curve the base's `circular`. Kirigami's RoundButton is `full` (below, Q2.4)
 
 [[fact]]
 key = "button.body.corners.top_left"
 when = { variants = ["circular"] }
-value = { full = { maximum_px = "absent" } }
+value = "ellipse"
 rows = ["K1.26"]
 
 [[fact.cite]]
@@ -6928,6 +6936,16 @@ quote = "const qreal roundRadius = std::max(rect.width(), rect.height()) / 2;"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:735-739"
 quote = "painter->setPen(QPen(penBrush, PenWidth::Frame)); const qreal radius = roundButton ? roundRadius : frameRadius(PenWidth::Frame); painter->drawRoundedRect(frameRect, radius, radius);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018"
+quote = "if (d->extended) { d->extended->drawRoundedRect(rect, xRadius, yRadius, mode); return;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpaintengineex.cpp:745-746"
+quote = "xRadius = qMin(xRadius, rect.width() / 2); yRadius = qMin(yRadius, rect.height() / 2);"
 
 [[fact.cite]]
 kind = "published"
@@ -6942,7 +6960,7 @@ quote = "const char PropertyNames::roundButton[] = \"_kde_round_button\";"
 [[fact]]
 key = "button.body.corners.top_right"
 when = { variants = ["circular"] }
-value = { full = { maximum_px = "absent" } }
+value = "ellipse"
 rows = ["K1.26"]
 
 [[fact.cite]]
@@ -6954,6 +6972,16 @@ quote = "const qreal roundRadius = std::max(rect.width(), rect.height()) / 2;"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:735-739"
 quote = "painter->setPen(QPen(penBrush, PenWidth::Frame)); const qreal radius = roundButton ? roundRadius : frameRadius(PenWidth::Frame); painter->drawRoundedRect(frameRect, radius, radius);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018"
+quote = "if (d->extended) { d->extended->drawRoundedRect(rect, xRadius, yRadius, mode); return;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpaintengineex.cpp:745-746"
+quote = "xRadius = qMin(xRadius, rect.width() / 2); yRadius = qMin(yRadius, rect.height() / 2);"
 
 [[fact.cite]]
 kind = "published"
@@ -6968,7 +6996,7 @@ quote = "const char PropertyNames::roundButton[] = \"_kde_round_button\";"
 [[fact]]
 key = "button.body.corners.bottom_right"
 when = { variants = ["circular"] }
-value = { full = { maximum_px = "absent" } }
+value = "ellipse"
 rows = ["K1.26"]
 
 [[fact.cite]]
@@ -6980,6 +7008,16 @@ quote = "const qreal roundRadius = std::max(rect.width(), rect.height()) / 2;"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:735-739"
 quote = "painter->setPen(QPen(penBrush, PenWidth::Frame)); const qreal radius = roundButton ? roundRadius : frameRadius(PenWidth::Frame); painter->drawRoundedRect(frameRect, radius, radius);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018"
+quote = "if (d->extended) { d->extended->drawRoundedRect(rect, xRadius, yRadius, mode); return;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpaintengineex.cpp:745-746"
+quote = "xRadius = qMin(xRadius, rect.width() / 2); yRadius = qMin(yRadius, rect.height() / 2);"
 
 [[fact.cite]]
 kind = "published"
@@ -6994,7 +7032,7 @@ quote = "const char PropertyNames::roundButton[] = \"_kde_round_button\";"
 [[fact]]
 key = "button.body.corners.bottom_left"
 when = { variants = ["circular"] }
-value = { full = { maximum_px = "absent" } }
+value = "ellipse"
 rows = ["K1.26"]
 
 [[fact.cite]]
@@ -7006,6 +7044,16 @@ quote = "const qreal roundRadius = std::max(rect.width(), rect.height()) / 2;"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:735-739"
 quote = "painter->setPen(QPen(penBrush, PenWidth::Frame)); const qreal radius = roundButton ? roundRadius : frameRadius(PenWidth::Frame); painter->drawRoundedRect(frameRect, radius, radius);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018"
+quote = "if (d->extended) { d->extended->drawRoundedRect(rect, xRadius, yRadius, mode); return;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpaintengineex.cpp:745-746"
+quote = "xRadius = qMin(xRadius, rect.width() / 2); yRadius = qMin(yRadius, rect.height() / 2);"
 
 [[fact.cite]]
 kind = "published"
@@ -7233,13 +7281,17 @@ quote = "size = expandSize(size, Metrics::Button_MarginWidth); // make sure butt
 # mixes it with; only leaving one fades, the animation running backward, its opacity floor(x * 10) / 10 of a falling
 # x, so the progress toward the new colour, S2.7's forward reading, jumps at the start of each tenth (steps(10,
 # jump-start), not the forward-run `animations` timing); no delay: the state change starts the animation at once.
-# So the style after the change states: at rest both fade; under {hover} or {focus_visible} the fill fades (a
-# release) and the pen is already the highlight; under {pressed} nothing fades. A disabled button takes its colours
-# at once.
+# So the fill fades only from {pressed} and the pen only from {hover, focus_visible, pressed}, into whatever state
+# follows (checked included), while checked, default and window-activation changes are instant (Transition.from,
+# S2.7, ADD-A124): one list for every state, the state rules stating none of their own. After the two fades, zero
+# ones from {disabled}: Qt keeps State_MouseOver on a disabled widget (Enter reaches it), and a hovered button
+# enabled again draws the highlight pen mixed with the highlight, so it changes at once. A zero duration's timing
+# (`linear`) never runs: the new value is taken in the frame of the change. The flat button's pen keeps its width
+# while its colour fades (S2.7: an edge whose paint alone becomes absent keeps its width)
 
 [[fact]]
 key = "button.body.transitions"
-value = [{ properties = ["fill", "stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false }]
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }]
 rows = ["K1.30"]
 
 [[fact.cite]]
@@ -7293,12 +7345,6 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
 quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
 
-[[fact]]
-key = "button.body.transitions"
-when = { states = ["hover"], not_conditions = ["flavor:kirigami"] }
-value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false }]
-rows = ["K1.30"]
-
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
@@ -7306,160 +7352,52 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
-quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
+source = "qtbase@6.12.0 src/widgets/styles/qstyleoption.cpp:151-152"
+quote = "if (widget->underMouse()) state |= QStyle::State_MouseOver;"
 
 [[fact.cite]]
 kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:4546-4551"
-quote = "// NOTE: Using focus animation for bg down because the pressed animation only works on press when enabled for buttons and not on release. _animations->widgetStateEngine().updateState(widget, AnimationFocus, down && enabled); // NOTE: Using hover animation for all pen animations to prevent flickering when closing the menu. _animations->widgetStateEngine().updateState(widget, AnimationHover, (hovered || visualFocus || down) && enabled); qreal bgAnimation = _animations->widgetStateEngine().opacity(widget, AnimationFocus); qreal penAnimation = _animations->widgetStateEngine().opacity(widget, AnimationHover);"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:3259-3262"
+quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (!QApplication::activePopupWidget() || QApplication::activePopupWidget() == widget->window())) widget->setAttribute(Qt::WA_UnderMouse, true);"
 
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:113-126"
-quote = "if (auto toolButton = qobject_cast<QToolButton *>(widget)) { _toolButtonEngine->registerWidget(toolButton, AnimationHover | AnimationFocus); _widgetStateEngine->registerWidget(toolButton, AnimationHover | AnimationFocus);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:70-74"
-quote = "for (const BaseEngine::Pointer &engine : std::as_const(_engines)) { engine.data()->setEnabled(animationsEnabled); engine.data()->setDuration(animationsDuration); }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.h:116-121"
-quote = "void setDuration(int value) override { BaseEngine::setDuration(value); _hoverData.setDuration(value); _focusData.setDuration(value);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:22-27"
-quote = "} else { _state = value; animation().data()->setDirection(_state ? Animation::Forward : Animation::Backward); if (!animation().data()->isRunning()) { animation().data()->start(); }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-30"
-quote = "bool WidgetStateData::updateState(bool value)"
-absent = ["QPauseAnimation", "addPause", "QTimer", "singleShot"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
-quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezegenericdata.h:48-50"
-quote = "void setOpacity(qreal value) { value = digitize(value);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
-quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
-
-[[fact]]
-key = "button.body.transitions"
-when = { states = ["focus_visible"], not_conditions = ["flavor:kirigami"] }
-value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false }]
-rows = ["K1.30"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
-quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
-quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:4546-4551"
-quote = "// NOTE: Using focus animation for bg down because the pressed animation only works on press when enabled for buttons and not on release. _animations->widgetStateEngine().updateState(widget, AnimationFocus, down && enabled); // NOTE: Using hover animation for all pen animations to prevent flickering when closing the menu. _animations->widgetStateEngine().updateState(widget, AnimationHover, (hovered || visualFocus || down) && enabled); qreal bgAnimation = _animations->widgetStateEngine().opacity(widget, AnimationFocus); qreal penAnimation = _animations->widgetStateEngine().opacity(widget, AnimationHover);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:113-126"
-quote = "if (auto toolButton = qobject_cast<QToolButton *>(widget)) { _toolButtonEngine->registerWidget(toolButton, AnimationHover | AnimationFocus); _widgetStateEngine->registerWidget(toolButton, AnimationHover | AnimationFocus);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:70-74"
-quote = "for (const BaseEngine::Pointer &engine : std::as_const(_engines)) { engine.data()->setEnabled(animationsEnabled); engine.data()->setDuration(animationsDuration); }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.h:116-121"
-quote = "void setDuration(int value) override { BaseEngine::setDuration(value); _hoverData.setDuration(value); _focusData.setDuration(value);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:22-27"
-quote = "} else { _state = value; animation().data()->setDirection(_state ? Animation::Forward : Animation::Backward); if (!animation().data()->isRunning()) { animation().data()->start(); }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-30"
-quote = "bool WidgetStateData::updateState(bool value)"
-absent = ["QPauseAnimation", "addPause", "QTimer", "singleShot"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
-quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/animations/breezegenericdata.h:48-50"
-quote = "void setOpacity(qreal value) { value = digitize(value);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
-quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
-
-[[fact]]
-key = "button.body.transitions"
-when = { states = ["pressed"], not_conditions = ["flavor:kirigami"] }
-value = []
-rows = ["K1.30"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
-quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:679-680"
-quote = "if (down && enabled) { bgBrush = alphaColor(highlightColor, highlightBackgroundAlpha);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:693-694"
-quote = "if (down && enabled) { bgBrush = KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value);"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
-quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
+# a disabled button: Breeze runs neither fade (both mixes need `enabled`), so a button disabled while hovered or
+# pressed changes at once. The rule's zero ones come after the base's (S6.1's merged order), and apply from any state
 
 [[fact]]
 key = "button.body.transitions"
 when = { states = ["disabled"], not_conditions = ["flavor:kirigami"] }
-value = []
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
 rows = ["K1.30"]
 
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
 quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
+absent = []
 
-# qqc2's style item paints with no widget, which the state engine has no animation data for
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4546-4549"
+quote = "_animations->widgetStateEngine().updateState(widget, AnimationFocus, down && enabled); // NOTE: Using hover animation for all pen animations to prevent flickering when closing the menu. _animations->widgetStateEngine().updateState(widget, AnimationHover, (hovered || visualFocus || down) && enabled);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
+quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
+
+# Kirigami: qqc2's style item paints with no widget, which Breeze's state engine keeps no animation data for (its
+# data map finds nothing for a null key), so it gives no opacity and neither fade runs; Button.qml and
+# RoundButton.qml state no Behavior or animation of their own. Zero transitions from any state, after the base's
 
 [[fact]]
 key = "button.body.transitions"
 when = { conditions = ["flavor:kirigami"] }
-value = []
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
 rows = ["K1.30"]
 
 [[fact.cite]]
@@ -7471,6 +7409,38 @@ quote = "KQuickStyleItem::style()->drawControl(QStyle::CE_PushButton, m_styleopt
 kind = "published"
 source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.cpp:39-43"
 quote = "DataMap<WidgetStateData>::Value data(WidgetStateEngine::data(object, mode)); return (data && data.data()->updateState(value));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezedatamap.h:38-40"
+quote = "if (!(enabled() && key)) { return Value(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.h:40-42"
+quote = "qreal opacity(const void *object, AnimationMode mode) { return isAnimated(object, mode) ? data(object, mode).data()->opacity() : AnimationData::OpacityInvalid;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:14-67"
+quote = "T.Button { id: controlRoot"
+absent = ["Behavior", "Transition", "transitions", "ColorAnimation", "NumberAnimation", "PropertyAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:13-120"
+quote = "T.RoundButton { id: controlRoot"
+absent = ["Behavior", "Transition", "transitions", "ColorAnimation", "NumberAnimation", "PropertyAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
+quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
 
 [[fact]]
 key = "button.label.text"
@@ -8049,6 +8019,100 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezemetrics.h:84"
 quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
+
+# the push button's arrow (`Inline`, its margin a margin in the row, S2.11, ADD-A123): Breeze sizes the button with
+# the arrow and its spacing inside Button_MarginWidth, but draws the arrow at the end of the label's contents rect
+# (the widget rect less Frame_FrameWidth), past that margin, and vertically centred in it. So the start margin
+# Button_MarginWidth and the end margin its negative move the arrow's box that far toward the end and leave the
+# row's size alone; top and bottom are zero, the arrow centred on the row as `Inline` centres it. The same label code
+# draws Kirigami's Button, whose style item sets HasMenu
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "0px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "-6px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556"
+quote = "const bool hasMenu(buttonOption->features & QStyleOptionButton::HasMenu); if (hasMenu) { size.rwidth() += Metrics::MenuButton_IndicatorWidth; if (hasText || hasIcon) { size.rwidth() += Metrics::Button_ItemSpacing; } } // expand with buttons margin size = expandSize(size, Metrics::Button_MarginWidth);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:75"
+quote = "static constexpr int Button_MarginWidth = 6;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "0px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "6px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5367-5372"
+quote = "auto arrowRect(contentsRect); arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1); contentsRect.adjust(Metrics::Button_MarginWidth, 0, 0, 0);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556"
+quote = "const bool hasMenu(buttonOption->features & QStyleOptionButton::HasMenu); if (hasMenu) { size.rwidth() += Metrics::MenuButton_IndicatorWidth; if (hasText || hasIcon) { size.rwidth() += Metrics::Button_ItemSpacing; } } // expand with buttons margin size = expandSize(size, Metrics::Button_MarginWidth);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:75"
+quote = "static constexpr int Button_MarginWidth = 6;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2216-2219"
+quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const QWidget *) const { return insideMargin(option->rect, Metrics::Frame_FrameWidth); }"
 
 [[fact]]
 key = "button.menu_indicator.margin.top"
@@ -9520,6 +9584,93 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:35-36"
 quote = "padding: 6 // Matches the button margins of Breeze, Fusion, Oxygen and QCommonStyle spacing: 4"
 
+# Kirigami's RoundButton: its background Rectangle takes the control's radius, which QQuickRoundButton keeps at half
+# the control's smaller side while none is set: a capsule, `full` (not the QWidget round button's ellipse, above)
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["Q2.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83"
+quote = "radius: controlRoot.radius"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:47-48"
+quote = "if (newRadius < 0) radius = qMax<qreal>(0, qMin<qreal>(width, height) / 2);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:100-101"
+quote = "if (!d->explicitRadius) d->setRadius();"
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["Q2.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83"
+quote = "radius: controlRoot.radius"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:47-48"
+quote = "if (newRadius < 0) radius = qMax<qreal>(0, qMin<qreal>(width, height) / 2);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:100-101"
+quote = "if (!d->explicitRadius) d->setRadius();"
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["Q2.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83"
+quote = "radius: controlRoot.radius"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:47-48"
+quote = "if (newRadius < 0) radius = qMax<qreal>(0, qMin<qreal>(width, height) / 2);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:100-101"
+quote = "if (!d->explicitRadius) d->setRadius();"
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["Q2.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83"
+quote = "radius: controlRoot.radius"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:47-48"
+quote = "if (newRadius < 0) radius = qMax<qreal>(0, qMin<qreal>(width, height) / 2);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:100-101"
+quote = "if (!d->explicitRadius) d->setRadius();"
+
 [[fact]]
 key = "button.body.bindings"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
@@ -9620,7 +9771,7 @@ quote = "setBackgroundColor(colors.scheme.background(KColorScheme::NormalBackgro
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"] }
-value = "= alpha(surface.background, 0)"
+value = "= with_alpha(surface.background, 0)"
 rows = ["Q2.5"]
 
 [[fact.cite]]
@@ -9629,59 +9780,20 @@ source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:87-88"
 quote = "} else if (controlRoot.flat) { return Qt.alpha(Kirigami.Theme.backgroundColor, 0)"
 
 # checked or pressed, flat or not: Qt.tint of the text colour with the border colour at alpha 0.8, written
-# kirigami_tint(base, tint, 1) (S2.2, ADD-A122: Qt.tint blends by the tint's own alpha). Qt.alpha(c, 0.8) SETS the
-# alpha where the model's `alpha` multiplies it, so the expression equals RoundButton's colour only for an opaque
-# border colour: the interpolation of the Button set's background and foreground, opaque in KColorScheme's defaults
-# and in every colour scheme Breeze ships (three components each, as the disabled colours KColorScheme derives from
-# them). KConfig also reads a four-component colour (kconfiggroupgui.cpp:55-58), so a third-party scheme with a
-# translucent Button colour breaks the equality until the model gains an alpha-setting function (the ledger's
-# queue #71)
+# kirigami_tint(base, tint, 1) (S2.2, ADD-A122: Qt.tint blends by the tint's own alpha), and Qt.alpha(c, 0.8), which
+# sets the alpha, written with_alpha (S2.2, ADD-A123), so the expression holds for a translucent border colour too
+# (a third-party scheme's four-component colour)
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickvaluetypes.cpp:55-60"
+quote = "QColor QQuickColorValueType::alpha(qreal value) const { QColor color = *this; color.setAlphaF(value); return color; }"
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["checked"] }
-value = "= kirigami_tint(surface.foreground, alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
+value = "= kirigami_tint(surface.foreground, with_alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
 rows = ["Q2.5"]
-
-[[fact.cite]]
-kind = "published"
-source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
-quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate {  35,  38, 41  }, // Normal"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeLight.colors:31"
-quote = "BackgroundNormal=252,252,252"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeLight.colors:39"
-quote = "ForegroundNormal=35,38,41"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeDark.colors:32"
-quote = "BackgroundNormal=41,44,48"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeDark.colors:40"
-quote = "ForegroundNormal=252,252,252"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeClassic.colors:23"
-quote = "BackgroundNormal=239,240,241"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeClassic.colors:31"
-quote = "ForegroundNormal=35,38,39"
-
-[[fact.cite]]
-kind = "published"
-source = "kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58"
-quote = "const QList<QByteArray> list = data.split(','); const int count = list.count(); if (count != 3 && count != 4) {"
 
 [[fact.cite]]
 kind = "published"
@@ -9731,48 +9843,8 @@ quote = "setFrameContrast(KColorScheme::frameContrast());"
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["pressed"] }
-value = "= kirigami_tint(surface.foreground, alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
+value = "= kirigami_tint(surface.foreground, with_alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
 rows = ["Q2.5"]
-
-[[fact.cite]]
-kind = "published"
-source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
-quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate {  35,  38, 41  }, // Normal"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeLight.colors:31"
-quote = "BackgroundNormal=252,252,252"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeLight.colors:39"
-quote = "ForegroundNormal=35,38,41"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeDark.colors:32"
-quote = "BackgroundNormal=41,44,48"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeDark.colors:40"
-quote = "ForegroundNormal=252,252,252"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeClassic.colors:23"
-quote = "BackgroundNormal=239,240,241"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeClassic.colors:31"
-quote = "ForegroundNormal=35,38,39"
-
-[[fact.cite]]
-kind = "published"
-source = "kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58"
-quote = "const QList<QByteArray> list = data.split(','); const int count = list.count(); if (count != 3 && count != 4) {"
 
 [[fact.cite]]
 kind = "published"
@@ -9822,48 +9894,8 @@ quote = "setFrameContrast(KColorScheme::frameContrast());"
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["checked", "disabled"] }
-value = "= kirigami_tint(surface.disabled.foreground, alpha(kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.8), 1)"
+value = "= kirigami_tint(surface.disabled.foreground, with_alpha(kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.8), 1)"
 rows = ["Q2.5"]
-
-[[fact.cite]]
-kind = "published"
-source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
-quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate {  35,  38, 41  }, // Normal"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeLight.colors:31"
-quote = "BackgroundNormal=252,252,252"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeLight.colors:39"
-quote = "ForegroundNormal=35,38,41"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeDark.colors:32"
-quote = "BackgroundNormal=41,44,48"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeDark.colors:40"
-quote = "ForegroundNormal=252,252,252"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeClassic.colors:23"
-quote = "BackgroundNormal=239,240,241"
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 colors/BreezeClassic.colors:31"
-quote = "ForegroundNormal=35,38,39"
-
-[[fact.cite]]
-kind = "published"
-source = "kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58"
-quote = "const QList<QByteArray> list = data.split(','); const int count = list.count(); if (count != 3 && count != 4) {"
 
 [[fact.cite]]
 kind = "published"

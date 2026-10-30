@@ -1010,7 +1010,9 @@ citation says (an absence citation holds a zero stated by omission; on a
 LinearGradientBrush an angle matches only the angle its points give; C++'s
 defaulted parameter is read from the quote's declaration; `ns_font_weight`
 converts an AppKit `NSFontWeight` to S2.8's CSS weight by WebKit's
-thresholds; a platform curve's name is the verifier's, and so are
+thresholds; XAML's character reference `&#xE974;` is its code point, equal
+only to the same integer, and each entry of a XAML `<FontFamily>` list is
+a whole string; a platform curve's name is the verifier's, and so are
 ADD-A124's names, a ripple effect's, a transition's `from` flags); a
 measured value
 has the committed evidence's shape and

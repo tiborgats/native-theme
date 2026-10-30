@@ -85,8 +85,57 @@ quote = "$toggle_transition: color 200ms $ease-out-quad, background 200ms $ease-
 
 # the stylesheet's inline transitions, keyed by the widget whose CSS block states them and, where that block states
 # different durations, by the property each is for in the source's words (S4.1 step 2); their curves are the named
-# CSS curves already keyed (`ease_in_out`, `ease_out`, `ease`, `ease_out_quad`, step 1). AdwTabBar's (`tabbar`):
-# the separator's opacity and the tab's background, both 150 ms ease-in-out
+# CSS curves already keyed (`ease_in_out`, `ease_out`, `ease`, `ease_out_quad`, step 1); in the order the stylesheet
+# imports their files (`_widgets.scss`)
+# AdwBottomSheet's (`bottom-sheet > sheet` and its `outline`): the corners 100 ms ease-out, the shadow 250 ms ease
+[[fact]]
+key = "token.motion.durations.bottom_sheet_border_radius"
+value = "100ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:10"
+quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:30"
+quote = "transition: border-radius 100ms ease-out;"
+
+[[fact]]
+key = "token.motion.durations.bottom_sheet_box_shadow"
+value = "250ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:10"
+quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
+
+# GtkPlacesView's (`placesview`): the server-list button's arrow rotation, 200 ms ease-out-quad
+[[fact]]
+key = "token.motion.durations.places_view"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_file-chooser.scss:68"
+quote = "transition: -gtk-icon-transform 200ms $ease-out-quad;"
+
+# AdwExpanderRow's (`image.expander-row-arrow`): the arrow rotation, 200 ms ease-out-quad
+[[fact]]
+key = "token.motion.durations.expander_row"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_lists.scss:392"
+quote = "transition: -gtk-icon-transform 200ms $ease-out-quad;"
+
+# AdwTabBar's (`tabbar`): the separator's opacity and the tab's background, both 150 ms ease-in-out
 [[fact]]
 key = "token.motion.durations.tab_bar"
 value = "150ms"
@@ -115,31 +164,16 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_tab-view.scss:199"
 quote = "transition: box-shadow 200ms $ease-out-quad, background-color $ease-out-quad;"
 
-# AdwBottomSheet's (`bottom-sheet > sheet` and its `outline`): the corners 100 ms ease-out, the shadow 250 ms ease
+# AdwToggleGroup's (`toggle-group > separator`): the separators' opacity, 200 ms ease-out-quad
 [[fact]]
-key = "token.motion.durations.bottom_sheet_border_radius"
-value = "100ms"
+key = "token.motion.durations.toggle_group"
+value = "200ms"
 rows = ["GN-3.18"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:10"
-quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:30"
-quote = "transition: border-radius 100ms ease-out;"
-
-[[fact]]
-key = "token.motion.durations.bottom_sheet_box_shadow"
-value = "250ms"
-rows = ["GN-3.18"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:10"
-quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toggle-group.scss:142"
+quote = "transition: opacity 200ms $ease-out-quad;"
 
 [[fact]]
 key = "token.motion.timings.linear"
@@ -160,6 +194,11 @@ rows = ["GN-3.19"]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:197"
 quote = "{ \"ease-in-out\",  TRUE,  FALSE, { 0.42, 0.0, 0.58, 1.0 } },"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:626-627"
+quote = "case ADW_EASE_IN_OUT: return ease_cubic_bezier (value, 1, 0.42, 0.0, 0.58, 1.0);"
 
 [[fact]]
 key = "token.motion.timings.ease_in"
@@ -191,9 +230,131 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:200"
 quote = "{ \"ease\",         TRUE,  FALSE, { 0.25, 0.1, 0.25, 1.0 } },"
 
-# `ease_out_cubic` (AdwTimedAnimation's default easing, `ADW_EASE_OUT_CUBIC`, `adw-timed-animation.c:275`) is left
-# out: libadwaita writes it as the polynomial `p * p * p + 1` (`adw-easing.c:175-181`), which is the cubic Bezier
-# (1/3, 1, 2/3, 1), but the quote check cannot verify that form from the source yet (the ledger's queue #68)
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:620-621"
+quote = "case ADW_EASE: return ease_cubic_bezier (value, 1, 0.25, 0.1, 0.25, 1.0);"
+
+# the easings libadwaita's code computes by functions of its own, each `Timing::Platform(Adw(…))` (S2.7, ADD-A123),
+# named for its `AdwEasing` (S4.1 step 1), in `adw-easing.c`'s order: the tab box's and tab grid's drag autoscroll
+[[fact]]
+key = "token.motion.timings.ease_in_cubic"
+value = { platform = { adw = "ease_in_cubic" } }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:166-173"
+quote = "ease_in_cubic (double t, double d) { double p = t / d; return p * p * p; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:566-567"
+quote = "case ADW_EASE_IN_CUBIC: return ease_in_cubic (value, 1);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:1450-1451"
+quote = "autoscroll_factor = adw_easing_ease (ADW_EASE_IN_CUBIC, autoscroll_factor);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:1473"
+quote = "autoscroll_factor = adw_easing_ease (ADW_EASE_IN_CUBIC, autoscroll_factor);"
+
+# AdwTimedAnimation's default easing (the toast overlay, the tab grid, the squeezer and the clamp apply it too)
+[[fact]]
+key = "token.motion.timings.ease_out_cubic"
+value = { platform = { adw = "ease_out_cubic" } }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:175-182"
+quote = "ease_out_cubic (double t, double d) { double p = t / d - 1; return p * p * p + 1; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:568-569"
+quote = "case ADW_EASE_OUT_CUBIC: return ease_out_cubic (value, 1);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-timed-animation.c:273-276"
+quote = "g_param_spec_enum (\"easing\", NULL, NULL, ADW_TYPE_EASING, ADW_EASE_OUT_CUBIC,"
+
+# AdwSpinner's arc
+[[fact]]
+key = "token.motion.timings.ease_in_out_sine"
+value = { platform = { adw = "ease_in_out_sine" } }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:276-281"
+quote = "ease_in_out_sine (double t, double d) { return -0.5 * (cos (G_PI * t / d) - 1); }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:588-589"
+quote = "case ADW_EASE_IN_OUT_SINE: return ease_in_out_sine (value, 1);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spinner-paintable.c:121"
+quote = "t = adw_easing_ease (ADW_EASE_IN_OUT_SINE, t);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spinner-paintable.c:141"
+quote = "t = adw_easing_ease (ADW_EASE_IN_OUT_SINE, t);"
+
+# AdwTabOverview's cross-fade into the pinned tab's thumbnail
+[[fact]]
+key = "token.motion.timings.ease_in_expo"
+value = { platform = { adw = "ease_in_expo" } }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:283-288"
+quote = "ease_in_expo (double t, double d) { return G_APPROX_VALUE (t, 0, DBL_EPSILON) ? 0.0 : pow (2, 10 * (t / d - 1)); }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:590-591"
+quote = "case ADW_EASE_IN_EXPO: return ease_in_expo (value, 1);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-overview.c:1307"
+quote = "gtk_snapshot_push_cross_fade (snapshot, adw_easing_ease (ADW_EASE_IN_EXPO, self->progress));"
+
+# AdwTabOverview's outer and inner outline fades
+[[fact]]
+key = "token.motion.timings.ease_out_expo"
+value = { platform = { adw = "ease_out_expo" } }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:290-295"
+quote = "ease_out_expo (double t, double d) { return G_APPROX_VALUE (t, d, DBL_EPSILON) ? 1.0 : -pow (2, -10 * t / d) + 1; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:592-593"
+quote = "case ADW_EASE_OUT_EXPO: return ease_out_expo (value, 1);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-overview.c:1336"
+quote = "rgba.alpha *= adw_easing_ease (ADW_EASE_OUT_EXPO, self->progress);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-overview.c:1347"
+quote = "rgba.alpha *= adw_easing_ease (ADW_EASE_OUT_EXPO, self->progress);"
 
 [[fact]]
 key = "token.motion.durations.revealer"
@@ -1470,15 +1631,27 @@ quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer:
 absent = ["box-shadow"]
 
 [[fact]]
-# the ring growing in from `offset + 4px` (`_drawing.scss:15`) is not expressible: reported
+# the ring growing in from `offset + 4px` (`_drawing.scss:15`) is not expressible: reported. The mixin states the
+# transition on the unfocused selector alone and no state rule restates it, and GTK times a change by the style
+# after it, the new base style, not the previous one (`gtkcssanimatedstyle.c:818-820`, `:1034`), so the ring's transition is the same from every state: `from` none
 key = "token.focus.transition"
-value = { properties = [], kind = "interpolate", duration_ms = "= mul(token.motion.durations.focus, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true }
+value = { properties = [], kind = "interpolate", duration_ms = "= mul(token.motion.durations.focus, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true, from = "none" }
 rows = ["GN-3.28"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:16"
-quote = "transition: $focus_transition, $transition;"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-16"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px); transition: $focus_transition, $transition;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:818-820"
+quote = "durations = base_style->transition->transition_duration; delays = base_style->transition->transition_delay; timing_functions = base_style->transition->transition_timing_function;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:1015-1034"
+quote = "gtk_css_animated_style_new (GtkCssStyle *base_style,"
 
 [[fact.cite]]
 kind = "published"

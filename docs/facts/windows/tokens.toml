@@ -2064,3 +2064,16 @@ quote = "<x:Double x:Key=\"AppBarButtonContentHeight\">16</x:Double>"
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:366"
 quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\""
+
+# Font fallbacks (S4.4, ADD-A122, ADD-A123): the symbol font is the XAML FontFamily list SymbolThemeFontFamily,
+# Segoe Fluent Icons then Segoe MDL2 Assets, which every FontCodePoint glyph's family takes.
+
+[[fact]]
+key = 'token.text.fallbacks.per_family."Segoe Fluent Icons"'
+value = ["Segoe MDL2 Assets"]
+rows = ["W-FM01†"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20"
+quote = "<FontFamily x:Key=\"SymbolThemeFontFamily\">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>"

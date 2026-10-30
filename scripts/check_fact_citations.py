@@ -115,17 +115,19 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
     (kconfig@6.31.0 src/kconfig_compiler/KConfigXmlParser.cpp:70-77; a `code="true"` default is code, read as any
     text); a `.kcfg`'s numbers are the number form's (a XAML `Thickness`, `Margin` or `Padding` likewise: XAML has
     no byte colour list);
-  - `xaml`: a `TimeSpan` `[d.]h:m:s[.f]` (a duration), and a colour name of XAML_NAMES as an attribute's value or an
-    element's content (`Color="Transparent"`: the names the cited theme resources use, valued as WinUI's
-    `KnownColors.h`, so `Transparent` is white with alpha 0); a `<LinearGradientBrush …>` with `StartPoint` and
-    `EndPoint` adds S2.3's angle (xaml_linear_angle; the ledger's queue #38): the points' direction (dx, dy) in the
-    brush's coordinate space (y down), each axis scaled by a `ScaleTransform` that the quote gives the brush as its
-    `RelativeTransform` or `Transform` before its next brush, is `atan2(dx, -dy)` in degrees taken into `0..360`, 0
-    pointing to the top and growing clockwise, as CSS's `linear-gradient()` (WinUI's elevation border,
-    `StartPoint="0,0" EndPoint="0,3"`, is 180; under the light theme's `ScaleY="-1"`, 0); no angle where a point is
-    missing, the two coincide, or a brush transform is another one. The angle is the points' own: under
-    `MappingMode="RelativeToBoundingBox"` a diagonal is the drawn angle only on a square box (an axis-aligned
-    gradient, or `Absolute` mapping, is exact). The points' numbers stay numbers (an `extent` reads them);
+  - `xaml`: a character reference, `&#x<hex digits>;` or `&#<decimal digits>;`, is its code point's number, as XAML
+    reads it (`&#xE974;` is 59764, a `FontCodePoint`'s `code_point = 0xE974`; S17 *The quote check*, ADD-A123, the
+    ledger's queue #67; equal only to the same integer, below), a `TimeSpan` `[d.]h:m:s[.f]` (a duration), and a colour
+    name of XAML_NAMES as an attribute's value or an element's content (`Color="Transparent"`: the names the cited theme
+    resources use, valued as WinUI's `KnownColors.h`, so `Transparent` is white with alpha 0); a
+    `<LinearGradientBrush …>` with `StartPoint` and `EndPoint` adds S2.3's angle (xaml_linear_angle; the ledger's queue #38): the points'
+    direction (dx, dy) in the brush's coordinate space (y down), each axis scaled by a `ScaleTransform` that the quote
+    gives the brush as its `RelativeTransform` or `Transform` before its next brush, is `atan2(dx, -dy)` in degrees
+    taken into `0..360`, 0 pointing to the top and growing clockwise, as CSS's `linear-gradient()` (WinUI's elevation
+    border, `StartPoint="0,0" EndPoint="0,3"`, is 180; under the light theme's `ScaleY="-1"`, 0); no angle where a point
+    is missing, the two coincide, or a brush transform is another one. The angle is the points' own: under
+    `MappingMode="RelativeToBoundingBox"` a diagonal is the drawn angle only on a square box (an axis-aligned gradient,
+    or `Absolute` mapping, is exact). The points' numbers stay numbers (an `extent` reads them);
   - `kotlin` (Compose): `Color(r, g, b[, a])` and `Color(red = r, green = g, blue = b[, alpha = a])` (Int arguments,
     decimal or `0x`, are bytes; Float ones, with an `f`, fractions), an eight-digit `0xAARRGGBB` integer (ARGB, as in
     `Color(0xFF5C77FF)`; other `0x` integers read nothing), and `[-]<n>.dp`, `[-]<n>.sp` (px) and `<n>.em` (no
@@ -145,8 +147,12 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   unquoted INI value `Theme=breeze`, Qt's `QFont::toString`, whose first field is the family); a font description's
   families (each quoted string or entry read as Pango's `pango_font_description_from_string` reads it, gsettings' font
   keys: the families before an optional size, `<n>` or `<n>px`, and the style words PANGO_WORDS, pango@1.58.2
-  pango/fonts.c:1294-1361; `'Adwaita Sans 11'` gives `Adwaita Sans`, `Cantarell Bold` `Cantarell`). A text value matches
-  a whole candidate only: `Noto Sans` is not in `Noto Sans Mono`, nor `go-next` in `go-next-symbolic`.
+  pango/fonts.c:1294-1361; `'Adwaita Sans 11'` gives `Adwaita Sans`, `Cantarell Bold` `Cantarell`). In `xaml`, each
+  entry of a `<FontFamily …>` element's list (XAML_FONT_FAMILY_RX), split at commas and trimmed as XAML's FontFamily
+  reads it (S17 *The quote check*, ADD-A123, the ledger's queue #67: generic.xaml's `Segoe Fluent Icons,Segoe MDL2
+  Assets` holds `Segoe Fluent Icons` and `Segoe MDL2 Assets`, not `Segoe Fluent`); a `FontFamily="…"` attribute is a
+  quoted string, its entries already the font description's families. A text value matches a whole candidate only:
+  `Noto Sans` is not in `Noto Sans Mono`, nor `go-next` in `go-next-symbolic`.
 - Units (UNITS) by dimension: px, dp, sp (Android's text size before its scaling) are px; pt; ms and s (×1000) are
   ms; deg; rem and em have none (a literal in them is no literal). A literal without a unit takes the value
   literal's dimension; with one it must be of it, px and pt being distinct. Apple's `pt` is a logical point, px (the
@@ -159,7 +165,8 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
   WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
   Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739).
-- Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17); `srgb(…)` and
+- Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17), a character
+  reference's code point exactly (it names one glyph; at 1e-4, U+E975 would be U+E974); `srgb(…)` and
   `display_p3(…)` literals in their own space. A `display_p3(…)` value is the colour as Apple publishes it (S2.1: the
   preset cites the published value exactly and converts when the file is read), so it is compared in Display P3, not
   after a conversion; no pinned source writes a Display P3 notation today (WebKit's CSS and the probe evidence have
@@ -244,7 +251,8 @@ NOTATIONS = {
 
 @dataclass(frozen=True)
 class Lit:
-    """A literal: a number (`dim`: None for unitless, "length", "pt", "duration", "angle", "number") or a colour
+    """A literal: a number (`dim`: None for unitless, "length", "pt", "duration", "angle", "number", "code_point" for
+    a character reference's, equal only to the same unitless integer) or a colour
     (`dim`: "srgb" or "p3", `value`: four channels on the 0-255 scale)."""
     kind: str
     dim: str | None
@@ -311,6 +319,8 @@ QCOLOR_F_RX = re.compile(rf"\bQColor::fromRgbF\(\s*({CPP_ARG})\s*,\s*({CPP_ARG})
 # a defaulted parameter in a declaration, `qreal opacity = 0.125` before the parameter list's next `,` or `)`
 CPP_DEFAULT_RX = re.compile(rf"\b([A-Za-z_]\w*)\s*=\s*({CPP_NUM})\s*(?=[,)])")
 XAML_LINEAR_RX = re.compile(r"<LinearGradientBrush(?=[\s/>])[^>]*>")
+XAML_CHAR_REF_RX = re.compile(r"&#(?:x([0-9A-Fa-f]+)|(\d+));")
+XAML_FONT_FAMILY_RX = re.compile(r"<FontFamily(?=[\s>])[^>]*>([^<]*)</FontFamily\s*>")
 XAML_POINT_RX = re.compile(rf"\b(Start|End)Point\s*=\s*\"\s*({NUM})\s*,\s*({NUM})\s*\"")
 XAML_SCALE_RX = re.compile(r"<LinearGradientBrush\.(?:Relative)?Transform>\s*(?:<ScaleTransform\b([^>]*)/>)?")
 XAML_SCALE_ATTR_RX = re.compile(rf"\bScale([XY])\s*=\s*\"\s*({NUM})\s*\"")
@@ -450,6 +460,9 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
                 add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
                                                                                  else (255,))))
     if notation == "xaml":
+        for m in XAML_CHAR_REF_RX.finditer(text):
+            n = int(m.group(1), 16) if m.group(1) else int(m.group(2))
+            add(m.start(), m.end(), Lit("num", "code_point", float(n)))
         for m in TIMESPAN_RX.finditer(text):
             d, h, mi, s = m.groups()
             ms = ((int(d or 0) * 24 + int(h)) * 60 + int(mi)) * 60000 + float(s) * 1000
@@ -563,6 +576,8 @@ def equal(v: Lit, q: Lit) -> bool:
         return False
     if v.kind == "colour":
         return v.dim == q.dim and all(abs(a - b) <= COLOUR_EQ for a, b in zip(v.value, q.value))
+    if q.dim == "code_point":
+        return v.dim == "number" and v.value == q.value
     if q.dim is not None and q.dim != v.dim:
         return False
     a, b = v.value, q.value
@@ -630,15 +645,19 @@ def font_description_families(s: str) -> list:
     return [f.strip() for f in rest.split(",") if f.strip()]
 
 
-def quote_texts(text: str) -> set:
+def quote_texts(text: str, notation: str = "text") -> set:
     """The whole strings a quote holds by the closed text notations (S17 *The quote check*), whitespace-normalised:
     every quoted string (`"…"`, `'…'`); every entry of a list, a list being each `;`-separated piece of the quote
     after its first `:` or `=` (the whole piece without one) split at commas, an entry trimmed of whitespace,
     enclosing brackets and quotes (CSS's `font-family: "Adwaita Sans", sans-serif;`, an INI key's `A;B;`, Qt's
     `QFont::toString`, whose first field is the family: `font=Noto Sans,10,-1,5,400,…`, an unquoted INI value,
-    `Theme=breeze`); and the families of each of those read as a font description (font_description_families)."""
+    `Theme=breeze`); the families of each of those read as a font description (font_description_families); and in
+    `xaml` each entry of a `<FontFamily>` element's list, split at commas and trimmed as XAML reads it (ADD-A123)."""
     t = normalise(text)
     cands = [m.group(1) for rx in (DQUOTED_RX, SQUOTED_RX) for m in rx.finditer(t)]
+    if notation == "xaml":
+        for m in XAML_FONT_FAMILY_RX.finditer(t):
+            cands += [e.strip() for e in m.group(1).split(",")]
     for piece in t.split(";"):
         m = re.search(r"[:=]", piece)
         for e in (piece[m.end():] if m else piece).split(","):
@@ -1097,7 +1116,7 @@ class Run:
                 conv = conversions_of(c.data)
                 quote = c.data.get("quote") if isinstance(c.data.get("quote"), str) else ""
                 union += convert(quote_literals(quote, notation, self.apple_only(c.data)), conv)
-                text_union |= quote_texts(quote)
+                text_union |= quote_texts(quote, notation)
                 zero = zero or isinstance(c.data.get("absent"), list)
                 brush = brush or (notation == "xaml" and XAML_LINEAR_RX.search(quote) is not None)
             for v in vlits:
@@ -1111,7 +1130,8 @@ class Run:
                 if normalise(t) not in text_union:
                     self.add(item.file, item.ln("value"), f"the value's text {t!r}{f' ({path})' if path else ''} is "
                                                           f"no whole string of a quote serving {g} (a quoted string, "
-                                                          f"a list's entry, a font description's family)")
+                                                          f"a list's entry, a font description's family, a XAML "
+                                                          f"FontFamily list's entry)")
 
     def check_measured(self, item, cite, runs):
         c = cite.data
@@ -1884,6 +1904,11 @@ SELF_TEST_NOTATIONS = [
     ("cpp", "return QColor::fromRgbF(0, 0, 0, opacity);", ["0", "0", "0"]),
     ("cpp", "void f(qreal a = 0.5); x = 2; QColor::fromRgbF(a, a, a)", ["0.5", "2",
                                                                        "srgb(127.5, 127.5, 127.5, 255)"]),
+    # a XAML character reference is its code point's number (ADD-A123, the ledger's queue #67): WinUI's chevron,
+    # AppBarButton_themeresources.xaml:31; the hex colour form and the number form do not read it again
+    ("xaml", '<x:String x:Key="AppBarButtonFlyoutGlyph">&#xE974;</x:String>', ["59764"]),
+    ("xaml", "&#59764; &#xe975; &#x;E974 #E974", ["59764", "59765", "srgb(153, 119, 68, 238)"]),
+    ("text", "&#xE974;", []),
 ]
 
 # (quote, text value, whether a text notation reads it as a whole string; S17 *The quote check*)
@@ -1913,6 +1938,23 @@ SELF_TEST_TEXTS = [
     ("[Icons]\nTheme=breeze-dark", "breeze", False),
 ]
 
+# (notation, quote, text value, whether a text notation reads it as a whole string) for a notation's own text forms:
+# a XAML FontFamily list's entries (ADD-A123, the ledger's queue #67; generic.xaml:20)
+SELF_TEST_NOTATION_TEXTS = [
+    ("xaml", '<FontFamily x:Key="SymbolThemeFontFamily">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>',
+     "Segoe Fluent Icons", True),
+    ("xaml", '<FontFamily x:Key="SymbolThemeFontFamily">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>',
+     "Segoe MDL2 Assets", True),
+    ("xaml", '<FontFamily x:Key="SymbolThemeFontFamily">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>',
+     "Segoe Fluent", False),
+    ("xaml", '<FontFamily x:Key="SymbolThemeFontFamily">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>',
+     "Segoe Fluent Icons,Segoe MDL2 Assets", False),
+    ("text", '<FontFamily x:Key="SymbolThemeFontFamily">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>',
+     "Segoe Fluent Icons", False),
+    ("xaml", "<FontFamily> Segoe UI Variable , Segoe UI </FontFamily>", "Segoe UI", True),
+    ("xaml", '<TextBlock FontFamily="Segoe UI Variable,Segoe UI" />', "Segoe UI Variable", True),
+]
+
 # (notation, text, the literals read) on a source that serves only Apple's presets: a point is a logical point (px)
 SELF_TEST_APPLE = [
     ("text", "Body 17 pt; 44x44 pt; 44 × 44 pt; 6pt", ["17px", "44px", "44px", "44px", "44px", "6px"]),
@@ -1939,6 +1981,13 @@ def self_test() -> int:
     for quote, text, want in SELF_TEST_TEXTS:
         if (text in quote_texts(quote)) != want:
             failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
+    for notation, quote, text, want in SELF_TEST_NOTATION_TEXTS:
+        if (text in quote_texts(quote, notation)) != want:
+            failures.append(f"{notation} text {text!r} in {quote!r}: got {not want}, want {want}")
+    # a glyph's `code_point = 0xE974` against XAML character references (ADD-A123): equal, and a near miss
+    for quote, want in (("&#xE974;", True), ("&#59764;", True), ("&#xE975;", False), ("xE974", False)):
+        if any(equal(Lit("num", "number", 59764.0), q) for q in quote_literals(quote, "xaml")) != want:
+            failures.append(f"code point 0xE974 in {quote!r}: got {not want}, want {want}")
     # S2.8's weight from an `NSFontWeight` (ADD-A123): each threshold's edge, the ends, and the probe's three weights
     edges = [(t, 100 * (i + 2)) for i, t in enumerate(NS_WEIGHT_THRESHOLDS)]
     edges += [(math.nextafter(t, -math.inf), 100 * (i + 1)) for i, t in enumerate(NS_WEIGHT_THRESHOLDS)]
@@ -2086,7 +2135,8 @@ def self_test() -> int:
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
-        print(f"self-test ok ({len(SELF_TEST_NOTATIONS)} notation cases, {len(SELF_TEST_TEXTS)} text cases, "
+        print(f"self-test ok ({len(SELF_TEST_NOTATIONS)} notation cases, "
+              f"{len(SELF_TEST_TEXTS) + len(SELF_TEST_NOTATION_TEXTS)} text cases, "
               f"{len(SELF_TEST_CASES) + 1} fixture cases)")
     return 1 if failures else 0
 
