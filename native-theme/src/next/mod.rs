@@ -8,6 +8,7 @@ mod blocks;
 pub mod color;
 mod error;
 pub mod expr;
+mod inputs;
 mod key;
 #[cfg_attr(
     not(test),
@@ -18,7 +19,10 @@ mod key;
 )]
 mod registry;
 mod roles;
+#[cfg(test)]
+mod roles_tokens_tests;
 mod selector;
+mod tokens;
 mod units;
 mod value;
 mod widgets;
@@ -89,9 +93,31 @@ pub use blocks::{Block, BlockPatch, FieldsBlock};
 pub use color::Color;
 pub use error::KeyError;
 pub use expr::{Expr, ParseError};
+pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 pub use key::Key;
-pub use roles::{GlobalRole, SurfaceRole, SurfaceSet};
-pub use selector::{PartRef, Scheme, VariantRef, WidgetRef};
+pub use roles::{
+    ColorRoles, ColorRolesPatch, DisabledRoles, DisabledRolesPatch, GlobalRole, GlobalRoles,
+    GlobalRolesPatch, ResolvedColorRoles, ResolvedDisabledRoles, ResolvedGlobalRoles,
+    ResolvedStatusColors, ResolvedStatusRoles, ResolvedSurfaceRoles, StatusColors,
+    StatusColorsPatch, StatusRoles, StatusRolesPatch, SurfaceRole, SurfaceRoles, SurfaceRolesPatch,
+    SurfaceSet,
+};
+pub use selector::{PartRef, Scheme, SizeClass, VariantRef, WidgetRef};
+pub use tokens::{
+    Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
+    FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens, IconTokensPatch,
+    KdeColorEffect, KdeContrastEffect, KdeEffects, KdeEffectsPatch, KdeGroup, KdeIntensityEffect,
+    KdeRoleKind, KdeTokens, KdeTokensPatch, KeyRepeat, KeyRepeatPatch, MaterialScheme,
+    MaterialSchemePatch, MaterialVariant, Mnemonics, MotionTokens, MotionTokensPatch,
+    PointerTokens, PointerTokensPatch, ResolvedBehavior, ResolvedCaret, ResolvedFontFallbacks,
+    ResolvedIconSizeTokens, ResolvedIconTokens, ResolvedKdeEffects, ResolvedKdeTokens,
+    ResolvedKeyRepeat, ResolvedMaterialScheme, ResolvedMnemonics, ResolvedMotionTokens,
+    ResolvedPointerTokens, ResolvedSizeClassThreshold, ResolvedTextRendering, ResolvedTextRoles,
+    ResolvedTextTokens, ResolvedThemeChange, ResolvedTokens, ResolvedTouchBehavior,
+    SizeClassThreshold, SizeClassThresholdPatch, SubpixelOrder, TextRendering, TextRenderingPatch,
+    TextRoles, TextRolesPatch, TextScaling, TextTokens, TextTokensPatch, ThemeChange, Tokens,
+    TokensPatch, TouchBehavior, TouchBehaviorPatch,
+};
 pub use units::{
     Axes, Deg, FontSize, Fraction, Length, Ms, Point, Px, Rect, Scalar, Sides, Size, ViewBox,
 };

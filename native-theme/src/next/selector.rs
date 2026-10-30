@@ -36,6 +36,24 @@ pub enum VariantRef {
     Keyed(Key),
 }
 
+/// A window's size class on one axis (S7.3), closed by the catalogue:
+/// Material's window size classes, and Apple's `regular`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SizeClass {
+    /// Compact.
+    Compact,
+    /// Medium.
+    Medium,
+    /// Expanded.
+    Expanded,
+    /// Large.
+    Large,
+    /// Extra large.
+    ExtraLarge,
+    /// Regular.
+    Regular,
+}
+
 /// A colour scheme.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Scheme {

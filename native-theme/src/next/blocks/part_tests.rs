@@ -20,38 +20,10 @@ use super::text::{
 use super::{Apply, BlockPatch, KeyedItem, Merge, Table};
 use crate::key;
 use crate::next::color::Color;
-use crate::next::registry::{BlockForm, FieldInfo, FieldType};
+use crate::next::registry::{FieldInfo, FieldType, join, leaves};
 use crate::next::roles::SurfaceSet;
 use crate::next::units::{Axes, FontSize, Fraction, Length, Ms, Px, Sides};
 use crate::next::value::Value;
-
-/// Every leaf path below `fields`, each prefixed by `prefix`; an enum block
-/// with unit variants is a leaf itself too, as a unit variant is stated at
-/// its path (`corners.top_left = "follow_part"`, S11).
-fn leaves(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<String>) {
-    for field in fields {
-        let path = join(prefix, field.path);
-        match field.ty {
-            FieldType::Block { form, fields, .. } => {
-                if matches!(form, BlockForm::Enum { unit_variants } if !unit_variants.is_empty())
-                    || fields.is_empty()
-                {
-                    out.push(path.clone());
-                }
-                leaves(&path, fields, out);
-            }
-            FieldType::Leaf(_) => out.push(path),
-        }
-    }
-}
-
-fn join(prefix: &str, path: &str) -> String {
-    if prefix.is_empty() {
-        path.to_owned()
-    } else {
-        format!("{prefix}.{path}")
-    }
-}
 
 fn under(prefix: &str, paths: &[&str]) -> Vec<String> {
     paths.iter().map(|path| join(prefix, path)).collect()

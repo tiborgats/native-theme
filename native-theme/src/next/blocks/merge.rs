@@ -2,7 +2,7 @@
 //! over a value.
 
 use super::{BlockPatch, FieldsBlock};
-use crate::next::value::Value;
+use crate::next::value::{SurfaceMap, Value};
 
 /// What stops a merge: a `Fields` patch or an `Append` over a value it
 /// cannot be applied to now.
@@ -24,6 +24,9 @@ pub(crate) enum Below {
     Absent,
     /// `Auto`: refused (S12).
     Auto,
+    /// Nothing: a surface set's fields patched over a map holding no roles
+    /// for the set, so no record lies below them.
+    Missing,
 }
 
 impl MergeConflict {
@@ -143,6 +146,73 @@ pub(crate) fn merge_slot<T: Merge>(
         *earlier = Some(later);
         Ok(())
     }
+}
+
+/// A map whose values are maps.
+type MapOfMaps<K, L, V> = Vec<(K, Vec<(L, V)>)>;
+
+/// A later map of maps merges into the earlier by key, an entry held on both
+/// sides merged by key in turn.
+pub(crate) fn merge_slot_by_key_nested<K: PartialEq, L: PartialEq, V>(
+    earlier: &mut Option<MapOfMaps<K, L, V>>,
+    later: Option<MapOfMaps<K, L, V>>,
+) {
+    let Some(later) = later else { return };
+    if let Some(held) = earlier.as_mut() {
+        merge_by_key_nested(held, later);
+    } else {
+        *earlier = Some(later);
+    }
+}
+
+/// Each later entry is merged by key into the earlier entry of its key, or
+/// is added after the earlier entries.
+pub(crate) fn merge_by_key_nested<K: PartialEq, L: PartialEq, V>(
+    earlier: &mut MapOfMaps<K, L, V>,
+    later: MapOfMaps<K, L, V>,
+) {
+    for (key, entries) in later {
+        match earlier.iter_mut().find(|(held, _)| *held == key) {
+            Some((_, held)) => merge_by_key(held, entries),
+            None => earlier.push((key, entries)),
+        }
+    }
+}
+
+/// A later map of patches per surface set merges into the earlier, set by
+/// set.
+pub(crate) fn merge_slot_surfaces<P: Merge>(
+    earlier: &mut Option<SurfaceMap<P>>,
+    later: Option<SurfaceMap<P>>,
+) -> Result<(), MergeConflict> {
+    let Some(later) = later else { return Ok(()) };
+    let Some(held) = earlier.as_mut() else {
+        *earlier = Some(later);
+        return Ok(());
+    };
+    for (set, patch) in later.into_entries() {
+        match held.get_mut(set) {
+            Some(below) => below.merge(patch).map_err(|c| c.under(set.name()))?,
+            None => {
+                held.insert(set, patch);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Patches per surface set applied over the sets' records.
+pub(crate) fn apply_surfaces<B: Apply<P>, P>(
+    value: &mut SurfaceMap<B>,
+    patch: SurfaceMap<P>,
+) -> Result<(), MergeConflict> {
+    for (set, fields) in patch.into_entries() {
+        match value.get_mut(set) {
+            Some(record) => record.apply(fields).map_err(|c| c.under(set.name()))?,
+            None => return Err(MergeConflict::new(Below::Missing).under(set.name())),
+        }
+    }
+    Ok(())
 }
 
 /// Each later entry replaces the earlier entry of its key, or is added after

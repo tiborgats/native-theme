@@ -32,9 +32,13 @@ pub mod text;
 pub mod transform;
 
 pub(crate) use merge::{
-    Apply, KeyedItem, Merge, MergeConflict, merge_by, merge_by_key, merge_slot, merge_slot_by_key,
-    merge_slot_keyed, replace_slot,
+    Apply, KeyedItem, Merge, MergeConflict, apply_surfaces, merge_by, merge_by_key,
+    merge_by_key_nested, merge_slot, merge_slot_by_key, merge_slot_by_key_nested, merge_slot_keyed,
+    merge_slot_surfaces, replace_slot,
 };
+
+#[cfg(test)]
+pub(crate) use merge::Below;
 
 /// Seals [`Block`]: only the `ThemeParts` derive implements it.
 pub(crate) mod sealed {

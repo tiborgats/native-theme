@@ -6,9 +6,11 @@ use std::fmt;
 
 use super::eval::{Platform, Val};
 use super::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref};
+use crate::next::inputs::{KdeSchemeKey, KdeWmKey};
 use crate::next::key::Key;
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::Scheme;
+use crate::next::tokens::{KdeGroup, KdeRoleKind};
 use crate::next::units::{FontSize, Ms, Px};
 
 /// An operand's, a result's or a field's type (S2.2).
@@ -70,44 +72,26 @@ pub(crate) static SURFACE_SET: EnumTy = EnumTy {
 /// `KdeGroup` (S4.8), `kde_effects`' and `kde_accent`'s `group`.
 pub(crate) static KDE_GROUP: EnumTy = EnumTy {
     name: "KdeGroup",
-    variants: &["active", "disabled", "inactive"],
+    variants: &KdeGroup::NAMES,
 };
 
 /// `KdeRoleKind` (S4.8), `kde_effects`' and `kde_selection_inactive`'s
 /// `role_kind`.
 pub(crate) static KDE_ROLE_KIND: EnumTy = EnumTy {
     name: "KdeRoleKind",
-    variants: &["foreground", "decoration", "background"],
+    variants: &KdeRoleKind::NAMES,
 };
 
 /// `KdeSchemeKey` (S4.8), `kde_accent`'s `key`.
 pub(crate) static KDE_SCHEME_KEY: EnumTy = EnumTy {
     name: "KdeSchemeKey",
-    variants: &[
-        "background_normal",
-        "background_alternate",
-        "foreground_normal",
-        "foreground_inactive",
-        "foreground_active",
-        "foreground_link",
-        "foreground_visited",
-        "foreground_negative",
-        "foreground_neutral",
-        "foreground_positive",
-        "decoration_focus",
-        "decoration_hover",
-    ],
+    variants: &KdeSchemeKey::NAMES,
 };
 
 /// `KdeWmKey` (S4.8), `kde_accent_wm`'s `key`.
 pub(crate) static KDE_WM_KEY: EnumTy = EnumTy {
     name: "KdeWmKey",
-    variants: &[
-        "active_background",
-        "active_foreground",
-        "inactive_background",
-        "inactive_foreground",
-    ],
+    variants: &KdeWmKey::NAMES,
 };
 
 /// `TrackingDesign` (S2.2), `sf_tracking`'s `design`.
