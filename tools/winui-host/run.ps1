@@ -35,13 +35,15 @@ Note "host: $($exe.FullName)"
 
 # The runner's desktop shows the out-of-box experience's privacy page above
 # every window, the host's always-on-top window too, which hides it from the
-# screen captures and the pointer. Its candidate processes are stopped.
+# screen captures and the pointer. Its candidate processes are stopped; the
+# Start menu then opens above the host's window, so its host process is
+# stopped after them (Windows restarts it without opening the menu).
 function Processes([string] $file) {
     Get-Process | Sort-Object Name | Format-Table Name, Id, SessionId, MainWindowTitle -AutoSize |
         Out-String -Width 300 | Set-Content -Path (Join-Path $Out $file)
 }
 Processes 'processes-before.txt'
-foreach ($name in 'WWAHost', 'UserOOBEBroker', 'CloudExperienceHostBroker') {
+foreach ($name in 'WWAHost', 'UserOOBEBroker', 'CloudExperienceHostBroker', 'StartMenuExperienceHost') {
     $found = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
     if ($found.Count -gt 0) {
         $found | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -49,6 +51,7 @@ foreach ($name in 'WWAHost', 'UserOOBEBroker', 'CloudExperienceHostBroker') {
     } else {
         Note "no $name"
     }
+    Start-Sleep -Seconds 3
 }
 Start-Sleep -Seconds 5
 Processes 'processes-after.txt'
