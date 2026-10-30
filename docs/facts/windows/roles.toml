@@ -4129,6 +4129,16 @@ source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2056"
 quote = "<SolidColorBrush x:Key=\"SystemControlHighlightAltAccentBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
 
 [[fact]]
+key = "role.@system_control_foreground_base_medium_high"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_button_text"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2042"
+quote = "<SolidColorBrush x:Key=\"SystemControlForegroundBaseMediumHighBrush\" Color=\"{ThemeResource SystemColorButtonTextColor}\" />"
+[[fact]]
 key = "role.@system_control_highlight_alt_base_high"
 when = { conditions = ["contrast_high"] }
 value = "= role.@system_highlight_text"

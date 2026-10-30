@@ -8615,6 +8615,112 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:78"
 quote = "<DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource ButtonForegroundDisabled}\" />"
 
+# An app-bar button with a Flyout (AppBarButton_Partial.cpp:337-345, HasFlyout): its SubItemChevron
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { variants = ["menu", "tool"] }
+value = "= role.@text_fill_secondary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:25"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForeground\" ResourceKey=\"TextFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:95"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForeground\" ResourceKey=\"TextFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:344-346"
+quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target=\"SubItemChevronPanel.Visibility\" Value=\"{ThemeResource AppBarButtonHasFlyoutChevronVisibility}\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { variants = ["menu", "tool"], states = ["hover"] }
+value = "= role.@text_fill_secondary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:26"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundPointerOver\" ResourceKey=\"TextFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:96"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundPointerOver\" ResourceKey=\"TextFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:249"
+quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundPointerOver}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:344-346"
+quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target=\"SubItemChevronPanel.Visibility\" Value=\"{ThemeResource AppBarButtonHasFlyoutChevronVisibility}\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { variants = ["menu", "tool"], states = ["pressed"] }
+value = "= role.@text_fill_tertiary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:27"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundPressed\" ResourceKey=\"TextFillColorTertiaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:97"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundPressed\" ResourceKey=\"TextFillColorTertiaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:260"
+quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundPressed}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:344-346"
+quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target=\"SubItemChevronPanel.Visibility\" Value=\"{ThemeResource AppBarButtonHasFlyoutChevronVisibility}\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { variants = ["menu", "tool"], states = ["disabled"] }
+value = "= role.@text_fill_disabled"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:29"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundDisabled\" ResourceKey=\"TextFillColorDisabledBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:99"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundDisabled\" ResourceKey=\"TextFillColorDisabledBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:271"
+quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundDisabled}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:344-346"
+quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target=\"SubItemChevronPanel.Visibility\" Value=\"{ThemeResource AppBarButtonHasFlyoutChevronVisibility}\" />"
+
+
 
 # The dialog's default button (ContentDialog's DefaultButtonStates set AccentButtonStyle on it): the accent
 # button's colours in each state. Its padding, border width, font and focus margin are the
@@ -14618,6 +14724,71 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:78"
 quote = "<DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource ButtonForegroundDisabled}\" />"
 
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { conditions = ["contrast_high"], variants = ["menu", "tool"] }
+value = "= role.@system_control_foreground_base_medium_high"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:60"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForeground\" ResourceKey=\"SystemControlForegroundBaseMediumHighBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = ["hover"] }
+value = "= role.@system_control_highlight_alt_base_high"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:61"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundPointerOver\" ResourceKey=\"SystemControlHighlightAltBaseHighBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:249"
+quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundPointerOver}\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = ["pressed"] }
+value = "= role.@system_control_highlight_alt_base_high"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:62"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundPressed\" ResourceKey=\"SystemControlHighlightAltBaseHighBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:260"
+quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundPressed}\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { conditions = ["contrast_high"], variants = ["menu", "tool"], states = ["disabled"] }
+value = "= role.@system_control_disabled_base_medium_low"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:64"
+quote = "<StaticResource x:Key=\"AppBarButtonSubItemChevronForegroundDisabled\" ResourceKey=\"SystemControlDisabledBaseMediumLowBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:271"
+quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundDisabled}\" />"
+
+
 # The drop-down button's chevron (an AnimatedIcon beside the content).
 
 [[fact]]
@@ -14652,6 +14823,110 @@ rows = ["W2-18"]
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
 quote = "Margin=\"8,0,0,0\""
+
+# The app-bar button's chevron: a FontIcon (U+E974 of SymbolThemeFontFamily) at font size 8, top-aligned in
+# its own column with Margin -23,20,12,0 (LabelOnRight -7,20,12,0), mirrored in right-to-left, no size of its own.
+[[fact]]
+key = "button.menu_indicator.glyph.size"
+when = { variants = ["menu", "tool"] }
+value = "8px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:33"
+quote = "<x:Double x:Key=\"AppBarButtonSubItemChevronFontSize\">8</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:68"
+quote = "<x:Double x:Key=\"AppBarButtonSubItemChevronFontSize\">8</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:103"
+quote = "<x:Double x:Key=\"AppBarButtonSubItemChevronFontSize\">8</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
+[[fact]]
+key = "button.menu_indicator.glyph.mirroring"
+when = { variants = ["menu", "tool"] }
+value = "always"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
+[[fact]]
+key = "button.menu_indicator.min_width"
+when = { variants = ["menu", "tool"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["Width", "MinWidth"]
+
+[[fact]]
+key = "button.menu_indicator.transform"
+when = { variants = ["menu", "tool"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["RenderTransform"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu", "tool"] }
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["Transitions"]
+
+# the chevron's start margin from the content columns (it overlaps them); its top margin 20 and end margin 12
+# have no model field (reported)
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { variants = ["menu", "tool"] }
+value = "-23px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:70"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:105"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+
 
 # A whole part's absence (ADD-A121): the chevron is DropDownButton's alone
 [[fact]]
