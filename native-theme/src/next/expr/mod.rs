@@ -309,6 +309,9 @@ pub enum Func {
     KcuOverlay,
     /// `kirigami_tint(c, tint, alpha)`: Kirigami's `ColorUtils.tintWithAlpha`.
     KirigamiTint,
+    /// `kirigami_lerp(a, b, balance)`: Kirigami's
+    /// `ColorUtils.linearInterpolation`, in HSV.
+    KirigamiLerp,
     /// `kirigami_label_icon_size(font_height)`: Kirigami's `units.cpp`.
     KirigamiLabelIconSize,
     /// `kirigami_badge_text(text, background)`: Kirigami's `Badge.qml`.
@@ -349,7 +352,7 @@ pub enum Func {
 
 impl Func {
     /// Every function, in S2.2's table's order.
-    pub const ALL: [Func; 40] = [
+    pub const ALL: [Func; 41] = [
         Func::Alpha,
         Func::WithAlpha,
         Func::Mix,
@@ -372,6 +375,7 @@ impl Func {
         Func::QtDarker,
         Func::KcuOverlay,
         Func::KirigamiTint,
+        Func::KirigamiLerp,
         Func::KirigamiLabelIconSize,
         Func::KirigamiBadgeText,
         Func::KaCardBorder,
@@ -418,6 +422,7 @@ impl Func {
             Func::QtDarker => "qt_darker",
             Func::KcuOverlay => "kcu_overlay",
             Func::KirigamiTint => "kirigami_tint",
+            Func::KirigamiLerp => "kirigami_lerp",
             Func::KirigamiLabelIconSize => "kirigami_label_icon_size",
             Func::KirigamiBadgeText => "kirigami_badge_text",
             Func::KaCardBorder => "ka_card_border",

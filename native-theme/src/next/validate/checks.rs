@@ -562,6 +562,13 @@ impl<'a> Checker<'a> {
     fn call(&mut self, func: Func, args: &[Expr], at: &str) {
         match func {
             Func::Pick if args.len() < 2 => self.problem(at, ProblemKind::PickWithoutColors),
+            Func::KirigamiLerp => {
+                if let Some(Expr::Lit(Literal::Number(balance))) = args.get(2)
+                    && !(0.0..=1.0).contains(balance)
+                {
+                    self.problem(at, ProblemKind::OutOfRange { expected: "0..=1" });
+                }
+            }
             Func::KdeAccent => {
                 let name = |index: usize| match args.get(index) {
                     Some(Expr::Lit(Literal::Name(Name::Variant(name)))) => Some(name.as_str()),

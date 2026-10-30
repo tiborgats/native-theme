@@ -17,6 +17,7 @@ mod inputs;
 mod key;
 mod layer;
 pub mod placement;
+mod platform;
 mod presets;
 #[cfg_attr(
     not(test),

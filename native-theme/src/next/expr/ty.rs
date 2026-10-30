@@ -703,7 +703,7 @@ impl Checker<'_> {
             Func::QtLighter | Func::QtDarker => {
                 self.fixed(func, args, depth, &[COLOR, NUMBER], color())
             }
-            Func::KcuMix | Func::KcuTint | Func::KirigamiTint => {
+            Func::KcuMix | Func::KcuTint | Func::KirigamiTint | Func::KirigamiLerp => {
                 self.fixed(func, args, depth, &[COLOR, COLOR, NUMBER], color())
             }
             Func::KdeEffects => self.fixed(
@@ -1523,6 +1523,26 @@ mod tests {
     }
 
     #[test]
+    fn kirigami_lerp_is_implemented() {
+        assert_eq!(
+            typed(
+                "kirigami_lerp(surface.foreground, #000000, 0.15)",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused("kirigami_lerp(surface.foreground, 4px, 0.15)", Ty::Color),
+            TypeError::Argument {
+                func: Func::KirigamiLerp,
+                index: 1,
+                expected: Ty::Color,
+                found: Ty::Length
+            }
+        );
+    }
+
+    #[test]
     fn uifm_scaled_takes_length_or_font_size() {
         for text in [
             "uifm_scaled(4px, body)",
@@ -1608,6 +1628,8 @@ mod tests {
                 Func::KdeAccentWm,
                 2,
             ),
+            ("kirigami_lerp(#ff0000, #000000)", Func::KirigamiLerp, 2),
+            ("with_alpha(#ff0000)", Func::WithAlpha, 1),
         ] {
             assert_eq!(refused(text, Ty::Color), TypeError::Arity { func, found });
         }

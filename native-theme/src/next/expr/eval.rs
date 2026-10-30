@@ -76,22 +76,37 @@ pub(crate) trait Env {
 /// typed expression calls: typing refuses the others
 /// ([`TypeError::NotImplemented`](super::ty::TypeError::NotImplemented)).
 ///
-/// Each is implemented under `next::platform`, with its vector table, by the
-/// task that needs it (the M1a design's task 13 and the value phase); none is
-/// yet.
+/// Each is implemented under `next::platform` by the task that needs it (the
+/// M1a design's task 13 and the value phase).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Platform {}
+pub(super) enum Platform {
+    /// `kirigami_lerp(a, b, balance)`.
+    KirigamiLerp,
+}
 
 impl Platform {
     /// The implemented platform function `func` names; `None` for one not
     /// implemented yet and for the model's own arithmetic.
-    pub(super) fn of(_func: Func) -> Option<Platform> {
-        None
+    pub(super) fn of(func: Func) -> Option<Platform> {
+        match func {
+            Func::KirigamiLerp => Some(Platform::KirigamiLerp),
+            _ => None,
+        }
     }
 
     /// The function's value over its typed arguments.
-    fn eval(self, _args: &[Node], _env: &dyn Env) -> Val {
-        match self {}
+    fn eval(self, args: &[Node], env: &dyn Env) -> Val {
+        let arg = |index: usize| args.get(index).map(|node| eval(node, env));
+        match self {
+            Platform::KirigamiLerp => {
+                let (a, b, balance) = (arg(0), arg(1), arg(2));
+                Val::Color(crate::next::platform::kirigami_lerp::kirigami_lerp(
+                    a.as_ref().map_or_else(transparent, color),
+                    b.as_ref().map_or_else(transparent, color),
+                    balance.as_ref().map_or(0.0, number),
+                ))
+            }
+        }
     }
 }
 
@@ -378,6 +393,18 @@ mod tests {
                 g: 0.0,
                 b: 0.0,
                 a: 0.25
+            })
+        );
+        // A platform function: Kirigami's interpolation of two greys, as
+        // Qt's 16-bit `QColor` gives it (`next::platform::kirigami_lerp`).
+        let grey = 42148.0 / 65535.0;
+        assert_eq!(
+            value("kirigami_lerp(#808080, #c8c8c8, 0.5)", Ty::Color),
+            Val::Color(Color {
+                r: grey,
+                g: grey,
+                b: grey,
+                a: 1.0
             })
         );
         assert_eq!(

@@ -469,6 +469,18 @@ fn refusal_pick_without_colors() {
 }
 
 #[test]
+fn refusal_kirigami_lerp_balance() {
+    assert_eq!(
+        bare(&accent("= kirigami_lerp(#000000, #ffffff, 1.5)")),
+        ["colors.light.global.accent: out of range: 0..=1"]
+    );
+    assert_eq!(
+        bare(&accent("= kirigami_lerp(#000000, #ffffff, 0.15)")),
+        NONE
+    );
+}
+
+#[test]
 fn refusal_too_deep() {
     let nested = |calls: usize| {
         let inner = Expr::Lit(crate::next::expr::Literal::Number(1.0));
