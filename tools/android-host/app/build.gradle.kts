@@ -5,7 +5,9 @@ plugins {
 
 android {
     namespace = "dev.nativetheme.androidhost"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         applicationId = "dev.nativetheme.androidhost"

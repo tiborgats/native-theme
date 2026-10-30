@@ -2,7 +2,8 @@
 # (docs/todo_v0.7.1_model-completeness-ledger.md, *Release set*); the beta BOM
 # 2026.10.01 is the one that lists material3 1.5.0-beta02, with Compose
 # 1.13.0-beta02 (material3's own metadata requires Compose 1.12.0 or newer).
-# The AAR requires compileSdk 37 and AGP 9.1.0 or newer.
+# material3 requires compileSdk 37 and AGP 9.1.0 or newer; Compose 1.13.0-beta02
+# requires compileSdk 37.1.
 [versions]
 agp = "9.5.0"
 kotlin = "2.4.21"

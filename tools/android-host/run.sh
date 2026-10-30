@@ -49,7 +49,7 @@ esac
 # package path | revision | archive | SHA-1 (repository2-3.xml, read 2026-10-30)
 packages=(
   "platform-tools|37.0.1|platform-tools_r37.0.1-linux.zip|477254aa5f903c15cf51001717bdf347fb6b53e0"
-  "platforms;android-37.0|2|platform-37.0_r02.zip|ed8ebf7f8822a4de5686d427f237d2fa30ff7410"
+  "platforms;android-37.1|1|platform-37.1_r01.zip|62aeba1ec09c2b1fdf888e79549daf678fa0d75f"
   "build-tools;37.0.0|37.0.0|build-tools_r37_linux.zip|70954e99f4c3d9d46ee70fa32624672fe7cd6ebe"
   "emulator|37.2.13|emulator-linux_x64-16740729.zip|f41f9e31eb5ca64926603c03265c50bbc0ff4172"
   "$image_path|$image_revision|$image_archive|$image_sha1"
