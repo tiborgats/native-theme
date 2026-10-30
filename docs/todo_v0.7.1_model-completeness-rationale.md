@@ -475,7 +475,10 @@ shares) are a paint layer a rule appends over the fill beneath (R6), with a colo
 Material's ripple is the pressed layer's transition (R9). Where a platform times a state layer or the press ripple
 apart from the part's own paint (Compose fades its state layer by specs of its own, grows and fades the press ripple by
 its own, and snaps a toggle's, a chip's or an icon button's container colour), the layer states its role, and each
-transition times only the layers of the role it names (R9).
+transition times only the layers of the role it names (R9). A part holds at most one layer of each role, a later
+rule's layer of a role replacing the earlier, as Compose draws one state layer and one ripple; a role layer's colour
+follows the current style at once and only its alpha is timed, as Compose redraws them in the current colour; and the
+rest style states them at zero alpha, so they never appear or disappear.
 
 ### R4 — The facts gate
 
@@ -728,7 +731,9 @@ MAT-X13–MAT-X15, X-MO-1).
   toolkit has from the press itself: the layer grows from it, with the radius, durations and opacities Material
   states (MAT-X9) as the transition's kind-specific values; its fade on release is the transition of the
   style entered, {hover} if the pointer is still on the control, as the style entered governs: that style's
-  transition `from {pressed}`, of the ripple's kind. One transition governs a property group per change, as in CSS,
+  transition `from {pressed}`, an interpolation of the ripple's alpha that starts no sooner than the ripple's
+  minimum press (Compose's: when its grow ends) while the circle grows on, a release during the fade-in setting the
+  alpha to full; the ripple's own transition states its fade-in, grow and the centre's travel. One transition governs a property group per change, as in CSS,
   except that a fill's layers are timed per role (R3): the part's own layers, the state layers and the press ripple
   each by the last applicable transition naming their role, so a ripple never times the container. Weighed: the state
   layer as a part of its own (a part more on every widget that draws one, and the ripple still sharing its fill);
@@ -1293,7 +1298,11 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
   own (CONTRA-7, settled; CONTRA-2's velocity curves stay members), R25.6 following.
 - R3, R9 (the independent checks' fixes): a fill layer's role and transitions timing per role, the press ripple's
   release fade `from {pressed}`; Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
-  none under Kirigami (qqc2-desktop-style's style item paints with no widget).
+  none under Kirigami (qqc2-desktop-style's style item paints with no widget); one layer per role, a later rule's
+  replacing the earlier, the role layers' alpha alone timed and stated at zero alpha at rest; the press ripple's
+  lifecycle (its fade-in, grow and minimum press before the release fade); the checkbox's, radio's and switch's
+  `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state opacity
+  dropped.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.

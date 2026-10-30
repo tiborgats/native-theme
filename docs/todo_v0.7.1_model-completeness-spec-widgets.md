@@ -243,7 +243,11 @@ Each `### <widget>` section states, in this order:
   focused shows both, two states drawn together (R3); the preset writes its `{pressed}` rule before the state-layer
   rules, so the press layer is appended first and lies beneath (ADD-A121). The appended layers carry their roles
   (S2.3): the state layer `role = StateLayer`, the press layer `role = Ripple`, in an appended `fill` and in a
-  `state_layer` part's fill alike. Only the state layer (an appended
+  `state_layer` part's fill alike. The rest style states both at zero alpha in the current content colour, each state's
+  rule restates the layer of its role (one layer per role, S2.3), and a `{checked}`, `{selected}` or `{invalid}` twin is
+  written after its plain rule, so its colour is the one drawn; a role layer's colour follows the style at once and only
+  its alpha is timed, as Compose draws them in the current content colour (`material3-ripple/…/Ripple.kt:380-385`,
+  `CommonRipple.kt:56-68`). Only the state layer (an appended
   `fill` layer, or a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`: a
   hover, focus or press that Compose draws as a `Surface`'s or clickable's ripple is a state layer wherever the row
   writes it, a whole `fill` included (the year cell, `DatePicker.kt:2414-2428`, whose container follows `selected`
@@ -256,8 +260,10 @@ Each `### <widget>` section states, in this order:
   disabled over dragged over selected, `:751-772`; the split button's shape by its pressed state alone,
   `SplitButton.kt:698`, `:705`), and where the source states none (the outlined button's hovered and focused outlines,
   `_md-comp-outlined-button.scss:84`, `:100`, which Compose's border and material-web's CSS do not rank) in the row's
-  order, hover, focus_visible, pressed, dragged, disabled, the later winning, a reasoned choice the state models record
-  as the recency tie-break is (S17). A control with an elevation shows the elevation of the
+  order, hover, focus_visible, pressed, dragged, disabled, the later winning, the facts stating such a combination
+  (`{hover, focus_visible}` on the outlined button) with that reason and the gate checking it (S17). That order is the
+  plain-flag rules'; a state-layer row's `{pressed}` alternative is its ripple rule, written before its state-layer
+  rules wherever the row lists it. A control with an elevation shows the elevation of the
   latest of hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`,
   `FloatingActionButton.kt:1300-1347`, `ToggleButton.kt:1589-1633`; the split button's halves through the button's
   `ButtonElevation`, `SplitButton.kt:687-1294`, `:709`, `:791`, `:917`), and of drag too on cards and chips
@@ -276,12 +282,17 @@ Each `### <widget>` section states, in this order:
   `:463-483`): by the interaction entered, or, going to none, by the one left, all linear. So the rest style states the
   outgoing fade with no `from`, then the drag's outgoing one `from {dragged}` where the set holds `dragged`, both
   `layer = StateLayer`; each state-layer rule states its incoming fade, `layer = StateLayer`; the `{pressed}` rule the
-  press ripple's `Ripple` transition and the rest style its release fade `from {pressed}`, both `layer = Ripple` (R9);
+  press ripple's `Ripple` transition and the rest style its release fade `from {pressed}`, an `Interpolate`, both
+  `layer = Ripple` (S2.7's press ripple: the fade waits for the grow, Compose's `RippleAnimation.kt:76-104`);
   and the container's own layers take no transition where Compose snaps them (a selected chip's, `Chip.kt:4070-4076`;
   a checked toggle button's, `ToggleButton.kt:178`, `:1446-1452`; a checked icon button's, `IconButton.kt:1428-1436`).
-  Each role is timed by its own transitions (S2.7), so a toggle clicked while hovered snaps its container, keeps its
-  hover layer and fades the press ripple by the ripple's own fade, and a hover that ends while the press holds fades
-  the hover layer by the outgoing spec while the ripple holds (MAT-X9).
+  Each role is timed by its own transitions (S2.7), so a toggle clicked while hovered snaps its container, its hover
+  layer taking the checked colour at once at its alpha unchanged, and its ripple, its grow done, fading in the checked
+  content colour; a hover that ends while the press holds fades the hover layer's alpha by the outgoing spec while the
+  ripple holds (MAT-X9). Where Compose animates a container or content colour itself, the part's own layers, or its
+  text or icon, take that transition (`animateColorAsState`, `animateColor`: the list item, the date picker's cells,
+  the selectable menu item, the tab's and the navigation bar's content, the toggle's outline; MAT-L, MAT-N16, MAT-M1,
+  MAT-TB1, MAT-N12, MAT-B12).
   Compose's buttons, toggle buttons and cards name the state left by the elevation they were heading for, the first of
   pressed, hovered, focused (and dragged) with that value (`Button.kt:1758-1764`, `ToggleButton.kt:1644-1650`,
   `Card.kt:733-740`; the FAB and the chips keep the interaction itself, `FloatingActionButton.kt:1417-1430`,
@@ -1910,8 +1921,8 @@ spaces:
   - `thumb_icon`, in `thumb` — Material's check or close icon on the handle (MAT-SW3): `icon`, `glyph` (the symbol: the check
     under `{checked}`, the close otherwise, MAT-SW3), `opacity` (the disabled icon's opacity, MAT-SW3), `transitions`
     (MAT-SW8's icon transitions).
-  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `fill` (a transparent base with the press ripple, role
-    `Ripple`, and over it the hover or focus state layer, role `StateLayer`, appended by rules, each its alpha in its
+  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `fill` (a transparent base, then the press ripple, role
+    `Ripple`, and over it the hover or focus state layer, role `StateLayer`, stated at rest at zero alpha and restated by rules, one per role, each its alpha in its
     colour: Compose's ripple indication, `Switch.kt:191-198`; S2.3), `corners` (its shape), `min_width`, `min_height`,
     `transitions` (the layers' fades by role, MAT-X9).
   - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
@@ -1997,8 +2008,8 @@ spaces:
     these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
-  - `state_layer` — Material's halo (MAT-C2): `fill` (a transparent base with the press ripple, role `Ripple`, and over
-    it the hover or focus state layer, role `StateLayer`, appended by rules, each its alpha in its colour: Compose's
+  - `state_layer` — Material's halo (MAT-C2): `fill` (a transparent base, then the press ripple, role `Ripple`, and over
+    it the hover or focus state layer, role `StateLayer`, stated at rest at zero alpha and restated by rules, one per role, each its alpha in its colour: Compose's
     ripple indication, `Checkbox.kt:554-579`; S2.3), `corners` (its shape), `min_width`, `min_height`, `transitions`
     (the layers' fades by role, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
@@ -2071,9 +2082,9 @@ spaces:
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
     (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
-  - `state_layer` — Material's halo (MAT-C2): `fill` (a transparent base with the press ripple, role `Ripple`, and over
-    it the hover or focus state layer, role `StateLayer`, appended by rules, each its alpha in its colour: Compose's
-    ripple indication, `RadioButton.kt:160-165`; S2.3), `corners` (its shape), `min_width`, `min_height`, `transitions`
+  - `state_layer` — Material's halo (MAT-C2): `fill` (a transparent base, then the press ripple, role `Ripple`, and over
+    it the hover or focus state layer, role `StateLayer`, stated at rest at zero alpha and restated by rules, one per role, each its alpha in its colour: Compose's
+    ripple indication, `RadioButton.kt:163-169`; S2.3), `corners` (its shape), `min_width`, `min_height`, `transitions`
     (the layers' fades by role, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`.
 - **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
@@ -2083,7 +2094,7 @@ spaces:
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates; CheckStates is
   `checked`, not a group); others none (states combine; `material-3`'s state layers are a recency set, below);
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
-  Material's recency sets, above: Compose's ripple, `RadioButton.kt:160-165`; `pressed` combines).
+  Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
@@ -2613,8 +2624,10 @@ spaces:
     `transform`, `transitions` (its scale per state and that scale's animation, W1-068).
   - `state_layer` — Material's halo round the handle (MAT-S7), named as `switch`'s, `checkbox`'s and `radio`'s: `fill`,
     `corners` (its shape), `opacity` (per state, MAT-S7), `min_width`, `min_height`. Unlike theirs it is no ripple: at
-    the pin Compose's slider indicates only focus there, a ring with the press, hover and drag indications off
-    (`Slider.kt:930-946`, `:1435-1470`), so the halo is the tokens' and its states an exclusive group (above).
+    the pin Compose's slider draws no indication on the handle under the default ripple theme
+    (`OpacityFocusThemeConfiguration`, `Ripple.kt:359`), and only an inset focus ring, with the press, hover and drag
+    indications off, under an inset-ring theme (`Slider.kt:930-946`, `:1435-1470`), so the halo is the tokens' and its
+    states an exclusive group (above).
   - `tick` *(element)* — a tick mark (its fill depends on whether it lies within `value_fill`): `fill`, `corners` (a line
     or a dot, MAC-SL04, MAT-S5), `min_width`, `min_height` (today's `tick_mark_length_px`; GN-1.100, SL-6).
   - `stop_indicator` *(element)* — Material's stop dot (MAT-S4): `fill`, `corners`, `min_width`, `min_height`.
@@ -3198,10 +3211,11 @@ spaces:
     MAC-SB02): `icon` (its style and size), `corners`, `min_width`, `min_height` (an image's or video's reserved
     size, L-8, MAT-L2), `transitions` (WinUI's settings gear, an AnimatedIcon: `TransitionKind::Keyed` of group `Icon`,
     W3-28, ADD-A27).
-  - `secondary_text` — subtitle, supporting or value text (L-7, MAT-L1, Q1.87, MAC-L04): `text`.
-  - `trailing_text` — trailing supporting text or a value cell's trailing value (MAT-L1, L-7, MAT-SB5): `text`.
-  - `overline_text` — Material's overline (MAT-L1): `text`.
-  - `trailing_icon` — Material's trailing icon (MAT-L3): `icon`.
+  - `secondary_text` — subtitle, supporting or value text (L-7, MAT-L1, Q1.87, MAC-L04): `text`, `transitions` (the Expressive item's colours, MAT-L10).
+  - `trailing_text` — trailing supporting text or a value cell's trailing value (MAT-L1, L-7, MAT-SB5): `text`,
+    `transitions` (the Expressive item's colours, MAT-L10).
+  - `overline_text` — Material's overline (MAT-L1): `text`, `transitions` (the Expressive item's colours, MAT-L10).
+  - `trailing_icon` — Material's trailing icon (MAT-L3): `icon`, `transitions` (the Expressive item's colours, MAT-L10).
   - `accessory` *(element)*, in `row` — a system accessory, its identity carried as a variant (L-12), and the reorder
     handle two platforms draw, typed `reorder` (iOS's reorder control, L-12; Kirigami's `ListItemDragHandle`, Q2.43):
     `glyph` (with its size), `icon` (Kirigami's `handle-sort` icon, Q2.43), `fill`, `opacity` (the handle's reduced
@@ -3440,8 +3454,8 @@ spaces:
     `icon`, `indicator` and `attention_indicator`
     belong to it and are queried with it.
   - `label` — the tab's label: `text` (font, elision: per platform, a fade at the edges on GNOME
-    GN-1.129), `focus` (the focus indicator of kind Underline where focus is a line under the label, K1.129).
-  - `icon` — the tab's icon: `icon` (its style per state, W1-081, K1.130, MAT-TB4).
+    GN-1.129), `focus` (the focus indicator of kind Underline where focus is a line under the label, K1.129), `transitions` (Material's content colour fade, MAT-TB1).
+  - `icon` — the tab's icon: `icon` (its style per state, W1-081, K1.130, MAT-TB4), `transitions` (Material's content colour fade, MAT-TB1).
   - `scroll_arrow` *(element)*, in `bar` — overflow arrows (GN-1.119, K1.125, W1-083): `fill`, `glyph`, `padding`,
     `margin` (GNOME's negative margins, GN-1.119), `min_width` (WinUI's scroll-button width, W1-083).
   - `separator` *(element)*, in `tab_box` — the line between two tabs, an element whose previous and next siblings are
@@ -4553,8 +4567,8 @@ spaces:
     disabled, focused: T-3, MAT-N12). `item_icon`, `item_label`, `indicator` belong to `item` and are queried with it.
   - `item_icon` — `icon` per state (the selected symbol variant: `item_icon.icon.symbol_variants`, ADD-A37), `glyph`
     (the More item's system glyph, `GlyphSource::NamedSystemImage`, by a rule `@ variant @more`: UIKit draws it for
-    `UITabBarItem.SystemItem.more`, its symbol named by P3-2†'s measurement).
-  - `item_label` — `text` per state (weight under `{selected}`, elision).
+    `UITabBarItem.SystemItem.more`, its symbol named by P3-2†'s measurement), `transitions` (Material's icon colour, MAT-N12).
+  - `item_label` — `text` per state (weight under `{selected}`, elision), `transitions` (Material's label colour, MAT-N12).
   - `indicator` — the selected item's indicator (Material's active indicator, MAT-N12; iOS 26's glass lens, T-8):
     `fill`, `corners`, `min_width`, `min_height`, `transform` (the lens growing while it follows a drag across the
     bar, iOS 26, T-8, as `segmented_control.indicator`'s, SG-4), `transitions`.
@@ -4705,19 +4719,19 @@ spaces:
   - `day` *(element)* — a day cell: `fill`, `corners`, `stroke`, `padding` (GN-2.25, W2-02), `min_width`,
     `min_height` (Material's cell size, MAT-N16), `opacity` (other-month days: K-KA-21†, MAT-N16), `focus` (GN-2.25,
     K-KA-21†). `day_label`, `today_marker`, `decoration`, `range_band` belong to `day`, nest in it and are queried
-    with it.
+    with it, `transitions` (Material's container colour animated into a selection, MAT-N16).
   - `day_label` — its number: `text` (tabular figures, GN-2.25; iOS's `fontDesign`, C-6; Windows' blackout
     strikethrough, W2-02, a `Strike` decoration under `{@blackout}` whose `thickness` and `offset` the value phase
     states from CalendarView's source: references to `element.font_strikeout_thickness` and
     `element.font_strikeout_offset`, declared `data = { day_label = ["font_strikeout_offset",
     "font_strikeout_thickness"] }`, where WinUI draws the line from the font, a number where it draws a fixed line,
-    S2.8).
+    S2.8), `transitions` (Material's number colour, MAT-N16).
   - `today_marker` — GNOME's underline, Material's outline: `stroke`, `corners`.
   - `decoration` — iOS's dot, image or custom decoration (C-6): `fill`, `corners`, `icon`, `min_width`, `min_height`.
   - `range_band` — Material's range selection band behind a day, by the day's own `@range_start`, `@range_end`,
     `@in_range` (MAT-N16): `fill`, `min_height`.
   - `year` *(element: Material's year cells, Windows' year and decade items, K-KA-21†'s year view)*: `fill`, `stroke`,
-    `corners`, `text`, `min_width`, `min_height` (MAT-N16), `opacity` (years outside the decade, K-KA-21†), `focus`.
+    `corners`, `text`, `min_width`, `min_height` (MAT-N16), `opacity` (years outside the decade, K-KA-21†), `focus`, `transitions` (Material's container and text colours, MAT-N16).
   - `month` *(element: Windows' month items, K-KA-21†'s month view)*: `fill`, `stroke`, `corners`, `text`, `focus`.
   - `clock_face` — macOS's clockAndCalendar style: `fill`, `stroke`.
   - `clock_hand` — macOS's clockAndCalendar style: `stroke`.
@@ -6970,11 +6984,12 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Variants:** typed `primary` (GNOME's suggested look; Windows' accent style), `destructive` (GN-2.29), `flat`
   (GN-2.29), `toggle` (Windows' ToggleSplitButton: button's `toggle` meaning, R15; its state `checked`, W2-17); keyed
   `adwaita` `@opaque` (GN-2.29), `@raised` (kept raised in a toolbar, GN-1.151); `kde-breeze` `@ka_double_floating`
-  (K-KA-27†); `material-3`: Compose's four forms, as `button`'s (MAT-B1): the filled one the base
+  (K-KA-27†); `material-3`: Compose's four forms, as `button`'s (MAT-B1) but for the filled one, which is `button`'s
+  `primary` and here the base, `primary` being undeclared on `material-3`
   (`SplitButtonDefaults.LeadingButton` and `TrailingButton`, `SplitButton.kt:681-687`, `:761-767`, `:872-879`), the
   tonal one `tinted` (`TonalLeadingButton`, `TonalTrailingButton`, `:993-999`, `:1053-1060`), and keyed `@outlined`
   (`:1110-1116`, `:1170-1177`, no elevation) and `@elevated` (`:1227-1233`, `:1287-1294`), in one `exclusive_variants`
-  group; the split-button tokens state sizes and shapes only (`_md-comp-split-button-*.scss`), so the forms' colours
+  group `[tinted, @outlined, @elevated]`; the split-button tokens state sizes and shapes only (`_md-comp-split-button-*.scss`), so the forms' colours
   and elevations are Compose's (R1.6), its `ButtonDefaults` colours and elevations (MAT-N7).
 - **Sizes and densities:** `material-3` flavour `expressive`: `extra_small`, `small`, `regular`, `large`,
   `extra_large` (Material's xsmall … xlarge, MAT-N7, ADD-A62); `macos-*`: its control sizes (MAC-N28†).
@@ -6995,9 +7010,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   halves stands for it, MAT-N7; `kde-breeze` by a rule under `variant @ka_double_floating`, the pill drawing no
   line between its halves, K-KA-27†). values: `menu_placement` (`kde-breeze` by a rule under
   `variant @ka_double_floating`, as for `arrow`, K-KA-27†); fields: `body.shadow` (all but `kde-breeze`; `kde-breeze` by its base, outside
-  `variant @ka_double_floating`, whose shared shadow is the one drawn, K-KA-27†), `primary.shadow` (all but `material-3`),
-  `secondary.shadow` (all but `material-3`; `material-3` by a rule under `@outlined`, whose halves have no
-  elevation, `SplitButton.kt:1116`, `:1177`).
+  `variant @ka_double_floating`, whose shared shadow is the one drawn, K-KA-27†), `primary.shadow` (all but `material-3`; `material-3` by a rule under `@outlined`, whose halves have no
+  elevation, `SplitButton.kt:1116`, `:1177`),
+  `secondary.shadow` (all but `material-3`; `material-3` by a rule under `@outlined`, as `primary.shadow`).
 - **State-model source:** GNOME `_buttons.scss` (`splitbutton`); macOS `NSComboButton.Style.split`; Material
   split-button tokens; Windows SplitButton visual states; KDE Breeze's tool-button branches for `MenuButtonPopup`
   (`st:4426-4465`, `st:4987-5051`, K1.155); kirigami-addons `DoubleFloatingButton.qml`.
