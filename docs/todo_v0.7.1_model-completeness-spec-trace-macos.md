@@ -440,7 +440,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF03 | `reader:macos:NSColor.systemYellow, systemPurple, systemPink, systemTeal, systemIndigo, systemCyan, systemMint, systemBrown, systemGray` | reader |
 | MAC-DF04 | `role.@under_page_background` | role |
 | MAC-DF04 | `role.global.find_highlight` | role |
-| MAC-DF04 | `role.@selected_control` | role |
+| MAC-DF04 | `role.@selected_control` (the accent input `selected_control`'s value, S9.1, ADD-A123) | role |
+| MAC-DF04 | `input.selected_control` (an accent input, S9.1: `NSColor.selectedControlColor`, ADD-A123) | input |
 | MAC-DF04 | `role.@selected_control_secondary` | role |
 | MAC-DF04 | `role.view.background` | role |
 | MAC-DF04 | `role.@text_background` | role |
@@ -495,8 +496,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `input.highlight` (an accent input, S9.1) | input |
-| MAC-DF05† | `role.@highlight` | role |
+| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, as it follows neither the accent nor the highlight setting, the probe's accent pass; no input, ADD-A123) | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
 | MAC-TS03† | `token.text.keyed.large_title_tight` | token |
@@ -754,6 +754,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X12 | `slider.values.repeat_delay / repeat_interval_ms` (= token.params.pointer_repeat.delay / .interval) | field |
 | MAC-X12 | `reader:macos:NSEvent.doubleClickInterval, keyRepeatDelay, keyRepeatInterval; getPeriodicDelay; NSTextInsertionPointBlinkPeriodOn/Off; NSInitialToolTipDelay` | reader |
 | MAC-X13 | `PartStyle.focus FocusIndicator (shape, offset, opacity, transition) per control` | field |
+| MAC-X13 | `token.focus.paint` (the accent input `keyboard_focus_indicator`'s value, its alpha the ring's opacity, S9.1, ADD-A123) | token |
+| MAC-X13 | `input.keyboard_focus_indicator` (an accent input, S9.1: `NSColor.keyboardFocusIndicatorColor`, ADD-A123) | input |
+| MAC-X13 | `reader:macos:NSColor.keyboardFocusIndicatorColor` | reader |
 | MAC-X13 | `list.row_background.focus (the ring on table rows)` | field |
 | MAC-X13 | `<widget>.values.focus_visible_when (Never for buttons, checkboxes, segments, links; AnyFocus for text fields and lists; ADD-A16)` | field |
 | MAC-X13 | `<widget>.values.focus_visible_when @ cond full_keyboard_access (Keyboard { … } for buttons, checkboxes, segments, links)` | rule |
@@ -843,7 +846,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X27 | `cond system_setting:wallpaper_tinting (ADD-A04)` | condition |
 | MAC-X27 | `input.accent multicolour (no accent chosen)` | input |
 | MAC-X27 | `role.* @ cond system_setting:wallpaper_tinting` | rule |
-| MAC-X27 | `input.highlight` (an accent input, S9.1) | input |
+| MAC-X27 | `input.highlight` (an accent input, S9.1: `NSColor.selectedTextBackgroundColor`, the highlight setting's colour, ADD-A123) | input |
+| MAC-X27 | `reader:macos:NSColor.selectedTextBackgroundColor` | reader |
 | MAC-X28 | `input.misspelling.text.decoration (Dotted / Wavy); text_area.misspelling.text.decoration` | field |
 | MAC-X28 | `input.grammar_mark.text, text_area.grammar_mark.text` | field |
 | MAC-X28 | `input.preedit.text, text_area.preedit.text (marked text underline)` | field |
