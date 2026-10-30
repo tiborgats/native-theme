@@ -65,7 +65,7 @@ tie-breaker, `A` audited), presets (`P`), gate (`G`), connectors (`C`).
 
 | Unit | adwaita | kde-breeze | macos-monterey | macos-tahoe | ios-13 | ios-26 | windows-11 | material-3 | Connectors |
 |---|---|---|---|---|---|---|---|---|---|
-| slice (`button`, colour roles, slice tokens) | L | — | — | F (188 measured, partial; fills are composites: redone from the probe's two-background pass) | — | — | — | — | — |
+| slice (`button`, colour roles, slice tokens) | F V A (lane c43c85f3, verifier, tie-break f34baa5b; 9 text values await the checkers) | — | — | F (188 measured, partial; fills are composites: redone from the probe's two-background pass) | — | — | — | — | — |
 
 ## Module inventory
 
@@ -130,6 +130,7 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 31 | 1 | `convert_inheritance_rules.py`; `check_ledger.py`; `check_facts.py` | S19.2 converts today's inheritance rules: `[defaults_internal]`, `[border_inheritance]`, `[font_inheritance]` and `[text_scale_inheritance]` are inheritance rules as `[uniform]` and `[per_platform]` are (S19.2 names those two as its examples; only `[wrong_safety_nets]` is excluded), so the converter covers them too; `check_ledger.py` lists `staged` among the folders that are not platforms; `check_facts.py` reads a quoted string value where the key's type is text (#28) | P1's report (decided by the orchestrator) | in progress on `facts-base`, with ADD-A120's checker rules: `absent = []`, `inputs` and the measured derivation's passes, the closed text notations (no span taken), the analysis folder (#30) |
 | 32 | 2 | spec S17's absence | an absence the platform has no name for (a role or field it simply does not have) cannot satisfy the `absent` names rule: `absent = []` there, the verifier confirming the cited range is the whole definition | the GNOME lane | applied (ADD-A120); checked six times (3, 4, 3, 2, 1, then 0 serious in the specification; fixed): converged 2026-10-30; the checkers follow in #31's batch |
 | 33 | 1–2 | catalogue `button`, roles; gap map GN-1.265 | the GNOME lane's findings: `@arrow_only` is `.arrow-button` (content plus an arrow), so it is `@with_arrow`, an arrow-only menu button being `.image-button`; GTK's 10px base padding for a button with a custom child has no variant; a menu button's two icon-and-label forms (GTK's own, AdwButtonContent) differ in gap and padding under one `with_icon`; adwaita states the View set's disabled pair (`.view:disabled`, `_views.scss:6-9`) and GTK 3's `insensitive_*`, against the catalogue's "every disabled role absent"; GN-1.265's OSD links are white at 87.5 % (visited 81.25 %), not the accent; a linked button's −1px overlap is its own margin, which the trace carries on `layout.values.item_gap`; the focus ring's grow-in, S2.2's missing negation, where S4.2's caret fades fall, and AdwEasing having no `PlatformCurve` variant | the GNOME lane | open: settled with the verifier's results, before task 15 |
+| 34 | 1–2 | catalogue `button`; spec S17 | the adwaita tie-break: `menu_trigger`'s may-be-absent list should include `adwaita` (plain buttons open no menu); S17 has no key for a whole absent part (S6.3's `absent = true`): `key = "<widget>.<part>"` with `value = "absent"`; `{menu, @card}` styles the menu button itself, so the `button.card` facts there are suspect (lane to re-check); the `{pane_toggle, checked}` exclusion has no source; `icon.icon.rendering_mode` stated by neither side | the adwaita tie-breaker | open: with #33, before task 15 |
 
 ## Unmeasured register
 
@@ -146,6 +147,7 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 
 | Unit | Platform | Facts | Agreed | Tie-broken | Audit sample | Agreed but wrong |
 |---|---|---|---|---|---|---|
+| slice | gnome | lane 640, verifier 926 | 827 of 1,035 compared combinations after normalising spellings (79.9 %; 68 % before) | 208: 124 equivalent spellings, 75 lane right, 9 verifier right, 0 both wrong; 338 verifier-only keys added (absences), 123 lane-only confirmed | 42 | 0 |
 
 ## Spikes and drift runs
 
