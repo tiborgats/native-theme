@@ -1,0 +1,2833 @@
+# GNOME (`adwaita`) tokens: motion (S4.1), caret and behaviour (S4.2), text ramp (S4.4), icon sizes (S4.5),
+# the keyed scalars the button and the roles use (S4.6) and the focus indicator. Facts in source order; for a
+# key and a combination the last matching fact applies (S17).
+
+[[fact]]
+key = "token.motion.timings.ease_out_quad"
+value = { cubic_bezier = [0.25, 0.46, 0.45, 0.94] }
+rows = ["GN-1.36", "GN-1.64", "GN-1.204", "GN-1.249", "GN-3.18", "GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:1"
+quote = "$ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);"
+
+[[fact]]
+key = "token.motion.durations.backdrop"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:2"
+quote = "$backdrop_transition: 200ms ease-out;"
+
+[[fact]]
+key = "token.motion.durations.focus"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:3-5"
+quote = "$focus_transition: outline-color 200ms $ease-out-quad, outline-width 200ms $ease-out-quad, outline-offset 200ms $ease-out-quad;"
+
+[[fact]]
+key = "token.motion.durations.button"
+value = "200ms"
+rows = ["GN-1.36", "GN-1.64", "GN-1.204", "GN-1.249", "GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:6-7"
+quote = "$button_transition: background 200ms $ease-out-quad, box-shadow 200ms $ease-out-quad;"
+
+[[fact]]
+key = "token.motion.timings.ease_in_out"
+value = { cubic_bezier = [0.42, 0.0, 0.58, 1.0] }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:197"
+quote = "{ \"ease-in-out\",  TRUE,  FALSE, { 0.42, 0.0, 0.58, 1.0 } },"
+
+[[fact]]
+key = "token.motion.timings.ease_in"
+value = { cubic_bezier = [0.42, 0.0, 1.0, 1.0] }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:198"
+quote = "{ \"ease-in\",      TRUE,  FALSE, { 0.42, 0.0, 1.0,  1.0 } },"
+
+[[fact]]
+key = "token.motion.timings.ease_out"
+value = { cubic_bezier = [0.0, 0.0, 0.58, 1.0] }
+rows = ["GN-3.18", "GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:199"
+quote = "{ \"ease-out\",     TRUE,  FALSE, { 0.0,  0.0, 0.58, 1.0 } },"
+
+[[fact]]
+key = "token.motion.timings.ease"
+value = { cubic_bezier = [0.25, 0.1, 0.25, 1.0] }
+rows = ["GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:200"
+quote = "{ \"ease\",         TRUE,  FALSE, { 0.25, 0.1, 0.25, 1.0 } },"
+
+[[fact]]
+key = "token.motion.durations.revealer"
+value = "250ms"
+rows = ["GN-3.22"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkrevealer.c:717-719"
+quote = "g_param_spec_uint (\"transition-duration\", NULL, NULL, 0, G_MAXUINT, 250,"
+
+[[fact]]
+key = "token.motion.durations.stack"
+value = "200ms"
+rows = ["GN-3.22"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkstack.c:1021-1023"
+quote = "g_param_spec_uint (\"transition-duration\", NULL, NULL, 0, G_MAXUINT, 200,"
+
+[[fact]]
+key = "token.motion.durations.scroll_animation"
+value = "200ms"
+rows = ["GN-3.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:189"
+quote = "#define ANIMATION_DURATION 200"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:2318-2319"
+quote = "gtk_adjustment_enable_animation (hadjustment, gtk_widget_get_frame_clock (GTK_WIDGET (scrolled_window)), ANIMATION_DURATION);"
+
+# the speed factor: CSS transitions run at GTK's slowdown factor (1) while animations are enabled (the default);
+# with animations off a widget has no frame clock, its timestamp is 0 and no transition runs
+[[fact]]
+key = "token.motion.speed_factor"
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkprogresstracker.c:39"
+quote = "static double gtk_slowdown = 1.0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:11-12"
+quote = "<key name=\"enable-animations\" type=\"b\"> <default>true</default>"
+
+[[fact]]
+key = "token.motion.speed_factor"
+when = { conditions = ["animations_off"] }
+value = 0
+rows = ["GN-3.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128"
+quote = "if (!gtk_settings_get_enable_animations (gtk_widget_get_settings (widget_node->widget))) return NULL;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssnode.c:651-653"
+quote = "frameclock = gtk_css_node_get_frame_clock_or_null (cssnode); if (frameclock == NULL) return 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:1091-1092"
+quote = "if (timestamp == 0) return g_object_ref (source->style);"
+
+[[fact]]
+key = "token.params.opacity.border"
+value = 0.15
+rows = ["GN-3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:257"
+quote = "$border_opacity: 15%;"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:318"
+quote = "--border-opacity: #{$border_opacity};"
+
+[[fact]]
+key = "token.params.opacity.focus_border"
+value = 0.5
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:260"
+quote = "$focus_border_opacity: 50%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.focus_border"
+when = { conditions = ["contrast_high"] }
+value = 0.8
+rows = ["GN-3.31", "GN-3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:261"
+quote = "$focus_border_opacity_hc: 80%;"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:24-26"
+quote = "@media (prefers-contrast: more) { outline-color: $focus_border_color_hc; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:308"
+quote = "$focus_border_color_hc: color-mix(in srgb, var(--accent-color) $focus_border_opacity_hc, transparent);"
+
+[[fact]]
+key = "token.params.opacity.dimmer"
+value = 0.3
+rows = ["GN-1.273"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:309"
+quote = "$dimmer_opacity: 30%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.dimmer"
+when = { conditions = ["contrast_high"] }
+value = 0.8
+rows = ["GN-1.273", "GN-3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:310"
+quote = "$dimmer_opacity_hc: 80%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.strong_disabled"
+value = 0.3
+rows = ["GN-1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:311"
+quote = "$strong_disabled_opacity: 30%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.dim"
+value = 0.55
+rows = ["GN-1.271"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:319"
+quote = "--dim-opacity: 55%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.disabled"
+value = 0.5
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:320"
+quote = "--disabled-opacity: 50%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.border"
+when = { conditions = ["contrast_high"] }
+value = 0.5
+rows = ["GN-3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:258"
+quote = "$border_opacity_hc: 50%;"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:323-325"
+quote = "@media (prefers-contrast: more) { :root { --border-opacity: #{$border_opacity_hc};"
+
+[[fact]]
+key = "token.params.opacity.dim"
+when = { conditions = ["contrast_high"] }
+value = 0.9
+rows = ["GN-1.271", "GN-3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:323-326"
+quote = "@media (prefers-contrast: more) { :root { --border-opacity: #{$border_opacity_hc}; --dim-opacity: 90%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.params.opacity.disabled"
+when = { conditions = ["contrast_high"] }
+value = 0.4
+rows = ["GN-3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:323-327"
+quote = "@media (prefers-contrast: more) { :root { --border-opacity: #{$border_opacity_hc}; --dim-opacity: 90%; --disabled-opacity: 40%;"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.focus.kind"
+value = "ring"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:19-22"
+quote = "&#{$focus-state} #{$target} { outline-color: $focus_border_color; outline-width: $width;"
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:21"
+quote = "outline-width: $width;"
+
+[[fact]]
+key = "token.focus.paint"
+value = "= alpha(role.global.accent_standalone, token.params.opacity.focus_border)"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:20"
+quote = "outline-color: $focus_border_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:307"
+quote = "$focus_border_color: color-mix(in srgb, var(--accent-color) $focus_border_opacity, transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:168-170"
+quote = "--accent-color: oklab( from var(--accent-bg-color) var(--standalone-color-oklab) );"
+
+[[fact]]
+key = "token.focus.paint"
+when = { conditions = ["contrast_high"] }
+value = "= alpha(role.global.accent_standalone, token.params.opacity.focus_border)"
+rows = ["GN-3.31"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:24-26"
+quote = "@media (prefers-contrast: more) { outline-color: $focus_border_color_hc; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:308"
+quote = "$focus_border_color_hc: color-mix(in srgb, var(--accent-color) $focus_border_opacity_hc, transparent);"
+
+[[fact]]
+key = "token.focus.dash"
+value = "solid"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
+quote = "outline: 0 solid transparent;"
+
+[[fact]]
+# `$offset: -$width`: the outline drawn inside the box by its own width
+key = "token.focus.offset.top"
+value = "= sub(0px, token.focus.width)"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:22"
+quote = "outline-offset: $offset;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
+quote = "outline: 0 solid transparent;"
+
+[[fact]]
+# `$offset: -$width`: the outline drawn inside the box by its own width
+key = "token.focus.offset.right"
+value = "= sub(0px, token.focus.width)"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:22"
+quote = "outline-offset: $offset;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
+quote = "outline: 0 solid transparent;"
+
+[[fact]]
+# `$offset: -$width`: the outline drawn inside the box by its own width
+key = "token.focus.offset.bottom"
+value = "= sub(0px, token.focus.width)"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:22"
+quote = "outline-offset: $offset;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
+quote = "outline: 0 solid transparent;"
+
+[[fact]]
+# `$offset: -$width`: the outline drawn inside the box by its own width
+key = "token.focus.offset.left"
+value = "= sub(0px, token.focus.width)"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:22"
+quote = "outline-offset: $offset;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
+quote = "outline: 0 solid transparent;"
+
+[[fact]]
+key = "token.focus.corners.top_left"
+value = "follow_part"
+rows = ["GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:495-499"
+quote = "/* Grow corner radii of border rect */ for (i = 0; i < 4; i ++) { if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d;"
+
+[[fact]]
+key = "token.focus.corners.top_right"
+value = "follow_part"
+rows = ["GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:495-499"
+quote = "/* Grow corner radii of border rect */ for (i = 0; i < 4; i ++) { if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d;"
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+value = "follow_part"
+rows = ["GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:495-499"
+quote = "/* Grow corner radii of border rect */ for (i = 0; i < 4; i ++) { if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d;"
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+value = "follow_part"
+rows = ["GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:495-499"
+quote = "/* Grow corner radii of border rect */ for (i = 0; i < 4; i ++) { if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d;"
+
+[[fact]]
+key = "token.focus.corners.curve"
+value = "circular"
+rows = ["GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:495-499"
+quote = "/* Grow corner radii of border rect */ for (i = 0; i < 4; i ++) { if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d;"
+
+[[fact]]
+key = "token.focus.shadow"
+value = "absent"
+rows = ["GN-3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-28"
+quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
+absent = ["box-shadow"]
+
+[[fact]]
+# the ring growing in from `offset + 4px` (`_drawing.scss:15`) is not expressible: reported
+key = "token.focus.transition"
+value = { properties = [], kind = "interpolate", duration_ms = "= mul(token.motion.durations.focus, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true }
+rows = ["GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:16"
+quote = "transition: $focus_transition, $transition;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1373-1378"
+quote = "gtk_css_style_property_register (\"transition-delay\", GTK_CSS_PROPERTY_TRANSITION_DELAY, 0, 0, transition_time_parse, gtk_css_number_value_new (0, GTK_CSS_S));"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:237-239"
+quote = "gtk_style_context_add_provider_for_display (self->display, GTK_STYLE_PROVIDER (self->animations_provider), 10000);"
+
+[[fact]]
+key = "token.caret.color"
+value = "= surface.foreground"
+rows = ["GN-3.39"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1448-1453"
+quote = "gtk_css_style_property_register (\"caret-color\", GTK_CSS_PROPERTY_CARET_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, color_parse, gtk_css_color_value_new_current_color ());"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:1-2"
+quote = "label { caret-color: currentColor;"
+
+[[fact]]
+# the cycle's visible half: shown, then fading out (gtktext.c's blink_alpha)
+key = "token.caret.blink_on"
+value = "= mul(1200ms, 0.5)"
+rows = ["GN-3.32", "GN-3.33"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:70-73"
+quote = "<key name=\"cursor-blink-time\" type=\"i\"> <range min=\"100\" max=\"2500\"/> <default>1200</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:364-366"
+quote = "g_param_spec_int (\"gtk-cursor-blink-time\", NULL, NULL, 100, G_MAXINT, 1200,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:6866-6873"
+quote = "if (phase < 0.25) return 1; else if (phase < 0.5) return 1 - 4 * (phase - 0.25); else if (phase < 0.75) return 0; else return 4 * (phase - 0.75);"
+
+[[fact]]
+# the cycle's hidden half: hidden, then fading in
+key = "token.caret.blink_off"
+value = "= mul(1200ms, 0.5)"
+rows = ["GN-3.32", "GN-3.33"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:70-73"
+quote = "<key name=\"cursor-blink-time\" type=\"i\"> <range min=\"100\" max=\"2500\"/> <default>1200</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:364-366"
+quote = "g_param_spec_int (\"gtk-cursor-blink-time\", NULL, NULL, 100, G_MAXINT, 1200,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:6866-6873"
+quote = "if (phase < 0.25) return 1; else if (phase < 0.5) return 1 - 4 * (phase - 0.25); else if (phase < 0.75) return 0; else return 4 * (phase - 0.75);"
+
+[[fact]]
+key = "token.caret.blink_timeout"
+value = "10000ms"
+rows = ["GN-3.34"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:78-80"
+quote = "<key name=\"cursor-blink-timeout\" type=\"i\"> <range min=\"1\" max=\"2147483647\"/> <default>10</default>"
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:378-380"
+quote = "g_param_spec_int (\"gtk-cursor-blink-timeout\", NULL, NULL, 1, G_MAXINT, 10,"
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.caret.blink_style"
+value = "fade"
+rows = ["GN-3.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:6863-6865"
+quote = "/* keep it simple, and split the blink cycle evenly * into visible, fading out, invisible, fading in */"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:2753"
+quote = "gtk_snapshot_push_opacity (snapshot, priv->cursor_alpha);"
+
+[[fact]]
+# gtk-split-cursor is off by default: GTK draws one caret for mixed-direction text
+key = "token.caret.secondary"
+value = "absent"
+rows = ["GN-3.37"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:388-390"
+quote = "g_param_spec_boolean (\"gtk-split-cursor\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.caret.shown_in_read_only"
+value = false
+rows = ["GN-3.38"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.a11y.gschema.xml.in:12-13"
+quote = "<key name=\"always-show-text-caret\" type=\"b\"> <default>false</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:955-957"
+quote = "g_param_spec_boolean (\"gtk-keynav-use-caret\", NULL, NULL, FALSE,"
+
+# typing restarts the blink with a delay: the caret stays solid while the user types
+[[fact]]
+key = "token.caret.solid_while_typing"
+value = true
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:6961-6967"
+quote = "if (cursor_blinks (self)) { remove_blink_timeout (self); add_blink_timeout (self, TRUE); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:6834-6837"
+quote = "data->start = priv->blink_start_time; if (delay) data->start += blink_time * 1000 / 2;"
+
+[[fact]]
+key = "token.params.caret.aspect_ratio"
+value = 0.04
+rows = ["GN-3.36"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:397-399"
+quote = "g_param_spec_double (\"gtk-cursor-aspect-ratio\", NULL, NULL, 0.0, 1.0, 0.04,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkrenderlayout.c:136"
+quote = "stem_width = height * aspect_ratio + 1;"
+
+[[fact]]
+key = "token.behavior.double_click_time"
+value = "400ms"
+rows = ["GN-3.47"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.peripherals.gschema.xml.in:243-244"
+quote = "<key name=\"double-click\" type=\"i\"> <default>400</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:333-334"
+quote = "g_param_spec_int (\"gtk-double-click-time\", NULL, NULL, 0, G_MAXINT, 400,"
+
+[[fact]]
+key = "token.behavior.double_click_distance"
+value = "5px"
+rows = ["GN-3.47"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:343-344"
+quote = "g_param_spec_int (\"gtk-double-click-distance\", NULL, NULL, 0, G_MAXINT, 5,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgestureclick.c:165-166"
+quote = "if (ABS (priv->initial_press_x - x) < double_click_distance && ABS (priv->initial_press_y - y) < double_click_distance)"
+
+[[fact]]
+key = "token.behavior.double_click_height"
+value = "= token.behavior.double_click_distance"
+rows = ["GN-3.47"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgestureclick.c:165-166"
+quote = "if (ABS (priv->initial_press_x - x) < double_click_distance && ABS (priv->initial_press_y - y) < double_click_distance)"
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+value = "8px"
+rows = ["GN-3.48"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.peripherals.gschema.xml.in:248-249"
+quote = "<key name=\"drag-threshold\" type=\"i\"> <default>8</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:430-431"
+quote = "g_param_spec_int (\"gtk-dnd-drag-threshold\", NULL, NULL, 1, G_MAXINT, 8,"
+
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+value = "500ms"
+rows = ["GN-3.68†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.peripherals.gschema.xml.in:155-156"
+quote = "<key name=\"delay\" type=\"u\"> <default>500</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.peripherals.gschema.xml.in:145-146"
+quote = "<key name=\"repeat\" type=\"b\"> <default>true</default>"
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+value = "30ms"
+rows = ["GN-3.68†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.peripherals.gschema.xml.in:150-151"
+quote = "<key name=\"repeat-interval\" type=\"u\"> <default>30</default>"
+
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+value = true
+rows = ["GN-3.67†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:3382"
+quote = "gtk_widget_set_cursor_from_name (GTK_WIDGET (self), \"none\");"
+
+[[fact]]
+key = "token.behavior.scroll.overscroll_extent"
+value = "100px"
+rows = ["GN-3.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:181"
+quote = "#define MAX_OVERSHOOT_DISTANCE 100"
+
+[[fact]]
+key = "token.behavior.scroll.touchpad_factor"
+value = 2.5
+rows = ["GN-P3-15†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:201"
+quote = "#define MAGIC_SCROLL_FACTOR 2.5"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:1404-1405"
+quote = "else if (scroll_unit == GDK_SCROLL_UNIT_SURFACE) delta_x *= MAGIC_SCROLL_FACTOR;"
+
+[[fact]]
+key = "token.behavior.long_press"
+value = "500ms"
+rows = ["GN-3.49"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:943-944"
+quote = "g_param_spec_uint (\"gtk-long-press-time\", NULL, NULL, 0, G_MAXINT, 500,"
+
+[[fact]]
+key = "token.behavior.spring_loading"
+value = "500ms"
+rows = ["GN-3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkexpander.c:136"
+quote = "#define TIMEOUT_EXPAND 500"
+
+[[fact]]
+key = "token.behavior.mnemonics"
+value = { on_alt = { delay_ms = 300 } }
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwindow.c:193"
+quote = "#define MNEMONICS_DELAY 300 /* ms */"
+
+[[fact]]
+key = "token.behavior.focus_visible_when"
+value = { keyboard = { timeout_ms = 3000 } }
+rows = ["GN-3.30"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwindow.c:195"
+quote = "#define DEFAULT_VISIBLE_FOCUS_DURATION 3 /* s */"
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwindow.c:6347-6349"
+quote = "if (keyboard_focus_visible_timeout < 0) keyboard_focus_visible_timeout = DEFAULT_VISIBLE_FOCUS_DURATION;"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.a11y.interface.gschema.xml.in:25-26"
+quote = "<key name=\"keyboard-focus-visible-timeout\" type=\"i\"> <default>-1</default>"
+
+[[fact]]
+key = "token.params.pointer_repeat.delay"
+value = "500ms"
+rows = ["GN-3.69†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkrange.c:73"
+quote = "#define TIMEOUT_INITIAL     500"
+
+[[fact]]
+key = "token.params.pointer_repeat.interval"
+value = "250ms"
+rows = ["GN-3.69†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkrange.c:74"
+quote = "#define TIMEOUT_REPEAT      250"
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.title_1.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# a percentage of the inherited (default) size
+key = "token.text.keyed.title_1.font.size"
+value = "= mul(token.text.keyed.body.font.size, 1.81)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_1.font.weight"
+value = 800
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_1.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.title_1.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.title_1.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.title_1.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.title_1.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.title_2.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# a percentage of the inherited (default) size
+key = "token.text.keyed.title_2.font.size"
+value = "= mul(token.text.keyed.body.font.size, 1.36)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_2.font.weight"
+value = 800
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_2.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.title_2.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.title_2.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.title_2.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 { font-weight: 800; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.title_2.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.title_3.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# a percentage of the inherited (default) size
+key = "token.text.keyed.title_3.font.size"
+value = "= mul(token.text.keyed.body.font.size, 1.36)"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_3.font.weight"
+value = 700
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_3.font.style"
+value = "normal"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.title_3.line_height"
+value = "auto"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.title_3.letter_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.title_3.case"
+value = "mixed"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.title_3.decoration"
+value = "absent"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.title_4.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# a percentage of the inherited (default) size
+key = "token.text.keyed.title_4.font.size"
+value = "= mul(token.text.keyed.body.font.size, 1.18)"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_4.font.weight"
+value = 700
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.title_4.font.style"
+value = "normal"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.title_4.line_height"
+value = "auto"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.title_4.letter_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.title_4.case"
+value = "mixed"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 { font-weight: 700; font-size: 118%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.title_4.decoration"
+value = "absent"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.heading.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# the class sets no size: the default font's, inherited
+key = "token.text.keyed.heading.font.size"
+value = "= token.text.keyed.body.font.size"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+key = "token.text.keyed.heading.font.weight"
+value = 700
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact]]
+key = "token.text.keyed.heading.font.style"
+value = "normal"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.heading.line_height"
+value = "auto"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.heading.letter_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.heading.case"
+value = "mixed"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.heading.decoration"
+value = "absent"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+key = "token.text.keyed.body.font.family"
+value = "Adwaita Sans"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+key = "token.text.keyed.body.font.size"
+value = "11pt"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.body.font.weight"
+value = 400
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.body.font.style"
+value = "normal"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+key = "token.text.keyed.body.line_height"
+value = "= mul(font_size, 1.4)"
+rows = ["GN-1.190"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.body.letter_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.body.case"
+value = "mixed"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.body.decoration"
+value = "absent"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.caption_heading.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# a percentage of the inherited (default) size
+key = "token.text.keyed.caption_heading.font.size"
+value = "= mul(token.text.keyed.body.font.size, 0.82)"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.caption_heading.font.weight"
+value = 700
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.caption_heading.font.style"
+value = "normal"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.caption_heading.line_height"
+value = "auto"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.letter_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.case"
+value = "mixed"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.decoration"
+value = "absent"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.caption.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# a percentage of the inherited (default) size
+key = "token.text.keyed.caption.font.size"
+value = "= mul(token.text.keyed.body.font.size, 0.82)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.caption.font.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.caption.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+key = "token.text.keyed.caption.line_height"
+value = "= mul(font_size, 1.4)"
+rows = ["GN-1.190"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.caption.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.caption.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.caption.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+key = "token.text.keyed.document.font.family"
+value = "Adwaita Sans"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:158-159"
+quote = "<key name=\"document-font-name\" type=\"s\"> <default>'Adwaita Sans 12'</default>"
+
+[[fact]]
+key = "token.text.keyed.document.font.size"
+value = "12pt"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document { font-family: var(--document-font-family); font-size: var(--document-font-size); line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:158-159"
+quote = "<key name=\"document-font-name\" type=\"s\"> <default>'Adwaita Sans 12'</default>"
+
+[[fact]]
+# the class sets no weight: CSS's initial `normal`, as GTK registers it
+key = "token.text.keyed.document.font.weight"
+value = 400
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document { font-family: var(--document-font-family); font-size: var(--document-font-size); line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:921-926"
+quote = "gtk_css_style_property_register (\"font-weight\", GTK_CSS_PROPERTY_FONT_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_SIZE, font_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact]]
+key = "token.text.keyed.document.font.style"
+value = "normal"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document { font-family: var(--document-font-family); font-size: var(--document-font-size); line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+key = "token.text.keyed.document.line_height"
+value = "= mul(font_size, 1.4)"
+rows = ["GN-1.190"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document { font-family: var(--document-font-family); font-size: var(--document-font-size); line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact]]
+key = "token.text.keyed.document.letter_spacing"
+value = "0px"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document { font-family: var(--document-font-family); font-size: var(--document-font-size); line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.document.case"
+value = "mixed"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document { font-family: var(--document-font-family); font-size: var(--document-font-size); line-height: 140%; }"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.document.decoration"
+value = "absent"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+key = "token.text.keyed.monospace.font.family"
+value = "Adwaita Mono"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:165-166"
+quote = "<key name=\"monospace-font-name\" type=\"s\"> <default>'Adwaita Mono 11'</default>"
+
+[[fact]]
+key = "token.text.keyed.monospace.font.size"
+value = "11pt"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(--monospace-font-size); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:165-166"
+quote = "<key name=\"monospace-font-name\" type=\"s\"> <default>'Adwaita Mono 11'</default>"
+
+[[fact]]
+# the class sets no weight: CSS's initial `normal`, as GTK registers it
+key = "token.text.keyed.monospace.font.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(--monospace-font-size); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:921-926"
+quote = "gtk_css_style_property_register (\"font-weight\", GTK_CSS_PROPERTY_FONT_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_SIZE, font_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact]]
+key = "token.text.keyed.monospace.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(--monospace-font-size); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.monospace.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(--monospace-font-size); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.monospace.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(--monospace-font-size); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.monospace.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family); font-size: var(--monospace-font-size); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.monospace.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+# the class sets no family: the default font's, inherited
+key = "token.text.keyed.numeric.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# the class sets no size: the default font's, inherited
+key = "token.text.keyed.numeric.font.size"
+value = "= token.text.keyed.body.font.size"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+[[fact]]
+# the class sets no weight: CSS's initial `normal`, as GTK registers it
+key = "token.text.keyed.numeric.font.weight"
+value = 400
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:921-926"
+quote = "gtk_css_style_property_register (\"font-weight\", GTK_CSS_PROPERTY_FONT_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_SIZE, font_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact]]
+key = "token.text.keyed.numeric.font.style"
+value = "normal"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+[[fact]]
+key = "token.text.keyed.numeric.font.features"
+value = [["tnum", 1]]
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:649-650"
+quote = "if (numeric & GTK_CSS_FONT_VARIANT_NUMERIC_TABULAR_NUMS) append_separated (&s, \"tnum 1\");"
+
+[[fact]]
+# the class sets no line height: GTK's default, the font's own spacing
+key = "token.text.keyed.numeric.line_height"
+value = "auto"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.numeric.letter_spacing"
+value = "0px"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.numeric.case"
+value = "mixed"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.numeric.decoration"
+value = "absent"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact]]
+key = "token.text.roles.body"
+value = "= token.text.keyed.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400; line-height: 140%; }"
+
+[[fact]]
+key = "token.text.roles.caption"
+value = "= token.text.keyed.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400; font-size: 82%; line-height: 140%; }"
+
+[[fact]]
+key = "token.text.roles.title1"
+value = "= token.text.keyed.title_2"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-alert-dialog.ui:46"
+quote = "<class name=\"title-2\"/>"
+
+[[fact]]
+key = "token.text.roles.title2"
+value = "= token.text.keyed.title_3"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 { font-weight: 700; font-size: 136%; }"
+
+[[fact]]
+key = "token.text.roles.title3"
+value = "= token.text.keyed.title_4"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-alert-dialog.ui:57"
+quote = "<class name=\"title-4\"/>"
+
+[[fact]]
+key = "token.text.roles.headline"
+value = "= token.text.keyed.heading"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-preferences-group.ui:26"
+quote = "<class name=\"heading\"/>"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400;"
+
+[[fact]]
+key = "token.text.roles.large_title"
+value = "= token.text.keyed.title_1"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:147-149"
+quote = "> .title { @extend .title-1; }"
+
+[[fact]]
+key = "token.text.roles.display_large"
+value = "= token.text.roles.large_title"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+
+[[fact]]
+key = "token.text.roles.display_medium"
+value = "= token.text.roles.large_title"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+
+[[fact]]
+key = "token.text.roles.display_small"
+value = "= token.text.roles.large_title"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 { font-weight: 800; font-size: 181%; }"
+
+[[fact]]
+key = "token.text.roles.body_emphasized"
+value = "= token.text.roles.headline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading { font-weight: 700; }"
+
+[[fact]]
+key = "token.text.roles.callout"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400;"
+
+[[fact]]
+key = "token.text.roles.footnote"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400;"
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+value = "= token.text.keyed.caption_heading"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading { font-weight: 700; font-size: 82%; }"
+
+[[fact]]
+key = "token.text.roles.caption2"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption { font-weight: 400;"
+
+[[fact]]
+key = "token.text.roles.label"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body { font-weight: 400;"
+
+[[fact]]
+key = "token.text.roles.monospace"
+value = "= token.text.keyed.monospace"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace { font-family: var(--monospace-font-family);"
+
+[[fact]]
+key = "token.text.roles.numeric"
+value = "= token.text.keyed.numeric"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact]]
+key = "token.text.font_dpi"
+value = 96
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:879-885"
+quote = "gtk_css_style_property_register (\"-gtk-dpi\", GTK_CSS_PROPERTY_DPI, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_SIZE | GTK_CSS_AFFECTS_TEXT_SIZE, dpi_parse, gtk_css_number_value_new (96.0, GTK_CSS_NUMBER));"
+
+[[fact]]
+key = "token.text.scaling"
+value = "linear"
+rows = ["GN-3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-123"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default>"
+
+[[fact]]
+key = "token.text.rendering.antialiasing"
+value = "grayscale"
+rows = ["GN-3.56"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:277-278"
+quote = "<key name=\"font-antialiasing\" enum=\"org.gnome.desktop.GDesktopFontAntialiasingMode\"> <default>'grayscale'</default>"
+
+[[fact]]
+key = "token.text.rendering.hinting"
+value = "slight"
+rows = ["GN-3.56"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:284-285"
+quote = "<key name=\"font-hinting\" enum=\"org.gnome.desktop.GDesktopFontHinting\"> <default>'slight'</default>"
+
+[[fact]]
+key = "token.text.rendering.subpixel_order"
+value = "rgb"
+rows = ["GN-3.56"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:291-292"
+quote = "<key name=\"font-rgba-order\" enum=\"org.gnome.desktop.GDesktopFontRgbaOrder\"> <default>'rgb'</default>"
+
+[[fact]]
+key = "token.text.rendering.engine"
+value = "automatic"
+rows = ["GN-3.56"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:305-306"
+quote = "<key name=\"font-rendering\" enum=\"org.gnome.desktop.GDesktopFontRendering\"> <default>'automatic'</default>"
+
+[[fact]]
+key = "token.text.fallbacks.emoji_family"
+value = "emoji"
+rows = ["GN-FM01†"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/itemize.c:923-927"
+quote = "if (is_emoji && !state->emoji_font_desc) { state->emoji_font_desc = pango_font_description_copy_static (state->font_desc); pango_font_description_set_family_static (state->emoji_font_desc, \"emoji\");"
+
+[[fact]]
+key = "token.icons.theme"
+value = "Adwaita"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:86-87"
+quote = "<key name=\"icon-theme\" type=\"s\"> <default>'Adwaita'</default>"
+
+[[fact]]
+key = "token.icons.theme_fallback"
+value = "hicolor"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkicontheme.c:292"
+quote = "#define FALLBACK_ICON_THEME \"hicolor\""
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkicontheme.c:1872"
+quote = "insert_theme (self, FALLBACK_ICON_THEME);"
+
+[[fact]]
+key = "token.icons.sizes.small.size"
+value = "16px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:34-36"
+quote = ".normal-icons { -gtk-icon-size: 16px; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\", GTK_CSS_PROPERTY_ICON_SIZE, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_SIZE | GTK_CSS_AFFECTS_ICON_SIZE, icon_size_parse, gtk_css_number_value_new (16, GTK_CSS_PX));"
+
+[[fact]]
+# GTK 4 has no toolbar icon size: header bars and toolbars draw the initial (normal) size
+key = "token.icons.sizes.toolbar.size"
+value = "16px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\", GTK_CSS_PROPERTY_ICON_SIZE, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_SIZE | GTK_CSS_AFFECTS_ICON_SIZE, icon_size_parse, gtk_css_number_value_new (16, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.icons.sizes.large.size"
+value = "32px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons { -gtk-icon-size: 32px; -gtk-icon-weight: 134; }"
+
+[[fact]]
+key = "token.icons.sizes.large.weight"
+value = 134
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons { -gtk-icon-size: 32px; -gtk-icon-weight: 134; }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.size"
+value = "128px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-136"
+quote = "> .icon { color: color-mix(in srgb, currentColor var(--dim-opacity), transparent); -gtk-icon-size: 128px;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.weight"
+value = 134
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:136-137"
+quote = "-gtk-icon-size: 128px; -gtk-icon-weight: 134;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.size"
+value = "96px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-163"
+quote = "> .icon { -gtk-icon-size: 96px; -gtk-icon-weight: 134;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.weight"
+value = 134
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-163"
+quote = "> .icon { -gtk-icon-size: 96px; -gtk-icon-weight: 134;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.size"
+value = "64px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-185"
+quote = "> .icon { -gtk-icon-size: 64px; -gtk-icon-weight: 267;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.weight"
+value = 267
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-185"
+quote = "> .icon { -gtk-icon-size: 64px; -gtk-icon-weight: 267;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.size"
+value = "128px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_dialogs.scss:53-55"
+quote = "image.large-icons { -gtk-icon-size: 128px; }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.size"
+value = "14px"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:25"
+quote = "-gtk-icon-size: 14px;"
+
+# every context's lists: the root's symbolic-icon palette (inherited everywhere); GTK's themed icons have no
+# variation axes and no symbol variants
+[[fact]]
+key = "token.icons.sizes.toolbar.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.small.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.small.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.small.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.large.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.large.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.large.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.status_colors"
+value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
+quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.axes"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
+quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+# GTK 4's icon sizes are inherit, normal and large: no dialog or panel size (GTK 3's dialog size is gone)
+[[fact]]
+key = "token.icons.sizes.dialog"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkenums.h:216-238"
+quote = "GtkIconSize:"
+absent = ["GTK_ICON_SIZE_DIALOG"]
+
+[[fact]]
+key = "token.icons.sizes.panel"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkenums.h:216-238"
+quote = "GtkIconSize:"
