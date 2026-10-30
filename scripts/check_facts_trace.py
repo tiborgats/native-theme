@@ -36,7 +36,9 @@ state-model entry: its `widget`) and one of the line's target paths (below; a `[
 segment, a unit suffix ignored (`button.body.stroke.top.paint` carries `button.body.{fill,stroke}`, the state model's
 `button` carries `button.body.fill @ {hover}`); a target naming a core struct's field (`FocusIndicator.offset`,
 `PartStyle.cursor`, an UpperCamel head) is carried by a key whose path passes through that struct to that field
-(key_types: `token.focus.width` and `button.body.focus.width` both carry `FocusIndicator.width`). A line whose target
+(key_types: `token.focus.width` and `button.body.focus.width` both carry `FocusIndicator.width`). A key's segments are
+read as check_facts.key_segments reads them, a quoted one whole (`token.text.fallbacks.per_family.".AppleSystemUIFont"`
+ends in one segment; S17, ADD-A123). A line whose target
 names no model path (a reader's `reader:…`, a `<widget>` placeholder) is carried by any fact or entry of its row. The
 rows are compared as the gap maps write them, `†` included.
 
@@ -278,6 +280,13 @@ def carried_rows(ctx) -> dict:
     return out
 
 
+def key_segs(key: str) -> list:
+    """A fact's key as its segments (check_facts.key_segments: a quoted segment is one), or split at its dots where it
+    does not read (check_facts.py reports it)."""
+    parsed = check_facts.key_segments(key)
+    return list(parsed[0]) if isinstance(parsed, tuple) else key.split(".")
+
+
 def related(a, b) -> bool:
     """One path is a leading part of the other, segment by segment (a unit suffix ignored); a path is a dotted
     string or a list of segments."""
@@ -291,7 +300,7 @@ def key_types(ctx, key: str) -> list:
     """(core struct, the key's segments below it) for each of the core's structs the key's path passes through
     (check_facts.type_at's walk): a part's field from `PartStyle`, a token from `Tokens`, a colour role from
     `GlobalRoles` or `SurfaceRoles`; [] for a widget value, an input or a key the sketches do not type."""
-    s = key.split(".")
+    s = key_segs(key)
     if s[0] == "token":
         t, rest = "Tokens", s[1:]
     elif s[0] == "role" and len(s) > 1:
@@ -342,7 +351,7 @@ def line_carried(ctx, line: Line, keys) -> bool:
             if head[:1].isupper():
                 if any(t == head and related(rest, p.split(".")[1:]) for t, rest in key_types(ctx, k)):
                     return True
-            elif related(k, p):
+            elif related(key_segs(k), p):
                 return True
     return False
 
@@ -580,7 +589,9 @@ def self_test() -> int:
                 ("FocusIndicator.width (the ring)", {"button.body.focus.width"}, True),
                 ("FocusIndicator.corners", {"token.focus.width"}, False),
                 ("reader:kde:kdeglobals [KDE] contrast", {"token.params.color.contrast"}, True),
-                ("reader:kde:kdeglobals [KDE] contrast", set(), False)):
+                ("reader:kde:kdeglobals [KDE] contrast", set(), False),
+                ("token.text.fallbacks.per_family", {'token.text.fallbacks.per_family."Segoe UI"'}, True),
+                ("FontFallbacks.per_family", {'token.text.fallbacks.per_family.".AppleSystemUIFont"'}, True)):
             if line_carried(fixture_context(base / "case0"), Line("kde", "K1.1", target, "rule"), keys) != want:
                 failures.append(f"line {target!r} carried by {sorted(keys)}: got {not want}")
         # every line: the deferred, the staged, other widgets', input and the verdict lines' rows
@@ -635,6 +646,10 @@ def self_test() -> int:
                                  ("token.behavior.scroll_px_per_step", "token", True)):
             if in_unit(path, kind, unit) != want:
                 failures.append(f"in_unit({path!r}): got {not want}")
+        # a key's quoted segment is one segment, its dots included (S17, ADD-A123)
+        got = key_types(fixture_context(base / "case0"), 'token.text.fallbacks.per_family.".AppleSystemUIFont"')
+        if ("FontFallbacks", ["per_family", ".AppleSystemUIFont"]) not in got:
+            failures.append(f"key_types of a quoted segment: got {got}")
         widget_input = Unit("fields", ("input",))
         if in_unit("input.accent", "input", widget_input) or not in_unit("input.body.fill", "field", widget_input):
             failures.append("in_unit: an S9 input is not the input widget")
