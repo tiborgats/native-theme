@@ -1,0 +1,249 @@
+# State models (S17), ios-13 and ios-26. Each `button` entry states what the SDK header declares (the styles and the
+# sizes, quoted from the pinned Xcode's iphonesimulator SDK as spike I's run 40984711960 printed them, grep -n, in its
+# environment.txt) and what that run's iOS host drew: the eight (18) or twelve (26) UIButton.Configuration styles, at
+# each `buttonSize`, at rest, `isHighlighted` (`pressed`), disabled, and as a toggle (`changesSelectionAsPrimaryAction`)
+# off and on (`checked`), under the light and the dark appearance. The states, conditions, variants and contexts the
+# run did not exercise (focus, hover and the pointer effects, the window and scene conditions, Increase Contrast,
+# Button Shapes, the corner styles, the roles, the system button types, the menu and bar-item variants, the loading
+# flag, the contexts) are not in it yet: the lane's report lists them as unmeasured. `exclusive` and `not_drawn` are
+# empty because the run combined no two states; whether UIKit draws every combination is unmeasured.
+
+[[model]]
+widget = "button"
+when = { conditions = ["preset:ios-13"] }
+available = true
+variants = ["flat", "@gray", "tinted", "primary", "@borderless", "@bordered", "toggle"]
+sizes = ["mini", "small", "regular", "large"]
+densities = []
+axes = { states = ["pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+not_drawn = []
+rows = ["B-1", "B-3"]
+
+# the four `buttonSize` values (medium is the model's `regular`)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:22-25"
+quote = "UIButtonConfigurationSizeMedium, UIButtonConfigurationSizeSmall, UIButtonConfigurationSizeMini, UIButtonConfigurationSizeLarge,"
+
+# the configuration styles
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:77-80"
+quote = "+ (instancetype)plainButtonConfiguration; + (instancetype)tintedButtonConfiguration; + (instancetype)grayButtonConfiguration; + (instancetype)filledButtonConfiguration;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:82-85"
+quote = "+ (instancetype)borderlessButtonConfiguration; + (instancetype)borderedButtonConfiguration; + (instancetype)borderedTintedButtonConfiguration; + (instancetype)borderedProminentButtonConfiguration;"
+
+# the styles the host drew on this runtime
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/index.toml#environment.styles"
+tolerance = 0
+
+# the default content size category (L) every capture was taken at
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/index.toml#screen.preferred_content_size_category"
+tolerance = 0
+
+# `mini` draws as `small` on iPhone: no pixel differs (light, plain; every style and state alike)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.filled.normal.mini_small"
+tolerance = 0
+
+# `pressed` (isHighlighted) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.highlighted_normal"
+tolerance = 0
+
+# `disabled` draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.disabled_normal"
+tolerance = 0
+
+# `checked` (the toggle's isSelected) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.selected_normal"
+tolerance = 0
+
+# the toggle off draws as the plain button (no pixel; at most one on 26)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.toggle_off_normal"
+tolerance = 0
+
+# `mini` draws as `small` on iPhone: no pixel differs (dark, plain; every style and state alike)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.filled.normal.mini_small"
+tolerance = 0
+
+# `pressed` (isHighlighted) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.highlighted_normal"
+tolerance = 0
+
+# `disabled` draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.disabled_normal"
+tolerance = 0
+
+# `checked` (the toggle's isSelected) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.selected_normal"
+tolerance = 0
+
+# the toggle off draws as the plain button (no pixel; at most one on 26)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.toggle_off_normal"
+tolerance = 0
+
+[[model]]
+widget = "button"
+when = { conditions = ["preset:ios-26"] }
+available = true
+variants = ["flat", "@gray", "tinted", "primary", "@borderless", "@bordered", "glass", "clear", "toggle"]
+sizes = ["mini", "small", "regular", "large"]
+densities = []
+axes = { states = ["pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+not_drawn = []
+rows = ["B-1", "B-2", "B-3"]
+
+# the four `buttonSize` values (medium is the model's `regular`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:23-26"
+quote = "UIButtonConfigurationSizeMedium, UIButtonConfigurationSizeSmall, UIButtonConfigurationSizeMini, UIButtonConfigurationSizeLarge,"
+
+# the configuration styles
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:78-81"
+quote = "+ (instancetype)plainButtonConfiguration; + (instancetype)tintedButtonConfiguration; + (instancetype)grayButtonConfiguration; + (instancetype)filledButtonConfiguration;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:83-86"
+quote = "+ (instancetype)borderlessButtonConfiguration; + (instancetype)borderedButtonConfiguration; + (instancetype)borderedTintedButtonConfiguration; + (instancetype)borderedProminentButtonConfiguration;"
+
+# iOS 26's glass styles (`glass`, `clear`; the prominent ones with `primary`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:88-91"
+quote = "+ (instancetype)glassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos); + (instancetype)prominentGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos); + (instancetype)clearGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos); + (instancetype)prominentClearGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos);"
+
+# the styles the host drew on this runtime
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/run1/index.toml#environment.styles"
+tolerance = 0
+
+# the default content size category (L) every capture was taken at
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/run1/index.toml#screen.preferred_content_size_category"
+tolerance = 0
+
+# `mini` draws as `small` on iPhone: no pixel differs (light, plain; every style and state alike)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.filled.normal.mini_small"
+tolerance = 0
+
+# `pressed` (isHighlighted) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.highlighted_normal"
+tolerance = 0
+
+# `disabled` draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.disabled_normal"
+tolerance = 0
+
+# `checked` (the toggle's isSelected) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.selected_normal"
+tolerance = 0
+
+# the toggle off draws as the plain button (no pixel; at most one on 26)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.toggle_off_normal"
+tolerance = 0
+
+# isHighlighted without a touch draws nothing on prominentGlass: glass's `pressed` needs a real touch (unmeasured)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.prominent_glass.medium.highlighted_normal"
+tolerance = 0
+
+# `mini` draws as `small` on iPhone: no pixel differs (dark, plain; every style and state alike)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.filled.normal.mini_small"
+tolerance = 0
+
+# `pressed` (isHighlighted) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.highlighted_normal"
+tolerance = 0
+
+# `disabled` draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.disabled_normal"
+tolerance = 0
+
+# `checked` (the toggle's isSelected) draws differently from rest
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.selected_normal"
+tolerance = 0
+
+# the toggle off draws as the plain button (no pixel; at most one on 26)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.toggle_off_normal"
+tolerance = 0
+
+# isHighlighted without a touch draws nothing on prominentGlass: glass's `pressed` needs a real touch (unmeasured)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.prominent_glass.medium.highlighted_normal"
+tolerance = 0

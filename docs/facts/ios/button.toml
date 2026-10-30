@@ -1,0 +1,3629 @@
+# button (ios-13, ios-26): UIButton.Configuration's styles as UIKit draws them in the iOS host of spike I, run
+# 40984711960 (docs/evidence/ios-host/2026-10-30-run-40984711960/README.md): iOS 18.6 on the iPhone 16 Pro simulator
+# (ios-13) and iOS 26.5 on the iPhone 17 Pro simulator (ios-26), the title "Button", no image, the default tint and
+# the default content size category (L), measured from the simulator's screenshots by analysis/measure_buttons.py.
+#
+# Only colours the capture proves opaque are stated: a capture is the colour composited over what lies beneath it
+# (the systemBackground cell, #ffffff light and #000000 dark, or the bezel), so a colour is stated only where some
+# channel reaches 0 or 255 while the colour beneath does not, which only an opaque colour can (the analysis's
+# `text_opaque`, `bezel_opaque`). Every other fill (the gray and tinted bezels, the pressed light-scheme colours, the
+# disabled look) is a composite: the lane's report lists it as needing a capture over a second background.
+#
+# The tint-coloured values (#007aff and #0a84ff on 18, #0088ff and #0091ff on 26) are literals: UIKit takes them from
+# the button's tintColor, but no pass varied the tint, so no measured derivation (S17) can state that yet.
+#
+# Mapping: plain `flat`, borderless `@borderless`, gray `@gray`, bordered `@bordered`, tinted `tinted`, filled
+# `primary`, borderedTinted `@bordered` with `tinted`, borderedProminent `@bordered` with `primary` (the catalogue's
+# ios-* variants); `isHighlighted = true` (no touch) is `pressed`; `changesSelectionAsPrimaryAction` is the variant
+# `toggle`, `isSelected` its `checked`. No fact names a size: each holds at every size, cited at mini, small, medium
+# (`regular`) and large. The two-variant styles' facts follow the one-variant ones, so the last matching fact is
+# theirs; a fact names the states it was not measured in as `not_states`, so it never answers for them. The order is
+# the harness's (style, then state), there being no platform source order for measured values.
+
+[[fact]]
+# UIButton.Configuration.plain(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["flat"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@borderless"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@gray"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#007aff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["flat"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@borderless"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@gray"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "primary"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0a84ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["flat"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0088ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@borderless"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0088ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@gray"], not_states = ["pressed", "disabled", "checked"] }
+value = "#000000"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered"], not_states = ["pressed", "disabled", "checked"] }
+value = "#000000"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0088ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0088ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0088ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0088ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["flat"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0091ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@borderless"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0091ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@gray"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0091ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "tinted"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0091ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.toggle_off.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.normal.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.toggle_off.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0091ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), at rest (and the toggle off); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "primary"], not_variants = ["glass", "clear"], not_states = ["pressed", "disabled", "checked"] }
+value = "#0091ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.toggle_off.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.normal.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.toggle_off.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["flat"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#3b9dff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@borderless"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#3b9dff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@gray"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#2290ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#2290ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["tinted"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#2290ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "tinted"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#2290ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["primary"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#3b9dff"
+rows = ["B-1", "B-6"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.highlighted.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "primary"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#3b9dff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.highlighted.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["flat"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#33a7ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@borderless"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#33a7ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@gray"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#ffffff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["tinted"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#199cff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "tinted"], not_variants = ["toggle"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#199cff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.mini.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.small.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.medium.highlighted.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.large.highlighted.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["primary"], not_variants = ["toggle", "glass", "clear"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#33a7ff"
+rows = ["B-1", "B-6"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.highlighted.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), `isHighlighted`; opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "primary"], not_variants = ["toggle", "glass", "clear"], states = ["pressed"], not_states = ["disabled", "checked"] }
+value = "#33a7ff"
+rows = ["B-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.highlighted.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.highlighted.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["flat", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.plain.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@borderless", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.borderless.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@gray", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.gray.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.filled.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], variants = ["@bordered", "primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#light.bordered_prominent.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["flat", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.plain.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@borderless", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.borderless.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@gray", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.gray.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.filled.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], variants = ["@bordered", "primary", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#dark.bordered_prominent.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["flat", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.plain.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@borderless", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.borderless.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@gray", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.gray.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.filled.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], variants = ["@bordered", "primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#light.bordered_prominent.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.plain(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["flat", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.plain.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderless(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@borderless", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.borderless.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.gray(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@gray", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.gray.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.bordered(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the bezel's capture does not (analysis.toml `text_opaque`)
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.selected.text"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.selected.text"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.tinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.filled(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.filled.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedTinted(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "tinted", "toggle"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_tinted.large.selected.bezel"
+tolerance = 1
+
+[[fact]]
+# UIButton.Configuration.borderedProminent(), the toggle on (`changesSelectionAsPrimaryAction`, `isSelected`); opaque: some channel reaches 0 or 255 where the cell (systemBackground) does not (analysis.toml `bezel_opaque`)
+key = "button.body.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], variants = ["@bordered", "primary", "toggle"], not_variants = ["glass", "clear"], states = ["checked"], not_states = ["pressed", "disabled"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.mini.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.small.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.medium.selected.bezel"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#dark.bordered_prominent.large.selected.bezel"
+tolerance = 1
