@@ -86,9 +86,10 @@ What the macOS 15 readings show, and how the facts take them (docs/facts/macos/b
 
 - the push bezel and those drawn like it draw an edge line and a shadow inside the frame (their alignment insets),
   which the layer solve does not separate: those strokes and shadows are pending (ledger U135, U136); the circle
-  fit of their corners has an rms of 0.2-0.56 coverage, so the facts take a corner only where every corner's rms is
-  at most 0.06, the tie-break's own criterion, the capsule case included (U142): `tiebreak-corners.toml` still
-  spells such a corner as `tiebreak_corners.py` reads it;
+  fit of `tiebreak_corners.py` reads the frame's drawn box, shadow ring included, and fails there (rms 0.2-0.56
+  coverage), so their top corners are the probe's own fit on the bezel's alpha outline (`button-pass*/probe.toml`
+  `corner_top_left`, `corner_top_right`, `radius_fit_px` where `fit_rms_px` is at most 0.1), and their bottom
+  corners, which the probe does not fit, are pending (U142);
 - the default button, a checked toggle (at rest and pressed) and most square bezels draw a gradient (`fill =
   "non_uniform"`): their fill and label are pending (U141), and measure_button_layers.py writes no
   `derivations.toml` (the default fill reads a gradient, the primary and tinted buttons are missing, and the key
@@ -100,6 +101,14 @@ What the macOS 15 readings show, and how the facts take them (docs/facts/macos/b
   under both accents (`tiebreak-derivations.toml` `caret_color_light`, `caret_color_dark`);
 - the focus ring lies partly inside the frame and the focus analysis reads uneven sides at every size, so every
   focus key is pending (U140): `focus.toml` and the focus pass's layers are not committed, as no fact cites them.
+
+The tie-break of macos-monterey's slice changed two of the scripts and rewrote their output for both images:
+`tiebreak_corners.py` takes a capsule only where the fit passes (it read a 46 x 16 px mini push bezel as a capsule
+whatever the rms) and refuses a mean over corners that spread by more than 1 px (`tiebreak-corners.toml` of both
+images); `measure_button_layers.py` measures the paddings from the alignment rect to the union of the title and
+image rects (it read them from the frame to the title rect; `geometry.toml` of both images, the other files
+byte for byte as before). On macos-15 it was run over the run's full artifact, whose focus pass this folder does not
+keep (its `focus.toml` is not committed, as before).
 
 Not committed, as nothing cites them: `environment/` (the wallpaper record), `sdk-headers/` (the facts cite the
 headers as `xcode@16.4`, which `os-probe.yml`'s macOS job checks), `renders/`, the captures over black and white,

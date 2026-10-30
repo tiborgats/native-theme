@@ -2350,6 +2350,13 @@ quote = "The foreground for unemphasized text selection (e.g. when the associate
 # the pass with it off where it reads the same colour (every colour does), and the Increase Contrast pass where that
 # pass reads the same colour; where it reads another, a fact under `contrast_increased` follows. The references to
 # inputs and other roles cite the macOS 15.5 SDK's declarations (xcode@16.4).
+# The accent inputs S9.1 names (ADD-A123; the tie-break of the monterey slice): selectedContentBackgroundColor,
+# selectedControlColor and keyboardFocusIndicatorColor are stated as `input.selected_content_background`,
+# `input.selected_control` and `input.keyboard_focus_indicator` (their measured values, which the red accent changes),
+# and the roles that take them (`role.selection.background`, `role.@selected_control`, `role.window.decoration_focus`)
+# as references to them (`read`), as `input.accent` and `input.highlight` are; highlightColor is `role.@highlight`, a
+# literal per scheme, which the red accent leaves unchanged. macos-tahoe's roles above still state those three as
+# literals (the tie-break's report).
 
 [[fact]]
 # windowBackgroundColor
@@ -2971,11 +2978,11 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-# selectedContentBackgroundColor
-key = "role.selection.background"
+# selectedContentBackgroundColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-monterey", "scheme:light"] }
 value = "#0064e1"
-rows = []
+rows = ["MAC-L02"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2988,10 +2995,10 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
 value = "#0040dd"
-rows = ["MAC-X22"]
+rows = ["MAC-L02", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2999,10 +3006,10 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
 value = "#0059d1"
-rows = []
+rows = ["MAC-L02"]
 
 [[fact.cite]]
 kind = "measured"
@@ -3015,15 +3022,26 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
 value = "#1774da"
-rows = ["MAC-X22"]
+rows = ["MAC-L02", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
 tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.selected_content_background"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:210"
+quote = "NSColor *selectedContentBackgroundColor"
 
 [[fact]]
 key = "role.selection.background"
@@ -4534,11 +4552,11 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-# keyboardFocusIndicatorColor
-key = "role.window.decoration_focus"
+# keyboardFocusIndicatorColor (S9.1: an accent input, ADD-A123)
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-monterey", "scheme:light"] }
 value = "#0067f47f"
-rows = []
+rows = ["MAC-X13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4551,10 +4569,10 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
 value = "#0022af"
-rows = ["MAC-X22"]
+rows = ["MAC-X13", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4562,10 +4580,10 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
 value = "#1aa9ff7f"
-rows = []
+rows = ["MAC-X13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4578,10 +4596,10 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
 value = "#469af5"
-rows = ["MAC-X22"]
+rows = ["MAC-X13", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4589,8 +4607,19 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-# selectedControlColor
-key = "role.@selected_control"
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.keyboard_focus_indicator"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:232"
+quote = "NSColor *keyboardFocusIndicatorColor;"
+
+[[fact]]
+# selectedControlColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_control"
 when = { conditions = ["preset:macos-monterey", "scheme:light"] }
 value = "#b3d7ff"
 rows = ["MAC-DF04"]
@@ -4606,7 +4635,7 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
 value = "#b3c6f5"
 rows = ["MAC-DF04", "MAC-X22"]
@@ -4617,7 +4646,7 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
 value = "#3f638b"
 rows = ["MAC-DF04"]
@@ -4633,7 +4662,7 @@ evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
 value = "#466280"
 rows = ["MAC-DF04", "MAC-X22"]
@@ -4641,6 +4670,70 @@ rows = ["MAC-DF04", "MAC-X22"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.selected_control"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:229"
+quote = "NSColor *selectedControlColor;"
+
+# highlightColor (NSColor.h:273: the colour all highlights tend toward; the red accent leaves it unchanged, S9.1)
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#b4b4b4"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]

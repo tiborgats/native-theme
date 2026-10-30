@@ -86,8 +86,12 @@ background (`colors_seen`, every such column's colour in either capture; a captu
 shows a blend with the background).
 
 Per sheet and button of the key pass, `geometry.<sheet>.<button>` from its probe.toml (points, a point a pixel):
-`min_height` (the intrinsic content size's height), `padding_left`, `padding_top` (the title rect's x and y), `padding_right`, `padding_bottom` (the bounds less
-the title rect's far edges), and `icon_text_gap` (the title rect's x less the image rect's right edge) where both
+`min_height` (the intrinsic content size's height), `padding_left`, `padding_top`, `padding_right`, `padding_bottom` (the distances
+from the bounds to the content: the union of the title rect and the image rect, each where drawn, so a button with an
+image measures to the image, as the body's padding holds the label and the icon), each less the button's alignment rect inset on that side (`alignmentRectInsets_tlbr`:
+the body's box is the alignment rect, whose height is `min_height` and on which the bezel's corners and fill are read;
+macOS 15's push bezel is inset 5, 7, 7, 7 in its frame, macOS 26's 0 but for a few bezels; before the tie-break of
+macos-monterey's slice the paddings were read from the frame), and `icon_text_gap` (the title rect's x less the image rect's right edge) where both
 rects are drawn. Per control size, `geometry.sizes.<size>`: `min_width` (the intrinsic width of a push button with an
 empty title, `[…geometry.sizes.<size>.empty_title]`), `font_size` (in points, a bare number) and `font_family` (the label font the sheets set,
 `systemFontOfSize:` of `systemFontSizeForControlSize:`, `font_control_common`).
@@ -610,9 +614,13 @@ def main():
             t, i = bt.get("cell_titleRectForBounds_xywh"), bt.get("cell_imageRectForBounds_xywh")
             w, h = bt["frame_xywh"][2], bt["frame_xywh"][3]
             g = {"min_height": f"{bt['intrinsicContentSize_wh'][1]:g}px"}
-            if t and t[2] > 0:
-                g.update({"padding_left": f"{t[0]:g}px", "padding_top": f"{t[1]:g}px",
-                          "padding_right": f"{w - t[0] - t[2]:g}px", "padding_bottom": f"{h - t[1] - t[3]:g}px"})
+            drawn = [r for r in (t, i) if r and r[2] > 0]
+            if drawn:
+                it, il, ib, ir = bt.get("alignmentRectInsets_tlbr", [0, 0, 0, 0])
+                x0, y0 = min(r[0] for r in drawn), min(r[1] for r in drawn)
+                x1, y1 = max(r[0] + r[2] for r in drawn), max(r[1] + r[3] for r in drawn)
+                g.update({"padding_left": f"{x0 - il:g}px", "padding_top": f"{y0 - it:g}px",
+                          "padding_right": f"{w - x1 - ir:g}px", "padding_bottom": f"{h - y1 - ib:g}px"})
             if t and t[2] > 0 and i and i[2] > 0:
                 g["icon_text_gap"] = f"{t[0] - (i[0] + i[2]):g}px"
             emit(lines, f"geometry.{sheet}.{b}", g)

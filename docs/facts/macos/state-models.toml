@@ -263,7 +263,9 @@ tolerance = 0
 # (NSBezelStyle has no glass member in the 15.5 SDK), no tint prominence (`primary`, `tinted`: NSButton declares no
 # tintProminence) and no border shapes (`pill`, `@rounded_rectangle`: no NSControlBorderShape), so the shape group
 # of tahoe's exclusive_variants is gone and `circular` is the bezel style alone. Reduce Transparency is on in every
-# pass (the runner image's setting); no macOS 15 pass draws the buttons with it off.
+# pass (the runner image's setting); no macOS 15 pass draws the buttons with it off. The toolbar context draws
+# otherwise: the toolbar bezel in a toolbar is 22 px high, on the sheet 20 px (the item view's and the sheet button's
+# intrinsic height, the last two citations; the tie-break of the monterey slice).
 widget = "button"
 when = { conditions = ["preset:macos-monterey"] }
 available = true
@@ -494,4 +496,14 @@ quote = "@interface NSComboButton : NSControl"
 [[model.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-toolbar.intrinsicContentSize_wh.1"
 tolerance = 0
