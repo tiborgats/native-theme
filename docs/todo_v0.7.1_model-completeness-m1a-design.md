@@ -48,9 +48,12 @@ right-to-left mirroring in the query (S2.4). **`Theme`** owns the stack, the con
 re-validates the whole stack on every mutation.
 
 **`ThemeParts` and `generate_widgets.py`.** The generator reads the catalogue through `spec_catalogue.py`; the
-enabled units are listed in `scripts/widget_units.toml` (`slice = ["button"]`). Per widget it writes
+enabled units are listed in `scripts/widget_units.toml` (`slice = ["button"]`; `[deferred.<widget>] <value> =
+"<unit>"` names each deferred value with the unit whose commit ends the deferral, as S6.1 asks; `[hand_written]`
+lists the units written by hand, never generated, `placement = false` until M3). Per widget it writes
 `widgets/gen_<widget>.rs` (the derive input `struct ButtonTheme` with one `#[part(root?, element?, parent = …,
-fields(…), may_be_absent?)]` per part, `ButtonValues` with `#[value(may_be_absent?, auto?)]`, the catalogue's own
+fields(…), may_be_absent?)]` per part, `ButtonValues` with the block mode's `#[parts(…)]` marks (`may_be_absent`, `auto`, `inner_may_be_absent`), as values
+need block kinds (task 6), the catalogue's own
 enums) and `widgets/gen_index.rs` (`WidgetKind`, `Variant`, `TypedPart` over the enabled units, `WidgetsPatch`,
 `WidgetValuesPatch`, the registry list); its output goes through `rustfmt` from stdin, and `--check` compares bytes.
 `#[derive(ThemeParts)]` is a new module of `native-theme-derive` beside `ThemeWidget`: on a widget it expands to the
