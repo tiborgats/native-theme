@@ -771,7 +771,9 @@ data, part-style fields) and, through `spec_catalogue.py`, the parts, widget
 values, variants and flags each catalogue entry lists, then reports each name
 in a trace target or a catalogue backtick span that neither defines, notation
 the specification forbids, names the core's checks removed, and platform
-values written into the specification. Prints one line per problem
+values written into the specification. An `input.<name>` path is one of S9's
+inputs (`S9_INPUTS`, the macOS accent inputs among them) or a part of the
+`input` widget. Prints one line per problem
 (tab-separated: file, line, kind, name, context) and exits 0 when there is
 none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
 `trace-macos`, ...), `--cat` and
@@ -950,7 +952,14 @@ exclusive groups and `requires_variants`; a set also listed in
 stderr), S4.1's motion keys (no dropped word or toolkit prefix, and on a
 platform whose catalogue row lists every duration key, one of them), the
 accent ramp's `role.global.accent_ramp.<key>`, and no key inside an enum
-block. Offline. The docstring states every rule and list. Prints
+block. ADD-A123's forms: a text-keyed map's entry in a key as TOML writes it
+(`token.text.fallbacks.per_family."Segoe Fluent Icons"`, a quoted segment one
+segment; an unterminated quote is a finding), each function called with the
+arity its S2.2 signature gives (`with_alpha(c, a)` beside `alpha(c, a)`), a
+platform curve one of the core's `QtEasing` or `AdwEasing` members, a
+`token.motion.timings.<key>` a `Timing` (S4.1's sketch), and
+`requires_variants` as any one of its forms (a listed set holding none of
+them is trimmed from the count). Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
@@ -975,7 +984,9 @@ literal of its citations' quotes, read by the cited file's notation (on
 Apple's sources a point is a logical point, px) and converted as the
 citation says (an absence citation holds a zero stated by omission; on a
 LinearGradientBrush an angle matches only the angle its points give; C++'s
-defaulted parameter is read from the quote's declaration); a measured value
+defaulted parameter is read from the quote's declaration; `ns_font_weight`
+converts an AppKit `NSFontWeight` to S2.8's CSS weight by WebKit's
+thresholds; a platform curve's name is the verifier's); a measured value
 has the committed evidence's shape and
 equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an
