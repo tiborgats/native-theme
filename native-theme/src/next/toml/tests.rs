@@ -1209,3 +1209,63 @@ fn a_breakpoints_part_is_the_widgets_own() {
         )]
     );
 }
+
+/// A map keyed by text is a TOML table with the text as its keys, quoted
+/// where TOML does not allow it bare; two keys are one entry exactly where
+/// they are equal as TOML keys, case-sensitively (S4.4, S11, ADD-A123).
+#[test]
+fn a_map_keyed_by_text_is_a_table_of_its_texts() {
+    let read = layer(
+        "[tokens.text.fallbacks.per_family]\n\"Segoe Fluent Icons\" = [\"Segoe MDL2 Assets\"]\n\
+         \"segoe fluent icons\" = []",
+    );
+    let fallbacks = read
+        .bases
+        .tokens
+        .text
+        .and_then(|text| text.fallbacks)
+        .and_then(|fallbacks| fallbacks.per_family);
+    assert_eq!(
+        fallbacks,
+        Some(vec![
+            (
+                "Segoe Fluent Icons".to_owned(),
+                vec!["Segoe MDL2 Assets".to_owned()]
+            ),
+            ("segoe fluent icons".to_owned(), Vec::new()),
+        ])
+    );
+    // A problem names the key as written, quoted.
+    assert_eq!(
+        problems("[tokens.text.fallbacks.per_family]\n\"Segoe Fluent Icons\" = 4"),
+        ["tokens.text.fallbacks.per_family.\"Segoe Fluent Icons\": expected an array"]
+    );
+    // Equal as TOML keys: one key, which TOML itself refuses twice.
+    assert_eq!(
+        problems("[tokens.text.fallbacks.per_family]\n\"Segoe UI\" = []\n\"Segoe UI\" = []").len(),
+        1
+    );
+}
+
+/// A `PartRef` stated as a value is a bare name of the parts of the widget
+/// whose table it is in, or `<widget>.<part>`; a bare name where no
+/// widget's table is read is mistyped (S11, ADD-A123).
+#[test]
+fn a_part_ref_value_names_its_widget_outside_a_widgets_table() {
+    let keyframe = |part: &str| {
+        format!(
+            "[tokens.icons.sizes.toolbar]\nsize_px = 16\nanimation = {{ period_ms = 100, timing = \
+             \"linear\", keyframes = [{{ at = 0, part = \"{part}\", timing = \"absent\", patch \
+             = {{}} }}] }}"
+        )
+    };
+    assert_eq!(
+        problems(&keyframe("icon")),
+        [
+            "tokens.icons.sizes.toolbar.animation.keyframes[0].part: expected `<widget>.<part>`: \
+             no widget's table is read here"
+        ]
+    );
+    let named = layer(&keyframe("button.icon"));
+    assert!(named.bases.tokens.icons.is_some());
+}

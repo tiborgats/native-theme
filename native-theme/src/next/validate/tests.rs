@@ -1239,3 +1239,41 @@ fn keyed_icon_context_fields_may_be_absent() {
         ["tokens.icons.sizes.keyed.menu.size_px: may not be absent"]
     );
 }
+
+/// A text-keyed map's key stated twice is one problem at the key as TOML
+/// writes it, quoted (S11, S12).
+#[test]
+fn a_text_keyed_map_names_its_key_quoted() {
+    let mut layer = Layer::default();
+    layer.bases.tokens.text = Some(crate::next::tokens::TextTokensPatch {
+        fallbacks: Some(crate::next::tokens::FontFallbacksPatch {
+            per_family: Some(vec![
+                ("Segoe UI".to_owned(), Vec::new()),
+                ("Segoe UI".to_owned(), Vec::new()),
+            ]),
+            ..crate::next::tokens::FontFallbacksPatch::default()
+        }),
+        ..crate::next::tokens::TextTokensPatch::default()
+    });
+    assert_eq!(
+        bare(&layer),
+        ["tokens.text.fallbacks.per_family.\"Segoe UI\": states the field \"Segoe UI\" states too"]
+    );
+}
+
+/// A font's weight is the CSS and OpenType weight, 1 to 1000 (S2.8,
+/// ADD-A123).
+#[test]
+fn refusal_weight_out_of_range() {
+    let weight = |n: u16| toml(&format!("[widgets.button.label]\ntext.font.weight = {n}"));
+    assert_eq!(
+        bare(&weight(0)),
+        ["widgets.button.label.text.font.weight: out of range: 1..=1000"]
+    );
+    assert_eq!(
+        bare(&weight(1001)),
+        ["widgets.button.label.text.font.weight: out of range: 1..=1000"]
+    );
+    assert_eq!(bare(&weight(400)), NONE);
+    assert_eq!(bare(&weight(1000)), NONE);
+}

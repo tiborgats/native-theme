@@ -152,7 +152,9 @@ pub(crate) struct WidgetDecl {
     pub(crate) default_size_by_variant: Option<Vec<DefaultSizeByVariant>>,
     /// Whether the platform has such a control.
     pub(crate) available: Option<bool>,
-    /// The variants an element must hold.
+    /// The forms the platform draws the widget only as: an element holding
+    /// any one of them is drawn, one holding none is not available (S8,
+    /// S10); empty, none required.
     pub(crate) requires_variants: Option<Vec<VariantRef>>,
     /// The element data each part's values read, and the values'.
     pub(crate) data: Option<Vec<(DataOwner, Vec<DataName>)>>,
