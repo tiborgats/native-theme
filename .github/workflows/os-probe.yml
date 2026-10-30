@@ -731,10 +731,12 @@ jobs:
           name: winui-host-${{ matrix.os }}
           path: winui-host-out
 
-  # The iOS host (D3, D4, spike I): tools/ios-host, a Swift app built by the
-  # image's default Xcode, run in a simulator of the image's newest iOS runtime
-  # (iOS 18 on macos-15, iOS 26 on macos-26), twice, and compared
-  # (tools/ios-host/run.sh). Its matrix is the probe's images; an image
+  # The iOS host (D3, D4, spike I): tools/ios-host, a Swift app and its UI
+  # test built by the image's default Xcode, run in a simulator of the image's
+  # newest iOS runtime (iOS 18 on macos-15, iOS 26 on macos-26): its render
+  # pass and its press pass twice each, compared, the layers over black and
+  # white solved, the SDK's UIKit headers copied (tools/ios-host/run.sh). Its
+  # matrix is the probe's images; an image
   # without a simulator (Windows) runs no step, since an `if:` cannot read the
   # matrix.
   ios-host:

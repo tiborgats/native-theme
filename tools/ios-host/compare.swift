@@ -1,14 +1,16 @@
 // Compares the files of two runs of the iOS host that are not byte-identical,
 // pixel by pixel (both decoded into 8-bit sRGB RGBA), for tools/ios-host/run.sh:
 //
-//     xcrun swift tools/ios-host/compare.swift <run1> <run2> <list>
+//     xcrun swift tools/ios-host/compare.swift [--list-only] <run1> <run2> <list>
 //
-// <list> holds one path per line, relative to both runs. Prints each file's
-// count of differing pixels and their largest difference in levels. Exits 1
-// when a measurement file (anything outside draw/) is not a PNG of the same
-// size or differs by more than `tolerance`: iOS 26's Liquid Glass edges in the
+// <list> holds one path per line, relative to both runs. Prints each PNG's
+// count of differing pixels and their largest difference in levels, and each
+// text file's first differing lines. Exits 1 when a measurement file (anything
+// outside draw/) is a text file that differs, or is not a PNG of the same size,
+// or differs by more than `tolerance`: iOS 26's Liquid Glass edges in the
 // simulator's screenshot vary by a level between runs in a few pixels (spike
-// I); drawHierarchy's copies (draw/) are listed and fail nothing.
+// I); drawHierarchy's copies (draw/) are listed and fail nothing, as is every
+// file under --list-only.
 
 import CoreGraphics
 import Foundation
@@ -30,9 +32,11 @@ func samples(_ url: URL) -> (width: Int, height: Int, bytes: [UInt8])? {
     return (image.width, image.height, [UInt8](data))
 }
 
-let arguments = CommandLine.arguments
+var arguments = CommandLine.arguments
+let listOnly = arguments.contains("--list-only")
+arguments.removeAll { $0 == "--list-only" }
 guard arguments.count == 4 else {
-    print("usage: compare.swift <run1> <run2> <list>")
+    print("usage: compare.swift [--list-only] <run1> <run2> <list>")
     exit(2)
 }
 let first = URL(fileURLWithPath: arguments[1])
@@ -40,8 +44,26 @@ let second = URL(fileURLWithPath: arguments[2])
 let list = (try? String(contentsOfFile: arguments[3], encoding: .utf8)) ?? ""
 var failed = false
 for path in list.split(separator: "\n").map(String.init) {
-    let measured = !path.hasPrefix("./draw/")
-    guard path.hasSuffix(".png"),
+    let measured = !listOnly && !path.hasPrefix("./draw/")
+    if !path.hasSuffix(".png") {
+        let a = (try? String(contentsOf: first.appendingPathComponent(path), encoding: .utf8)) ?? ""
+        let b = (try? String(contentsOf: second.appendingPathComponent(path), encoding: .utf8)) ?? ""
+        let linesA = a.split(separator: "\n", omittingEmptySubsequences: false)
+        let linesB = b.split(separator: "\n", omittingEmptySubsequences: false)
+        var shown = 0
+        for index in 0..<max(linesA.count, linesB.count) where shown < 20 {
+            let lineA = index < linesA.count ? String(linesA[index]) : "(none)"
+            let lineB = index < linesB.count ? String(linesB[index]) : "(none)"
+            if lineA != lineB {
+                print("\(path):\(index + 1): \(lineA) | \(lineB)")
+                shown += 1
+            }
+        }
+        print("\(path): differs (\(linesA.count) and \(linesB.count) lines)")
+        if measured { failed = true }
+        continue
+    }
+    guard
         let a = samples(first.appendingPathComponent(path)),
         let b = samples(second.appendingPathComponent(path)),
         a.width == b.width, a.height == b.height, a.bytes.count == b.bytes.count
