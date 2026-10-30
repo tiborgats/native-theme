@@ -5,16 +5,27 @@ use syn::{DeriveInput, Error, Result};
 
 mod attrs;
 mod block;
+mod widget;
 
 pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     let type_attrs = attrs::parse_type_attrs(&input.attrs)?;
-    if !type_attrs.block {
-        return Err(Error::new_spanned(
+    match (type_attrs.block, type_attrs.widget) {
+        (true, false) => block::expand(input, &type_attrs),
+        (false, true)
+            if !type_attrs.append && !type_attrs.own_resolved && !type_attrs.resolved_patch =>
+        {
+            widget::expand(input)
+        }
+        (false, true) => Err(Error::new_spanned(
             &input.ident,
-            "ThemeParts expands blocks, marked `#[parts(block)]`",
-        ));
+            "append, own_resolved and resolved_patch are a block's",
+        )),
+        _ => Err(Error::new_spanned(
+            &input.ident,
+            "ThemeParts expands blocks, marked `#[parts(block)]`, or widgets, marked \
+             `#[parts(widget)]`",
+        )),
     }
-    block::expand(input, &type_attrs)
 }
 
 #[cfg(test)]
@@ -395,6 +406,40 @@ mod tests {
     }
 
     #[test]
+    fn widget_expands_part_enum_patch_and_tables() {
+        let out = expand(syn::parse_quote! {
+            #[parts(widget)]
+            pub(crate) struct MenuButtonTheme {
+                /// The bezel.
+                #[part(root, fields(fill, shadow), absent(shadow))]
+                body: PartStyle,
+                /// The arrow.
+                #[part(element, may_be_absent, parent = "body", fields(glyph))]
+                menu_indicator: PartStyle,
+                values: MenuButtonValues,
+            }
+        });
+        for expected in [
+            "pub enum MenuButtonPart { # [doc = r\" The bezel.\"] Body , # [doc = r\" The arrow.\"] MenuIndicator , }",
+            "pub struct MenuButtonPatch { # [doc = r\" The bezel.\"] pub body : :: core :: option :: Option < crate :: next :: widgets :: PartPatch > ,",
+            "pub values : :: core :: option :: Option < MenuButtonValuesPatch > ,",
+            "pub (crate) fn into_parts (self ,)",
+            "[(MenuButtonPart :: Body , body) , (MenuButtonPart :: MenuIndicator , menu_indicator)]",
+            "impl crate :: next :: widgets :: WidgetTable for MenuButtonTheme",
+            "name : \"body\" , root : true , element : false , parent : :: core :: option :: Option :: None , may_be_absent : false",
+            "name : \"menu_indicator\" , root : false , element : true , parent : :: core :: option :: Option :: Some (\"body\") , may_be_absent : true",
+            "const _ : () = :: core :: assert ! (crate :: next :: registry :: names_fields \
+             (< PartStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"shadow\"]) , \
+             \"`menu_button.body` lists a field its style does not have\") ;",
+            "const FIELDS : [crate :: next :: registry :: FieldInfo ; 2usize] = crate :: next :: registry :: select \
+             (< PartStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"shadow\"] , & [\"shadow\"] ,) ;",
+            "const VALUES : & 'static [crate :: next :: registry :: FieldInfo] = < MenuButtonValues as crate :: next :: blocks :: Table > :: FIELDS ;",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
     fn append_block_expands_set_and_append() {
         let out = expand(syn::parse_quote! {
             #[parts(block, append)]
@@ -463,7 +508,8 @@ mod tests {
         for (input, message) in [
             (
                 syn::parse_quote! { pub struct ButtonTheme { body: PartStyle } },
-                "ThemeParts expands blocks, marked `#[parts(block)]`",
+                "ThemeParts expands blocks, marked `#[parts(block)]`, or widgets, marked \
+                 `#[parts(widget)]`",
             ),
             (
                 syn::parse_quote! {
@@ -603,10 +649,85 @@ mod tests {
             ),
             (
                 syn::parse_quote! {
-                    #[parts(widget)]
+                    #[parts(wide)]
                     pub struct Probe { pub x: Value<Px> }
                 },
-                "unknown parts attribute: expected block, append, own_resolved or resolved_patch",
+                "unknown parts attribute: expected block, widget, append, own_resolved or \
+                 resolved_patch",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme { pub x: Value<Px>, values: ProbeValues }
+                },
+                "a widget's field is a part, marked `#[part(...)]`, or its one `values`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(fields(fill))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "a widget's first part, and only it, is its root, `#[part(root, ...)]`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, may_be_absent, fields(fill))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "the root part is never absent as a whole, never an element and nests in nothing",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill))]
+                        body: PartStyle,
+                        #[part(parent = "label", fields(text))]
+                        icon: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "parent names another part",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill), absent(shadow))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "absent names a field the part lists in `fields(...)`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill))]
+                        body: PartStyle,
+                    }
+                },
+                "a widget has a `values` field, its values' struct",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct Probe {
+                        #[part(root, fields(fill))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "a widget's input is named `<Widget>Theme`",
             ),
         ] {
             assert_eq!(refused(input), message);

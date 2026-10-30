@@ -13,7 +13,8 @@
 //!   `#[theme]`, `#[theme_layer]` and `#[theme_inherit]` attributes.
 //! - [`ThemeFields`](derive@ThemeFields) registers a plain struct's
 //!   serialized field names for TOML linting.
-//! - [`ThemeParts`](derive@ThemeParts) generates the 0.8.0 model's blocks'
+//! - [`ThemeParts`](derive@ThemeParts) generates the 0.8.0 model's blocks' and
+//!   typed widgets'
 //!   patches, resolved types, merges and field tables; its expansions name
 //!   `crate::next::*` paths (the blocks' traits and merge helpers, the
 //!   field-path registry) that exist only inside `native-theme`, so it too
@@ -147,7 +148,8 @@ fn gen_inventory_submit(
     }
 }
 
-/// Derive macro for the 0.8.0 model's blocks (S2, S6.1).
+/// Derive macro for the 0.8.0 model's blocks and typed widgets (S2, S5,
+/// S6.1).
 ///
 /// On a block marked `#[parts(block)]` it generates, beside the block:
 ///
@@ -186,9 +188,22 @@ fn gen_inventory_submit(
 /// paths of a variant's fields `variant.field` (a tuple variant's fields:
 /// `variant`, several only of plain values).
 ///
+/// On a widget's input marked `#[parts(widget)]`, `<Widget>Theme`, which
+/// `scripts/generate_widgets.py` writes from the catalogue (one field per
+/// part, `PartStyle`, and one `values` field, the widget's values struct, a
+/// struct block), it generates `<Widget>Part`, one variant per part;
+/// `<Widget>Patch`, a `PartPatch` per part and the values' patch, each an
+/// `Option`, with `into_parts`, the patches in the catalogue's order; and the
+/// `WidgetTable` impl: the parts' tables (`PartInfo`: the name, the root,
+/// element and may-be-absent marks, the parent, and the `PartStyle` fields the
+/// part lists, each with its marks, a field named in `absent` also marked may
+/// be `Absent`), asserting at compile time that each listed field is one of
+/// the style's, and the values' table.
+///
 /// # Type attributes
 ///
-/// - `#[parts(block)]`: block mode (required).
+/// - `#[parts(block)]`: block mode.
+/// - `#[parts(widget)]`: widget mode.
 /// - `#[parts(append)]`: a struct block patched by `Set` or `Append`.
 /// - `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
 /// - `#[parts(resolved_patch)]`: a struct block's patch resolved,
@@ -217,7 +232,15 @@ fn gen_inventory_submit(
 ///   (a keyframe's `PartStylePatch`): it resolves to `Resolved<B>Patch`
 ///   (`B` marked `resolved_patch`), and its table entry reaches `B`'s table
 ///   through a function, as `B` can hold the field itself.
-#[proc_macro_derive(ThemeParts, attributes(parts))]
+///
+/// # Part attributes (widget mode)
+///
+/// - `#[part(root, element, may_be_absent, parent = "<part>", fields(...),
+///   absent(...))]`: the root part (the first, never absent as a whole, never
+///   an element, nesting in nothing); an *(element)* part; a part that may be
+///   `Absent` as a whole (S6.3); the part it nests in; its fields, the
+///   catalogue's list; and those of them the catalogue marks may be absent.
+#[proc_macro_derive(ThemeParts, attributes(parts, part))]
 pub fn derive_theme_parts(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 

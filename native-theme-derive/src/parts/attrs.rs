@@ -18,6 +18,8 @@ pub(crate) enum BlockKind {
 pub(crate) struct TypeAttrs {
     /// `#[parts(block)]`: block mode.
     pub block: bool,
+    /// `#[parts(widget)]`: widget mode.
+    pub widget: bool,
     /// `#[parts(append)]`: patched by `Set` or by appending to its one list.
     pub append: bool,
     /// `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
@@ -67,6 +69,8 @@ pub(crate) fn parse_type_attrs(attrs: &[Attribute]) -> Result<TypeAttrs> {
         attr.parse_nested_meta(|meta| {
             if meta.path.is_ident("block") {
                 flag(&mut out.block, &meta)
+            } else if meta.path.is_ident("widget") {
+                flag(&mut out.widget, &meta)
             } else if meta.path.is_ident("append") {
                 flag(&mut out.append, &meta)
             } else if meta.path.is_ident("own_resolved") {
@@ -75,7 +79,7 @@ pub(crate) fn parse_type_attrs(attrs: &[Attribute]) -> Result<TypeAttrs> {
                 flag(&mut out.resolved_patch, &meta)
             } else {
                 Err(meta.error(
-                    "unknown parts attribute: expected block, append, own_resolved or \
+                    "unknown parts attribute: expected block, widget, append, own_resolved or \
                      resolved_patch",
                 ))
             }
