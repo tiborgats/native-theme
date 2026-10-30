@@ -36,6 +36,10 @@ typed one (`rows`, `columns: Value<u32>`: both `Value<u32>`), or a bare `name` w
 the rule. Variants, sizes and flags are prose (typed and keyed names per preset, with notes): their items' text and
 backticked names are exposed as they stand, not interpreted.
 
+The **Exclusive groups** item names the widget's recency sets after `Recency sets` (S10's `recency`, S7.2; ADD-A124):
+each a backticked `<name> = [<flag>, …]`, its flags in the set's stated order (`state_layer = [focus_visible,
+hover]`); recency_sets reads every such span after the words, whatever platforms and notes surround it.
+
     python3 scripts/spec_catalogue.py [catalogue.md]   # one line per entry: line, kind, name, parts, values
     python3 scripts/spec_catalogue.py --self-test
 
@@ -44,10 +48,12 @@ API (run from the repository root, or pass a path):
     entries(text) -> list[Entry]          every entry in document order
     read(path=CATALOGUE) -> list[Entry]   entries() of a file
     catalogue_index(text) -> dict         per entry name: kind, line and the backticked names of its parts, widget
-                                          values, variants and flags items (check_spec_names.py's vocabulary)
+                                          values, variants and flags items (check_spec_names.py's vocabulary), and
+                                          `recency`: {set name: its flags, every declaration's in order}
     names_in(text) -> set[str]            the identifiers inside text's backtick spans (`@k` keeps its `@`)
     depth0_tokens(text)                   the backtick spans and parenthesis groups outside parentheses
     absence_sections(text)                a may_be_absent item's `parts:`, `fields:`, `values:` sections
+    recency_sets(entry) -> list           the entry's recency sets: (name, [flags in the stated order], line)
 
     Entry: name ("button", "component.led"), kind ("typed" | "component"), line (the heading's), section (its H2),
            platform (a component's first heading word in parentheses, else None), heading, body_lines
@@ -74,6 +80,9 @@ IDENT = re.compile(r"[a-z_][a-z0-9_]*")
 ITEM = re.compile(r"^\s{0,2}(?:- )?\*\*([^*]+?)\*\*")
 TYPED_HEADING = re.compile(r"^### (.+?)\s*$")
 COMPONENT_HEADING = re.compile(r"^#### component\.([a-z_][a-z0-9_]*)(.*)$")
+RECENCY_ITEM = re.compile(r"exclusive group", re.I)   # the item that names the recency sets (Entry format)
+RECENCY_WORDS = "Recency sets"
+RECENCY_SET = re.compile(r"^\s*([a-z_][a-z0-9_]*)\s*=\s*\[([^\]]*)\]\s*$")
 
 # check_spec_names.py's vocabulary: which items' names count as a widget's parts, values, variants and flags
 LABELS = {
@@ -425,13 +434,32 @@ def read(path=CATALOGUE) -> list[Entry]:
     return entries(Path(path).read_text(encoding="utf-8"))
 
 
+def recency_sets(entry) -> list:
+    """(name, [flags in the stated order], line) of every recency set the entry's **Exclusive groups** item names: each
+    backticked `<name> = [<flag>, …]` after the words `Recency sets` (S10's `recency`; ADD-A124)."""
+    out = []
+    for it in entry.items:
+        if not RECENCY_ITEM.search(it.label):
+            continue
+        text = it.text
+        start = text.find(RECENCY_WORDS)
+        if start < 0:
+            continue
+        for m in re.finditer(r"`([^`]+)`", text[start:]):
+            sm = RECENCY_SET.match(m.group(1))
+            if sm:
+                flags = [f.strip() for f in sm.group(2).split(",") if f.strip()]
+                out.append((sm.group(1), flags, it.line_at(start + m.start())))
+    return out
+
+
 def catalogue_index(text: str) -> dict:
     widgets: dict[str, dict] = {}
     for e in entries(text):
         if e.kind == "typed" and not IDENT.fullmatch(e.name):
             continue
         w = widgets.setdefault(e.name, {"kind": e.kind, "line": e.line, "parts": set(), "values": set(),
-                                        "variants": set(), "flags": set()})
+                                        "variants": set(), "flags": set(), "recency": {}})
         for it in e.items:
             if "may_be_absent" in it.label or "Today" in it.label or "State-model" in it.label:
                 continue
@@ -440,6 +468,9 @@ def catalogue_index(text: str) -> dict:
                 names = it.names()
                 for k in keys:
                     w[k] |= names
+        for name, flags, _ in recency_sets(e):
+            members = w["recency"].setdefault(name, [])
+            members += [f for f in flags if f not in members]
     return widgets
 
 
@@ -494,7 +525,8 @@ SELF_TEST_CATALOGUE = """\
   - `body` — the root: `fill`.
 - **Widget values:** none.
 - **Variants/sizes:** none. **Flags:** keyed `@on`; state flags used: disabled.
-  **Exclusive groups:** none.
+  **Exclusive groups:** none (`x = [a, b]` before the words is no set). Recency sets: `kde`: `glow = [hover,
+  focus_visible]` and `ring = [pressed, hover]` (a note, `not = a set`).
 - **may_be_absent**: none.
 
 #### component.bar (windows, Windows Community Toolkit)
@@ -520,7 +552,7 @@ def self_test() -> int:
         ("button", "typed", 12, "Buttons and toggles", None),
         ("Malformed Heading", "typed", 33, "Buttons and toggles", None),
         ("component.led", "component", 42, "Keyed components", "kde"),
-        ("component.bar", "component", 52, "Keyed components", "windows"),
+        ("component.bar", "component", 53, "Keyed components", "windows"),
     ])
     b, _, led, bar = es
     expect("button items", [(i.label, i.line, i.bullet) for i in b.items], [
@@ -534,7 +566,7 @@ def self_test() -> int:
     expect("item missing", b.item("Notes"), None)
     expect("led items", [(i.label, i.line, i.bullet) for i in led.items], [
         ("Kind", 44, True), ("Parts", 45, True), ("Widget values", 47, True), ("Variants/sizes", 48, True),
-        ("Flags", 48, False), ("Exclusive groups", 49, False), ("may_be_absent", 50, True),
+        ("Flags", 48, False), ("Exclusive groups", 49, False), ("may_be_absent", 51, True),
     ])
     expect("label colon outside the bold", led.item("may_be_absent").text, "none. ")
     expect("several labels on a line", led.item("Variants/sizes").text, "none.")
@@ -572,6 +604,11 @@ def self_test() -> int:
     expect("index skips may_be_absent and today", "font" in idx["button"]["parts"] | idx["button"]["values"], False)
     expect("index combined label", (idx["component.led"]["variants"], idx["component.led"]["flags"]),
            (set(), {"@on"}))
+    expect("recency sets", recency_sets(led), [("glow", ["hover", "focus_visible"], 49),
+                                               ("ring", ["pressed", "hover"], 50)])
+    expect("no recency sets", recency_sets(b), [])
+    expect("index recency", (idx["component.led"]["recency"], idx["button"]["recency"]),
+           ({"glow": ["hover", "focus_visible"], "ring": ["pressed", "hover"]}, {}))
     names, groups = depth0_tokens("`a` (`b` (`c`)) `d`")
     expect("depth0 names", [x[2] for x in names], ["a", "d"])
     expect("depth0 groups", groups, [(4, 15)])

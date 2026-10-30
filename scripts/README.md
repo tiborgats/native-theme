@@ -746,8 +746,10 @@ Reads the v0.7.1 specification's widget catalogue,
 components (`#### component.<key> (<platform>)`), each with its heading line,
 its items (the bold labels, `**Parts:**`, `**Widget values:**`, several to a
 line in many components), its parts (names, the parent a part nests in, the
-*(element)* mark and note, the field list) and its widget values (name and
-the type the catalogue states), with the source line of each. Variants, sizes
+*(element)* mark and note, the field list), its widget values (name and
+the type the catalogue states) and its recency sets (each `<name> = [<flag>,
+…]` its **Exclusive groups** item names after "Recency sets", ADD-A124), with
+the source line of each. Variants, sizes
 and flags are prose in the catalogue, so their items' text and backticked
 names are given as they stand. A module, imported by `check_spec_names.py` and
 `check_spec_entries.py` and meant for the widget-declaration generator and the
@@ -773,7 +775,15 @@ in a trace target or a catalogue backtick span that neither defines, notation
 the specification forbids, names the core's checks removed, and platform
 values written into the specification. An `input.<name>` path is one of S9's
 inputs (`S9_INPUTS`, the macOS accent inputs among them) or a part of the
-`input` widget. Prints one line per problem
+`input` widget. ADD-A124's names are read from the core's sketches: a
+`latest <set>:<flag>` term names a recency set a targeted widget declares and
+a member of it, the catalogue's recency sets hold two or more state flags,
+none twice, no two of an entry ordering two flags oppositely, `PartStyle.`
+paths and the `interaction` block's fields are part-style fields, and
+`Radius::`, `PropertyGroup::` (and a `transitions (…)` note's groups, so
+`StateLayer` and `StrokeWidth`), `RippleEffect::` and a corner's or effect's
+TOML spelling name variants of their enums; a transition's `from {…}` is not
+empty and names no flag twice. Prints one line per problem
 (tab-separated: file, line, kind, name, context) and exits 0 when there is
 none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
 `trace-macos`, ...), `--cat` and
