@@ -840,11 +840,14 @@ requires exactly one row per item, matched by source, heading and opening
 words, and exactly one item per row, so a closed or moved item's row is a
 finding; each destination must be one the plan names, and a row going
 `after 0.8.0`, `not this plan's work` or `settled by the model` needs a
-reason. The script's docstring states the whole rule. `--final` adds the
+reason. On every run it also checks the *Unmeasured register*'s Ids (`U` and
+a number, none shared by two rows) and that every pending fact
+(`pending = "U<n>"` in `docs/facts/<platform>/`) names one of its rows.
+The script's docstring states the whole rule. `--final` adds the
 plan's M4 gate: `docs/facts/imported/` empty, S19.2's staged file (named by
 `--staged-file PATH`, which `--final` requires) gone, the `LEGACY_EVIDENCE`
-list of `check_fact_citations.py` empty, and no unmeasured-register row
-without a decision; the drift comparison of every measured fact has no ledger
+list of `check_fact_citations.py` empty, no unmeasured-register row
+without a decision and no S17 pending fact; the drift comparison of every measured fact has no ledger
 table to read yet, so `--final` reports it as a finding until it has one.
 Prints one line per finding (file:line: what) and a summary with the counts,
 and exits 0 when there is none, 1 when there are some, 2 on an input it
