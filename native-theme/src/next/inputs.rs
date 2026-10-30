@@ -39,10 +39,7 @@ impl InputName {
     #[must_use]
     #[cfg_attr(
         not(test),
-        expect(
-            dead_code,
-            reason = "read by the evaluator (M1a task 10)"
-        )
+        expect(dead_code, reason = "read by the evaluator (M1a task 10)")
     )]
     pub(crate) fn segments(&self) -> &[Key] {
         &self.0
