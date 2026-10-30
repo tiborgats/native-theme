@@ -214,8 +214,8 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     project commit) is listed in `sources.toml` as not pinned, with its reason. `scripts/check_sources.py` fails on a
     cited project in neither list. A web page is pinned as a commit of its public source repository where it has one
     (Microsoft Learn's MicrosoftDocs repositories), else as a dated snapshot with its SHA-256 (Apple's pages as their
-    DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no versions, so its snapshot serves the
-    newest generation only. Apple's SDK headers exist only on macOS runners, so their citations are checked by a macOS
+    DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no versions, so a snapshot serves only presets
+    describing the release current when it was taken (D12, spec S17). Apple's SDK headers exist only on macOS runners, so their citations are checked by a macOS
     job of `os-probe.yml` at the pinned Xcode.
 - **D4 — `unsafe` and the measurement hosts** (approved by the maintainer, 2026-10-29).
   - The readers' and watchers' new reads (the traces' `reader` lines on macOS and Windows) grow under their existing
