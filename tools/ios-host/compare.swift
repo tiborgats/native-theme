@@ -1,20 +1,45 @@
 // Compares the files of two runs of the iOS host that are not byte-identical,
 // pixel by pixel (both decoded into 8-bit sRGB RGBA), for tools/ios-host/run.sh:
 //
-//     xcrun swift tools/ios-host/compare.swift <run1> <run2> <list>
+//     xcrun swift tools/ios-host/compare.swift [--list-only] [--adaptive-glass] <run1> <run2> <list>
 //
-// <list> holds one path per line, relative to both runs. Prints each file's
-// count of differing pixels and their largest difference in levels. Exits 1
-// when a measurement file (anything outside draw/) is not a PNG of the same
-// size or differs by more than `tolerance`: iOS 26's Liquid Glass edges in the
+// <list> holds one path per line, relative to both runs. Prints each PNG's
+// count of differing pixels and their largest difference in levels, and each
+// text file's first differing lines. Exits 1 when a measurement file (anything
+// outside draw/) is a text file that differs, or is not a PNG of the same size,
+// or differs by more than `tolerance`: iOS 26's Liquid Glass edges in the
 // simulator's screenshot vary by a level between runs in a few pixels (spike
-// I); drawHierarchy's copies (draw/) are listed and fail nothing.
+// I; `tolerance`), and Liquid Glass over black by up to two levels in a few
+// dozen pixels (iOS 26.5, `glassTolerance`, a path holding `glass`);
+// drawHierarchy's copies (draw/) are listed and fail nothing, as is every
+// file under --list-only and every capture of the activity indicator, which
+// turns without end (a path holding `+activity_indicator_`). Under
+// --adaptive-glass (an iOS 26 SDK), so is every capture of a Liquid Glass
+// specimen (a glass style, a bar item, a back button) over black, white or the
+// pattern, and every page of one: the glass adapts to a backdrop unlike its
+// appearance, and two runs can settle on different looks of it (dark glass over
+// white light or dark, up to 222 levels apart, each run's screenshots agreeing;
+// the lane's second round, iOS 26.5), so both runs' captures are the record.
 
 import CoreGraphics
 import Foundation
 import ImageIO
 
 let tolerance = 1
+let glassTolerance = 2
+
+/// Whether a path is a capture of Liquid Glass that adapts to its backdrop:
+/// ./screen/<appearance>/<specimen>/<size>/<backdrop>/<state>.png over black,
+/// white or the pattern, or ./pages/<appearance>/<specimen>/<size>/<part>.png.
+func adapts(_ path: String) -> Bool {
+    var parts = path.split(separator: "/").map(String.init)
+    if parts.first == "." { parts.removeFirst() }
+    guard parts.count >= 5 else { return false }
+    let specimen = parts[2]
+    guard specimen.contains("glass") || specimen.hasPrefix("bar_") || specimen.hasPrefix("back_") else { return false }
+    if parts[0] == "pages" { return true }
+    return parts[0] == "screen" && parts.count == 6 && ["black", "white", "pattern"].contains(parts[4])
+}
 
 func samples(_ url: URL) -> (width: Int, height: Int, bytes: [UInt8])? {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -30,9 +55,12 @@ func samples(_ url: URL) -> (width: Int, height: Int, bytes: [UInt8])? {
     return (image.width, image.height, [UInt8](data))
 }
 
-let arguments = CommandLine.arguments
+var arguments = CommandLine.arguments
+let listOnly = arguments.contains("--list-only")
+let adaptiveGlass = arguments.contains("--adaptive-glass")
+arguments.removeAll { $0 == "--list-only" || $0 == "--adaptive-glass" }
 guard arguments.count == 4 else {
-    print("usage: compare.swift <run1> <run2> <list>")
+    print("usage: compare.swift [--list-only] [--adaptive-glass] <run1> <run2> <list>")
     exit(2)
 }
 let first = URL(fileURLWithPath: arguments[1])
@@ -40,8 +68,27 @@ let second = URL(fileURLWithPath: arguments[2])
 let list = (try? String(contentsOfFile: arguments[3], encoding: .utf8)) ?? ""
 var failed = false
 for path in list.split(separator: "\n").map(String.init) {
-    let measured = !path.hasPrefix("./draw/")
-    guard path.hasSuffix(".png"),
+    let measured = !listOnly && !path.hasPrefix("./draw/") && !path.contains("+activity_indicator_")
+        && !(adaptiveGlass && adapts(path))
+    if !path.hasSuffix(".png") {
+        let a = (try? String(contentsOf: first.appendingPathComponent(path), encoding: .utf8)) ?? ""
+        let b = (try? String(contentsOf: second.appendingPathComponent(path), encoding: .utf8)) ?? ""
+        let linesA = a.split(separator: "\n", omittingEmptySubsequences: false)
+        let linesB = b.split(separator: "\n", omittingEmptySubsequences: false)
+        var shown = 0
+        for index in 0..<max(linesA.count, linesB.count) where shown < 20 {
+            let lineA = index < linesA.count ? String(linesA[index]) : "(none)"
+            let lineB = index < linesB.count ? String(linesB[index]) : "(none)"
+            if lineA != lineB {
+                print("\(path):\(index + 1): \(lineA) | \(lineB)")
+                shown += 1
+            }
+        }
+        print("\(path): differs (\(linesA.count) and \(linesB.count) lines)")
+        if measured { failed = true }
+        continue
+    }
+    guard
         let a = samples(first.appendingPathComponent(path)),
         let b = samples(second.appendingPathComponent(path)),
         a.width == b.width, a.height == b.height, a.bytes.count == b.bytes.count
@@ -61,6 +108,6 @@ for path in list.split(separator: "\n").map(String.init) {
         largest = max(largest, difference)
     }
     print("\(path): \(pixels) pixels differ, by at most \(largest) levels")
-    if measured && largest > tolerance { failed = true }
+    if measured && largest > (path.contains("glass") ? glassTolerance : tolerance) { failed = true }
 }
 exit(failed ? 1 : 0)

@@ -8,16 +8,36 @@
 
 /* Begin PBXBuildFile section */
 		1A0000000000000000000001 /* IosHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000002 /* IosHost.swift */; };
+		1A0000000000000000000101 /* PressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000102 /* PressTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1A0000000000000000000140 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A0000000000000000000040 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A0000000000000000000030;
+			remoteInfo = IosHost;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		1A0000000000000000000002 /* IosHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosHost.swift; sourceTree = "<group>"; };
 		1A0000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A0000000000000000000004 /* IosHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IosHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A0000000000000000000102 /* PressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressTests.swift; sourceTree = "<group>"; };
+		1A0000000000000000000104 /* IosHostUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IosHostUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		1A0000000000000000000010 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A0000000000000000000110 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -31,6 +51,7 @@
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000021 /* IosHost */,
+				1A0000000000000000000121 /* IosHostUITests */,
 				1A0000000000000000000022 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -44,10 +65,19 @@
 			path = IosHost;
 			sourceTree = "<group>";
 		};
+		1A0000000000000000000121 /* IosHostUITests */ = {
+			isa = PBXGroup;
+			children = (
+				1A0000000000000000000102 /* PressTests.swift */,
+			);
+			path = IosHostUITests;
+			sourceTree = "<group>";
+		};
 		1A0000000000000000000022 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000004 /* IosHost.app */,
+				1A0000000000000000000104 /* IosHostUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -72,6 +102,24 @@
 			productReference = 1A0000000000000000000004 /* IosHost.app */;
 			productType = "com.apple.product-type.application";
 		};
+		1A0000000000000000000130 /* IosHostUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A0000000000000000000150 /* Build configuration list for PBXNativeTarget "IosHostUITests" */;
+			buildPhases = (
+				1A0000000000000000000111 /* Sources */,
+				1A0000000000000000000110 /* Frameworks */,
+				1A0000000000000000000112 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1A0000000000000000000141 /* PBXTargetDependency */,
+			);
+			name = IosHostUITests;
+			productName = IosHostUITests;
+			productReference = 1A0000000000000000000104 /* IosHostUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -81,6 +129,11 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					1A0000000000000000000130 = {
+						TestTargetID = 1A0000000000000000000030;
+					};
+				};
 			};
 			buildConfigurationList = 1A0000000000000000000051 /* Build configuration list for PBXProject "IosHost" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -96,12 +149,20 @@
 			projectRoot = "";
 			targets = (
 				1A0000000000000000000030 /* IosHost */,
+				1A0000000000000000000130 /* IosHostUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A0000000000000000000012 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A0000000000000000000112 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -119,7 +180,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1A0000000000000000000111 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A0000000000000000000101 /* PressTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1A0000000000000000000141 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A0000000000000000000030 /* IosHost */;
+			targetProxy = 1A0000000000000000000140 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1A0000000000000000000060 /* Debug */ = {
@@ -168,7 +245,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.tiborgats.native-theme.ios-host";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -183,7 +260,33 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.tiborgats.native-theme.ios-host";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1A0000000000000000000162 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "io.github.tiborgats.native-theme.ios-host.ui-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = IosHost;
+			};
+			name = Debug;
+		};
+		1A0000000000000000000163 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "io.github.tiborgats.native-theme.ios-host.ui-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = IosHost;
 			};
 			name = Release;
 		};
@@ -204,6 +307,15 @@
 			buildConfigurations = (
 				1A0000000000000000000060 /* Debug */,
 				1A0000000000000000000061 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A0000000000000000000150 /* Build configuration list for PBXNativeTarget "IosHostUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A0000000000000000000162 /* Debug */,
+				1A0000000000000000000163 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
