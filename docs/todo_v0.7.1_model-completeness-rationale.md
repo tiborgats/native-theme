@@ -242,7 +242,7 @@ and one mechanism. R2.1–R2.8 define it.
 | stroke | a width and paint per side; inside, centred or outside | C12 | R7 |
 | shadow | layers (offset, blur, spread, colour, inset), or a reference to an elevation ramp entry | C01, C02 | R8 |
 | transform | scale, rotation and translation about an origin | C13, C14 | R9 |
-| transition | what changes, duration, delay, timing, and kind-specific values (a ripple's radius and opacities) | C14 | R9 |
+| transition | what changes, duration, delay, timing, and kind-specific values (a keyed kind's measured values) | C14 | R9 |
 | text style | font (family, size, weight, style, width, axes, features, fallbacks), letter spacing, line height, decoration, elision and wrapping, and its fill, a paint | C18 | R10 |
 | icon style, glyph | an icon's size, rendering mode, weight, effect; a glyph's source and geometry; the fill of either, a paint | C13, C19 | R11 |
 | focus indicator | kind, stroke, offset, corners, shadow, transition | C15 | R12 |
@@ -404,7 +404,7 @@ colours.
 
 **R2.7 — Declarations.** A preset declares, per widget, its variants, sizes and densities (per flavour where
 they differ, and per container where the platform draws a size only in some, such as a large button outside a
-navigation bar), its widget-specific state flags and exclusive state groups with their precedence (R3), its
+navigation bar), its widget-specific state flags, exclusive state groups with their precedence and recency sets (R3), its
 keyed components' availability, sizes, variants, flags and value types (their parts and fields come from the
 catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and elevation entries, its
 flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
@@ -439,9 +439,61 @@ with its flags in order of precedence (for `CommonStates`: disabled, pressed, ho
 highest present and drops the others before matching, so no look is made up for a combination the platform
 does not have.
 
-**State layers** (Material's hover, focus, pressed and dragged overlays, C08; libadwaita's `currentColor`
-shares) are a paint layer a rule appends over the fill beneath (R6), with a colour derivation (R5.4).
-Material's ripple is the pressed state layer's transition (R9).
+**Recency** (CONTRA-6). Some platforms show the most recent of several states rather than a fixed one. Compose
+keeps a control's interactions in the order they began and shows the last: its state layer over hover, focus and
+drag, the press ripple drawn beside it (`androidx@e4d933c9
+compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-280`), and a
+button's elevation over hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`;
+`FloatingActionButton.kt`, `ToggleButton.kt` and the split button's halves through the button's `ButtonElevation`,
+`SplitButton.kt:687-1294`, likewise, `Card.kt` and `Chip.kt` with drag too). An elevated
+button hovered after it was focused is at level 2, and focused after it was hovered at level 1
+(`tokens/ElevatedButtonTokens.kt:43-74`), so any fixed precedence is wrong for one of the two sequences. An
+exclusive group cannot state them either: it drops flags for every property, while the press, a member of the
+elevation's set, is drawn beside the state layer.
+
+- *An exclusive group with a fixed order.* Against: the two sequences above.
+- *One most-recent flag per element.* Against: the press is the latest of the elevation's set yet drawn beside the
+  state layer, so one element-wide answer is wrong for one of the two properties.
+- *The connector drops the older flags itself.* Against: it needs the sets, which are preset data a generic
+  connector does not have.
+- *Named recency sets: the preset declares each, per widget, its members cited from the platform's code; a rule's
+  selector may require a flag to be the latest of a set, that is kept (after the exclusive groups' drop) and set
+  after every other kept flag of the set; the connector reports the order it set the element's flags in, which it
+  records (element data, R25.3); flags it reports no order for count by the set's stated order, its
+  first as the latest.*
+
+**Decision:** named recency sets. The stated order is the tie-break, so a connector that reports nothing gets a
+fixed precedence (Material's: focus over hover, as its View library ranks them), and the gate checks each order of
+the flags present (R4). Material's state layers are rules on the latest of the set `state_layer`, not an exclusive
+group: a layer rule matching only its latest flag already draws one layer. Only the fields the platform's recency
+code drives follow a set (Compose's state layer and elevation); its other state-dependent fields are drawn by fixed
+precedences of their own (the list item's shape, `ListItemDefaults.kt:1144-1152`), so they stay rules on plain
+flags, in that order.
+
+**State layers.** libadwaita's `currentColor` shares are CSS background layers, so paint layers a rule appends over
+the fill beneath (R6), with a colour derivation (R5.4), animated as CSS animates them. Material's hover, focus and
+dragged overlays and its press ripple (C08) are Compose's ripple node, which draws them apart from the container and
+over the content, times their alpha by specs of its own while drawing them in the current colour every frame, and
+grows and fades the ripple by its own lifecycle, while the container's colour may snap (a toggle's, a chip's, an icon
+button's).
+
+- *Paint layers with roles:* each layer names its role, transitions time a role's layers, a part holds one layer of a
+  role, role layers are timed by their alpha alone and stated at rest so they never appear. Against: each rule
+  compensates for the one before, and a rule that sets the fill still drops them.
+- *The state layer as a part of its own.* Against: a part more on every widget that draws one, the ripple still
+  sharing its fill.
+- *A block of the part, `interaction`, holding a state layer (colour, alpha) and a ripple (colour, alpha, its
+  geometry), drawn over the part's fill and content and beneath its stroke, set by field patches, with
+  a property group of its own, `StateLayer`; the state layer's colour changes at once and its alpha alone is timed; the ripple is the
+  platform's effect, keeping the colour of its first frame (S2.12).* Its cost: a field on a dozen Material parts that every
+  other preset states absent.
+
+**Decision:** the block. It holds one state layer and one ripple by its type, a rule setting the fill cannot touch it,
+and its timing follows from its fields; its colours reference the content colour, `= surface.foreground`, so they
+follow every rebinding with no rule restating them; Material's ripple is the block's effect, started by the press (R9), on
+Android the framework's `RippleDrawable`, as Compose draws it there. Weighed for the ripple: a transition kind (a
+transition with no timing of its own, started by an event rather than a value change, against R9's own rule, with
+checks to fence it in) against a field of the block whose start is the flag: the field.
 
 ### R4 — The facts gate
 
@@ -462,8 +514,9 @@ so the preset must state {checked, hover}.
   libadwaita's selectors, Breeze's state branches, Material's tokens; on macOS and iOS the API's control
   states (`NSControl`, `UIControl.State`) and appearances, times the conditions, the containers the API
   distinguishes (a toolbar item, a bar item), and the styles and sizes the API enumerates
-  (`NSButton.BezelStyle`, `NSControl.ControlSize`, `UIButton.Configuration`), each measured by the probe.
-  The map is a survey; the platforms' state models are the list.
+  (`NSButton.BezelStyle`, `NSControl.ControlSize`, `UIButton.Configuration`), each measured by the probe;
+  where a recency set holds several present flags, each order of them (R3). The map is a survey; the platforms'
+  state models are the list.
 - **Derivations:** where a platform states a derivation, the fact is the derivation. The gate resolves each
   preset twice, with its own inputs and base colours and with perturbed ones (another accent, foreground and
   background), and
@@ -570,7 +623,8 @@ A paint is a stack of layers, bottom first: a colour, a linear or radial gradien
 macOS 12–15's checkbox box, MAC-X09, bezels to verify, MAC-B05; WinUI's elevation strokes, W3-04), or a
 material, each with a blend mode (macOS's vibrant foregrounds blend with what is beneath, MAC-X03). Paint fills
 parts, strokes, text, icons and glyphs. A rule sets a part's paint or appends layers over `base`: libadwaita's
-stacked fills (GN-1.30, GN-3.06) and every state layer are appended layers.
+stacked fills (GN-1.30, GN-3.06) and its and the tokens' state layers are appended layers; Material's state layer
+and press ripple are the part's `interaction` block (R3).
 
 **Materials** (MAC-X02, MAC-X03; Liquid Glass, MAC-X04–MAC-X06, X-MT-5–X-MT-13; Mica, Mica Alt, Acrylic,
 W3-06–W3-10; KWin's blur, K3.11):
@@ -593,10 +647,21 @@ toolkit that cannot draw the material draws instead.
 ### R7 — Corners and stroke (C11, C12)
 
 **Corners:** a radius per corner; fully rounded (a capsule at any height: Material's `full`, iOS 26's
-capsules); concentric (the container's radius less the inset, with a minimum where the platform states one,
+capsules); elliptical (each corner a quarter of the ellipse inscribed in the box, half its width across and half its
+height down, equal to the capsule on a square box: Breeze's QWidget round button, drawn with a radius of half its
+larger side, which Qt clamps per axis to half each side, `breeze@6.8.2 kstyle/breezehelper.cpp:727-739`,
+`qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018`, `qpaintengineex.cpp:745-746`; an application reaches it by giving such a button a
+label or a stretched box); concentric (the container's radius less the inset, with a minimum where the platform states one,
 X-CR-1–X-CR-3), which the toolkit computes at layout from its container; and the corner curve (circular, or
 Apple's continuous). A boxed list's rounded first and last rows are rules by position (R2.3). A shape that
-changes between states is a rule with its transition.
+changes between states is a rule with its transition. For the ellipse, recording it as not expressible would leave a
+visible deviation on a reachable case; two radii per corner (CSS's `a / b`) would add a field to every corner of
+every preset and connector for one shape; and a shape (R25.5) is Material's closed library, implemented to
+`androidx.graphics.shapes`, so it would state Breeze's drawing by another platform's code, and it replaces the
+corners, whose stroke, inset, ring and shadow rules a shape does not carry. So it is one corner kind, the smallest exact form: on all four corners or
+none, with circular curves, its shadow and a focus ring that follows the part following the ellipse of their own
+boxes, where a ring is stated `FollowPart` on such a part (Breeze's own ring keeps its `Frame_FrameRadius` corners
+on a round button, `breeze@6.8.2 kstyle/breezestyle.cpp:6631-6647`, K3.20).
 
 **Stroke:** a width and paint per side, inside, centred or outside the edge: WinUI's gradient elevation strokes
 and the thicker accent bottom edge of a focused text box (W1-026); libadwaita's outlines outside the box. A
@@ -631,19 +696,48 @@ MAT-X13–MAT-X15, X-MO-1).
   WinUI's pressed knob stretching (W1-120) and its chevron (W1-132).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
-  Material state springs; Apple's response and damping fraction convert to it exactly; velocity-dependent
-  curves (Kirigami's, Q3.26) are a closed set of platform curves, each implemented once in native-theme to its cited
-  source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16).
+  Material state springs; Apple's response and damping fraction convert to it exactly; a curve the toolkit computes
+  by a function of its own is one of a closed set of platform curves, each implemented once in native-theme to its
+  cited source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16). The set holds
+  Kirigami's velocity-dependent animations (Q3.26, CONTRA-2) and Qt's and libadwaita's easing functions (CONTRA-7),
+  several of which are no cubic Bézier at all (Qt's in-out sine, a cosine, `qtbase@6.12.0
+  src/3rdparty/easing/easing.cpp:275-278`; its out-expo, `:309-312`; its in-out quad and cubic, two pieces, `:70-79`,
+  `:122-131`; libadwaita's sine and expo curves, `libadwaita@1.10.0 src/adw-easing.c:276-295`). Rejected: stating
+  the curves that equal a cubic Bézier in exact arithmetic (Qt's in and out quad and cubic, libadwaita's in and out
+  cubic) as Béziers (it does not avoid the set, which the others need; it adds a second form and a checker for the
+  derivation, and the facts would carry control points no source writes; a connector whose toolkit takes only
+  Béziers can be given those curves' Béziers by a helper beside the evaluation, with no model change); a sampled
+  table (approximate); a general expression language for curves (a second evaluator for a closed set of named
+  functions).
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
   input), except during a theme change, which the theme-change token governs; the transition of the style
   after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`); where several rules state one for the same property, the later in stated order
-  wins. XAML's alternative, a transition per (from, to) pair of states, was weighed: CSS's form expresses a
-  direction-dependent motion by putting it on the style entered, and no WinUI row needs a pair. A paint layer
-  that appears interpolates from its colour at zero alpha, and one that disappears to it; layers are matched by
-  their position in the stack; colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
+  (`gtkcssanimatedstyle.c`). A transition may name the states it applies from (`from`, a set of flags): one with
+  none applies from any state, and one with a set only where the element held one of its flags before the change,
+  after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
+  later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
+  entered, or, moving to rest, by the one left (150 ms from press or focus, and drag on cards and chips; 120 ms from
+  hover), and snaps from none and into disabled (`androidx@e4d933c9
+  compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-113`,
+  `Button.kt:1750-1770`), and its state layer's fade the same way (15 ms from hover or focus, 150 ms from drag;
+  `compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:313-322`,
+  `:463-483`). Breeze fades a button's pen only on leaving hover, visible focus or press and its fill only
+  on leaving press, into whatever state follows, checked included, while checked, default and window-activation
+  changes are instant (`breeze@6.8.2 kstyle/breezehelper.cpp:655-725`, `kstyle/breezestyle.cpp:4546-4549`). Both are
+  the style entered governing with each of its transitions limited to the states it names: Material's rest
+  elevation states 150 ms `from {pressed, focus_visible}` (with `dragged` on cards and chips) and then 120 ms
+  `from {hover}`, the later winning where both apply, and its rest state layer a 15 ms fade and then 150 ms
+  `from {dragged}`; Breeze's base states its fill transition `from {pressed}` and its stroke transition
+  `from {hover, focus_visible, pressed}`, which a checked rule stating no transitions keeps, and after them zero ones
+  `from {disabled}`, as Breeze changes a button at once on being enabled again, and its disabled rule zero ones, as
+  Breeze runs neither fade on a disabled button. Rejected: a transition per (from, to) pair of states, XAML's form (the style
+  entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
+  transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
+  that appears interpolates from its colour at zero alpha, and one that disappears to it, a stroke that becomes
+  absent likewise, to zero width; layers are matched by their position in the stack; the `interaction` block's
+  colours change at once and its alphas move (R3); colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
@@ -651,10 +745,16 @@ MAT-X13–MAT-X15, X-MO-1).
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
   edge, scale, shape morph, clip reveal (WinUI's combo box opens by revealing from the selected item, W1-136),
   and the rest. `dialog.entrance` becomes one of them.
-- **Ripple:** a property transition of the pressed state layer whose origin is the point pressed, which the
-  toolkit has from the press itself: the layer grows from it, with the radius, durations and opacities Material
-  states (MAT-X9) as the transition's kind-specific values; its fade on release is the transition of the
-  style entered, {hover} if the pointer is still on the control, as the style entered governs.
+- **Ripple:** no transition but a field of the part's `interaction` block, a platform's own effect from a closed set
+  implemented once in native-theme to its source, as platform curves are, which the press starts and whose whole
+  lifecycle, the release's exit included, is the effect's own (R3); its origin is the point pressed where it is bounded,
+  which the toolkit has from the press itself, and the box's centre where it is not. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
+  whose shader draws a wave with sparkles, so the ripple is that effect, implemented to its source, not a circle with
+  stated durations. One transition governs a property group per change, as in CSS; the state layer has a group of its own,
+  so it does not time the container (R3). A stroke's widths may be timed by a group of their own,
+  `StrokeWidth`, which overrides `Stroke` for them where stated, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
+  different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
+  group was weighed and rejected, a field-path list on every transition for one pair.
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
   indeterminate progress).
 - **Scroll physics:** deceleration, overscroll and its spring, snapping, distance per wheel step (GN-3.24,
@@ -1071,7 +1171,12 @@ font rather than one measured number (R10),
 and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
 declares it reads, so the query still cannot fail (R2.8); the connector supplies them and queries again when they
-change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4).
+change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4). The order in which
+the connector set the element's state flags (R3's recency) is element data too: the connector records when each flag
+became set, beside the previous query results it already keeps per element to compare them (R9), as an
+immediate-mode toolkit recomputes the flags every frame. It is carried beside the flags it orders, not among the expression operands: selectors read it, as they
+read the flags, and no expression does; and it needs no declaration, as flags it leaves out count by the recency
+set's stated order, so a connector that reports none gets a defined answer.
 
 **R25.4 — Pattern paint (extends R6).** Some fills are patterns no gradient makes: a colour well's transparency
 checkerboard (GN-2.53†, W2-42†), Qt's dense brush patterns (K-SF09†), a code editor's background grid (GN-SF11†),
@@ -1092,8 +1197,8 @@ is a transition of kind morph; a loop's keyframes may name shapes.
 **R25.6 — Presentation transitions (extends R9).** Several transitions may run on one event together (a sheet's fade
 with its slide, Q2.40), one may target a single part (a clear button's fade), a slide states its distance, and
 items may be staggered (Q2.14, Q2.15, Q2.52). **Decision:** an event's presentation is a set of transitions, each with
-an optional part, distance and stagger; R9's velocity-dependent curves are platform curves implemented in native-theme
-(the specification's `Timing::Platform`).
+an optional part, distance and stagger; R9's platform curves (the curves a toolkit computes by a function of its own,
+the velocity-dependent ones among them) are implemented in native-theme (the specification's `Timing::Platform`).
 
 **R25.7 — Text rendering (extends R10).** Antialiasing, hinting, subpixel order, LCD filter and gamma or contrast
 (ClearType's, FreeType's through fontconfig, GNOME's `font-antialiasing`, `font-hinting`, `font-rgba-order`, macOS's font
@@ -1199,6 +1304,24 @@ Amended by the maintainer's decision D12 of the 0.8.0 plan (2026-10-29):
 - R1.5: a preset describes the newest release a supported runner measures, so `macos-tahoe` and `ios-26` describe
   26.x while macOS 27 runs only on a preview image; what only 27 draws is carried to `docs/todo.md`'s macOS 27 entry.
 
+Amended in place by the specification's batch ADD-A124 (2026-10-30), decided from the sources in the ledger's queue
+#42, #49, #60 and #73:
+
+- R3: recency sets and a selector term on a set's latest flag (CONTRA-6, settled); R25.3: the order the connector set
+  the flags in is element data.
+- R7: the elliptical corner, Breeze's round button on a box that is not square.
+- R9: a transition's `from` states; the platform curves widened to the curves a toolkit computes by a function of its
+  own (CONTRA-7, settled; CONTRA-2's velocity curves stay members), R25.6 following.
+- R3, R9 (the independent checks' fixes): Material's state layer and press ripple a block of the part,
+  `interaction`, with groups of its own (replacing paint layers with roles, which needed a compensating rule each
+  round); Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
+  none under Kirigami (qqc2-desktop-style's style item paints with no widget); the press ripple's
+  effect (Android's patterned `RippleDrawable`, a closed set of effects implemented to their sources, the ripple keeping
+  its pressed colour); the ripple a field of the block, `ripple.effect`, not a transition; the press delay a touch behaviour
+  (`token.behavior.touch.delay`); the checkbox's, radio's and switch's
+  `state_layer` parts holding the block, their per-state opacity dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
+  property group that overrides `Stroke` where stated; a stroke becoming absent interpolating to zero width.
+
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
 
@@ -1214,10 +1337,10 @@ platform rule into every application.
 
 The names and types of every field; the colour roles' surface sets, role record and keyed roles; the text ramp's slots;
 the semantic variants, sizes and densities; the condition, context, position, direction and state lists in full, and the
-exclusive groups with their precedence; the selector and patch types and the TOML spelling of rules, derivations,
+exclusive groups with their precedence, the recency sets; the selector and patch types and the TOML spelling of rules, derivations,
 references, inputs and value kinds; the derive macro's changes; the resolution and query API and the element tree a
 connector builds; the placement strategies; the derivation functions with their sources; the theme-change token's
-fields; the transition kinds and their kind-specific values (the ripple's); which controls AppKit renders whole and the
+fields; the transition kinds and their kind-specific values; the press ripple's effects; which controls AppKit renders whole and the
 rendering's API; the facts' data format and the gate's test; the conversion of today's inheritance rules into the
 presets; and the mapping of every row (R24). Its first steps, the kirigami-addons survey (R1.2), the survey of the
 community projects' platform ports (R19) and reading Plasma's accent derivation (R2.6), are done; what they and
