@@ -1,0 +1,806 @@
+# Tokens (ios-13, ios-26): what the iOS host's run 41020880059 read from UIKit
+# (docs/evidence/ios-host/2026-10-30-run-41020880059/README.md), each image's run1/index.toml: the eleven text styles'
+# fonts (`preferredFont(forTextStyle:compatibleWith:)`) at the default content size category (L), regular and bold
+# legibility weight alike in family and size (the weight differs; not stated: the lane's report); each text-role slot
+# references its keyed style, the style UIKit names for it (UIFontDescriptor.h's `UIFontTextStyle` constants);
+# `UILongPressGestureRecognizer`'s default minimum duration; the caret's width (`caretRect(for:)` of a UITextView and a
+# UITextField in every font the host tried). Each fact holds for both presets: the two runtimes read the same.
+
+[[fact]]
+key = "token.text.keyed.large_title.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.6.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.7.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.6.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.7.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.large_title.font.size"
+value = "34pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.6.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.7.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.6.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.7.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.30.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.31.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.30.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.31.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1.font.size"
+value = "28pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.30.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.31.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.30.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.31.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.54.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.55.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.54.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.55.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2.font.size"
+value = "22pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.54.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.55.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.54.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.55.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.78.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.79.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.78.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.79.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3.font.size"
+value = "20pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.78.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.79.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.78.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.79.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.102.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.103.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.102.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.103.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline.font.size"
+value = "17pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.102.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.103.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.102.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.103.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.126.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.127.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.126.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.127.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.size"
+value = "15pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.126.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.127.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.126.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.127.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.150.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.151.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.150.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.151.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body.font.size"
+value = "17pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.150.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.151.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.150.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.151.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.174.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.175.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.174.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.175.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout.font.size"
+value = "16pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.174.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.175.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.174.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.175.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.198.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.199.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.198.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.199.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote.font.size"
+value = "13pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.198.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.199.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.198.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.199.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.222.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.223.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.222.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.223.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.size"
+value = "12pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.222.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.223.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.222.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.223.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.246.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.247.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.246.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.247.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.size"
+value = "11pt"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.246.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.247.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.246.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.247.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.roles.large_title"
+value = "= token.text.keyed.large_title"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:175"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:175"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
+
+[[fact]]
+key = "token.text.roles.title1"
+value = "= token.text.keyed.title_1"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.title2"
+value = "= token.text.keyed.title_2"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:179"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:179"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.title3"
+value = "= token.text.keyed.title_3"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.headline"
+value = "= token.text.keyed.headline"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:181"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:181"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+value = "= token.text.keyed.subheadline"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.body"
+value = "= token.text.keyed.body"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:183"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:183"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.callout"
+value = "= token.text.keyed.callout"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.footnote"
+value = "= token.text.keyed.footnote"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:185"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:185"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.caption"
+value = "= token.text.keyed.caption_1"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:186"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:186"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.caption2"
+value = "= token.text.keyed.caption_2"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+# UILongPressGestureRecognizer's minimumPressDuration, a new recognizer's
+key = "token.behavior.long_press"
+value = "500ms"
+rows = ["X-BT-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#motion.long_press_minimum_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#motion.long_press_minimum_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+# caretRect(for:)'s width, 2 pt in every font the host tried (the caret's height follows the font)
+key = "token.caret.width"
+value = "2px"
+rows = ["X-CA-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.0.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.0.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.6.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.6.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.10.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.10.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.0.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.0.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.6.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.6.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.10.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.10.text_field_caret_rect_pt.2"
+tolerance = 0
