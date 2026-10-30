@@ -165,9 +165,15 @@ fn gen_inventory_submit(
 ///   by key, a list marked `keyed` by its items' own keys, any other list is
 ///   replaced whole, and a `Sides` or `Axes` field, patched as
 ///   `Option<Sides<Option<T>>>`, member by member; a `Vec` of pairs whose
-///   values are `Vec`s of pairs merges by key twice, and a `SurfaceMap` of
-///   a struct block, patched as `Option<SurfaceMap<<B>Patch>>`, set by set,
-///   each set's patch over that set's record);
+///   values are `Vec`s of pairs merges by key twice); a map of struct blocks
+///   (`Vec<(K, B)>`, `Vec<(K, Value<B>)>`, a `SurfaceMap<B>`) is patched
+///   entry by entry, each entry by `BlockPatch<B>` (`Set` replaces it,
+///   `Fields` applies over it), and a map of an append block's values by
+///   that block's patch; an entry the map lacks is created from its patch;
+/// - for a struct block, `Create`: the block built from its patch alone, for
+///   a map entry the value lacks, each `Value` the patch leaves unset
+///   `Absent` (left for S12's absent checks) and any other field it leaves
+///   unset a `Missing` conflict, as no value is invented for it;
 /// - the `Block` impl (the resolved type, sealed) and the `Table` impl: the
 ///   static `FIELDS` table of `FieldInfo { path, ty, may_be_absent, auto }`
 ///   and the `FORM`, a struct or an enum with its unit variants.

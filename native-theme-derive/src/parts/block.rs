@@ -49,14 +49,42 @@ struct BlockRef {
     name: Ident,
 }
 
+/// A map's values' block: the block, how it is patched, where it sits in the
+/// map's value, and the map's key type.
+struct MapBlock {
+    block: BlockRef,
+    kind: BlockKind,
+    wrap: Wrap,
+    key: Box<Type>,
+}
+
+impl MapBlock {
+    /// The patch of one entry, where the map's entries are patched one by one
+    /// (S6.1): a struct block's `BlockPatch<B>`, held bare or as a `Value`,
+    /// or an append block's own patch; `None` where an entry is set whole (an
+    /// enum block, a list of blocks).
+    fn entry_patch(&self) -> Option<TokenStream> {
+        let b = blocks();
+        let ty = &self.block.ty;
+        match (self.kind, self.wrap) {
+            (BlockKind::Fields, Wrap::Bare | Wrap::Value) => Some(quote!(#b::BlockPatch<#ty>)),
+            (BlockKind::Append, Wrap::Value) => {
+                let patch = renamed(ty, &format_ident!("{}Patch", self.block.name));
+                Some(quote!(#patch))
+            }
+            _ => None,
+        }
+    }
+}
+
 /// What a field holds, which decides its patch, its merge and its resolved
 /// type.
 enum Shape {
     /// A value with no fields of its own.
     Leaf,
     /// A `Vec` of pairs: merged by key; its values a block's where the field
-    /// is marked `block`.
-    Map(Option<BlockRef>),
+    /// is marked `block`, each entry then patched by its block's patch.
+    Map(Option<MapBlock>),
     /// A `Vec` of pairs whose values are `Vec`s of pairs: merged by key, an
     /// entry held on both sides merged by key in turn (S6.1: every `Vec` of
     /// pairs).
@@ -114,6 +142,7 @@ struct BlockField {
 enum MergeKind {
     Replace,
     ByKey,
+    Entries,
     ByKeyNested,
     Surfaces,
     Keyed,
@@ -129,6 +158,7 @@ impl BlockField {
         match &self.shape {
             Shape::Compound(_) => MergeKind::Members,
             Shape::Leaf => MergeKind::Replace,
+            Shape::Map(Some(map)) if map.entry_patch().is_some() => MergeKind::Entries,
             Shape::Map(_) => MergeKind::ByKey,
             Shape::NestedMap => MergeKind::ByKeyNested,
             Shape::Surfaces(_) => MergeKind::Surfaces,
@@ -189,8 +219,13 @@ impl BlockField {
             }
             Shape::Surfaces(block) => {
                 let m = model();
-                let patch = renamed(&block.ty, &format_ident!("{}Patch", block.name));
-                quote!(#o<#m::SurfaceMap<#patch>>)
+                let inner = &block.ty;
+                quote!(#o<#m::SurfaceMap<#b::BlockPatch<#inner>>>)
+            }
+            Shape::Map(Some(map)) if map.entry_patch().is_some() => {
+                let key = &map.key;
+                let entry = map.entry_patch();
+                quote!(#o<::std::vec::Vec<(#key, #entry)>>)
             }
             Shape::Leaf | Shape::Map(_) | Shape::NestedMap | Shape::Block { .. } => {
                 let ty = &self.ty;
@@ -222,9 +257,8 @@ impl BlockField {
 
     fn block(&self) -> Option<&BlockRef> {
         match &self.shape {
-            Shape::Block { block, .. } | Shape::Map(Some(block)) | Shape::Surfaces(block) => {
-                Some(block)
-            }
+            Shape::Block { block, .. } | Shape::Surfaces(block) => Some(block),
+            Shape::Map(Some(map)) => Some(&map.block),
             Shape::Leaf | Shape::Map(None) | Shape::NestedMap | Shape::Compound(_) => None,
         }
     }
@@ -237,6 +271,100 @@ impl BlockField {
             return quote!(#resolved);
         }
         resolved_ty(&self.ty, self.block(), self.attrs.auto)
+    }
+
+    /// The field's value in a block built from its patch alone (`Create`),
+    /// the patch's field bound to the field's name: a `Value` left unset is
+    /// `Absent`, left for S12's absent checks; any other field left unset is
+    /// a `Missing` conflict, as nothing else stands for "not stated".
+    fn created(&self) -> TokenStream {
+        let b = blocks();
+        let m = model();
+        let o = option();
+        let ident = &self.ident;
+        let path = ident.as_ref().map(Ident::to_string).unwrap_or_default();
+        let missing = quote! {
+            #b::MergeConflict::new(#b::Below::Missing).under(#path)
+        };
+        let required = quote!(#ident.ok_or_else(|| #missing)?);
+        match &self.shape {
+            Shape::Leaf if generic_arg(&self.ty, "Value").is_some() && !self.attrs.keyed => {
+                quote!(#ident.unwrap_or(#m::Value::Absent))
+            }
+            Shape::Compound(compound) => {
+                let (name, members) = self.members();
+                if generic_arg(&compound.inner, "Value").is_some() {
+                    quote! {
+                        match #ident {
+                            #o::Some(held) => #name { #(#members: held.#members.unwrap_or(#m::Value::Absent)),* },
+                            #o::None => #name { #(#members: #m::Value::Absent),* },
+                        }
+                    }
+                } else {
+                    let paths = members.iter().map(|member| format!("{path}.{member}"));
+                    quote! {{
+                        let held = #required;
+                        #name {
+                            #(#members: held.#members.ok_or_else(|| {
+                                #b::MergeConflict::new(#b::Below::Missing).under(#paths)
+                            })?),*
+                        }
+                    }}
+                }
+            }
+            Shape::Block {
+                kind: BlockKind::Fields,
+                wrap: Wrap::Bare,
+                block,
+            } => {
+                let ty = &block.ty;
+                quote! {
+                    <#ty as #b::Create>::create(#ident.unwrap_or_default())
+                        .map_err(|c| c.under(#path))?
+                }
+            }
+            Shape::Block {
+                kind: kind @ (BlockKind::Fields | BlockKind::Append),
+                wrap: Wrap::Value,
+                block,
+            } => {
+                let ty = &block.ty;
+                let patch = if *kind == BlockKind::Fields {
+                    quote!(#b::BlockPatch<#ty>)
+                } else {
+                    let patch = renamed(ty, &format_ident!("{}Patch", block.name));
+                    quote!(#patch)
+                };
+                quote! {
+                    match #ident {
+                        #o::Some(patch) => <#m::Value<#ty> as #b::Entry<#patch>>::create(patch)
+                            .map_err(|c| c.under(#path))?,
+                        #o::None => #m::Value::Absent,
+                    }
+                }
+            }
+            Shape::Block {
+                kind: BlockKind::Set,
+                wrap: Wrap::Value,
+                ..
+            } => quote!(#ident.unwrap_or(#m::Value::Absent)),
+            Shape::Surfaces(_) => quote! {{
+                let mut held = #m::SurfaceMap::default();
+                #b::apply_surfaces(&mut held, #required).map_err(|c| c.under(#path))?;
+                held
+            }},
+            Shape::Map(Some(map)) if map.entry_patch().is_some() => quote! {{
+                let mut held = ::std::vec::Vec::new();
+                #b::apply_entries(&mut held, #required).map_err(|c| c.under(#path))?;
+                held
+            }},
+            _ if self.attrs.keyed => quote! {{
+                let mut held = ::std::vec::Vec::new();
+                #b::KeyedItem::merge_keyed(&mut held, #required);
+                held
+            }},
+            Shape::Leaf | Shape::Map(_) | Shape::NestedMap | Shape::Block { .. } => required,
+        }
     }
 
     fn field_info(&self, path: &str) -> TokenStream {
@@ -511,11 +639,26 @@ fn parse_field(field: &syn::Field) -> Result<BlockField> {
         Shape::Compound(compound)
     } else {
         match (attrs.block, map_pair(&ty)) {
-            (Some(_), Some((_, value))) => {
-                let inner = generic_arg(value, "Value")
-                    .or_else(|| generic_arg(value, "Vec"))
-                    .unwrap_or(value);
-                Shape::Map(Some(block_ref(field, inner)?))
+            (Some(kind), Some((key, value))) => {
+                let (wrap, inner) = if let Some(inner) = generic_arg(value, "Value") {
+                    (Wrap::Value, inner)
+                } else if let Some(inner) = generic_arg(value, "Vec") {
+                    (Wrap::List, inner)
+                } else {
+                    (Wrap::Bare, value)
+                };
+                if kind == BlockKind::Append && wrap != Wrap::Value {
+                    return Err(Error::new_spanned(
+                        &field.ty,
+                        "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+                    ));
+                }
+                Shape::Map(Some(MapBlock {
+                    block: block_ref(field, inner)?,
+                    kind,
+                    wrap,
+                    key: Box::new(key.clone()),
+                }))
             }
             (Some(BlockKind::Fields), None) if generic_arg(&ty, "SurfaceMap").is_some() => {
                 let inner = generic_arg(&ty, "SurfaceMap").unwrap_or(&ty);
@@ -712,12 +855,16 @@ fn expand_fields(
         quote!(#(#docs)* #vis #ident: #ty,)
     });
     let idents: Vec<_> = fields.iter().map(|f| &f.ident).collect();
+    let created = fields.iter().map(BlockField::created);
     let merges = fields.iter().map(|f| {
         let ident = &f.ident;
         let path = ident.as_ref().map(Ident::to_string).unwrap_or_default();
         match f.merge_kind() {
             MergeKind::Replace => quote!(#b::replace_slot(&mut self.#ident, #ident);),
             MergeKind::ByKey => quote!(#b::merge_slot_by_key(&mut self.#ident, #ident);),
+            MergeKind::Entries => quote! {
+                #b::merge_slot_entries(&mut self.#ident, #ident).map_err(|c| c.under(#path))?;
+            },
             MergeKind::ByKeyNested => {
                 quote!(#b::merge_slot_by_key_nested(&mut self.#ident, #ident);)
             }
@@ -751,6 +898,11 @@ fn expand_fields(
             },
             MergeKind::ByKey => quote! {
                 if let ::core::option::Option::Some(entries) = #ident { #b::merge_by_key(&mut self.#ident, entries); }
+            },
+            MergeKind::Entries => quote! {
+                if let ::core::option::Option::Some(entries) = #ident {
+                    #b::apply_entries(&mut self.#ident, entries).map_err(|c| c.under(#path))?;
+                }
             },
             MergeKind::ByKeyNested => quote! {
                 if let ::core::option::Option::Some(entries) = #ident {
@@ -837,6 +989,13 @@ fn expand_fields(
                 ::core::result::Result::Ok(())
             }
         }
+
+        impl #b::Create for #name {
+            fn create(patch: #patch) -> ::core::result::Result<Self, #b::MergeConflict> {
+                let #patch { #(#idents),* } = patch;
+                ::core::result::Result::Ok(Self { #(#idents: #created),* })
+            }
+        }
     }
 }
 
@@ -896,6 +1055,18 @@ fn expand_append(
                         }
                     },
                 }
+            }
+        }
+
+        impl #b::Entry<#patch> for #m::Value<#name> {
+            fn apply_entry(&mut self, patch: #patch) -> ::core::result::Result<(), #b::MergeConflict> {
+                #b::Apply::apply(self, patch)
+            }
+
+            fn create(patch: #patch) -> ::core::result::Result<Self, #b::MergeConflict> {
+                let mut value = #m::Value::Absent;
+                #b::Apply::apply(&mut value, patch)?;
+                ::core::result::Result::Ok(value)
             }
         }
 

@@ -19,8 +19,8 @@ use super::roles::{
 use super::selector::Scheme;
 use super::tokens::{
     Behavior, BehaviorPatch, Caret, IconSizeTokens, IconTokens, KdeEffects, KdeTokens, KeyRepeat,
-    MaterialScheme, MaterialVariant, Mnemonics, PointerTokens, TextRendering, ThemeChange, Tokens,
-    TokensPatch, TouchBehavior,
+    MaterialScheme, MaterialVariant, Mnemonics, PointerTokens, SizeClassThreshold,
+    SizeClassThresholdPatch, TextRendering, ThemeChange, Tokens, TokensPatch, TouchBehavior,
 };
 use super::units::{Ms, Scalar};
 use super::value::{SchemeMap, SurfaceMap, Value};
@@ -694,8 +694,8 @@ fn surface_roles(r: f32) -> SurfaceRoles {
 }
 
 fn surfaces(
-    entries: Vec<(SurfaceSet, SurfaceRolesPatch)>,
-) -> Option<SurfaceMap<SurfaceRolesPatch>> {
+    entries: Vec<(SurfaceSet, BlockPatch<SurfaceRoles>)>,
+) -> Option<SurfaceMap<BlockPatch<SurfaceRoles>>> {
     let mut map = SurfaceMap::default();
     for (set, patch) in entries {
         map.insert(set, patch);
@@ -703,81 +703,153 @@ fn surfaces(
     Some(map)
 }
 
+fn roles_patch(patch: SurfaceRolesPatch) -> BlockPatch<SurfaceRoles> {
+    BlockPatch::Fields(patch)
+}
+
+/// The roles of a surface set no layer states, each `Absent`.
+fn absent_surface_roles() -> SurfaceRoles {
+    let mut roles = surface_roles(0.0);
+    for slot in [
+        &mut roles.background,
+        &mut roles.foreground,
+        &mut roles.foreground_inactive,
+        &mut roles.link,
+        &mut roles.negative,
+        &mut roles.border,
+        &mut roles.disabled.background,
+        &mut roles.disabled.foreground,
+    ] {
+        *slot = Value::Absent;
+    }
+    roles
+}
+
 #[test]
 fn surface_sets_patch_set_by_set_and_field_by_field() {
     let mut earlier = ColorRolesPatch {
-        surfaces: surfaces(vec![(
-            SurfaceSet::Window,
-            SurfaceRolesPatch {
-                background: Some(color(0.1)),
-                foreground: Some(color(0.2)),
-                ..SurfaceRolesPatch::default()
-            },
-        )]),
+        surfaces: surfaces(vec![
+            (
+                SurfaceSet::Window,
+                roles_patch(SurfaceRolesPatch {
+                    background: Some(color(0.1)),
+                    foreground: Some(color(0.2)),
+                    ..SurfaceRolesPatch::default()
+                }),
+            ),
+            (
+                SurfaceSet::Button,
+                BlockPatch::Set(Value::Stated(surface_roles(0.7))),
+            ),
+        ]),
         ..ColorRolesPatch::default()
     };
     let later = ColorRolesPatch {
         surfaces: surfaces(vec![
             (
                 SurfaceSet::Window,
-                SurfaceRolesPatch {
+                roles_patch(SurfaceRolesPatch {
                     background: Some(color(0.3)),
                     ..SurfaceRolesPatch::default()
-                },
+                }),
             ),
             (
                 SurfaceSet::View,
-                SurfaceRolesPatch {
+                roles_patch(SurfaceRolesPatch {
                     link: Some(color(0.4)),
                     ..SurfaceRolesPatch::default()
-                },
+                }),
+            ),
+            (
+                SurfaceSet::Button,
+                roles_patch(SurfaceRolesPatch {
+                    link: Some(color(0.8)),
+                    ..SurfaceRolesPatch::default()
+                }),
             ),
         ]),
         ..ColorRolesPatch::default()
     };
     assert_eq!(earlier.merge(later), Ok(()));
     let merged = earlier.surfaces.unwrap_or_default();
-    let window = merged.get(SurfaceSet::Window);
-    assert_eq!(window.and_then(|w| w.background.clone()), Some(color(0.3)));
-    assert_eq!(window.and_then(|w| w.foreground.clone()), Some(color(0.2)));
     assert_eq!(
-        merged.get(SurfaceSet::View).and_then(|v| v.link.clone()),
-        Some(color(0.4))
+        merged.get(SurfaceSet::Window),
+        Some(&roles_patch(SurfaceRolesPatch {
+            background: Some(color(0.3)),
+            foreground: Some(color(0.2)),
+            ..SurfaceRolesPatch::default()
+        }))
+    );
+    assert_eq!(
+        merged.get(SurfaceSet::View),
+        Some(&roles_patch(SurfaceRolesPatch {
+            link: Some(color(0.4)),
+            ..SurfaceRolesPatch::default()
+        }))
+    );
+    let button = SurfaceRoles {
+        link: color(0.8),
+        ..surface_roles(0.7)
+    };
+    assert_eq!(
+        merged.get(SurfaceSet::Button),
+        Some(&BlockPatch::Set(Value::Stated(button)))
     );
 
     let mut value = SurfaceMap::default();
     value.insert(SurfaceSet::Window, surface_roles(0.5));
-    let patch = surfaces(vec![(
-        SurfaceSet::Window,
-        SurfaceRolesPatch {
-            neutral: Some(color(0.6)),
-            ..SurfaceRolesPatch::default()
-        },
-    )])
-    .unwrap_or_default();
+    let patch = surfaces(vec![
+        (
+            SurfaceSet::Window,
+            roles_patch(SurfaceRolesPatch {
+                neutral: Some(color(0.6)),
+                ..SurfaceRolesPatch::default()
+            }),
+        ),
+        (
+            SurfaceSet::View,
+            BlockPatch::Set(Value::Stated(surface_roles(0.9))),
+        ),
+        (
+            SurfaceSet::Card,
+            roles_patch(SurfaceRolesPatch {
+                link: Some(color(0.2)),
+                ..SurfaceRolesPatch::default()
+            }),
+        ),
+    ]);
     let mut colors = super::roles::ColorRoles {
         surfaces: value,
         global: global_roles(),
         keyed: Vec::new(),
     };
     let over = ColorRolesPatch {
-        surfaces: Some(patch.clone()),
+        surfaces: patch,
         ..ColorRolesPatch::default()
     };
     assert_eq!(colors.apply(over), Ok(()));
     let window = colors.surfaces.get(SurfaceSet::Window);
     assert_eq!(window.map(|w| w.neutral.clone()), Some(color(0.6)));
     assert_eq!(window.map(|w| w.background.clone()), Some(color(0.5)));
+    assert_eq!(
+        colors.surfaces.get(SurfaceSet::View),
+        Some(&surface_roles(0.9))
+    );
+    // A set the value lacks is built from its patch, each role it leaves
+    // unset `Absent`, left for S12's absent checks.
+    let card = SurfaceRoles {
+        link: color(0.2),
+        ..absent_surface_roles()
+    };
+    assert_eq!(colors.surfaces.get(SurfaceSet::Card), Some(&card));
 
-    let mut missing = patch;
-    missing.insert(SurfaceSet::Card, SurfaceRolesPatch::default());
     let refused = colors.apply(ColorRolesPatch {
-        surfaces: Some(missing),
+        surfaces: surfaces(vec![(SurfaceSet::Window, BlockPatch::Set(Value::Absent))]),
         ..ColorRolesPatch::default()
     });
     let conflict: Result<(), MergeConflict> = Err(MergeConflict {
-        path: "surfaces.card".to_owned(),
-        below: super::blocks::Below::Missing,
+        path: "surfaces.window".to_owned(),
+        below: super::blocks::Below::Block,
     });
     assert_eq!(refused, conflict);
 }
@@ -962,4 +1034,79 @@ fn kde_tokens_patch_by_set_or_fields() {
         ..TokensPatch::default()
     };
     assert!(absent.merge(fields).is_err());
+}
+
+#[test]
+fn token_maps_of_blocks_patch_each_entry() {
+    let _: Option<Vec<(Key, BlockPatch<TextStyle>)>> =
+        super::tokens::TextTokensPatch::default().keyed;
+    let _: Option<Vec<(Key, BlockPatch<IconStyle>)>> =
+        super::tokens::IconSizeTokensPatch::default().keyed;
+    let _: Option<Vec<(Key, super::blocks::paint::PaintPatch)>> =
+        super::blocks::icon::IconStylePatch::default().status_colors;
+    let _: Option<Vec<(super::selector::SizeClass, BlockPatch<SizeClassThreshold>)>> =
+        TokensPatch::default().size_classes;
+
+    let threshold = |px: f32| SizeClassThresholdPatch {
+        horizontal: Some(Some(Value::Stated(super::units::Px(px)))),
+        ..SizeClassThresholdPatch::default()
+    };
+    let compact = super::selector::SizeClass::Compact;
+    let mut earlier = TokensPatch {
+        size_classes: Some(vec![(compact, BlockPatch::Fields(threshold(1.0)))]),
+        ..TokensPatch::default()
+    };
+    let later = TokensPatch {
+        size_classes: Some(vec![(
+            compact,
+            BlockPatch::Fields(SizeClassThresholdPatch {
+                vertical: Some(None),
+                ..SizeClassThresholdPatch::default()
+            }),
+        )]),
+        ..TokensPatch::default()
+    };
+    assert_eq!(earlier.merge(later), Ok(()));
+    assert_eq!(
+        earlier.size_classes,
+        Some(vec![(
+            compact,
+            BlockPatch::Fields(SizeClassThresholdPatch {
+                vertical: Some(None),
+                ..threshold(1.0)
+            })
+        )])
+    );
+
+    // A threshold's `Option`s have no `Absent`: an entry the value lacks is
+    // built only from a patch stating both.
+    let mut held: Vec<(super::selector::SizeClass, SizeClassThreshold)> = Vec::new();
+    assert_eq!(
+        super::blocks::apply_entries(
+            &mut held,
+            vec![(compact, BlockPatch::Fields(threshold(2.0)))]
+        ),
+        Err(MergeConflict {
+            path: "vertical".to_owned(),
+            below: super::blocks::Below::Missing,
+        })
+    );
+    let both = SizeClassThresholdPatch {
+        vertical: Some(None),
+        ..threshold(2.0)
+    };
+    assert_eq!(
+        super::blocks::apply_entries(&mut held, vec![(compact, BlockPatch::Fields(both))]),
+        Ok(())
+    );
+    assert_eq!(
+        held,
+        vec![(
+            compact,
+            SizeClassThreshold {
+                horizontal: Some(Value::Stated(super::units::Px(2.0))),
+                vertical: None,
+            }
+        )]
+    );
 }

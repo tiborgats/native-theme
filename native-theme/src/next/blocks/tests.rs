@@ -370,6 +370,8 @@ struct MapProbe {
     line_height: Value<crate::next::FontSize>,
     #[parts(block = "fields")]
     edge: super::outline::Edge,
+    #[parts(block = "fields")]
+    edges: Vec<(crate::next::Key, Edge)>,
 }
 
 #[test]
@@ -377,6 +379,7 @@ fn a_map_of_blocks_resolves_its_blocks_and_merges_by_key() {
     let resolved = ResolvedMapProbe {
         paints: vec![(key!("a"), None)],
         shadows: vec![(key!("b"), Vec::new())],
+        edges: Vec::new(),
         line_height: Some(Length::Auto),
         edge: ResolvedEdge {
             width: None,
@@ -401,25 +404,162 @@ fn a_map_of_blocks_resolves_its_blocks_and_merges_by_key() {
         Some(true)
     );
 
+    let _: Option<Vec<(crate::next::Key, PaintPatch)>> = MapProbePatch::default().paints;
+    let _: Option<Vec<(crate::next::Key, BlockPatch<Edge>)>> = MapProbePatch::default().edges;
+    let _: Option<Vec<(crate::next::Key, super::shadow::Shadow)>> =
+        MapProbePatch::default().shadows;
+}
+
+fn map_probe() -> MapProbe {
+    MapProbe {
+        paints: vec![(key!("a"), paint(vec![color_layer(0.1)]))],
+        shadows: Vec::new(),
+        line_height: Value::Auto,
+        edge: edge(1.0),
+        edges: vec![(key!("a"), edge(1.0))],
+    }
+}
+
+#[test]
+fn a_map_of_paints_patches_each_entry_by_set_or_append() {
     let mut earlier = MapProbePatch {
         paints: Some(vec![
-            (key!("a"), paint(vec![color_layer(0.1)])),
-            (key!("b"), Value::Absent),
+            (key!("a"), PaintPatch::Set(paint(vec![color_layer(0.1)]))),
+            (key!("b"), PaintPatch::Set(Value::Absent)),
         ]),
         ..MapProbePatch::default()
     };
     let later = MapProbePatch {
-        paints: Some(vec![(key!("b"), paint(vec![color_layer(0.2)]))]),
+        paints: Some(vec![
+            (key!("b"), PaintPatch::Append(vec![color_layer(0.2)])),
+            (key!("c"), PaintPatch::Append(vec![color_layer(0.3)])),
+        ]),
         ..MapProbePatch::default()
     };
     assert_eq!(earlier.merge(later), Ok(()));
     assert_eq!(
         earlier.paints,
         Some(vec![
-            (key!("a"), paint(vec![color_layer(0.1)])),
-            (key!("b"), paint(vec![color_layer(0.2)])),
+            (key!("a"), PaintPatch::Set(paint(vec![color_layer(0.1)]))),
+            (key!("b"), PaintPatch::Set(paint(vec![color_layer(0.2)]))),
+            (key!("c"), PaintPatch::Append(vec![color_layer(0.3)])),
         ])
     );
+
+    let mut value = map_probe();
+    let patch = MapProbePatch {
+        paints: Some(vec![
+            (key!("a"), PaintPatch::Append(vec![color_layer(0.4)])),
+            (key!("d"), PaintPatch::Append(vec![color_layer(0.5)])),
+        ]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(value.apply(patch), Ok(()));
+    assert_eq!(
+        value.paints,
+        vec![
+            (key!("a"), paint(vec![color_layer(0.1), color_layer(0.4)])),
+            (key!("d"), paint(vec![color_layer(0.5)])),
+        ]
+    );
+}
+
+#[test]
+fn a_map_of_struct_blocks_patches_each_entry_by_set_or_fields() {
+    let width = |w: f32| EdgePatch {
+        width: Some(Value::Stated(Px(w))),
+        ..EdgePatch::default()
+    };
+    let mut earlier = MapProbePatch {
+        edges: Some(vec![
+            (key!("a"), BlockPatch::Fields(width(1.0))),
+            (key!("b"), BlockPatch::Set(Value::Stated(edge(2.0)))),
+        ]),
+        ..MapProbePatch::default()
+    };
+    let later = MapProbePatch {
+        edges: Some(vec![
+            (
+                key!("a"),
+                BlockPatch::Fields(EdgePatch {
+                    snap: Some(PixelSnap::None),
+                    ..EdgePatch::default()
+                }),
+            ),
+            (key!("b"), BlockPatch::Fields(width(3.0))),
+        ]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(earlier.merge(later), Ok(()));
+    assert_eq!(
+        earlier.edges,
+        Some(vec![
+            (
+                key!("a"),
+                BlockPatch::Fields(EdgePatch {
+                    snap: Some(PixelSnap::None),
+                    ..width(1.0)
+                })
+            ),
+            (key!("b"), BlockPatch::Set(Value::Stated(edge(3.0)))),
+        ])
+    );
+
+    let mut value = map_probe();
+    let patch = MapProbePatch {
+        edges: Some(vec![
+            (key!("a"), BlockPatch::Fields(width(4.0))),
+            (key!("b"), BlockPatch::Set(Value::Stated(edge(5.0)))),
+            (
+                key!("c"),
+                BlockPatch::Fields(EdgePatch {
+                    snap: Some(PixelSnap::None),
+                    ..width(6.0)
+                }),
+            ),
+        ]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(value.apply(patch), Ok(()));
+    assert_eq!(
+        value.edges,
+        vec![
+            (key!("a"), edge(4.0)),
+            (key!("b"), edge(5.0)),
+            (
+                key!("c"),
+                Edge {
+                    width: Value::Stated(Px(6.0)),
+                    paint: Value::Absent,
+                    dash: Value::Absent,
+                    snap: PixelSnap::None,
+                }
+            ),
+        ]
+    );
+}
+
+#[test]
+fn a_map_entry_created_from_fields_needs_its_fields_without_absent() {
+    let mut value = map_probe();
+    let patch = MapProbePatch {
+        edges: Some(vec![(
+            key!("c"),
+            BlockPatch::Fields(EdgePatch {
+                width: Some(Value::Stated(Px(1.0))),
+                ..EdgePatch::default()
+            }),
+        )]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(value.apply(patch), conflict("edges.snap", Below::Missing));
+
+    let mut value = map_probe();
+    let patch = MapProbePatch {
+        edges: Some(vec![(key!("a"), BlockPatch::Set(Value::Absent))]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(value.apply(patch), conflict("edges", Below::Block));
 }
 
 #[test]

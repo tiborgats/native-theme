@@ -24,13 +24,18 @@ pub(crate) enum Below {
     Absent,
     /// `Auto`: refused (S12).
     Auto,
-    /// Nothing: a surface set's fields patched over a map holding no roles
-    /// for the set, so no record lies below them.
+    /// Nothing: a map entry's fields patched over a map lacking the entry,
+    /// which no block can be built for from the patch alone, as a field the
+    /// patch leaves unset has no `Absent` (S12 refuses it; no value is
+    /// invented for the field).
     Missing,
+    /// A bare block: a map of bare blocks' entry set to a reference,
+    /// `Absent` or `Auto`, which the entry cannot hold (S12 refuses it).
+    Block,
 }
 
 impl MergeConflict {
-    fn new(below: Below) -> Self {
+    pub(crate) fn new(below: Below) -> Self {
         Self {
             path: String::new(),
             below,
@@ -112,6 +117,105 @@ where
             },
         }
     }
+}
+
+/// A map entry's value and its patch (S6.1): the patch applied over the
+/// entry the map holds, or building the entry the map lacks.
+pub(crate) trait Entry<P>: Sized {
+    /// Applies `patch` over the held entry.
+    fn apply_entry(&mut self, patch: P) -> Result<(), MergeConflict>;
+    /// The entry `patch` builds where the map lacks it.
+    fn create(patch: P) -> Result<Self, MergeConflict>;
+}
+
+/// A struct block built from its patch alone, for a map entry the value
+/// lacks: each `Value` field the patch leaves unset is `Absent`, left for
+/// S12's absent checks; a field with no `Absent` (a plain value, an
+/// `Option`, a list) left unset is a [`Below::Missing`] conflict, as no value
+/// is invented for it.
+pub(crate) trait Create: FieldsBlock {
+    /// The block `patch` states, or the first field it leaves unset that
+    /// cannot be `Absent`.
+    fn create(patch: Self::Patch) -> Result<Self, MergeConflict>;
+}
+
+/// An entry of a map of bare struct blocks: `Set` replaces it with a stated
+/// block, `Fields` applies over it, and over a missing entry builds it.
+impl<B> Entry<BlockPatch<B>> for B
+where
+    B: Create + Apply<B::Patch>,
+{
+    fn apply_entry(&mut self, patch: BlockPatch<B>) -> Result<(), MergeConflict> {
+        match patch {
+            BlockPatch::Set(Value::Stated(block)) => {
+                *self = block;
+                Ok(())
+            }
+            BlockPatch::Set(_) => Err(MergeConflict::new(Below::Block)),
+            BlockPatch::Fields(fields) => self.apply(fields),
+        }
+    }
+
+    fn create(patch: BlockPatch<B>) -> Result<Self, MergeConflict> {
+        match patch {
+            BlockPatch::Set(Value::Stated(block)) => Ok(block),
+            BlockPatch::Set(_) => Err(MergeConflict::new(Below::Block)),
+            BlockPatch::Fields(fields) => B::create(fields),
+        }
+    }
+}
+
+/// An entry of a map of a struct block's values: `Set` replaces it, `Fields`
+/// applies over it, and over a missing entry builds a stated block.
+impl<B> Entry<BlockPatch<B>> for Value<B>
+where
+    B: Create + Apply<B::Patch>,
+{
+    fn apply_entry(&mut self, patch: BlockPatch<B>) -> Result<(), MergeConflict> {
+        self.apply(patch)
+    }
+
+    fn create(patch: BlockPatch<B>) -> Result<Self, MergeConflict> {
+        match patch {
+            BlockPatch::Set(value) => Ok(value),
+            BlockPatch::Fields(fields) => B::create(fields).map(Value::Stated),
+        }
+    }
+}
+
+/// A later map of entry patches merges into the earlier by key, an entry
+/// held on both sides merged as its patch merges.
+pub(crate) fn merge_slot_entries<K: PartialEq, P: Merge>(
+    earlier: &mut Option<Vec<(K, P)>>,
+    later: Option<Vec<(K, P)>>,
+) -> Result<(), MergeConflict> {
+    let Some(later) = later else { return Ok(()) };
+    let Some(held) = earlier.as_mut() else {
+        *earlier = Some(later);
+        return Ok(());
+    };
+    for (key, patch) in later {
+        match held.iter_mut().find(|(k, _)| *k == key) {
+            Some((_, below)) => below.merge(patch)?,
+            None => held.push((key, patch)),
+        }
+    }
+    Ok(())
+}
+
+/// Entry patches applied over a map by key, an entry the map lacks built
+/// from its patch and added after the held entries.
+pub(crate) fn apply_entries<K: PartialEq, V: Entry<P>, P>(
+    value: &mut Vec<(K, V)>,
+    patch: Vec<(K, P)>,
+) -> Result<(), MergeConflict> {
+    for (key, entry) in patch {
+        match value.iter_mut().find(|(k, _)| *k == key) {
+            Some((_, held)) => held.apply_entry(entry)?,
+            None => value.push((key, V::create(entry)?)),
+        }
+    }
+    Ok(())
 }
 
 /// A later setting replaces the earlier.
@@ -201,15 +305,19 @@ pub(crate) fn merge_slot_surfaces<P: Merge>(
     Ok(())
 }
 
-/// Patches per surface set applied over the sets' records.
-pub(crate) fn apply_surfaces<B: Apply<P>, P>(
+/// Patches per surface set applied over the sets' records, a record the
+/// map lacks built from its patch.
+pub(crate) fn apply_surfaces<B: Entry<P>, P>(
     value: &mut SurfaceMap<B>,
     patch: SurfaceMap<P>,
 ) -> Result<(), MergeConflict> {
-    for (set, fields) in patch.into_entries() {
+    for (set, entry) in patch.into_entries() {
         match value.get_mut(set) {
-            Some(record) => record.apply(fields).map_err(|c| c.under(set.name()))?,
-            None => return Err(MergeConflict::new(Below::Missing).under(set.name())),
+            Some(record) => record.apply_entry(entry).map_err(|c| c.under(set.name()))?,
+            None => {
+                let record = B::create(entry).map_err(|c| c.under(set.name()))?;
+                value.insert(set, record);
+            }
         }
     }
     Ok(())

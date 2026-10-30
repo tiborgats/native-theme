@@ -143,18 +143,27 @@ mod tests {
     }
 
     #[test]
-    fn a_map_of_blocks_resolves_them_and_merges_by_key() {
+    fn a_map_of_blocks_resolves_them_and_patches_each_entry() {
         let out = expand(syn::parse_quote! {
             #[parts(block)]
             pub struct Probe {
                 #[parts(block = "append")]
                 pub status_colors: Vec<(Key, Value<Paint>)>,
+                #[parts(block = "fields")]
+                pub keyed: Vec<(Key, TextStyle)>,
+                #[parts(block = "set")]
+                pub timings: Vec<(Key, Timing)>,
             }
         });
         for expected in [
-            "pub status_colors : :: core :: option :: Option < Vec < (Key , Value < Paint >) > >",
+            "pub status_colors : :: core :: option :: Option < :: std :: vec :: Vec < (Key , PaintPatch) >>",
+            "pub keyed : :: core :: option :: Option < :: std :: vec :: Vec < (Key , crate :: next :: blocks :: BlockPatch < TextStyle >) >>",
+            "pub timings : :: core :: option :: Option < Vec < (Key , Timing) > >",
             "pub status_colors : :: std :: vec :: Vec < (Key , :: core :: option :: Option < ResolvedPaint >) >",
-            "crate :: next :: blocks :: merge_slot_by_key (& mut self . status_colors , status_colors)",
+            "crate :: next :: blocks :: merge_slot_entries (& mut self . status_colors , status_colors) \
+             . map_err (| c | c . under (\"status_colors\")) ?",
+            "crate :: next :: blocks :: apply_entries (& mut self . keyed , entries)",
+            "crate :: next :: blocks :: merge_slot_by_key (& mut self . timings , timings)",
             "fields : < Paint as crate :: next :: blocks :: Table > :: FIELDS",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
@@ -241,7 +250,7 @@ mod tests {
             }
         });
         for expected in [
-            "pub surfaces : :: core :: option :: Option < crate :: next :: SurfaceMap < SurfaceRolesPatch >>",
+            "pub surfaces : :: core :: option :: Option < crate :: next :: SurfaceMap < crate :: next :: blocks :: BlockPatch < SurfaceRoles >> >",
             "pub surfaces : crate :: next :: SurfaceMap < ResolvedSurfaceRoles >",
             "crate :: next :: blocks :: merge_slot_surfaces (& mut self . surfaces , surfaces) \
              . map_err (| c | c . under (\"surfaces\")) ?",
@@ -352,6 +361,37 @@ mod tests {
     }
 
     #[test]
+    fn create_leaves_values_absent_and_requires_the_rest() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub width: Value<Px>,
+                pub margin: Sides<Value<Px>>,
+                pub flip: Axes<bool>,
+                pub case: TextCase,
+                #[parts(block = "fields")]
+                pub edge: Edge,
+                #[parts(block = "fields")]
+                pub stroke: Value<Stroke>,
+            }
+        });
+        for expected in [
+            "impl crate :: next :: blocks :: Create for Probe",
+            "width : width . unwrap_or (crate :: next :: Value :: Absent)",
+            "top : held . top . unwrap_or (crate :: next :: Value :: Absent)",
+            "vertical : held . vertical . ok_or_else (|| { crate :: next :: blocks :: MergeConflict :: new \
+             (crate :: next :: blocks :: Below :: Missing) . under (\"flip.vertical\") }) ?",
+            "case : case . ok_or_else (|| crate :: next :: blocks :: MergeConflict :: new \
+             (crate :: next :: blocks :: Below :: Missing) . under (\"case\")) ?",
+            "edge : < Edge as crate :: next :: blocks :: Create > :: create (edge . unwrap_or_default ())",
+            "< crate :: next :: Value < Stroke > as crate :: next :: blocks :: Entry < crate :: next :: blocks :: \
+             BlockPatch < Stroke > >> :: create (patch)",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
     fn append_block_expands_set_and_append() {
         let out = expand(syn::parse_quote! {
             #[parts(block, append)]
@@ -367,6 +407,7 @@ mod tests {
             "pub layers : :: std :: vec :: Vec < ResolvedPaintLayer >",
             "impl crate :: next :: blocks :: Apply < PaintPatch > for crate :: next :: Value < Paint >",
             "Paint { layers : items }",
+            "impl crate :: next :: blocks :: Entry < PaintPatch > for crate :: next :: Value < Paint >",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -453,6 +494,23 @@ mod tests {
                 syn::parse_quote! {
                     #[parts(block)]
                     pub struct Probe { #[parts(block = "append")] pub fill: Option<Paint> }
+                },
+                "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "append")] pub fills: Vec<(Key, Paint)> }
+                },
+                "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe {
+                        #[parts(block = "append")]
+                        pub fills: Vec<(Key, Vec<Paint>)>,
+                    }
                 },
                 "an append block is held as `Value<B>`, or as a map's `Value<B>`",
             ),
