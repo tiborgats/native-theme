@@ -429,6 +429,154 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:172"
 quote = "BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
 
+# Pending (S17, ADD-A122; register U1): the accent style (`primary`, and the dialog's default button, which takes
+# it), and the app-bar styles (`tool`) set no Padding or BorderThickness; whether DefaultButtonStyle's setters reach
+# them is the WinUI host's measurement.
+[[fact]]
+key = "button.body.padding.top"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.top"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.right"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.padding.left"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.top.width"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.top.width"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.top.width"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.right.width"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.right.width"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.right.width"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.bottom.width"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.bottom.width"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.bottom.width"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.left.width"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.left.width"
+when = { variants = ["tool"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke.left.width"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+
 # The fill under the stroke (Stroke.fill_clip, ADD-A121): WinUI's BackgroundSizing, InnerBorderEdge in
 # every style but the accent one and the checked toggles, whose OuterBorderEdge is `box`.
 [[fact]]
@@ -533,7 +681,7 @@ quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"ContentPresenter
 key = "button.body.stroke.fill_clip"
 when = { variants = ["toggle"], states = ["checked", "disabled"] }
 value = "inner_edge"
-rows = []
+rows = ["W1-022"]
 
 [[fact.cite]]
 kind = "published"
@@ -550,7 +698,7 @@ absent = ["BackgroundSizing"]
 key = "button.body.stroke.fill_clip"
 when = { variants = ["tool", "toggle"], states = ["checked"] }
 value = "box"
-rows = []
+rows = ["W1-100"]
 
 [[fact.cite]]
 kind = "published"
@@ -1134,8 +1282,51 @@ quote = "Describes the specifics of the desired render transform. The default va
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransformorigin.md:26"
-quote = "The origin point of the render transform. The default value is a [Point](/uwp/api/windows.foundation.point) with value 0,0."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:154-234"
+quote = "<Style x:Key=\"DefaultButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:235-296"
+quote = "<Style x:Key=\"AccentButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:297-377"
+quote = "<Style x:Key=\"SubtleButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:180-363"
+quote = "<Style x:Key=\"DefaultToggleButtonStyle\" TargetType=\"ToggleButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:78-148"
+quote = "<Style x:Key=\"DefaultRepeatButtonStyle\" TargetType=\"RepeatButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:3-103"
+quote = "<Style x:Key=\"DefaultDropDownButtonStyle\" TargetType=\"controls:DropDownButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:125-381"
+quote = "<Style x:Key=\"DefaultAppBarButtonStyle\" TargetType=\"AppBarButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:212-495"
+quote = "<Style x:Key=\"DefaultAppBarToggleButtonStyle\" TargetType=\"AppBarToggleButton\">"
+absent = ["RenderTransform"]
 
 [[fact]]
 key = "button.body.transform.translate_x"
@@ -1149,8 +1340,51 @@ quote = "Describes the specifics of the desired render transform. The default va
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransformorigin.md:26"
-quote = "The origin point of the render transform. The default value is a [Point](/uwp/api/windows.foundation.point) with value 0,0."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:154-234"
+quote = "<Style x:Key=\"DefaultButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:235-296"
+quote = "<Style x:Key=\"AccentButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:297-377"
+quote = "<Style x:Key=\"SubtleButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:180-363"
+quote = "<Style x:Key=\"DefaultToggleButtonStyle\" TargetType=\"ToggleButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:78-148"
+quote = "<Style x:Key=\"DefaultRepeatButtonStyle\" TargetType=\"RepeatButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:3-103"
+quote = "<Style x:Key=\"DefaultDropDownButtonStyle\" TargetType=\"controls:DropDownButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:125-381"
+quote = "<Style x:Key=\"DefaultAppBarButtonStyle\" TargetType=\"AppBarButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:212-495"
+quote = "<Style x:Key=\"DefaultAppBarToggleButtonStyle\" TargetType=\"AppBarToggleButton\">"
+absent = ["RenderTransform"]
 
 [[fact]]
 key = "button.body.transform.translate_y"
@@ -1164,8 +1398,51 @@ quote = "Describes the specifics of the desired render transform. The default va
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransformorigin.md:26"
-quote = "The origin point of the render transform. The default value is a [Point](/uwp/api/windows.foundation.point) with value 0,0."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:154-234"
+quote = "<Style x:Key=\"DefaultButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:235-296"
+quote = "<Style x:Key=\"AccentButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:297-377"
+quote = "<Style x:Key=\"SubtleButtonStyle\" TargetType=\"Button\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:180-363"
+quote = "<Style x:Key=\"DefaultToggleButtonStyle\" TargetType=\"ToggleButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:78-148"
+quote = "<Style x:Key=\"DefaultRepeatButtonStyle\" TargetType=\"RepeatButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:3-103"
+quote = "<Style x:Key=\"DefaultDropDownButtonStyle\" TargetType=\"controls:DropDownButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:125-381"
+quote = "<Style x:Key=\"DefaultAppBarButtonStyle\" TargetType=\"AppBarButton\">"
+absent = ["RenderTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:212-495"
+quote = "<Style x:Key=\"DefaultAppBarToggleButtonStyle\" TargetType=\"AppBarToggleButton\">"
+absent = ["RenderTransform"]
 
 [[fact]]
 key = "button.body.transform.origin"
@@ -1217,12 +1494,19 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:134"
 quote = "<Setter Property=\"UseSystemFocusVisuals\" Value=\"{StaticResource UseSystemFocusVisuals}\" />"
 
-# FocusVisualMargin -3: the ring 3 px outside the box (the model's offset is outward-positive)
+# FocusVisualMargin -3 sets the ring's outer edge 3 px outside the box (WinUI shrinks the element's bounds by the
+# margin and draws the outer ring inside them, FocusRectNudging.h:389, FocusRectManager.cpp:444-459); the model's
+# offset is to the ring's inner edge, outward-positive (S2.10, ADD-A122): the margin negated less the ring's width.
 [[fact]]
 key = "button.body.focus.offset.top"
 when = { not_variants = ["primary"], not_states = ["default"] }
-value = "3px"
-rows = ["W1-025"]
+value = "= sub(3px, part.focus.width)"
+rows = ["W1-025", "W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
 
 [[fact.cite]]
 kind = "published"
@@ -1274,8 +1558,13 @@ quote = "Provides margin values for the focus visual. The default is a [Thicknes
 [[fact]]
 key = "button.body.focus.offset.right"
 when = { not_variants = ["primary"], not_states = ["default"] }
-value = "3px"
-rows = ["W1-025"]
+value = "= sub(3px, part.focus.width)"
+rows = ["W1-025", "W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
 
 [[fact.cite]]
 kind = "published"
@@ -1327,8 +1616,13 @@ quote = "Provides margin values for the focus visual. The default is a [Thicknes
 [[fact]]
 key = "button.body.focus.offset.bottom"
 when = { not_variants = ["primary"], not_states = ["default"] }
-value = "3px"
-rows = ["W1-025"]
+value = "= sub(3px, part.focus.width)"
+rows = ["W1-025", "W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
 
 [[fact.cite]]
 kind = "published"
@@ -1380,8 +1674,13 @@ quote = "Provides margin values for the focus visual. The default is a [Thicknes
 [[fact]]
 key = "button.body.focus.offset.left"
 when = { not_variants = ["primary"], not_states = ["default"] }
-value = "3px"
-rows = ["W1-025"]
+value = "= sub(3px, part.focus.width)"
+rows = ["W1-025", "W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
 
 [[fact.cite]]
 kind = "published"
@@ -1429,6 +1728,56 @@ conversion = ["negate"]
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+# Pending (S17, ADD-A122; register U1): AccentButtonStyle sets no FocusVisualMargin.
+[[fact]]
+key = "button.body.focus.offset.top"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.right"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.bottom"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.left"
+when = { variants = ["primary"], not_states = ["default"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.top"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.right"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.bottom"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.focus.offset.left"
+when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+pending = "U1"
+rows = []
+
 
 # ContentControlThemeFontFamily -> XamlAutoFontFamily, which WinUI resolves to Segoe UI Variable where the
 # default language's script is Latin (PALFontAndScriptServices.cpp:201-213; Segoe UI otherwise)
@@ -14813,7 +15162,7 @@ quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target
 
 [[fact]]
 key = "button.menu_indicator.min_width"
-when = { variants = ["menu"] }
+when = { variants = ["menu"], not_variants = ["tool"] }
 value = "12px"
 rows = ["W2-18"]
 
@@ -14844,9 +15193,31 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
 quote = "Margin=\"8,0,0,0\""
 
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "inline"
+rows = ["W2-18"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:88-91"
+quote = "<Grid.ColumnDefinitions> <ColumnDefinition Width=\"*\" /> <ColumnDefinition Width=\"Auto\" /> </Grid.ColumnDefinitions>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\""
+
 # The app-bar button's chevron: a FontIcon (U+E974 of SymbolThemeFontFamily) at font size 8, mirrored in
-# right-to-left, no size of its own; its Auto column measures 0 wide, so Margin -23,20,12,0 puts it 12 px in from the
-# end edge and 20 px down from the top, over the content: no label-to-indicator gap (its anchor awaits the spec batch).
+# right-to-left, no size of its own. Under the default and icon-only label positions (W1-102, ADD-A122) it lies over
+# the top-end corner (TopEnd): its zero-width Auto column is arranged to the column less the margins -23 and 12, so
+# its box is 11 px wide (min_width), the glyph centred in it, 20 px below ContentRoot's top and 12 px in from its end;
+# body is the drawn AppBarButtonInnerBorder, inset 2,6,2,6 from ContentRoot, so the margin from body is 14 and 10.
+# The tabbed command bar's label-beside-icon position (LabelOnRight, margin -7,20,12,0) is not expressible (queue #63):
+# its anchor, margin and box are left out there. The glyph's source (U+E974 in Segoe Fluent Icons, its fallback
+# Segoe MDL2 Assets through token.text.fallbacks.per_family) is left out: the quote check reads no XAML character
+# reference `&#xE974;` as a number, and S11 spells no map entry keyed by a family name (reported).
 [[fact]]
 key = "button.menu_indicator.glyph.size"
 when = { variants = ["menu", "tool"] }
@@ -14885,16 +15256,165 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_the
 quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
 
 [[fact]]
-key = "button.menu_indicator.min_width"
-when = { variants = ["menu", "tool"] }
-value = "absent"
-rows = []
+key = "button.values.menu_indicator_anchor"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+value = "top_end"
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:372"
+quote = "<Grid x:Name=\"SubItemChevronPanel\" Grid.Column=\"2\" Visibility=\"Collapsed\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:357-361"
+quote = "<Grid.ColumnDefinitions> <ColumnDefinition Width=\"*\" /> <ColumnDefinition Width=\"Auto\" /> <ColumnDefinition Width=\"Auto\" /> </Grid.ColumnDefinitions>"
 
 [[fact.cite]]
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
 quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
-absent = ["Width", "MinWidth"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:70"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:105"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact]]
+key = "button.menu_indicator.min_width"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+value = "= sub(0px, add(-23px, 12px))"
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:70"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:105"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:357-361"
+quote = "<Grid.ColumnDefinitions> <ColumnDefinition Width=\"*\" /> <ColumnDefinition Width=\"Auto\" /> <ColumnDefinition Width=\"Auto\" /> </Grid.ColumnDefinitions>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:372"
+quote = "<Grid x:Name=\"SubItemChevronPanel\" Grid.Column=\"2\" Visibility=\"Collapsed\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:1833-1834"
+quote = "XFLOAT arrangeWidthWithoutRoundedMargin = MAX(arrangeSize.width - roundedMarginWidth, 0); arrangeSize.width = arrangeWidthWithoutRoundedMargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/icon.cpp:809-814"
+quote = "horizontalAlignment.Set(DirectUI::HorizontalAlignment::Stretch); IFC(pTextBlock->SetValueByKnownIndex(KnownPropertyIndex::FrameworkElement_HorizontalAlignment, horizontalAlignment)); verticalAlignment.Set(DirectUI::VerticalAlignment::Center); IFC(pTextBlock->SetValueByKnownIndex(KnownPropertyIndex::FrameworkElement_VerticalAlignment, verticalAlignment)); textAlignment.Set(DirectUI::TextAlignment::Center);"
+
+[[fact]]
+key = "button.menu_indicator.min_height"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+value = "auto"
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["Height", "MinHeight"]
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+value = "= sub(20px, 6px)"
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:70"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:105"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\" Background=\"{TemplateBinding Background}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:356"
+quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "component.tabbed_command_bar" }] }
+value = "= sub(12px, 2px)"
+rows = ["W1-102"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:70"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:105"
+quote = "<Thickness x:Key=\"AppBarButtonSubItemChevronMargin\">-23,20,12,0</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:117"
+quote = "<Thickness x:Key=\"AppBarButtonInnerBorderMargin\">2,6,2,6</Thickness>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:351"
+quote = "<Border x:Name=\"AppBarButtonInnerBorder\" Margin=\"{ThemeResource AppBarButtonInnerBorderMargin}\" Background=\"{TemplateBinding Background}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:356"
+quote = "<Grid x:Name=\"ContentRoot\" MinHeight=\"{ThemeResource AppBarThemeMinHeight}\">"
 
 [[fact]]
 key = "button.menu_indicator.transform"

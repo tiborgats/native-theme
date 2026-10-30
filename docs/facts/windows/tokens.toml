@@ -91,6 +91,49 @@ kind = "published"
 source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:66"
 quote = "cubic-bezier(1 , 0 , 1 , 1)"
 
+# The connected animation's default duration and curve, CConnectedAnimationService's own (S4.1 step 2:
+# `connected_service`); the scroll into view is measured (W-P4-3†) and pending (register U50).
+[[fact]]
+key = "token.motion.durations.connected_service"
+value = "300ms"
+rows = ["W3-33"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26"
+quote = "static const INT64 s_DefaultDuration = 3000000; // 300ms"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:33"
+quote = "m_defaultDuration.Duration = s_DefaultDuration;"
+
+[[fact]]
+key = "token.motion.timings.connected_service"
+value = { cubic_bezier = [0.8, 0, 0.2, 1] }
+rows = ["W3-33"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:27-28"
+quote = "static const wfn::Vector2 s_ControlPoint1 = { 0.8f, 0.0f }; // Default control points for easing function static const wfn::Vector2 s_ControlPoint2 = { 0.2f, 1.0f };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:300"
+quote = "CreateCubicBezierEasingFunction(renderTarget->GetDCompTreeHost()->GetCompositor(), s_ControlPoint1, s_ControlPoint2, &cubicBezier)"
+
+[[fact]]
+key = "token.motion.durations.scroll_into_view"
+pending = "U50"
+rows = ["W-P4-3†"]
+
+[[fact]]
+key = "token.motion.timings.scroll_into_view"
+pending = "U50"
+rows = ["W-P4-3†"]
+
+
 # Behaviour: the system defaults the Win32 reference states (the reader reads the user's).
 
 [[fact]]
@@ -190,7 +233,7 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_the
 quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
 
 # The focus indicator: the HighVisibility system focus visual (the default FocusVisualKind), a 2 px outer ring
-# in FocusStrokeColorOuter at the element's FocusVisualMargin (0 unless a style sets it).
+# in FocusStrokeColorOuter whose outer edge lies at the element's FocusVisualMargin (0 unless a style sets it).
 
 [[fact]]
 key = "token.focus.kind"
@@ -257,39 +300,71 @@ kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/focusvisualkind.md:22"
 quote = "### -field HighVisibility:1"
 
+# The offset is to the ring's inner edge (S2.10, ADD-A122): WinUI shrinks the element's bounds by the margin and
+# draws the outer ring inside them, so the inner edge lies the margin negated less the ring's width out.
 [[fact]]
 key = "token.focus.offset.top"
-value = "0px"
+value = "= sub(0px, token.focus.width)"
 rows = ["W3-20"]
 
 [[fact.cite]]
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
 
 [[fact]]
 key = "token.focus.offset.right"
-value = "0px"
+value = "= sub(0px, token.focus.width)"
 rows = ["W3-20"]
 
 [[fact.cite]]
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
 
 [[fact]]
 key = "token.focus.offset.bottom"
-value = "0px"
+value = "= sub(0px, token.focus.width)"
 rows = ["W3-20"]
 
 [[fact.cite]]
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
 
 [[fact]]
 key = "token.focus.offset.left"
-value = "0px"
+value = "= sub(0px, token.focus.width)"
 rows = ["W3-20"]
 
 [[fact.cite]]
@@ -297,9 +372,114 @@ kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
 
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
+
+# The ring's inner corners (S2.10, ADD-A122): WinUI takes the focus target's CornerRadius less the mean of the two
+# margins at each corner for the outer ring, and that less the outer thickness for the inner border (the outer
+# ring's inner edge), each at least 0 and a square corner kept square: follow_part where the part's corner is
+# rounded and its offsets equal; a part with a square corner states Px(0).
+[[fact]]
+key = "token.focus.corners.top_left"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.top_right"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.curve"
+value = "circular"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:478-483"
+quote = "XCORNERRADIUS cornerRadius = { options.cornerRadius.topLeft, options.cornerRadius.topRight, options.cornerRadius.bottomRight, options.cornerRadius.bottomLeft };"
+
+
 # The HighVisibility visual's inner ring (ADD-A17): a 1 px border in FocusStrokeColorInner drawn just inside the
-# outer ring, its bounds the outer ring's deflated by the outer thickness (FocusRectManager.cpp:450-455): an inset
-# shadow layer of spread 1, no blur, no offset.
+# outer ring, its bounds the outer ring's deflated by the outer thickness (FocusRectManager.cpp:450-455): one inset
+# shadow layer cast by the ring's inner outline (S2.10, ADD-A122), spread 1, no blur, no offset.
 [[fact]]
 key = "token.focus.shadow"
 value = { layers = [ { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true } ] }
