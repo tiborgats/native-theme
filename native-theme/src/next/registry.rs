@@ -2,12 +2,13 @@
 //! the `ThemeParts` derive writes it (S6.1).
 
 use super::blocks::Table;
+use super::expr::Ty;
 use super::roles::ColorRoles;
 use super::tokens::Tokens;
 use super::widgets::{Variant, WidgetKind};
 
 /// One field of a block or a part: its path, its type and its marks.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct FieldInfo {
     /// The field's path below its block, in the model's Rust names (S1): a
     /// field's name; for an enum block's variant, the variant in snake_case,
@@ -21,6 +22,27 @@ pub(crate) struct FieldInfo {
     /// The field may be `Auto` (S6.3), so it resolves to a
     /// [`Length`](super::Length).
     pub(crate) auto: bool,
+    /// The type an expression's reference to the field, or to an entry of
+    /// its map, has (S2.2); `None` where the place decides it (a key, a
+    /// keyed scalar) or nothing can (a list).
+    pub(crate) value: fn() -> Option<Ty>,
+}
+
+/// Two fields are equal by their paths, types and marks: a function's
+/// address is no identity to compare, and the type it gives is the written
+/// type's.
+impl PartialEq for FieldInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+            && self.ty == other.ty
+            && self.may_be_absent == other.may_be_absent
+            && self.auto == other.auto
+    }
+}
+
+/// No type for a reference: the place decides it, or nothing can.
+pub(crate) fn no_type() -> Option<Ty> {
+    None
 }
 
 /// A field's type, as the registry walks it.
@@ -133,6 +155,7 @@ const UNSET: FieldInfo = FieldInfo {
     ty: FieldType::Leaf(""),
     may_be_absent: false,
     auto: false,
+    value: no_type,
 };
 
 /// `fields` with every `Value` field not named in `required` marked may be

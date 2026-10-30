@@ -21,7 +21,7 @@ use crate::next::blocks::paint::{Paint, PaintKind, PaintPatch};
 use crate::next::blocks::shadow::Shadow;
 use crate::next::blocks::text::{Font, FontPatch, LanguageTag};
 use crate::next::color::Color;
-use crate::next::expr::Expr;
+use crate::next::expr::{EnumTy, Expr, SURFACE_SET, Ty};
 use crate::next::key::Key;
 use crate::next::registry::FieldInfo;
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
@@ -330,8 +330,9 @@ pub(crate) trait Visit {
     /// A block or a leaf with constraints of its own, before what it holds.
     fn check(&mut self, path: &Path, node: Node<'_>);
 
-    /// A `Value`'s form, the expression form its type takes.
-    fn value(&mut self, path: &Path, form: Form<'_>, expr: ExprForm);
+    /// A `Value`'s form, the expression form its type takes and its type
+    /// (S2.2), `None` where the place decides it.
+    fn value(&mut self, path: &Path, form: Form<'_>, expr: ExprForm, ty: Option<Ty>);
 
     /// A stated number.
     fn number(&mut self, path: &Path, n: f32, number: Number);
@@ -373,8 +374,8 @@ impl<'v> Walker<'v> {
     }
 
     /// Hands a `Value`'s form to the visit.
-    pub(crate) fn value(&mut self, form: Form<'_>, expr: ExprForm) {
-        self.visit.value(&self.path, form, expr);
+    pub(crate) fn value(&mut self, form: Form<'_>, expr: ExprForm, ty: Option<Ty>) {
+        self.visit.value(&self.path, form, expr, ty);
     }
 
     /// Hands a patch's fields to the visit.
@@ -514,6 +515,13 @@ pub(crate) trait Walk {
     fn set_fields(&self) -> Vec<&'static str> {
         Vec::new()
     }
+
+    /// The type an expression stated on a `Value` of this type has, and a
+    /// reference to such a value (S2.2); `None` where the place decides it
+    /// (a key, a keyed scalar) or nothing can (a list).
+    fn ty() -> Option<Ty> {
+        None
+    }
 }
 
 /// A map, `Vec<(K, V)>`: each key stated once (S12), each value walked
@@ -552,12 +560,12 @@ impl<T: Walk> Walk for Value<T> {
     fn walk(&self, w: &mut Walker<'_>) {
         match self {
             Value::Stated(value) => {
-                w.value(Form::Stated, T::EXPR);
+                w.value(Form::Stated, T::EXPR, None);
                 value.walk(w);
             }
-            Value::Expr(expr) => w.value(Form::Expr(expr), T::EXPR),
-            Value::Absent => w.value(Form::Absent, T::EXPR),
-            Value::Auto => w.value(Form::Auto, T::EXPR),
+            Value::Expr(expr) => w.value(Form::Expr(expr), T::EXPR, T::ty()),
+            Value::Absent => w.value(Form::Absent, T::EXPR, None),
+            Value::Auto => w.value(Form::Auto, T::EXPR, None),
         }
     }
 
@@ -566,6 +574,10 @@ impl<T: Walk> Walk for Value<T> {
             Value::Stated(value) => value.suffix(),
             Value::Expr(_) | Value::Absent | Value::Auto => T::SUFFIX,
         }
+    }
+
+    fn ty() -> Option<Ty> {
+        T::ty()
     }
 }
 
@@ -581,6 +593,10 @@ impl<T: Walk> Walk for Option<T> {
 
     fn suffix(&self) -> &'static str {
         self.as_ref().map_or(T::SUFFIX, Walk::suffix)
+    }
+
+    fn ty() -> Option<Ty> {
+        T::ty()
     }
 }
 
@@ -602,6 +618,10 @@ impl<T: Walk> Walk for Box<T> {
 
     fn suffix(&self) -> &'static str {
         T::suffix(&**self)
+    }
+
+    fn ty() -> Option<Ty> {
+        T::ty()
     }
 }
 
@@ -632,6 +652,10 @@ impl<T: Walk> Walk for Axes<T> {
 }
 
 impl<T: Walk> Walk for SurfaceMap<T> {
+    fn ty() -> Option<Ty> {
+        T::ty()
+    }
+
     fn walk(&self, w: &mut Walker<'_>) {
         for (set, value) in self.iter() {
             w.key(set.name().to_owned(), value.suffix(), |w| {
@@ -662,11 +686,15 @@ where
             BlockPatch::Fields(patch) => patch.walk(w),
         }
     }
+
+    fn ty() -> Option<Ty> {
+        T::ty()
+    }
 }
 
 /// A leaf with a number of a kind, keyed by its unit's suffix.
 macro_rules! numbers {
-    ($($ty:ty => $number:expr, $suffix:expr;)*) => {
+    ($($ty:ty => $number:expr, $suffix:expr, $typed:expr;)*) => {
         $(
             impl Walk for $ty {
                 const EXPR: ExprForm = ExprForm::Calls;
@@ -675,16 +703,20 @@ macro_rules! numbers {
                 fn walk(&self, w: &mut Walker<'_>) {
                     w.number(self.0, $number);
                 }
+
+                fn ty() -> Option<Ty> {
+                    Some($typed)
+                }
             }
         )*
     };
 }
 
 numbers! {
-    Px => Number::Length, "_px";
-    Ms => Number::Duration, "_ms";
-    Deg => Number::Angle, "_deg";
-    Fraction => Number::Fraction, "";
+    Px => Number::Length, "_px", Ty::Length;
+    Ms => Number::Duration, "_ms", Ty::Duration;
+    Deg => Number::Angle, "_deg", Ty::Angle;
+    Fraction => Number::Fraction, "", Ty::Number;
 }
 
 impl Walk for f32 {
@@ -692,6 +724,10 @@ impl Walk for f32 {
 
     fn walk(&self, w: &mut Walker<'_>) {
         w.number(*self, Number::Plain);
+    }
+
+    fn ty() -> Option<Ty> {
+        Some(Ty::Number)
     }
 }
 
@@ -711,6 +747,10 @@ impl Walk for FontSize {
             FontSize::Pt(_) => "_pt",
             FontSize::Px(_) => "_px",
         }
+    }
+
+    fn ty() -> Option<Ty> {
+        Some(Ty::FontSize)
     }
 }
 
@@ -733,6 +773,10 @@ impl Walk for Scalar {
 impl Walk for Color {
     const EXPR: ExprForm = ExprForm::Calls;
 
+    fn ty() -> Option<Ty> {
+        Some(Ty::Color)
+    }
+
     fn walk(&self, w: &mut Walker<'_>) {
         for channel in [self.r, self.g, self.b, self.a] {
             w.number(channel, Number::Channel);
@@ -747,22 +791,44 @@ impl Walk for (f32, f32) {
     }
 }
 
-/// A leaf holding no number and no constraint of its own.
+/// A leaf holding no number and no constraint of its own, of a type.
 macro_rules! leaves {
-    ($form:expr => $($ty:ty),* $(,)?) => {
+    ($form:expr => $($ty:ty: $typed:expr),* $(,)?) => {
         $(
             impl Walk for $ty {
                 const EXPR: ExprForm = $form;
 
                 fn walk(&self, _: &mut Walker<'_>) {}
+
+                fn ty() -> Option<Ty> {
+                    $typed
+                }
             }
         )*
     };
 }
 
-leaves!(ExprForm::Calls => u16, u32);
-leaves!(ExprForm::NoCalls => bool, String, LanguageTag, IconRole, IconSet);
-leaves!(ExprForm::NoCalls => SurfaceRole, PartRef, VariantRef, WidgetRef);
+leaves!(ExprForm::Calls => u16: Some(Ty::Number), u32: Some(Ty::Number));
+leaves!(ExprForm::NoCalls => bool: Some(Ty::Bool), String: Some(Ty::Text));
+leaves!(ExprForm::NoCalls => IconSet: Some(Ty::Enum(&ICON_SET)));
+leaves!(ExprForm::NoCalls => LanguageTag: None, IconRole: None, SurfaceRole: None);
+leaves!(ExprForm::NoCalls => PartRef: None, VariantRef: None, WidgetRef: None);
+
+/// The declaration a key's type names until its place names the one it is
+/// a key of (S10): a field's, or a widget value's `keys` entry.
+pub(crate) const KEY_OF_PLACE: &str = "";
+
+/// `IconSet` (S4.5), its names as TOML writes them: in snake_case.
+static ICON_SET: EnumTy = EnumTy {
+    name: "IconSet",
+    variants: &[
+        "sf_symbols",
+        "segoe_fluent",
+        "freedesktop",
+        "material",
+        "lucide",
+    ],
+};
 
 /// A global role: an `accent_ramp` entry's key is a keyed name (S10).
 impl Walk for GlobalRole {
@@ -778,6 +844,11 @@ impl Walk for GlobalRole {
 impl Walk for Key {
     const EXPR: ExprForm = ExprForm::NoCalls;
 
+    /// A key of a declaration the place names: [`KEY_OF_PLACE`].
+    fn ty() -> Option<Ty> {
+        Some(Ty::Key(std::borrow::Cow::Borrowed(KEY_OF_PLACE)))
+    }
+
     fn walk(&self, w: &mut Walker<'_>) {
         w.check(Node::Key(self));
     }
@@ -785,6 +856,10 @@ impl Walk for Key {
 
 impl Walk for SurfaceSet {
     const EXPR: ExprForm = ExprForm::NoCalls;
+
+    fn ty() -> Option<Ty> {
+        Some(Ty::Enum(&SURFACE_SET))
+    }
 
     fn walk(&self, w: &mut Walker<'_>) {
         w.check(Node::SurfaceSet(*self));
@@ -837,5 +912,23 @@ mod tests {
             path.to_string(),
             "widgets.button.body.\"Segoe Fluent Icons\""
         );
+    }
+
+    /// `ICON_SET` names each icon set as the reader takes it: its name in
+    /// snake_case.
+    #[test]
+    fn icon_set_names_are_the_readers() {
+        let sets = [
+            IconSet::SfSymbols,
+            IconSet::SegoeFluent,
+            IconSet::Freedesktop,
+            IconSet::Material,
+            IconSet::Lucide,
+        ];
+        let names: Vec<String> = sets
+            .iter()
+            .map(|set| set.name().replace('-', "_"))
+            .collect();
+        assert_eq!(names, ICON_SET.variants);
     }
 }

@@ -453,15 +453,22 @@ fn refusal_kde_accent_argument() {
             "colors.light.global.accent: `kde_accent` does not take `disabled`",
         ]
     );
+    // The near miss reaches typing, which refuses the call: `kde_accent`
+    // is not implemented yet (S2.2).
     let decl = declare("surface_sets = [\"window\"]");
     assert_eq!(
         found(
             &accent("= kde_accent(window, background_normal, inactive)"),
             &decl
         ),
-        NONE
+        [NOT_IMPLEMENTED]
     );
 }
+
+/// What typing says of a call of `kde_accent`, which no task has
+/// implemented yet (S2.2).
+const NOT_IMPLEMENTED: &str = "colors.light.global.accent: the expression does not type: the \
+                               platform function `kde_accent` is not implemented yet";
 
 #[test]
 fn kde_accent_set_is_declared() {
@@ -479,7 +486,7 @@ fn kde_accent_set_is_declared() {
             &accent("= kde_accent(window, background_normal, inactive)"),
             &decl
         ),
-        NONE
+        [NOT_IMPLEMENTED]
     );
 }
 
@@ -597,17 +604,18 @@ fn refusal_surface_in_roles() {
 
 #[test]
 fn refusal_undeclared_data() {
-    let min_width = |text: &str| toml(&format!("[widgets.button.body]\nmin_width_px = \"{text}\""));
+    let opacity = |text: &str| toml(&format!("[widgets.button.body]\nopacity = \"{text}\""));
     assert_eq!(
-        bare(&min_width("= element.progress")),
+        bare(&opacity("= element.progress")),
         [
-            "widgets.button.body.min_width_px: `element.progress` is element data the part does not declare"
+            "widgets.button.body.opacity: `element.progress` is element data the part does not declare"
         ]
     );
     let decl = declare("[declare.widget.button]\ndata = { body = [\"progress\"] }");
-    assert_eq!(found(&min_width("= element.progress"), &decl), NONE);
+    assert_eq!(found(&opacity("= element.progress"), &decl), NONE);
     // The root's inputs need no declaration.
-    assert_eq!(bare(&min_width("= element.window_width")), NONE);
+    let min_width = toml("[widgets.button.body]\nmin_width_px = \"= element.window_width\"");
+    assert_eq!(bare(&min_width), NONE);
 }
 
 #[test]
@@ -1276,4 +1284,73 @@ fn refusal_weight_out_of_range() {
     );
     assert_eq!(bare(&weight(400)), NONE);
     assert_eq!(bare(&weight(1000)), NONE);
+}
+
+/// Every expression is typed when its layer is added (S2.2, S12): one that
+/// mistypes or names nothing is refused, and a call is refused on an enum
+/// block's field as on any field that takes a literal or a reference.
+#[test]
+fn refusal_ill_typed() {
+    let body = |line: &str| toml(&format!("[widgets.button.body]\n{line}"));
+    assert_eq!(
+        bare(&body("opacity = \"= #ff0000\"")),
+        [
+            "widgets.button.body.opacity: the expression does not type: a colour where a number \
+             is expected"
+        ]
+    );
+    assert_eq!(
+        bare(&body("opacity = \"= widget.nope.opacity\"")),
+        [
+            "widgets.button.body.opacity: the expression does not type: `widget.nope.opacity` names nothing"
+        ]
+    );
+    assert_eq!(
+        bare(&body("min_width_px = \"= token.nowhere\"")),
+        [
+            "widgets.button.body.min_width_px: the expression does not type: `token.nowhere` names nothing"
+        ]
+    );
+    // A part's own fields: the catalogue's list, which gives `label` no fill.
+    assert_eq!(
+        bare(&toml(
+            "[widgets.button.label]\npadding.top_px = \"= part.min_width\""
+        )),
+        [
+            "widgets.button.label.padding.top_px: the expression does not type: `part.min_width` \
+             names nothing"
+        ]
+    );
+    // A call on a block-mode enum's field.
+    let mut called = transitions(vec![transition(vec![PropertyGroup::Fill], Timing::Linear)]);
+    if let Some(button) = called.bases.widgets.button.as_mut()
+        && let Some(PartPatch::Style(style)) = button.body.as_mut()
+        && let Some(items) = style.transitions.as_mut()
+        && let Some(first) = items.first_mut()
+    {
+        first.timing = Value::Expr(Expr::Call(
+            Func::Max,
+            vec![
+                Expr::Lit(crate::next::expr::Literal::Number(1.0)),
+                Expr::Lit(crate::next::expr::Literal::Number(2.0)),
+            ],
+        ));
+    }
+    assert_eq!(
+        bare(&called),
+        ["widgets.button.body.transitions[0].timing: takes a literal or a reference, not a call"]
+    );
+    // Near misses: a reference of the field's type, a call on a number.
+    let decl = declare("timings = [\"fast\"]");
+    assert_eq!(bare(&body("opacity = \"= mul(0.5, 2)\"")), NONE);
+    assert_eq!(
+        bare(&body("min_width_px = \"= add(token.caret.width, 2px)\"")),
+        NONE
+    );
+    let referenced = toml(
+        "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"= token.motion.timings.fast\", \
+         suspended_by_theme_change = false }]",
+    );
+    assert_eq!(found(&referenced, &decl), NONE);
 }

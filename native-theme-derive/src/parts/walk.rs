@@ -78,6 +78,21 @@ fn suffix(f: &BlockField, value: &TokenStream) -> TokenStream {
     }
 }
 
+/// The module the expression types live in.
+fn expr_ty() -> TokenStream {
+    quote!(crate::next::expr)
+}
+
+/// The type of a block named `name` (S2.2), as a reference to it has.
+fn block_ty(name: &str) -> TokenStream {
+    let e = expr_ty();
+    quote! {
+        fn ty() -> ::core::option::Option<#e::Ty> {
+            ::core::option::Option::Some(#e::Ty::block(#name))
+        }
+    }
+}
+
 /// The hand-over of a block marked `#[parts(check)]` to the visit, as its
 /// `Node` variant `variant`; nothing for an unmarked one.
 fn check(variant: Option<&Ident>) -> TokenStream {
@@ -142,6 +157,7 @@ pub(super) fn struct_walk(
     } else {
         TokenStream::new()
     };
+    let ty = block_ty(&owner_name);
     quote! {
         impl #w::Walk for #walked {
             const EXPR: #w::ExprForm = #form;
@@ -153,6 +169,8 @@ pub(super) fn struct_walk(
             }
 
             #set_fields
+
+            #ty
         }
     }
 }
@@ -173,6 +191,7 @@ pub(super) fn enum_walk(
     let check = check(checked.then_some(name));
     let mut arms = Vec::new();
     let mut suffixes = Vec::new();
+    let mut units = Vec::new();
     let mut any_folded = false;
     for variant in &data.variants {
         let ident = &variant.ident;
@@ -191,6 +210,7 @@ pub(super) fn enum_walk(
             Fields::Unit => {
                 arms.push(quote!(#name::#ident => {}));
                 suffixes.push(quote!(#name::#ident => "",));
+                units.push(snake.clone());
             }
             Fields::Named(named) => {
                 suffixes.push(quote!(#name::#ident { .. } => "",));
@@ -272,6 +292,20 @@ pub(super) fn enum_walk(
     } else {
         TokenStream::new()
     };
+    let ty = match expr {
+        Expr::NoCalls => {
+            let e = expr_ty();
+            quote! {
+                fn ty() -> ::core::option::Option<#e::Ty> {
+                    ::core::option::Option::Some(#e::Ty::Enum(&#e::EnumTy {
+                        name: #owner,
+                        variants: &[#(#units),*],
+                    }))
+                }
+            }
+        }
+        Expr::Calls | Expr::ReferenceOnly => block_ty(&owner),
+    };
     Ok(quote! {
         impl #w::Walk for #name {
             const EXPR: #w::ExprForm = #form;
@@ -282,6 +316,8 @@ pub(super) fn enum_walk(
             }
 
             #suffix_fn
+
+            #ty
         }
     })
 }

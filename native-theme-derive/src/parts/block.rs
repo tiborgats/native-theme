@@ -425,6 +425,7 @@ impl BlockField {
             }
             (_, Shape::Compound(compound), None) => {
                 let inner = type_string(&compound.inner);
+                let inner_ty = &compound.inner;
                 let members = compound.members.iter().map(|member| {
                     quote! {
                         #r::FieldInfo {
@@ -432,6 +433,7 @@ impl BlockField {
                             ty: #r::FieldType::Leaf(#inner),
                             may_be_absent: #may_be_absent,
                             auto: #auto,
+                            value: <#inner_ty as crate::next::validate::walk::Walk>::ty,
                         }
                     }
                 });
@@ -477,8 +479,38 @@ impl BlockField {
         // A compound value is never absent or `Auto` as a whole: its marks are
         // its members' (S6.3).
         let (may_be_absent, auto) = (may_be_absent && whole, auto && whole);
+        let value = self.value_ty();
         quote! {
-            #r::FieldInfo { path: #path, ty: #ty, may_be_absent: #may_be_absent, auto: #auto }
+            #r::FieldInfo {
+                path: #path,
+                ty: #ty,
+                may_be_absent: #may_be_absent,
+                auto: #auto,
+                value: #value,
+            }
+        }
+    }
+
+    /// The function giving the type a reference to the field has, or to an
+    /// entry of its map (S2.2): its value type's; a compound's members have
+    /// theirs, the compound none.
+    fn value_ty(&self) -> TokenStream {
+        let w = quote!(crate::next::validate::walk);
+        let r = registry();
+        match &self.shape {
+            Shape::Map(_) => match map_pair(&self.ty) {
+                Some((_, value)) => quote!(<#value as #w::Walk>::ty),
+                None => quote!(#r::no_type),
+            },
+            Shape::NestedMap => match map_pair(&self.ty).and_then(|(_, inner)| map_pair(inner)) {
+                Some((_, value)) => quote!(<#value as #w::Walk>::ty),
+                None => quote!(#r::no_type),
+            },
+            Shape::Compound(_) => quote!(#r::no_type),
+            Shape::Leaf | Shape::Surfaces(_) | Shape::Block { .. } => {
+                let ty = &self.ty;
+                quote!(<#ty as #w::Walk>::ty)
+            }
         }
     }
 }
@@ -1095,6 +1127,7 @@ fn expand_append(
         }
     };
     let list_name = list.as_ref().map(Ident::to_string).unwrap_or_default();
+    let name_string = name.to_string();
     let patch = format_ident!("{name}Patch");
     let common = expand_struct_common(input, type_attrs, fields);
     let doc = format!(
@@ -1158,6 +1191,10 @@ fn expand_append(
                     #patch::Set(value) => #w::Walk::walk(value, w),
                     #patch::Append(items) => #w::Walk::walk(items, w),
                 }
+            }
+
+            fn ty() -> ::core::option::Option<crate::next::expr::Ty> {
+                ::core::option::Option::Some(crate::next::expr::Ty::block(#name_string))
             }
         }
 
@@ -1268,6 +1305,7 @@ fn expand_enum(
                                 ty: #r::FieldType::Leaf(#written),
                                 may_be_absent: false,
                                 auto: false,
+                                value: #r::no_type,
                             }
                         });
                     }

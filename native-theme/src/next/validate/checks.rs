@@ -3,8 +3,11 @@
 
 use std::borrow::Cow;
 
-use super::walk::{ExprForm, Form, Node, Number, Path, Visit, Walk, Walker, toml_key};
+use super::walk::{
+    ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker, toml_key,
+};
 use super::{Context, LayerKind};
+use crate::next::blocks::Table;
 use crate::next::blocks::motion::{Keyframe, PresentationKind, StepJump, Timing, TransitionKind};
 use crate::next::blocks::outline::Radius;
 use crate::next::blocks::paint::{BlendMode, PaintKind, PaintPatch};
@@ -13,13 +16,15 @@ use crate::next::blocks::shadow::Shadow;
 use crate::next::blocks::text::{AxisTag, AxisValue, FeatureTag};
 use crate::next::declare::{DataName, DataOwner, Declarations, FontMetric, ScalarUnit, WidgetDecl};
 use crate::next::error::{Problem, ProblemKind};
-use crate::next::expr::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref};
+use crate::next::expr::{
+    Bound, ElementDatum, Expr, FieldType, Func, Literal, MAX_DEPTH, Name, Ref, Ty, TypeEnv,
+};
 use crate::next::inputs::{InputBases, InputName, InputValue};
 use crate::next::key::Key;
 use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::presets::PresetId;
-use crate::next::registry::{self, PartInfo};
-use crate::next::roles::{ColorRolesPatch, SurfaceSet};
+use crate::next::registry::{self, FieldInfo, PartInfo};
+use crate::next::roles::{ColorRolesPatch, SurfaceRoles, SurfaceSet};
 use crate::next::selector::{
     Condition, ContextMatch, ControlSize, Density, PartRef, PositionMatch, Rule, RuleBody,
     Selector, SetMatch, SiblingMatch, StateFlag, ValuesPatch, VariantRef, WidgetOrPart, WidgetRef,
@@ -95,40 +100,85 @@ struct Declaration {
     map: bool,
 }
 
+/// The keyed names' declarations by the slot holding them (S10): the owner
+/// and the field or variant, the declaration, whether a problem writes the
+/// name `@<key>` (an enum's keyed variant), and whether the slot is a map
+/// whose keys a base states. One table for the checks, for what a preset
+/// uses and for a key field's type.
+const DECLARATIONS: [(&str, &str, &str, bool, bool); 25] = [
+    ("ColorRoles", "keyed", "color_roles", false, true),
+    ("GlobalRoles", "accent_ramp", "accent_ramp", false, true),
+    ("TextTokens", "keyed", "text_styles", false, true),
+    ("Tokens", "elevation", "elevation", false, true),
+    ("MotionTokens", "durations", "durations", false, true),
+    ("MotionTokens", "timings", "timings", false, true),
+    ("PointerTokens", "drag_cursors", "drag_cursors", false, true),
+    ("IconStyle", "status_colors", "status_colors", false, true),
+    ("IconSizeTokens", "keyed", "icon_contexts", false, true),
+    ("Tokens", "params", "params", false, true),
+    ("IconStyle", "scale", "symbol_scales", false, false),
+    (
+        "IconStyle",
+        "state_effect",
+        "icon_state_effects",
+        false,
+        false,
+    ),
+    (
+        "IconStyle",
+        "symbol_variants",
+        "symbol_variants",
+        false,
+        false,
+    ),
+    ("TextRendering", "engine", "rendering_engines", false, false),
+    ("TextRendering", "lcd_filter", "lcd_filters", false, false),
+    (
+        "MaterialScheme",
+        "spec_version",
+        "spec_versions",
+        false,
+        false,
+    ),
+    ("Material", "identity", "materials", false, false),
+    ("Shadow", "elevation", "elevation", false, false),
+    ("GlobalRole", "accent_ramp", "accent_ramp", false, false),
+    ("BlendMode", "keyed", "blend_modes", true, false),
+    ("FocusKind", "keyed", "focus_kinds", true, false),
+    (
+        "PresentationEvent",
+        "keyed",
+        "presentation_events",
+        true,
+        false,
+    ),
+    ("RoleRef", "keyed", "color_roles", true, false),
+    ("TransitionKind", "key", "transition_kinds", true, false),
+    ("PresentationKind", "key", "presentation_kinds", true, false),
+];
+
 /// The declaration a keyed name in the slot `slot` (a field or an enum's
 /// variant, owner and name) is checked against: a map's key by the map's
-/// field, a `Key` leaf by its field or variant (S10). One table for the
-/// checks and for what a preset uses.
+/// field, a `Key` leaf by its field or variant (S10).
 fn declaration_of(slot: Option<(&'static str, &'static str)>) -> Option<Declaration> {
-    let (name, keyed, map) = match slot? {
-        ("ColorRoles", "keyed") => ("color_roles", false, true),
-        ("GlobalRoles", "accent_ramp") => ("accent_ramp", false, true),
-        ("TextTokens", "keyed") => ("text_styles", false, true),
-        ("Tokens", "elevation") => ("elevation", false, true),
-        ("MotionTokens", "durations") => ("durations", false, true),
-        ("MotionTokens", "timings") => ("timings", false, true),
-        ("PointerTokens", "drag_cursors") => ("drag_cursors", false, true),
-        ("IconStyle", "status_colors") => ("status_colors", false, true),
-        ("IconSizeTokens", "keyed") => ("icon_contexts", false, true),
-        ("Tokens", "params") => ("params", false, true),
-        ("IconStyle", "scale") => ("symbol_scales", false, false),
-        ("IconStyle", "state_effect") => ("icon_state_effects", false, false),
-        ("IconStyle", "symbol_variants") => ("symbol_variants", false, false),
-        ("TextRendering", "engine") => ("rendering_engines", false, false),
-        ("TextRendering", "lcd_filter") => ("lcd_filters", false, false),
-        ("MaterialScheme", "spec_version") => ("spec_versions", false, false),
-        ("Material", "identity") => ("materials", false, false),
-        ("Shadow", "elevation") => ("elevation", false, false),
-        ("GlobalRole", "accent_ramp") => ("accent_ramp", false, false),
-        ("BlendMode", "keyed") => ("blend_modes", true, false),
-        ("FocusKind", "keyed") => ("focus_kinds", true, false),
-        ("PresentationEvent", "keyed") => ("presentation_events", true, false),
-        ("RoleRef", "keyed") => ("color_roles", true, false),
-        ("TransitionKind", "key") => ("transition_kinds", true, false),
-        ("PresentationKind", "key") => ("presentation_kinds", true, false),
-        _ => return None,
-    };
-    Some(Declaration { name, keyed, map })
+    let (owner, field) = slot?;
+    DECLARATIONS
+        .iter()
+        .find(|(o, f, ..)| *o == owner && *f == field)
+        .map(|(_, _, name, keyed, map)| Declaration {
+            name,
+            keyed: *keyed,
+            map: *map,
+        })
+}
+
+/// The declaration a `Key` field named `field` holds a key of, whichever
+/// block holds it: a reference to the field has that key's type (S2.2).
+fn declaration_of_field(field: &str) -> Option<&'static str> {
+    DECLARATIONS
+        .iter()
+        .find(|(_, f, _, keyed, map)| *f == field && !keyed && !map)
+        .map(|(_, _, name, ..)| *name)
 }
 
 /// The keys the declaration `name` lists; `params`' are its groups' names,
@@ -665,17 +715,55 @@ impl<'a> Checker<'a> {
 
     /// An expression's structural checks (S2.2, S3.3, S10, S12); one nested
     /// deeper than [`MAX_DEPTH`] is that one problem, not followed down.
-    fn expression(&mut self, path: &Path, expr: &Expr, form: ExprForm) {
+    ///
+    /// An expression with no structural problem is then typed against its
+    /// field (S2.2, S12): one that mistypes, names nothing, or calls a
+    /// platform function not implemented yet is refused. An expression's
+    /// structural problems are its one problem each, so a fault the
+    /// structure shows is not reported again by its typing.
+    fn expression(&mut self, path: &Path, expr: &Expr, form: ExprForm, ty: Option<Ty>) {
         let at = path.to_string();
         if depth(expr) > MAX_DEPTH {
             self.problem(&at, ProblemKind::TooDeep);
             return;
         }
-        if form == ExprForm::NoCalls && matches!(expr, Expr::Call(..)) {
+        let found = self.problems.len();
+        // A bool, a text, a key or an enum takes a literal or a reference, a
+        // block (an enum block among them) a reference only: no call.
+        if form != ExprForm::Calls && matches!(expr, Expr::Call(..)) {
             self.problem(&at, ProblemKind::CallNotAllowed);
         }
         let in_text_style = path.fields().any(|(owner, _)| owner == "TextStyle");
         self.expr_node(expr, &at, in_text_style);
+        let ty = match ty {
+            Some(Ty::Key(set)) if set == KEY_OF_PLACE => self.key_type(path),
+            Some(ty) => Some(ty),
+            None => self.declared_unit(path).map(unit_type),
+        };
+        if self.problems.len() == found
+            && let Some(ty) = ty
+        {
+            let types = Types {
+                decl: self.decl(),
+                region: self.region,
+            };
+            if let Err(error) = expr.check(&FieldType::new(ty, Bound::Unbounded), &types) {
+                let reason = error.to_string();
+                self.problem(&at, ProblemKind::IllTyped { reason });
+            }
+        }
+    }
+
+    /// The type of a key at `path` (S2.2, S10): a key of its field's
+    /// declaration, or a widget value's, a key its `keys` entry lists.
+    fn key_type(&self, path: &Path) -> Option<Ty> {
+        if let Some(declaration) = declaration_of(path.slot()).filter(|d| !d.map) {
+            return Some(Ty::Key(Cow::Borrowed(declaration.name)));
+        }
+        match (self.region, path.first_field()) {
+            (Region::Values(widget), Some((_, value))) => Some(widget_keys(widget, value)),
+            _ => None,
+        }
     }
 
     /// One node's checks, then its arguments'; `expression` has bounded the
@@ -907,22 +995,23 @@ impl<'a> Checker<'a> {
 
     /// A stated keyed scalar's unit, its declaration's (S4.6, S10).
     fn scalar_unit(&mut self, path: &Path, scalar: &Scalar) {
+        if let Some(unit) = self.declared_unit(path) {
+            self.unit(&path.to_string(), scalar, unit);
+        }
+    }
+
+    /// The declared unit of the keyed scalar at `path`: a `params` group's,
+    /// or a material parameter's (S4.6, S10).
+    fn declared_unit(&self, path: &Path) -> Option<ScalarUnit> {
         let decl = self.decl();
-        let unit = match (path.last_field(), path.keys().as_slice()) {
-            (Some(("Tokens", "params")), [group, ..]) => decl
-                .params
-                .iter()
-                .find(|(held, _)| held.as_str() == *group)
-                .map(|(_, group)| group.unit),
-            (Some(("Material", "params")), [key, ..]) => decl
+        match (path.last_field(), path.keys().as_slice()) {
+            (Some(("Tokens", "params")), [group, _]) => group_unit(decl, group),
+            (Some(("Material", "params")), [key]) => decl
                 .material_params
                 .iter()
                 .find(|(held, _)| held.as_str() == *key)
                 .map(|(_, unit)| *unit),
             _ => None,
-        };
-        if let Some(unit) = unit {
-            self.unit(&path.to_string(), scalar, unit);
         }
     }
 
@@ -1206,7 +1295,7 @@ impl Visit for Checker<'_> {
         }
     }
 
-    fn value(&mut self, path: &Path, form: Form<'_>, expr: ExprForm) {
+    fn value(&mut self, path: &Path, form: Form<'_>, expr: ExprForm, ty: Option<Ty>) {
         let marks = path.marks();
         let absent_param = path.last_field() == Some(("Tokens", "params"))
             && path
@@ -1230,7 +1319,7 @@ impl Visit for Checker<'_> {
             Form::Auto if !marks.auto => {
                 self.problem(&path.to_string(), ProblemKind::AutoNotAllowed);
             }
-            Form::Expr(e) => self.expression(path, e, expr),
+            Form::Expr(e) => self.expression(path, e, expr, ty),
             Form::Absent | Form::Auto | Form::Stated => {}
         }
     }
@@ -1293,6 +1382,146 @@ impl Visit for Checker<'_> {
         for field in missing {
             self.problem(&path.join(field), ProblemKind::Missing);
         }
+    }
+}
+
+/// What typing knows of the model where an expression is stated (S2.2):
+/// the registry's types of the fields, tokens and roles a reference names,
+/// and the preset's declarations.
+struct Types<'a> {
+    decl: &'a Declarations,
+    region: Region,
+}
+
+impl TypeEnv for Types<'_> {
+    fn reference(&self, reference: &Ref) -> Option<Ty> {
+        let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
+        match reference {
+            Ref::Role { set, path } => field_type(
+                registry::colors(),
+                &format!("surfaces.{}.{}", set.name(), joined(path)),
+            ),
+            Ref::GlobalRole(path) => {
+                field_type(registry::colors(), &format!("global.{}", joined(path)))
+            }
+            Ref::KeyedRole(_) | Ref::Input(_) => Some(Ty::Color),
+            Ref::Surface(path) => field_type(<SurfaceRoles as Table>::FIELDS, &joined(path)),
+            Ref::Token(path) => match path.as_slice() {
+                [params, group, _] if params.as_str() == "params" => {
+                    group_unit(self.decl, group.as_str()).map(unit_type)
+                }
+                _ => field_type(registry::tokens(), &joined(path)),
+            },
+            Ref::Part(path) => match self.region {
+                Region::Part(_, _, info) => field_type(info.fields, &joined(path)),
+                Region::Roles | Region::Tokens | Region::Values(_) => None,
+            },
+            Ref::Widget { part, path } => {
+                let widget = match self.region {
+                    Region::Part(widget, ..) | Region::Values(widget) => widget,
+                    Region::Roles | Region::Tokens => return None,
+                };
+                let info = registry::widgets()
+                    .iter()
+                    .find(|info| info.kind == widget)?
+                    .part(part.as_str())?;
+                match path.as_slice() {
+                    [metric] if <FontMetric as Named>::from_name(metric.as_str()).is_some() => {
+                        Some(Ty::Length)
+                    }
+                    _ => field_type(info.fields, &joined(path)),
+                }
+            }
+            Ref::Values(name) => {
+                let widget = match self.region {
+                    Region::Part(widget, ..) | Region::Values(widget) => widget,
+                    Region::Roles | Region::Tokens => return None,
+                };
+                let info = registry::widgets()
+                    .iter()
+                    .find(|info| info.kind == widget)?;
+                match (
+                    info.values.iter().find(|field| field.path == name.as_str()),
+                    field_type(info.values, name.as_str()),
+                ) {
+                    (Some(_), Some(Ty::Key(set))) if set == KEY_OF_PLACE => {
+                        Some(widget_keys(widget, name.as_str()))
+                    }
+                    (_, ty) => ty,
+                }
+            }
+            Ref::Active(_)
+            | Ref::Base
+            | Ref::Scheme
+            | Ref::FontSize
+            | Ref::LineHeight
+            | Ref::Element(_)
+            | Ref::BodyFontHeight
+            | Ref::TextScale => None,
+        }
+    }
+
+    fn declares(&self, set: &str, key: &Key) -> bool {
+        match set.strip_prefix("widget.") {
+            Some(rest) => {
+                let Some((widget, value)) = rest.split_once(".keys.") else {
+                    return false;
+                };
+                let Some(info) = registry::widget(widget) else {
+                    return false;
+                };
+                self.decl.in_each_flavor(info.kind).iter().any(|decl| {
+                    decl.keys
+                        .iter()
+                        .flatten()
+                        .any(|(held, keys)| *held == value && keys.contains(key))
+                })
+            }
+            None => declared(self.decl, set).contains(&key),
+        }
+    }
+}
+
+/// The type a reference to the field at `path` below `fields` has: its
+/// registry entry's, a key field's a key of its field's declaration (S2.2,
+/// S10); a widget value's key is left to its widget's `keys` entry.
+fn field_type(fields: &'static [FieldInfo], path: &str) -> Option<Ty> {
+    let info = registry::find(fields, path)?;
+    match (info.value)() {
+        Some(Ty::Key(set)) if set == KEY_OF_PLACE => {
+            let name = path.rsplit('.').next()?;
+            match declaration_of_field(name) {
+                Some(declaration) => Some(Ty::Key(Cow::Borrowed(declaration))),
+                None => Some(Ty::Key(set)),
+            }
+        }
+        ty => ty,
+    }
+}
+
+/// The type of a key the widget's `keys` entry for `value` lists (S10).
+fn widget_keys(widget: WidgetKind, value: &str) -> Ty {
+    Ty::Key(Cow::Owned(format!(
+        "widget.{}.keys.{value}",
+        widget_name(widget)
+    )))
+}
+
+/// A `params` group's declared unit.
+fn group_unit(decl: &Declarations, group: &str) -> Option<ScalarUnit> {
+    decl.params
+        .iter()
+        .find(|(held, _)| held.as_str() == group)
+        .map(|(_, group)| group.unit)
+}
+
+/// The type of a keyed scalar of a declared unit (S2.2, S4.6).
+fn unit_type(unit: ScalarUnit) -> Ty {
+    match unit {
+        ScalarUnit::Px => Ty::Length,
+        ScalarUnit::Ms => Ty::Duration,
+        ScalarUnit::Deg => Ty::Angle,
+        ScalarUnit::Fraction | ScalarUnit::Number => Ty::Number,
     }
 }
 
@@ -1397,7 +1626,7 @@ impl Visit for Uses {
         }
     }
 
-    fn value(&mut self, _: &Path, _: Form<'_>, _: ExprForm) {}
+    fn value(&mut self, _: &Path, _: Form<'_>, _: ExprForm, _: Option<Ty>) {}
 
     fn number(&mut self, _: &Path, _: f32, _: Number) {}
 

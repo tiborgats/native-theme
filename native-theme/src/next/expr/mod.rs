@@ -42,6 +42,7 @@ use super::roles::SurfaceSet;
 use super::units::{Deg, Ms, Px};
 
 pub use parse::{ParseError, ParseErrorKind};
+pub(crate) use ty::{Bound, EnumTy, FieldType, SURFACE_SET, Ty, TypeEnv};
 
 /// How deep an expression may nest: calls and `active(…)` inside each other
 /// (S2.2, S12).

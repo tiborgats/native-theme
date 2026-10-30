@@ -47,6 +47,38 @@ pub(crate) enum Ty {
     Block(&'static str),
 }
 
+impl Ty {
+    /// The type of a block named `name` (S2.2): a paint's and a shadow's
+    /// types of their own, every other block's by its name, reached by
+    /// reference only.
+    #[must_use]
+    pub(crate) const fn block(name: &'static str) -> Ty {
+        if same(name, "Paint") {
+            Ty::Paint
+        } else if same(name, "Shadow") {
+            Ty::Shadow
+        } else {
+            Ty::Block(name)
+        }
+    }
+}
+
+/// Whether `a` and `b` are the same text, at compile time.
+const fn same(a: &str, b: &str) -> bool {
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut rest = (a, b);
+    while let ([x, a @ ..], [y, b @ ..]) = rest {
+        if *x != *y {
+            return false;
+        }
+        rest = (a, b);
+    }
+    true
+}
+
 /// An enum's name and its variants' names in snake_case, as expressions spell
 /// them.
 #[derive(Debug, PartialEq, Eq)]

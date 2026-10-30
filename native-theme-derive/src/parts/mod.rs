@@ -222,9 +222,12 @@ mod tests {
             "path : \"margin\" , ty : crate :: next :: registry :: FieldType :: Block { ty : \"Sides<Value<Px>>\" , \
              form : crate :: next :: registry :: BlockForm :: Struct , fields : & [crate :: next :: registry :: FieldInfo { \
              path : \"top\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
-             may_be_absent : true , auto : false , }",
+             may_be_absent : true , auto : false , \
+             value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty , }",
             "path : \"left\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
-             may_be_absent : true , auto : false , }] , } , may_be_absent : false , auto : false }",
+             may_be_absent : true , auto : false , \
+             value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty , }] , } , \
+             may_be_absent : false , auto : false , value : crate :: next :: registry :: no_type , }",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -676,6 +679,38 @@ mod tests {
                 pub enum Probe { #[parts(suffixed)] Pair(f32, f32) }
             })
             .contains("suffixed marks a tuple variant of one member")
+        );
+    }
+
+    #[test]
+    fn walks_give_the_types_references_have() {
+        let block = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub durations: Vec<(Key, Value<Ms>)>,
+                pub width: Value<Px>,
+            }
+        });
+        for expected in [
+            "fn ty () -> :: core :: option :: Option < crate :: next :: expr :: Ty > { :: core :: \
+             option :: Option :: Some (crate :: next :: expr :: Ty :: block (\"Probe\")) }",
+            "path : \"durations\" , ty : crate :: next :: registry :: FieldType :: Leaf \
+             (\"Vec<(Key,Value<Ms>)>\") , may_be_absent : false , auto : false , value : < Value < Ms \
+             > as crate :: next :: validate :: walk :: Walk > :: ty , }",
+            "value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty",
+        ] {
+            assert!(block.contains(expected), "{expected}\n{block}");
+        }
+        let named = expand(syn::parse_quote! {
+            #[parts(toml)]
+            pub enum Side { Top, BottomEnd, Keyed(Key) }
+        });
+        assert!(
+            named.contains(
+                "crate :: next :: expr :: Ty :: Enum (& crate :: next :: expr :: EnumTy { name : \
+                 \"Side\" , variants : & [\"top\" , \"bottom_end\"] , })"
+            ),
+            "{named}"
         );
     }
 

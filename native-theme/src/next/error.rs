@@ -187,6 +187,13 @@ pub enum ProblemKind {
     /// A colour-role definition naming `surface.`: a set's roles name
     /// `role.<set>.<role>` (S3.3, S12).
     SurfaceInRoles,
+    /// An expression that does not type against its field (S2.2, S12): it
+    /// mistypes, names nothing, or calls a platform function not
+    /// implemented yet.
+    IllTyped {
+        /// Why, as typing says it.
+        reason: String,
+    },
     /// A `widget.<part>` reference naming a part of another element than
     /// the one its part is queried with (S2.2, S12).
     OtherElementsPart {
@@ -307,6 +314,7 @@ impl fmt::Display for ProblemKind {
             ProblemKind::SurfaceInRoles => {
                 f.write_str("a colour role names `surface.`, not `role.<set>.`")
             }
+            ProblemKind::IllTyped { reason } => write!(f, "the expression does not type: {reason}"),
             ProblemKind::OtherElementsPart { part } => {
                 write!(f, "`widget.{part}` is another element's part")
             }
