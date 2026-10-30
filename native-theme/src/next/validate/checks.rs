@@ -1347,6 +1347,10 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
 #[derive(Default)]
 struct Uses {
     flags: Vec<StateFlag>,
+    /// The variants rules select on or draw a part as, by the widget they
+    /// are of; `None`: a context or sibling matched by variant alone, of
+    /// any widget.
+    variants: Vec<(Option<WidgetKind>, VariantRef)>,
     conditions: Vec<Condition>,
     events: Vec<Key>,
     /// The bases' keyed names, by their declaration (`params` as
@@ -1391,10 +1395,24 @@ impl Visit for Uses {
 }
 
 impl Uses {
-    fn selector(&mut self, selector: &Selector) {
+    /// A rule's selector, the rule targeting a part or values of `widget`.
+    fn selector(&mut self, selector: &Selector, widget: Option<WidgetKind>) {
         let conditions = &selector.conditions;
         self.conditions
             .extend(conditions.all_of.iter().chain(&conditions.none_of).cloned());
+        if widget.is_some() {
+            self.variants_of(widget, &selector.variants);
+        }
+        for context in selector.context.iter().chain(&selector.not_context) {
+            let widget = target_widget(context.target.as_ref());
+            self.variants_of(widget, &context.variants);
+        }
+        if let Some(position) = &selector.position {
+            for sibling in [&position.previous, &position.next].into_iter().flatten() {
+                let widget = target_widget(sibling.target.as_ref());
+                self.variants_of(widget, &sibling.variants);
+            }
+        }
         let mut states = vec![&selector.states];
         states.extend(
             selector
@@ -1415,6 +1433,34 @@ impl Uses {
             self.flags
                 .extend(set.all_of.iter().chain(&set.none_of).cloned());
         }
+    }
+
+    fn variants_of(&mut self, widget: Option<WidgetKind>, set: &SetMatch<VariantRef>) {
+        let named = set.all_of.iter().chain(&set.none_of);
+        self.variants
+            .extend(named.map(|variant| (widget, variant.clone())));
+    }
+
+    /// A part's patch: its style's keyed names, the variants a `DrawnAs`
+    /// draws it as.
+    fn part(&mut self, patch: &PartPatch) {
+        match patch {
+            PartPatch::Style(style) => self.walk(style),
+            PartPatch::Absent => {}
+            PartPatch::DrawnAs { target, variants } => {
+                let widget = target_widget(Some(target));
+                self.variants
+                    .extend(variants.iter().map(|variant| (widget, variant.clone())));
+            }
+        }
+    }
+
+    /// Whether a rule selects on, or a part is drawn as, `variant` of
+    /// `widget`.
+    fn uses_variant(&self, widget: WidgetKind, variant: &VariantRef) -> bool {
+        self.variants
+            .iter()
+            .any(|(held, used)| held.is_none_or(|held| held == widget) && used == variant)
     }
 
     fn walk<T: Walk + ?Sized>(&mut self, value: &T) {
@@ -1441,9 +1487,7 @@ impl Uses {
     fn button(&mut self, button: &ButtonPatch) {
         let (parts, values) = button.clone().into_parts();
         for (_, patch) in parts {
-            if let PartPatch::Style(style) = patch {
-                self.walk(&style);
-            }
+            self.part(&patch);
         }
         if let Some(values) = values {
             self.walk(&values);
@@ -1451,40 +1495,78 @@ impl Uses {
     }
 }
 
-/// Each declared keyed name nothing uses (S12): a keyed flag, a system
-/// setting, a flavour or a container size no rule selects on (but the
-/// default flavour, each container's default size and a setting for
-/// applications), a keyed name no base states, an event no `presentations`
-/// list names.
+/// Each declared keyed name nothing uses (S12): a keyed flag, a keyed
+/// variant, a system setting, a device model, a flavour or a container size
+/// no rule selects on (but the default flavour, each container's default
+/// size, a setting for applications, and the variants `exempt_variant` and
+/// `content_variants` name), a keyed name no base states, an event no
+/// `presentations` list names.
 pub(super) fn unused(decl: &Declarations, layer: &Layer) -> Vec<Problem> {
     let mut uses = Uses::default();
     uses.bases(&layer.bases);
     for rule in &layer.rules {
-        uses.selector(&rule.selector);
-        match &rule.body {
-            RuleBody::Colors(roles) => uses.walk(roles),
-            RuleBody::Tokens(tokens) => uses.walk(tokens),
-            RuleBody::Part(_, PartPatch::Style(style)) => uses.walk(style),
-            RuleBody::Part(..) => {}
+        let widget = match &rule.body {
+            RuleBody::Colors(roles) => {
+                uses.walk(roles);
+                None
+            }
+            RuleBody::Tokens(tokens) => {
+                uses.walk(tokens);
+                None
+            }
+            RuleBody::Part(part, patch) => {
+                uses.part(patch);
+                match part {
+                    PartRef::Typed(part) => Some(widget_of(*part)),
+                    PartRef::Component { .. } => None,
+                }
+            }
             RuleBody::Values(ValuesPatch::Typed(WidgetValuesPatch::Button(values))) => {
                 uses.walk(values);
+                Some(WidgetKind::Button)
             }
-        }
+        };
+        uses.selector(&rule.selector, widget);
     }
     let mut unused: Vec<(String, String)> = Vec::new();
-    let sections = decl.widgets.iter().chain(
-        decl.flavor
-            .iter()
-            .flat_map(|(_, flavor)| flavor.widgets.iter()),
-    );
-    for (widget, section) in sections {
+    let own = decl.widgets.iter().map(|(widget, section)| {
+        (
+            format!("declare.widget.{}", widget_name(*widget)),
+            *widget,
+            section,
+        )
+    });
+    let flavors = decl.flavor.iter().flat_map(|(flavor, section)| {
+        section.widgets.iter().map(move |(widget, section)| {
+            let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
+            (at, *widget, section)
+        })
+    });
+    let sections: Vec<_> = own.chain(flavors).collect();
+    for (at, widget, section) in &sections {
         for flag in section.flags.iter().flatten() {
             if let StateFlag::Widget(key) = flag
                 && !uses.flags.contains(flag)
             {
-                let at = format!("declare.widget.{}.flags", widget_name(*widget));
-                unused.push((at, format!("@{key}")));
+                unused.push((format!("{at}.flags"), format!("@{key}")));
             }
+        }
+        for variant in section.variants.iter().flatten() {
+            if let VariantRef::Keyed(key) = variant
+                && !uses.uses_variant(*widget, variant)
+                && !exempt_variant(decl, *widget, variant)
+                && !content_variants(*widget).contains(&key.as_str())
+            {
+                unused.push((format!("{at}.variants"), format!("@{key}")));
+            }
+        }
+    }
+    for model in &decl.device_models {
+        if !uses
+            .conditions
+            .contains(&Condition::DeviceModel(model.clone()))
+        {
+            unused.push(("declare.device_models".to_owned(), format!("@{model}")));
         }
     }
     for setting in decl.conditions.iter().filter(|s| !s.for_applications) {
@@ -1524,6 +1606,8 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer) -> Vec<Problem> {
         "durations",
         "timings",
         "drag_cursors",
+        "icon_contexts",
+        "status_colors",
     ];
     for declaration in stated {
         for key in declared(decl, declaration) {
@@ -1552,6 +1636,44 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer) -> Vec<Problem> {
         .into_iter()
         .map(|(at, name)| Problem::new(&at, ProblemKind::Unused { name }))
         .collect()
+}
+
+/// A variant no rule needs to select on (S12): one `requires_variants`,
+/// `sizes_by_variant` or a breakpoint names, in any section of the widget.
+fn exempt_variant(decl: &Declarations, widget: WidgetKind, variant: &VariantRef) -> bool {
+    let sections = decl.widgets.iter().chain(
+        decl.flavor
+            .iter()
+            .flat_map(|(_, flavor)| flavor.widgets.iter()),
+    );
+    sections
+        .filter(|(held, _)| *held == widget)
+        .any(|(_, section)| {
+            section
+                .requires_variants
+                .iter()
+                .flatten()
+                .any(|held| held == variant)
+                || section
+                    .sizes_by_variant
+                    .iter()
+                    .flatten()
+                    .any(|by| by.variant == *variant)
+                || section
+                    .breakpoints
+                    .iter()
+                    .flatten()
+                    .any(|breakpoint| breakpoint.variant == *variant)
+        })
+}
+
+/// A widget's keyed content variants, which the connector sets by one
+/// platform's rule under every preset (S8; the catalogue's content-variant
+/// pairs, *Entry format*, ADD-A123): no rule need select on them.
+fn content_variants(widget: WidgetKind) -> &'static [&'static str] {
+    match widget {
+        WidgetKind::Button => &["custom_child", "arrow_only", "with_arrow"],
+    }
 }
 
 /// `at.key`, or `key` at the root.

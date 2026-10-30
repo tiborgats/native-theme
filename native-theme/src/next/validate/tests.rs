@@ -771,6 +771,60 @@ fn refusal_unused() {
     );
 }
 
+/// Keyed variants and device models no rule selects on, and keyed icon
+/// contexts and status colours no base states, are unused (S12); the
+/// variants S12 exempts are not.
+#[test]
+fn refusal_unused_variants_models_and_maps() {
+    let rule = "[[rules]]\nwhen = { variants = [\"@pill\"], conditions = \
+                [\"device_model:phone_x\"] }\ntarget = \"button.body\"\nset = { opacity = 0.5 }";
+    let head = "[declare]\ndevice_models = [\"phone_x\"]\nicon_contexts = [\"menu\"]\n\
+                status_colors = [\"error\"]\n[declare.widget.button]\nvariants = [\"@pill\", \
+                \"@with_arrow\", \"@tall\", \"@fab\"]\nrequires_variants = [\"@tall\"]\n\
+                sizes_by_variant = [{ variant = \"@fab\", sizes = [\"regular\"] }]";
+    assert_eq!(
+        preset(head),
+        [
+            "declare.widget.button.variants: `@pill` is declared but unused",
+            "declare.device_models: `@phone_x` is declared but unused",
+            "declare.icon_contexts: `menu` is declared but unused",
+            "declare.status_colors: `error` is declared but unused",
+        ]
+    );
+    // The rule selects on both; the bases state the context and the colour.
+    let file = read_preset(&format!("{PRESET_HEAD}{head}\n{rule}")).unwrap();
+    let mut layer = file.layer;
+    let size = IconStylePatch {
+        size: Some(Value::Stated(Px(16.0))),
+        ..IconStylePatch::default()
+    };
+    layer.bases.tokens.icons = Some(crate::next::tokens::IconTokensPatch {
+        sizes: Some(crate::next::tokens::IconSizeTokensPatch {
+            keyed: Some(vec![(key!("menu"), BlockPatch::Fields(size))]),
+            ..crate::next::tokens::IconSizeTokensPatch::default()
+        }),
+        ..crate::next::tokens::IconTokensPatch::default()
+    });
+    let error = PaintPatch::Set(Value::Stated(Paint {
+        layers: vec![layer_of(BlendMode::Normal)],
+    }));
+    layer.bases.widgets.button = Some(ButtonPatch {
+        icon: Some(PartPatch::Style(PartStylePatch {
+            icon: Some(BlockPatch::Fields(IconStylePatch {
+                status_colors: Some(vec![(key!("error"), error)]),
+                ..IconStylePatch::default()
+            })),
+            ..PartStylePatch::default()
+        })),
+        ..ButtonPatch::default()
+    });
+    let problems: Vec<String> = strings(check_preset(&file.declarations, &layer, None))
+        .into_iter()
+        .filter(|problem| !problem.ends_with(": missing"))
+        .collect();
+    assert_eq!(problems, NONE);
+}
+
 #[test]
 fn refusal_duplicate_key() {
     let keyed = |keys: [&str; 2]| {
