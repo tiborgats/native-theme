@@ -6000,14 +6000,18 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:3555-3564"
 quote = "size = expandSize(size, Metrics::Button_MarginWidth); // make sure buttons have a minimum width if (hasText) { size.setWidth(qMax(size.width(), int(Metrics::Button_MinWidth))); } // finally add frame margins return expandSize(size, Metrics::Frame_FrameWidth);"
 
-# Breeze's widget state engine cross-fades the frame while enabled: the fill toward the pressed colour (its focus
-# animation, which follows `down`) and the pen toward the highlight colour (its hover animation, which follows hover,
-# visual focus and `down`), linear over the state duration and quantised to the animation steps; a disabled button
-# takes its colours at once
+# Breeze's widget state engine fades the frame while enabled: the fill from the pressed colour (its focus animation,
+# which follows `down`) and the pen from the highlight colour (its hover animation, which follows hover, visual focus
+# and `down`). Entering a state is instant: the brush is already the pressed or highlight colour that the animation
+# mixes it with; only leaving one fades, the animation running backward, its opacity floor(x * 10) / 10 of a falling
+# x, so the progress toward the new colour jumps at the start of each tenth (steps(10, jump-start), not the
+# forward-run breeze_state timing). So the style after the change states: at rest both fade; under {hover} or
+# {focus_visible} the fill fades (a release) and the pen is already the highlight; under {pressed} nothing fades.
+# A disabled button takes its colours at once.
 
 [[fact]]
 key = "button.body.transitions"
-value = [{ properties = ["fill", "stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.breeze_state", delay_ms = 0, timing = "= token.motion.timings.breeze_state", suspended_by_theme_change = false }]
+value = [{ properties = ["fill", "stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.breeze_state", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false }]
 rows = ["K1.30"]
 
 [[fact.cite]]
@@ -6044,6 +6048,169 @@ quote = "} else { _state = value; animation().data()->setDirection(_state ? Anim
 kind = "published"
 source = "qtbase@6.12.0 src/corelib/animation/qabstractanimation_p.h:64"
 quote = "int currentTime = 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
+quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezegenericdata.h:48-50"
+quote = "void setOpacity(qreal value) { value = digitize(value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
+
+[[fact]]
+key = "button.body.transitions"
+when = { states = ["hover"], not_conditions = ["flavor:kirigami"] }
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.breeze_state", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false }]
+rows = ["K1.30"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
+quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4546-4551"
+quote = "// NOTE: Using focus animation for bg down because the pressed animation only works on press when enabled for buttons and not on release. _animations->widgetStateEngine().updateState(widget, AnimationFocus, down && enabled); // NOTE: Using hover animation for all pen animations to prevent flickering when closing the menu. _animations->widgetStateEngine().updateState(widget, AnimationHover, (hovered || visualFocus || down) && enabled); qreal bgAnimation = _animations->widgetStateEngine().opacity(widget, AnimationFocus); qreal penAnimation = _animations->widgetStateEngine().opacity(widget, AnimationHover);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:113-126"
+quote = "if (auto toolButton = qobject_cast<QToolButton *>(widget)) { _toolButtonEngine->registerWidget(toolButton, AnimationHover | AnimationFocus); _widgetStateEngine->registerWidget(toolButton, AnimationHover | AnimationFocus);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:70-74"
+quote = "for (const BaseEngine::Pointer &engine : std::as_const(_engines)) { engine.data()->setEnabled(animationsEnabled); engine.data()->setDuration(animationsDuration); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.h:116-121"
+quote = "void setDuration(int value) override { BaseEngine::setDuration(value); _hoverData.setDuration(value); _focusData.setDuration(value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:22-27"
+quote = "} else { _state = value; animation().data()->setDirection(_state ? Animation::Forward : Animation::Backward); if (!animation().data()->isRunning()) { animation().data()->start(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qabstractanimation_p.h:64"
+quote = "int currentTime = 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
+quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezegenericdata.h:48-50"
+quote = "void setOpacity(qreal value) { value = digitize(value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
+
+[[fact]]
+key = "button.body.transitions"
+when = { states = ["focus_visible"], not_conditions = ["flavor:kirigami"] }
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.breeze_state", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false }]
+rows = ["K1.30"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
+quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4546-4551"
+quote = "// NOTE: Using focus animation for bg down because the pressed animation only works on press when enabled for buttons and not on release. _animations->widgetStateEngine().updateState(widget, AnimationFocus, down && enabled); // NOTE: Using hover animation for all pen animations to prevent flickering when closing the menu. _animations->widgetStateEngine().updateState(widget, AnimationHover, (hovered || visualFocus || down) && enabled); qreal bgAnimation = _animations->widgetStateEngine().opacity(widget, AnimationFocus); qreal penAnimation = _animations->widgetStateEngine().opacity(widget, AnimationHover);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:113-126"
+quote = "if (auto toolButton = qobject_cast<QToolButton *>(widget)) { _toolButtonEngine->registerWidget(toolButton, AnimationHover | AnimationFocus); _widgetStateEngine->registerWidget(toolButton, AnimationHover | AnimationFocus);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:70-74"
+quote = "for (const BaseEngine::Pointer &engine : std::as_const(_engines)) { engine.data()->setEnabled(animationsEnabled); engine.data()->setDuration(animationsDuration); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.h:116-121"
+quote = "void setDuration(int value) override { BaseEngine::setDuration(value); _hoverData.setDuration(value); _focusData.setDuration(value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:22-27"
+quote = "} else { _state = value; animation().data()->setDirection(_state ? Animation::Forward : Animation::Backward); if (!animation().data()->isRunning()) { animation().data()->start(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qabstractanimation_p.h:64"
+quote = "int currentTime = 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:73-80"
+quote = "virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezegenericdata.h:48-50"
+quote = "void setOpacity(qreal value) { value = digitize(value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
+
+[[fact]]
+key = "button.body.transitions"
+when = { states = ["pressed"], not_conditions = ["flavor:kirigami"] }
+value = []
+rows = ["K1.30"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:679-680"
+quote = "if (down && enabled) { bgBrush = alphaColor(highlightColor, highlightBackgroundAlpha);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:693-694"
+quote = "if (down && enabled) { bgBrush = KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:715-725"
+quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = bgBrush.color(); QColor color2 = flat ? alphaColor(highlightColor, highlightBackgroundAlpha) : KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value); bgBrush = KColorUtils::mix(color1, color2, bgAnimation); } if (penAnimation != AnimationData::OpacityInvalid && enabled) { QColor color1 = penBrush.color(); QColor color2 = highlightColor; penBrush = KColorUtils::mix(color1, color2, penAnimation); }"
 
 [[fact]]
 key = "button.body.transitions"
@@ -6186,13 +6353,15 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:5441-5444"
 quote = "drawItemText(painter, textRect, textFlags, palette, enabled, buttonOption->text, textRole);"
 
-# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area)
+# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area):
+# only a QToolBar in the top toolbar area of a top-level QMainWindow that no QMdiArea or QDockWidget holds
+# (breezetoolsareamanager.cpp:138-150, :317-356), which `toolbar.bar` `top` names as far as a context can
 
 [[fact]]
 key = "button.label.text.fill"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["flat"] }
 value = "= role.header.foreground"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -6223,7 +6392,7 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 key = "button.label.text.fill"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["flat"], states = ["disabled"] }
 value = "= role.header.disabled.foreground"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -6424,13 +6593,15 @@ kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
 quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
 
-# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area)
+# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area):
+# only a QToolBar in the top toolbar area of a top-level QMainWindow that no QMdiArea or QDockWidget holds
+# (breezetoolsareamanager.cpp:138-150, :317-356), which `toolbar.bar` `top` names as far as a context can
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }] }
 value = "= role.header.foreground"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -6471,7 +6642,7 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 key = "button.icon.icon.fill"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], states = ["disabled"] }
 value = "= role.header.disabled.foreground"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -6823,13 +6994,15 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
 quote = "static const qreal arrowShade = 0.15;"
 
-# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area)
+# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area):
+# only a QToolBar in the top toolbar area of a top-level QMainWindow that no QMdiArea or QDockWidget holds
+# (breezetoolsareamanager.cpp:138-150, :317-356), which `toolbar.bar` `top` names as far as a context can
 
 [[fact]]
 key = "button.menu_indicator.glyph.stroke.paint"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["menu", "flat"], not_variants = ["tool"] }
 value = "= kcu_mix(role.header.foreground, role.header.background, 0.15)"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -6875,7 +7048,7 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 key = "button.menu_indicator.glyph.stroke.paint"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["menu", "flat"], not_variants = ["tool"], states = ["disabled"] }
 value = "= kcu_mix(role.header.disabled.foreground, role.header.disabled.background, 0.15)"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -7162,13 +7335,15 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
 quote = "static const qreal arrowShade = 0.15;"
 
-# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area)
+# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area):
+# only a QToolBar in the top toolbar area of a top-level QMainWindow that no QMdiArea or QDockWidget holds
+# (breezetoolsareamanager.cpp:138-150, :317-356), which `toolbar.bar` `top` names as far as a context can
 
 [[fact]]
 key = "button.menu_indicator.glyph.stroke.paint"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["tool", "@inline_small", "flat"] }
 value = "= kcu_mix(role.header.foreground, role.header.background, 0.15)"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -7219,7 +7394,7 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 key = "button.menu_indicator.glyph.stroke.paint"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["tool", "@inline_small", "flat"], states = ["disabled"] }
 value = "= kcu_mix(role.header.disabled.foreground, role.header.disabled.background, 0.15)"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -7533,13 +7708,15 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
 quote = "static const qreal arrowShade = 0.15;"
 
-# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area)
+# in a main window's top toolbar Breeze gives the toolbar the Header set's Window and WindowText (the tools area):
+# only a QToolBar in the top toolbar area of a top-level QMainWindow that no QMdiArea or QDockWidget holds
+# (breezetoolsareamanager.cpp:138-150, :317-356), which `toolbar.bar` `top` names as far as a context can
 
 [[fact]]
 key = "button.menu_indicator.glyph.stroke.paint"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["tool", "@inline_large", "flat"] }
 value = "= kcu_mix(role.header.foreground, role.header.background, 0.15)"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
@@ -7590,7 +7767,7 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 key = "button.menu_indicator.glyph.stroke.paint"
 when = { not_conditions = ["flavor:kirigami"], context = [{ scope = "any", widget = "toolbar", part = "bar", variants = ["top"] }], variants = ["tool", "@inline_large", "flat"], states = ["disabled"] }
 value = "= kcu_mix(role.header.disabled.foreground, role.header.disabled.background, 0.15)"
-rows = []
+rows = ["K1.150"]
 
 [[fact.cite]]
 kind = "published"
