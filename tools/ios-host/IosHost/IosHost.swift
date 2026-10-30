@@ -8,7 +8,7 @@
 // centred. The states: normal; highlighted (`isHighlighted = true`, no touch);
 // disabled; toggle_off (`changesSelectionAsPrimaryAction`, not selected);
 // selected (the same, `isSelected = true`). UIKit's animations are disabled
-// and each page settles for a second before it is drawn.
+// and each page settles for two seconds before it is drawn.
 //
 // Each cell is drawn twice: by the app (`drawHierarchy(in:afterScreenUpdates:)`
 // into a UIGraphicsImageRenderer of the screen's scale and the standard range)
@@ -80,6 +80,8 @@ func configurationStyles() -> [Style] {
 let sizes: [(name: String, size: UIButton.Configuration.Size)] = [
     ("mini", .mini), ("small", .small), ("medium", .medium), ("large", .large),
 ]
+
+let settleSeconds = 2.0
 
 let appearances: [(name: String, style: UIUserInterfaceStyle)] = [("light", .light), ("dark", .dark)]
 
@@ -153,7 +155,6 @@ final class HostViewController: UIViewController {
     required init?(coder: NSCoder) { nil }
 
     override var prefersStatusBarHidden: Bool { true }
-    override var prefersHomeIndicatorAutoHidden: Bool { true }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -216,7 +217,7 @@ final class HostViewController: UIViewController {
             top += height + gap
         }
         view.layoutIfNeeded()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.draw() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + settleSeconds) { [weak self] in self?.draw() }
     }
 
     private func draw() {
@@ -378,7 +379,7 @@ final class HostViewController: UIViewController {
             title = "Button"
             render_draw = "drawHierarchy(in:afterScreenUpdates: true), UIGraphicsImageRenderer, standard range"
             render_screen = "xcrun simctl io screenshot, cropped to the cell"
-            settle_seconds = 1.0
+            settle_seconds = \(settleSeconds)
 
             """
     }

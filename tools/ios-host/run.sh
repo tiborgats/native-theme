@@ -2,7 +2,9 @@
 # Runs on a macOS runner (os-probe.yml's ios-host job), from the repository's
 # root, with the image's default Xcode: builds tools/ios-host for the
 # simulator, creates and boots a simulator of the image's newest iOS runtime
-# (the newest "iPhone <N> Pro" that runtime supports), runs the app twice, and
+# of the SDK's major version (macos-15 also carries iOS 26 runtimes, which
+# would run an iOS 18 SDK build in iOS 26's compatibility look) on the newest
+# "iPhone <N> Pro" that runtime supports, runs the app twice, and
 # checks that the two runs wrote byte-identical files (shasum -a 256). For each
 # page the app draws, the script takes the simulator's screenshot
 # (`simctl io screenshot`) when the app writes sync/ready-<page> and hands it
@@ -10,6 +12,8 @@
 # into $1:
 #   run<N>/       the app's draw/, screen/ and pages/ PNGs, index.toml,
 #                 sync/done (ok or the app's failures)
+#   later/run<N>/ a second screenshot of each page, a second after the first
+#                 (whether a page that does not change draws the same)
 #   environment.txt (the OS, Xcode and its SDKs, the runtime and device chosen,
 #   the SDK's UIButton.Configuration styles and sizes), build.log, run.txt
 #   (each step's exit status), run<N>.sha256, sha256.txt
@@ -33,17 +37,19 @@ header="$sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfigura
   echo "iphonesimulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-version) build $(xcrun --sdk iphonesimulator --show-sdk-build-version)"
   echo "sysctl hw.model: $(sysctl -n hw.model)"
   echo "UIButtonConfiguration.h, the styles and sizes:"
-  grep -n -E 'ButtonConfiguration;|UIButtonConfigurationSize[A-Za-z]* *[=,]' "$header"; echo "grep: exit $?"
+  grep -n -E '\(instancetype\)[A-Za-z]*ButtonConfiguration|UIButtonConfigurationSize[A-Za-z]* *[=,]' "$header"; echo "grep: exit $?"
   echo "the iOS runtimes:"
   xcrun simctl list runtimes ios; echo "simctl list runtimes: exit $?"
 } >"$out/environment.txt" 2>&1
 cat "$out/environment.txt"
 
 xcrun simctl list -j runtimes >"$out/runtimes.json"
-choice=$(python3 -I - "$out/runtimes.json" <<'EOF'
+sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
+choice=$(python3 -I - "$out/runtimes.json" "$sdk_version" <<'EOF'
 import json, re, sys
+major = sys.argv[2].split(".")[0]
 runtimes = [r for r in json.load(open(sys.argv[1]))["runtimes"]
-            if r.get("platform") == "iOS" and r.get("isAvailable")]
+            if r.get("platform") == "iOS" and r.get("isAvailable") and r["version"].split(".")[0] == major]
 runtime = max(runtimes, key=lambda r: tuple(int(p) for p in r["version"].split(".")))
 pro = [(int(m.group(1)), t) for t in runtime.get("supportedDeviceTypes", [])
        if (m := re.fullmatch(r"iPhone (\d+) Pro", t["name"]))]
@@ -90,12 +96,15 @@ for run in 1 2; do
   container=$(xcrun simctl get_app_container "$udid" "$bundle" data)
   sync="$container/Documents/run$run/sync"
   page=0
+  mkdir -p "$out/later/run$run"
   start=$(date +%s)
   while [ ! -e "$sync/done" ]; do
     if [ -e "$sync/ready-$page" ]; then
       xcrun simctl io "$udid" screenshot --type=png "$sync/.screen-$page.png" >/dev/null 2>&1
       status=$?
       if [ $status -ne 0 ]; then note "screenshot $page: exit $status"; failed=1; fi
+      sleep 1
+      xcrun simctl io "$udid" screenshot --type=png "$out/later/run$run/$page.png" >/dev/null 2>&1
       mv "$sync/.screen-$page.png" "$sync/screen-$page.png"
       page=$((page + 1))
     elif [ $(($(date +%s) - start)) -gt 900 ]; then
