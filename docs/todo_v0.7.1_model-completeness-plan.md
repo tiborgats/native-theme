@@ -599,7 +599,7 @@ dev-dependencies and modules linked again.
 - **Facts, mechanically** (`check_fact_citations.py`):
   - a `published` or `read` fact's `quote` occurs, whitespace-normalised, in the cited lines of the cited file at its
     pin, and every literal of its `value` (numbers after unit normalisation, colours in any notation, a derivation's
-    operands), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
+    operands, a text value as a whole quoted string), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
   - a `measured` fact's evidence file is committed, the value at its `evidence` path equals the fact's value after its
     `conversion` within its tolerance (a measured derivation: the form of its passes, which the gate evaluates, spec S17), and the file records the pinned generation and toolkit versions (the exact
     builds listed);
