@@ -711,7 +711,7 @@ impl<'a> Checker<'a> {
             _ => return,
         };
         if !declared {
-            self.undeclared(at, &format!("@{name}"), declaration);
+            self.undeclared(at, name.as_str(), declaration);
         }
     }
 
@@ -1991,7 +1991,7 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId
             .conditions
             .contains(&Condition::DeviceModel(model.clone()))
         {
-            unused.push(("declare.device_models".to_owned(), format!("@{model}")));
+            unused.push(("declare.device_models".to_owned(), model.to_string()));
         }
     }
     for setting in decl.conditions.iter().filter(|s| !s.for_applications) {

@@ -679,7 +679,7 @@ fn refusal_undeclared() {
         bare(&layer),
         [
             "colors.light.keyed.shade: `shade` is not declared in `color_roles`",
-            "rules[0].when.conditions[0]: `@phone_x` is not declared in `device_models`",
+            "rules[0].when.conditions[0]: `phone_x` is not declared in `device_models`",
             "rules[0].when.variants[0]: `primary` is not declared in `widget.button.variants`",
         ]
     );
@@ -984,7 +984,7 @@ fn refusal_unused_variants_models_and_maps() {
         preset(head),
         [
             "declare.widget.button.variants: `@pill` is declared but unused",
-            "declare.device_models: `@phone_x` is declared but unused",
+            "declare.device_models: `phone_x` is declared but unused",
             "declare.icon_contexts: `menu` is declared but unused",
             "declare.status_colors: `error` is declared but unused",
         ]
@@ -1325,7 +1325,7 @@ fn rust_built_rules_spell_model_paths() {
         [
             "rules[0].body.fill.append[0].kind.color: the expression does not type: a length \
              where a colour is expected",
-            "rules[0].selector.conditions.none_of[0]: `@kirigami` is not declared in `flavors`",
+            "rules[0].selector.conditions.none_of[0]: `kirigami` is not declared in `flavors`",
         ]
     );
 }
@@ -1674,17 +1674,17 @@ fn refusal_undeclared_every_kind() {
         ),
         (
             rule("{ conditions = [\"flavor:kirigami\"] }"),
-            "rules[0].when.conditions[0]: `@kirigami` is not declared in `flavors`",
+            "rules[0].when.conditions[0]: `kirigami` is not declared in `flavors`",
             "flavors = [\"widgets\", \"kirigami\"]",
         ),
         (
             rule("{ conditions = [\"container_size:button:large\"] }"),
-            "rules[0].when.conditions[0]: `@large` is not declared in `container_sizes`",
+            "rules[0].when.conditions[0]: `large` is not declared in `container_sizes`",
             "container_sizes = { button = [\"regular\", \"large\"] }",
         ),
         (
             rule("{ conditions = [\"system_setting:glow\"] }"),
-            "rules[0].when.conditions[0]: `@glow` is not declared in `conditions`",
+            "rules[0].when.conditions[0]: `glow` is not declared in `conditions`",
             "conditions = [\"@glow\"]",
         ),
         (
