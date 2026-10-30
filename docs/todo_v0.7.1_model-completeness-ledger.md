@@ -65,7 +65,7 @@ tie-breaker, `A` audited), presets (`P`), gate (`G`), connectors (`C`).
 
 | Unit | adwaita | kde-breeze | macos-monterey | macos-tahoe | ios-13 | ios-26 | windows-11 | material-3 | Connectors |
 |---|---|---|---|---|---|---|---|---|---|
-| slice (`button`, colour roles, slice tokens) | — | — | — | — | — | — | — | — | — |
+| slice (`button`, colour roles, slice tokens) | L | — | — | F (188 measured, partial; fills are composites: redone from the probe's two-background pass) | — | — | — | — | — |
 
 ## Module inventory
 
@@ -124,6 +124,9 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 25 | 1 | the facts scripts | the first M0 scripts review: 7 serious (uppercase `RGB(`, missing source notations and `.sp`/`.dp` units, Apple `pt`, an analysis output's image, measured shapes, the re-pin not idempotent, suffixed keys), 12 minor | the M0 scripts review (facts) | fixed 169024d8's cherry-pick; the re-pin now idempotent, its 4 remaining reports are the rows queue #16 and the changed list name (kde :535, :536, :1243, :1374) |
 | 26 | 1 | `check_release.sh`, `update_sources.sh`, `check_sources.py`, `check_ledger.py`, `citations.py`, README | the second M0 scripts review: 2 serious (`update_sources.sh` acted on unvalidated `sources.toml` values: a crafted id deleted outside the cache, a commit as a git option ran a command; a changed sparse list was never fetched), 21 minor (PLAN_EXCLUDED steps in a subshell, clean ci.yml marks, the banner, unused keys, crate-level keys; failures inside `fetch_one`; site and tag checks; ledger and citation parsing) | the M0 scripts review (sources, release) | fixed 7d703911's cherry-pick; left: `citations.py` splits a slashed branch ref (`winui3/release/2.5.1` → `winui3`) and does not parse a gitlab.gnome.org URL's ref, to fix before a lane cites such a URL |
 | 27 | 2 | spec S6.1 (a unit), S4.2, S13 | M1a's design decisions 1–3 and 6 ([the M1a design](todo_v0.7.1_model-completeness-m1a-design.md) §4): a unit may defer named values (the button's two `Placement` values until M3's placement unit, S13's data types defined early); `Behavior.scroll` and `ScrollPhysics` staged to the `scroll_view` unit; `MaterialShape` uninhabited until M1b; `may_be_absent` generated as the union per path | the M1a design | open: an S22 line and one independent check with the next spec batch |
+| 28 | 2 | spec S11's Spelling, S17; `check_facts.py` | a free string value (`font.family = ".AppleSystemUIFont"`) has no spelling, so a font family cannot be stated: spell a `Value<String>` as a quoted string, compared exactly | the macOS lane | open: with #27's batch |
+| 29 | 2 | spec S17 | a measured value that follows an input (the default button's fill and the accent) cannot be stated as a derivation without a published source: a measured derivation cites evidence under at least two values of its operands (the accent passes), and the gate evaluates the expression over each | the macOS lane | open: with #27's batch, after the probe's accent pass |
+| 30 | 1 | `check_fact_citations.py` | a run's `analysis/` folder (the committed analysis scripts) is flagged as uncited evidence: exempt it as README.md and `run.toml` are | the macOS lane | open |
 
 ## Unmeasured register
 
@@ -132,6 +135,7 @@ the maintainer's decision.
 
 | Key and combination | Attempts and evidence | Options | Decision |
 |---|---|---|---|
+| `macos-tahoe` slice: button focus, open, window inactive, Increase Contrast; other bezels and border shapes; corners, top/bottom and extra-large padding, `min_width`, default size; label text and font; icon fields; widget values; accent-dependent roles; status and link roles; text weights and styles; `font_dpi`; icon sizes; motion; caret; behaviour (lane report, 2026-10-30) | run 40969040283's button pass and the legacy runs | the probe's second extension (tools branch `v0.8.0-tools-probe-m2`, in progress); Xcode 26.6 header excerpts from the same run for `read` and `published` facts | pending the extension's run |
 
 ## Verification rates
 
