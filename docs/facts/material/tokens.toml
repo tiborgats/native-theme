@@ -417,9 +417,11 @@ quote = "/// md.sys.motion.easing.emphasized (Easing) $easing-emphasized: $easin
 # ExpressiveMotionTokens). Compose's spring has no mass and its rest threshold is the animated type's default, both in
 # animation-core, which the source cache does not hold (ledger queue #45, #50): the facts leave `mass`, `rest_epsilon`,
 # `initial_velocity`, `clamp` and `time_scale` out.
+# Keys by S4.1's rule (ADD-A122): the tokens' shared name less `Spring`, `SpringDefaultSpatialDamping` and
+# `…Stiffness` `default_spatial`.
 
 [[fact]]
-key = "token.motion.timings.spring_default_spatial"
+key = "token.motion.timings.default_spatial"
 value = { spring = { stiffness = 700, damping_ratio = 0.9 } }
 rows = ["MAT-X13"]
 
@@ -444,7 +446,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
-key = "token.motion.timings.spring_default_effects"
+key = "token.motion.timings.default_effects"
 value = { spring = { stiffness = 1600, damping_ratio = 1 } }
 rows = ["MAT-X13"]
 
@@ -469,7 +471,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
-key = "token.motion.timings.spring_fast_spatial"
+key = "token.motion.timings.fast_spatial"
 value = { spring = { stiffness = 1400, damping_ratio = 0.9 } }
 rows = ["MAT-X13"]
 
@@ -494,7 +496,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
-key = "token.motion.timings.spring_fast_effects"
+key = "token.motion.timings.fast_effects"
 value = { spring = { stiffness = 3800, damping_ratio = 1 } }
 rows = ["MAT-X13"]
 
@@ -519,7 +521,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
-key = "token.motion.timings.spring_slow_spatial"
+key = "token.motion.timings.slow_spatial"
 value = { spring = { stiffness = 300, damping_ratio = 0.9 } }
 rows = ["MAT-X13"]
 
@@ -544,7 +546,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
-key = "token.motion.timings.spring_slow_effects"
+key = "token.motion.timings.slow_effects"
 value = { spring = { stiffness = 800, damping_ratio = 1 } }
 rows = ["MAT-X13"]
 
@@ -569,7 +571,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
-key = "token.motion.timings.spring_default_spatial"
+key = "token.motion.timings.default_spatial"
 when = { conditions = ["flavor:expressive"] }
 value = { spring = { stiffness = 380, damping_ratio = 0.8 } }
 rows = ["MAT-X13"]
@@ -590,7 +592,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
 
 [[fact]]
-key = "token.motion.timings.spring_default_effects"
+key = "token.motion.timings.default_effects"
 when = { conditions = ["flavor:expressive"] }
 value = { spring = { stiffness = 1600, damping_ratio = 1 } }
 rows = ["MAT-X13"]
@@ -611,7 +613,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
 
 [[fact]]
-key = "token.motion.timings.spring_fast_spatial"
+key = "token.motion.timings.fast_spatial"
 when = { conditions = ["flavor:expressive"] }
 value = { spring = { stiffness = 800, damping_ratio = 0.6 } }
 rows = ["MAT-X13"]
@@ -632,7 +634,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
 
 [[fact]]
-key = "token.motion.timings.spring_fast_effects"
+key = "token.motion.timings.fast_effects"
 when = { conditions = ["flavor:expressive"] }
 value = { spring = { stiffness = 3800, damping_ratio = 1 } }
 rows = ["MAT-X13"]
@@ -653,7 +655,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
 
 [[fact]]
-key = "token.motion.timings.spring_slow_spatial"
+key = "token.motion.timings.slow_spatial"
 when = { conditions = ["flavor:expressive"] }
 value = { spring = { stiffness = 200, damping_ratio = 0.8 } }
 rows = ["MAT-X13"]
@@ -674,7 +676,7 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
 
 [[fact]]
-key = "token.motion.timings.spring_slow_effects"
+key = "token.motion.timings.slow_effects"
 when = { conditions = ["flavor:expressive"] }
 value = { spring = { stiffness = 800, damping_ratio = 1 } }
 rows = ["MAT-X13"]
@@ -922,9 +924,12 @@ source = "material-web@2.5.0 tokens/_md-sys-elevation.scss:26"
 quote = "'level5': if($exclude-hardcoded-values, null, 5)"
 
 # ----------------------------------------------------------------------------------------------------
-# token.focus: md.sys.state.focus-indicator (thickness, outer offset) and md-focus-ring's drawing
-# (focus/internal/_focus-ring.scss: an outline of the width, outside the box by the outward offset, its radii the
-# part's plus the offset; colour md.sys.color.secondary, tokens/_md-comp-focus-ring.scss:47)
+# token.focus: md.sys.state.focus-indicator (thickness, outer offset) and md-focus-ring's outward ring, the one buttons
+# draw (focus/internal/_focus-ring.scss: an outline of the width around a box grown by the outward offset, so the
+# offset is the ring's inner edge, S2.10, ADD-A122; that box's radii, the ring's inner corners, the part's plus the
+# offset, `follow_part`, which grows a square corner too; colour md.sys.color.secondary,
+# tokens/_md-comp-focus-ring.scss:47). The inward ring (list items, menu items, tabs) is its parts' own: its offset
+# the system inner-offset, -3px, which already measures to its inner edge (MAT-X10)
 
 [[fact]]
 key = "token.focus.kind"
@@ -971,7 +976,7 @@ kind = "published"
 source = "material-web@2.5.0 focus/internal/_focus-ring.scss:65"
 quote = "outline: $width solid currentColor;"
 
-# outward: positive (S2.10, ADD-A18)
+# outward: positive, to the ring's inner edge (S2.10, ADD-A18, ADD-A122)
 [[fact]]
 key = "token.focus.offset.top"
 value = "2px"
@@ -1238,8 +1243,10 @@ quote = "/// md.comp.dialog.with-icon.icon.size (Enabled / Icon) $with-icon-icon
 # ----------------------------------------------------------------------------------------------------
 # S4.4 text ramp: the fifteen md.sys.typescale styles and the fifteen emphasized ones. Family and weight from
 # material-web's tokens (the styles' mixins apply font-family, font-size, font-weight, letter-spacing and line-height
-# only); size, line height and tracking from Compose's TypeScaleTokens (material-web writes them in rem, which has no
-# px value, S17), stated only where both agree; the drawing defaults of Compose's Text
+# only); size, line height and tracking from Compose's TypeScaleTokens, which TypographyTokens reads and Compose draws
+# (material-web writes them in rem, which has no px value, S17; where its rem tracking differs, body medium, display
+# large, title medium and the emphasized body large and display large, Compose's is stated: the catalogue's note on
+# Material's column, ADD-A122); the drawing defaults of Compose's Text
 
 # md.sys.typescale.body-large
 [[fact]]
@@ -1514,6 +1521,16 @@ rows = ["MAT-TS1", "MAT-X16"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:42-43"
 quote = "inline val BodyMediumLineHeight: androidx.compose.ui.unit.TextUnit get() = 20.0.sp"
+
+[[fact]]
+key = "token.text.keyed.body_medium.letter_spacing"
+value = "0.2px"
+rows = ["MAT-TS1", "MAT-TS2", "MAT-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:48-49"
+quote = "inline val BodyMediumTracking: androidx.compose.ui.unit.TextUnit get() = 0.2.sp"
 
 [[fact]]
 key = "token.text.keyed.body_medium.decoration"
@@ -1852,6 +1869,16 @@ rows = ["MAT-TS1", "MAT-X16"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:72-73"
 quote = "inline val DisplayLargeLineHeight: androidx.compose.ui.unit.TextUnit get() = 64.0.sp"
+
+[[fact]]
+key = "token.text.keyed.display_large.letter_spacing"
+value = "-0.2px"
+rows = ["MAT-TS1", "MAT-TS2", "MAT-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:78-79"
+quote = "inline val DisplayLargeTracking: androidx.compose.ui.unit.TextUnit get() = -0.2.sp"
 
 [[fact]]
 key = "token.text.keyed.display_large.decoration"
@@ -3584,6 +3611,16 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "inline val TitleMediumLineHeight: androidx.compose.ui.unit.TextUnit get() = 24.0.sp"
 
 [[fact]]
+key = "token.text.keyed.title_medium.letter_spacing"
+value = "0.2px"
+rows = ["MAT-TS1", "MAT-TS2", "MAT-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:228-229"
+quote = "inline val TitleMediumTracking: androidx.compose.ui.unit.TextUnit get() = 0.2.sp"
+
+[[fact]]
 key = "token.text.keyed.title_medium.decoration"
 value = "absent"
 rows = ["MAT-TS1"]
@@ -3920,6 +3957,16 @@ rows = ["MAT-TS4", "MAT-X16"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:253-254"
 quote = "inline val BodyLargeEmphasizedLineHeight: androidx.compose.ui.unit.TextUnit get() = 24.0.sp"
+
+[[fact]]
+key = "token.text.keyed.body_large_emphasized.letter_spacing"
+value = "0.15px"
+rows = ["MAT-TS4", "MAT-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:259-260"
+quote = "inline val BodyLargeEmphasizedTracking: androidx.compose.ui.unit.TextUnit get() = 0.15.sp"
 
 [[fact]]
 key = "token.text.keyed.body_large_emphasized.decoration"
@@ -4432,6 +4479,16 @@ rows = ["MAT-TS4", "MAT-X16"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:298-299"
 quote = "inline val DisplayLargeEmphasizedLineHeight: androidx.compose.ui.unit.TextUnit get() = 64.0.sp"
+
+[[fact]]
+key = "token.text.keyed.display_large_emphasized.letter_spacing"
+value = "0px"
+rows = ["MAT-TS4", "MAT-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TypeScaleTokens.kt:304-305"
+quote = "inline val DisplayLargeEmphasizedTracking: androidx.compose.ui.unit.TextUnit get() = 0.sp"
 
 [[fact]]
 key = "token.text.keyed.display_large_emphasized.decoration"
@@ -6584,10 +6641,13 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "maxLines: Int = Int.MAX_VALUE,"
 
 # ----------------------------------------------------------------------------------------------------
-# S4.4 the nineteen slots (S4.4: owner slots reference the keyed style, the others the owner slot). `body` is
-# Compose's default text style, bodyLarge (MaterialTheme's ProvideTextStyle), so `callout` and `numeric`, which the
-# catalogue's draft gives body-large and body's style, share it through `body`; the other slots follow the catalogue's
-# draft table, which no Material source assigns (the tie-break report)
+# S4.4 the slots Compose assigns (S4.4: owner slots reference the keyed style, the others the owner slot; the
+# catalogue's note on Material's column, ADD-A122). `body` is Compose's default text style, bodyLarge (MaterialTheme's
+# ProvideTextStyle), so `callout` and `numeric`, which the catalogue gives body-large, share it through `body`; `title1`
+# a dialog's title, `large_title` the large top app bar's title, `label` a button's label. The other twelve slots
+# (`display_large`, `display_medium`, `display_small`, `title2`, `title3`, `headline`, `subheadline`,
+# `body_emphasized`, `footnote`, `caption`, `caption_emphasized`, `caption2`) no Compose component or token assigns:
+# unsourced, not stated (the lane's report)
 
 [[fact]]
 key = "token.text.roles.body"
@@ -6599,21 +6659,6 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
 quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
 
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:452-459"
-quote = "/// md.sys.typescale.body-large (Body styles / Body Large) @mixin body-large { font-family: $body-large-font; font-size: $body-large-size; font-weight: $body-large-weight; letter-spacing: $body-large-tracking; line-height: $body-large-line-height; }"
-
-[[fact]]
-key = "token.text.roles.caption"
-value = "= token.text.keyed.body_small"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:468-475"
-quote = "/// md.sys.typescale.body-small (Body styles / Body Small) @mixin body-small { font-family: $body-small-font; font-size: $body-small-size; font-weight: $body-small-weight; letter-spacing: $body-small-tracking; line-height: $body-small-line-height; }"
-
 [[fact]]
 key = "token.text.roles.title1"
 value = "= token.text.keyed.headline_small"
@@ -6621,78 +6666,28 @@ rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:516-523"
-quote = "/// md.sys.typescale.headline-small (Headline styles / Headline Small) @mixin headline-small { font-family: $headline-small-font; font-size: $headline-small-size; font-weight: $headline-small-weight; letter-spacing: $headline-small-tracking; line-height: $headline-small-line-height; }"
-
-[[fact]]
-key = "token.text.roles.title2"
-value = "= token.text.keyed.title_large"
-rows = ["MAT-TS1", "MAT-X16"]
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/DialogTokens.kt:51-52"
+quote = "inline val HeadlineFont: TypographyToken get() = TypographyKeyTokens.HeadlineSmall"
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:548-555"
-quote = "/// md.sys.typescale.title-large (Title styles / Title Large) @mixin title-large { font-family: $title-large-font; font-size: $title-large-size; font-weight: $title-large-weight; letter-spacing: $title-large-tracking; line-height: $title-large-line-height; }"
-
-[[fact]]
-key = "token.text.roles.headline"
-value = "= token.text.keyed.title_medium"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:556-563"
-quote = "/// md.sys.typescale.title-medium (Title styles / Title Medium) @mixin title-medium { font-family: $title-medium-font; font-size: $title-medium-size; font-weight: $title-medium-weight; letter-spacing: $title-medium-tracking; line-height: $title-medium-line-height; }"
-
-[[fact]]
-key = "token.text.roles.subheadline"
-value = "= token.text.keyed.title_small"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:564-571"
-quote = "/// md.sys.typescale.title-small (Title styles / Title Small) @mixin title-small { font-family: $title-small-font; font-size: $title-small-size; font-weight: $title-small-weight; letter-spacing: $title-small-tracking; line-height: $title-small-line-height; }"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AlertDialog.kt:330"
+quote = "DialogTokens.HeadlineFont.value"
 
 [[fact]]
 key = "token.text.roles.large_title"
-value = "= token.text.keyed.headline_large"
+value = "= token.text.keyed.headline_medium"
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:500-507"
-quote = "/// md.sys.typescale.headline-large (Headline styles / Headline Large) @mixin headline-large { font-family: $headline-large-font; font-size: $headline-large-size; font-weight: $headline-large-weight; letter-spacing: $headline-large-tracking; line-height: $headline-large-line-height; }"
-
-[[fact]]
-key = "token.text.roles.display_large"
-value = "= token.text.keyed.display_large"
-rows = ["MAT-TS1", "MAT-X16"]
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/AppBarLargeTokens.kt:28-29"
+quote = "inline val TitleFont: TypographyToken get() = TypographyKeyTokens.HeadlineMedium"
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:476-483"
-quote = "/// md.sys.typescale.display-large (Display styles / Display Large) @mixin display-large { font-family: $display-large-font; font-size: $display-large-size; font-weight: $display-large-weight; letter-spacing: $display-large-tracking; line-height: $display-large-line-height; }"
-
-[[fact]]
-key = "token.text.roles.display_medium"
-value = "= token.text.keyed.display_medium"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:484-491"
-quote = "/// md.sys.typescale.display-medium (Display styles / Display Medium) @mixin display-medium { font-family: $display-medium-font; font-size: $display-medium-size; font-weight: $display-medium-weight; letter-spacing: $display-medium-tracking; line-height: $display-medium-line-height; }"
-
-[[fact]]
-key = "token.text.roles.display_small"
-value = "= token.text.keyed.display_small"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:492-499"
-quote = "/// md.sys.typescale.display-small (Display styles / Display Small) @mixin display-small { font-family: $display-small-font; font-size: $display-small-size; font-weight: $display-small-weight; letter-spacing: $display-small-tracking; line-height: $display-small-line-height; }"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt:727"
+quote = "titleTextStyle = AppBarLargeTokens.TitleFont.value,"
 
 [[fact]]
 key = "token.text.roles.callout"
@@ -6701,18 +6696,8 @@ rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:452-459"
-quote = "/// md.sys.typescale.body-large (Body styles / Body Large) @mixin body-large { font-family: $body-large-font; font-size: $body-large-size; font-weight: $body-large-weight; letter-spacing: $body-large-tracking; line-height: $body-large-line-height; }"
-
-[[fact]]
-key = "token.text.roles.caption2"
-value = "= token.text.keyed.label_small"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:540-547"
-quote = "/// md.sys.typescale.label-small (Label styles / Label Small) @mixin label-small { font-family: $label-small-font; font-size: $label-small-size; font-weight: $label-small-weight; letter-spacing: $label-small-tracking; line-height: $label-small-line-height; }"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
+quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
 
 [[fact]]
 key = "token.text.roles.label"
@@ -6721,41 +6706,8 @@ rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:524-531"
-quote = "/// md.sys.typescale.label-large (Label styles / Label Large) @mixin label-large { font-family: $label-large-font; font-size: $label-large-size; font-weight: $label-large-weight; letter-spacing: $label-large-tracking; line-height: $label-large-line-height; }"
-
-# title_large, owned by title2
-[[fact]]
-key = "token.text.roles.title3"
-value = "= token.text.roles.title2"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:548-555"
-quote = "/// md.sys.typescale.title-large (Title styles / Title Large) @mixin title-large { font-family: $title-large-font; font-size: $title-large-size; font-weight: $title-large-weight; letter-spacing: $title-large-tracking; line-height: $title-large-line-height; }"
-
-# body_small, owned by caption
-[[fact]]
-key = "token.text.roles.footnote"
-value = "= token.text.roles.caption"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:468-475"
-quote = "/// md.sys.typescale.body-small (Body styles / Body Small) @mixin body-small { font-family: $body-small-font; font-size: $body-small-size; font-weight: $body-small-weight; letter-spacing: $body-small-tracking; line-height: $body-small-line-height; }"
-
-# body_medium, owned by body
-[[fact]]
-key = "token.text.roles.numeric"
-value = "= token.text.roles.body"
-rows = ["MAT-TS1", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
-quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:169"
+quote = "textStyle = MaterialTheme.typography.labelLarge,"
 
 [[fact]]
 key = "token.text.roles.monospace"
@@ -6767,47 +6719,12 @@ kind = "published"
 source = "frameworks-base@android-17.0.0_r1 data/fonts/fonts.xml:253-255"
 quote = "<family name=\"monospace\"> <font weight=\"400\" style=\"normal\">DroidSansMono.ttf</font> </family>"
 
-# baseline has no emphasized set: title_small, owned by subheadline
 [[fact]]
-key = "token.text.roles.body_emphasized"
-when = { conditions = ["flavor:baseline"] }
-value = "= token.text.roles.subheadline"
-rows = ["MAT-TS4", "MAT-X16"]
+key = "token.text.roles.numeric"
+value = "= token.text.roles.body"
+rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:564-571"
-quote = "/// md.sys.typescale.title-small (Title styles / Title Small) @mixin title-small { font-family: $title-small-font; font-size: $title-small-size; font-weight: $title-small-weight; letter-spacing: $title-small-tracking; line-height: $title-small-line-height; }"
-
-[[fact]]
-key = "token.text.roles.body_emphasized"
-when = { conditions = ["flavor:expressive"] }
-value = "= token.text.keyed.body_medium_emphasized"
-rows = ["MAT-TS4", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale-emphasized.scss:448-455"
-quote = "/// md.sys.typescale.emphasized.body-medium (Emphasized Body styles / Emphasized Body Medium) @mixin body-medium { font-family: $body-medium-font; font-size: $body-medium-size; font-weight: $body-medium-weight; letter-spacing: $body-medium-tracking; line-height: $body-medium-line-height; }"
-
-[[fact]]
-key = "token.text.roles.caption_emphasized"
-when = { conditions = ["flavor:baseline"] }
-value = "= token.text.keyed.label_medium"
-rows = ["MAT-TS4", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:532-539"
-quote = "/// md.sys.typescale.label-medium (Label styles / Label Medium) @mixin label-medium { font-family: $label-medium-font; font-size: $label-medium-size; font-weight: $label-medium-weight; letter-spacing: $label-medium-tracking; line-height: $label-medium-line-height; }"
-
-[[fact]]
-key = "token.text.roles.caption_emphasized"
-when = { conditions = ["flavor:expressive"] }
-value = "= token.text.keyed.body_small_emphasized"
-rows = ["MAT-TS4", "MAT-X16"]
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale-emphasized.scss:456-463"
-quote = "/// md.sys.typescale.emphasized.body-small (Emphasized Body styles / Emphasized Body Small) @mixin body-small { font-family: $body-small-font; font-size: $body-small-size; font-weight: $body-small-weight; letter-spacing: $body-small-tracking; line-height: $body-small-line-height; }"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
+quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"

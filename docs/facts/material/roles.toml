@@ -2390,6 +2390,10 @@ source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-2
 quote = "@use 'md-ref-palette';"
 absent = []
 
+# the scrim: Compose applies ScrimTokens.ContainerOpacity to the scrim role wherever it draws one (the modal sheet,
+# the navigation drawer, the docked search bar's dropdown); only the internal, unpublished
+# StyleableExpandedDockedSearchBarWithGap takes the role unscaled (SearchBar.kt:1014-1030, ComponentStyles.kt:688), which
+# no public component draws (MAT-X1, ADD-A122)
 [[fact]]
 key = "role.global.scrim"
 value = "= alpha(role.@scrim, 0.32)"
@@ -2409,6 +2413,21 @@ quote = "get() = ScrimTokens.ContainerColor.value.copy(alpha = ScrimTokens.Conta
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ScrimTokens.kt:25"
 quote = "const val ContainerOpacity = 0.32f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SheetDefaults.kt:530"
+quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(ScrimTokens.ContainerOpacity)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/NavigationDrawer.kt:1068"
+quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(ScrimTokens.ContainerOpacity)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SearchBar.kt:2054-2055"
+quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(alpha = ScrimTokens.ContainerOpacity)"
 
 # the scheme tokens m3_role reads (S4.8): material-color-utilities' default spec version and its contrast levels
 
