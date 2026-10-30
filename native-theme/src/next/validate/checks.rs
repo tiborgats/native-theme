@@ -23,6 +23,7 @@ use crate::next::selector::{
     Condition, ContextMatch, ControlSize, Density, PartRef, PositionMatch, Rule, RuleBody,
     Selector, SetMatch, SiblingMatch, StateFlag, ValuesPatch, VariantRef, WidgetOrPart, WidgetRef,
 };
+use crate::next::tokens::ABSENT_PARAM_GROUPS;
 use crate::next::toml::read::Named;
 use crate::next::units::Scalar;
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
@@ -1199,8 +1200,13 @@ impl Visit for Checker<'_> {
 
     fn value(&mut self, path: &Path, form: Form<'_>, expr: ExprForm) {
         let marks = path.marks();
+        let absent_param = path.last_field() == Some(("Tokens", "params"))
+            && path
+                .keys()
+                .first()
+                .is_some_and(|group| ABSENT_PARAM_GROUPS.contains(group));
         match form {
-            Form::Absent if !marks.may_be_absent => {
+            Form::Absent if !(marks.may_be_absent || absent_param) => {
                 self.problem(&path.to_string(), ProblemKind::AbsentNotAllowed);
             }
             Form::Auto if !marks.auto => {

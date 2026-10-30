@@ -741,6 +741,32 @@ fn refusal_size_not_taken() {
     assert_eq!(entry("regular"), NONE);
 }
 
+/// The display radii may be `Absent`, for a device model the preset does
+/// not list (S4.6); another group's keys may not.
+#[test]
+fn display_params_may_be_absent() {
+    let decl = declare(
+        "params = { display = { unit = \"px\", keys = [\"corner_radius_top_left\"] }, layout = \
+         { unit = \"px\", keys = [\"gap\"] } }",
+    );
+    let param = |group: &str, key: &str| {
+        let mut layer = Layer::default();
+        layer.bases.tokens.params = Some(vec![(
+            crate::next::Key::new(group).unwrap(),
+            vec![(crate::next::Key::new(key).unwrap(), Value::Absent)],
+        )]);
+        layer
+    };
+    assert_eq!(
+        found(&param("display", "corner_radius_top_left"), &decl),
+        NONE
+    );
+    assert_eq!(
+        found(&param("layout", "gap"), &decl),
+        ["tokens.params.layout.gap: may not be absent"]
+    );
+}
+
 #[test]
 fn refusal_unit_mismatch() {
     let decl = declare("params = { layout = { unit = \"px\", keys = [\"gap\"] } }");

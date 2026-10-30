@@ -63,7 +63,8 @@ pub struct Tokens {
     #[parts(block = "fields")]
     pub size_classes: Vec<(SizeClass, SizeClassThreshold)>,
     /// Keyed groups of keyed scalars, each group of the one unit its
-    /// declaration names (S4.6).
+    /// declaration names (S4.6); a key of a group [`ABSENT_PARAM_GROUPS`]
+    /// names may be `Absent`.
     #[expect(clippy::type_complexity, reason = "S4's type, as the spec writes it")]
     pub params: Vec<(Key, Vec<(Key, Value<Scalar>)>)>,
     /// The pointer (S4.7).
@@ -76,6 +77,12 @@ pub struct Tokens {
     #[parts(block = "fields", may_be_absent)]
     pub material: Value<MaterialScheme>,
 }
+
+/// The keyed scalar groups whose keys may be `Absent` (S4.6, S6.3):
+/// `display`, the measured display radii per corner, `Absent` for a device
+/// model the preset does not list, where concentric corners fall back to
+/// their stated minimum.
+pub(crate) const ABSENT_PARAM_GROUPS: [&str; 1] = ["display"];
 
 /// Motion tokens (S4.1). Map keys carry no unit suffix: their values are
 /// plain numbers in the unit their declaration names (S10).
