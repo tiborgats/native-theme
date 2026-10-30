@@ -572,7 +572,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X9 | `PartStyle.transitions (Fill, TransitionKind::Ripple with its max_radius, initial_scale, padding, soft_edge, opacity, fade, min_press, touch_delay) @ {pressed} (on the state layer, S2.7)` | rule |
 | MAT-X9 | `Transition.{duration,delay,timing} of the ripple (grow time, easing)` | field |
 | MAT-X9 | `PartStyle.transitions (Fill, Interpolate) @ {hover} (the hover fade)` | rule |
-| MAT-X10 | `token.focus: FocusIndicator.width, FocusIndicator.offset (per side, negative for the inward offset, ADD-A18), FocusIndicator.corners (Radius::FollowPart: the ring following the part's per-corner shape, concentric)` (the system tokens: thickness, inner and outer offset) | token |
+| MAT-X10 | `token.focus: FocusIndicator.width, FocusIndicator.offset (per side, to the ring's inner edge, S2.10: the outward offset for the outward ring, `material-web@2.5.0 focus/internal/_focus-ring.scss:58-65`; for the inward ring, drawn inside the box by the inward offset, `= sub(0, add(<inward offset>, <width>))`, `:68-75`; ADD-A18), FocusIndicator.corners (Radius::FollowPart, the ring's inner corner: the shape plus the outward offset, or the shape less the inward offset less the width, `:60-63`, `:70-73`)` (the system tokens: thickness, inner and outer offset) | token |
 | MAT-X10 | - (material-web's growing focus ring and its reduced-motion form, `md-focus-ring`'s own component tokens, `_md-comp-focus-ring.scss:20-52`; Compose, the reference, has its own focus indication, MAT-X34†) | reference (R1.6) |
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |
 | MAT-X11 | `token.params.shape.<scale step> (none … extra_extra_large, ADD-A44)` | token |
@@ -645,7 +645,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X34† | `token.behavior.focus_visible_when` (Compose's rule, the preset's reference where the tokens are silent, R1.6: when Compose shows its focus indication, read from its focus handling, a `FocusInteraction` under Android's touch mode, to verify in the value phase; material-web's `:focus-visible` only a cross-check; each widget's focus_visible_when refers to it, ADD-A16) | token |
 | MAT-X34† | `PartStyle.fill.append @ {focus_visible} (Compose's default focus style: a state-layer opacity)` | rule |
 | MAT-X34† | `FocusIndicator.{width,paint,offset,shadow} (Compose's inset ring: the outer stroke the indicator's width and offset, the inner stroke a shadow layer, R7, ADD-A17)` | field |
-| MAT-X34† | `FocusIndicator.corners` (stated per component: the shape each component supplies, as expressions over `part.corners` and the offsets, cited) | field |
+| MAT-X34† | `FocusIndicator.corners` (stated per component as the ring's inner corner, S2.10: the shape each component supplies, as expressions over `part.corners` and the offsets, cited) | field |
 | MAT-X35† | - (colour inversion and correction, which the system applies to the whole display; high-contrast text and force dark, which Android applies to the app's own drawing (who draws the high-contrast outline or plate: to verify), have no catalogue name yet) | out (R1.1) |
 | MAT-X36† | `token.text.roles.{body,monospace}.font.family` | token |
 | MAT-X36† | `reader:android:Typeface.DEFAULT, Typeface.MONOSPACE` | readers (R18) |
