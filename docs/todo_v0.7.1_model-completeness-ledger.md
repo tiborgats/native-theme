@@ -65,15 +65,15 @@ tie-breaker, `A` audited), presets (`P`), gate (`G`), connectors (`C`).
 
 | Unit | adwaita | kde-breeze | macos-monterey | macos-tahoe | ios-13 | ios-26 | windows-11 | material-3 | Connectors |
 |---|---|---|---|---|---|---|---|---|---|
-| slice (`button`, colour roles, slice tokens) | — | — | — | — | — | — | — | — | — |
+| slice (`button`, colour roles, slice tokens) | L | — | — | F (188 measured, partial; fills are composites: redone from the probe's two-background pass) | — | — | — | — | — |
 
 ## Module inventory
 
 Every module, integration test and `lib.rs` item of `native-theme`, one fate each (the plan, *The module
-inventory*): ported beside, kept in place, split, deleted, unlinked; with its milestone. Written before the switch.
-
-| Item | Fate | Milestone | Notes |
-|---|---|---|---|
+inventory*): in [`todo_v0.7.1_model-completeness-inventory.md`](todo_v0.7.1_model-completeness-inventory.md)
+(drafted 2026-10-30 from the call sites; its sixteen open points decided there, F1–F16, two of them correcting the
+plan's examples: windows.rs keeps `os_version`, not its DPI constant, and `read_kcmfonts_key` goes with the reader
+part, their callers being the reader's).
 
 ## `PLAN_EXCLUDED`
 
@@ -123,7 +123,13 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 24 | 1 | `scripts/check_fact_citations.py` | readings the checker took where S17 is silent, to settle in the M0 scripts review: on Apple's sources `pt` is a logical point (px), not a typographic one; an image analysis's output cites the image it names; snapshot cache layout (one file per `<cache>/<id>/`); `absent` names matched as substrings; `rows = []` allowed on a fact for a combination no row names | the facts checkers' author | settled by the M0 scripts review (2026-10-30): Apple's `pt` read as px on Apple sources; an analysis output's `input_image` cites its image; snapshot entries name their `file`; `absent` names at identifier boundaries; `rows = []` allowed, `check_facts_trace.py` to flag it later (M1a) |
 | 25 | 1 | the facts scripts | the first M0 scripts review: 7 serious (uppercase `RGB(`, missing source notations and `.sp`/`.dp` units, Apple `pt`, an analysis output's image, measured shapes, the re-pin not idempotent, suffixed keys), 12 minor | the M0 scripts review (facts) | fixed 169024d8's cherry-pick; the re-pin now idempotent, its 4 remaining reports are the rows queue #16 and the changed list name (kde :535, :536, :1243, :1374) |
 | 26 | 1 | `check_release.sh`, `update_sources.sh`, `check_sources.py`, `check_ledger.py`, `citations.py`, README | the second M0 scripts review: 2 serious (`update_sources.sh` acted on unvalidated `sources.toml` values: a crafted id deleted outside the cache, a commit as a git option ran a command; a changed sparse list was never fetched), 21 minor (PLAN_EXCLUDED steps in a subshell, clean ci.yml marks, the banner, unused keys, crate-level keys; failures inside `fetch_one`; site and tag checks; ledger and citation parsing) | the M0 scripts review (sources, release) | fixed 7d703911's cherry-pick; left: `citations.py` splits a slashed branch ref (`winui3/release/2.5.1` → `winui3`) and does not parse a gitlab.gnome.org URL's ref, to fix before a lane cites such a URL |
-| 27 | 2 | spec S6.1 (a unit), S4.2, S13 | M1a's design decisions 1–3 and 6 ([the M1a design](todo_v0.7.1_model-completeness-m1a-design.md) §4): a unit may defer named values (the button's two `Placement` values until M3's placement unit, S13's data types defined early); `Behavior.scroll` and `ScrollPhysics` staged to the `scroll_view` unit; `MaterialShape` uninhabited until M1b; `may_be_absent` generated as the union per path | the M1a design | open: an S22 line and one independent check with the next spec batch |
+| 27 | 2 | spec S6.1 (a unit and its deferrals; S4.2's staged `scroll`) | M1a's design decisions 1–3 and 6 ([the M1a design](todo_v0.7.1_model-completeness-m1a-design.md) §4): a unit may defer named values (the button's two `Placement` values until M3's placement unit, S13's data types defined early); `Behavior.scroll` and `ScrollPhysics` staged to the `scroll_view` unit; `MaterialShape` uninhabited until M1b; `may_be_absent` generated as the union per path | the M1a design | applied (ADD-A120); checked four times (3, 4, 3, 2 serious, all in the measured-derivation rule, the text quote and the unit list; fixed); fifth check pending |
+| 28 | 2 | spec S11's Spelling, S17; `check_facts.py` | a free string value (`font.family = ".AppleSystemUIFont"`) has no spelling, so a font family cannot be stated: spell a `Value<String>` as a quoted string, compared exactly | the macOS lane | applied (ADD-A120); checked four times (3, 4, 3, 2 serious, all in the measured-derivation rule, the text quote and the unit list; fixed); fifth check pending |
+| 29 | 2 | spec S17 | a measured value that follows an input (the default button's fill and the accent) cannot be stated as a derivation without a published source: a measured derivation cites evidence under at least two values of its operands (the accent passes), and the gate evaluates the expression over each | the macOS lane | applied (ADD-A120); checked four times (3, 4, 3, 2 serious, all in the measured-derivation rule, the text quote and the unit list; fixed); fifth check pending; evidence after the probe's accent pass |
+| 30 | 1 | `check_fact_citations.py` | a run's `analysis/` folder (the committed analysis scripts) is flagged as uncited evidence: exempt it as README.md and `run.toml` are | the macOS lane | open |
+| 31 | 1 | `convert_inheritance_rules.py`; `check_ledger.py`; `check_facts.py` | S19.2 converts today's inheritance rules: `[defaults_internal]`, `[border_inheritance]`, `[font_inheritance]` and `[text_scale_inheritance]` are inheritance rules as `[uniform]` and `[per_platform]` are (S19.2 names those two as its examples; only `[wrong_safety_nets]` is excluded), so the converter covers them too; `check_ledger.py` lists `staged` among the folders that are not platforms; `check_facts.py` reads a quoted string value where the key's type is text (#28) | P1's report (decided by the orchestrator) | open: the next checker-fix batch |
+| 32 | 2 | spec S17's absence | an absence the platform has no name for (a role or field it simply does not have) cannot satisfy the `absent` names rule: `absent = []` there, the verifier confirming the cited range is the whole definition | the GNOME lane | applied (ADD-A120); checked four times (3, 4, 3, 2 serious, all in the measured-derivation rule, the text quote and the unit list; fixed); fifth check pending |
+| 33 | 1–2 | catalogue `button`, roles; gap map GN-1.265 | the GNOME lane's findings: `@arrow_only` is `.arrow-button` (content plus an arrow), so it is `@with_arrow`, an arrow-only menu button being `.image-button`; GTK's 10px base padding for a button with a custom child has no variant; a menu button's two icon-and-label forms (GTK's own, AdwButtonContent) differ in gap and padding under one `with_icon`; adwaita states the View set's disabled pair (`.view:disabled`, `_views.scss:6-9`) and GTK 3's `insensitive_*`, against the catalogue's "every disabled role absent"; GN-1.265's OSD links are white at 87.5 % (visited 81.25 %), not the accent; a linked button's −1px overlap is its own margin, which the trace carries on `layout.values.item_gap`; the focus ring's grow-in, S2.2's missing negation, where S4.2's caret fades fall, and AdwEasing having no `PlatformCurve` variant | the GNOME lane | open: settled with the verifier's results, before task 15 |
 
 ## Unmeasured register
 
@@ -132,6 +138,7 @@ the maintainer's decision.
 
 | Key and combination | Attempts and evidence | Options | Decision |
 |---|---|---|---|
+| `macos-tahoe` slice: button focus, open, window inactive, Increase Contrast; other bezels and border shapes; corners, top/bottom and extra-large padding, `min_width`, default size; label text and font; icon fields; widget values; accent-dependent roles; status and link roles; text weights and styles; `font_dpi`; icon sizes; motion; caret; behaviour (lane report, 2026-10-30) | run 40969040283's button pass and the legacy runs | the probe's second extension (tools branch `v0.8.0-tools-probe-m2`, in progress); Xcode 26.6 header excerpts from the same run for `read` and `published` facts | pending the extension's run |
 
 ## Verification rates
 
@@ -152,7 +159,8 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 | A — Android host | **yes** (2026-10-30): the emulator image is API 37.1 rev 9 (Android 17's stable release, 16 KB pages; `android-system-image@37.1-r9` in `sources.toml`), booting under KVM on `ubuntu-24.04` in 25–35 s; `tools/android-host` (Gradle 9.8.2, AGP 9.5.0, Kotlin 2.4.21, Compose Material 3 1.5.0-beta02 with the Compose BOM's 1.13.0-beta02) renders five button styles × five states × light and dark with `captureToImage()`, byte-identical across runs and CPUs. For the lanes: the pressed state is Android's own ripple, measured, not computed from the 0.10 token; one activity per capture (a reused ripple drawer draws nothing); PNGs carry a 16 dp margin, the index gives the bounds; 1 dp = 2 px on the 320-dpi screen; the Compose foundation and UI the app runs (1.13.0-beta02) are one step past the source cache's tree (1.13.0-beta01): cite them at the runtime's release | [40983911425](https://github.com/tiborgats/native-theme/actions/runs/40983911425) | merged into `v0.8.0-tools` |
 
 `scripts/check_ledger.py --final` (M4) needs two things the plan leaves open, to be settled before M4: the path of
-S19.2's staged inheritance file (named when M1a writes `convert_inheritance_rules.py`; passed as `--staged-file`),
+S19.2's staged inheritance file (`docs/facts/staged/inheritance-bases.toml`, written by
+`scripts/convert_inheritance_rules.py` at M1a; passed as `--staged-file`),
 and a per-fact table of drift comparisons in this ledger, which the script then reads (until then `--final` reports
 the drift rule as a finding).
 

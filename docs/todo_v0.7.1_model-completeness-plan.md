@@ -449,7 +449,7 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
   visual states, spike W brought forward) takes `macos-tahoe`'s place; M1b then closes only after the maintainer has
   decided those entries.
 - **Code, beside today's model:** S1; S2's blocks in full with S2.2's grammar, the model's arithmetic and the platform
-  functions the two presets' facts use, with their vectors (spike G's generator); S3; S4.1, S4.2, S4.4, S4.5, and
+  functions the two presets' facts use, with their vectors (spike G's generator); S3; S4.1, S4.2 (its `scroll` field staged to the `scroll_view` unit, spec ADD-A120), S4.4, S4.5, and
   S4.6's groups the button and the roles use (`token.params.pointer_repeat`, `token.params.color`,
   `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts`; S7; S8 without
   S13; S9.1, S9.2, S9.4; S10; S11; S12 for what the model holds, with its refusal test (an exhaustive `match` over
@@ -599,9 +599,9 @@ dev-dependencies and modules linked again.
 - **Facts, mechanically** (`check_fact_citations.py`):
   - a `published` or `read` fact's `quote` occurs, whitespace-normalised, in the cited lines of the cited file at its
     pin, and every literal of its `value` (numbers after unit normalisation, colours in any notation, a derivation's
-    operands), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
+    operands, a text value as a whole string or list entry, spec S17), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
   - a `measured` fact's evidence file is committed, the value at its `evidence` path equals the fact's value after its
-    `conversion` within its tolerance, and the file records the pinned generation and toolkit versions (the exact
+    `conversion` within its tolerance (a measured derivation: the form of its passes, which the gate evaluates, spec S17), and the file records the pinned generation and toolkit versions (the exact
     builds listed);
   - every evidence file is cited by a fact, a state-model entry or a vector table (spec S17), except the legacy runs
     until M4. Evidence files are the files under
