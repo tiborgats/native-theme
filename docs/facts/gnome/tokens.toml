@@ -155,6 +155,530 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:1091-1092"
 quote = "if (timestamp == 0) return g_object_ref (source->style);"
 
+# libadwaita's springs (AdwSpringAnimation), by damping ratio, mass and stiffness as `adw_spring_params_new` takes them;
+# each widget's own epsilon and clamp, its initial velocity 0 where no gesture hands one over (a swipe's release
+# velocity at run time), and skipped (time scale 0) when animations are off. The floating sheet (AdwDialog's
+# floating presentation): clamped on close only
+[[fact]]
+key = "token.motion.timings.floating_sheet_open"
+value = { spring = { mass = 1, stiffness = 500, damping_ratio = 0.62, initial_velocity = 0, rest_epsilon = 0.01, clamp = false, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:34-35"
+quote = "#define SPRING_DAMPING 0.62 #define SPRING_STIFFNESS 500"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:85-87"
+quote = "params = adw_spring_params_new (self->use_fade ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:383"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.01);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:489-490"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+# reduced motion: the fade, critically damped
+[[fact]]
+key = "token.motion.timings.floating_sheet_open"
+when = { conditions = ["reduced_motion"] }
+value = { spring = { mass = 1, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.01, clamp = false, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:85-87"
+quote = "params = adw_spring_params_new (self->use_fade ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:482"
+quote = "self->use_fade = adw_get_reduce_motion (GTK_WIDGET (self));"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:34-35"
+quote = "#define SPRING_DAMPING 0.62 #define SPRING_STIFFNESS 500"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:383"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.01);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:489-490"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.floating_sheet_close"
+value = { spring = { mass = 1, stiffness = 500, damping_ratio = 0.62, initial_velocity = 0, rest_epsilon = 0.01, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:34-35"
+quote = "#define SPRING_DAMPING 0.62 #define SPRING_STIFFNESS 500"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:85-87"
+quote = "params = adw_spring_params_new (self->use_fade ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:383"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.01);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:489-490"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.floating_sheet_close"
+when = { conditions = ["reduced_motion"] }
+value = { spring = { mass = 1, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.01, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:85-87"
+quote = "params = adw_spring_params_new (self->use_fade ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:482"
+quote = "self->use_fade = adw_get_reduce_motion (GTK_WIDGET (self));"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:34-35"
+quote = "#define SPRING_DAMPING 0.62 #define SPRING_STIFFNESS 500"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:383"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.01);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-floating-sheet.c:489-490"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+# the bottom sheet (AdwBottomSheet): clamped when it closes without a bottom bar
+[[fact]]
+key = "token.motion.timings.bottom_sheet_open"
+value = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:33-34"
+quote = "#define SPRING_DAMPING 0.8 #define SPRING_STIFFNESS 400"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:213-218"
+quote = "gboolean reduce_motion = adw_get_reduce_motion (GTK_WIDGET (self)); AdwSpringParams *params; params = adw_spring_params_new (reduce_motion ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1230"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.0001);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1773-1774"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open && !self->bottom_bar);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.bottom_sheet_open"
+when = { conditions = ["reduced_motion"] }
+value = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:213-218"
+quote = "gboolean reduce_motion = adw_get_reduce_motion (GTK_WIDGET (self)); AdwSpringParams *params; params = adw_spring_params_new (reduce_motion ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:33-34"
+quote = "#define SPRING_DAMPING 0.8 #define SPRING_STIFFNESS 400"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1230"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.0001);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1773-1774"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open && !self->bottom_bar);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.bottom_sheet_close"
+value = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:33-34"
+quote = "#define SPRING_DAMPING 0.8 #define SPRING_STIFFNESS 400"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:213-218"
+quote = "gboolean reduce_motion = adw_get_reduce_motion (GTK_WIDGET (self)); AdwSpringParams *params; params = adw_spring_params_new (reduce_motion ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1230"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.0001);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1773-1774"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open && !self->bottom_bar);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.bottom_sheet_close"
+when = { conditions = ["reduced_motion"] }
+value = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:213-218"
+quote = "gboolean reduce_motion = adw_get_reduce_motion (GTK_WIDGET (self)); AdwSpringParams *params; params = adw_spring_params_new (reduce_motion ? 1.0 : SPRING_DAMPING, 1, SPRING_STIFFNESS);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:33-34"
+quote = "#define SPRING_DAMPING 0.8 #define SPRING_STIFFNESS 400"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1230"
+quote = "adw_spring_animation_set_epsilon (ADW_SPRING_ANIMATION (self->open_animation), 0.0001);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-bottom-sheet.c:1773-1774"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->open_animation), !open && !self->bottom_bar);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+# the navigation view (AdwNavigationView): critically damped, clamped on pop; reduced motion crossfades with
+# the same spring
+[[fact]]
+key = "token.motion.timings.navigation_push"
+value = { spring = { mass = 1, stiffness = 1000, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-navigation-view.c:22"
+quote = "#define SPRING_STIFFNESS 1000"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-navigation-view.c:2151-2153"
+quote = "self->transition = adw_spring_animation_new (GTK_WIDGET (self), 0, 1, adw_spring_params_new (1, 1, SPRING_STIFFNESS), target);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-navigation-view.c:907"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->transition), pop);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.navigation_pop"
+value = { spring = { mass = 1, stiffness = 1000, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-navigation-view.c:22"
+quote = "#define SPRING_STIFFNESS 1000"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-navigation-view.c:2151-2153"
+quote = "self->transition = adw_spring_animation_new (GTK_WIDGET (self), 0, 1, adw_spring_params_new (1, 1, SPRING_STIFFNESS), target);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-navigation-view.c:907"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->transition), pop);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+# the overlay split view's sidebar (AdwOverlaySplitView): clamped when it hides
+[[fact]]
+key = "token.motion.timings.overlay_split_view_show"
+value = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-overlay-split-view.c:1163-1165"
+quote = "self->animation = adw_spring_animation_new (GTK_WIDGET (self), 0, 0, adw_spring_params_new (1, 0.5, 500), target);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-overlay-split-view.c:288-289"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->animation), to < 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.overlay_split_view_hide"
+value = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-overlay-split-view.c:1163-1165"
+quote = "self->animation = adw_spring_animation_new (GTK_WIDGET (self), 0, 0, adw_spring_params_new (1, 0.5, 500), target);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-overlay-split-view.c:288-289"
+quote = "adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->animation), to < 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+# the carousel's page settle (AdwCarousel): always clamped
+[[fact]]
+key = "token.motion.timings.carousel"
+value = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-carousel.c:1222-1226"
+quote = "self->animation = adw_spring_animation_new (GTK_WIDGET (self), 0, 0, adw_spring_params_new (1, 0.5, 500), target); adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->animation), TRUE);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
 [[fact]]
 key = "token.params.opacity.border"
 value = 0.15

@@ -16,6 +16,19 @@ source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:19-27"
 quote = "@at-root %button_basic, & {"
 absent = ["color", "--accent-bg-color", "--accent-color"]
 
+# `.card` (_misc.scss:201-208) on the node classed `.card`, the button itself or a menu button's outer node: its
+# `color` rebinds the foreground; (0,1,0), it outranks only the plain `button` rules
+[[fact]]
+key = "button.body.bindings"
+when = { variants = ["@card"] }
+value = [{ role = { role = { surface = "foreground" }, value = "= role.card.foreground" } }]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:201-204"
+quote = ".card { @at-root %card, & { background-color: var(--card-bg-color); color: var(--card-fg-color);"
+
 [[fact]]
 key = "button.body.min_height"
 value = "24px"
@@ -66,6 +79,23 @@ quote = "$button_radius: 9px;"
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:23"
 quote = "border-radius: $button_radius;"
+
+# `.card`'s radius (0,1,0) over the plain button's
+[[fact]]
+key = "button.body.corners"
+when = { variants = ["@card"] }
+value = { top_left_px = 12, top_right_px = 12, bottom_right_px = 12, bottom_left_px = 12, curve = "circular" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:201-205"
+quote = ".card { @at-root %card, & { background-color: var(--card-bg-color); color: var(--card-fg-color); border-radius: $card_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:9"
+quote = "$card_radius: 12px;"
 
 [[fact]]
 key = "button.body.margin"
@@ -132,17 +162,7 @@ source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
 quote = "/* GTK - The GIMP Toolkit"
 absent = ["gtk_widget_set_cursor", "gtk_widget_set_cursor_from_name"]
 
-# no shape in place of the corners, no touch target beyond the box
-[[fact]]
-key = "button.body.shape"
-value = "absent"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
-quote = "%button, button {"
-
+# no touch target beyond the box
 [[fact]]
 key = "button.body.touch_target"
 value = "absent"
@@ -209,28 +229,6 @@ rows = []
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1045-1050"
 quote = "gtk_css_number_value_new (0.0, GTK_CSS_PX));"
-
-[[fact]]
-key = "button.label.transform"
-value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1329-1334"
-quote = "_gtk_css_transform_value_new_none ());"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1335-1341"
-quote = "_gtk_css_position_value_new (gtk_css_number_value_new (50, GTK_CSS_PERCENT), gtk_css_number_value_new (50, GTK_CSS_PERCENT)));"
-conversion = ["percent_to_fraction"]
-
-# `none` is the identity transform: GTK's own identity of each transform function
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcsstransformvalue.c:129-152"
-quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.y = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.z = gtk_css_number_value_new (0, GTK_CSS_PX); break; case GTK_CSS_TRANSFORM_ROTATE: transform->rotate.x = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.y = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.z = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->rotate.angle = gtk_css_number_value_new (0, GTK_CSS_DEG); break; case GTK_CSS_TRANSFORM_SCALE: transform->scale.x = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->scale.y = gtk_css_number_value_new (1, GTK_CSS_NUMBER);"
 
 [[fact]]
 key = "button.icon.icon.size"
@@ -352,28 +350,6 @@ source = "gtk@4.24.1 gtk/gtkbutton.c:1018"
 quote = "gtk_image_set_from_icon_name (GTK_IMAGE (priv->child), icon_name);"
 
 [[fact]]
-key = "button.icon.transform"
-value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1329-1334"
-quote = "_gtk_css_transform_value_new_none ());"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1335-1341"
-quote = "_gtk_css_position_value_new (gtk_css_number_value_new (50, GTK_CSS_PERCENT), gtk_css_number_value_new (50, GTK_CSS_PERCENT)));"
-conversion = ["percent_to_fraction"]
-
-# `none` is the identity transform: GTK's own identity of each transform function
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcsstransformvalue.c:129-152"
-quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.y = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.z = gtk_css_number_value_new (0, GTK_CSS_PX); break; case GTK_CSS_TRANSFORM_ROTATE: transform->rotate.x = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.y = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.z = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->rotate.angle = gtk_css_number_value_new (0, GTK_CSS_DEG); break; case GTK_CSS_TRANSFORM_SCALE: transform->scale.x = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->scale.y = gtk_css_number_value_new (1, GTK_CSS_NUMBER);"
-
-[[fact]]
 key = "button.values.icon_text_gap"
 value = "0px"
 rows = []
@@ -464,6 +440,24 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtksettings.c:1-2177"
 quote = "/* GTK - The GIMP Toolkit"
 absent = ["gtk-button-images"]
+
+# no second text line under the title: the whole `subtitle` part absent
+[[fact]]
+key = "button.subtitle"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-button-content.c:1-495"
+quote = "/*"
+absent = ["subtitle"]
 
 # the widget values adwaita's buttons have none of (the catalogue's may_be_absent): no subtitle, no tool-button label
 # choice, no auto-repeat, no hit extension, no iOS back or paste modes, no Material scaffold; no presentations
@@ -634,6 +628,34 @@ rows = ["GN-1.38"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:31-33"
 quote = "@media (prefers-contrast: more) { box-shadow: inset 0 0 0 1px $border_color; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
+quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+# `.card`'s three-layer shadow (0,1,0), and its high-contrast outline, over the plain button's none and inset ring
+[[fact]]
+key = "button.body.shadow"
+when = { variants = ["@card"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+rows = ["GN-1.252"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:206-208"
+quote = "box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%);"
+
+[[fact]]
+key = "button.body.shadow"
+when = { variants = ["@card"], conditions = ["contrast_high"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+rows = ["GN-1.252"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:210-214"
+quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%); }"
 
 [[fact.cite]]
 kind = "published"
@@ -921,9 +943,34 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:77-80"
 quote = "&.text-button.image-button, &.image-text-button { padding-left: 9px; padding-right: 9px;"
 
+# a button whose child is neither a label nor an image (a custom child): GTK sets neither `.text-button` nor
+# `.image-button`, so libadwaita's base padding holds
 [[fact]]
 key = "button.body.padding"
-when = { variants = ["@arrow_only"] }
+when = { variants = ["@custom_child"] }
+value = { top_px = 5, right_px = 10, bottom_px = 5, left_px = 10 }
+rows = ["GN-1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:22"
+quote = "padding: 5px 10px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:431-432"
+quote = "add_or_remove_class (GTK_WIDGET (button), child_type == LABEL_CHILD, \"text-button\"); add_or_remove_class (GTK_WIDGET (button), child_type == ICON_CHILD, \"image-button\");"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:460-466"
+quote = "priv->child_type = WIDGET_CHILD;"
+
+# `.arrow-button`: a menu button showing its arrow beside an icon, a label or a custom child (an arrow-only menu
+# button is `.image-button`, `icon_only`); later than `.image-button` and `.text-button` at their specificity
+[[fact]]
+key = "button.body.padding"
+when = { variants = ["@with_arrow"] }
 value = { top_px = 5, right_px = 9, bottom_px = 5, left_px = 9 }
 rows = ["GN-1.27"]
 
@@ -937,9 +984,14 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:93-95"
 quote = "&.arrow-button { padding-left: 9px; padding-right: 9px;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:644-647"
+quote = "if (has_arrow && !has_only_arrow) gtk_widget_add_css_class (menu_button->button, \"arrow-button\");"
+
 [[fact]]
 key = "button.values.menu_indicator_gap"
-when = { variants = ["@arrow_only"] }
+when = { variants = ["@with_arrow"] }
 value = "4px"
 rows = ["GN-1.27"]
 
@@ -2501,9 +2553,11 @@ kind = "published"
 source = "gtk@4.24.1 gsk/gskroundedrect.c:74-91"
 quote = "/* clamp border radius, following CSS specs */ factor = gsk_rounded_rect_get_corner_scale_factor (self);"
 
+# `button.card` (_buttons.scss:328-365): a button that is itself the card; a menu button classed `.card` is the
+# outer `menubutton` node, and its inner button keeps the plain button's rules (so these exclude `menu`)
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"] }
+when = { variants = ["@card"], not_variants = ["menu"] }
 value = "= role.card.background"
 rows = ["GN-1.35"]
 
@@ -2515,7 +2569,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 # `font-weight: inherit`: the inherited (body) weight, not the button's bold
 [[fact]]
 key = "button.label.text.font.weight"
-when = { variants = ["@card"] }
+when = { variants = ["@card"], not_variants = ["menu"] }
 value = "= token.text.roles.body.font.weight"
 rows = ["GN-1.35"]
 
@@ -2526,7 +2580,7 @@ quote = "font-weight: inherit;"
 
 [[fact]]
 key = "button.body.padding"
-when = { variants = ["@card"] }
+when = { variants = ["@card"], not_variants = ["menu"] }
 value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
 rows = ["GN-1.35"]
 
@@ -2537,7 +2591,7 @@ quote = "padding: 0;"
 
 [[fact]]
 key = "button.body.focus.offset"
-when = { variants = ["@card"] }
+when = { variants = ["@card"], not_variants = ["menu"] }
 value = { top_px = -1, right_px = -1, bottom_px = -1, left_px = -1 }
 rows = ["GN-1.35", "GN-1.37"]
 
@@ -2553,7 +2607,7 @@ quote = "outline-width: $width; outline-offset: $offset;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"], states = ["hover"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["hover"] }
 value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.04)" }, blend = "normal" }] }
 rows = ["GN-1.35"]
 
@@ -2575,7 +2629,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"], states = ["pressed"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["pressed"] }
 value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.08)" }, blend = "normal" }] }
 rows = ["GN-1.35"]
 
@@ -2597,7 +2651,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"], states = ["checked"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["checked"] }
 value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
 rows = ["GN-1.35"]
 
@@ -2619,7 +2673,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"], states = ["checked", "hover"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "hover"] }
 value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 rows = ["GN-1.35"]
 
@@ -2641,7 +2695,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"], states = ["checked", "pressed"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "pressed"] }
 value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
 rows = ["GN-1.35"]
 
@@ -2663,7 +2717,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@card"], states = ["checked", "open"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "open"] }
 value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 rows = ["GN-1.35", "GN-1.26"]
 
@@ -2685,7 +2739,7 @@ quote = "&.card { background-color: var(--card-bg-color);"
 
 [[fact]]
 key = "button.body.shadow"
-when = { variants = ["@card"], states = ["drop_target"] }
+when = { variants = ["@card"], not_variants = ["menu"], states = ["drop_target"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.global.accent", inset = true }] }
 rows = ["GN-1.35"]
 
@@ -2699,12 +2753,18 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
 quote = "$drop_target_color: var(--accent-bg-color);"
 
-# only GtkMenuButton has the `arrow` node
+# only GtkMenuButton has the `arrow` node: every other button draws no menu indicator (the whole part absent)
 [[fact]]
-key = "button.menu_indicator.glyph"
+key = "button.menu_indicator"
 when = { not_variants = ["menu"] }
 value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
+quote = "/* GTK - The GIMP Toolkit"
+absent = ["arrow"]
 
 [[fact.cite]]
 kind = "published"
@@ -2952,16 +3012,68 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1045-1050"
 quote = "gtk_css_number_value_new (0.0, GTK_CSS_PX));"
 
+# AdwButtonContent in a menu button that shows its arrow: libadwaita drops the label's end padding for
+# `.arrow-button > box > buttoncontent`, but GtkMenuButton parents a custom child to a `contents` node inside that
+# box, so the selector never matches and the label keeps its 2 px (the `with_icon` value)
 [[fact]]
 key = "button.label.padding"
-when = { variants = ["with_icon", "@arrow_only"] }
-value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+when = { variants = ["with_icon", "@with_arrow"] }
+value = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 0 }
 rows = ["GN-1.39"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:638-643"
 quote = ".arrow-button > box > &, splitbutton > button > & { > box > label { &:dir(ltr) { padding-right: 0; } &:dir(rtl) { padding-left: 0; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1516"
+quote = "inner_widget = gtk_gizmo_new_with_role (\"contents\","
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1527-1532"
+quote = "if (child) gtk_widget_set_parent (child, inner_widget); gtk_box_append (GTK_BOX (box), inner_widget); gtk_box_append (GTK_BOX (box), arrow); gtk_button_set_child (GTK_BUTTON (menu_button->button), box);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:630-634"
+quote = "> label { font-weight: bold; &:dir(ltr) { padding-right: 2px; } &:dir(rtl) { padding-left: 2px; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1045-1050"
+quote = "gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+# an icon and a label in a box the application builds and classes `.image-text-button` (or `.text-button.image-button`):
+# GTK's form, whose gap and label padding are the classes' (`with_icon` alone is AdwButtonContent's, above)
+[[fact]]
+key = "button.values.icon_text_gap"
+when = { variants = ["with_icon", "@image_text_box"] }
+value = "4px"
+rows = ["GN-1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:77-84"
+quote = "&.text-button.image-button, &.image-text-button { padding-left: 9px; padding-right: 9px; > box, > box > box { border-spacing: 4px;"
+
+[[fact]]
+key = "button.label.padding"
+when = { variants = ["with_icon", "@image_text_box"] }
+value = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 2 }
+rows = ["GN-1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:82-89"
+quote = "> box, > box > box { border-spacing: 4px; > label { padding-left: 2px; padding-right: 2px; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1045-1050"
+quote = "gtk_css_number_value_new (0.0, GTK_CSS_PX));"
 
 # a card menu button: its inner button takes the card's radius (`menubutton.card > button`)
 [[fact]]
@@ -2980,6 +3092,226 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_common.scss:9"
 quote = "$card_radius: 12px;"
 
+# the card menu button (`menubutton.card`): the outer node draws the card's fill and shadow (`.card`), the inner
+# button (not `.card`) the plain button's state colours over it, in the card's foreground
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["menu", "@card"] }
+value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:203"
+quote = "background-color: var(--card-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:1"
+quote = "$button_color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:29"
+quote = "background-color: $button_color;"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["menu", "@card"], states = ["hover"] }
+value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.15)" }, blend = "normal" }] }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:203"
+quote = "background-color: var(--card-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:2"
+quote = "$button_hover_color: color-mix(in srgb, currentColor 15%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:35-36"
+quote = "&:hover { background-color: $button_hover_color;"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["menu", "@card"], states = ["pressed"] }
+value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:203"
+quote = "background-color: var(--card-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:3"
+quote = "$button_active_color: color-mix(in srgb, currentColor 30%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:39-41"
+quote = "&.keyboard-activating, &:active { background-color: $button_active_color;"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["menu", "@card"], states = ["open"] }
+value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
+rows = ["GN-1.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:203"
+quote = "background-color: var(--card-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:4"
+quote = "$button_checked_color: color-mix(in srgb, currentColor 30%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:44-45"
+quote = "&:checked { background-color: $button_checked_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["menu", "@card"], states = ["open", "hover"] }
+value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }] }
+rows = ["GN-1.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:203"
+quote = "background-color: var(--card-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:5"
+quote = "$button_checked_hover_color: color-mix(in srgb, currentColor 35%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:47-48"
+quote = "&:hover { background-color: $button_checked_hover_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["menu", "@card"], states = ["open", "pressed"] }
+value = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }] }
+rows = ["GN-1.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:203"
+quote = "background-color: var(--card-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:6"
+quote = "$button_checked_active_color: color-mix(in srgb, currentColor 40%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:51-53"
+quote = "&.keyboard-activating, &:active { background-color: $button_checked_active_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+# the inner button's inset ring (high contrast) and drop ring, drawn over the outer card's shadow
+[[fact]]
+key = "button.body.shadow"
+when = { variants = ["menu", "@card"], conditions = ["contrast_high"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+rows = ["GN-1.38", "GN-1.252"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:31-33"
+quote = "@media (prefers-contrast: more) { box-shadow: inset 0 0 0 1px $border_color; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:210-214"
+quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%); }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
+quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact]]
+key = "button.body.shadow"
+when = { variants = ["menu", "@card"], states = ["drop_target"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+rows = ["GN-1.25", "GN-1.252"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
+quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
+quote = "$drop_target_color: var(--accent-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:206-208"
+quote = "box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%);"
+
+# under the drop ring the inner button's colour is the accent; the outer card's outline keeps the card's foreground
+[[fact]]
+key = "button.body.shadow"
+when = { variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+rows = ["GN-1.25", "GN-1.252"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
+quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
+quote = "$drop_target_color: var(--accent-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:210-214"
+quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%); }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
+quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
 [[fact]]
 key = "button.body.corners.top_left"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "ltr" }
@@ -3111,6 +3443,42 @@ rows = ["GN-1.42"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:40-42"
 quote = "&:not(:last-child) #{$child} { border-bottom-left-radius: 0; border-bottom-right-radius: 0;"
+
+# the linked box's 1 px overlap: each child's own negative margin toward its previous sibling, none on the first.
+# Physical left in either direction (CSS `margin-left`); a margin is a `Sides` value, stated for the left-to-right
+# layout and mirrored by the query, so the right-to-left child's physical left is stated as its `right`
+[[fact]]
+key = "button.body.margin"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "ltr" }
+value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = -1 }
+rows = ["GN-1.42"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-21"
+quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px;"
+
+[[fact]]
+key = "button.body.margin"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "rtl" }
+value = { top_px = 0, right_px = -1, bottom_px = 0, left_px = 0 }
+rows = ["GN-1.42"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-21"
+quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px;"
+
+[[fact]]
+key = "button.body.margin"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", first = false } }
+value = { top_px = -1, right_px = 0, bottom_px = 0, left_px = 0 }
+rows = ["GN-1.42"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:34-37"
+quote = "&:not(:first-child) #{$child} { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px;"
 
 # libadwaita's flat look for image, image-text and arrow buttons in a header bar or toolbar
 [[fact]]
@@ -3734,33 +4102,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
-value = "= alpha(surface.foreground, 0.1)"
-rows = ["GN-1.29", "GN-1.151", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:270"
-quote = "$selected_color: color-mix(in srgb, currentColor 10%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:259-260"
-quote = "&:checked { background: $selected_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29", "GN-1.151"]
@@ -3807,33 +4148,6 @@ quote = "&:hover { background: $selected_hover_color;"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
-value = "= alpha(surface.foreground, 0.13)"
-rows = ["GN-1.29", "GN-1.151", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:271"
-quote = "$selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:262-263"
-quote = "&:hover { background: $selected_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.fill"
@@ -3885,33 +4199,6 @@ source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
 
 [[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
-value = "= alpha(surface.foreground, 0.19)"
-rows = ["GN-1.29", "GN-1.151", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:272"
-quote = "$selected_active_color: color-mix(in srgb, currentColor 19%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:266-268"
-quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
 key = "button.body.opacity"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["disabled"], not_states = ["checked"] }
 value = "= token.params.opacity.strong_disabled"
@@ -3935,7 +4222,7 @@ quote = "$strong_disabled_opacity: 30%;"
 # libadwaita's flat look for image, image-text and arrow buttons in a header bar or toolbar
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
 value = "absent"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -3951,7 +4238,7 @@ quote = "@at-root %button_basic_flat, &.flat { background: transparent;"
 
 [[fact]]
 key = "button.body.shadow"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
 value = "absent"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -3967,7 +4254,7 @@ quote = "box-shadow: none;"
 
 [[fact]]
 key = "button.body.shadow"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -3988,7 +4275,7 @@ quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_targe
 
 [[fact]]
 key = "button.body.shadow"
-when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
+when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4009,7 +4296,7 @@ quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), t
 
 [[fact]]
 key = "button.body.shadow"
-when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
+when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4030,7 +4317,7 @@ quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), t
 
 [[fact]]
 key = "button.body.shadow"
-when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
+when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4051,7 +4338,7 @@ quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), t
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
 value = "= alpha(surface.foreground, 0.07)"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4073,7 +4360,7 @@ quote = "&:hover { background: $hover_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
 value = "= alpha(surface.foreground, 0.16)"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4095,7 +4382,7 @@ quote = "&.keyboard-activating, &:active { background: $active_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
 value = "= alpha(surface.foreground, 0.1)"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4117,7 +4404,7 @@ quote = "&:checked { background: $selected_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
 value = "= alpha(surface.foreground, 0.1)"
 rows = ["GN-1.29", "GN-1.151", "GN-1.26"]
 
@@ -4144,34 +4431,7 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
-value = "= alpha(surface.foreground, 0.1)"
-rows = ["GN-1.29", "GN-1.151", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:270"
-quote = "$selected_color: color-mix(in srgb, currentColor 10%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:259-260"
-quote = "&:checked { background: $selected_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "hover"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4193,7 +4453,7 @@ quote = "&:hover { background: $selected_hover_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29", "GN-1.151", "GN-1.26"]
 
@@ -4220,34 +4480,7 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
-value = "= alpha(surface.foreground, 0.13)"
-rows = ["GN-1.29", "GN-1.151", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:271"
-quote = "$selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:262-263"
-quote = "&:hover { background: $selected_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "pressed"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "pressed"] }
 value = "= alpha(surface.foreground, 0.19)"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4269,7 +4502,7 @@ quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
 value = "= alpha(surface.foreground, 0.19)"
 rows = ["GN-1.29", "GN-1.151", "GN-1.26"]
 
@@ -4293,37 +4526,10 @@ quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
-value = "= alpha(surface.foreground, 0.19)"
-rows = ["GN-1.29", "GN-1.151", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:272"
-quote = "$selected_active_color: color-mix(in srgb, currentColor 19%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:266-268"
-quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.opacity"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["disabled"], not_states = ["checked"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["disabled"], not_states = ["checked"] }
 value = "= token.params.opacity.strong_disabled"
 rows = ["GN-1.29", "GN-1.151"]
 
@@ -4964,33 +5170,6 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
-value = "= alpha(surface.foreground, 0.1)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:270"
-quote = "$selected_color: color-mix(in srgb, currentColor 10%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:259-260"
-quote = "&:checked { background: $selected_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29"]
@@ -5037,33 +5216,6 @@ quote = "&:hover { background: $selected_hover_color;"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
-value = "= alpha(surface.foreground, 0.13)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:271"
-quote = "$selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:262-263"
-quote = "&:hover { background: $selected_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.fill"
@@ -5115,33 +5267,6 @@ source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
 
 [[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
-value = "= alpha(surface.foreground, 0.19)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:272"
-quote = "$selected_active_color: color-mix(in srgb, currentColor 19%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:266-268"
-quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
 key = "button.body.opacity"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["disabled"], not_states = ["checked"] }
 value = "= token.params.opacity.strong_disabled"
@@ -5165,7 +5290,7 @@ quote = "$strong_disabled_opacity: 30%;"
 # libadwaita's flat look for image, image-text and arrow buttons in a header bar or toolbar
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
 value = "absent"
 rows = ["GN-1.29"]
 
@@ -5181,7 +5306,7 @@ quote = "@at-root %button_basic_flat, &.flat { background: transparent;"
 
 [[fact]]
 key = "button.body.shadow"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"] }
 value = "absent"
 rows = ["GN-1.29"]
 
@@ -5197,7 +5322,7 @@ quote = "box-shadow: none;"
 
 [[fact]]
 key = "button.body.shadow"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
 rows = ["GN-1.29"]
 
@@ -5218,7 +5343,7 @@ quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_targe
 
 [[fact]]
 key = "button.body.shadow"
-when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
+when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
 rows = ["GN-1.29"]
 
@@ -5239,7 +5364,7 @@ quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), t
 
 [[fact]]
 key = "button.body.shadow"
-when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
+when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
 rows = ["GN-1.29"]
 
@@ -5260,7 +5385,7 @@ quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), t
 
 [[fact]]
 key = "button.body.shadow"
-when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
+when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
 value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
 rows = ["GN-1.29"]
 
@@ -5281,7 +5406,7 @@ quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), t
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
 value = "= alpha(surface.foreground, 0.07)"
 rows = ["GN-1.29"]
 
@@ -5303,7 +5428,7 @@ quote = "&:hover { background: $hover_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
 value = "= alpha(surface.foreground, 0.16)"
 rows = ["GN-1.29"]
 
@@ -5325,7 +5450,7 @@ quote = "&.keyboard-activating, &:active { background: $active_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
 value = "= alpha(surface.foreground, 0.1)"
 rows = ["GN-1.29"]
 
@@ -5347,7 +5472,7 @@ quote = "&:checked { background: $selected_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
 value = "= alpha(surface.foreground, 0.1)"
 rows = ["GN-1.29", "GN-1.26"]
 
@@ -5374,34 +5499,7 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open"] }
-value = "= alpha(surface.foreground, 0.1)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:270"
-quote = "$selected_color: color-mix(in srgb, currentColor 10%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:259-260"
-quote = "&:checked { background: $selected_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "hover"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29"]
 
@@ -5423,7 +5521,7 @@ quote = "&:hover { background: $selected_hover_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
 value = "= alpha(surface.foreground, 0.13)"
 rows = ["GN-1.29", "GN-1.26"]
 
@@ -5450,34 +5548,7 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "hover"] }
-value = "= alpha(surface.foreground, 0.13)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:271"
-quote = "$selected_hover_color: color-mix(in srgb, currentColor 13%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:262-263"
-quote = "&:hover { background: $selected_hover_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "pressed"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked", "pressed"] }
 value = "= alpha(surface.foreground, 0.19)"
 rows = ["GN-1.29"]
 
@@ -5499,7 +5570,7 @@ quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
 
 [[fact]]
 key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["menu", "@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
 value = "= alpha(surface.foreground, 0.19)"
 rows = ["GN-1.29", "GN-1.26"]
 
@@ -5523,37 +5594,10 @@ quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:1262-1267"
 quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
-
-[[fact]]
-key = "button.body.fill"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["back", "@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["open", "pressed"] }
-value = "= alpha(surface.foreground, 0.19)"
-rows = ["GN-1.29", "GN-1.278†"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-7"
-quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:272"
-quote = "$selected_active_color: color-mix(in srgb, currentColor 19%, transparent);"
-conversion = ["percent_to_fraction"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:266-268"
-quote = "&.keyboard-activating, &:active { background: $selected_active_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
-quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
 
 [[fact]]
 key = "button.body.opacity"
-when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@arrow_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["disabled"], not_states = ["checked"] }
+when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["disabled"], not_states = ["checked"] }
 value = "= token.params.opacity.strong_disabled"
 rows = ["GN-1.29"]
 
