@@ -166,18 +166,22 @@ impl KeyedItem for Transition {
     }
 }
 
-/// Each transition as one per property group it lists.
+/// Each transition as one per property group it lists; one listing no group
+/// is kept under its empty list, for validation to refuse (S12).
 fn split_by_group(transitions: Vec<Transition>) -> Vec<Transition> {
-    transitions
-        .into_iter()
-        .flat_map(|transition| {
-            let groups = transition.properties.clone();
-            groups.into_iter().map(move |group| Transition {
-                properties: vec![group],
-                ..transition.clone()
-            })
-        })
-        .collect()
+    let mut out = Vec::new();
+    for transition in transitions {
+        if transition.properties.is_empty() {
+            out.push(transition);
+            continue;
+        }
+        let groups = transition.properties.clone();
+        out.extend(groups.into_iter().map(|group| Transition {
+            properties: vec![group],
+            ..transition.clone()
+        }));
+    }
+    out
 }
 
 /// How a transition draws a change.

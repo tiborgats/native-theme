@@ -922,6 +922,45 @@ fn transitions_merge_by_property_group_split_first() {
 }
 
 #[test]
+fn a_transition_listing_no_group_is_kept_and_a_first_patch_split() {
+    let mut list = vec![transition(Vec::new(), 100.0)];
+    Transition::merge_keyed(
+        &mut list,
+        vec![transition(vec![PropertyGroup::Fill], 200.0)],
+    );
+    assert_eq!(
+        list,
+        vec![
+            transition(Vec::new(), 100.0),
+            transition(vec![PropertyGroup::Fill], 200.0),
+        ]
+    );
+    Transition::merge_keyed(&mut list, vec![transition(Vec::new(), 300.0)]);
+    assert_eq!(list.first(), Some(&transition(Vec::new(), 300.0)));
+    assert_eq!(list.len(), 2);
+
+    let mut patch = PartStylePatch::default();
+    assert_eq!(
+        patch.merge(PartStylePatch {
+            transitions: Some(vec![
+                transition(vec![PropertyGroup::Fill, PropertyGroup::Stroke], 100.0),
+                transition(Vec::new(), 50.0),
+            ]),
+            ..PartStylePatch::default()
+        }),
+        Ok(())
+    );
+    assert_eq!(
+        patch.transitions,
+        Some(vec![
+            transition(vec![PropertyGroup::Fill], 100.0),
+            transition(vec![PropertyGroup::Stroke], 100.0),
+            transition(Vec::new(), 50.0),
+        ])
+    );
+}
+
+#[test]
 fn presentations_merge_by_event() {
     let presentation = |event, kind| PresentationTransition {
         event,

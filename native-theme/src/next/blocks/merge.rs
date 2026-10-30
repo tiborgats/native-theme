@@ -241,11 +241,9 @@ pub(crate) trait KeyedItem: Sized {
 }
 
 /// A later keyed list merges into the earlier by its items' keys.
+/// A first one is merged into an empty list, so its items are keyed (a
+/// transition listing several groups split) as a later one's are.
 pub(crate) fn merge_slot_keyed<T: KeyedItem>(earlier: &mut Option<Vec<T>>, later: Option<Vec<T>>) {
     let Some(later) = later else { return };
-    if let Some(held) = earlier.as_mut() {
-        T::merge_keyed(held, later);
-    } else {
-        *earlier = Some(later);
-    }
+    T::merge_keyed(earlier.get_or_insert_with(Vec::new), later);
 }
