@@ -349,7 +349,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | T-8 | `bottom_tab_bar.values.presentations event @indicator_move` (step `part: indicator`, kind `Morph`) | field |
 | T-8 | `bottom_tab_bar.indicator.{transform,transitions} @ {pressed} / {dragged}` (the lens following the finger across the bar and growing while it does, as `segmented_control.indicator`'s, SG-4) | rule |
 | T-9 | `bottom_tab_bar.bar.{corners,shadow,min_height} @ variant floating` (corners `Full`) | rule |
-| T-9 | `bottom_tab_bar.values.floating_inset` | field |
+| T-9 | `bottom_tab_bar.bar.margin @ variant floating` (the capsule's distance from the window's edges) | rule |
 | T-10 | `bottom_tab_bar.bar.*, bottom_tab_bar.item.* @ {minimized}` | rule |
 | T-10 | `bottom_tab_bar.values.presentations event @minimize` | field |
 | T-10 | `reader:ios:UITabBarController.tabBarMinimizeBehavior` | readers (R18) |
@@ -379,7 +379,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SD-5 | `reader:ios:UIListContentConfiguration.sidebarCell, accompaniedSidebarCell` | readers (R18) |
 | SD-6 | `sidebar.pane.{corners,shadow,padding} @ variant floating` (corners `Concentric`) | rule |
 | SD-6 | `sidebar.pane.fill @ variant floating` (the glass material) | rule |
-| SD-6 | `sidebar.values.floating_inset` | field |
+| SD-6 | `sidebar.pane.margin @ variant floating` (the pane's distance from the window's edges, its `Concentric` corners' inset, S2.4) | rule |
 | SD-6 | `background_extension.extension.fill @ context sidebar.pane variant floating` (the content extending beneath) | rule |
 | SD-7 | `sidebar.values.presentations events Appear, Disappear, @tab_sidebar_morph` | field |
 | SD-8 | `list.row.min_height @ variant sidebar` | rule |
@@ -847,7 +847,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-1 | `token.motion.durations.*` | token |
 | X-MO-1 | `token.motion.timings.*` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
-| X-MO-2 | `token.motion.timings.spring_default (Timing::Spring)` | token |
+| X-MO-2 | `token.motion.timings.default (Timing::Spring; S4.1's rule drops spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |
 | X-MO-3 | `toolbar.values.presentations event @title_change` (the title's cross-fade); `button.values.presentations @ variant back context toolbar.bar` (event `@title_change`: the back label's transition) | rule |
