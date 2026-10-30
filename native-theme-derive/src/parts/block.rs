@@ -239,6 +239,7 @@ impl BlockField {
         let written = type_string(&self.ty);
         let may_be_absent = self.attrs.may_be_absent;
         let auto = self.attrs.auto;
+        let whole = !matches!(self.shape, Shape::Compound(_));
         let ty = match (self.block(), &self.shape) {
             (_, Shape::Compound(compound)) => {
                 let inner = type_string(&compound.inner);
@@ -283,6 +284,9 @@ impl BlockField {
             }
             (None, _) => quote!(#r::FieldType::Leaf(#written)),
         };
+        // A compound value is never absent or `Auto` as a whole: its marks are
+        // its members' (S6.3).
+        let (may_be_absent, auto) = (may_be_absent && whole, auto && whole);
         quote! {
             #r::FieldInfo { path: #path, ty: #ty, may_be_absent: #may_be_absent, auto: #auto }
         }

@@ -459,7 +459,6 @@ fn part_shape_touch_target_and_margin_may_be_absent() {
     for path in [
         "shape",
         "touch_target",
-        "margin",
         "margin.top",
         "margin.right",
         "margin.bottom",
@@ -467,6 +466,7 @@ fn part_shape_touch_target_and_margin_may_be_absent() {
     ] {
         assert!(marked("PartStyle", path), "{path}");
     }
+    assert!(!marked("PartStyle", "margin"));
 }
 
 #[test]
@@ -529,7 +529,6 @@ fn no_other_field_may_be_absent_or_auto() {
         "PartStyle.focus",
         "PartStyle.glyph",
         "PartStyle.icon",
-        "PartStyle.margin",
         "PartStyle.shadow",
         "PartStyle.shape",
         "PartStyle.stroke",

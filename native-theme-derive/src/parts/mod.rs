@@ -184,6 +184,8 @@ mod tests {
              form : crate :: next :: registry :: BlockForm :: Struct , fields : & [crate :: next :: registry :: FieldInfo { \
              path : \"top\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
              may_be_absent : true , auto : false , }",
+            "path : \"left\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
+             may_be_absent : true , auto : false , }] , } , may_be_absent : false , auto : false }",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
