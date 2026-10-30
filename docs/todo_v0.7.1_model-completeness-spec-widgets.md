@@ -221,26 +221,51 @@ Each `### <widget>` section states, in this order:
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
   in the order of precedence the preset's `exclusive` array states (S10); that order is a fact of the platform's
-  state model, which the gate checks (S17), so every entry ends "precedence: state models (S17)". A widget's groups
+  state model, which the gate checks (S17), so every entry's groups end "precedence: state models (S17)", its
+  recency sets, where it has any, following. A widget's groups
   apply to each element of the widget, its *(element)* parts included (S8 drops the excluded flags per element), so
   "on `item`" names the element whose states the platform's model groups.
-  **Material's state-layer groups** (each `material-3` entry that names Compose's ripple): Compose's ripple node shows
-  one state layer of hover, focus and drag at a time, the most recent (`androidx@e4d933c9
-  compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-280`), which
-  no fixed precedence states: CONTRA-6 (S22), pending the maintainer. Until it is settled the group is a fixed one,
-  `[dragged, focus_visible, hover]`, or `[focus_visible, hover]` where the widget draws no dragged layer, its order
-  **provisional**: `focus_visible` over `hover` as Material's View library ranks them (an Android `ColorStateList`
+  The item also names the widget's **recency sets** (S10's `recency`, S7.2, R3; ADD-A124), each the flags among which
+  the platform shows the one set last, written in the set's stated order (its first the latest where the connector
+  reports no order), with the source of its members; a rule on the latest of a set is written `latest <set>:<flag>`
+  (Selector notation).
+  **Material's recency sets** (each `material-3` entry that names Compose's ripple or its elevation): Compose keeps
+  each list of interactions in the order they began and shows the last. Its ripple node shows one state layer of
+  hover, focus and drag at a time, the most recent (`androidx@e4d933c9
+  compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-280`): the
+  set `state_layer`, `[dragged, focus_visible, hover]`, or `[focus_visible, hover]` where the widget draws no dragged
+  layer, its order `focus_visible` before `hover` as Material's View library ranks them (an Android `ColorStateList`
   takes its first matching item, and its ripple colour lists put focused before hovered,
   `material-components-android@1.14.0 lib/java/com/google/android/material/button/res/color/m3_button_ripple_color.xml:20-21`,
-  `chip/res/color/m3_chip_ripple_color.xml:43-44`); `dragged` keeps the first place the catalogue gave it, as no
-  source ranks it against the other two. `pressed` is no member: Compose draws the press ripple apart from the state
-  layer (`Ripple.kt:241-248`, `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a
-  pressed element hovered or focused shows both, two states drawn together (R3); the preset writes its `{pressed}`
-  rule before the `{hover}`, `{focus_visible}` and `{dragged}` rules, so the press layer is appended first and lies
-  beneath (ADD-A121). The entries' Compose citations (`Menu.kt`, `Surface.kt`, …) are files of `androidx@e4d933c9
-  compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/`. Compose draws no ripple state
-  layer on the slider's handle, the carousel's items or the sheet's drag handle at that pin, so their `material-3`
-  groups, from the published tokens, are not these.
+  `chip/res/color/m3_chip_ripple_color.xml:43-44`), `dragged` first, as a drag begins after the hover or focus it
+  starts in. `pressed` is no member: Compose draws the press ripple apart from the state layer (`Ripple.kt:241-248`,
+  `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
+  focused shows both, two states drawn together (R3); the preset writes its `{pressed}` rule before the state-layer
+  rules, so the press layer is appended first and lies beneath (ADD-A121). The widget's other hover-, focus- and
+  drag-dependent fields (a label's colour, a stroke) follow the state layer's set, as they followed its exclusive group
+  before, the gate checking each order (S17). A control with an elevation shows the elevation of the
+  latest of hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`,
+  `FloatingActionButton.kt:1300-1347`, `ToggleButton.kt:1589-1633`), and of drag too on cards and chips
+  (`Card.kt:668-723`, `Chip.kt:3612-3666`, `:3751-3805`): the set `elevation`, `[pressed, focus_visible, hover]`, or
+  `[dragged, pressed, focus_visible, hover]`, `pressed` before the others as a press begins on an element the
+  pointer already hovers or the key's focus already holds, `dragged` before it as a drag begins from a press, and
+  `focus_visible` before `hover` as in `state_layer`; an elevated button hovered after it was focused is at level 2,
+  focused after it was hovered at level 1 (`tokens/ElevatedButtonTokens.kt:43-74`), and pressed while hovered at
+  level 1. The rest elevation's shadow transitions are Compose's outgoing specs, its hovered one `from {hover}` and
+  its default one `from {pressed, dragged, focus_visible}`, each state's rule states Compose's incoming spec with no
+  `from`, and the `{disabled}` rule a zero duration (`internal/Elevation.kt:46-113`, `Button.kt:1750-1770`; S2.7).
+  The `from {hover}` transition is stated after the other, so it wins where hover and another flag end in one update,
+  where Compose takes the spec of the elevation it showed: exact on buttons, FABs and toggle buttons, where at the pin's
+  tokens only the hovered elevation differs from the rest one, and on cards and chips but where a drag and a hover
+  end in one update (S2.7).
+  Compose's buttons, toggle buttons and cards name the state left by the elevation they were heading for, the first of
+  pressed, hovered, focused (and dragged) with that value (`Button.kt:1758-1764`, `ToggleButton.kt:1644-1650`,
+  `Card.kt:733-740`; the FAB and the chips keep the interaction itself, `FloatingActionButton.kt:1417-1430`,
+  `Chip.kt:3672-3684`), which at the pin's tokens is the flag left wherever the elevation changes, their pressed and
+  focused elevations equalling the rest one. The entries' Compose citations (`Menu.kt`, `Surface.kt`, …)
+  are files of `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/`.
+  Compose draws no ripple state layer on the slider's handle, the carousel's items or the sheet's drag handle at that
+  pin, so their `material-3` groups, from the published tokens, are exclusive groups, not these sets.
 - **may_be_absent** (S6.3): `parts:` whole parts some preset does not draw, with the presets: the preset's base, or a
   rule under a condition, states the part `absent = true` (`PartPatch::Absent`), and the query answers `NotDrawn` for
   it (an absent part needs no fields); a root part is never listed. A part a platform draws with another widget is
@@ -368,6 +393,7 @@ spaces:
 |---|---|
 | `{a,b}` | the element's states: all of them hold together |
 | `!{a}` | none of these states |
+| `latest s:f` | `f` is the latest present flag of the widget's recency set `s` (`Selector.latest`, S7.2, ADD-A124): it implies `{f}`; `{a} latest s:f` holds both |
 | `variant v`, `variant @k`, `variants {v,w}`, `!variant v`, `!variants {v,w}`, `w.part[v]` | the element's (or the named ancestor's) variants: `variants {v,w}` all of them, `!variants {v,w}` none of them (`SetMatch.none_of`); `@k` is keyed, and a rule names only the keyed variants its own preset declares (S12) |
 | `w.part[size s]` | the named ancestor's control size (`ContextMatch.sizes`, ADD-A84) |
 | `cond c`, `!cond c` | a condition (S7.1, snake_case): `window_inactive`, `contrast_high`, `scheme:dark`, `input:touch`, `idiom:pad`, `flavor:kirigami`, `preset:ios-26`, `system_setting:<key>` (ADD-A04), `container_size:sidebar:small`, `tiled:top`, `freeform`, `posture:tabletop`, `device_model:<key>` (ADD-A83) |
@@ -1163,9 +1189,9 @@ spaces:
   (on the menu).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `item` (MenuFlyoutItem's CommonStates;
   CheckStates is `checked`, SubMenuOpened is `open`, PaddingSizeStates is `opened_by_touch`, none of them a group);
-  `material-3`: `[focus_visible, hover]` on `item`, provisional (Material's state-layer groups, above: Compose's ripple, `Menu.kt:2155-2159`,
-  CONTRA-6; `pressed` combines; the menu tokens state no dragged layer);
-  others none (states combine); precedence: state models (S17).
+  others none (states combine; `material-3`'s state layers are a recency set, below); precedence: state models (S17).
+  Recency sets: `material-3`: `state_layer = [focus_visible, hover]` on `item` (Material's recency sets, above:
+  Compose's ripple, `Menu.kt:2155-2159`; `pressed` combines; the menu tokens state no dragged layer).
 - **may_be_absent:**
   - parts: `item_label` (`kde-breeze` by rules under `@ka_bottom_drawer` and `@ka_dialog`: the form row's own title
     takes its place, K-KA-31†), `item_subtitle` (`kde-breeze`, `windows-11`: QMenu, qqc2's Menu and MenuFlyout draw no
@@ -1542,11 +1568,13 @@ spaces:
   AppBarButton, AppBarToggleButton, accent and subtle templates; their Checked* and Indeterminate* states name the
   check state with them, so `checked` and `indeterminate` each combine with that group) and `[indeterminate, checked]`
   (the template takes the Indeterminate* states while `IsChecked` is null and the Checked* states only otherwise,
-  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); `material-3`: `[focus_visible, hover]`,
-  provisional (Material's state-layer groups, above: Compose's ripple, `Button.kt:156-157`, `Surface.kt:253-264`, CONTRA-6; `pressed`
-  combines; Material draws no dragged layer on a button, MAT-X29); others none (states combine: libadwaita's CSS
-  and Breeze's branches combine flags; K1.29's
-  "pressed wins" is a rule order, not a group); precedence: state models (S17).
+  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); others none (states
+  combine: libadwaita's CSS and Breeze's branches combine flags; K1.29's "pressed wins" is a rule order, not a group;
+  `material-3`'s are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
+  `state_layer = [focus_visible, hover]` (Material's recency sets, above: Compose's ripple, `Button.kt:156-157`,
+  `Surface.kt:253-264`; `pressed` combines; Material draws no dragged layer on a button, MAT-X29) and
+  `elevation = [pressed, focus_visible, hover]` (the elevated, filled and tonal buttons, toggle buttons and FABs:
+  `Button.kt:1703-1747`, `ToggleButton.kt:1589-1633`, `FloatingActionButton.kt:1300-1347`; MAT-B6, MAT-N1).
 - **may_be_absent:**
   - parts: `subtitle` (all but `ios-*`, `kde-breeze`), `icon` (`ios-*` by a rule under `@loading`: a `spinner` element
     in `context button` in its place, B-10), `menu_indicator` (every preset: stated in the base, absent by a
@@ -1616,10 +1644,13 @@ spaces:
     tab's context; the responses in `context dialog.action_area`.
   - Group 6: `circular` covers KDE's RoundButton (Q2.4–Q2.8: a gloss as an appended linear paint layer, the whole
     button translated under `{pressed}` / `{checked}` as `body.transform`, the Selection binding under `{focused}`);
-    Breeze's round button (K1.26) is drawn with a radius of half its larger side, which Qt clamps per axis to half
-    each side (`breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738`; `qtbase@6.12.0
-    src/gui/painting/qpainterpath.cpp:3457-3470`), so a square box is a circle, `Full`, and a box that is not square
-    an ellipse, which circular corners cannot state (a model question for the maintainer, the ledger's queue #48); `help` takes the
+    Breeze's QWidget round button (K1.26, `_kde_round_button`) is drawn with a radius of half its larger side, which
+    Qt clamps per axis to half each side (`breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738-739`; `qtbase@6.12.0
+    src/gui/painting/qpainterpath.cpp:3457-3470`), so a square box is a circle and a box that is not square an
+    ellipse: `body.corners` is `Ellipse` on `kde-breeze` (S2.4, ADD-A124), its shadow following the ellipse of its own
+    box (S2.5), while Kirigami's RoundButton (`cond flavor:kirigami`) is a capsule, `Full`, its background's radius
+    the control's, half its smaller side (`qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83`,
+    `qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:48`); `help` takes the
     cursor `WhatsThis` (ADD-A59); Material's icon buttons are `icon_only` with `primary`, `tinted` and `@outlined`
     (MAT-N4, MAT-N5, C-29).
   - Material's state layers stay appended fill layers (R3) though Compose draws them over the label and icon (its
@@ -1781,10 +1812,10 @@ spaces:
   current choice among its siblings, `selected` on every platform; under `@select_any` each chosen segment is
   `selected`), disabled, focused, focus_visible.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `segment` (SegmentedItem's CommonStates, which
-  name Selected, PointerOverSelected and PressedSelected with them, so `selected` combines); `material-3`:
-  `[focus_visible, hover]` on `segment`, provisional (Material's state-layer groups, above: a `Surface`'s ripple, `SegmentedButton.kt:150-166`,
-  CONTRA-6; `pressed` combines); others none (states combine); precedence: state models
-  (S17).
+  name Selected, PointerOverSelected and PressedSelected with them, so `selected` combines); others none (states
+  combine; `material-3`'s state layers are a recency set, below); precedence: state models (S17). Recency sets:
+  `material-3`: `state_layer = [focus_visible, hover]` on `segment` (Material's recency sets, above: a `Surface`'s
+  ripple, `SegmentedButton.kt:150-166`; `pressed` combines).
 - **may_be_absent:**
   - parts: `indicator` (`adwaita`, `material-3`: the selected segment's own fill; `kde-breeze` by a rule under
     `@ka_segmented_button`, whose selected segment is filled, K-KA-24†; `macos-*`, `ios-*`, `windows-11`,
@@ -1875,9 +1906,9 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large` (MAC-SW05). Others none.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ToggleSwitch's CommonStates; ToggleStates is
-  `checked`, not a group); `material-3`: `[focus_visible, hover]`, provisional (state layers, MAT-SW4; Material's state-layer groups, above:
-  Compose's ripple on the thumb, `Switch.kt:191-198`, CONTRA-6; `pressed` combines); others
-  none (states combine); precedence: state models (S17).
+  `checked`, not a group); others none (states combine; `material-3`'s state layers are a recency set, below);
+  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers,
+  MAT-SW4; Material's recency sets, above: Compose's ripple on the thumb, `Switch.kt:191-198`; `pressed` combines).
 - **may_be_absent:**
   - parts: `track_fill` (all but `kde-breeze`), `on_glyph` (all but `adwaita`, `ios-*`, `macos-*`; on those stated
     in the base and absent by a rule outside the condition that shows them: `!cond on_off_labels` on `ios-*`, `!cond
@@ -1952,9 +1983,10 @@ spaces:
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked,
   indeterminate, invalid (Material's error, MAT-C5).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (CheckBox's CombinedStates, which name the check
-  state with each of them, so `checked` and `indeterminate` combine); `material-3`: `[focus_visible, hover]`,
-  provisional (state layers, MAT-C2; Material's state-layer groups, above: Compose's ripple, `Checkbox.kt:554-579`, CONTRA-6; `pressed`
-  combines); others none (states combine); precedence: state models (S17).
+  state with each of them, so `checked` and `indeterminate` combine); others none (states combine; `material-3`'s
+  state layers are a recency set, below); precedence: state models (S17). Recency sets: `material-3`:
+  `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
+  `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
@@ -2018,9 +2050,9 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. Others none.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates; CheckStates is
-  `checked`, not a group); `material-3`: `[focus_visible, hover]`, provisional (state layers; Material's state-layer groups, above:
-  Compose's ripple, `RadioButton.kt:160-165`, CONTRA-6; `pressed` combines); others none
-  (states combine); precedence: state models (S17).
+  `checked`, not a group); others none (states combine; `material-3`'s state layers are a recency set, below);
+  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
+  Material's recency sets, above: Compose's ripple, `RadioButton.kt:160-165`; `pressed` combines).
 - **may_be_absent:**
   - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
@@ -3247,9 +3279,10 @@ spaces:
   own parts by `{redacted}` rules, W-RV-2†; macOS and iOS draw the `redaction` widget in its context, MAC-P4-13†,
   P4-18†; ADD-A14).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (ListViewItemPresenter's common states; `selected`
-  combines with them); `material-3`: `[dragged, focus_visible, hover]`, provisional (Material's state-layer groups, above: Compose's ripple on
-  a clickable item, `ListItem.kt:1600-1606`, CONTRA-6; `pressed` combines); others
-  none (states combine); precedence: state models (S17).
+  combines with them); others none (states combine; `material-3`'s state layers are a recency set, below);
+  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [dragged, focus_visible, hover]`
+  (Material's recency sets, above: Compose's ripple on a clickable item, `ListItem.kt:1600-1606`; `pressed` combines;
+  the row's dragged shadow, MAT-L4, is a plain `{dragged}` rule, no elevation set holding it).
 - **may_be_absent:** parts: `section` (all but `ios-*`: L-2), `section_index` (all but `ios-*`: L-15),
   `section_footer` (all but `ios-*`: L-5), `accessory` (`adwaita`, `macos-*`, `windows-11`, `material-3`: no system
   accessory or reorder handle on their rows, L-12, Q2.43; `kde-breeze` by a rule `cond flavor:widgets`, the handle
@@ -3451,8 +3484,9 @@ spaces:
   focus_within (AdwTabBar's focus on the tab box child, GN-1.134), disabled, dragged, drop_target (on the widget's
   element, a drag over the strip).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (TabViewItem CommonStates; `selected` combines with
-  them); `material-3`: `[focus_visible, hover]` (Compose's ripple state layer, `Tab.kt:166-179`; provisional pending
-  CONTRA-6, as on `button`); others none (states combine); precedence: state models (S17).
+  them); others none (states combine; `material-3`'s state layers are a recency set, below); precedence: state models
+  (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (Material's recency sets, above: Compose's
+  ripple state layer, `Tab.kt:166-179`; `pressed` combines).
 - **may_be_absent:** parts: `attention_indicator` (all but `adwaita`: GN-1.128; `adwaita` by a rule outside
   `{@needs_attention}`), `drop_indicator` (all but `adwaita`: GN-1.127; `adwaita` by a rule `!{drop_target}`),
   `tab_box` (all but `adwaita`: AdwTabBar's, GN-1.125; `adwaita` by a rule outside `document`, GtkNotebook having
@@ -3940,9 +3974,11 @@ spaces:
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: hover, pressed, checked (Q1.126), focus_visible, dragged, disabled
   (MAT-CA2).
-- **Exclusive groups:** `material-3`: `[dragged, focus_visible, hover]`, provisional (MAT-CA2's state layers;
-  Material's state-layer groups, above: a clickable card's `Surface` ripple, `Card.kt:149-150`, CONTRA-6; `pressed` combines); others none
-  (states combine; Windows' card surfaces have no states); precedence: state models (S17).
+- **Exclusive groups:** none (states combine; Windows' card surfaces have no states; `material-3`'s state layers and
+  elevation are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
+  `state_layer = [dragged, focus_visible, hover]` (MAT-CA2's state layers; Material's recency sets, above: a clickable
+  card's `Surface` ripple, `Card.kt:149-150`; `pressed` combines) and `elevation = [dragged, pressed, focus_visible,
+  hover]` (MAT-CA2's elevations, `Card.kt:668-723`).
 - **may_be_absent:** parts: `icon` (all but `material-3`: Material's card icon, MAT-CA3), `banner` (all but
   `kde-breeze`: Kirigami's banner, Q1.131; `kde-breeze` by a rule outside `@banner`), `banner_band` (all but
   `kde-breeze`: Q1.131; `kde-breeze` by a rule outside `@banner`), `banner_title` (all but `kde-breeze`: Q1.131;
@@ -4528,8 +4564,9 @@ spaces:
 - **Flags:** shared `minimized` (iOS, T-10); state flags used: hover, pressed, selected (the current destination
   on every platform: Kirigami's checked tab button maps to it, Q2.35; S7.2), disabled, focus_visible, dragged,
   drop_target (on `bar`, T-17†), scrolled (T-1).
-- **Exclusive groups:** `material-3`: `[focus_visible, hover]`, provisional (the navigation bar's state layers,
-  MAT-N12; Material's state-layer groups, above: Compose's ripple, `NavigationBar.kt:268-271`, CONTRA-6; `pressed` combines); others none (states combine); precedence: state models (S17).
+- **Exclusive groups:** none (states combine; `material-3`'s state layers are a recency set, below); precedence: state
+  models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (the navigation bar's state layers,
+  MAT-N12; Material's recency sets, above: Compose's ripple, `NavigationBar.kt:268-271`; `pressed` combines).
 - **may_be_absent:** parts: `indicator` (`kde-breeze`, `adwaita`: Kirigami's and AdwViewSwitcherBar's items draw
   none, Q2.35, GN-2.15; `ios-13` by a rule outside `@tab_sidebar` and by a rule outside `{selected}`: iPadOS 18's
   top bar marks the selected item, T-13, and the bottom bar draws no indicator before iOS 26, T-8; `material-3`,
@@ -4671,9 +4708,9 @@ spaces:
   out-of-range days, K2.23†, K-KA-21†, C-6), focus_visible, on `day`, `year`, `month`.
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (CalendarView items; `selected`, `today`,
   `other_month` and `@blackout` combine, as the template's selected-hover, selected-pressed and selected-disabled
-  states show); `material-3`: `[focus_visible, hover]`, provisional (the date cells' state layers; Material's state-layer groups, above: a
-  `Surface`'s ripple, `DatePicker.kt:2254-2256`, CONTRA-6; `pressed` combines); others none
-  (states combine); precedence: state models (S17).
+  states show); others none (states combine; `material-3`'s state layers are a recency set, below); precedence: state
+  models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (the date cells' state layers;
+  Material's recency sets, above: a `Surface`'s ripple, `DatePicker.kt:2254-2256`; `pressed` combines).
 - **may_be_absent:** parts: `title` (`adwaita`, `kde-breeze`, `windows-11`, `ios-*`: the month and year there are
   `button` elements in `context calendar.header`, GN-2.25, K2.4, W2-02, iOS's month-year toggle, C-6, or
   kirigami-addons' segmented button, K-KA-20†),
@@ -4808,7 +4845,8 @@ spaces:
   `kirigami` only (Kirigami's Chip).
 - **Parts:**
   - `body` — the root: `fill`, `stroke`, `corners`, `padding`, `shadow` (Material's elevated chips), `min_height`
-    (MAT-N9), `opacity` (Material's disabled chips, MAT-N9), `focus` (MAT-N9).
+    (MAT-N9), `opacity` (Material's disabled chips, MAT-N9), `focus` (MAT-N9), `transitions` (Material's elevation
+    motion, MAT-N9; ADD-A124).
   - `label` — `text`.
   - `leading_icon`, `trailing_icon` — `icon`.
   - `menu_arrow` — the token's menu arrow (MAC-N03): `glyph`.
@@ -4823,10 +4861,11 @@ spaces:
   (Material's input chip, Windows' token, macOS's selected token: MAT-N9, W2-43†, MAC-N03), dragged (MAT-N9),
   hover, pressed, focus_visible, disabled.
 - **Exclusive groups:** `windows-11`: `[pressed, hover]` (the token's CommonStates: rest, pointer-over, pressed;
-  `selected` combines, as its selected-pointer-over and selected-pressed states show, W2-43†); `material-3`:
-  `[dragged, focus_visible, hover]`, provisional (the chips' state layers; Material's state-layer groups, above: a `Surface`'s ripple,
-  `Chip.kt:3207-3208`, CONTRA-6; `pressed` combines); others none (states combine); precedence:
-  state models (S17).
+  `selected` combines, as its selected-pointer-over and selected-pressed states show, W2-43†); others none (states
+  combine; `material-3`'s state layers and elevation are recency sets, below); precedence: state models (S17).
+  Recency sets: `material-3`: `state_layer = [dragged, focus_visible, hover]` (the chips' state layers; Material's
+  recency sets, above: a `Surface`'s ripple, `Chip.kt:3207-3208`; `pressed` combines) and `elevation = [dragged,
+  pressed, focus_visible, hover]` (MAT-N9's elevations, `Chip.kt:3612-3666`, `:3751-3805`).
 - **may_be_absent:** parts: `trailing_icon` (all but `material-3`: Material's chips alone draw a trailing icon,
   MAT-N9; Kirigami's and Windows' removing control is a `button`, Q2.24, W2-43†), `leading_icon` (`windows-11`;
   `macos-*`: NSTokenField's tokens hold no image, MAC-N03), `menu_arrow` (all but `macos-*`: MAC-N03); fields:
@@ -6908,9 +6947,10 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   hover, disabled, focused, focus_visible and checked on that element (GNOME's divider hidden while the control is
   hovered or focused, GN-2.29; WinUI's checked divider, W2-17; `body.focus`).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `primary` and `secondary` (each part's
-  CommonStates), `checked` combining (`toggle`); `material-3`: `[focus_visible, hover]` on `primary` and
-  `secondary`, provisional (Material's state-layer groups, above: a `Surface`'s ripple, `SplitButton.kt:702-703`, CONTRA-6; `pressed`
-  combines); others none (states combine); precedence: state models (S17).
+  CommonStates), `checked` combining (`toggle`); others none (states combine; `material-3`'s state layers are a
+  recency set, below); precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible,
+  hover]` on `primary` and `secondary` (Material's recency sets, above: a `Surface`'s ripple, `SplitButton.kt:702-703`;
+  `pressed` combines).
 - **may_be_absent:** parts: `arrow` (`kde-breeze` by a rule under `variant @ka_double_floating`: DoubleFloatingButton's
   two halves are two actions, neither opening a menu, K-KA-27†), `divider` (`material-3`: the gap between its
   halves stands for it, MAT-N7; `kde-breeze` by a rule under `variant @ka_double_floating`, the pill drawing no
@@ -7185,10 +7225,11 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Flags:** none of its own; state flags used: selected (`selector_cell`, `period_selector`, `dial_label`;
   `field_segment` on `macos-*`, MAC-N04), hover, pressed (iOS's pill, C-5), focused, disabled, open (Windows' flyout,
   iOS's popover shown), focus_visible, read_only (kirigami-addons' row drops the field's fill, K-KA-22†).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `field` (CommonStates); `material-3`:
-  `[focus_visible, hover]` on `selector_cell` and `period_selector`, provisional (state layers; Material's state-layer groups, above: a
-  `Surface`'s ripple, `TimePicker.kt:3089-3095`, and a `TextButton`'s, `:3018`, CONTRA-6; `pressed` combines); others none
-  (states combine); precedence: state models (S17).
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` on `field` (CommonStates); others none (states
+  combine; `material-3`'s state layers are a recency set, below); precedence: state models (S17). Recency sets:
+  `material-3`: `state_layer = [focus_visible, hover]` on `selector_cell` and `period_selector` (state layers;
+  Material's recency sets, above: a `Surface`'s ripple, `TimePicker.kt:3089-3095`, and a `TextButton`'s, `:3018`;
+  `pressed` combines).
 - **may_be_absent:** parts: `dial` (every preset but `material-3`: the clock dial is Material's, MAT-N17;
   `material-3` by a rule under `variant @input`, the time input drawing no dial, MAT-N17), `dial_selector` (every
   preset but `material-3`, as for `dial`; `material-3` by a rule under `variant @input`, as for `dial`),
@@ -8257,9 +8298,10 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Widget values:** `item_gap: Value<Px>` (declared `"length"`), `presentations: Vec<PresentationTransition>`
   (declared `"presentations"`: events `Appear`, `Disappear`, the menu opening from the FAB and closing, kind `Morph`).
 - **Variants:** keyed `@primary`, `@secondary`, `@tertiary` (its colour styles, MAT-N3). **Sizes:** none.
-- **Flags:** state flags only (above). **Exclusive groups:** `[focus_visible, hover]` on `item`, provisional
-  (Material's state layers; Material's state-layer groups, above: a `Surface`'s ripple, `FloatingActionButtonMenu.kt:350`, `:381`, CONTRA-6;
-  `pressed` combines); precedence: state models (S17).
+- **Flags:** state flags only (above). **Exclusive groups:** none (its state layers are a recency set); precedence:
+  state models (S17). Recency sets: `state_layer = [focus_visible, hover]` on `item` (Material's state layers;
+  Material's recency sets, above: a `Surface`'s ripple, `FloatingActionButtonMenu.kt:350`, `:381`; `pressed`
+  combines).
 - **may_be_absent:** none beyond S6.3's drawing fields.
 - **State-model source:** `latest/_md-comp-fab-menu.scss:22-50` and the per-style close-button and container token
   files of the primary, secondary and tertiary styles (MAT-N3).
@@ -8880,7 +8922,8 @@ token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 | material-3 | the duration tokens `short1`–`short4`, `medium1`–`medium4`, `long1`–`long4`, `extra_long1`–`extra_long4` (`DurationShort1` …, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/MotionTokens.kt:24-39`); by family, the facts lanes naming each key: the ripple's (material-web's `Ripple`), the shadow transition's | MAT-X13, MAT-X9, MAT-X7 |
 
 **token.motion.timings** (`Vec<(Key, Timing)>`): cubic Béziers, springs (`Timing::Spring`), `Timing::Platform(PlatformCurve)` where a
-platform's curve is its own (Kirigami's velocity-based curves, `KirigamiVelocity`). Keys per platform: libadwaita's
+platform's curve is one its toolkit computes by a function of its own (S2.7, R9: Kirigami's velocity-based curves,
+`KirigamiVelocity`; Qt's and libadwaita's easings, `Qt(…)`, `Adw(…)`). Keys per platform: libadwaita's
 `ease_out_quad` (`$ease-out-quad`, `libadwaita@1.10.0 src/stylesheet/_common.scss:1`), the CSS keyword curves its
 stylesheet uses (`ease_out`, `ease_in`, `ease_in_out`, `ease`, `linear`) and AdwTimedAnimation's default
 `ease_out_cubic` (`ADW_EASE_OUT_CUBIC`, `adw-timed-animation.c:275`, `Timing::Platform(Adw(EaseOutCubic))`, the polynomial

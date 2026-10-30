@@ -96,7 +96,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.24 | `button.label.text.fill @ variant flat (= role.window.foreground)` | rule |
 | K1.25 | `button.body.fill @ {checked} variant warning` | rule |
 | K1.25 | `button.body.stroke @ variant warning` | rule |
-| K1.26 | `button.body.corners @ variant circular (Full)` (exact for a square box; Breeze draws a non-square round button as an ellipse, a radius of half the larger side that Qt clamps per axis, `breezehelper.cpp:727`, `qpainterpath.cpp:3457-3470`, which circular corners cannot state: the ledger's queue #48) | rule |
+| K1.26 | `button.body.corners @ variant circular (Ellipse, all four corners, Circular: Breeze's QWidget round button, `_kde_round_button`, drawn with a radius of half its rect's larger side, `breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738-739`, which Qt clamps per axis to half each side of the frame rect, `qtbase@6.12.0 src/gui/painting/qpainterpath.cpp:3457-3470`: the rect's inscribed ellipse, a circle where it is square; its shadow the same radius on the shadow's rect, `breezehelper.cpp:729-731`, `:1654-1659`, an ellipse of its own box, S2.5; ADD-A124); button.body.corners @ variant circular cond flavor:kirigami (Full: Kirigami's RoundButton, qqc2-desktop-style's background `Rectangle` with the control's radius, `qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83`, which defaults to half the control's smaller side, `qtdeclarative@6.12.0 src/quicktemplates/qquickroundbutton.cpp:48`)` | rule |
 | K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill; margin, `Inline`'s margin in the row, S2.11's: the arrow's box at the right of the label's contents rect, which Breeze sizes with the arrow inside its margins, `breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556`, `:5365-5371`, the value phase stating the start and end margins that move it there; ADD-A123)` | field |
 | K1.27 | `button.values.menu_indicator_gap` | field |
 | K1.28 | `button.icon.icon.size (= token.icons.sizes.small.size)` | field |
@@ -105,7 +105,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.29 | `button.body.fill, button.body.stroke @ {checked,hover}` | rule |
 | K1.29 | `button.body.fill @ {checked,pressed}` | rule |
 | K1.29 | `button.body.fill, button.body.stroke @ {default,hover}` | rule |
-| K1.30 | `button.body.transitions (Fill, Stroke)` | field |
+| K1.30 | `button.body.transitions (Fill from {pressed}; Stroke from {hover, focus_visible, pressed}: Breeze fades the fill only on leaving press and the pen only on leaving hover, visible focus or press, into whatever state follows, its state rules but `{disabled}`'s (below) stating no transitions of their own, so checked, default and window-activation changes are instant, `breeze@6.8.2 kstyle/breezehelper.cpp:655-725`, `kstyle/breezestyle.cpp:4546-4549`; S2.7's Transition.from, ADD-A124)` | field |
+| K1.30 | `button.body.transitions (Fill, Stroke: a zero duration) @ {disabled}` (Breeze runs neither fade on a disabled button, `breezehelper.cpp:715`, `:721`, so a button disabled while hovered or pressed changes at once) | rule |
 | K1.30 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.40 | `input.body.stroke @ variant warning` | rule |
 | K1.40 | `input.body.stroke (= qt_lighter of it, ADD-A50) @ variant warning {hover} / variant warning {focused}` | rule |

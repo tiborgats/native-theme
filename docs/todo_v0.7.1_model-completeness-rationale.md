@@ -404,7 +404,7 @@ colours.
 
 **R2.7 — Declarations.** A preset declares, per widget, its variants, sizes and densities (per flavour where
 they differ, and per container where the platform draws a size only in some, such as a large button outside a
-navigation bar), its widget-specific state flags and exclusive state groups with their precedence (R3), its
+navigation bar), its widget-specific state flags, exclusive state groups with their precedence and recency sets (R3), its
 keyed components' availability, sizes, variants, flags and value types (their parts and fields come from the
 catalogue, as typed widgets' do, R14), its keyed colour roles, text styles and elevation entries, its
 flavours, and its inputs (R2.6). Adding a layer checks every rule and reference against the declarations: a typo
@@ -439,6 +439,33 @@ with its flags in order of precedence (for `CommonStates`: disabled, pressed, ho
 highest present and drops the others before matching, so no look is made up for a combination the platform
 does not have.
 
+**Recency** (CONTRA-6). Some platforms show the most recent of several states rather than a fixed one. Compose
+keeps a control's interactions in the order they began and shows the last: its state layer over hover, focus and
+drag, the press ripple drawn beside it (`androidx@e4d933c9
+compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-280`), and a
+button's elevation over hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`;
+`FloatingActionButton.kt` and `ToggleButton.kt` likewise, `Card.kt` and `Chip.kt` with drag too). An elevated
+button hovered after it was focused is at level 2, and focused after it was hovered at level 1
+(`tokens/ElevatedButtonTokens.kt:43-74`), so any fixed precedence is wrong for one of the two sequences. An
+exclusive group cannot state them either: it drops flags for every property, while the press, a member of the
+elevation's set, is drawn beside the state layer.
+
+- *An exclusive group with a fixed order.* Against: the two sequences above.
+- *One most-recent flag per element.* Against: the press is the latest of the elevation's set yet drawn beside the
+  state layer, so one element-wide answer is wrong for one of the two properties.
+- *The connector drops the older flags itself.* Against: it needs the sets, which are preset data a generic
+  connector does not have.
+- *Named recency sets: the preset declares each, per widget, its members cited from the platform's code; a rule's
+  selector may require a flag to be the latest of a set, that is present and set after every other present flag of
+  the set (after the exclusive groups' drop); the connector reports the order it set the element's flags in, which it
+  has from setting them (element data, R25.3); flags it reports no order for count by the set's stated order, its
+  first as the latest.*
+
+**Decision:** named recency sets. The stated order is the tie-break, so a connector that reports nothing gets a
+fixed precedence (Material's: focus over hover, as its View library ranks them), and the gate checks each order of
+the flags present (R4). Material's state layers are rules on the latest of the set `state_layer`, not an exclusive
+group: a layer rule matching only its latest flag already draws one layer.
+
 **State layers** (Material's hover, focus, pressed and dragged overlays, C08; libadwaita's `currentColor`
 shares) are a paint layer a rule appends over the fill beneath (R6), with a colour derivation (R5.4).
 Material's ripple is the pressed state layer's transition (R9).
@@ -462,8 +489,9 @@ so the preset must state {checked, hover}.
   libadwaita's selectors, Breeze's state branches, Material's tokens; on macOS and iOS the API's control
   states (`NSControl`, `UIControl.State`) and appearances, times the conditions, the containers the API
   distinguishes (a toolbar item, a bar item), and the styles and sizes the API enumerates
-  (`NSButton.BezelStyle`, `NSControl.ControlSize`, `UIButton.Configuration`), each measured by the probe.
-  The map is a survey; the platforms' state models are the list.
+  (`NSButton.BezelStyle`, `NSControl.ControlSize`, `UIButton.Configuration`), each measured by the probe;
+  where a recency set holds several present flags, each order of them (R3). The map is a survey; the platforms'
+  state models are the list.
 - **Derivations:** where a platform states a derivation, the fact is the derivation. The gate resolves each
   preset twice, with its own inputs and base colours and with perturbed ones (another accent, foreground and
   background), and
@@ -593,10 +621,18 @@ toolkit that cannot draw the material draws instead.
 ### R7 — Corners and stroke (C11, C12)
 
 **Corners:** a radius per corner; fully rounded (a capsule at any height: Material's `full`, iOS 26's
-capsules); concentric (the container's radius less the inset, with a minimum where the platform states one,
+capsules); elliptical (each corner a quarter of the ellipse inscribed in the box, half its width across and half its
+height down, equal to the capsule on a square box: Breeze's QWidget round button, drawn with a radius of half its
+larger side, which Qt clamps per axis to half each side, `breeze@6.8.2 kstyle/breezehelper.cpp:727-739`,
+`qtbase@6.12.0 src/gui/painting/qpainterpath.cpp:3457-3470`; an application reaches it by giving such a button a
+label or a stretched box); concentric (the container's radius less the inset, with a minimum where the platform states one,
 X-CR-1–X-CR-3), which the toolkit computes at layout from its container; and the corner curve (circular, or
 Apple's continuous). A boxed list's rounded first and last rows are rules by position (R2.3). A shape that
-changes between states is a rule with its transition.
+changes between states is a rule with its transition. For the ellipse, recording it as not expressible would leave a
+visible deviation on a reachable case, and two radii per corner (CSS's `a / b`) would add a field to every corner of
+every preset and connector for one shape, so it is one corner kind, the smallest exact form: on all four corners or
+none, with circular curves, its shadow and a focus ring that follows the part following the ellipse of their own
+boxes.
 
 **Stroke:** a width and paint per side, inside, centred or outside the edge: WinUI's gradient elevation strokes
 and the thicker accent bottom edge of a focused text box (W1-026); libadwaita's outlines outside the box. A
@@ -631,17 +667,41 @@ MAT-X13–MAT-X15, X-MO-1).
   WinUI's pressed knob stretching (W1-120) and its chevron (W1-132).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
-  Material state springs; Apple's response and damping fraction convert to it exactly; velocity-dependent
-  curves (Kirigami's, Q3.26) are a closed set of platform curves, each implemented once in native-theme to its cited
-  source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16).
+  Material state springs; Apple's response and damping fraction convert to it exactly; a curve the toolkit computes
+  by a function of its own is one of a closed set of platform curves, each implemented once in native-theme to its
+  cited source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16). The set holds
+  Kirigami's velocity-dependent animations (Q3.26, CONTRA-2) and Qt's and libadwaita's easing functions (CONTRA-7),
+  several of which are no cubic Bézier at all (Qt's in-out sine, a cosine, `qtbase@6.12.0
+  src/3rdparty/easing/easing.cpp:275-278`; its out-expo, `:309-312`; its in-out quad and cubic, two pieces, `:70-79`,
+  `:122-131`; libadwaita's sine and expo curves, `libadwaita@1.10.0 src/adw-easing.c:276-295`). Rejected: stating
+  the curves that equal a cubic Bézier in exact arithmetic (Qt's in and out quad and cubic, libadwaita's in and out
+  cubic) as Béziers (it does not avoid the set, which the others need; it adds a second form and a checker for the
+  derivation, and the facts would carry control points no source writes; a connector whose toolkit takes only
+  Béziers can be given those curves' Béziers by a helper beside the evaluation, with no model change); a sampled
+  table (approximate); a general expression language for curves (a second evaluator for a closed set of named
+  functions).
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
   input), except during a theme change, which the theme-change token governs; the transition of the style
   after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`); where several rules state one for the same property, the later in stated order
-  wins. XAML's alternative, a transition per (from, to) pair of states, was weighed: CSS's form expresses a
-  direction-dependent motion by putting it on the style entered, and no WinUI row needs a pair. A paint layer
+  (`gtkcssanimatedstyle.c`). A transition may name the states it applies from (`from`, a set of flags): one with
+  none applies from any state, and one with a set only where the element held one of its flags before the change,
+  after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
+  later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
+  entered, or, moving to rest, by the one left (120 ms from hover, 150 ms from press, drag or focus), and snaps from
+  none and into disabled (`androidx@e4d933c9
+  compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-113`,
+  `Button.kt:1750-1770`). Breeze fades a button's pen only on leaving hover, visible focus or press and its fill only
+  on leaving press, into whatever state follows, checked included, while checked, default and window-activation
+  changes are instant (`breeze@6.8.2 kstyle/breezehelper.cpp:655-725`, `kstyle/breezestyle.cpp:4546-4549`). Both are
+  the style entered governing with each of its transitions limited to the states it names: Material's rest
+  elevation states 120 ms `from {hover}` and 150 ms `from {pressed, dragged, focus_visible}`, and Breeze's base its
+  fill transition `from {pressed}` and its stroke transition `from {hover, focus_visible, pressed}`, which a checked
+  rule stating no transitions keeps (its disabled rule states zero ones, as Breeze runs neither fade on a disabled
+  button). Rejected: a transition per (from, to) pair of states, XAML's form (the style
+  entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
+  transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
   that appears interpolates from its colour at zero alpha, and one that disappears to it; layers are matched by
   their position in the stack; colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
@@ -1071,7 +1131,11 @@ font rather than one measured number (R10),
 and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
 declares it reads, so the query still cannot fail (R2.8); the connector supplies them and queries again when they
-change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4).
+change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4). The order in which
+the connector set the element's state flags (R3's recency) is element data too, which every connector has from setting
+the flags. It is carried beside the flags it orders, not among the expression operands: selectors read it, as they
+read the flags, and no expression does; and it needs no declaration, as flags it leaves out count by the recency
+set's stated order, so a connector that reports none gets a defined answer.
 
 **R25.4 — Pattern paint (extends R6).** Some fills are patterns no gradient makes: a colour well's transparency
 checkerboard (GN-2.53†, W2-42†), Qt's dense brush patterns (K-SF09†), a code editor's background grid (GN-SF11†),
@@ -1092,8 +1156,8 @@ is a transition of kind morph; a loop's keyframes may name shapes.
 **R25.6 — Presentation transitions (extends R9).** Several transitions may run on one event together (a sheet's fade
 with its slide, Q2.40), one may target a single part (a clear button's fade), a slide states its distance, and
 items may be staggered (Q2.14, Q2.15, Q2.52). **Decision:** an event's presentation is a set of transitions, each with
-an optional part, distance and stagger; R9's velocity-dependent curves are platform curves implemented in native-theme
-(the specification's `Timing::Platform`).
+an optional part, distance and stagger; R9's platform curves (the curves a toolkit computes by a function of its own,
+the velocity-dependent ones among them) are implemented in native-theme (the specification's `Timing::Platform`).
 
 **R25.7 — Text rendering (extends R10).** Antialiasing, hinting, subpixel order, LCD filter and gamma or contrast
 (ClearType's, FreeType's through fontconfig, GNOME's `font-antialiasing`, `font-hinting`, `font-rgba-order`, macOS's font
@@ -1199,6 +1263,15 @@ Amended by the maintainer's decision D12 of the 0.8.0 plan (2026-10-29):
 - R1.5: a preset describes the newest release a supported runner measures, so `macos-tahoe` and `ios-26` describe
   26.x while macOS 27 runs only on a preview image; what only 27 draws is carried to `docs/todo.md`'s macOS 27 entry.
 
+Amended in place by the specification's batch ADD-A124 (2026-10-30), decided from the sources in the ledger's queue
+#42, #49, #60 and #73:
+
+- R3: recency sets and a selector term on a set's latest flag (CONTRA-6, settled); R25.3: the order the connector set
+  the flags in is element data.
+- R7: the elliptical corner, Breeze's round button on a box that is not square.
+- R9: a transition's `from` states; the platform curves widened to the curves a toolkit computes by a function of its
+  own (CONTRA-7, settled; CONTRA-2's velocity curves stay members), R25.6 following.
+
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
 
@@ -1214,7 +1287,7 @@ platform rule into every application.
 
 The names and types of every field; the colour roles' surface sets, role record and keyed roles; the text ramp's slots;
 the semantic variants, sizes and densities; the condition, context, position, direction and state lists in full, and the
-exclusive groups with their precedence; the selector and patch types and the TOML spelling of rules, derivations,
+exclusive groups with their precedence, the recency sets; the selector and patch types and the TOML spelling of rules, derivations,
 references, inputs and value kinds; the derive macro's changes; the resolution and query API and the element tree a
 connector builds; the placement strategies; the derivation functions with their sources; the theme-change token's
 fields; the transition kinds and their kind-specific values (the ripple's); which controls AppKit renders whole and the
