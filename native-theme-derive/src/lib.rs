@@ -13,6 +13,9 @@
 //!   `#[theme]`, `#[theme_layer]` and `#[theme_inherit]` attributes.
 //! - [`ThemeFields`](derive@ThemeFields) registers a plain struct's
 //!   serialized field names for TOML linting.
+//! - [`ThemeParts`](derive@ThemeParts) generates the 0.8.0 model's blocks'
+//!   patches, resolved types, merges and field tables; its expansions name
+//!   `crate::next::*` paths.
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -23,6 +26,7 @@ mod gen_ranges;
 mod gen_structs;
 mod gen_validate;
 mod parse;
+mod parts;
 mod util;
 
 /// Derive macro that generates a companion Resolved struct and impl blocks
@@ -137,6 +141,50 @@ fn gen_inventory_submit(
             widget_name: #widget_name,
             field_names: #opt_name::FIELD_NAMES,
         });
+    }
+}
+
+/// Derive macro for the 0.8.0 model's blocks (S2, S6.1).
+///
+/// On a block marked `#[parts(block)]` it generates, beside the block:
+///
+/// - for a struct block, `<T>Patch`, every field an `Option` (`None`: the
+///   patch does not set it), a field holding a struct block patched by
+///   `BlockPatch` (`Set | Fields`) and one holding an append block by that
+///   block's patch; with `#[parts(append)]`, a block whose one field is a list
+///   (a paint), `<T>Patch` is instead `Set(Value<T>) | Append(list)`;
+/// - `Resolved<T>`, each `Value<U>` as `Option<U>` (a `Value<Px>` marked
+///   `auto` as `Option<Length>`) and each block as its resolved type;
+/// - the merge of a later patch over an earlier one and the application of a
+///   patch over a value (S6.1: a set field replaces, a `Vec` of pairs merges
+///   by key, any other list is replaced whole);
+/// - the `Block` impl: the resolved type and the static `FIELDS` table of
+///   `FieldInfo { path, ty, may_be_absent, auto }`.
+///
+/// An enum block is set whole only: it gets `Resolved<T>` and its table, the
+/// paths of a variant's fields `variant.field` (a tuple variant's one field:
+/// `variant`).
+///
+/// # Type attributes
+///
+/// - `#[parts(block)]`: block mode (required).
+/// - `#[parts(append)]`: a struct block patched by `Set` or `Append`.
+/// - `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
+///
+/// # Field attributes
+///
+/// - `#[parts(may_be_absent)]`: the `Value` may be `Absent` (S6.3).
+/// - `#[parts(auto)]`: the `Value<Px>` may be `Auto` (S6.3).
+/// - `#[parts(block = "fields" | "append" | "set")]`: the field holds a
+///   block (`B`, `Value<B>` or `Vec<B>`) of that kind: a struct block, an
+///   append block or an enum block.
+#[proc_macro_derive(ThemeParts, attributes(parts))]
+pub fn derive_theme_parts(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    match parts::derive(&input) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
     }
 }
 
