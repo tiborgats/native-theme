@@ -1000,6 +1000,16 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-184"
 quote = "public fun Button("
 absent = []
+[[fact]]
+key = "button.values.menu_indicator_gap"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-184"
+quote = "public fun Button("
+absent = []
 
 [[fact]]
 key = "button.values.shows_icon"
@@ -5374,8 +5384,8 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 
 # the menu buttons (MAT-N8): md.comp.{standard,filled,outlined}-menu-button.* — standard is `menu` alone (no
 # container), filled `{menu, primary}`, outlined `{menu, @outlined}`; the trailing icon is the menu indicator. Compose
-# has no menu button and material-web no component for it, so what the tokens leave out (the indicator's glyph, its
-# gap) is listed in the lane report, not stated.
+# has no menu button and material-web no component for it, so what the tokens leave out (the indicator's glyph) is
+# listed in the lane report, not stated; its placement and gap are material-web's button's trailing icon's (below).
 
 [[fact]]
 key = "button.body.bindings"
@@ -5445,7 +5455,10 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:35"
 quote = "$with-icon-leading-icon-size: 18px;"
 
-# the indicator is the trailing icon: after the label in the row (ADD-A122's `Inline`)
+# the indicator is the menu button's trailing icon (its tokens' "Trailing icon"); neither Compose nor material-web has
+# a menu-button component, and material-web's button draws a trailing icon in its inline-flex row after the label
+# (button.ts's render, _shared.scss's row), its gap the row's: so `Inline` (the catalogue's rule for every indicator
+# not overlaid, ADD-A122) and the row's gap
 [[fact]]
 key = "button.values.menu_indicator_anchor"
 when = { variants = ["menu"] }
@@ -5456,6 +5469,32 @@ rows = ["MAT-N8"]
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:30-31"
 quote = "/// md.comp.standard-menu-button.trailing-icon.size (Enabled / Trailing icon) $trailing-icon-size: 18px;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_shared.scss:22-23"
+quote = "display: inline-flex; gap: 8px;"
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { variants = ["menu"] }
+value = "8px"
+rows = ["MAT-N8"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_shared.scss:22-23"
+quote = "display: inline-flex; gap: 8px;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
 
 [[fact]]
 key = "button.menu_indicator.glyph.size"
