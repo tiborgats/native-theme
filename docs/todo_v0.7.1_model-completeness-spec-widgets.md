@@ -984,7 +984,8 @@ spaces:
   an app running on a Mac, where the tip is macOS's, TT-1).
 - **Parts:**
   - `body` — the root: `fill` (colour or material: in-app acrylic, `.toolTip`), `stroke` (KDE's border mixed from
-    background and text), `corners`, `shadow`, `padding`, `min_height` (Material's, MAT-T5; `windows-11`'s base
+    background and text by the frame contrast: Breeze's `kcu_mix`, under `cond flavor:kirigami` qqc2's `kirigami_lerp`,
+    Q1.38, Q3.15), `corners`, `shadow`, `padding`, `min_height` (Material's, MAT-T5; `windows-11`'s base
     `auto`, the annotated scroll bar's tooltip's minimum stated by a rule `@ context scrollbar.body variant
     @annotated`, W2-28; `auto` on the other presets, whose platforms set no minimum, never `Absent`), `max_width` (pixels, or
     characters of the label's font as `mul(widget.label.char_width, <count>)`: `body` has no font of its own, S2.2),
@@ -4258,7 +4259,9 @@ spaces:
   overview's
   thumbnail `context component.tab_overview.thumbnail` (GN-2.35): one structure wherever the dot is drawn, its
   offsets `anchor_offset_x_px`, `anchor_offset_y_px`, its appearance the badge's `Appear` presentation.
-  Kirigami's text colour follows its background (`kirigami_badge_text`, ADD-A53; Q2.26).
+  Kirigami's text colour follows its background (`kirigami_badge_text`, ADD-A53, its last step `kirigami_lerp` of the
+  text colour and the background by 0.17; Q2.26), and its border on an application colour is
+  `= kirigami_lerp(element.color, surface.foreground, 0.5)` (Q2.26).
 
 ### banner
 
@@ -8270,12 +8273,16 @@ group starts from the `Window` set's active values whatever `inactive_change_sel
 (`kcolorscheme.cpp:317-319`, S2.2), so each of those fields of `role.selection.disabled` is `=
 kde_effects(active(role.window.<role>), active(role.window.background), disabled, <kind>)` (R5.1). `border` is no
 KColorScheme role (below), so no effect applies to it: Breeze computes its frame colour from the palette group the
-widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`breeze@c97883a kstyle/breezehelper.cpp:142-144`,
+widget is drawn in, `KColorUtils::mix(Window, WindowText, frameIntensityBias())` (`breeze@c97883a kstyle/breezehelper.cpp:142-144`,
 the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border` is the active `border`'s derivation
 (`kcu_mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
 `= kcu_mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`; under
 `cond flavor:kirigami` the role stays Breeze's, since Breeze draws Kirigami's buttons and fields; the frames
-qqc2-desktop-style's own QML draws (Frame, Menu, Popup, ToolTip) stroke with `kirigami_lerp` on those parts (Q3.15, S2.2). On a
+Kirigami, qqc2-desktop-style and kirigami-addons draw in their own QML (qqc2's Frame, GroupBox, Menu, Popup, ToolTip,
+Dialog, the search field's popup and RangeSlider's handles; Kirigami's card, chip, dialog and separator; kirigami-addons'
+dialog surface, segmented button, floating button, banner line, video controls and onboarding tip) stroke with
+`kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)` on those parts, and the
+switch's thumb, RoundButton and the double floating button with the same over `role.button` (Q3.15, S2.2). On a
 platform that dims by opacity (libadwaita) the record stays absent but for the `View` pair above and the parts' `{disabled}` rules set `opacity`
 from `token.params.opacity` instead [GN-1.271, GN-1.272].
 
