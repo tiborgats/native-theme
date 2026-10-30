@@ -118,18 +118,55 @@ kind = "published"
 source = "kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60"
 quote = "timeLine = new QTimeLine(500, q);"
 
+# the decoration's speed factor (`token.params.motion.kwin_speed_factor`, ADD-A123): the decoration runs in KWin and
+# reads [KDE] AnimationDurationFactor from KSharedConfig::openConfig(), KWin's main config: kwinrc (KWin's about data
+# names it `kwin`, and KConfig's main config is the application name plus `rc`), cascaded over kdeglobals (the
+# globals parsed first, the main config last), 1 where neither sets it. So kwinrc's factor, where set, wins over
+# kdeglobals' for the decoration; `token.motion.speed_factor` is kdeglobals' alone. The default, 1, is the
+# decoration's own readEntry default and KWin's kcfg default
+
+[[fact]]
+key = "token.params.motion.kwin_speed_factor"
+value = 1
+rows = ["K1.17"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:388-389"
+quote = "// But the shadow is fine to animate like this! m_shadowAnimation->setDuration(cg.readEntry(\"AnimationDurationFactor\", 1.0f) * 100.0f);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381"
+quote = "KSharedConfig::Ptr config = KSharedConfig::openConfig(); const KConfigGroup cg(config, QStringLiteral(\"KDE\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:139"
+quote = "KAboutData aboutData(QStringLiteral(\"kwin\"), // The program name used internally"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:648-649"
+quote = "QString appName = QCoreApplication::applicationName(); return appName + QLatin1String(\"rc\");"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:712-731"
+quote = "// Parse all desired files from the least to the most specific. bool globalConfigFileIsImmutable = false; if (d->wantGlobals()) { globalConfigFileIsImmutable = (d->parseGlobalSystemFiles() == KConfigIniBackend::ParseImmutable); }"
+
 # the decoration's shadow fade (Breeze's Decoration class, whose shadow fade and active-state fade differ:
-# `decoration_shadow`): the factor times the literal 100, a float that QVariantAnimation::setDuration(int)
-# truncates to whole ms; the active-state animation is set to 0 and unused. The decoration runs in KWin and reads the
-# factor from KSharedConfig::openConfig(), KWin's main config: kwinrc (KWin's about data names it `kwin`, and
-# KConfig's main config is the application name plus `rc`), cascaded over kdeglobals (the globals parsed first, the
-# main config last), 1 where neither sets it. So kwinrc's [KDE] AnimationDurationFactor, where set, wins over
-# kdeglobals' for the decoration alone; `token.motion.speed_factor` is kdeglobals' (the reader's input), equal to
-# the decoration's unless kwinrc sets its own
+# `decoration_shadow`): the decoration's factor (above) times the literal 100, a float that
+# QVariantAnimation::setDuration(int) truncates to whole ms; the active-state animation is set to 0 and unused
 
 [[fact]]
 key = "token.motion.durations.decoration_shadow"
-value = "= floor(mul(100ms, token.motion.speed_factor))"
+value = "= floor(mul(100ms, token.params.motion.kwin_speed_factor))"
 rows = ["K1.17"]
 
 [[fact.cite]]
@@ -280,6 +317,249 @@ rows = ["Q3.27"]
 kind = "published"
 source = "kirigami@6.31.0 src/platform/units.cpp:44"
 quote = ", humanMoment(2000)"
+
+# Qt's easing curves the platform uses, each the curve Qt computes in code (`QEasingCurve::Type` through curveToFunc
+# to the easing.cpp function), so a platform curve by its name, `Timing::Platform(Qt(…))`, not a cubic Bézier, even
+# where one equals it (S2.7, CONTRA-7, ADD-A123): the decoration's shadow fade (`out_cubic` both ways, the
+# deactivation's in-cubic run backward being the out-cubic in S2.7's forward reading), the tree expand, the tab move
+# and the dock-widget and toolbar re-layout (`in_out_quad`), QTimeLine's default (`in_out_sine`, KMessageWidget's and
+# KCollapsibleGroupBox's timelines), and Kirigami's and qqc2-desktop-style's QML curves (QML's `Easing` is the same
+# QEasingCurve). The QML property takes the name `Easing.<type>`
+
+[[fact]]
+key = "token.motion.timings.out_cubic"
+value = { platform = { qt = "out_cubic" } }
+rows = ["K1.17", "Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:197"
+quote = "m_shadowAnimation->setEasingCurve(QEasingCurve::OutCubic);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:278-279"
+quote = "m_shadowAnimation->setDirection(window()->isActive() ? QAbstractAnimation::Forward : QAbstractAnimation::Backward); m_shadowAnimation->setEasingCurve(window()->isActive() ? QEasingCurve::OutCubic : QEasingCurve::InCubic);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/wheelhandler.cpp:102-103"
+quote = "m_xScrollAnimation.setEasingCurve(QEasingCurve::OutCubic); m_yScrollAnimation.setEasingCurve(QEasingCurve::OutCubic);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/GlobalDrawer.qml:677"
+quote = "easing.type: Easing.OutCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1015-1016"
+quote = "case QEasingCurve::OutCubic: return &easeOutCubic;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:110-114"
+quote = "static qreal easeOutCubic(qreal t) { t-=1.0; return t*t*t + 1; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_out_quad"
+value = { platform = { qt = "in_out_quad" } }
+rows = ["K1.133†", "K1.185†", "K3.38†", "Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/itemviews/qtreeview_p.h:89"
+quote = "AnimatedOperation() : item(0) { setEasingCurve(QEasingCurve::InOutQuad); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtabbar_p.h:144"
+quote = "{ setEasingCurve(QEasingCurve::InOutQuad); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:62"
+quote = "anim->setEasingCurve(QEasingCurve::InOutQuad);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/AbstractApplicationHeader.qml:34"
+quote = "easing.type: Easing.InOutQuad"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1009-1010"
+quote = "case QEasingCurve::InOutQuad: return &easeInOutQuad;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:70-79"
+quote = "static qreal easeInOutQuad(qreal t) { t*=2.0; if (t < 1) { return t*t/qreal(2); } else { --t; return -0.5 * (t*(t-2) - 1); } }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_out_sine"
+value = { platform = { qt = "in_out_sine" } }
+rows = ["K3.37"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qtimeline.cpp:24-25"
+quote = "Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(QTimeLinePrivate, QEasingCurve, easingCurve, QEasingCurve::InOutSine)"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60"
+quote = "timeLine = new QTimeLine(500, q);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1041-1042"
+quote = "case QEasingCurve::InOutSine: return &easeInOutSine;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:275-278"
+quote = "static qreal easeInOutSine(qreal t) { return -0.5 * (::qCos(M_PI*t) - 1); }"
+
+[[fact]]
+key = "token.motion.timings.in_cubic"
+value = { platform = { qt = "in_cubic" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/private/PassiveNotificationsManager.qml:159"
+quote = "easing.type: Easing.InCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1013-1014"
+quote = "case QEasingCurve::InCubic: return &easeInCubic;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:99-102"
+quote = "static qreal easeInCubic(qreal t) { return t*t*t; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_out_cubic"
+value = { platform = { qt = "in_out_cubic" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/private/PassiveNotificationsManager.qml:142"
+quote = "easing.type: Easing.InOutCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/PageRow.qml:769"
+quote = "easing.type: Easing.InOutCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1017-1018"
+quote = "case QEasingCurve::InOutCubic: return &easeInOutCubic;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:122-131"
+quote = "static qreal easeInOutCubic(qreal t) { t*=2.0; if(t < 1) { return 0.5*t*t*t; } else { t -= qreal(2.0); return 0.5*(t*t*t + 2); } }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.out_quad"
+value = { platform = { qt = "out_quad" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/wheelhandler.cpp:104-105"
+quote = "m_xInertiaScrollAnimation.setEasingCurve(QEasingCurve::OutQuad); m_yInertiaScrollAnimation.setEasingCurve(QEasingCurve::OutQuad);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/OverlayDrawer.qml:296"
+quote = "easing.type: Easing.OutQuad"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1007-1008"
+quote = "case QEasingCurve::OutQuad: return &easeOutQuad;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:59-62"
+quote = "static qreal easeOutQuad(qreal t) { return -t*(t-2); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_quad"
+value = { platform = { qt = "in_quad" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/OverlayDrawer.qml:314"
+quote = "easing.type: Easing.InQuad"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1005-1006"
+quote = "case QEasingCurve::InQuad: return &easeInQuad;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:48-51"
+quote = "static qreal easeInQuad(qreal t) { return t*t; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.out_expo"
+value = { platform = { qt = "out_expo" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/layouts/columnview.cpp:462"
+quote = "m_slideAnim->setEasingCurve(QEasingCurve(QEasingCurve::OutExpo));"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1047-1048"
+quote = "case QEasingCurve::OutExpo: return &easeOutExpo;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:309-312"
+quote = "static qreal easeOutExpo(qreal t) { return (t==1.0) ? 1.0 : 1.001 * (-::qPow(2.0f, -10 * t) + 1); }"
 
 # The focus indicator (R12, S2.10): Breeze's QFocusFrame, shown after a keyboard focus change only (Tab, Backtab,
 # a shortcut), a ring of PM_FocusFrameHMargin filled with Highlight at Blend_Value. The token is Breeze's default
