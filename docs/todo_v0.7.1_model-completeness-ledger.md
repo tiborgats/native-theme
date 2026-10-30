@@ -70,10 +70,10 @@ tie-breaker, `A` audited), presets (`P`), gate (`G`), connectors (`C`).
 ## Module inventory
 
 Every module, integration test and `lib.rs` item of `native-theme`, one fate each (the plan, *The module
-inventory*): ported beside, kept in place, split, deleted, unlinked; with its milestone. Written before the switch.
-
-| Item | Fate | Milestone | Notes |
-|---|---|---|---|
+inventory*): in [`todo_v0.7.1_model-completeness-inventory.md`](todo_v0.7.1_model-completeness-inventory.md)
+(drafted 2026-10-30 from the call sites; its sixteen open points decided there, F1–F16, two of them correcting the
+plan's examples: windows.rs keeps `os_version`, not its DPI constant, and `read_kcmfonts_key` goes with the reader
+part, their callers being the reader's).
 
 ## `PLAN_EXCLUDED`
 
