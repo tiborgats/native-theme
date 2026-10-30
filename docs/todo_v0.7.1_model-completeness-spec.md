@@ -122,7 +122,17 @@ palette states only its schemes, S14, and a value no layer states for a scheme i
   Error and status types:
 
 ```rust
-pub enum LayerError { Invalid(Vec<Problem>),             // every validation problem S12 finds, not the first only
+pub enum LayerError { Invalid(Vec<Problem>),             // every problem, not the first only: S12's checks, and
+                                                          // the TOML reader's own (`Layer::from_toml`, S11: text
+                                                          // that is not TOML, an unknown key, a mistyped value, an
+                                                          // unknown name, a key outside the key grammar, an
+                                                          // expression that does not parse), each a `ProblemKind`;
+                                                          // the other variants are no validation's but the API's
+                                                          // (ADD-A123): `ReaderPresent` `set_reader_stand_in`'s
+                                                          // (S8), `AccentInputsMissing` `set_accent`'s, a preset
+                                                          // change's and the palettes' (S9.2, S14),
+                                                          // `SchemeNotInPalette`, `PaletteNotForPreset` the
+                                                          // palettes' (S14), `UnknownLayer` S16's
                       ReaderPresent, AccentInputsMissing(Vec<InputName>), SchemeNotInPalette(Scheme),
                       PaletteNotForPreset(PresetId),
                       UnknownLayer(LayerId) }             // `replace_layer`, `remove_layer`: an id this theme does
@@ -330,9 +340,9 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 conflict. The merge keeps it on the reference with its position (a base's, in layer order, or its rule's place in the
 stack's order), since evaluation interleaves it with the referenced value's own rules by that position; a later `Set`
 replaces the reference and every patch kept on it. Over a value, a merge conflict is a `Fields` patch meeting an `Absent` or
-`Auto` value directly (an `Append` over `Absent` is the appended layers, S6.1, and a paint is never `Auto`), a map
-entry created with a field unset that may not be `Absent` (S6.1), or a bare block's map entry `Set` to a reference,
-`Absent` or `Auto` (S6.1, ADD-A123); one a
+`Auto` value directly (an `Append` over `Absent` is the appended layers, S6.1, and a paint is never `Auto`), or a map
+entry created with a field unset that may not be `Absent` (S6.1) (a bare block's map entry set to a reference,
+`Absent` or `Auto` is no conflict but an ill-typed patch, S6.1, ADD-A123); one a
 reference can bring is S12's conservative check, as the merge does not see where the reference leads, so the merge
 refuses nothing that check would pass, and the check refuses what the merge cannot see.
 
@@ -701,7 +711,7 @@ pub enum PlatformCurve { KirigamiVelocity,   // Kirigami's velocity-based animat
                          Qt(QtEasing),       // a `QEasingCurve::Type` Qt computes in code (below; ADD-A123)
                          Adw(AdwEasing) }    // an `AdwEasing` libadwaita computes in code (below; ADD-A123)
 pub enum QtEasing { InQuad, OutQuad, InOutQuad, InCubic, OutCubic, InOutCubic, InOutSine, OutExpo }
-pub enum AdwEasing { EaseOutCubic }
+pub enum AdwEasing { EaseInCubic, EaseOutCubic, EaseInExpo, EaseOutExpo }
 pub enum PropertyGroup { Fill, Stroke, Corners, Shape, Shadow, Opacity, Transform, Text, Icon, Glyph, Geometry }
                                               // the focus indicator's motion is its own `transition` (S2.10)
 pub struct Transition {
@@ -769,7 +779,7 @@ changes (a switch's thumb moving to its new end), when the connector's own layou
 state-triggered icon animation (WinUI's AnimatedIcon, GtkSvg's states, an SF Symbol effect on a change) is a
 `TransitionKind::Keyed` transition of the `Icon` group; a repeating one is `IconStyle.animation` (R25.12).
 
-**A curve is stated as its source states it** (ADD-A123): a curve whose control points the source writes (CSS's
+**A curve is stated as its source states it** (ADD-A123; provisional, CONTRA-7, pending the maintainer): a curve whose control points the source writes (CSS's
 keyword curves, libadwaita's `ADW_EASE`, `ADW_EASE_IN`, `ADW_EASE_OUT` and `ADW_EASE_IN_OUT`, whose points
 `adw-easing.c` passes to its `ease_cubic_bezier`, `libadwaita@1.10.0 src/adw-easing.c:620-627`; WinUI's key splines;
 Material's easing tokens) is a `CubicBezier`; a curve a toolkit computes by a function of its own is
@@ -781,10 +791,12 @@ src/3rdparty/easing/easing.cpp:309-312`), and the facts quote its name, not cont
 `curveToFunc` (`src/corelib/tools/qeasingcurve.cpp:1000-1048`; QML's `Easing.<type>` is the same `QEasingCurve`,
 `qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239`); several are no cubic Bézier at all (`InOutSine`, a
 cosine, `easing.cpp:275-278`; `OutExpo`; `InOutQuad` and `InOutCubic`, two pieces). `AdwEasing` is libadwaita's
-easings the presets use, to `adw-easing.c` (`ease_out_cubic`, `:175-181`). A member is added, implemented to its
+easings the presets use, to `adw-easing.c` (`ease_in_cubic`, `ease_out_cubic`, `ease_in_expo`, `ease_out_expo`,
+`:166-181`, `:282-295`). A member is added, implemented to its
 source, with the fact that needs it (a class 1 change, as a quote notation is, S17). Rejected: a derivation notation
 the quote check accepts ("this polynomial equals that Bézier"), which states none of the curves that are no cubic
-Bézier and needs a checker of its own.
+Bézier and needs a checker of its own. R9 and CONTRA-2 name the platform curves as the velocity-dependent ones, so this
+reading, which also puts fixed curves a toolkit computes in code there, is CONTRA-7's provisional one (S22).
 
 A spring is stated by its damping ratio, as the platforms that publish springs state it (ADD-A121): libadwaita's
 `adw_spring_params_new (damping_ratio, mass, stiffness)`, which derives the damping coefficient from it
@@ -873,8 +885,8 @@ variable font maps the fields onto its `wght` and `wdth` axes itself.
 **Weight** (ADD-A123) is the CSS and OpenType weight, 1 to 1000 (400 regular, 700 bold), as the `wght` axis and CSS's
 `font-weight` state it. A platform reporting another scale is converted to it, in the facts by S17's `conversion` and
 in a reader the same way: AppKit's `NSFontWeight`, a number in −1..1 (`NSFontDescriptor.h`'s `NSFontWeightTrait`,
-whose named constants the SDK declares without values), by `ns_font_weight` (S17), WebKit's mapping of the system
-font's weight trait to a CSS weight. Rejected: a table from the nine named `NSFontWeight` constants to 100…900, which
+whose named constants the SDK declares without values), by `ns_font_weight` (S17), the model's own conversion,
+WebKit's mapping of the system font's weight trait to a CSS weight. Rejected: a table from the nine named `NSFontWeight` constants to 100…900, which
 no pinned source states (the SDK declares the constants without values, `NSFontDescriptor.h:165-175`, and a font's
 trait need not equal one of them).
 
@@ -1178,8 +1190,9 @@ A setting the reader reads (breezerc's `AnimationsDuration`, plasmarc's `longDur
 the source of its key. A key holds one value: two classes stating the same number have a key each, and a class taking
 its duration from another's (a style hint's, `SH_Widget_Animation_Duration`) states a reference to that key, not a key
 of its own. The catalogue's *token.motion* lists name each key, or, where a platform's motions are measured or not yet
-read, its family; the facts lanes name each key by this rule. Map keys (keyed durations, params) carry no unit suffix: their values are plain numbers in
-the unit their declaration names (S10).
+read, its family; the facts lanes name each key by this rule. A key carries no unit suffix in a path (`token.motion.durations.button`);
+in TOML a keyed duration's key takes `_ms` as a field's does (`button_ms`), and a keyed scalar (params) none, its
+number in the unit its declaration names (S10, S11; ADD-A123).
 
 ### S4.2 Caret and behaviour (R12, R17)
 
@@ -1545,17 +1558,18 @@ not yet held is created as follows (ADD-A122). Merging two patches, it holds the
 patch over a value (a later layer's patch over the bases below, a set's roles patched over a map holding no record
 for the set), the entry is created only where every field the patch leaves unset may be `Absent` (S6.3's marks,
 their conditions S12's), those fields then `Absent`; where one may not, the patch is a merge conflict, refused when
-the layer is added (S12), and the field is never filled with an invented value. A map whose values are bare struct blocks, not
-`Value`s (`token.text.keyed`, `token.icons.sizes.keyed`, `ColorRoles.surfaces`), holds a stated block in every entry, so an
-entry's `Set` to a reference, `Absent` or `Auto`, which the entry cannot hold, is a merge conflict too, refused when
-the layer is added (S12; ADD-A123); a reference to a whole keyed style is stated where it is used (a slot, S4.4), not
-as an entry. A **keyed list** (the bindings by
+the layer is added (S12), and the field is never filled with an invented value. A map whose values are bare blocks, not
+`Value`s (the struct blocks of `token.text.keyed`, `token.icons.sizes.keyed`, `ColorRoles.surfaces`, and the enum
+block `Timing` of `token.motion.timings`), holds a stated block in every entry, so a patch setting an entry to a
+reference, `Absent` or `Auto` is ill-typed in itself, whatever lies below it, and is refused when the layer is added
+(S12; ADD-A123); a reference to a whole keyed style or timing is stated where it is used (a slot, S4.4; a
+transition's `timing`, S2.7), not as an entry. A **keyed list** (the bindings by
 role or surface, every `Surface(_)` binding one key, so a part has one surface binding, a later `Surface(_)` replacing
 an earlier one (ADD-A122), the presentations by event, the transitions by property group, a transition listing several groups
 being split per group first) merges by its items' keys, the later item replacing the earlier whole; any other list (`stops`, `layers`
 set with `Set`, `symbol_variants`, `fallbacks`) is replaced whole, an empty one included; `Append` adds paint layers over `base` (R6), and
 over an `Absent` base gives a paint of the appended layers; over a reference it composes lazily, as a `Fields` patch
-does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is. The merge conflicts are three: a `Fields` patch meeting an `Absent` or `Auto` value directly (S2.2), a map entry created over a value with a field unset that may not be `Absent` (above), and a bare block's map entry `Set` to a reference, `Absent` or `Auto` (above); each is refused when the layer is added (S12), so resolution never meets it (S8).
+does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is. The merge conflicts are two: a `Fields` patch meeting an `Absent` or `Auto` value directly (S2.2), and a map entry created over a value with a field unset that may not be `Absent` (above); each is refused when the layer is added (S12), so resolution never meets it (S8).
 
 **S6.2** Inheritance code goes: `inherit_from`, `theme_inherit`, the `[uniform]`, `[per_platform]` and
 `[wrong_safety_nets]` registries and `resolve/inheritance.rs` are removed (R20). Their rules are converted once
@@ -1905,7 +1919,8 @@ come from the root's inputs through the scope; the font metrics from `Element.me
 
 The query tells the variants apart by name and element: the content variants are the catalogue's listed pairs, each a
 widget or one of its *(element)* parts and a typed variant name (`button`: `icon_only`; `list.row`: `with_subtitle`;
-*Entry format*, ADD-A61), a name being a content variant only on the widget or part its pair names; the breakpoint
+*Entry format*, ADD-A61), or a keyed one that one platform's rule derives (`button`'s `@with_arrow`, GTK's, which the
+connector sets by that rule under every preset; ADD-A123), a name being a content variant only on the widget or part its pair names; the breakpoint
 variants are those the widget's `breakpoints` value names (S7.3); and every other variant in `Element.variants` (the
 same name on another widget or part included: `vertical` on `slider`) is one the application asked for. The
 declarations in force are the preset's, a flavour's section replacing the keys it states (S10). The query: ignores a
@@ -2335,16 +2350,17 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
-| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared as S17's quote check compares text (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared as S17's quote check compares text (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which may only be a reference to a text field (S12 refuses a call), `"absent"` means `Absent` (S6.3 deciding where it is allowed), `"none"` means `None` only in an `Option` field, and `"auto"` is `Auto` only in a `Value<Px>` or `Value<FontSize>` field (S2.2: a length or a line height), so in a `Value<String>` `"auto"` is the text `auto` and `"none"` the text `none` unless the field is an `Option`; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120, ADD-A123) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
 | an `Option` that is `None` | `"none"`; an `Option` field or leaf of a field (`Caret.blink_timeout`, `Behavior.key_repeat`, `TextStyle.max_lines`, `PlacementParams.max_visible_items`) is stated like any other, so left out it is missing (S2.2, S2.11), never a silent `None`; an `Option` inside a list item or an enum variant's payload left out is `None` (`focus_visible_when = { keyboard = {} }`: no timeout) |
 | an enum variant | a unit variant is its snake_case name (`"follow_part"`, `"continuous"`); a variant with data is a one-key table, `{ <variant> = <payload> }`: `top_left = { concentric = { minimum_px = <n> } }` (a `Corners` field is a table of its four corners and its curve, S2.4), `shadow = { elevation = "<step>" }`, `timing = { spring = { mass = <n>, … } }` |
 | a list | a TOML array; where the platform has none, `[]` with its citation (a list is never `"absent"`, S2.11) |
-| a map (`Vec<(K, V)>`) | a TOML table, one key per entry, never a list of pairs: a `Key` (or an enum-keyed map's variant) bare, by S1's key grammar; a key that is text (`per_family`'s font families, `per_language`'s language tags) as written, quoted where TOML does not allow it bare (`"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`), and compared as text is (ADD-A123); a value with a unit keyed by its key and the unit's suffix (S1) |
+| a map (`Vec<(K, V)>`) | a TOML table, one key per entry, never a list of pairs: a `Key` (or an enum-keyed map's variant) bare, by S1's key grammar; a key that is text (`per_family`'s font families, `per_language`'s language tags) as written, quoted where TOML does not allow it bare (`"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`); two keys are one entry exactly where they are equal as TOML keys, that is case-sensitively, so a family is written as its source writes it, and the toolkit's own family matching (fontconfig's ignores case and blanks, `fontconfig@2.18.3 src/fcmatch.c:69-82`) is the connector's (ADD-A123); an entry whose value has a unit (`Value<Ms>`, `Value<Px>`) takes the unit's suffix on its key as a field does (`[tokens.motion.durations] button_ms = <n>`), its path naming it without (`token.motion.durations.button`), while a `Scalar` entry (a keyed param, a material or transition param) takes none, its number in the unit its declaration names (S10) |
 | a tuple, a tuple variant | a positional TOML array: `center = [<x>, <y>]` (`Radial.center`, `Conic.center`), `origin = [<x>, <y>]` (`Transform.origin`); a tuple variant is a one-key table holding that array, `timing = { cubic_bezier = [<x1>, <y1>, <x2>, <y2>] }` |
 | `input.kde_scheme.groups`, `.inactive_groups`, `.unset_keys` | `[inputs.kde_scheme.groups]`, `[inputs.kde_scheme.inactive_groups]` and `[inputs.kde_scheme.unset_keys]`, each with `light` and `dark`: arrays of surface sets (`["header"]`, or `[]`), and for `unset_keys` of scheme input names (`["kde_scheme.view.foreground_visited"]`, or `[]`) |
+| a `PartRef` stated as a value (a keyframe's `part`, S2.7; `Measured::Part`; a fade's `under`) | `"<part>"`, a bare name of the parts of the widget whose table it is in, or `"<widget>.<part>"`, which names its widget (a keyframe of a component's loop naming a part of a widget it holds); a bare name where no widget's table is read is mistyped (ADD-A123) |
 | a part drawn by another widget | `drawn_as = { widget = "<w>", part = "<p>", variants = [ … ] }` (`part` left out: the whole widget; `part` a bare name of `<w>`'s parts, so the two keys spell one `WidgetOrPart`, S1) |
 | a condition | `"<name>"` in snake_case (`"window_inactive"`); with a parameter `"<name>:<value>"`: `"scheme:dark"`, `"tiled:left,top"`, `"input:touch"`, `"idiom:pad"`, `"flavor:kirigami"`, `"preset:adwaita"`, `"system_setting:<key>"`, `"container_size:sidebar:<key>"` |
 | a rule's target | `"colors"`, `"tokens"`, `"<widget>.<part>"`, `"<widget>.values"`, `"component.<key>.<part>"`, `"component.<key>.values"` |
@@ -2354,7 +2370,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | widget values, component parts | `[widgets.<widget>.values]`, `[components.<key>.<part>]`, `[components.<key>.values]` |
 
 `when` keys: `conditions`, `not_conditions`, `context` and `not_context` (arrays of `{ scope = "any" | { nearest =
-[...] }, widget, part, surface, sizes, not_sizes, variants, not_variants, states, not_states }`; `widget` may be left out to match by
+[...] }` (left out: `"any"`, any ancestor; ADD-A123), widget, part, surface, sizes, not_sizes, variants, not_variants, states, not_states }`; `widget` may be left out to match by
 variant alone, and `part`, a bare name of `widget`'s parts, is stated only with it, the two keys spelling one
 `WidgetOrPart`, S1), `position` (`{ among, first, last, only, parity, previous, next }`, `among` = `"same"`, `"any"` or a
 list of widgets; `previous` and `next` as `{ widget, part, variants, not_variants, states, not_states }`),
@@ -2434,8 +2450,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - an expression nests deeper than 32, or a chain of references is longer than 32;
 - a `Fields` patch can meet an `Absent` or `Auto` block under some combination of the rules before it, following
   references (S2.2; checked conservatively), or `base` or `Append` appears in a layer's bases;
-- a map of bare struct blocks (`token.text.keyed`, `token.icons.sizes.keyed`, `ColorRoles.surfaces`, S6.1) has an
-  entry `Set` to a reference, `Absent` or `Auto`, in a base or a rule (ADD-A123);
+- a patch sets an entry of a map of bare blocks (`token.text.keyed`, `token.icons.sizes.keyed`, `ColorRoles.surfaces`,
+  `token.motion.timings`, S6.1) to a reference, `Absent` or `Auto`, in a base or a rule: an ill-typed patch, refused
+  whatever lies below it (ADD-A123);
 - a map entry's patch (S6.1) can create the entry over a value with a field left unset that may not be `Absent`: a
   base's patch for a key that no base before it states (the bases of the layers below and the earlier bases of its
   own layer, a layer's `for_preset` part counting after its common bases for that preset only, checked while that
@@ -2898,7 +2915,8 @@ tolerance = <t>
   `<widget>.<part>` (`component.<key>.<part>`), with `value = "absent"` (S6.3's `absent = true`,
   `PartPatch::Absent`) or the part's `drawn_as` table as S11 spells it (`PartPatch::DrawnAs`), and the gate compares
   it with the query's `Styled::NotDrawn` or `Styled::DrawnAs` (ADD-A121); a map entry whose key is text is keyed by that key as a TOML
-  dotted key writes it, quoted (`token.text.fallbacks.per_family."Segoe Fluent Icons"`, S11; ADD-A123); a struct block field is stated per leaf (`….text.font.size`) or as a
+  dotted key writes it, quoted where needed, and equal to the preset's entry as S11's TOML keys are
+  (`token.text.fallbacks.per_family."Segoe Fluent Icons"`; ADD-A123); a struct block field is stated per leaf (`….text.font.size`) or as a
 whole by a reference (S2.2: `= token.focus`), an enum block (S6.1 lists them: `Timing`) as a whole, by a reference or S11's
 spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct blocks the valid keys decide (below). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
@@ -2973,9 +2991,12 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, for a unitless number of seconds), `negate` (−x, the quoted
   number's sign flipped: WinUI's `FocusVisualMargin`, whose negative margin is an outward distance, S2.10; ADD-A122),
   `ns_font_weight` (an AppKit `NSFontWeight` to S2.8's CSS weight: 100 times one more than the number of the
-  thresholds −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5 and 0.7 at or below it, WebKit's mapping of the system
-  font's weight trait, `WebKit@7624.5.1.11.3 Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739`, so the
-  probe's 0, 0.3 and 0.4 are 400, 600 and 700; ADD-A123). A point size stays a
+  thresholds −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5 and 0.7 at or below it, so the probe's 0, 0.3 and 0.4 are
+  400, 600 and 700; ADD-A123). It is the model's own conversion, the same for every generation, as every member of
+  this list is; its source is WebKit's mapping of the system font's weight trait,
+  `WebKit@7624.5.1.11.3 Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739`, which WebKit takes only where
+  Core Text gives the font no CSS weight of its own (`kCTFontCSSWeightAttribute`, read first, `:725-728`): a fact
+  whose evidence records that attribute states it unconverted. A point size stays a
   point size (S9.4 converts it by the preset's font DPI). A JSON-pointer citation's quote occurs in the string value
   at the pointer.
 - **Absence.** A value that states an absence (`absent`, an empty list, `available = false`, a variant or size the
@@ -3292,7 +3313,7 @@ with none (ADD-A118).
 
 The catalogue groups asked for additions to this core; the traceability cites them by ID. Each is decided: class A
 (`ADD-Ann`) are details inside the rationale's mechanisms, class B (`ADD-Bnn`) needed decisions the rationale took in
-R25, and `CONTRA-n` were contradictions with the rationale, settled there (CONTRA-6, which waits for the
+R25, and `CONTRA-n` were contradictions with the rationale, settled there (CONTRA-6 and CONTRA-7, which wait for the
 maintainer, excepted). The rows each needs are the traceability's
 lines that cite it.
 
@@ -3420,7 +3441,7 @@ lines that cite it.
 | ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S4.2, S6.1, S11, S12, S17 |
 | ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp` (every Kirigami, qqc2-desktop-style and kirigami-addons `linearInterpolation` the KDE trace states written with it and its operands), `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17, S4.6 |
 | ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; a glyph font's fallback chain; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms; the first check's fixes: the one merge conflict (a `Fields` patch meeting `Absent` or `Auto` directly), the motion keys from a shared name, the one class or the source's words, the pending fact's register Id and a shadowed pending fact failing the gate, two products giving one set, the enum blocks listed, `min_width` and `min_height` as `Option<Length>`, one surface binding per part, `concentric`'s `None` for unequal insets, `damping_coefficient`, `ResolvedPartStylePatch` for a keyframe, a transition with no property group refused; the second check's fixes: the enum blocks defined (a model enum with a variant holding data) and listed, each stated whole; the motion keys' closed list of dropped words applied in every step (UIKit's `default`, QVariantAnimation's `variant`) and the catalogue naming each key or its family; `FontCodePoint`'s chain moved to `token.text.fallbacks.per_family`; a map merging by key with a `BlockPatch` per struct-block entry, an entry for a missing key created from its patch; `GlobalRole::AccentRamp`; `StatusColors` named; `concentric`'s inset from the stated paddings and margins, S12 refusing unequal ones; `Paint::try_from` refusing a bottom `Mask`; a product repeating a variant refused; a pending fact's place in its file; the ring offset on the part's own width; the third check's fixes: a floating part's distance from the window as its `margin` (no `floating_inset` value), the connector summing `inset`; WinUI's `connected_service` by step 2 and the catalogue listing every key the traces use; Breeze's deactivation `out_cubic`; W1-102's indicator box the laid-out glyph; a map entry created over a value only where its unset fields may be `Absent`, else a merge conflict; several pending facts sharing one register row; the fourth check's fixes: W1-102's `min_width` from WinUI's arrange of its zero-width column, S12's map-entry conflict, S2.7's forward reading defined, the floating margins' reference edges and Material's offset on the anchored edge only, a register Id unique among rows, the tab's declared `width` and `height`, the W spike's `connected_service`; the fifth check's fixes: W1-102 limited to the default label position, the label-beside-icon position recorded as not expressible, S12's map-entry check on bases and on rules conservatively, the backward-run wording; the sixth check's fixes: W1-102 excluding the tabbed command bar, where the label-beside-icon chevron is not expressible, and covering the icon-only position; every focus corner the ring's inner corner (S2.10), W3-20 and MAT-X10 from their sources; AdwTabBox's and AdwTabGrid's keys named; `for_preset` bases in S12's map-entry check; the seventh check's fixes: Breeze's focus corners stated as it draws them (`Frame_FrameRadius`, circular for radio, slider and dial), MAT-X10's `inward-offset` and system `inner-offset` told apart, a `FollowPart` ring's outer corner `follow_part(r, offset + width)`, a square part's ring kept square on GTK and WinUI, WinUI's Reveal and DottedLine corners square; the eighth check's fixes: Breeze's focus offsets per part (frames and the dial inset, the checkbox and radio flush with the drawn indicator), the group box's ring the title checkbox's, a ring's `Full` corner on its inner box; the ninth check's fixes: `group_box.body` without `focus`, S8's focus-corner operand on the ring's inner box, `token.focus`'s offset and the slider's inset stated; the tenth check's minors: `Full` on a ring's inner box, the slider's and dial's handle rect, Breeze's default branch unused, the `animations` base the literal | S1, S2.2, S2.4, S2.7, S2.9, S2.10, S3, S3.3, S4.1, S4.4, S6.1, S10, S12, S17, the catalogue |
-| ADD-A123 | the third spec batch (queue #56, #62, #63, #64, #65–#71): a curve a toolkit computes in code is `Timing::Platform`, `PlatformCurve::Qt(QtEasing)` and `PlatformCurve::Adw(AdwEasing)` beside `KirigamiVelocity`, a curve whose control points the source writes a `CubicBezier`, and the facts quote the curve's name; `with_alpha(c, a)`, which sets the alpha as `Qt.alpha` and CSS's relative colour do, beside the multiplying `alpha` (Q2.5's RoundButton fill); `requires_variants` meaning any one of its forms; `MotionTokens`' Rust sketch; S2.8's weight the CSS weight and the `ns_font_weight` conversion (WebKit's thresholds for AppKit's `NSFontWeight`); a map keyed by text spelt as a TOML table with the text as its keys (`per_family`), its fact keyed by the quoted key; the macOS accent inputs named (`highlight` from `selectedTextBackgroundColor`, `selected_content_background`, `keyboard_focus_indicator`, `selected_control`; `highlightColor` a literal); a `Style` after a `DrawnAs` restoring the part as after `Absent`; a bare block's map entry `Set` to a reference, `Absent` or `Auto` the third merge conflict; `PlatformCurve` an enum block; the catalogue's `IndicatorAnchor::InlineTop` and an inline indicator's `margin` a margin in the row, an overlaid one's unused sides stated as written (W1-102's tabbed command bar now stated); adwaita's arrow absence rule `@ variants {menu} !variants {@arrow_only,@with_arrow}`; libadwaita's inline transition keys `tab_bar`, `tab_thumbnail`, `bottom_sheet_border_radius`, `bottom_sheet_box_shadow`; `token.params.motion.kwin_speed_factor` (the decoration's factor, kwinrc over kdeglobals); K3.20's +0.001px offset; macOS's circular bezel and circle shape one variant (probe-confirmed), `NSComboButton.unified` as `menu`, `automatic` no variant until measured, a size's font `systemFontSizeForControlSize:`'s, the accent-following fills as `mix`; Material's `@extended_fab` `regular` the unsized composable and Expressive's sizes `small`, `large`, `extra_large`, the extended FAB's and Expressive `with_icon` paddings traced, `token.material.variant`'s default not pinned, the dialog title's precision-pointer case an application opt-in with no rule | S2.2, S2.7, S2.8, S4.1, S4.4, S6.1, S6.3, S8, S9.1, S10, S11, S12, S17, the catalogue |
+| ADD-A123 | the third spec batch (queue #56, #62, #63, #64, #65–#71): a curve a toolkit computes in code is `Timing::Platform` (provisional, CONTRA-7), `PlatformCurve::Qt(QtEasing)` and `PlatformCurve::Adw(AdwEasing)` beside `KirigamiVelocity`, a curve whose control points the source writes a `CubicBezier`, and the facts quote the curve's name; `with_alpha(c, a)`, which sets the alpha as `Qt.alpha` and CSS's relative colour do, beside the multiplying `alpha` (Q2.5's RoundButton fill); `requires_variants` meaning any one of its forms; `MotionTokens`' Rust sketch; S2.8's weight the CSS weight and the `ns_font_weight` conversion (WebKit's thresholds for AppKit's `NSFontWeight`); a map keyed by text spelt as a TOML table with the text as its keys (`per_family`), its fact keyed by the quoted key; the macOS accent inputs named (`highlight` from `selectedTextBackgroundColor`, `selected_content_background`, `keyboard_focus_indicator`, `selected_control`; `highlightColor` a literal); a `Style` after a `DrawnAs` restoring the part as after `Absent`; a bare block's map entry set to a reference, `Absent` or `Auto` an ill-typed patch; `PlatformCurve` an enum block; the catalogue's `IndicatorAnchor::InlineTop` and an inline indicator's `margin` a margin in the row, an overlaid one's unused sides stated as written (W1-102's tabbed command bar now stated); adwaita's arrow absence rule `@ variants {menu} !variants {@arrow_only,@with_arrow}`; libadwaita's inline transition keys `tab_bar`, `tab_thumbnail`, `bottom_sheet_border_radius`, `bottom_sheet_box_shadow`; `token.params.motion.kwin_speed_factor` (the decoration's factor, kwinrc over kdeglobals); K3.20's offsets; macOS's circular bezel and circle shape one variant (probe-confirmed), `NSComboButton.unified` as `menu`, `automatic` no variant until measured, a size's font `systemFontSizeForControlSize:`'s, the accent-following fills as `mix`; Material's `@extended_fab` `regular` the unsized composable and Expressive's sizes `small`, `large`, `extra_large`, the extended FAB's and Expressive `with_icon` paddings traced, `token.material.variant`'s default not pinned, the dialog title's precision-pointer case an application opt-in with no rule; the first check's fixes: `@with_arrow` and `@arrow_only` content variants the connector sets by GTK's rule (keyed content variants, S8), CONTRA-7 recording the platform-curve reading, K3.20 split (a positive offset on buttons and non-editable combo boxes, the inset inward on line edits, text areas, spin boxes and editable combo boxes), W1-102's `InlineTop` row with its glyph and gap, `ns_font_weight` the model's own conversion, the bare-block entry (`token.motion.timings` too) an ill-typed patch, not a merge conflict, text map keys equal as TOML keys, the unit suffix on map entry keys and none on `Scalar` entries, `"auto"`/`"none"`/`"absent"` exact, `selected_content_background`'s row, `kwin_speed_factor`'s default, an inline row's spare width, libadwaita's `expander_row`, `places_view`, `toggle_group` and `AdwEasing`'s in-cubic and expo members, `context.scope` defaulting to any ancestor, a `PartRef` value's spelling, `LayerError`'s variants by owner | S1, S2.2, S2.7, S2.8, S4.1, S4.4, S6.1, S6.3, S8, S9.1, S10, S11, S12, S17, the catalogue |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
@@ -3444,4 +3465,5 @@ lines that cite it.
 | CONTRA-3 | R2.3 position among the same widget kind against GTK's `.linked` | R2.3, R25.9 |
 | CONTRA-4 | R11 symbol effects as transitions against an icon "effect" | R25.12 |
 | CONTRA-5 | R5.4 a width in characters as a multiple of the font size | R5.4, R25.3 |
+| CONTRA-7 | R9's timings (rationale `R9`, *Timing*) and CONTRA-2 make the closed set of platform curves the velocity-dependent ones (Kirigami's), while Qt's and libadwaita's fixed curves are computed in code, several no cubic Bézier at all (`QEasingCurve::InOutSine`, a cosine, `qtbase@6.12.0 src/3rdparty/easing/easing.cpp:275-278`; `OutExpo`, `:309-312`; `InOutQuad`, `InOutCubic`, two pieces, `:70-79`, `:122-131`). Provisional reading (ADD-A123, S2.7): every curve a toolkit computes by a function of its own is `Timing::Platform` (`Qt(QtEasing)`, `Adw(AdwEasing)`), implemented to that function, the facts quoting its name. Alternative: the curves that are exact cubic Béziers stated as such, `InQuad` `cubic_bezier(1/3, 0, 2/3, 1/3)`, `OutQuad` `(1/3, 2/3, 2/3, 1)`, `InCubic` `(1/3, 0, 2/3, 0)`, `OutCubic` and libadwaita's `ease_out_cubic` `(1/3, 1, 2/3, 1)` (each equal to the polynomial in exact arithmetic, `easing.cpp:48-51`, `:59-62`, `:99-102`, `:110-114`, `libadwaita@1.10.0 src/adw-easing.c:175-181`), with a quote notation for the derivation, leaving only the curves that are no Bézier (the in-out, sine and expo ones) as platform curves, which still extends R9's set beyond velocity-dependent curves | pending the maintainer (R9, R25.6) |
 | CONTRA-6 | R3's exclusive groups (a fixed precedence; the query keeps the highest present) against Compose's state layer, which shows the more recent of hover and focus (and of drag; `androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:279-280`); a recency rule would also need element data no part declares (R25.3). Pending the maintainer; until then Material's groups state a provisional fixed order, `focus_visible` over `hover` (the catalogue's Material state-layer groups); Compose's InsetRing focus indicator draws no state layer at all | pending the maintainer (R3, R25.3) |

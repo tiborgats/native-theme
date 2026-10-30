@@ -194,8 +194,11 @@ Each `### <widget>` section states, in this order:
   variant's meaning is the declaring widget's (`inline` is a link inside running text on `link`, a tip inside the
   content on `teaching_tip`), and a keyed `@k` and a typed `k` are different names. A content variant is a pair, a
   widget (or one of its *(element)* parts) and a variant name, set by the connector from the element's content on
-  every platform (ADD-A61), so it is typed whichever presets style it. The pairs are exactly these:
-  `button`: `icon_only`, `with_icon`; `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
+  every platform (ADD-A61), so it is typed whichever presets style it, except a keyed one that only one platform's
+  rule derives, set by the connector by that rule on every platform and ignored where a preset does not declare it
+  (S8; ADD-A123). The pairs are exactly these:
+  `button`: `icon_only`, `with_icon`, and GTK's keyed `@custom_child`, `@arrow_only`, `@with_arrow` (the `button`
+  entry's `adwaita` variants give the rule); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
   `icon_only`, `with_icon`; `menu.item`: `icon_only`; `list.row`: `icon_only`, `with_icon`, `with_subtitle`,
   `three_line`, `with_avatar`, `with_image`, `with_video`; `breadcrumb.crumb`: `with_icon`; `chip`: `with_icon`;
   `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `badge`:
@@ -1315,6 +1318,11 @@ spaces:
     to the row's size, a negative one overlapping, so a start margin of `d` with an end margin of `−d` moves the box `d`
     toward the end and leaves the row's size alone); `Inline` centres its margin box on the row's cross axis,
     `InlineTop` puts it at the row's top, the top margin then the distance from the top of `body`'s content box.
+    Where the row is wider than its content and indicator need (a stated minimum width, a stretched button), the
+    spare width goes to the content: the indicator keeps the row's end and the content is laid out in the rest as it
+    would be alone, centred where the button centres it (Breeze's push button, the arrow at the contents rect's end
+    and the text centred in the rest, `breeze@6.8.2 kstyle/breezestyle.cpp:5364-5370`; GTK's label menu button, the
+    label expanding before the arrow, `gtk@4.24.1 gtk/gtkmenubutton.c:1174-1186`; ADD-A123).
     `TopEnd`, `BottomEnd` over that corner of `body`, taking no layout space, its box its laid-out size (its content,
     at least `min_width` by `min_height` where it states them) and its `margin`'s top or bottom and its end (mirrored
     with the layout, S1) the distances from `body`'s edges at that corner; its two other sides place nothing, as CSS
@@ -1406,13 +1414,18 @@ spaces:
     cast button; `route_active` while a route plays, MAC-P3-9†, C-42†, W-P4-18†).
   - keyed, `adwaita`: `@raised`, `@osd`, `@opaque`, `@card`, `@with_arrow` (`.arrow-button`: a menu button showing
     its arrow beside an icon, a label or a custom child, `gtk@4.24.1 gtk/gtkmenubutton.c:72-75`, `:644-647`; an
-    arrow-only menu button is `.image-button`, `icon_only`, `:634-637`), `@arrow_only` (with `icon_only`: a menu button
-    whose only content is its arrow, `has_only_arrow`, `gtkmenubutton.c:631`, `:661-665`, which draws the arrow as its
-    `menu_indicator`, where `menu` with `icon_only` alone is an icon menu button whose arrow GTK hides, `:661-665`; set
-    from the button's content as `@custom_child` is; ADD-A122), `@arrow_up`,
+    arrow-only menu button is `.image-button`, `icon_only`, `:634-637`; a content variant (Entry format) the connector
+    sets on a `menu` button wherever GTK adds the class, the arrow shown and not the only content, `:631-632`,
+    `:644-647`, `:658-666`: on text-only content (neither `icon_only`, `with_icon` nor `@custom_child`), which GTK's
+    label makes a text button, unless the element holds `@arrow_none`; on other content only where the application
+    asks for the arrow, GTK's `always-show-arrow`, and holds no `@arrow_none`; ADD-A123), `@arrow_only` (with
+    `icon_only`: a menu button whose only content is its arrow, `has_only_arrow`, `gtkmenubutton.c:631`, `:661-665`,
+    which draws the arrow as its `menu_indicator`, where `menu` with `icon_only` alone is an icon menu button whose
+    arrow GTK hides, `:661-665`; a content variant the connector sets on a `menu` button with no content but its
+    arrow, as it sets `@custom_child`; ADD-A122, ADD-A123), `@arrow_up`,
     `@arrow_start`, `@arrow_end`, `@arrow_none` (GtkMenuButton's direction; down is the base), `@tab_button`
-    (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@custom_child` (a button whose child is neither a
-    label nor an image, so GTK sets neither `.text-button` nor `.image-button`, `gtk/gtkbutton.c:431-432`: the base
+    (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@custom_child` (a content variant: a button whose
+    child is neither a label nor an image, so GTK sets neither `.text-button` nor `.image-button`, `gtk/gtkbutton.c:431-432`: the base
     `button` padding, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:22`, where the base, text only, is
     `.text-button`'s, `:72-75`), `@image_text_box` (with `with_icon`: an icon and a label in a box the application
     builds and classes `.image-text-button` or `.text-button.image-button`, whose gap and label padding are
@@ -8855,7 +8868,7 @@ token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 
 | Platform | Keys (one per duration the platform states) | Rows |
 |---|---|---|
-| libadwaita | the stylesheet's transition variables `backdrop`, `focus`, `button`, `row`, `toggle` (`$backdrop_transition` …, `libadwaita@1.10.0 src/stylesheet/_common.scss:2-7`, `widgets/_lists.scss:1-3`, `widgets/_toggle-group.scss:5-7`), `scrollbar` (`$_scrollbar_transition`, `widgets/_scrolling.scss:4`) and `needs_attention` (the keyframes' name, `_common.scss:114`), and its inline transitions by S4.1's step 2, the class (its CSS node's widget) and, where one class states different values, the transition in the source's words: `tab_bar` (AdwTabBar's separator and tab fades, one duration, `widgets/_tab-view.scss:39`, `:59`), `tab_thumbnail` (AdwTabThumbnail's shadow, `:199`), `bottom_sheet_border_radius` and `bottom_sheet_box_shadow` (AdwBottomSheet's sheet and outline, `widgets/_bottom-sheet.scss:10`, `:30`; ADD-A123); the timed animations defined in code: AdwToastOverlay's `toast_overlay_show`, `toast_overlay_hide`, `toast_overlay_replace` (`src/adw-toast-overlay.c:20-22`), AdwTab's `tab_close_btn`, `tab_attention_indicator` (`adw-tab.c:19`, `:28`), AdwTabOverview's `tab_overview_scroll` and `tab_overview` (`SCROLL_ANIMATION_DURATION`, `TRANSITION_DURATION`, `adw-tab-overview.c:29-30`), AdwEntryRow's `entry_row` (`adw-entry-row.c:18`), AdwViewStack's `view_stack` (`adw-view-stack.c:1653`), the deprecated AdwFlap's fold, `flap_fold`, and AdwLeaflet's mode transition, `leaflet_mode` (`adw-flap.c:1551`, `adw-leaflet.c:2445`), AdwTabBox's `tab_box_open`, `tab_box_close`, `tab_box_focus`, `tab_box_scroll`, `tab_box_resize`, `tab_box_reorder`, `tab_box_icon_resize` (`adw-tab-box.c:30-36`) and AdwTabGrid's `tab_grid_open`, `tab_grid_close`, `tab_grid_focus`, `tab_grid_resize`, `tab_grid_reorder`, `tab_grid_icon_resize` (`adw-tab-grid.c:29-34`), each class stating different values for its transitions; the revealer and stack defaults, `revealer` and `stack`; the animated scroll, `scrolled_window` (GtkScrolledWindow's `ANIMATION_DURATION`, `gtk@4.24.1 gtk/gtkscrolledwindow.c:189`) | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
+| libadwaita | the stylesheet's transition variables `backdrop`, `focus`, `button`, `row`, `toggle` (`$backdrop_transition` …, `libadwaita@1.10.0 src/stylesheet/_common.scss:2-7`, `widgets/_lists.scss:1-3`, `widgets/_toggle-group.scss:5-7`), `scrollbar` (`$_scrollbar_transition`, `widgets/_scrolling.scss:4`) and `needs_attention` (the keyframes' name, `_common.scss:114`), and its inline transitions by S4.1's step 2, the class (its CSS node's widget) and, where one class states different values, the transition in the source's words: `tab_bar` (AdwTabBar's separator and tab fades, one duration, `widgets/_tab-view.scss:39`, `:59`), `tab_thumbnail` (AdwTabThumbnail's shadow, `:199`), `bottom_sheet_border_radius` and `bottom_sheet_box_shadow` (AdwBottomSheet's sheet and outline, `widgets/_bottom-sheet.scss:10`, `:30`), `expander_row` (AdwExpanderRow's arrow rotation, `widgets/_lists.scss:392`), `places_view` (GtkPlacesView's server-list arrow, `widgets/_file-chooser.scss:68`) and `toggle_group` (AdwToggleGroup's separators, `widgets/_toggle-group.scss:142`) (ADD-A123); the timed animations defined in code: AdwToastOverlay's `toast_overlay_show`, `toast_overlay_hide`, `toast_overlay_replace` (`src/adw-toast-overlay.c:20-22`), AdwTab's `tab_close_btn`, `tab_attention_indicator` (`adw-tab.c:19`, `:28`), AdwTabOverview's `tab_overview_scroll` and `tab_overview` (`SCROLL_ANIMATION_DURATION`, `TRANSITION_DURATION`, `adw-tab-overview.c:29-30`), AdwEntryRow's `entry_row` (`adw-entry-row.c:18`), AdwViewStack's `view_stack` (`adw-view-stack.c:1653`), the deprecated AdwFlap's fold, `flap_fold`, and AdwLeaflet's mode transition, `leaflet_mode` (`adw-flap.c:1551`, `adw-leaflet.c:2445`), AdwTabBox's `tab_box_open`, `tab_box_close`, `tab_box_focus`, `tab_box_scroll`, `tab_box_resize`, `tab_box_reorder`, `tab_box_icon_resize` (`adw-tab-box.c:30-36`) and AdwTabGrid's `tab_grid_open`, `tab_grid_close`, `tab_grid_focus`, `tab_grid_resize`, `tab_grid_reorder`, `tab_grid_icon_resize` (`adw-tab-grid.c:29-34`), each class stating different values for its transitions; the revealer and stack defaults, `revealer` and `stack`; the animated scroll, `scrolled_window` (GtkScrolledWindow's `ANIMATION_DURATION`, `gtk@4.24.1 gtk/gtkscrolledwindow.c:189`) | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
 | kde-breeze | `animations` (Breeze's `Animations`, its state engines' duration: while kdeglobals sets `AnimationDurationFactor`, `= floor(mul(<base>, token.motion.speed_factor))`, `<base>` the literal the factor is multiplied by at `breeze@6.8.2 kstyle/breezestyle.cpp:2080` (not breezerc's `AnimationsDuration`), the product truncated to whole ms, a positive result turning Breeze's animations on whatever breezerc says (`:2081-2083`) and zero, which a factor below 0.01 gives, turning them off (`:2085`), so the duration is then zero; while the factor is unset, breezerc's `AnimationsDuration`, zero where its `AnimationsEnabled` is off (`:2076-2078`, `kstyle/animations/breezeanimations.cpp:49-55`); Qt's `SH_Widget_Animation_Duration` too, `breezestyle.cpp:937-938`, which the dock widgets' and toolbars' re-layout and KCollapsibleGroupBox's expansion reference, the last with the source's floor by `max`, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:114-116`); `decoration_shadow` (the decoration's shadow fade, a base times `token.params.motion.kwin_speed_factor`, the factor KWin's configuration gives, kwinrc's over kdeglobals', `floor`ed, `kdecoration/breezedecoration.cpp:379-389`, K1.17, ADD-A123); `line_edit_icon_button` (Qt's side-icon fade, unscaled, `qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:432`); `tab_bar` (Qt's tab move, `ANIMATION_DURATION`, unscaled, `src/widgets/widgets/qtabbar_p.h:30`); `message_widget` (KMessageWidget's timeline, `kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60`); `variant` (QVariantAnimation's own default, unscaled, which QTreeView's expand takes, K1.185†, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`); Kirigami `very_short`, `short`, `long`, `very_long` (derived from `long`, with the source's floor by `max`, ADD-A56) and `human_moment` (unscaled) | K1.17, K1.185†, K3.31, K3.37, K3.38†, Q3.23–Q3.25, Q3.27 |
 | windows-11 | `control_normal`, `control_fast`, `control_fast_after`, `control_faster` (WinUI's `ControlNormalAnimationDuration`, `ControlFastAnimationDuration`, `ControlFastAnimationAfterDuration`, `ControlFasterAnimationDuration`, `Common_themeresources_any.xaml:603-606`); `connected_service` (ConnectedAnimationService's default, `src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26`); `scroll_into_view` (the scroll into view, measured, W-P4-3†); one entry per built-in theme transition the facts measure, named as WinUI names its class less `Transition` and `Animation` (`EntranceThemeTransition` `entrance_theme`: entrance, content, add and delete, reorder, reposition, popup, pane, drill in, press tilt, fade, split open and close, drag item) | W3-30, W3-32, W3-33, W3-34, W-P4-3† |
 | macos-* | by family, the facts lanes naming each key: the AppKit durations (`NSAnimationContext`'s default, the window resize time, per-control durations the probe records), `navigation` | MAC-X11 |
@@ -8867,7 +8880,10 @@ platform's curve is its own (Kirigami's velocity-based curves, `KirigamiVelocity
 `ease_out_quad` (`$ease-out-quad`, `libadwaita@1.10.0 src/stylesheet/_common.scss:1`), the CSS keyword curves its
 stylesheet uses (`ease_out`, `ease_in`, `ease_in_out`, `ease`, `linear`) and AdwTimedAnimation's default
 `ease_out_cubic` (`ADW_EASE_OUT_CUBIC`, `adw-timed-animation.c:275`, `Timing::Platform(Adw(EaseOutCubic))`, the polynomial
-`adw-easing.c:175-181` computes, S2.7, ADD-A123) (GN-3.19), and its springs below (GN-3.20);
+`adw-easing.c:175-181` computes, S2.7, ADD-A123) (GN-3.19), and the easings its code applies, each named for its
+`AdwEasing` (S4.1 step 1) and a `Timing::Platform(Adw(…))`: `ease_in_cubic` (the tab box's and tab grid's drag
+autoscroll, `adw-tab-box.c:1450`, `adw-tab-grid.c:1473`), `ease_in_expo` and `ease_out_expo` (AdwTabOverview's
+cross-fade and fades, `adw-tab-overview.c:1307`, `:1336`, `:1347`) (ADD-A123), and its springs below (GN-3.20);
 on `kde-breeze` Qt's curves by their `QEasingCurve` names, each `Timing::Platform(Qt(<type>))` (S2.7, ADD-A123): the
 decoration's shadow fade, `out_cubic` both ways
 (`breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:278-279`: the deactivation's in-cubic curve runs backward,
@@ -8918,7 +8934,8 @@ is not).
 **token.params** (ADD-A44), keyed scalar tokens in groups, each group of one unit its declaration names (S4.6, S10):
 `token.params.shadow.strength` (K3.1, K3.2); `token.params.motion.animation_steps` (K3.31); `token.params.motion.kwin_speed_factor` (K1.17: the speed factor
 KWin and its decoration read, kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', which
-`token.motion.speed_factor` reads alone; ADD-A123);
+`token.motion.speed_factor` reads alone, and 1 where neither states one, the decoration's default,
+`breeze@6.8.2 kdecoration/breezedecoration.cpp:389`; ADD-A123);
 `token.params.color.contrast` and `token.params.color.frame_contrast` (K3.53, K3.91, Q3.14, Q3.15);
 `token.params.layout.grid_unit` (Q3.29, a length); `token.params.optics.optical_centering` (MAT-X37†: Material's
 unitless optical-centering coefficient, in a group of unit `number` of its own, since `layout` is a group of lengths);

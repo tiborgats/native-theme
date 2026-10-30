@@ -286,6 +286,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-L01 | `reader:macos:headerRect(ofColumn:), rect(ofRow:) per style` | reader |
 | MAC-L02 | `list.row_background.corners, list.values.row_background_inset @ {selected}` | rule |
 | MAC-L02 | `list.row_background.corners @ {selected} prev list.row{selected} / {selected} next list.row{selected} (ADD-B07)` | rule |
+| MAC-L02 | `list.row_background.fill @ {selected} context list.view {focus_within}` (the emphasized selection, the accent input `selected_content_background`'s value: `selectedContentBackgroundColor`, "the background color of selected and emphasized (focused) content: table views rows", `NSColor.h:221` in the Xcode 26.6 SDK; ADD-A123) | rule |
+| MAC-L02 | `input.selected_content_background` (an accent input, S9.1: `NSColor.selectedContentBackgroundColor`, ADD-A123) | input |
+| MAC-L02 | `reader:macos:NSColor.selectedContentBackgroundColor` | reader |
 | MAC-L03 | `list.row_background.fill, list.row.text.fill @ {selected} context list.view !{focus_within} / {selected} cond window_inactive` | rule |
 | MAC-L03 | `reader:macos:unemphasizedSelectedContentBackgroundColor` | reader |
 | MAC-L04 | `list.secondary_text.text.fill, list.leading_icon.icon.fill @ {selected} context list.view {focus_within}` | rule |
