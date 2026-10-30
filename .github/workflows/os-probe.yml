@@ -6,8 +6,9 @@ name: OS probe
 # (tools/linux-containers/gnome): its build, the harness (tools/gnome-host) and
 # the vector generator (tools/gnome-vectors); and the KDE jobs, in the KDE
 # container (tools/linux-containers/kde): its build, the accent run
-# (scripts/measure_kde_accent.sh) and the render host (tools/kde-host); and the
-# WinUI host (tools/winui-host) on the Windows images.
+# (scripts/measure_kde_accent.sh) and the render host (tools/kde-host); the
+# Android host (tools/android-host) on the emulator; and the WinUI host
+# (tools/winui-host) on the Windows images.
 # Evidence for the platform-fidelity review
 # (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
 # jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
@@ -20,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       jobs:
-        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render, winui-host); empty runs every job"
+        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render, android-host, winui-host); empty runs every job"
         required: false
         default: ""
       images:
@@ -662,6 +663,41 @@ jobs:
         with:
           name: kde-render
           path: kde-render-out
+
+  # The Android host (D2, D4, spike A): tools/android-host, a Kotlin Compose
+  # app on the release set's Compose Material 3, built with its pinned Gradle
+  # wrapper and run by tools/android-host/run.sh on the emulator under KVM
+  # (the udev rule GitHub documents for hardware acceleration), at the system
+  # image IMAGE names, twice from a cold boot: the PNGs of CaptureTest and an
+  # index of the versions; the two runs are compared.
+  android-host:
+    name: Android host
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',android-host,')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      IMAGE: "37.1"
+      OUT: android-host-out
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build, boot and capture
+        run: bash tools/android-host/run.sh "$IMAGE" "$OUT"
+      - name: Upload the captures
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-host
+          path: android-host-out
 
   # The WinUI host (D4, spike W): tools/winui-host, a C# WinUI 3 app on the
   # release set's Windows App SDK (2.5.1, unpackaged and self-contained), built

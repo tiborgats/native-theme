@@ -1,0 +1,27 @@
+# The host's pinned build. Compose Material 3 is the release set's
+# (docs/todo_v0.7.1_model-completeness-ledger.md, *Release set*); the beta BOM
+# 2026.10.01 is the one that lists material3 1.5.0-beta02, with Compose
+# 1.13.0-beta02 (material3's own metadata requires Compose 1.12.0 or newer).
+# The AAR requires compileSdk 37 and AGP 9.1.0 or newer.
+[versions]
+agp = "9.5.0"
+kotlin = "2.4.21"
+compose-bom-beta = "2026.10.01"
+material3 = "1.5.0-beta02"
+activity-compose = "1.13.0"
+androidx-test-runner = "1.7.0"
+androidx-test-ext-junit = "1.3.0"
+
+[libraries]
+compose-bom-beta = { module = "androidx.compose:compose-bom-beta", version.ref = "compose-bom-beta" }
+material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
