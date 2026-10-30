@@ -61,6 +61,8 @@ What it reads from an entry
   depth, the mark allows `Absent` too (S6.3): those members' marks are not generated yet.
 - **Variants**: the sub-bullets starting `typed`, their first sentence's names outside parentheses; the keyed ones
   are the presets' (S10).
+- **Content variants** (spec_catalogue.content_variants, from *Entry format*'s list of pairs, not from the entry):
+  the widget's own, typed and keyed (`@custom_child`) as the list writes them, in `WidgetInfo.content_variants`.
 """
 import re
 import subprocess
@@ -307,6 +309,7 @@ class Widget:
     enums: list
     variants: list
     deferred: dict
+    content_variants: list = field(default_factory=list)
 
 
 def split_type(ty: str):
@@ -707,7 +710,8 @@ def index_file(widgets: list, shared: dict) -> str:
         W = camel(w.name)
         out += ["    WidgetInfo {", f"        kind: WidgetKind::{W},", f'        name: "{w.name}",',
                 f"        parts: <{W}Theme as WidgetTable>::PARTS,", f"        values: <{W}Theme as WidgetTable>::VALUES,",
-                "        variants: &[" + ", ".join(f"Variant::{camel(v)}" for v in w.variants) + "],", "    },"]
+                "        variants: &[" + ", ".join(f"Variant::{camel(v)}" for v in w.variants) + "],",
+                "        content_variants: &[" + ", ".join(f'"{v}"' for v in w.content_variants) + "],", "    },"]
     out += ["];"]
     return "\n".join(out) + "\n"
 
@@ -732,12 +736,15 @@ def generate(root: Path) -> dict:
         raise InputError(str(err)) from err
     entries = {e.name: e for e in spec_catalogue.entries(text) if e.kind == "typed"}
     shared_table = spec_catalogue.shared_types(text)
+    pairs = spec_catalogue.content_variants(text)
     shared, widgets = {}, []
     for name in units.widgets():
         entry = entries.get(name)
         if entry is None:
             raise InputError(f"{UNITS}: `{name}` is no typed widget of the catalogue")
-        widgets.append(read_widget(entry, units, shared_table, shared))
+        widget = read_widget(entry, units, shared_table, shared)
+        widget.content_variants = pairs.get(name, [])
+        widgets.append(widget)
     out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared)), f"gen_{w.name}.rs") for w in widgets}
     out[INDEX] = rustfmt(index_file(widgets, shared), INDEX)
     return out

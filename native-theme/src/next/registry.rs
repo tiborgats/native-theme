@@ -139,6 +139,10 @@ pub(crate) struct WidgetInfo {
     /// The catalogue's typed variants of the widget; a preset declares the
     /// ones it draws (S10).
     pub(crate) variants: &'static [Variant],
+    /// The widget's content variants, which the connector sets from the
+    /// element's content (the catalogue's pairs, *Entry format*, ADD-A61,
+    /// ADD-A123): typed, and keyed with their `@` (`@custom_child`).
+    pub(crate) content_variants: &'static [&'static str],
 }
 
 impl WidgetInfo {

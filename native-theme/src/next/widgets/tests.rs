@@ -445,3 +445,19 @@ fn a_drawn_as_part_keeps_its_style_until_brought_back() {
         }
     );
 }
+
+/// The button's content variants are the catalogue's pairs (*Entry
+/// format*), generated: typed, and GTK's keyed ones with their `@`.
+#[test]
+fn button_content_variants_match_catalogue() {
+    assert_eq!(
+        button().content_variants,
+        [
+            "icon_only",
+            "with_icon",
+            "@custom_child",
+            "@arrow_only",
+            "@with_arrow"
+        ]
+    );
+}

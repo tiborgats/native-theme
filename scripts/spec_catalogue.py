@@ -443,6 +443,35 @@ def shared_types(text: str) -> dict:
     return out
 
 
+CONTENT_PAIRS_START = "The pairs are exactly these:"
+CONTENT_PAIRS_END = "An entry that adds one"
+
+
+def content_variants(text: str) -> dict:
+    """The catalogue's content-variant pairs (*Entry format*, ADD-A61, ADD-A123): {widget or `widget.part`: its
+    content variants as written, a keyed one with its `@`}, read from the list after CONTENT_PAIRS_START up to
+    CONTENT_PAIRS_END: groups split by `;` outside parentheses, each `targets: names`, every backticked name
+    outside parentheses (a group's note) taken. Empty where the catalogue has no such list."""
+    start = text.find(CONTENT_PAIRS_START)
+    if start < 0:
+        return {}
+    start += len(CONTENT_PAIRS_START)
+    end = text.find(CONTENT_PAIRS_END, start)
+    body = " ".join(text[start:end if end >= 0 else len(text)].split()).rstrip(". ")
+    out = {}
+    while body:
+        cut = depth0_find(body, lambda t, i: t[i] == ";")
+        group, body = (body, "") if cut < 0 else (body[:cut], body[cut + 1:].strip())
+        colon = depth0_find(group, lambda t, i: t[i] == ":")
+        if colon < 0:
+            continue
+        targets = [name for _, _, name in depth0_tokens(group[:colon])[0]]
+        names = [name for _, _, name in depth0_tokens(group[colon + 1:])[0]]
+        for target in targets:
+            out.setdefault(target, []).extend(names)
+    return out
+
+
 def catalogue_index(text: str) -> dict:
     widgets: dict[str, dict] = {}
     for e in entries(text):
@@ -599,6 +628,13 @@ def self_test() -> int:
            (set(), {"@on"}))
     expect("shared types", shared_types(SELF_TEST_CATALOGUE),
            {"Side": (14, "`Start`, `End`"), "Lone": (15, "`A` (a note, `B`)")})
+    pairs = ("widget (or one of its parts) and a variant name. The pairs are exactly these:\n"
+             "`button`: `icon_only`, and GTK's keyed `@custom_child` (the `button` entry's `adwaita` variants);\n"
+             "`checkbox`, `radio`: `with_label`; `form.row`: `bitmap_icon`. An entry that adds one says so.")
+    expect("content variants", content_variants(pairs),
+           {"button": ["icon_only", "@custom_child"], "checkbox": ["with_label"], "radio": ["with_label"],
+            "form.row": ["bitmap_icon"]})
+    expect("no content variants", content_variants("no list"), {})
     names, groups = depth0_tokens("`a` (`b` (`c`)) `d`")
     expect("depth0 names", [x[2] for x in names], ["a", "d"])
     expect("depth0 groups", groups, [(4, 15)])

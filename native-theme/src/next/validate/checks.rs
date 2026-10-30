@@ -1980,7 +1980,7 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId
             if let VariantRef::Keyed(key) = variant
                 && !uses.uses_variant(*widget, variant)
                 && !exempt_variant(decl, *widget, variant)
-                && !content_variants(*widget).contains(&key.as_str())
+                && !content_variants(*widget).any(|name| name == key.as_str())
             {
                 unused.push((format!("{at}.variants"), format!("@{key}")));
             }
@@ -2095,10 +2095,12 @@ fn exempt_variant(decl: &Declarations, widget: WidgetKind, variant: &VariantRef)
 /// A widget's keyed content variants, which the connector sets by one
 /// platform's rule under every preset (S8; the catalogue's content-variant
 /// pairs, *Entry format*, ADD-A123): no rule need select on them.
-fn content_variants(widget: WidgetKind) -> &'static [&'static str] {
-    match widget {
-        WidgetKind::Button => &["custom_child", "arrow_only", "with_arrow"],
-    }
+fn content_variants(widget: WidgetKind) -> impl Iterator<Item = &'static str> {
+    registry::widgets()
+        .iter()
+        .filter(move |info| info.kind == widget)
+        .flat_map(|info| info.content_variants)
+        .filter_map(|name| name.strip_prefix('@'))
 }
 
 /// `at.key`, or `key` at the root.

@@ -280,4 +280,11 @@ pub(crate) const WIDGETS: &[WidgetInfo] = &[WidgetInfo {
         Variant::Restore,
         Variant::Route,
     ],
+    content_variants: &[
+        "icon_only",
+        "with_icon",
+        "@custom_child",
+        "@arrow_only",
+        "@with_arrow",
+    ],
 }];
