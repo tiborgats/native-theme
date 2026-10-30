@@ -7528,7 +7528,7 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
     values.dark_factor)` `@ !{@on}` (the off look is the colour darkened by KLed's dark factor), the shape and shading
     by rules per variant; the part declares its data, `data = { body = ["color"] }` (S8, S10).
 - **Widget values:** `default_color: Value<Color>` (declared `"color"`: KLed's default colour), `dark_factor:
-  Value<f32>` (declared `"number"`: KLed's dark factor), both from `kled.cpp` in the value phase.
+  Value<u32>` (declared `"number"`: KLed's dark factor, an integer percent, `kled.cpp:19`), both from `kled.cpp` in the value phase.
 - **Variants:** keyed `@round`, `@rectangular` (shape), `@raised`, `@sunken`, `@flat` (look), the application's
   choice. **Sizes:** none.
 - **Flags:** keyed `@on` (the lamp lit, set by the application); state flags used: disabled. **Exclusive groups:**
