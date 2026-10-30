@@ -34,9 +34,17 @@ entries serve, a `preset:` in `not_conditions` taken out; whether or not the pre
 check_facts.py's generation rule asks), and for a palette fact once over all its citations, every literal of `value`
 equals a literal of the union of those citations' quotes, as written or after the citation's `conversion`. A value's
 literals are S2.2's (a TOML number; the colour, length, duration, angle and font-size literals of a string or an
-expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's.
+expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's, a
+`Timing::Platform` curve's name among them (`{ platform = { qt = "in_out_sine" } }`: S2.7, ADD-A123;
+scripts/check_facts.py checks it is one of the core's `QtEasing` or `AdwEasing` members, or `kirigami_velocity`).
 A text value (check_facts.text_leaves: where the key's type is text) is no literal source: it equals, whitespace-
 normalised and case-sensitive, a whole string one of those quotes holds by the text notations (quote_texts, below).
+A zero stated by omission (S17 *Absence*, ADD-A122): where one of those citations is an absence citation (it has
+`absent`, whose names the check above refuses in its range), the value's zero literals (`"0ms"`, `"0px"`, `0`) are
+held by it; every other literal still needs a quote. A LinearGradientBrush (the ledger's queue #57): where one of
+those quotes holds a `<LinearGradientBrush …>` (xaml), an angle literal of the value equals only an angle literal of
+the quotes (the brush's computed angle, a `deg` literal), never a unitless number, so a point's `0` holds no
+`angle_deg = 0`.
 
 Per `measured` citation: the evidence file is committed (`git ls-files`) and exists, the run folder's `run.toml` has an
 entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
@@ -46,7 +54,8 @@ quoted keys, `result`, and `conditions` (a list of S7.1's condition strings nami
 (check_facts.value_problems; `conversion` does not apply to a result); for each input and each scheme the fact covers,
 two passes with the same conditions and other inputs that differ in that input beyond the quote check's precision and
 whose results differ by more than `tolerance` (a per-leaf table: in some leaf). Its value is not compared with the
-evidence directly. Otherwise the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
+evidence directly. Each evidence file is read and parsed once per run (evidence_doc's cache, the ledger's queue #62),
+as each cited source file is read once. Otherwise the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
 scalar as one literal, a value with leaves leaf by leaf. The evidence path names a table shaped like the value, and the
 shape is compared exactly first (shape_problems: a table's keys the same, a list's length the same, a leaf where the
 value has a leaf), so a one-layer shadow or `[]` does not pass against two layers; then each numeric or colour leaf
@@ -87,7 +96,11 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
     `black`, `white`, `transparent`;
   - `qml`: `Qt.rgba(r, g, b, a)` (fractions), and a quoted colour name of QML_NAMES in any case (`"transparent"`:
     the names the cited QML uses, valued as qtbase's `qcolor.cpp` table); `cpp`: `QColor::fromRgbF(r, g, b[, a])`
-    (fractions, an `f` suffix allowed), `QColor(r, g, b[, a])` (bytes), and the C++ initialiser `{r, g, b[, a]}`
+    (fractions, an `f` suffix allowed; an argument may be a name the quote declares a default for, a defaulted
+    parameter `<name> = <number>` before the parameter list's next `,` or `)`, read as that number, the ledger's
+    queue #58: Breeze's `shadowColor(…, qreal opacity = 0.125) const { return QColor::fromRgbF(0, 0, 0, opacity); }`,
+    breeze@6.8.2 kstyle/breezehelper.h:88-91, is `srgb(0, 0, 0, 0.125)`, its quote holding the declaration; a name
+    with no default in the quote reads no colour), `QColor(r, g, b[, a])` (bytes), and the C++ initialiser `{r, g, b[, a]}`
     (bytes) only in a colour context: after, in the quote, a colour type of CPP_COLOUR_TYPES_RX (`QColor`, and
     KColorScheme's default tables `SerializedColors` and `DecorationColors`, kcolorscheme@6.31.0
     src/kcolorscheme.cpp:101-122, :213), as `{ 2, 2, 2, 2 }` is WinUI's `XTHICKNESS` and `{ 0, 0, 0, 0 }` an
@@ -137,7 +150,11 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
 - Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
   `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, the
   result a duration), `negate` (− x: WinUI's `FocusVisualMargin="-3"`, an inward margin, is the model's outward
-  focus offset of 3px, the ledger's queue #38).
+  focus offset of 3px, the ledger's queue #38), `ns_font_weight` (an AppKit `NSFontWeight`, −1..1, to S2.8's CSS
+  weight: 100 times one more than the number of NS_WEIGHT_THRESHOLDS, −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5
+  and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
+  WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
+  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739).
 - Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17); `srgb(…)` and
   `display_p3(…)` literals in their own space. A `display_p3(…)` value is the colour as Apple publishes it (S2.1: the
   preset cites the published value exactly and converts when the file is read), so it is compared in Display P3, not
@@ -174,12 +191,15 @@ LEGACY_EVIDENCE = [
     "docs/evidence/os-probe/2026-10-26-run-40348854007",
 ]
 
+# S17's `ns_font_weight` (ADD-A123): the `NSFontWeight` thresholds, each one at or below the weight adding 100 to 100
+NS_WEIGHT_THRESHOLDS = (-0.6, -0.365, -0.115, 0.130, 0.235, 0.350, 0.5, 0.7)
 CONVERSIONS = {
     "percent_to_fraction": lambda x: x / 100,
     "byte_to_fraction": lambda x: x / 255,
     "complement": lambda x: 1 - x,
     "seconds_to_ms": lambda x: x * 1000,
     "negate": lambda x: -x,
+    "ns_font_weight": lambda x: 100 * (1 + sum(t <= x for t in NS_WEIGHT_THRESHOLDS)),
 }
 # unit -> (dimension, factor to the dimension's canonical unit); None: no dimension (no literal)
 UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("pt", 1), "ms": ("duration", 1),
@@ -281,8 +301,11 @@ BRACE_RX = re.compile(r"\{\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*
 # (kcolorscheme@6.31.0 src/kcolorscheme.cpp:101-122, :213)
 CPP_COLOUR_TYPES_RX = re.compile(r"\b(?:QColor|SerializedColors|DecorationColors)\b")
 CPP_NUM = r"-?(?:\d+(?:\.\d*)?|\.\d+)[fF]?"
-QCOLOR_F_RX = re.compile(rf"\bQColor::fromRgbF\(\s*({CPP_NUM})\s*,\s*({CPP_NUM})\s*,\s*({CPP_NUM})\s*"
-                         rf"(?:,\s*({CPP_NUM})\s*)?\)")
+CPP_ARG = rf"(?:{CPP_NUM}|[A-Za-z_]\w*)"
+QCOLOR_F_RX = re.compile(rf"\bQColor::fromRgbF\(\s*({CPP_ARG})\s*,\s*({CPP_ARG})\s*,\s*({CPP_ARG})\s*"
+                         rf"(?:,\s*({CPP_ARG})\s*)?\)")
+# a defaulted parameter in a declaration, `qreal opacity = 0.125` before the parameter list's next `,` or `)`
+CPP_DEFAULT_RX = re.compile(rf"\b([A-Za-z_]\w*)\s*=\s*({CPP_NUM})\s*(?=[,)])")
 XAML_LINEAR_RX = re.compile(r"<LinearGradientBrush(?=[\s/>])[^>]*>")
 XAML_POINT_RX = re.compile(rf"\b(Start|End)Point\s*=\s*\"\s*({NUM})\s*,\s*({NUM})\s*\"")
 XAML_SCALE_RX = re.compile(r"<LinearGradientBrush\.(?:Relative)?Transform>\s*(?:<ScaleTransform\b([^>]*)/>)?")
@@ -386,8 +409,14 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
         for m in QML_NAME_RX.finditer(text):
             add(m.start(), m.end(), Lit("colour", "srgb", QML_NAMES[m.group(2).lower()]))
     if notation == "cpp":
+        defaults = {}
+        for m in CPP_DEFAULT_RX.finditer(text):
+            defaults.setdefault(m.group(1), m.group(2))
         for m in QCOLOR_F_RX.finditer(text):
-            vals = [float(g.rstrip("fF")) * 255 for g in m.groups() if g is not None]
+            args = [defaults.get(g, g) for g in m.groups() if g is not None]
+            if not all(re.fullmatch(CPP_NUM, a) for a in args):
+                continue
+            vals = [float(a.rstrip("fF")) * 255 for a in args]
             if all(0 <= v <= 255 for v in vals):
                 add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
                                                                                  else (255,))))
@@ -659,19 +688,63 @@ def json_pointer(doc, pointer: str):
     return cur
 
 
-def evidence_value(path: Path, form: str):
-    """The value at `form` in the evidence file (by its type), or raise EvidenceError."""
+def evidence_doc(path: Path, cache=None):
+    """The evidence file parsed by its type (TOML and JSON as their data, an INI file as {group: {key: value}}, the
+    first of each key; a CSV file as its rows), or raise EvidenceError; with `cache` (a dict), each file is parsed
+    once per run, its error kept too."""
+    if cache is not None and path in cache:
+        doc = cache[path]
+        if isinstance(doc, EvidenceError):
+            raise doc
+        return doc
+    try:
+        doc = read_evidence_file(path)
+    except EvidenceError as err:
+        if cache is not None:
+            cache[path] = err
+        raise
+    if cache is not None:
+        cache[path] = doc
+    return doc
+
+
+def read_evidence_file(path: Path):
     name = path.name
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as err:
         raise EvidenceError(str(err)) from err
-    kind = notation_of(name)
     if name.endswith(".toml"):
         try:
-            cur = tomllib.loads(text)
+            return tomllib.loads(text)
         except tomllib.TOMLDecodeError as err:
             raise EvidenceError(f"not valid TOML: {err}") from err
+    if name.endswith(".json"):
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as err:
+            raise EvidenceError(f"not valid JSON: {err}") from err
+    if name.endswith(".csv"):
+        return list(csv.reader(io.StringIO(text)))
+    if notation_of(name) == "ini":
+        groups, cur = {}, None
+        for line in text.splitlines():
+            s = line.strip()
+            if s.startswith("[") and s.endswith("]"):
+                cur = s[1:-1]
+            elif cur is not None and "=" in s and not s.startswith(("#", ";")):
+                k, v = s.split("=", 1)
+                groups.setdefault(cur, {}).setdefault(k.strip(), v.strip())
+        return groups
+    raise EvidenceError(f"{name}: not an evidence file type (TOML, JSON, INI, CSV)")
+
+
+def evidence_value(path: Path, form: str, cache=None):
+    """The value at `form` in the evidence file (by its type), or raise EvidenceError; `cache` as evidence_doc's."""
+    name = path.name
+    doc = evidence_doc(path, cache)
+    if name.endswith(".toml"):
+        cur = doc
         for seg in form.split("."):
             if isinstance(cur, list) and seg.isdigit() and int(seg) < len(cur):
                 cur = cur[int(seg)]
@@ -681,13 +754,10 @@ def evidence_value(path: Path, form: str):
                 raise EvidenceError(f"no {seg!r} at {form!r}")
         return cur
     if name.endswith(".json"):
-        try:
-            return json_pointer(json.loads(text), form)
-        except json.JSONDecodeError as err:
-            raise EvidenceError(f"not valid JSON: {err}") from err
+        return json_pointer(doc, form)
     if name.endswith(".csv"):
         first, sep, header = form.rpartition("/")
-        rows = list(csv.reader(io.StringIO(text)))
+        rows = doc
         if not sep or not rows or header not in rows[0]:
             raise EvidenceError(f"no column {header!r}")
         col = rows[0].index(header)
@@ -697,21 +767,12 @@ def evidence_value(path: Path, form: str):
                     raise EvidenceError(f"row {first!r} has no {header!r} cell")
                 return row[col]
         raise EvidenceError(f"no row {first!r}")
-    if kind == "ini":
-        group, sep, key = form.rpartition("/")
-        if not sep:
-            raise EvidenceError(f"{form!r} is not `<group>/<key>`")
-        cur = None
-        for line in text.splitlines():
-            s = line.strip()
-            if s.startswith("[") and s.endswith("]"):
-                cur = s[1:-1]
-            elif cur == group and "=" in s and not s.startswith(("#", ";")):
-                k, v = s.split("=", 1)
-                if k.strip() == key:
-                    return v.strip()
+    group, sep, key = form.rpartition("/")
+    if not sep:
+        raise EvidenceError(f"{form!r} is not `<group>/<key>`")
+    if key not in doc.get(group, {}):
         raise EvidenceError(f"no key {key!r} in group [{group}]")
-    raise EvidenceError(f"{name}: not an evidence file type (TOML, JSON, INI, CSV)")
+    return doc[group][key]
 
 
 def leaves(value, prefix="", dim=None):
@@ -883,6 +944,8 @@ class Run:
         self.check_heads = check_heads
         self.committed = committed if committed is not None else self.git_files()
         self._heads = {}
+        self._evidence = {}   # path -> its parsed document or EvidenceError (evidence_doc)
+        self._lines = {}      # cited file -> its lines, or None where it cannot be read
         self.findings = []
         self.sdk = []
         self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0}
@@ -972,9 +1035,13 @@ class Run:
                 return None
             return v, "text"
         f = base / path
-        try:
-            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
-        except OSError:
+        if f not in self._lines:
+            try:
+                self._lines[f] = f.read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                self._lines[f] = None
+        lines = self._lines[f]
+        if lines is None:
             self.add(item.file, cite.ln("source"), f"{sid}: no file {path} at the pin")
             return None
         if l2 > len(lines):
@@ -1019,6 +1086,7 @@ class Run:
         for g, cs in groups:
             self.counts["generations"] += 1
             union, text_union = [], set()
+            zero = brush = False
             for c in cs:
                 src = check_facts.parse_source(c.data.get("source"))
                 notation = "text" if not src or src[4] is not None else notation_of(src[1])
@@ -1026,8 +1094,13 @@ class Run:
                 quote = c.data.get("quote") if isinstance(c.data.get("quote"), str) else ""
                 union += convert(quote_literals(quote, notation, self.apple_only(c.data)), conv)
                 text_union |= quote_texts(quote)
+                zero = zero or isinstance(c.data.get("absent"), list)
+                brush = brush or (notation == "xaml" and XAML_LINEAR_RX.search(quote) is not None)
             for v in vlits:
-                if not any(equal(v, q) for q in union):
+                if zero and v.kind == "num" and v.value == 0:
+                    continue
+                cands = [q for q in union if q.dim == "angle"] if brush and v.dim == "angle" else union
+                if not any(equal(v, q) for q in cands):
                     self.add(item.file, item.ln("value"), f"the value's literal {v} is in no quote serving {g} (as "
                                                           f"written or converted)")
             for path, t in texts:
@@ -1055,7 +1128,7 @@ class Run:
         if not isinstance(images, dict) or image not in images:
             self.add(item.file, cite.ln("evidence"), f"the run's run.toml maps no image {image!r}")
         try:
-            value = evidence_value(p, form)
+            value = evidence_value(p, form, self._evidence)
         except EvidenceError as err:
             self.add(item.file, cite.ln("evidence"), f"{file}#{form}: {err}")
             return
@@ -1187,9 +1260,8 @@ class Run:
             if p.suffix not in (".toml", ".json") or not p.is_file():
                 continue
             try:
-                text = p.read_text(encoding="utf-8")
-                data = tomllib.loads(text) if p.suffix == ".toml" else json.loads(text)
-            except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, json.JSONDecodeError):
+                data = evidence_doc(p, self._evidence)
+            except EvidenceError:
                 continue
             names = data.get("input_image") if isinstance(data, dict) else None
             if names is None:
@@ -1268,6 +1340,39 @@ class Run:
 # --------------------------------------------------------------------------------------------- self-test
 
 SELF_TEST_EXTRA = {
+    "docs/facts/gnome/curve.toml": '''
+[[fact]]
+key = "button.body.transitions"
+value = [{ properties = ["fill"], duration_ms = 250, timing = { platform = { adw = "ease_out_cubic" } } }]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-toggle.c:2-3"
+quote = "adw_timed_animation_new (GTK_WIDGET (self), 0, 1, 250, target); adw_timed_animation_set_easing (ADW_TIMED_ANIMATION (self->animation), ADW_EASE_OUT_CUBIC);"
+''',
+    "cache/libadwaita@1.10.0/src/adw-toggle.c": "  target = adw_callback_animation_target_new (cb, self, NULL);\n"
+                                               "  self->animation = adw_timed_animation_new (GTK_WIDGET (self), 0, 1, "
+                                               "250, target);\n  adw_timed_animation_set_easing (ADW_TIMED_ANIMATION "
+                                               "(self->animation), ADW_EASE_OUT_CUBIC);\n",
+    "docs/facts/macos/weight.toml": '''
+[[fact]]
+key = "button.label.text.font.weight"
+value = 600
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml#macos.fonts.weights.button"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.weights.button"
+tolerance = 0
+conversion = ["ns_font_weight"]
+''',
     "docs/facts/gnome/more.toml": '''
 [[fact]]
 key = "button.body.shadow"
@@ -1375,16 +1480,57 @@ conditions = ["scheme:dark"]
                                                     "BackgroundNormal=239,240,241\n",
     "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Common_themeresources_any.xaml":
         '<ResourceDictionary>\n  <ResourceDictionary.ThemeDictionaries>\n    <ResourceDictionary x:Key="Dark">\n'
-        '      <Color x:Key="SubtleFillColorSecondary">#0FFFFFFF</Color>\n',
+        '      <Color x:Key="SubtleFillColorSecondary">#0FFFFFFF</Color>\n'
+        '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" '
+        'EndPoint="0,3">\n',
     "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Button_themeresources.xaml":
         '<ResourceDictionary>\n\n\n\n\n<VisualState x:Name="PointerOver">\n'
         '  <DoubleAnimation Storyboard.TargetProperty="Opacity" Duration="0:0:0.083" />\n</VisualState>\n'
         '<x:Double x:Key="Button_MinWidth">80</x:Double>\n<Setter Property="FocusVisualMargin" Value="-3" />\n',
+    "docs/facts/gnome/zero.toml": '''
+[[fact]]
+key = "button.values.repeat_delay"
+value = "0ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-button.c:1-3"
+quote = "static void adw_button_clicked (AdwButton *self) {"
+absent = ["delay", "timeout"]
+''',
+    "docs/facts/windows/brush.toml": '''
+[[fact]]
+key = "button.body.stroke"
+value = { linear = { angle_deg = 180 } }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Common_themeresources_any.xaml:5"
+quote = '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,3">'
+''',
+    "docs/facts/kde/shadow.toml": '''
+[[fact]]
+key = "button.body.fill"
+value = "srgb(0, 0, 0, 0.125)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:2-5"
+quote = "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opacity = 0.125) const { return QColor::fromRgbF(0, 0, 0, opacity); }"
+''',
+    "cache/libadwaita@1.10.0/src/adw-button.c": "static void\nadw_button_clicked (AdwButton *self) {\n"
+                                               "  g_signal_emit (self, signals[SIGNAL_CLICKED], 0); }\n",
+    "cache/breeze@6.8.2/kstyle/breezehelper.h": "    //* shadow\n    QColor shadowColor([[maybe_unused]] const QPalette "
+                                               "&palette, qreal opacity = 0.125) const\n    {\n        return "
+                                               "QColor::fromRgbF(0, 0, 0, opacity);\n    }\n",
     "cache/catppuccin@1.7.1/palette.json": "\n" * 119 + '        "hex": "#313244",\n',
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml":
-        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n",
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml":
-        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n",
     "docs/evidence/os-probe/2026-11-02-run-1/README.md": "The run's harness and commit.\n",
     "docs/evidence/kde-accent/2026-11-03-run-2/kde-breeze-light/kdeglobals":
         "[Colors:Header]\nBackgroundNormal=222,224,226\n\n[Colors:Header][Inactive]\nBackgroundNormal=227,229,231\n",
@@ -1412,6 +1558,32 @@ _PASSES = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml
 # (label, file, old, new, wanted findings as substrings, one per finding); old None: the file is replaced by new (None:
 # removed); old a list of (old, new) pairs: each replaced
 SELF_TEST_CASES = [
+    # a zero stated by omission (S17 *Absence*, ADD-A122): an absence citation holds the value's zero literals
+    ("zero by omission: a non-zero value", "docs/facts/gnome/zero.toml", 'value = "0ms"', 'value = "10ms"',
+     ["10ms is in no quote serving adwaita"]),
+    ("zero by omission: no absence citation", "docs/facts/gnome/zero.toml", 'absent = ["delay", "timeout"]\n', "",
+     ["0ms is in no quote serving adwaita"]),
+    ("zero by omission: a name the path does set", "docs/facts/gnome/zero.toml", '["delay", "timeout"]',
+     '["delay", "g_signal_emit"]', ["absent name 'g_signal_emit' occurs"]),
+    ("zero by omission: no name for it", "docs/facts/gnome/zero.toml", '["delay", "timeout"]', "[]", []),
+    # a platform curve's name is the verifier's, not the quote check's (S17 *The quote check*, S2.7; ADD-A123); its
+    # transition's literals still need a quote
+    ("platform curve: the name not compared", "docs/facts/gnome/curve.toml", '"ease_out_cubic"', '"ease_in_expo"', []),
+    ("platform curve: a duration no quote holds", "docs/facts/gnome/curve.toml", "duration_ms = 250",
+     "duration_ms = 260", ["260ms is in no quote serving adwaita"]),
+    # a LinearGradientBrush's angle is the one its points give, never a point's number (the ledger's queue #57)
+    ("brush: a wrong angle a point's number holds", "docs/facts/windows/brush.toml", "angle_deg = 180",
+     "angle_deg = 0", ["0deg is in no quote serving windows-11"]),
+    ("brush: a wrong angle", "docs/facts/windows/brush.toml", "angle_deg = 180", "angle_deg = 90",
+     ["90deg is in no quote serving windows-11"]),
+    ("brush: a point's number as a length", "docs/facts/windows/brush.toml", "angle_deg = 180",
+     "angle_deg = 180, extent_px = 3", []),
+    # a defaulted parameter read from the quote's declaration (the ledger's queue #58)
+    ("C++: another default", "docs/facts/kde/shadow.toml", "0.125)\"", "0.25)\"",
+     ["srgb(0, 0, 0, 63.75) is in no quote serving kde-breeze"]),
+    ("C++: the declaration left out of the quote", "docs/facts/kde/shadow.toml",
+     "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opacity = 0.125) const { ", "",
+     ["srgb(0, 0, 0, 31.875) is in no quote serving kde-breeze"]),
     ("libadwaita: a literal no quote holds", "docs/facts/gnome/buttons.toml", "0.07)", "0.08)",
      ["0.08 is in no quote serving adwaita"]),
     ("libadwaita: the quote at other lines", "docs/facts/gnome/buttons.toml", "_colors.scss:3", "_colors.scss:2",
@@ -1453,6 +1625,14 @@ SELF_TEST_CASES = [
      ["the evidence has no leaf 'layers.0.spread_px'"]),
     ("macOS: 26 measures another size", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml",
      "13.0", "14.0", ["the evidence holds 14, the fact 13pt"]),
+    # S2.8's weight from an `NSFontWeight` (S17's `ns_font_weight`, ADD-A123): 0.3 is 600
+    ("macOS: a weight without its conversion", "docs/facts/macos/weight.toml",
+     [('tolerance = 0\nconversion = ["ns_font_weight"]\n', "tolerance = 0\n")] * 2,
+     None, ["the evidence holds 0.3, the fact 600", "the evidence holds 0.3, the fact 600"]),
+    ("macOS: a weight past the next threshold", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml",
+     "button = 0.3", "button = 0.35", ["the evidence holds 700, the fact 600"]),
+    ("macOS: a weight just below the next threshold",
+     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml", "button = 0.3", "button = 0.3499", []),
     ("macOS: a path the evidence lacks", "docs/facts/macos/buttons.toml", "macos-26/probe.toml#macos.fonts.sizes."
      "systemFontSize", "macos-26/probe.toml#macos.fonts.sizes.labelFontSize", ["no 'labelFontSize'"]),
     ("macOS: run.toml without the build", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", 'os = "25G83"\n', "",
@@ -1465,7 +1645,7 @@ SELF_TEST_CASES = [
      None, "a = 1\n", ["evidence file cited by no fact", "image folder 'os-probe-macos-14' has no [images"]),
     ("macOS: a run without run.toml", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", None, None,
      ["missing: a run's run.toml", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'",
-      "maps no image 'os-probe-macos-26'"]),
+      "maps no image 'os-probe-macos-26'", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'"]),
     ("evidence: an uncited file", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/extra.txt", None, "x\n",
      ["evidence file cited by no fact"]),
     ("evidence: a file outside an image folder", "docs/evidence/os-probe/2026-11-02-run-1/notes.txt", None, "x\n",
@@ -1651,6 +1831,13 @@ SELF_TEST_NOTATIONS = [
      ["10", "255", "0", "0"]),
     # Kotlin's negative units (#47)
     ("kotlin", "letterSpacing = -0.2.sp, 0.5.sp -1.dp", ["-0.2px", "0.5px", "-1px"]),
+    # a defaulted parameter's default read from the quote's declaration (the ledger's queue #58): Breeze's shadow
+    # colour, breeze@6.8.2 kstyle/breezehelper.h:88-91; a name the quote declares no default for reads nothing
+    ("cpp", "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opacity = 0.125) const { return "
+            "QColor::fromRgbF(0, 0, 0, opacity); }", ["0.125", "srgb(0, 0, 0, 31.875)"]),
+    ("cpp", "return QColor::fromRgbF(0, 0, 0, opacity);", ["0", "0", "0"]),
+    ("cpp", "void f(qreal a = 0.5); x = 2; QColor::fromRgbF(a, a, a)", ["0.5", "2",
+                                                                       "srgb(127.5, 127.5, 127.5, 255)"]),
 ]
 
 # (quote, text value, whether a text notation reads it as a whole string; S17 *The quote check*)
@@ -1706,7 +1893,15 @@ def self_test() -> int:
     for quote, text, want in SELF_TEST_TEXTS:
         if (text in quote_texts(quote)) != want:
             failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
-    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "percent_to_fraction", "seconds_to_ms"]:
+    # S2.8's weight from an `NSFontWeight` (ADD-A123): each threshold's edge, the ends, and the probe's three weights
+    edges = [(t, 100 * (i + 2)) for i, t in enumerate(NS_WEIGHT_THRESHOLDS)]
+    edges += [(math.nextafter(t, -math.inf), 100 * (i + 1)) for i, t in enumerate(NS_WEIGHT_THRESHOLDS)]
+    for x, want in edges + [(-1, 100), (1, 900), (0, 400), (0.3, 600), (0.4, 700)]:
+        got = convert([Lit("num", None, x)], ["ns_font_weight"])[1].value
+        if got != want:
+            failures.append(f"ns_font_weight {x!r}: got {got}, want {want}")
+    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "ns_font_weight", "percent_to_fraction",
+                               "seconds_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
                        ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),
@@ -1744,6 +1939,20 @@ def self_test() -> int:
                 got = err
             if got != want:
                 failures.append(f"evidence path {name}#{form}: got {got!r}")
+        # each evidence file parsed once per run (the ledger's queue #62): a cached document outlives its file
+        cache = {}
+        first = evidence_doc(base / "t.toml", cache)
+        (base / "t.toml").unlink()
+        if evidence_doc(base / "t.toml", cache) is not first or evidence_value(base / "t.toml", "a.b.c.0", cache) != 1:
+            failures.append("evidence cache: the file was parsed again")
+        for _ in range(2):
+            try:
+                evidence_doc(base / "gone.toml", cache)
+                failures.append("evidence cache: a missing file read")
+            except EvidenceError:
+                pass
+        if not isinstance(cache.get(base / "gone.toml"), EvidenceError):
+            failures.append("evidence cache: an unreadable file's error not kept")
         n = 0
         for case in [("good", None, None, None, [])] + SELF_TEST_CASES:
             label, path, old, new, want = case
@@ -1783,7 +1992,7 @@ def self_test() -> int:
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
             if label == "good":
-                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 6:
+                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 8:
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
         # the quote check does not depend on the presets that exist: none exist, a wrong literal still fails
         root = base / "case0"
@@ -1804,7 +2013,7 @@ def self_test() -> int:
         # an uncommitted evidence file, and the vacuous run
         run = Run(check_facts.fixture_context(root), root / "cache", set(), check_heads=False)
         run.check()
-        if sum("is not committed" in w for _, _, w in run.findings) != 6:
+        if sum("is not committed" in w for _, _, w in run.findings) != 8:
             failures.append(f"uncommitted: got {run.findings}")
         root = base / "empty"
         check_facts.write_fixture(root, {})

@@ -217,6 +217,7 @@ ALIAS = {
     "xdg-desktop-portal-kde": "KDE/xdg-desktop-portal-kde", "kcompletion": "KDE/kcompletion",
     "ktexteditor": "KDE/ktexteditor", "sonnet": "KDE/sonnet", "kquickcharts": "KDE/kquickcharts",
     "kquickimageeditor": "KDE/kquickimageeditor", "plasma-workspace": "KDE/plasma-workspace", "WebKit": "WebKit/WebKit",
+    "androidx": "androidx/androidx",
 }
 
 # The 0.8.0 session's scratchpad checkouts that the catalogue cites as `src/<name>/…` (catalogue:8193-8347):
@@ -377,6 +378,8 @@ def classify_url(url):
             proj = "KDE/" + repo.split("/")[1]
         if host == "gitlab.gnome.org":
             proj = "GNOME/" + repo.split("/")[1]
+        if repo == "tiborgats/native-theme":
+            proj = OWN  # this repository (a CI run's evidence link, a file at a commit): never a pinned source
         if host == "searchfox.org":
             proj = "mozilla/gecko-dev (searchfox mozilla-central)"
             ref = "live"
@@ -1135,8 +1138,12 @@ SELF_TEST = [
      [("md-link [file:L](code-host URL @ref#L)", "WebKit/WebKit", "main", "Source/x.mm", "L3", "unresolved")]),
     ("A2 raw URL", "todo.md", "see https://github.com/microsoft/WindowsAppSDK/blob/main/specs/themes/ThemeSettings.md", {},
      [("raw code-host URL", "microsoft/WindowsAppSDK", "main", "specs/themes/ThemeSettings.md", "", "unresolved")]),
+    ("A2 own CI run URL", "spec-widgets.md", "run [1](https://github.com/tiborgats/native-theme/actions/runs/1)", {},
+     [("md-link [file:L](code-host URL @ref#L)", "native-theme (own)", "", "actions/runs/1", "", "unresolved")]),
     ("A3 name@sha path", "gap-map-kde.md", "`kirigami@81ada72b src/templates/NavigationTabBar.qml:180-277`", {},
      [("project@sha path:L", "KDE/kirigami", "81ada72b", "src/templates/NavigationTabBar.qml", "180-277", "resolved")]),
+    ("A3 androidx@sha path", "spec.md", "`androidx@e4d933c9 compose/material3/x/Button.kt:12`", {},
+     [("project@sha path:L", "androidx/androidx", "e4d933c9", "compose/material3/x/Button.kt", "12", "resolved")]),
     ("A6 file@sha", "gap-map-ios.md", "`RenderThemeMac.mm@de320ba3:3373-3376`", {},
      [("file@sha", "WebKit/WebKit", "de320ba3", "RenderThemeMac.mm", "3373-3376", "resolved")]),
     ("A7 project tag path", "gap-map-kde.md", "frameworkintegration v6.31.0 `src/kstyle/kstyle.cpp:424-427`", {},

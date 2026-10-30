@@ -4944,7 +4944,7 @@ absent = []
 [[fact]]
 key = "role.global.status.success.background_solid"
 value = "absent"
-rows = []
+rows = ["W3-17"]
 
 [[fact.cite]]
 kind = "published"
@@ -4967,7 +4967,7 @@ absent = []
 [[fact]]
 key = "role.global.status.warning.background_solid"
 value = "absent"
-rows = []
+rows = ["W3-17"]
 
 [[fact.cite]]
 kind = "published"
@@ -4990,7 +4990,7 @@ absent = []
 [[fact]]
 key = "role.global.status.error.background_solid"
 value = "absent"
-rows = []
+rows = ["W3-17"]
 
 [[fact.cite]]
 kind = "published"

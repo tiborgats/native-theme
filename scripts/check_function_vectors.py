@@ -81,7 +81,8 @@ What is checked
 - Coverage: every `pub` and `pub(crate)` function of the `platform` module (its `.rs` files; items of a
   `#[cfg(test)]` module are not the module's) has a table `<fn>.tsv` and a test `#[test] fn vectors_<fn>` in
   `native-theme/tests/platform_vectors.rs`, and so does every function S2.2's table lists as a platform function
-  (every row but the model's own arithmetic, ARITHMETIC) that is implemented there; the functions implementing S9.4's
+  (every row but the model's own arithmetic, ARITHMETIC: `alpha`, `with_alpha`, `mix`, `mul`, `div`, `add`, `sub`,
+  `min`, `max`, `floor`, `round`, `pick`) that is implemented there; the functions implementing S9.4's
   scaling curves live in `platform` too and are covered by the same rule. Once the `placement` module exists, every
   `PlacementStrategy` variant has `place.<strategy>.tsv` and `vectors_place_<strategy>` (S13: each strategy
   implemented). A table or test of anything else is a finding (the model's arithmetic has unit tests, S2.2), except a
@@ -126,7 +127,8 @@ VECTORS = Path("native-theme/tests/vectors")
 TESTS = Path("native-theme/tests/platform_vectors.rs")
 PLATFORM_DIRS = (Path("native-theme/src/next/platform"), Path("native-theme/src/platform"))
 PLACEMENT_DIRS = (Path("native-theme/src/next/placement"), Path("native-theme/src/placement"))
-ARITHMETIC = {"alpha", "mix", "mul", "div", "add", "sub", "min", "max", "floor", "pick"}
+# S2.2's model's own arithmetic, no platform function (`with_alpha` ADD-A123's, `round` ADD-A122's)
+ARITHMETIC = {"alpha", "with_alpha", "mix", "mul", "div", "add", "sub", "min", "max", "floor", "round", "pick"}
 GENERATED = ("public_api", "observable_behaviour", "compiled_source")
 ROUTES = GENERATED + ("measured", "published")
 HEADER_NAMES = {"function", "route", "source", "generations", "generator", "inputs", "outputs", "tolerance"}

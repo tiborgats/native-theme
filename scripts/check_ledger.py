@@ -61,6 +61,15 @@ row) or several (lengthen its opening words); an unknown Source; an Item of
 neither form; a Destination not in DESTINATIONS; a row going `after 0.8.0`,
 `not this plan's work` or `settled by the model` without a Reason.
 
+The Unmeasured register (every run)
+-----------------------------------
+The ledger's `## Unmeasured register` table (`| Id | Key and combination |
+Attempts and evidence | Options | Decision |`): a missing section or table,
+an Id not `U` and a number, and an Id two rows share are findings. Every S17
+pending fact (a `[[fact]]` with `pending` of `docs/facts/<platform>/*.toml`,
+the folders of NOT_PLATFORMS left out) names a row: a pending fact whose id
+is no row's Id is a finding. Several pending facts may name one row.
+
 --final (the plan's M4 gate, from M4 on)
 ----------------------------------------
 Also:
@@ -74,10 +83,9 @@ Also:
   it at the top level as `LEGACY_EVIDENCE = <literal list, tuple, set or
   dict>`. A missing script (the plan keeps it from M0 on), a missing or
   non-literal assignment, and a non-empty list are findings.
-- The ledger's `## Unmeasured register` table (`| Id | Key and combination |
-  Attempts and evidence | Options | Decision |`, the Id `U` and a number, S17's
-  pending facts naming it): a row with an empty Decision is a finding, and so
-  is a missing section or table, an Id not of that form, and an Id used twice.
+- The Unmeasured register: a row with an empty Decision is a finding.
+- No S17 pending fact: each pending fact is a finding, whether or not its id
+  names a row (the plan's final gate; 0.8.0 is released with none).
 - Every measured fact with a drift comparison. A measured fact is a
   `[[fact]]` of `docs/facts/<platform>/*.toml` (not `imported/`, not
   `palettes/`, not `staged/`, S19.2's staged inheritance bases) with a `[[fact.cite]]` of `kind = "measured"`; M4's drift run
@@ -150,6 +158,8 @@ TAG = re.compile(r"^\[[^\]]+\](?!\()\s*(.*)$")
 QUOTED = re.compile(r"^“([^”]*)”(?: · l\. \d+)?$")
 LABEL = re.compile(r"^\(.+\)$")
 NAME = re.compile(r"`[^`]+`")
+ID = re.compile(r"U[1-9][0-9]*")
+PENDING = re.compile(r"^\s*pending\s*=")
 
 
 class InputError(Exception):
@@ -390,26 +400,63 @@ def legacy_problems(name: str, text: str | None) -> list[tuple[str, int, str]]:
     return [(name, 1, f"no top-level {LEGACY} assignment")]
 
 
-def unmeasured_problems(ledger: str, ledger_text: str) -> list[tuple[str, int, str]]:
+def register_rows(ledger: str, ledger_text: str) -> tuple[list[tuple[int, list[str]]] | None, list]:
+    """(the Unmeasured register's rows, or None, and the problem when it has no section or table)."""
     sec = section(ledger_text.splitlines(), "## Unmeasured register")
     if sec is None:
-        return [(ledger, 1, "no `## Unmeasured register` section")]
+        return None, [(ledger, 1, "no `## Unmeasured register` section")]
     try:
         rows = table(sec, UNMEASURED_HEADER)
     except InputError as err:
         raise InputError(f"{ledger}: {err}") from err
     if rows is None:
-        return [(ledger, sec[0][0] - 1, "the unmeasured register has no table")]
-    found = []
+        return None, [(ledger, sec[0][0] - 1, "the unmeasured register has no table")]
+    return rows, []
+
+
+def unmeasured_problems(ledger: str, ledger_text: str, final: bool = True) -> list[tuple[str, int, str]]:
+    """The register's Ids (every run): `U` and a number, no two rows sharing one; with `final`, also each row's
+    Decision (the plan's M4 gate)."""
+    rows, found = register_rows(ledger, ledger_text)
     seen = set()
-    for n, c in rows:
-        if not re.fullmatch(r"U[1-9][0-9]*", c[0]):
+    for n, c in rows or []:
+        if not ID.fullmatch(c[0]):
             found.append((ledger, n, f"unmeasured id {c[0]!r} is not U and a number"))
         elif c[0] in seen:
             found.append((ledger, n, f"unmeasured id {c[0]} is used twice"))
         seen.add(c[0])
-        if not c[4]:
+        if final and not c[4]:
             found.append((ledger, n, f"unmeasured {c[1]!r} has no decision"))
+    return found
+
+
+def pending_facts(texts: dict[str, str]) -> list[tuple[str, int, str, object]]:
+    """(file, line, key, id) of every S17 pending fact (a `[[fact]]` with `pending`) of the platform fact files."""
+    out = []
+    for name, text in texts.items():
+        try:
+            data = tomllib.loads(text)
+        except tomllib.TOMLDecodeError as err:
+            raise InputError(f"{name}: {err}") from err
+        facts = [f for f in data.get("fact", []) if isinstance(f, dict) and "pending" in f]
+        lines = [n for n, line in enumerate(text.splitlines(), 1) if PENDING.match(line)]
+        for k, fact in enumerate(facts):
+            out.append((name, lines[k] if len(lines) == len(facts) else 1, str(fact.get("key")), fact["pending"]))
+    return out
+
+
+def pending_problems(ledger: str, ledger_text: str, pending: list, final: bool) -> list[tuple[str, int, str]]:
+    """S17 *A pending measurement*: on every run, a pending fact whose id names no row of the register; with
+    `final`, every pending fact (the plan's final gate requires none)."""
+    rows, _ = register_rows(ledger, ledger_text)
+    ids = {c[0] for _, c in rows or []}
+    found = []
+    for name, line, key, pid in pending:
+        if not isinstance(pid, str) or pid not in ids:
+            found.append((name, line, f"pending fact {key!r} names {pid!r}, no row of the ledger's Unmeasured "
+                                      "register"))
+        if final:
+            found.append((name, line, f"pending fact {key!r} ({pid}): 0.8.0 is released with no S17 pending fact"))
     return found
 
 
@@ -432,7 +479,6 @@ def final_problems(ledger: str, ledger_text: str, imported: list[str], staged: s
     if staged_exists:
         found.append((staged, 1, "S19.2's staged inheritance file must be gone at M4"))
     found += legacy_problems(str(CITATIONS), citations)
-    found += unmeasured_problems(ledger, ledger_text)
     lines = ledger_text.splitlines()
     drift = next((n for n, l in enumerate(lines, 1) if l.rstrip() == "## Spikes and drift runs"), 1)
     found.append((ledger, drift, f"drift comparison not checked: the ledger has no per-fact drift table to match "
@@ -638,6 +684,44 @@ After the table.
     if unmeasured_problems("L", ids) != [("L", 6, "unmeasured id U1 is used twice"),
                                          ("L", 7, "unmeasured id 'V3' is not U and a number")]:
         failures.append(f"unmeasured ids: got {unmeasured_problems('L', ids)}")
+    if unmeasured_problems("L", ledger, final=False):
+        failures.append(f"unmeasured, every run (the Decision is --final's): got "
+                        f"{unmeasured_problems('L', ledger, False)}")
+    if unmeasured_problems("L", ids, final=False) != [("L", 6, "unmeasured id U1 is used twice"),
+                                                      ("L", 7, "unmeasured id 'V3' is not U and a number")]:
+        failures.append(f"unmeasured ids, every run: got {unmeasured_problems('L', ids, False)}")
+    if unmeasured_problems("L", "# Ledger\n", final=False) != [("L", 1, "no `## Unmeasured register` section")]:
+        failures.append("unmeasured, every run: a ledger without the section passed")
+    # S17's pending facts against the register: every run, an id naming no row; --final, every pending fact
+    pending_text = """[[fact]]
+key = "button.body.fill"
+value = "#ffffff"
+
+[[fact]]
+key = "button.body.fill"
+when = { states = ["pressed"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.body.stroke"
+  pending = "U9"
+rows = []
+"""
+    pending = pending_facts({"f.toml": pending_text, "g.toml": "[[fact]]\nkey = 'x'\npending = 3\n"})
+    if pending != [("f.toml", 8, "button.body.fill", "U1"), ("f.toml", 13, "button.body.stroke", "U9"),
+                   ("g.toml", 3, "x", 3)]:
+        failures.append(f"pending facts: got {pending}")
+    got = pending_problems("L", ledger, pending, False)
+    if got != [("f.toml", 13, "pending fact 'button.body.stroke' names 'U9', no row of the ledger's Unmeasured "
+                              "register"),
+               ("g.toml", 3, "pending fact 'x' names 3, no row of the ledger's Unmeasured register")]:
+        failures.append(f"pending, every run: got {got}")
+    got = pending_problems("L", ledger, pending[:1], True)
+    if got != [("f.toml", 8, "pending fact 'button.body.fill' (U1): 0.8.0 is released with no S17 pending fact")]:
+        failures.append(f"pending, --final: got {got}")
+    if pending_problems("L", ledger, [], True) or pending_problems("L", ledger, pending[:1], False):
+        failures.append("pending: no pending fact, or one naming a row, is a finding")
     if unmeasured_problems("L", "# Ledger\n") != [("L", 1, "no `## Unmeasured register` section")]:
         failures.append("unmeasured: a ledger without the section passed")
     if unmeasured_problems("L", "## Unmeasured register\n\nProse.\n")[0][2] != "the unmeasured register has no table":
@@ -669,7 +753,6 @@ kind = "read"
     want_final = [
         ("docs/facts/imported/a.toml", 1, "docs/facts/imported/ must be empty at M4"),
         ("staged.toml", 1, "S19.2's staged inheritance file must be gone at M4"),
-        ("L", 7, "unmeasured '`menu.body.shadow`' has no decision"),
         ("L", 9, "drift comparison not checked: the ledger has no per-fact drift table to match the 1 measured facts "
                  "against"),
     ]
@@ -688,6 +771,7 @@ kind = "read"
         (lambda: extract({**texts, "catalogue": cat.replace("`ink_toolbar` and `ink_part`", "ink")}), "no name"),
         (lambda: extract({**texts, "docs/todo.md": "- [ ] before any heading\n"}), "item before a heading"),
         (lambda: measured_facts({"f.toml": "[[fact]\n"}), "bad TOML"),
+        (lambda: pending_facts({"f.toml": "[[fact]\n"}), "bad TOML, pending"),
         (lambda: legacy_problems("c.py", "LEGACY_EVIDENCE = [\n"), "bad Python"),
     ]
     for call, label in bad_inputs:
@@ -733,6 +817,9 @@ def main(argv: list[str]) -> int:
             raise InputError(f"{ledger}: {err}") from err
         items = extract(read_sources())
         found = problems(str(ledger), rows, items)
+        pending = pending_facts(platform_fact_texts(FACTS))
+        found += unmeasured_problems(str(ledger), ledger_text, final)
+        found += pending_problems(str(ledger), ledger_text, pending, final)
         if final:
             found += check_final(str(ledger), ledger_text, staged)
     except (OSError, UnicodeDecodeError, InputError) as err:
@@ -741,8 +828,8 @@ def main(argv: list[str]) -> int:
     for name, line, what in found:
         print(f"{name}:{line}: {what}")
     per_source = ", ".join(f"{s} {sum(1 for i in items if i.source == s)}" for s in SOURCES)
-    print(f"{len(rows)} triage rows, {len(items)} items ({per_source}){', --final' if final else ''}: "
-          f"{len(found)} findings", file=sys.stderr)
+    print(f"{len(rows)} triage rows, {len(items)} items ({per_source}), {len(pending)} pending facts"
+          f"{', --final' if final else ''}: {len(found)} findings", file=sys.stderr)
     return 1 if found else 0
 
 
