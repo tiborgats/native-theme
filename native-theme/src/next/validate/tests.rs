@@ -1427,6 +1427,38 @@ fn refusal_weight_out_of_range() {
     assert_eq!(bare(&weight(1000)), NONE);
 }
 
+/// A reference naming a whole map, no key, names nothing (S2.2, S12): a
+/// reference names one entry's value.
+#[test]
+fn refusal_whole_map_reference() {
+    let decl = declare("durations = [\"button\"]");
+    let duration = |text: &str| {
+        let mut item = transition(vec![PropertyGroup::Fill], Timing::Linear);
+        item.duration = Value::Expr(Expr::parse(text).unwrap());
+        transitions(vec![item])
+    };
+    assert_eq!(
+        found(&duration("token.motion.durations"), &decl),
+        [
+            "widgets.button.body.transitions[0].duration: the expression does not type: \
+             `token.motion.durations` names nothing"
+        ]
+    );
+    assert_eq!(
+        found(&duration("token.motion.durations.button"), &decl),
+        NONE
+    );
+    assert_eq!(
+        bare(&toml(
+            "[widgets.button.body]\nmin_width_px = \"= token.icons.sizes.keyed\""
+        )),
+        [
+            "widgets.button.body.min_width_px: the expression does not type: \
+             `token.icons.sizes.keyed` names nothing"
+        ]
+    );
+}
+
 /// Every expression is typed when its layer is added (S2.2, S12): one that
 /// mistypes or names nothing is refused, and a call is refused on an enum
 /// block's field as on any field that takes a literal or a reference.

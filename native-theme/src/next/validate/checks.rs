@@ -1620,7 +1620,7 @@ impl TypeEnv for Types<'_> {
 /// registry entry's, a key field's a key of its field's declaration (S2.2,
 /// S10); a widget value's key is left to its widget's `keys` entry.
 fn field_type(fields: &'static [FieldInfo], path: &str) -> Option<Ty> {
-    let info = registry::find(fields, path)?;
+    let info = registry::find_value(fields, path)?;
     match (info.value)() {
         Some(Ty::Key(set)) if set == KEY_OF_PLACE => {
             let name = path.rsplit('.').next()?;

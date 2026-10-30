@@ -347,6 +347,18 @@ fn key_levels(ty: &str) -> usize {
 /// `params.opacity.disabled`); a unit variant of an enum block names the
 /// field holding it.
 pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static FieldInfo> {
+    find_in(fields, path, false)
+}
+
+/// The field whose value a path names below `fields`, as [`find`] does,
+/// but `None` for a map named whole, its keys left out: a reference names
+/// one entry's value (S2.2), never the map.
+pub(crate) fn find_value(fields: &'static [FieldInfo], path: &str) -> Option<&'static FieldInfo> {
+    find_in(fields, path, true)
+}
+
+/// [`find`]; `value`: a map named whole names nothing.
+fn find_in(fields: &'static [FieldInfo], path: &str, value: bool) -> Option<&'static FieldInfo> {
     fields.iter().find_map(|field| {
         let rest = if path == field.path {
             ""
@@ -358,11 +370,12 @@ pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static 
             FieldType::Block { ty, form, fields } => (ty, Some((form, fields))),
             FieldType::Patch { ty, fields } => (ty, Some((BlockForm::Struct, fields()))),
         };
+        let levels = key_levels(ty);
         if rest.is_empty() {
-            return Some(field);
+            return (!value || levels == 0).then_some(field);
         }
         let mut rest = rest;
-        for _ in 0..key_levels(ty) {
+        for _ in 0..levels {
             if rest.is_empty() {
                 return None;
             }
@@ -375,7 +388,7 @@ pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static 
             Some((BlockForm::Enum { unit_variants }, _)) if unit_variants.contains(&rest) => {
                 Some(field)
             }
-            Some((_, fields)) => find(fields, rest),
+            Some((_, fields)) => find_in(fields, rest, value),
             None => None,
         }
     })
