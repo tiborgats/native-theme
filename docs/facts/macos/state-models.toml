@@ -1,54 +1,134 @@
-# State models (S17). macos-tahoe's `button` entry states only what run 40969040283's button pass measured:
-# the push bezel (the base) and `pushOnPushOff` (`toggle`), every control size, both appearances, in a key window
-# of the active application. The states, conditions and variants the pass did not exercise (focus, `open`, the
-# window and application conditions, Increase Contrast, the other bezel styles and the 26 border shapes, the menu
-# and tool buttons, …) are not in it yet: the lane's report lists them as unmeasured.
+# State models (S17). macos-tahoe's `button` entry states what the os-probe button passes measured: spike M's run
+# 40969040283 (hover draws nothing, `highlight:` is a real press, Reduce Transparency changes no push-button pixel) and
+# run 41006842699 (every bezel style, border shape, tint, image button and size, in a key window, another window key,
+# the application inactive, Increase Contrast on, the accent red, and the focus ring under Full Keyboard Access). The
+# variants AppKit draws that no fact states yet are not declared (the lane's report lists them for the pending form):
+# `@small_square`, `@shadowless_square` (their fill is not one colour), `glass` (not one linear overlay, with a
+# shadow), `menu` (NSComboButton: drawn dimmed in every state the pass set), and the nested identities.
 
 [[model]]
-# sizes: the five NSControl.ControlSize values the pass set and read back (`controlSize_raw`, 2 1 0 3 4);
-# `hover` is not an axis: a hovered button's capture differs from the normal one in no pixel, in either appearance
-# and for every kind (`diff_from_normal`, the hovered rows; the cursor over the button, the mouse-moved event
-# delivered); `pressed` is `highlight:`, which draws what a real mouse press draws (analysis.toml `clicked`);
-# Reduce Transparency is not an axis: the offscreen push-button renders are the same with it on and off.
+# sizes: NSControl.ControlSize's five values, read back from each sheet's button; the default a new button's
+# (`buttonWithTitle:`, controlSize 0, regular). `hover` is not an axis (spike M); `pressed` is `highlight:`.
+# `focus_visible`: the focus ring, drawn with Full Keyboard Access on. Conditions: `window_inactive` with `not_main`
+# (another window key), and `app_inactive`, under which the window is neither key nor main (the inactive pass reads
+# both false), so `app_inactive` without the other two is not drawn. exclusive_variants: one bezel style (push the
+# base; `flat` is bordered NO, which no bezel style draws), one border shape, one tint prominence, one image position.
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }
 available = true
-variants = ["toggle"]
+variants = ["toggle", "@flexible_push", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "icon_only", "with_icon"]
 sizes = ["mini", "small", "regular", "large", "extra_large"]
+default_size = "regular"
 densities = []
-axes = { states = ["pressed", "disabled", "default", "checked"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [] }
 exclusive = []
-not_drawn = []
-rows = ["MAC-B01", "MAC-B02", "MAC-B10", "MAC-X17"]
+exclusive_variants = [["@flexible_push", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }]
+rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:91-97"
+quote = "typedef NS_ENUM(NSUInteger, NSControlSize) { NSControlSizeRegular = 0, NSControlSizeSmall = 1, NSControlSizeMini = 2, NSControlSizeLarge API_AVAILABLE(macos(11.0)) = 3, NSControlSizeExtraLarge API_AVAILABLE(macos(26.0)) = 4, };"
 
 [[model.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.mini-plain.controlSize_raw"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.controlSize_raw"
 tolerance = 0
 
 [[model.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.small-plain.controlSize_raw"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.controlSize_raw"
 tolerance = 0
 
 [[model.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-plain.controlSize_raw"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.controlSize_raw"
 tolerance = 0
 
 [[model.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.large-plain.controlSize_raw"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.controlSize_raw"
 tolerance = 0
 
 [[model.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.extraLarge-plain.controlSize_raw"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.extraLarge-plain.controlSize_raw"
 tolerance = 0
 
 [[model.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-toggle_on.state"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.geometry.standard_button.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:29-79"
+quote = "typedef NS_ENUM(NSUInteger, NSBezelStyle) {"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:105-109"
+quote = "The bezel style is not used if the `bordered` property is set to `NO`."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:123-124"
+quote = "@property NSTintProminence tintProminence API_AVAILABLE(macos(26.0));"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSControl.h:152-158"
+quote = "typedef NS_ENUM(NSInteger, NSControlBorderShape) {"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:86-87"
+quote = "@property BOOL hasDestructiveAction API_AVAILABLE(macos(11.0));"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:48-58"
+quote = "typedef NS_ENUM(NSUInteger, NSCellImagePosition) {"
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_on.state"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.sheets.push.isKeyWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-not-key/probe.toml#macos.button_pass.sheets.push.isMainWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.sheets.push.isKeyWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.sheets.push.isMainWindow"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-inactive/probe.toml#macos.button_pass.sheets.push.NSApp_isActive"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/probe.toml#macos.button_pass.isFullKeyboardAccessEnabled"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-increase-contrast-on/probe.toml#macos.environment.accessibility.accessibilityDisplayShouldIncreaseContrast"
 tolerance = 0
 
 [[model.cite]]
