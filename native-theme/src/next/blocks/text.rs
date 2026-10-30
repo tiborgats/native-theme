@@ -130,20 +130,22 @@ impl fmt::Display for FeatureTag {
 /// A BCP 47 language tag, in RFC 5646's syntax (section 2.1's ABNF): a
 /// `langtag` (language with up to three extended language subtags, script,
 /// region, variants, extensions, private use), a private-use tag, or one of
-/// the grandfathered tags, letters in either case.
+/// the grandfathered tags, letters in either case, held in RFC 5646's
+/// canonical case (section 2.1.1), so tags differing only in case are one
+/// key: `zh-hant` is `zh-Hant`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct LanguageTag(String);
 
 impl LanguageTag {
     /// The tag `tag` spells (`"ar"`, `"zh-Hant"`, `"sl-rozaj-biske"`), if it
-    /// has that syntax.
+    /// has that syntax, in canonical case.
     #[must_use]
     pub fn new(tag: &str) -> Option<LanguageTag> {
-        is_language_tag(tag).then(|| LanguageTag(tag.to_owned()))
+        is_language_tag(tag).then(|| LanguageTag(canonical_case(tag)))
     }
 
-    /// The tag as written.
+    /// The tag in canonical case.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
@@ -154,6 +156,36 @@ impl fmt::Display for LanguageTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
+}
+
+/// `tag` in RFC 5646's canonical case (section 2.1.1): a two-letter subtag
+/// uppercase (a region), a four-letter one titlecase (a script) and every
+/// other lowercase; the first subtag and every subtag after a singleton (an
+/// extension's or private use's) lowercase.
+fn canonical_case(tag: &str) -> String {
+    let mut out = String::with_capacity(tag.len());
+    let mut after_singleton = false;
+    for (index, subtag) in tag.split('-').enumerate() {
+        if index > 0 {
+            out.push('-');
+        }
+        let first = index == 0 || after_singleton;
+        match subtag.len() {
+            2 if !first => out.push_str(&subtag.to_ascii_uppercase()),
+            4 if !first => {
+                let mut chars = subtag.chars();
+                if let Some(head) = chars.next() {
+                    out.push(head.to_ascii_uppercase());
+                }
+                out.push_str(&chars.as_str().to_ascii_lowercase());
+            }
+            _ => out.push_str(&subtag.to_ascii_lowercase()),
+        }
+        if subtag.len() == 1 {
+            after_singleton = true;
+        }
+    }
+    out
 }
 
 /// RFC 5646's `grandfathered` tags, `irregular` then `regular`.
