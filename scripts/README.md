@@ -969,7 +969,18 @@ arity its S2.2 signature gives (`with_alpha(c, a)` beside `alpha(c, a)`), a
 platform curve one of the core's `QtEasing` or `AdwEasing` members, a
 `token.motion.timings.<key>` a `Timing` (S4.1's sketch), and
 `requires_variants` as any one of its forms (a listed set holding none of
-them is trimmed from the count). Offline. The docstring states every rule and list. Prints
+them is trimmed from the count). ADD-A124's forms: a state model's `recency`
+sets (two or more flags of `axes.states`, none twice, no two sets ordering
+two flags oppositely), with the gate's runs per order of the present flags
+counted per entry on stderr and summed in the summary (at most n! per state
+combination); a fact's `when.latest` (a set every state model it can hold
+under declares, a flag that is a member of it and that `not_states` does not
+refuse), which fact applies made order-aware (two latest flags of one set, or
+latest flags no one order allows, never hold together); a transition's
+`from` (stated in a single transition, never empty, no flag twice, no keyed
+flag the widget lacks) and a `state_layer` transition only on a part with
+`interaction`; the `interaction` block's keys; and `"ellipse"` on all four
+corners of one `when` or none, never with a `continuous` curve. Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's

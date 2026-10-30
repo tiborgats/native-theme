@@ -14,8 +14,8 @@ Run from the repository root:
     python3 scripts/check_facts.py --self-test
 
 It prints one line per finding, `<file>:<line>: <what>`, and on stderr a `# variant sets:` line per state-model
-entry stating `variant_sets` or `variant_products` (its widget's number of sets, below) and a summary line with the
-counts. Exit 0
+entry stating `variant_sets` or `variant_products` (its widget's number of sets, below), a `# recency orders:` line
+per entry stating `recency` (the gate's runs per order, below) and a summary line with the counts. Exit 0
 when there is none, 1 when there are some, 2 on an input it cannot read (sources.toml, the core, the catalogue) or a
 wrong command line. A fact file that is no valid TOML is a finding of that file.
 
@@ -96,9 +96,26 @@ A `[[fact]]` (S17 *Fields*):
 - `when` is S11's: the keys WHEN_KEYS; conditions by S7.1's names (Checker.cond_ok), states (StateFlag, SharedFlag,
   `@<key>`), variants of the key's widget, sizes (ControlSize or `@<key>`), densities (Density or `@<key>`), size
   classes, `direction` (`ltr`, `rtl`), `context`/`not_context` entries (CONTEXT_KEYS; `scope` `"any"` or
-  `{ nearest = [<widgets>] }`; `part` only with `widget`), `position` (POSITION_KEYS). A colour-role, token or input
-  key's `when` has conditions only (S7: a `Colors` or `Tokens` rule may only have conditions). A `preset:` condition
-  names a preset of the fact's directory.
+  `{ nearest = [<widgets>] }`; `part` only with `widget`), `position` (POSITION_KEYS), `latest` (S11's
+  `latest = { <set> = "<flag>" }`, `Selector.latest`, S7.2; ADD-A124: a non-empty table, each name a key (S1's key
+  grammar, KEY_RX) and each flag a state flag that the `when`'s own `not_states` does not refuse, as `latest` implies
+  the flag; latest_problems: in every state-model entry of the key's widget the fact can hold under
+  (applicable_entries: the entries whose `preset:`/`flavor:` conditions the `when`'s include, if any, else the shared
+  entries and those the `when` does not refuse), the set is one of the entry's `recency` sets and the flag a member
+  of it, and some such entry exists). A colour-role, token or input key's `when` has conditions only (S7: a `Colors`
+  or `Tokens` rule may only have conditions). A `preset:` condition names a preset of the fact's directory.
+- A transition (transition_problems: every `Transition` table the key's type reaches in the value; S2.7, S11, S12;
+  ADD-A124): its `from` is stated in a single transition (`"none"` for any state) and may be left out of a list's
+  entry only (`None`); as a list it is not empty, names no flag twice and no keyed flag the key's widget does not
+  declare (its names are StateFlag's by the type rule); a transition naming `state_layer` is on a part whose
+  catalogue fields hold `interaction`. `PartStyle.interaction`'s keys (`interaction.state_layer.<field>`,
+  `interaction.ripple.<field>`, S2.12) are field paths as any (Checker.field_ok), their values typed by the core's
+  `Interaction`, `StateLayerStyle` and `RippleStyle` (`ripple.effect` a `RippleEffect`).
+- `Radius::Ellipse` (ellipse_problems; S2.4, S12; ADD-A124), where the facts show it: the corners one `Corners` value
+  holds (the Radius fields of the core's `Corners`), as the leaf facts `….corners.<corner>` or one whole `….corners`
+  table under one `when` (equal as S11 reads it, canonical_when) in one file and run state, are `"ellipse"` on all
+  four or on none, and a `….corners.curve` beside them is not `continuous`. A corner stated under another `when` is
+  not this `when`'s, so an Ellipse whose other corners only a broader fact states is a finding.
 - each citation (`[[fact.cite]]`) by `kind`: `published` requires `source`, `quote`, may have `conversion`, `absent`;
   `read` requires `source`, `quote`, may have `conversion`; `measured` requires `evidence`, `tolerance`, may have
   `conversion`, `inputs`; nothing else. `inputs` (S17 *A measured derivation*) is on a measured citation of an
@@ -121,7 +138,12 @@ A `[[fact]]` (S17 *Fields*):
   `preset:`, `flavor:`, `idiom:`, `input:`, `posture:`, `device_model:`, one container's `container_size:`); their
   positions differ in `first`, `last`, `only` or `parity`; one requires a context the other refuses; or, by the
   widget's state-model entries of the platform (any of them), they name two states of one exclusive group, two
-  variants of one `exclusive_variants` group, or two or more variants no listed or product set holds. Anything else
+  variants of one `exclusive_variants` group, or two or more variants no listed or product set holds. It is
+  order-aware (S17: a fact under `when.latest` holds only under the orders it names, a fact without it under every
+  order; ADD-A124): two `when`s cannot hold together where they name two latest flags of one recency set, where a
+  latest flag is refused by `not_states` (`latest` implies its flag), or where no one order of the flags can make
+  every latest flag its set's latest while every flag either names is present (orders_possible: each latest flag set
+  after the other present members of its set, those every entry gives it, without a cycle). Anything else
   may hold together (`not_drawn` is not read: a shadowing there is a finding to narrow).
 - The generation rule (S17 *Generations*): a fact with `preset:<id>` in `when.conditions` has every citation serving
   that generation; a fact without one has citations that together serve each generation of its directory among the
@@ -134,8 +156,8 @@ A `[[model]]` in `<platform>/state-models.toml` (S17 *State models*): `widget` (
 may only hold `conditions` with `preset:` or `flavor:` ones. With `available = false` no other declaration. With
 `true`, `variants`, `sizes`, `densities`, `axes` (`{ states, conditions, contexts }`), `exclusive` and `not_drawn`
 are required, and `default_size`, `flags`, `requires_variants`, `sizes_by_variant`, `sizes_by_context`,
-`exclusive_variants`, `variant_sets`, `variant_products` and `default_size_by_variant` optional (S10's declarations,
-S17; absent meaning none); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities, states,
+`exclusive_variants`, `variant_sets`, `variant_products`, `default_size_by_variant` and `recency` optional (S10's
+declarations, S17; absent meaning none); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities, states,
 conditions, context selectors as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states`
 and in one group only, `default_size` is one of a non-empty `sizes`, `requires_variants` and `sizes_by_variant`'s
 variants are among `variants`, every listed size among `sizes`, a `sizes_by_context` context a catalogue widget.
@@ -154,7 +176,15 @@ set is stated once), and the exclusive groups check the listed sets only. The nu
 (drawn_variant_sets: the listed and the products' sets, less those a `not_drawn` entry stating only `variants` and
 `not_variants` removes whole and the listed sets `requires_variants` excludes, each counted once; a listed set it
 excludes is no finding, as S17 trims the combinations by it) is printed on stderr, so the expansion is reviewed by its
-count. The generation rule applies as to a fact.
+count. ADD-A124 (recency_problems): `recency` is a table of named sets, each name a key (S1) and each set two or more
+flags (S12), each a state flag of `axes.states`, none twice, and no two sets of the entry order two flags oppositely
+(S12: so the answer under no reported order is one order). The gate's runs per order (recency_orders, S17): the
+entry's state combinations (state_combinations: every subset of `axes.states` reduced by `exclusive`, each group
+keeping its first present flag, less those a `not_drawn` entry stating only `states` and `not_states` removes),
+each run once per order of its flags that belong to a recency set, the orders giving every set the same latest flag
+counted once (combination_orders; at most n! for n such flags); the runs, the combinations, the most orders of one
+combination and its n are printed on stderr, and their sums in the summary. The generation rule applies as to a
+fact.
 
 A palette fact (`docs/facts/palettes/<project>.toml`, S17 *Palette facts*): `key = "<project>.<flavour>.<name>"`
 (`<project>` the file's stem), a colour literal as `value`, at least one citation; no `rows`, `when`,
@@ -219,12 +249,13 @@ CITE_FIELDS = {
 MODEL_REQUIRED = {"widget", "available", "rows", "cite"}
 MODEL_DECLARATIONS = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn", "default_size", "flags",
                       "requires_variants", "sizes_by_variant", "sizes_by_context", "exclusive_variants",
-                      "variant_sets", "variant_products", "default_size_by_variant"}
+                      "variant_sets", "variant_products", "default_size_by_variant", "recency"}
 MODEL_AVAILABLE_REQUIRED = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn"}
 AXES_KEYS = {"states", "conditions", "contexts"}
 
 WHEN_KEYS = {"conditions", "not_conditions", "context", "not_context", "position", "variants", "not_variants",
-             "sizes", "not_sizes", "densities", "not_densities", "size_class", "direction", "states", "not_states"}
+             "sizes", "not_sizes", "densities", "not_densities", "size_class", "direction", "states", "not_states",
+             "latest"}
 CONTEXT_KEYS = {"scope", "widget", "part", "surface", "sizes", "not_sizes", "variants", "not_variants", "states",
                 "not_states"}
 POSITION_KEYS = {"among", "first", "last", "only", "parity", "previous", "next"}
@@ -275,6 +306,7 @@ TEXT_MAP = re.compile(rf"Vec<\(\s*(?:{'|'.join(TEXT_KEY_TYPES)})\s*,\s*(.+)\)>")
 TOML_BARE = re.compile(r"^[A-Za-z0-9_-]+$")
 TEXT_ENTRY = "text_entry"
 DRAWN_AS_KEYS = {"widget", "part", "variants"}
+KEY_RX = re.compile(r"^[a-z0-9][a-z0-9_]*$")   # S1's key grammar: a recency set's name (S10; ADD-A124)
 
 
 class InputError(Exception):
@@ -1286,6 +1318,28 @@ def when_problems(ctx, when, widget, platform, only_conditions=False, where="whe
                 out += context_problems(ctx, c, f"{where}.{k}[{i}]")
     if "position" in when:
         out += position_problems(ctx, when["position"], f"{where}.position")
+    if "latest" in when:
+        out += latest_form_problems(ctx, when, widgets, where)
+    return out
+
+
+def latest_form_problems(ctx, when, widgets, where) -> list:
+    """A `when.latest` table's form (S11, S7.2; ADD-A124): `{ <set> = "<flag>" }`, each set's name a key (S1) and its
+    flag a state flag that the `when`'s own `not_states` does not refuse (`latest` implies the flag, S7.2)."""
+    lt = when["latest"]
+    if not isinstance(lt, dict) or not lt or not all(isinstance(v, str) for v in lt.values()):
+        return [f"{where}.latest is not a table of recency sets and their latest flags (S11: latest = "
+                f"{{ <set> = \"<flag>\" }})"]
+    nots = when.get("not_states") if str_list(when.get("not_states")) else []
+    out = []
+    for name, flag in lt.items():
+        if not KEY_RX.match(name):
+            out.append(f"{where}.latest: {name!r} is not a recency set's name (a key, S1)")
+        if flag.startswith("!") or not ctx.ck.flag_ok(flag, widgets):
+            out.append(f"{where}.latest.{name}: {flag!r} is not a state flag")
+        elif flag in nots:
+            out.append(f"{where}.latest.{name}: {flag!r} is among the when's not_states, which `latest` contradicts "
+                       f"(it implies the flag, S7.2)")
     return out
 
 
@@ -1520,6 +1574,7 @@ def fact_problems(ctx, item: Item) -> list:
             out += [(item.ln("value"), p) for p in part_patch_problems(ctx, d["value"], widget)]
         elif "value" in d:
             out += [(item.ln("value"), p) for p in value_problems(ctx, d["value"], dim, typ=typ)]
+            out += [(item.ln("value"), p) for p in transition_problems(ctx, d["key"], d["value"], typ, widget)]
             if isinstance(d["value"], str) and text_leaves(ctx, d["value"], typ):
                 out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
                                             "(S11)") for c in item.cites if c.data.get("kind") == "measured"
@@ -1533,6 +1588,57 @@ def fact_problems(ctx, item: Item) -> list:
     for c in item.cites:
         out += cite_problems(ctx, item, c)
     out += generation_problems(ctx, item)
+    return out
+
+
+def transition_tables(ctx, value, t, in_list=False, path="value"):
+    """(path, table, whether it is an entry of a list) of every `Transition` table in `value` under the core's type
+    `t` (S2.7)."""
+    s = strip_type(t) if t else None
+    if isinstance(value, dict) and s == "Transition":
+        yield path, value, in_list
+    elif isinstance(value, list):
+        it = item_type(t) if t else None
+        for i, v in enumerate(value):
+            yield from transition_tables(ctx, v, it, True, f"{path}[{i}]") if it else ()
+    elif isinstance(value, dict) and t:
+        for k, v in value.items():
+            yield from transition_tables(ctx, v, child_type(ctx, t, k), False, f"{path}.{k}")
+
+
+def part_fields(ctx, key):
+    """The catalogue's field list of the part a widget or component key names (`<widget>.<part>.…`), or None."""
+    parsed = key_segments(key) if isinstance(key, str) else None
+    if not isinstance(parsed, tuple):
+        return None
+    segs = parsed[0]
+    widget, rest = (f"component.{segs[1]}", segs[2:]) if segs[0] == "component" and len(segs) > 1 else (segs[0],
+                                                                                                         segs[1:])
+    entry = ctx.entries.get(widget)
+    part = next((p for p in entry.parts if rest and rest[0] in p.names), None) if entry else None
+    return [check_spec_names.norm_value(f) for f in part.fields] if part else None
+
+
+def transition_problems(ctx, key, value, typ, widget) -> list:
+    """A transition's `from` (`Transition.from`, S2.7, S11, S12; ADD-A124): stated in a single transition (`"none"` for
+    any state), left out of a list's entry only; never an empty list, no flag twice, no keyed flag the widget does not
+    declare; and a `state_layer` transition only on a part whose fields hold `interaction` (S12)."""
+    out = []
+    fields = part_fields(ctx, key)
+    for path, tr, in_list in transition_tables(ctx, value, typ):
+        frm = tr.get("from")
+        if "from" not in tr and not in_list:
+            out.append(f"{path}: a single transition states `from` (S11: \"none\" for any state)")
+        if isinstance(frm, list):
+            if not frm:
+                out.append(f"{path}.from is an empty list (it would apply from no state, S12)")
+            out += [f"{path}.from names {f!r} twice (S12)" for f in sorted({f for f in frm if isinstance(f, str)
+                                                                             and frm.count(f) > 1})]
+            out += [f"{path}.from: {f!r} is not a flag {widget} declares (S12)" for f in dict.fromkeys(frm)
+                    if widget and isinstance(f, str) and KEYED.match(f) and not ctx.ck.flag_ok(f, [widget])]
+        props = tr.get("properties") if isinstance(tr.get("properties"), list) else []
+        if "state_layer" in props and fields is not None and "interaction" not in fields:
+            out.append(f"{path}: a `state_layer` transition on a part whose fields lack `interaction` (S12)")
     return out
 
 
@@ -1689,11 +1795,92 @@ def model_problems(ctx, item: Item) -> list:
                 out += [(item.ln(k), p) for p in names_problems(x["sizes"], f"{k}.sizes", lambda s: s in sizes,
                                                                   "among sizes")]
         out += variant_declaration_problems(item, variants, sizes)
+        out += recency_problems(item, states, ws, ck)
     out += cite_list_problems(item, "model")
     for c in item.cites:
         out += cite_problems(ctx, item, c)
     out += generation_problems(ctx, item)
     return out
+
+
+def recency_of(d) -> dict:
+    """{name: [flags in the stated order]} of an entry's `recency` (S10, S17; ADD-A124), its well-formed sets only."""
+    r = d.get("recency")
+    return {k: v for k, v in r.items() if str_list(v)} if isinstance(r, dict) else {}
+
+
+def recency_problems(item: Item, states, ws, ck) -> list:
+    """`recency` (S10, S12, S17; ADD-A124): a table of named sets, each name a key (S1) and each set two or more flags,
+    each a state flag of `axes.states`, none twice; no two sets ordering two flags oppositely."""
+    d = item.data
+    if "recency" not in d:
+        return []
+    r, ln = d["recency"], item.ln("recency")
+    if not isinstance(r, dict) or not all(str_list(v) for v in r.values()):
+        return [(ln, "recency is not a table of named sets, each a list of flags (S10, S17)")]
+    out = []
+    for name, flags in r.items():
+        where = f"recency.{name}"
+        if not KEY_RX.match(name):
+            out.append((ln, f"{where}: {name!r} is not a key (S1)"))
+        if len(set(flags)) < 2:
+            out.append((ln, f"{where} holds fewer than two flags (S12)"))
+        out += [(ln, f"{where} names {f!r} twice (S12)") for f in sorted({f for f in flags if flags.count(f) > 1})]
+        for f in dict.fromkeys(flags):
+            if f.startswith("!") or not ck.flag_ok(f, ws):
+                out.append((ln, f"{where}: {f!r} is not a state flag"))
+            elif "axes" in d and f not in states:
+                out.append((ln, f"{where}: {f!r} is not in axes.states"))
+    for (n1, f1), (n2, f2) in itertools.combinations(r.items(), 2):
+        for a, b in itertools.combinations([f for f in dict.fromkeys(f1) if f in f2], 2):
+            if f2.index(a) > f2.index(b):
+                out.append((ln, f"recency: {n1} and {n2} order {a!r} and {b!r} oppositely (S12: a widget's sets agree "
+                                f"on their orders)"))
+    return out
+
+
+def state_combinations(d) -> set:
+    """The state combinations of an available entry (S17 *State models*): every subset of `axes.states` reduced by
+    `exclusive` (each group keeping its first present flag), less those a `not_drawn` entry stating only `states` and
+    `not_states` removes, each counted once."""
+    axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
+    states = list(dict.fromkeys(axes.get("states", []))) if str_list(axes.get("states", [])) else []
+    ex = d.get("exclusive") if isinstance(d.get("exclusive"), list) else []
+    groups = [g for g in ex if str_list(g)]
+    nd = d.get("not_drawn") if isinstance(d.get("not_drawn"), list) else []
+    gone = [(set(w.get("states", [])), set(w.get("not_states", []))) for w in nd
+            if isinstance(w, dict) and w and set(w) <= {"states", "not_states"} and all(str_list(w[k]) for k in w)]
+    out = set()
+    for n in range(len(states) + 1):
+        for sub in itertools.combinations(states, n):
+            kept = set(sub)
+            for g in groups:
+                kept -= set([f for f in g if f in kept][1:])
+            k = frozenset(kept)
+            if not any(a <= k and not (no & k) for a, no in gone):
+                out.add(k)
+    return out
+
+
+def combination_orders(k, sets) -> tuple:
+    """(orders, flags) of a state combination (S17): one order per order of its flags that belong to a recency set, the
+    orders giving every set the same latest flag counted once, and the number of those flags (n, the bound n!)."""
+    members = [f for f in sorted(k) if any(f in s for s in sets.values())]
+    seen = set()
+    for perm in itertools.permutations(members):
+        pos = {f: i for i, f in enumerate(perm)}
+        seen.add(tuple(max((f for f in s if f in pos), key=pos.get, default=None) for s in sets.values()))
+    return len(seen), len(members)
+
+
+def recency_orders(d) -> tuple:
+    """(state combinations, the gate's runs over them, the most orders of one combination, the most flags of the sets one
+    combination holds) of an entry with recency sets (S17: one run per order of the present flags, at most n!)."""
+    sets = recency_of(d)
+    combos = state_combinations(d)
+    counts = [combination_orders(k, sets) for k in combos]
+    return (len(combos), sum(c for c, _ in counts), max((c for c, _ in counts), default=0),
+            max((n for _, n in counts), default=0))
 
 
 def variant_declaration_problems(item: Item, variants, sizes) -> list:
@@ -1871,9 +2058,18 @@ def whens_overlap(a, b, model) -> bool:
     `exclusive_variants` group; two or more variants no listed or product set holds)."""
     a = a if isinstance(a, dict) else {}
     b = b if isinstance(b, dict) else {}
+    la = {k: v for k, v in a.get("latest", {}).items() if isinstance(v, str)} if isinstance(a.get("latest"), dict) \
+        else {}
+    lb = {k: v for k, v in b.get("latest", {}).items() if isinstance(v, str)} if isinstance(b.get("latest"), dict) \
+        else {}
+    if any(la[s] != lb[s] for s in la.keys() & lb.keys()):
+        return False
+    latest = {**la, **lb}
     held = {}
     for k in ("states", "variants", "conditions", "sizes", "densities"):
         held[k] = when_lists(a, k) | when_lists(b, k)
+        if k == "states":
+            held[k] |= set(latest.values())
         if held[k] & (when_lists(a, f"not_{k}") | when_lists(b, f"not_{k}")):
             return False
     if len(held["sizes"]) > 1 or len(held["densities"]) > 1:
@@ -1906,7 +2102,10 @@ def whens_overlap(a, b, model) -> bool:
         if any(c in not_y for c in ctx_x):
             return False
     if model is not None:
-        states, groups, sets = model
+        states, groups, sets = model[:3]
+        recency = model[3] if len(model) > 3 else {}
+        if latest and not orders_possible(latest, held["states"], recency):
+            return False
         if any(len(held["states"] & g) > 1 for g in states):
             return False
         if any(len(held["variants"] & g) > 1 for g in groups):
@@ -1916,15 +2115,40 @@ def whens_overlap(a, b, model) -> bool:
     return True
 
 
+def orders_possible(latest, held, recency) -> bool:
+    """Whether one order of the flags (`Element.state_order`, S7.2) can make each `latest` flag its set's latest while
+    the flags `held` are present: each latest flag set after every other held member of its set (the members every
+    entry gives the set, `recency`), with no cycle."""
+    after = {f: set() for f in held}
+    for name, flag in latest.items():
+        after.setdefault(flag, set()).update(g for g in recency.get(name, ()) if g in held and g != flag)
+    done, active = set(), set()
+
+    def acyclic(f):
+        if f in done:
+            return True
+        if f in active:
+            return False
+        active.add(f)
+        ok = all(acyclic(g) for g in after.get(f, ()))
+        active.discard(f)
+        done.add(f)
+        return ok
+    return all(acyclic(f) for f in list(after))
+
+
 def widget_models(items) -> dict:
-    """{(platform, widget): (exclusive state groups, exclusive variant groups, variant sets)} over the widget's
-    state-model entries of the platform (every entry's, the listed and the products' sets)."""
+    """{(platform, widget): (exclusive state groups, exclusive variant groups, variant sets, recency sets)} over the
+    widget's state-model entries of the platform (every entry's, the listed and the products' sets; each recency set's
+    members those every entry declaring it gives)."""
     out = {}
     for it in items:
         d = it.data
         if it.table != "model" or d.get("available") is not True or not isinstance(d.get("widget"), str):
             continue
-        states, groups, sets = out.setdefault((it.platform, d["widget"]), ([], [], set()))
+        states, groups, sets, recency = out.setdefault((it.platform, d["widget"]), ([], [], set(), {}))
+        for name, members in recency_of(d).items():
+            recency[name] = recency[name] & set(members) if name in recency else set(members)
         ex = d.get("exclusive") if isinstance(d.get("exclusive"), list) else []
         states += [set(g) for g in ex if str_list(g)]
         ev = d.get("exclusive_variants") if isinstance(d.get("exclusive_variants"), list) else []
@@ -1962,6 +2186,117 @@ def pending_problems(ctx, items) -> list:
                     out.append((file, pend.line, f"pending fact {d['key']!r} ({d['pending']}) is shadowed by the later "
                                                  f"fact at line {later.line} on a combination both `when`s hold in "
                                                  f"(S17 *Which fact applies*: narrow its `when` or place it after)"))
+    return out
+
+
+def model_entries(items) -> dict:
+    """{(platform, widget): [the widget's available state-model entries of the platform]}."""
+    out = {}
+    for it in items:
+        d = it.data
+        if it.table == "model" and d.get("available") is True and isinstance(d.get("widget"), str):
+            out.setdefault((it.platform, d["widget"]), []).append(it)
+    return out
+
+
+def entry_conditions(it) -> set:
+    w = it.data.get("when")
+    return set(w["conditions"]) if isinstance(w, dict) and str_list(w.get("conditions")) else set()
+
+
+def applicable_entries(entries, when) -> list:
+    """The state-model entries a fact's `when` can hold under (S17: an entry with `preset:` or `flavor:` replaces the
+    shared one there): those whose conditions the `when`'s all include, if any; else the shared entries and every
+    entry whose conditions the `when` does not refuse (a `not_conditions` member, or another value of its kind)."""
+    conds, nots = when_lists(when, "conditions"), when_lists(when, "not_conditions")
+    specific = [e for e in entries if entry_conditions(e) and entry_conditions(e) <= conds]
+    if specific:
+        return specific
+    fixed = {c.partition(":")[0]: c for c in conds if c.startswith(("preset:", "flavor:"))}
+    return [e for e in entries if not any(c in nots or fixed.get(c.partition(":")[0], c) != c
+                                          for c in entry_conditions(e))]
+
+
+def latest_problems(ctx, items) -> list:
+    """A fact's `when.latest` against its widget's state models (S12, S17; ADD-A124): each set a recency set and each
+    flag a member of it in every entry the fact can hold under (applicable_entries)."""
+    models = model_entries(items)
+    out = []
+    for it in items:
+        when = it.data.get("when")
+        if it.table != "fact" or it.palette or not isinstance(when, dict) or not isinstance(when.get("latest"), dict):
+            continue
+        widget = key_info(ctx, it.data.get("key"))[2]
+        if not widget:
+            continue
+        entries = applicable_entries(models.get((it.platform, widget), []), when)
+        if not entries:
+            out.append((it.file, it.ln("when"), f"when.latest: no state model of {widget} in {it.platform}/ that the "
+                                                f"fact can hold under declares recency sets (S17)"))
+            continue
+        for name, flag in when["latest"].items():
+            for e in entries:
+                sets = recency_of(e.data)
+                if name not in sets:
+                    out.append((it.file, it.ln("when"), f"when.latest: {name!r} is not a recency set of {widget}'s "
+                                                        f"state model ({e.file}:{e.line}; S12)"))
+                elif flag not in sets[name]:
+                    out.append((it.file, it.ln("when"), f"when.latest.{name}: {flag!r} is not a member of the set "
+                                                        f"({e.file}:{e.line}; S12)"))
+    return out
+
+
+def canonical_when(when):
+    """A `when` as a comparable value: its lists of names as sets (two `when`s equal as S11 reads them)."""
+    if isinstance(when, dict):
+        return tuple(sorted((k, canonical_when(v)) for k, v in when.items()))
+    if isinstance(when, list):
+        if str_list(when):
+            return ("set",) + tuple(sorted(set(when)))
+        return ("list",) + tuple(canonical_when(v) for v in when)
+    return when
+
+
+def ellipse_problems(ctx, items) -> list:
+    """`Radius::Ellipse` (S2.4, S12; ADD-A124), where the facts show it: the corners of one `Corners` value (the leaf
+    facts of a `….corners.<corner>` path, or a whole `….corners` table) under one `when`, in one file and run, state
+    `"ellipse"` on all four corners or none, and their curve, where a fact states it, is not `continuous`. The corners
+    are the Radius fields of the core's `Corners`."""
+    corners = [k for k, v in ctx.structs.get("Corners", {}).items() if strip_type(v) == "Radius"]
+    groups = {}
+    for it in items:
+        d = it.data
+        if it.table != "fact" or it.palette or "value" not in d or not isinstance(d.get("key"), str):
+            continue
+        parsed = key_segments(d["key"])
+        if not isinstance(parsed, tuple) or "corners" not in parsed[0][-2:]:
+            continue
+        segs = parsed[0]
+        i = len(segs) - 1 - segs[::-1].index("corners")
+        gk = (it.file, d.get("scheme_file"), d.get("accent"), tuple(segs[:i + 1]), canonical_when(d.get("when")))
+        g = groups.setdefault(gk, {})
+        if i == len(segs) - 2:
+            g[segs[-1]] = (d["value"], it.ln("value"))
+        elif isinstance(d["value"], dict):
+            for k, v in d["value"].items():
+                g[re.sub(r"_px$", "", k)] = (v, it.ln("value"))
+    out = []
+    for (file, _, _, prefix, _), g in groups.items():
+        path = ".".join(prefix)
+        on = [c for c in corners if c in g and g[c][0] == "ellipse"]
+        if not on:
+            continue
+        line = g[on[0]][1]
+        for c in corners:
+            if c not in g:
+                out.append((file, line, f"{path}: `ellipse` on {', '.join(on)} and no fact under the same when states "
+                                        f"{c} (S12: an Ellipse on all four corners or none)"))
+            elif g[c][0] != "ellipse":
+                out.append((file, g[c][1], f"{path}.{c}: {g[c][0]!r} beside `ellipse` on {', '.join(on)} under the "
+                                           f"same when (S12: an Ellipse on all four corners or none)"))
+        if "curve" in g and g["curve"][0] == "continuous":
+            out.append((file, g["curve"][1], f"{path}.curve: `continuous` with `ellipse` corners (S12: an Ellipse "
+                                             f"corner is Circular)"))
     return out
 
 
@@ -2022,6 +2357,8 @@ def check(ctx: Context):
         problems = model_problems(ctx, it) if it.table == "model" else fact_problems(ctx, it)
         findings += [(it.file, ln, what) for ln, what in problems]
     findings += pending_problems(ctx, items)
+    findings += latest_problems(ctx, items)
+    findings += ellipse_problems(ctx, items)
     fact_keys = {it.data.get("key") for it in items if it.palette and isinstance(it.data.get("key"), str)}
     palettes = bundled_palettes(ctx.root)
     for path, text, data in palettes:
@@ -2037,14 +2374,19 @@ def check(ctx: Context):
         "variant_sets": [(it.file, it.line, it.data["widget"], drawn_variant_sets(it.data)) for it in items
                          if it.table == "model" and isinstance(it.data.get("widget"), str)
                          and ("variant_sets" in it.data or "variant_products" in it.data)],
+        "recency_orders": [(it.file, it.line, it.data["widget"], recency_orders(it.data)) for it in items
+                           if it.table == "model" and isinstance(it.data.get("widget"), str)
+                           and it.data.get("available") is True and recency_of(it.data)],
     }
     return findings, counts
 
 
 def summary(counts, n):
     vacuous = "no facts yet: " if not counts["files"] else ""
+    orders = counts.get("recency_orders", [])
     return (f"{vacuous}{counts['files']} fact files, {counts['facts']} facts ({counts['pending']} pending), "
-            f"{counts['models']} state-model entries, "
+            f"{counts['models']} state-model entries ({len(orders)} with recency sets: "
+            f"{sum(o[3][1] for o in orders)} runs per order of {sum(o[3][0] for o in orders)} state combinations), "
             f"{counts['palette']} palette facts, {counts['cites']} citations; {counts['palettes']} bundled palettes "
             f"(new format): {n} findings")
 
@@ -2053,7 +2395,7 @@ def summary(counts, n):
 
 SELF_TEST_CORE = '''
 ```rust
-pub enum StateFlag { Hover, Pressed, Focused, Disabled, Checked, Shared(SharedFlag), Widget(Key) }
+pub enum StateFlag { Hover, Pressed, Focused, FocusVisible, Disabled, Checked, Shared(SharedFlag), Widget(Key) }
 pub enum SharedFlag { Pulling, Refreshing }
 pub enum Condition { WindowInactive, ContrastHigh, Scheme(Scheme), Flavor(Key), Preset(PresetId) }
 pub enum Scheme { Light, Dark }
@@ -2074,7 +2416,13 @@ pub struct MotionTokens { pub durations: Vec<(Key, Value<Ms>)>, pub timings: Vec
 pub struct PartStyle { pub fill: Value<Paint>, pub stroke: Value<Stroke>, pub corners: Value<Corners>,
                        pub shadow: Value<Shadow>, pub text: Value<TextStyle>, pub focus: Value<FocusIndicator>,
                        pub padding: Sides<Value<Px>>, pub min_width: Value<Px>, pub opacity: Value<Fraction>,
-                       pub transitions: Vec<Transition>, pub glyph: Value<Glyph> }
+                       pub transitions: Vec<Transition>, pub glyph: Value<Glyph>,
+                       pub interaction: Value<Interaction> }
+pub struct Interaction { pub state_layer: StateLayerStyle, pub ripple: RippleStyle }
+pub struct StateLayerStyle { pub color: Value<Color>, pub alpha: Value<Fraction> }
+pub struct RippleStyle { pub effect: Value<RippleEffect>, pub color: Value<Color>, pub alpha: Value<Fraction>,
+                         pub bounded: bool, pub max_radius: Value<Px>, pub padding: Value<Px> }
+pub enum RippleEffect { AndroidPatterned }
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>, pub spread: Value<Px>,
                          pub color: Value<Color>, pub inset: bool }
 pub struct ElementData { pub progress: f32 }
@@ -2086,8 +2434,11 @@ pub struct IconStyle { pub size: Value<Px> }
 pub struct Glyph { pub source: GlyphSource, pub stroke: X }
 pub enum GlyphSource { ThemeIcon { name: String, fallbacks: Vec<String> }, NamedSystemImage { name: String } }
 pub struct GlyphStroke { pub width: X }
-pub struct FocusIndicator { pub width: Value<Px>, pub corners: X }
-pub struct Corners { pub top_left: Radius }
+pub struct FocusIndicator { pub width: Value<Px>, pub corners: X, pub transition: Value<Transition> }
+pub struct Corners { pub top_left: Radius, pub top_right: Radius, pub bottom_right: Radius, pub bottom_left: Radius,
+                     pub curve: CornerCurve }
+pub enum Radius { Px(Value<Px>), Full { maximum: Value<Px> }, Ellipse, FollowPart }
+pub enum CornerCurve { Circular, Continuous }
 pub struct Stroke { pub top: Edge }
 pub struct Transform { pub scale: X }
 pub struct Caret { pub width: X }
@@ -2101,8 +2452,10 @@ pub struct KdeTokens { pub disabled: KdeEffects, pub frame_width: Value<Px> }
 pub struct KdeEffects { pub intensity_amount: Value<f32> }
 pub struct MaterialScheme { pub variant: MaterialVariant, pub primary: X }
 pub enum MaterialVariant { TonalSpot, FruitSalad, Cmf }
-pub struct Transition { pub properties: Vec<PropertyGroup>, pub duration: Value<Ms>, pub timing: Value<Timing> }
-pub enum PropertyGroup { Fill, Stroke }
+pub struct Transition { pub properties: Vec<PropertyGroup>, pub duration: Value<Ms>, pub timing: Value<Timing>,
+                        pub from: Option<Vec<StateFlag>> }
+pub enum PropertyGroup { Fill, Stroke, StrokeWidth, StateLayer }
+pub enum TransitionKind { Interpolate, Keyed { key: Key } }
 pub enum Timing { CubicBezier(f32, f32, f32, f32), Linear, Spring { mass: f32, stiffness: f32, damping_ratio: f32,
                   rest_epsilon: f32 }, Platform(PlatformCurve) }
 pub enum PlatformCurve { KirigamiVelocity, Qt(QtEasing), Adw(AdwEasing) }
@@ -2138,7 +2491,8 @@ SELF_TEST_CATALOGUE = '''
 ### button
 
 - **Parts:**
-  - `body` — the root: `fill`, `stroke`, `corners`, `shadow`, `padding`, `min_width`, `focus`, `transitions`.
+  - `body` — the root: `fill`, `stroke`, `corners`, `shadow`, `padding`, `min_width`, `focus`, `transitions`,
+    `interaction`.
   - `label` — the text: `text`.
   - `mark` — the mark: `glyph`.
 - **Widget values:** `icon_text_gap_px: Value<Px>`, `repeat_delay_ms: Value<Ms>`.
@@ -2149,7 +2503,7 @@ SELF_TEST_CATALOGUE = '''
 
 - **Parts:**
   - `body` — the root: `padding`.
-  - `indicator` — the indicator: `fill`, `shadow`.
+  - `indicator` — the indicator: `fill`, `shadow`, `transitions`.
 - **Widget values:** `trigger_distance_px: Value<Px>`.
 - **Variants:** none.
 - **Flags:** shared `pulling`, `refreshing`.
@@ -2393,6 +2747,7 @@ axes = { states = ["hover", "pressed", "disabled", "focused"], conditions = ["wi
 exclusive = [["disabled", "pressed", "hover"]]
 not_drawn = [{ states = ["hover"], conditions = ["window_inactive"] }]
 sizes_by_variant = [{ variant = "@pill", sizes = ["regular"] }]
+recency = { glow = ["focused", "hover"] }
 rows = ["MAC-B08"]
 
 [[model.cite]]
@@ -2496,6 +2851,26 @@ _UNTYPED = "'Segoe MDL2 Assets' is not a value as S11 spells it"   # a key that 
 _TIMING = ('[[fact]]\nkey = "token.motion.timings.in_out_sine"\nvalue = { platform = { qt = "in_out_sine" } }\n'
            'rows = []\n' + _CITE)
 _PRODUCTS = _SBV + '\nvariant_products = [[{ any = ["flat"] }, { one = ["@pill"] }]]'
+# ADD-A124: recency sets, `when.latest`, `Transition.from`, `Radius::Ellipse` and the interaction block
+_RECENCY = 'recency = { glow = ["focused", "hover"] }'
+_MAC_ID = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/x.h:1"
+_LATEST = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:macos-monterey"], latest = { glow = '
+           '"hover" } }\nvalue = "#ffffff"\nrows = []\n' + _MAC_CITE)
+_LATEST_PENDING = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:macos-monterey"], latest = { glow '
+                   '= "hover" } }\npending = "U3"\nrows = []\n\n[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = '
+                   '["preset:macos-monterey"], latest = { glow = "focused" } }\nvalue = "#ffffff"\nrows = []\n' + _MAC_CITE)
+_FROM = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], duration_ms = 150, timing = '
+         '"linear", from = ["pressed", "focused"] }, { properties = ["state_layer"], duration_ms = 15, timing = "linear" }]'
+         '\nrows = []\n' + _CITE)
+_FOCUS_TRANSITION = ('[[fact]]\nkey = "token.focus.transition"\nvalue = { properties = ["fill"], duration_ms = 100, timing = '
+                     '"linear", from = "none" }\nrows = []\n' + _CITE)
+_ELLIPSE = "".join(f'[[fact]]\nkey = "button.body.corners.{c}"\nwhen = {{ variants = ["flat"] }}\nvalue = "ellipse"\n'
+                   f'rows = []\n{_CITE}\n' for c in ("top_left", "top_right", "bottom_right", "bottom_left")) + (
+           '[[fact]]\nkey = "button.body.corners.curve"\nwhen = { variants = ["flat"] }\nvalue = "circular"\nrows = []\n'
+           + _CITE)
+_INTERACTION = ('[[fact]]\nkey = "button.body.interaction.state_layer.alpha"\nwhen = { states = ["hover"] }\nvalue = 0.08\n'
+                'rows = []\n' + _CITE + '\n[[fact]]\nkey = "button.body.interaction.ripple.effect"\nvalue = '
+                '"android_patterned"\nrows = []\n' + _CITE)
 
 # (label, file, old, new, the findings wanted: substrings, one per finding)
 SELF_TEST_CASES = [
@@ -2890,6 +3265,105 @@ SELF_TEST_CASES = [
     ("bad TOML", "docs/facts/gnome/buttons.toml", "[[fact]]\nkey", "[[fact]\nkey", ["not valid TOML"]),
     ("a fact table in state-models", "docs/facts/macos/state-models.toml", None, '[[fact]]\nkey = "button.body.fill"\n',
      ["unknown table `fact`"]),
+    # a state model's recency sets (S10, S12, S17; ADD-A124); the good fixture's model states one
+    ("recency: two sets in one order", "docs/facts/macos/state-models.toml", _RECENCY,
+     'recency = { glow = ["focused", "hover"], lift = ["pressed", "focused", "hover"] }', []),
+    ("recency: two sets ordering two flags oppositely", "docs/facts/macos/state-models.toml", _RECENCY,
+     'recency = { glow = ["focused", "hover"], lift = ["hover", "pressed", "focused"] }',
+     ["glow and lift order 'focused' and 'hover' oppositely"]),
+    ("recency: a set of one flag", "docs/facts/macos/state-models.toml", _RECENCY, 'recency = { glow = ["hover"] }',
+     ["recency.glow holds fewer than two flags"]),
+    ("recency: a flag twice", "docs/facts/macos/state-models.toml", _RECENCY,
+     'recency = { glow = ["hover", "focused", "hover"] }', ["recency.glow names 'hover' twice"]),
+    ("recency: a flag outside the axes", "docs/facts/macos/state-models.toml", _RECENCY,
+     'recency = { glow = ["checked", "hover"] }', ["recency.glow: 'checked' is not in axes.states"]),
+    ("recency: an unknown flag", "docs/facts/macos/state-models.toml", _RECENCY,
+     'recency = { glow = ["@glowing", "hover"] }', ["recency.glow: '@glowing' is not a state flag"]),
+    ("recency: a name outside the key grammar", "docs/facts/macos/state-models.toml", _RECENCY,
+     'recency = { Glow = ["focused", "hover"] }', ["'Glow' is not a key"]),
+    ("recency: not a table of lists", "docs/facts/macos/state-models.toml", _RECENCY, 'recency = ["focused", "hover"]',
+     ["recency is not a table of named sets"]),
+    ("recency: on an unavailable entry", "docs/facts/macos/state-models.toml", "available = false\n",
+     'available = false\n' + _RECENCY + '\n', ["`recency` on an entry with available = false"]),
+    # a fact's `when.latest` (S11, S12, S17; ADD-A124)
+    ("latest: a set and flag the model declares", "docs/facts/macos/latest.toml", None, _LATEST, []),
+    ("latest: beside the flag's own states", "docs/facts/macos/latest.toml", None,
+     _LATEST.replace('latest = {', 'states = ["focused", "hover"], latest = {'), []),
+    ("latest: a set the model does not declare", "docs/facts/macos/latest.toml", None,
+     _LATEST.replace("glow =", "lift ="), ["'lift' is not a recency set of button's state model"]),
+    ("latest: a flag not in the set", "docs/facts/macos/latest.toml", None, _LATEST.replace('"hover" }', '"pressed" }'),
+     ["when.latest.glow: 'pressed' is not a member of the set"]),
+    ("latest: an unknown flag", "docs/facts/macos/latest.toml", None, _LATEST.replace('"hover" }', '"hovr" }'),
+     ["when.latest.glow: 'hovr' is not a state flag", "'hovr' is not a member of the set"]),
+    ("latest: a flag the when's not_states refuses", "docs/facts/macos/latest.toml", None,
+     _LATEST.replace('latest = {', 'not_states = ["hover"], latest = {'), ["is among the when's not_states"]),
+    ("latest: not a table", "docs/facts/macos/latest.toml", None,
+     _LATEST.replace('latest = { glow = "hover" }', 'latest = "hover"'), ["when.latest is not a table"]),
+    ("latest: no state model for the generation", "docs/facts/macos/latest.toml", None,
+     _LATEST.replace("macos-monterey", "macos-tahoe").replace("xcode@16.4", "xcode@26.6"),
+     ["no state model of button in macos/"]),
+    ("latest: on a colour-role key", "docs/facts/gnome/latest.toml", None,
+     _FILL.replace('"button.body.fill"', '"role.view.background"').replace('states = ["hover"]',
+                                                                          'latest = { glow = "hover" }'),
+     ["`latest` on a colour-role, token or input key"]),
+    # which fact applies, order-aware (S17 *Which fact applies*; ADD-A124): a fact under `latest` holds only under
+    # the orders it names, a fact without it under every order
+    ("latest: a pending fact and a later one on another latest flag", "docs/facts/macos/pending.toml", None,
+     _LATEST_PENDING, []),
+    ("latest: a pending fact shadowed by a later fact without latest", "docs/facts/macos/pending.toml", None,
+     _LATEST_PENDING.replace(', latest = { glow = "focused" }', ""), ["is shadowed by the later fact"]),
+    ("latest: a pending fact shadowed on the same latest flag", "docs/facts/macos/pending.toml", None,
+     _LATEST_PENDING.replace('glow = "focused"', 'glow = "hover"'), ["is shadowed by the later fact"]),
+    # a transition's `from` (S2.7, S11, S12; ADD-A124)
+    ("from: a list entry's from, and one left out", "docs/facts/gnome/from.toml", None, _FROM, []),
+    ("from: an empty list", "docs/facts/gnome/from.toml", None, _FROM.replace('["pressed", "focused"]', "[]"),
+     ["value[0].from is an empty list"]),
+    ("from: a flag twice", "docs/facts/gnome/from.toml", None, _FROM.replace('"focused"]', '"pressed"]'),
+     ["value[0].from names 'pressed' twice"]),
+    ("from: a keyed flag the widget does not declare", "docs/facts/gnome/from.toml", None,
+     _FROM.replace('"focused"]', '"@glowing"]'), ["value[0].from: '@glowing' is not a flag button declares"]),
+    ("from: a keyed flag the widget declares", "docs/facts/gnome/from.toml", None, _FROM.replace('"focused"]', '"@busy"]'),
+     []),
+    ("from: no state flag", "docs/facts/gnome/from.toml", None, _FROM.replace('"focused"]', '"focussed"]'),
+     ["'focussed' is not a unit variant of StateFlag"]),
+    ("from: a single transition's any state", "docs/facts/gnome/from.toml", None, _FOCUS_TRANSITION, []),
+    ("from: a single transition without it", "docs/facts/gnome/from.toml", None,
+     _FOCUS_TRANSITION.replace(', from = "none"', ""), ["value: a single transition states `from`"]),
+    ("state layer: a transition on a part without interaction", "docs/facts/gnome/from.toml", None,
+     _FROM.replace("button.body.transitions", "pull_to_refresh.indicator.transitions"),
+     ["value[1]: a `state_layer` transition on a part whose fields lack `interaction`"]),
+    ("stroke width: a property group", "docs/facts/gnome/from.toml", None, _FROM.replace('["state_layer"]',
+                                                                                      '["stroke_width"]'), []),
+    # Radius::Ellipse (S2.4, S12; ADD-A124)
+    ("ellipse: all four corners, circular", "docs/facts/gnome/ellipse.toml", None, _ELLIPSE, []),
+    ("ellipse: on three corners", "docs/facts/gnome/ellipse.toml", None,
+     _ELLIPSE.replace('corners.bottom_left"\nwhen = { variants = ["flat"] }\nvalue = "ellipse"',
+                      'fill"\nwhen = { variants = ["flat"] }\nvalue = "#ffffff"', 1),
+     ["and no fact under the same when states bottom_left"]),
+    ("ellipse: beside another radius", "docs/facts/gnome/ellipse.toml", None,
+     _ELLIPSE.replace('corners.top_right"\nwhen = { variants = ["flat"] }\nvalue = "ellipse"', 'corners.top_right"\nwhen '
+                      '= { variants = ["flat"] }\nvalue = { full = { maximum_px = "absent" } }', 1),
+     ["button.body.corners.top_right: {'full': {'maximum_px': 'absent'}} beside `ellipse`"]),
+    ("ellipse: a continuous curve", "docs/facts/gnome/ellipse.toml", None,
+     _ELLIPSE.replace('value = "circular"', 'value = "continuous"'), ["`continuous` with `ellipse` corners"]),
+    ("ellipse: a whole corners table on some corners", "docs/facts/gnome/ellipse.toml", None,
+     _CMF.replace('"token.material.variant"', '"button.body.corners"').replace(
+         'value = "cmf"', 'value = { top_left = "ellipse", top_right = "ellipse", bottom_right = "ellipse", '
+                          'bottom_left_px = 4, curve = "circular" }'), ["bottom_left: 4 beside `ellipse`"]),
+    ("ellipse: no unit variant of that name", "docs/facts/gnome/ellipse.toml", None,
+     _ELLIPSE.replace('"ellipse"', '"elipse"'), ["'elipse' is not a unit variant of Radius"] * 4),
+    # PartStyle.interaction (S2.11, S2.12; ADD-A124)
+    ("interaction: the state layer's alpha and the ripple's effect", "docs/facts/gnome/interaction.toml", None,
+     _INTERACTION, []),
+    ("interaction: a field the state layer lacks", "docs/facts/gnome/interaction.toml", None,
+     _INTERACTION.replace("state_layer.alpha", "state_layer.opacity"), ["is not a field path"]),
+    ("interaction: a block the interaction lacks", "docs/facts/gnome/interaction.toml", None,
+     _INTERACTION.replace("interaction.state_layer.alpha", "interaction.hover.alpha"), ["is not a field path"]),
+    ("interaction: an effect no RippleEffect names", "docs/facts/gnome/interaction.toml", None,
+     _INTERACTION.replace('"android_patterned"', '"patterned"'), ["'patterned' is not a unit variant of RippleEffect"]),
+    ("interaction: a part whose fields lack it", "docs/facts/gnome/interaction.toml", None,
+     _INTERACTION.replace("button.body.interaction.state_layer", "button.label.interaction.state_layer"),
+     ["`interaction` is not a field of button's part `label`"]),
 ]
 
 
@@ -3044,6 +3518,29 @@ def self_test() -> int:
                         {"conditions": ["container_size:sidebar:large"]}, False)):
         if whens_overlap(a, b, model) != want:
             failures.append(f"whens {a} and {b}: got {not want}, want {want}")
+    # order-aware (ADD-A124): one latest flag per set, the flag held, and one order of the flags for every set
+    model = ([], [], set(), {"glow": {"focused", "hover"}, "lift": {"pressed", "focused", "hover"}})
+    for a, b, want in (({"latest": {"glow": "hover"}}, {}, True),
+                       ({"latest": {"glow": "hover"}}, {"latest": {"glow": "focused"}}, False),
+                       ({"latest": {"glow": "hover"}}, {"latest": {"glow": "hover"}, "states": ["focused"]}, True),
+                       ({"latest": {"glow": "hover"}}, {"not_states": ["hover"]}, False),
+                       ({"latest": {"glow": "hover"}}, {"latest": {"lift": "focused"}}, False),
+                       ({"latest": {"glow": "hover"}}, {"latest": {"lift": "pressed"}}, True),
+                       ({"latest": {"glow": "hover"}}, {"latest": {"lift": "hover"}, "states": ["pressed"]}, True),
+                       ({"latest": {"glow": "focused"}, "states": ["hover"]}, {"latest": {"lift": "hover"}}, False)):
+        if whens_overlap(a, b, model) != want:
+            failures.append(f"whens {a} and {b}: got {not want}, want {want}")
+    # the gate's runs per order (S17: at most n! orders per combination, those giving every set one latest counted once)
+    d = {"axes": {"states": ["hover", "focused", "pressed", "disabled"]}, "exclusive": [["disabled", "pressed"]],
+         "not_drawn": [{"states": ["disabled", "hover"]}],
+         "recency": {"glow": ["focused", "hover"], "lift": ["pressed", "focused", "hover"]}}
+    # the 16 subsets reduce to 12 (disabled drops pressed), less the two holding disabled and hover: 10; one order each
+    # but {hover, focused}, {hover, pressed} and {focused, pressed} (2 each) and {hover, focused, pressed} (4: lift's
+    # latest any of the three, and with pressed glow's either): 16 runs
+    if recency_orders(d) != (10, 16, 4, 3):
+        failures.append(f"recency orders: got {recency_orders(d)}, want (10, 16, 4, 3)")
+    if combination_orders(frozenset({"hover", "focused", "pressed"}), d["recency"]) != (4, 3):
+        failures.append(f"combination orders: got {combination_orders(frozenset({'hover', 'focused', 'pressed'}), d['recency'])}")
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
@@ -3069,6 +3566,9 @@ def main(argv) -> int:
     for f, ln, widget, (listed, products, total) in counts["variant_sets"]:
         print(f"# variant sets: {f}:{ln}: {widget}: {total} ({listed} listed, {products} from variant_products)",
               file=sys.stderr)
+    for f, ln, widget, (combos, runs, most, n) in counts["recency_orders"]:
+        print(f"# recency orders: {f}:{ln}: {widget}: {runs} runs per order of {combos} state combinations (at most "
+              f"{most} orders of {n} flags in one, the bound {n}! = {math.factorial(n)})", file=sys.stderr)
     print(summary(counts, len(findings)), file=sys.stderr)
     return 1 if findings else 0
 
