@@ -738,7 +738,10 @@ MAT-X13–MAT-X15, X-MO-1).
   each by the last applicable transition naming their role, so a ripple never times the container. Weighed: the state
   layer as a part of its own (a part more on every widget that draws one, and the ripple still sharing its fill);
   transitions per layer position (positions shift as rules append layers); a ripple alone timing only its layer
-  (the container would still take the state layer's fade where Compose snaps it).
+  (the container would still take the state layer's fade where Compose snaps it). A stroke's widths are a group of their own,
+  apart from its paint, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
+  different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
+  group was weighed and rejected, a field-path list on every transition for one pair.
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
   indeterminate progress).
 - **Scroll physics:** deceleration, overscroll and its spring, snapping, distance per wheel step (GN-3.24,
@@ -1302,7 +1305,8 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
   replacing the earlier, the role layers' alpha alone timed and stated at zero alpha at rest; the press ripple's
   lifecycle (its fade-in, grow and minimum press before the release fade); the checkbox's, radio's and switch's
   `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state opacity
-  dropped.
+  dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
+  property group of their own.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.

@@ -3165,6 +3165,12 @@ spaces:
     shadow, its insets `values.row_background_inset`), `focus` (K1.175), `transitions` (the deselection fade L-11,
     GN-1.165's row transitions).
   - `row_inner_border` — WinUI's inner selection border of a grid item (W2-13, W2-14): `stroke`.
+  - `row_state_layer`, in `row` — Material's navigation rail's ripple pill (MAT-N13): Compose draws a rail item's
+    state layer and press ripple on a box of its own, laid out as `row_selection_indicator` at its full size,
+    unaffected by the indicator's width and alpha animation (`NavigationRail.kt:248-282`, `:574-590`, `:628-638`;
+    `NavigationItem.kt:798-806`, `:904-912`, `:1232-1238`, the Expressive rail), where the drawer's item draws them
+    on its whole `Surface`, `row_background` (`NavigationDrawer.kt:1134-1144`): `fill` (its role layers, S2.3),
+    `corners`, `min_width`, `min_height`, `transitions` (the layers' fades by role, MAT-X9).
   - `row_selection_indicator` — WinUI's selection pill (W1-107; W1-089 in the sidebar variant; the tree's, W2-12);
     Material's navigation rail and drawer active indicator (MAT-N13, rename row 18): `fill`, `corners`, `min_width`,
     `min_height`, `transitions` (absent where the row's state shows none, it enters from transparent and leaves to
@@ -3333,7 +3339,8 @@ spaces:
 - **may_be_absent:** parts: `section` (all but `ios-*`: L-2), `section_index` (all but `ios-*`: L-15),
   `section_footer` (all but `ios-*`: L-5), `accessory` (`adwaita`, `macos-*`, `windows-11`, `material-3`: no system
   accessory or reorder handle on their rows, L-12, Q2.43; `kde-breeze` by a rule `cond flavor:widgets`, the handle
-  being Kirigami's, Q2.43), `row_inner_border` (all but `windows-11`: W2-13, W2-14), `row_selection_indicator` (all
+  being Kirigami's, Q2.43), `row_inner_border` (all but `windows-11`: W2-13, W2-14), `row_state_layer` (all but `material-3`: MAT-N13;
+  `material-3` by a rule outside `context sidebar.pane[compact]`), `row_selection_indicator` (all
   but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11`, `material-3` by a rule outside `{selected}`, and
   `material-3` outside `sidebar`, MAT-N13), `nested` (all but `adwaita`: GN-1.260), `cell` (`windows-11`: no
   multi-column row among WinUI's lists, W2-12, W2-13, W2-14, W2-33), `column_separator` (`windows-11`, `material-3`:
@@ -4572,6 +4579,12 @@ spaces:
   - `indicator` — the selected item's indicator (Material's active indicator, MAT-N12; iOS 26's glass lens, T-8):
     `fill`, `corners`, `min_width`, `min_height`, `transform` (the lens growing while it follows a drag across the
     bar, iOS 26, T-8, as `segmented_control.indicator`'s, SG-4), `transitions`.
+  - `state_layer`, in `item` — Material's ripple pill (MAT-N12): Compose draws an item's state layer and press ripple
+    on a box of its own, laid out where the indicator lies at the indicator's full size, unaffected by the
+    indicator's width and alpha animation (`NavigationBar.kt:247-272`, measured `:564-569`, placed `:613-623`;
+    `NavigationItem.kt:690-700`, `:1232-1238`, the Expressive items): `fill` (its role layers, S2.3), `corners` (the
+    indicator's shape), `min_width`, `min_height` (the indicator's full size), `transitions` (the layers' fades by
+    role, MAT-X9). It belongs to `item` and is queried with it.
   - `drop_indicator` — where a dragged tab would land (T-17†): `fill`, `min_width`, `min_height`.
   - `accessory`, in `bar` — iOS 26's bottom accessory, the capsule above or inside the bar (`UITabAccessory`, C-21,
     T-12): `fill` (a `Material` paint), `corners` (a capsule), `shadow`, `padding` (its insets), `min_height` (its
@@ -4617,7 +4630,7 @@ spaces:
 - **may_be_absent:** parts: `indicator` (`kde-breeze`, `adwaita`: Kirigami's and AdwViewSwitcherBar's items draw
   none, Q2.35, GN-2.15; `ios-13` by a rule outside `@tab_sidebar` and by a rule outside `{selected}`: iPadOS 18's
   top bar marks the selected item, T-13, and the bottom bar draws no indicator before iOS 26, T-8; `material-3`,
-  `ios-26` by a rule outside `{selected}`), `drop_indicator` (all but `ios-*`: T-17†), `accessory` (all but
+  `ios-26` by a rule outside `{selected}`), `drop_indicator` (all but `ios-*`: T-17†), `state_layer` (all but `material-3`: MAT-N12), `accessory` (all but
   `ios-26`: iOS 26's bottom accessory, C-21, T-12), `accessory_content` (all but `ios-26`: iOS 26's bottom
   accessory, C-21, T-12); fields: `bar.stroke` (`ios-26` by a rule under `floating`: T-2's top hairline is the
   iOS 13–18 bar's), `bar.shadow` (`kde-breeze`, `ios-13`: their bars are flat); values: `max_items` (all but `ios-*`: P3-2†), `item_positioning` (all but `ios-*`: the keys are
