@@ -471,17 +471,39 @@ func specimens(quick: Bool) -> [Specimen] {
     }
 }
 
+typealias Slot = (state: ButtonState, backdrop: Backdrop)
+
+/// The cells of the states (rows) over the backdrops (columns).
+func grid(_ states: [ButtonState], _ backdrops: [Backdrop]) -> [Slot] {
+    states.flatMap { state in backdrops.map { (state: state, backdrop: $0) } }
+}
+
+/// A page: its cells in `columns` columns, row by row; `rows` rows sharing
+/// the screen's height, or rows of `cellHeight` where it is 0.
 struct Page {
     let appearance: Appearance
     let specimen: Specimen
     let size: SizeChoice
-    let states: [ButtonState]
-    let backdrops: [Backdrop]
+    let slots: [Slot]
+    let columns: Int
+    let rows: Int
+    let part: String
 
     var path: String { "\(appearance.name)/\(specimen.name)/\(size.name)" }
 
-    /// The page's screenshot, named for the page and its backdrops.
-    var screenshot: String { "pages/\(path)/\(backdrops.first?.fill == .pattern ? "pattern" : "solid").png" }
+    var screenshot: String { "pages/\(path)/\(part).png" }
+}
+
+/// Pages of `rows` x `columns` cells for the slots, in order.
+func roomyPages(
+    _ appearance: Appearance, _ specimen: Specimen, _ size: SizeChoice, _ slots: [Slot], columns: Int, rows: Int
+) -> [Page] {
+    stride(from: 0, to: slots.count, by: columns * rows).map { start in
+        Page(
+            appearance: appearance, specimen: specimen, size: size,
+            slots: Array(slots[start..<min(slots.count, start + columns * rows)]), columns: columns, rows: rows,
+            part: "\(start / (columns * rows))")
+    }
 }
 
 final class Cell {
@@ -738,40 +760,37 @@ final class HostViewController: UIViewController {
         let list = specimens(quick: quickRun)
         for appearance in appearances {
             for specimen in list {
+                // A glass style's shadow and its press's halo reach far past
+                // the button: the base glass styles and every press get cells
+                // of a third or a half of the screen's height.
+                let glass = specimen.kind == "configuration" && specimen.variant.isEmpty
+                    && glassStyles.contains(specimen.name)
                 if press {
                     guard specimen.kind == "configuration" && specimen.variant.isEmpty || specimen.name == "system"
                     else { continue }
-                    if glassStyles.contains(specimen.name) {
+                    if glass {
                         for size in specimen.sizes {
-                            pages.append(
-                                Page(
-                                    appearance: appearance, specimen: specimen, size: size,
-                                    states: [.pressed, .pressedSelected], backdrops: solveBackdrops))
-                            pages.append(
-                                Page(
-                                    appearance: appearance, specimen: specimen, size: size, states: [.pressed],
-                                    backdrops: patternBackdrops))
+                            let slots = grid([.pressed, .pressedSelected], solveBackdrops) + grid([.pressed], patternBackdrops)
+                            pages += roomyPages(appearance, specimen, size, slots, columns: 1, rows: 2)
                         }
                     } else if let size = specimen.sizes.first(where: { $0.name == "medium" || $0.name == "default" }) {
                         if quickRun && specimen.name != "filled" { continue }
-                        pages.append(
-                            Page(
-                                appearance: appearance, specimen: specimen, size: size,
-                                states: [.pressed, .pressedSelected], backdrops: [solveBackdrops[0]]))
+                        pages += roomyPages(
+                            appearance, specimen, size, grid([.pressed, .pressedSelected], [solveBackdrops[0]]),
+                            columns: 1, rows: 2)
                     }
                 } else {
                     for size in specimen.sizes {
-                        pages.append(
-                            Page(
-                                appearance: appearance, specimen: specimen, size: size, states: specimen.states,
-                                backdrops: solveBackdrops))
-                        if specimen.kind == "configuration" && specimen.variant.isEmpty
-                            && glassStyles.contains(specimen.name)
-                        {
+                        if glass {
+                            let slots = grid(specimen.states, solveBackdrops) + grid(specimen.states, [patternBackdrops[0]])
+                                + grid([.normal], [patternBackdrops[1]])
+                            pages += roomyPages(appearance, specimen, size, slots, columns: 2, rows: 3)
+                        } else {
                             pages.append(
                                 Page(
-                                    appearance: appearance, specimen: specimen, size: size, states: specimen.states,
-                                    backdrops: patternBackdrops))
+                                    appearance: appearance, specimen: specimen, size: size,
+                                    slots: grid(specimen.states, solveBackdrops), columns: solveBackdrops.count, rows: 0,
+                                    part: "solid"))
                         }
                     }
                 }
@@ -844,42 +863,50 @@ final class HostViewController: UIViewController {
         previousCrops = []
         view.window?.overrideUserInterfaceStyle = page.appearance.style
 
-        let columns = CGFloat(page.backdrops.count)
+        let columns = CGFloat(page.columns)
         let width = ((view.bounds.width - 2 * margin - (columns - 1) * gap) / columns).rounded(.down)
-        var top = view.safeAreaInsets.top + margin
-        for state in page.states {
-            for (column, backdrop) in page.backdrops.enumerated() {
-                let frame = CGRect(
-                    x: margin + CGFloat(column) * (width + gap), y: top, width: width, height: cellHeight)
-                let cellView: UIView
-                switch backdrop.fill {
-                case .system:
-                    cellView = UIView(frame: frame)
-                    cellView.backgroundColor = .systemBackground
-                case .black:
-                    cellView = UIView(frame: frame)
-                    cellView.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
-                case .white:
-                    cellView = UIView(frame: frame)
-                    cellView.backgroundColor = UIColor(red: 1, green: 1, blue: 1, alpha: 1)
-                case .pattern:
-                    cellView = PatternView(frame: frame)
-                }
-                view.addSubview(cellView)
-                var sample: Sample?
-                var applied = true
-                if backdrop.holdsSpecimen {
-                    let made = page.specimen.make(page.size.size)
-                    place(made, in: cellView)
-                    applied = apply(state, to: made)
-                    if state == .focused && backdrop.fill == .system { focusTarget = made.view }
-                    sample = made
-                }
-                cells.append(Cell(state: state, backdrop: backdrop, view: cellView, sample: sample, applied: applied))
-            }
-            top += cellHeight + gap
+        let top = view.safeAreaInsets.top + margin
+        var height = cellHeight
+        if page.rows > 0 {
+            let available = view.bounds.height - view.safeAreaInsets.bottom - margin - 3 * codeSquare - top
+            height = ((available - CGFloat(page.rows - 1) * gap) / CGFloat(page.rows)).rounded(.down)
         }
-        cellsBottom = top - gap
+        for (position, slot) in page.slots.enumerated() {
+            let state = slot.state
+            let backdrop = slot.backdrop
+            let column = position % page.columns
+            let row = position / page.columns
+            let frame = CGRect(
+                x: margin + CGFloat(column) * (width + gap), y: top + CGFloat(row) * (height + gap), width: width,
+                height: height)
+            let cellView: UIView
+            switch backdrop.fill {
+            case .system:
+                cellView = UIView(frame: frame)
+                cellView.backgroundColor = .systemBackground
+            case .black:
+                cellView = UIView(frame: frame)
+                cellView.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+            case .white:
+                cellView = UIView(frame: frame)
+                cellView.backgroundColor = UIColor(red: 1, green: 1, blue: 1, alpha: 1)
+            case .pattern:
+                cellView = PatternView(frame: frame)
+            }
+            view.addSubview(cellView)
+            var sample: Sample?
+            var applied = true
+            if backdrop.holdsSpecimen {
+                let made = page.specimen.make(page.size.size)
+                place(made, in: cellView)
+                applied = apply(state, to: made)
+                if state == .focused && backdrop.fill == .system { focusTarget = made.view }
+                sample = made
+            }
+            cells.append(Cell(state: state, backdrop: backdrop, view: cellView, sample: sample, applied: applied))
+        }
+        let rowCount = (page.slots.count + page.columns - 1) / page.columns
+        cellsBottom = top + CGFloat(rowCount) * (height + gap) - gap
         for bit in 0..<codeBits {
             let square = UIView(
                 frame: CGRect(
@@ -1542,6 +1569,7 @@ final class HostViewController: UIViewController {
             [layout]
             margin_pt = \(number(margin))
             cell_height_pt = \(number(cellHeight))
+            roomy = "the base glass styles' pages: 2 columns x 3 rows sharing the screen's height; every press page: 1 column x 2 rows; each cell's frame is its render's cell_pt"
             gap_pt = \(number(gap))
             bar_inset_pt = \(number(barInset))
             backdrops = { system = "UIColor.systemBackground", black = "#000000", white = "#ffffff", pattern = "squares of pattern.square_pt, pattern.colors in a 2 x 2 tile (column % 2 + 2 * (row % 2)), anchored at the cell's top left", pattern_alone = "the pattern, no specimen" }
