@@ -48,6 +48,7 @@ API (run from the repository root, or pass a path):
     names_in(text) -> set[str]            the identifiers inside text's backtick spans (`@k` keeps its `@`)
     depth0_tokens(text)                   the backtick spans and parenthesis groups outside parentheses
     absence_sections(text)                a may_be_absent item's `parts:`, `fields:`, `values:` sections
+    shared_types(text) -> dict            the *Shared value types* table: per type name, (line, its second cell)
 
     Entry: name ("button", "component.led"), kind ("typed" | "component"), line (the heading's), section (its H2),
            platform (a component's first heading word in parentheses, else None), heading, body_lines
@@ -425,6 +426,23 @@ def read(path=CATALOGUE) -> list[Entry]:
     return entries(Path(path).read_text(encoding="utf-8"))
 
 
+SHARED_TYPES = "Shared value types"
+SHARED_ROW = re.compile(r"^\| `([A-Za-z_][A-Za-z0-9_]*)` \| (.*) \|\s*$")
+
+
+def shared_types(text: str) -> dict:
+    """The rows of the `## Shared value types` table: {type name: (line, its second cell as written)}."""
+    out, section = {}, None
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.startswith("## "):
+            section = line[3:].strip()
+            continue
+        m = SHARED_ROW.match(line) if section == SHARED_TYPES else None
+        if m:
+            out[m.group(1)] = (n, m.group(2).strip())
+    return out
+
+
 def catalogue_index(text: str) -> dict:
     widgets: dict[str, dict] = {}
     for e in entries(text):
@@ -454,6 +472,13 @@ SELF_TEST_CATALOGUE = """\
 
 - **Parts:**
   - `ghost` — never read: `fill`.
+
+## Shared value types
+
+| Type | Variants or fields |
+|---|---|
+| `Side` | `Start`, `End` |
+| `Lone` | `A` (a note, `B`) |
 
 ## Buttons and toggles
 
@@ -517,15 +542,15 @@ def self_test() -> int:
 
     es = entries(SELF_TEST_CATALOGUE)
     expect("entries", [(e.name, e.kind, e.line, e.section, e.platform) for e in es], [
-        ("button", "typed", 12, "Buttons and toggles", None),
-        ("Malformed Heading", "typed", 33, "Buttons and toggles", None),
-        ("component.led", "component", 42, "Keyed components", "kde"),
-        ("component.bar", "component", 52, "Keyed components", "windows"),
+        ("button", "typed", 19, "Buttons and toggles", None),
+        ("Malformed Heading", "typed", 40, "Buttons and toggles", None),
+        ("component.led", "component", 49, "Keyed components", "kde"),
+        ("component.bar", "component", 59, "Keyed components", "windows"),
     ])
     b, _, led, bar = es
     expect("button items", [(i.label, i.line, i.bullet) for i in b.items], [
-        ("Kind", 16, True), ("Parts", 17, True), ("Widget values", 25, True), ("Variants", 28, True),
-        ("Flags", 29, True), ("may_be_absent", 30, True), ("Today's fields", 31, True),
+        ("Kind", 23, True), ("Parts", 24, True), ("Widget values", 32, True), ("Variants", 35, True),
+        ("Flags", 36, True), ("may_be_absent", 37, True), ("Today's fields", 38, True),
     ])
     expect("button items in format order", [i.label for i in b.items if i.label in ENTRY_ITEMS],
            ["Kind", "Parts", "Widget values", "Variants", "Flags", "may_be_absent", "Today's fields"])
@@ -533,17 +558,17 @@ def self_test() -> int:
     expect("item names", b.item("Flags").names(), {"empty", "@busy"})
     expect("item missing", b.item("Notes"), None)
     expect("led items", [(i.label, i.line, i.bullet) for i in led.items], [
-        ("Kind", 44, True), ("Parts", 45, True), ("Widget values", 47, True), ("Variants/sizes", 48, True),
-        ("Flags", 48, False), ("Exclusive groups", 49, False), ("may_be_absent", 50, True),
+        ("Kind", 51, True), ("Parts", 52, True), ("Widget values", 54, True), ("Variants/sizes", 55, True),
+        ("Flags", 55, False), ("Exclusive groups", 56, False), ("may_be_absent", 57, True),
     ])
     expect("label colon outside the bold", led.item("may_be_absent").text, "none. ")
     expect("several labels on a line", led.item("Variants/sizes").text, "none.")
     expect("button parts", [(p.names, p.parent, p.element, p.fields, p.line) for p in b.parts], [
-        (["body"], None, False, ["fill", "stroke", "corners"], 18),
-        (["label"], None, True, ["text", "opacity", "focus", "padding"], 20),
-        (["icon"], "label", False, ["icon", "opacity"], 21),
-        (["prefix", "suffix"], None, False, ["text"], 22),
-        (["year"], None, True, ["fill", "stroke"], 23),
+        (["body"], None, False, ["fill", "stroke", "corners"], 25),
+        (["label"], None, True, ["text", "opacity", "focus", "padding"], 27),
+        (["icon"], "label", False, ["icon", "opacity"], 28),
+        (["prefix", "suffix"], None, False, ["text"], 29),
+        (["year"], None, True, ["fill", "stroke"], 30),
     ])
     expect("part note", [p.note for p in b.parts],
            [None, "element; states hover", None, None, "element: the year cells, Q1.2"])
@@ -554,9 +579,9 @@ def self_test() -> int:
     expect("component parts", [(p.names, p.fields) for p in led.parts + bar.parts],
            [(["body"], ["fill"]), (["strip"], ["fill"])])
     expect("values", [(v.name, v.type, v.line) for v in b.values], [
-        ("icon_text_gap_px", "Value<Px>", 25), ("rows", "Value<u32>", 25), ("columns", "Value<u32>", 25),
-        ("kind", "Value<Key>", 26), ("inner_a", "Value<Ms>", 26), ("inner_b", "Value<Ms>", 26),
-        ("focus_visible_when", None, 27),
+        ("icon_text_gap_px", "Value<Px>", 32), ("rows", "Value<u32>", 32), ("columns", "Value<u32>", 32),
+        ("kind", "Value<Key>", 33), ("inner_a", "Value<Ms>", 33), ("inner_b", "Value<Ms>", 33),
+        ("focus_visible_when", None, 34),
     ])
     expect("no values", led.values, [])
     idx = catalogue_index(SELF_TEST_CATALOGUE)
@@ -572,6 +597,8 @@ def self_test() -> int:
     expect("index skips may_be_absent and today", "font" in idx["button"]["parts"] | idx["button"]["values"], False)
     expect("index combined label", (idx["component.led"]["variants"], idx["component.led"]["flags"]),
            (set(), {"@on"}))
+    expect("shared types", shared_types(SELF_TEST_CATALOGUE),
+           {"Side": (14, "`Start`, `End`"), "Lone": (15, "`A` (a note, `B`)")})
     names, groups = depth0_tokens("`a` (`b` (`c`)) `d`")
     expect("depth0 names", [x[2] for x in names], ["a", "d"])
     expect("depth0 groups", groups, [(4, 15)])
