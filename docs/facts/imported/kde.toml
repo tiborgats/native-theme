@@ -1,0 +1,4743 @@
+# Today's platform-facts.md cells for kde, from platform-facts.md@fc6109d1: lane input, not facts (specification S17;
+# the 0.8.0 plan's *What carries over*). The facts gate and check_fact_citations.py do not read this folder; a lane
+# turns each entry into a verified fact or records it as not a model value, and removes it. Written by
+# scripts/import_platform_facts.py, whose docstring states the rules. `text` is the cell as written, its links
+# relative to docs/; `targets` are the trace's, of the gap-map `rows` that name the cell.
+
+[[row]]
+line = "platform-facts.md@fc6109d1:575"
+section = "1.3.1 Fonts"
+property = "font"
+text = "Body text | ⚙ Noto Sans, 10pt, 400 | ✅ kfontsettingsdata.cpp"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:576"
+section = "1.3.1 Fonts"
+property = "fixed"
+text = "Monospace | ⚙ Hack, 10pt, 400 | ✅ kfontsettingsdata.cpp"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:577"
+section = "1.3.1 Fonts"
+property = "smallestReadableFont"
+text = "Smallest text | ⚙ Noto Sans, 8pt, 400 | ✅ kfontsettingsdata.cpp"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:578"
+section = "1.3.1 Fonts"
+property = "toolBarFont"
+text = "Toolbar labels | ⚙ Noto Sans, 10pt, 400 (can be smaller) | ✅"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:579"
+section = "1.3.1 Fonts"
+property = "menuFont"
+text = "Menu items | ⚙ Noto Sans, 10pt, 400 | ✅"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:580"
+section = "1.3.1 Fonts"
+property = "taskbarFont"
+text = "Taskbar/panel | ⚙ Noto Sans, 10pt, 400 | ✅ in kfontsettingsdata.cpp (not in kcfg GUI)"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:586"
+section = "1.3.1 Fonts"
+property = "activeFont"
+text = "Window title bar | ⚙ Noto Sans, 10pt, 400 (Normal) | ✅"
+columns = "Role | Typical Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:604"
+section = "1.3.2 Colors"
+property = "[Colors:Window]"
+text = "Window/dialog backgrounds and foregrounds | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:605"
+section = "1.3.2 Colors"
+property = "[Colors:View]"
+text = "Editable content areas (inputs, list views) | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:606"
+section = "1.3.2 Colors"
+property = "[Colors:Button]"
+text = "Button backgrounds and foregrounds | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:607"
+section = "1.3.2 Colors"
+property = "[Colors:Selection]"
+text = "Selection backgrounds and foregrounds | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:608"
+section = "1.3.2 Colors"
+property = "[Colors:Tooltip]"
+text = "Tooltip backgrounds and foregrounds | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:609"
+section = "1.3.2 Colors"
+property = "[Colors:Complementary]"
+text = "Complementary areas | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:610"
+section = "1.3.2 Colors"
+property = "[Colors:Header]"
+text = "Table/list column header (KF 5.71+) | ✅ commit fce11e205c (2020-05-20) landed between v5.70.0 and v5.71.0 tags"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:616"
+section = "1.3.2 Colors"
+property = "activeBackground"
+text = "Active title bar background | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:617"
+section = "1.3.2 Colors"
+property = "activeForeground"
+text = "Active title bar foreground | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:618"
+section = "1.3.2 Colors"
+property = "inactiveBackground"
+text = "Inactive title bar background | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:619"
+section = "1.3.2 Colors"
+property = "inactiveForeground"
+text = "Inactive title bar foreground | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:620"
+section = "1.3.2 Colors"
+property = "activeBlend"
+text = "Active blend color | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:621"
+section = "1.3.2 Colors"
+property = "inactiveBlend"
+text = "Inactive blend color | ✅"
+columns = "What it provides | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:630"
+section = "1.3.3 Geometry"
+property = "Control corner radius"
+text = "`Frame_FrameRadius` | 5px | ✅ breezemetrics.h"
+columns = "Breeze source constant | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:631"
+section = "1.3.3 Geometry"
+property = "Frame/border width"
+text = "`PenWidth::Frame` | 1.001px | ✅ breezemetrics.h"
+columns = "Breeze source constant | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:632"
+section = "1.3.3 Geometry"
+property = "Scrollbar groove width"
+text = "`ScrollBar_Extend` | 21px | ✅ breezemetrics.h"
+columns = "Breeze source constant | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:633"
+section = "1.3.3 Geometry"
+property = "Focus ring margin"
+text = "`PM_FocusFrameHMargin` | 2px | ✅ breezemetrics.h"
+columns = "Breeze source constant | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:634"
+section = "1.3.3 Geometry"
+property = "Disabled state"
+text = "`ColorEffects:Disabled` palette blending | (no single opacity) | ✅"
+columns = "Breeze source constant | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:635"
+section = "1.3.3 Geometry"
+property = "Drop shadows"
+text = "yes (KWin compositor) |  | ✅"
+columns = "Breeze source constant | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:646"
+section = "1.3.4 Widget Metrics"
+property = "Button_MinWidth"
+text = "Button min width | 80px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:647"
+section = "1.3.4 Widget Metrics"
+property = "Button_MarginWidth"
+text = "Button horizontal padding | 6px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:648"
+section = "1.3.4 Widget Metrics"
+property = "Button_ItemSpacing"
+text = "Button icon-to-label gap | 4px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:649"
+section = "1.3.4 Widget Metrics"
+property = "CheckBox_Size"
+text = "Checkbox indicator size | 20px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:650"
+section = "1.3.4 Widget Metrics"
+property = "CheckBox_ItemSpacing"
+text = "Checkbox label spacing | 4px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:651"
+section = "1.3.4 Widget Metrics"
+property = "LineEdit_FrameWidth"
+text = "Input horizontal padding | 6px | ✅ breezemetrics.h"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:652"
+section = "1.3.4 Widget Metrics"
+property = "ScrollBar_Extend"
+text = "Scrollbar groove width | 21px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:653"
+section = "1.3.4 Widget Metrics"
+property = "ScrollBar_SliderWidth"
+text = "Scrollbar thumb width | 8px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:654"
+section = "1.3.4 Widget Metrics"
+property = "ScrollBar_MinSliderHeight"
+text = "Scrollbar min thumb height | 20px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:655"
+section = "1.3.4 Widget Metrics"
+property = "Slider_GrooveThickness"
+text = "Slider track height | 6px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:656"
+section = "1.3.4 Widget Metrics"
+property = "Slider_ControlThickness"
+text = "Slider thumb size | 20px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:657"
+section = "1.3.4 Widget Metrics"
+property = "Slider_TickLength"
+text = "Slider tick mark length | 8px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:658"
+section = "1.3.4 Widget Metrics"
+property = "ProgressBar_Thickness"
+text = "Progress bar height | 6px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:659"
+section = "1.3.4 Widget Metrics"
+property = "ProgressBar_BusyIndicatorSize"
+text = "Busy indicator size | 14px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:660"
+section = "1.3.4 Widget Metrics"
+property = "TabBar_TabMinWidth"
+text = "Tab min width | 80px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:661"
+section = "1.3.4 Widget Metrics"
+property = "TabBar_TabMinHeight"
+text = "Tab min height | 30px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:662"
+section = "1.3.4 Widget Metrics"
+property = "TabBar_TabMarginWidth"
+text = "Tab horizontal padding | 8px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:663"
+section = "1.3.4 Widget Metrics"
+property = "TabBar_TabMarginHeight"
+text = "Tab vertical padding | 4px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:664"
+section = "1.3.4 Widget Metrics"
+property = "MenuItem_MarginWidth"
+text = "Menu item horizontal pad | 4px (was 5 through v6.5.2) | ✅ current=4; changed in v6.5.3 cycle"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:665"
+section = "1.3.4 Widget Metrics"
+property = "MenuItem_MarginHeight"
+text = "Menu item vertical padding | 4px (was 3→5→4) | ✅ current=4; was 3 (≤v6.5.2), 5 (v6.5.3), 4 (v6.5.4+)"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:666"
+section = "1.3.4 Widget Metrics"
+property = "MenuItem_TextLeftMargin"
+text = "Menu item text left margin | 8px (new in 6.5.3+) | ✅ commit 35967f0a (2025-11-17), shipped in v6.5.3"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:667"
+section = "1.3.4 Widget Metrics"
+property = "ToolTip_FrameWidth"
+text = "Tooltip padding | 3px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:668"
+section = "1.3.4 Widget Metrics"
+property = "ItemView_ItemMarginLeft/Right"
+text = "List item horizontal pad | 2px | ✅ breezemetrics.h"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:669"
+section = "1.3.4 Widget Metrics"
+property = "ItemView_ItemMarginTop/Bottom"
+text = "List item vertical padding | 1px | ✅ breezemetrics.h"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:670"
+section = "1.3.4 Widget Metrics"
+property = "ToolBar_ItemSpacing"
+text = "Toolbar item spacing | 0px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:671"
+section = "1.3.4 Widget Metrics"
+property = "ToolBar_ItemMargin"
+text = "Toolbar item margin | 6px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:672"
+section = "1.3.4 Widget Metrics"
+property = "Splitter_SplitterWidth"
+text = "Splitter width | 1px | ✅"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:673"
+section = "1.3.4 Widget Metrics"
+property = "ComboBox_FrameWidth"
+text = "ComboBox padding | 6px | ✅ breezemetrics.h"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:674"
+section = "1.3.4 Widget Metrics"
+property = "MenuButton_IndicatorWidth"
+text = "ComboBox arrow area width | 20px | ✅ breezemetrics.h"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:675"
+section = "1.3.4 Widget Metrics"
+property = "GroupBox_TitleMarginWidth"
+text = "GroupBox title margin | 4px | ✅ breezemetrics.h"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:676"
+section = "1.3.4 Widget Metrics"
+property = "ItemView_ArrowSize"
+text = "Tree/disclosure arrow size | 10px | ✅ breezemetrics.h (`ArrowSize=10`)"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:677"
+section = "1.3.4 Widget Metrics"
+property = "(QQC2 Switch)"
+text = "Track size | 36 × 12px | ✅ qqc2-desktop-style: the indicator is `implicitHeight * 2` × Kirigami's `gridUnit` 18 = 36 × 18, the track inset `floor(18/6)` = 3 above and below (§2.21)"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:678"
+section = "1.3.4 Widget Metrics"
+property = "(QQC2 Switch)"
+text = "Handle diameter | 18px | ✅ the indicator's height, overhanging the track by 3 above and below (§2.21)"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:679"
+section = "1.3.4 Widget Metrics"
+property = "(QQC2 BusyIndicator)"
+text = "Spinner size | 36px | ✅ `Kirigami.Units.gridUnit*2` = 36px"
+columns = "Widget / property | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:687"
+section = "1.3.5 Layout Spacing"
+property = "Layout_TopLevelMarginWidth"
+text = "Window/dialog content margin | 10px | ✅ breezemetrics.h"
+columns = "What it provides | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:688"
+section = "1.3.5 Layout Spacing"
+property = "Layout_ChildMarginWidth"
+text = "Nested container margin | 6px | ✅ breezemetrics.h"
+columns = "What it provides | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:689"
+section = "1.3.5 Layout Spacing"
+property = "Layout_DefaultSpacing"
+text = "Default gap between widgets | 6px | ✅ breezemetrics.h"
+columns = "What it provides | Value | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:706"
+section = "1.3.6 Icon Sizes"
+property = "`Desktop` `DesktopDefault`"
+text = "32px | 48px | ✅ Breeze index.theme overrides C++ fallback"
+columns = "C++ fallback | Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:707"
+section = "1.3.6 Icon Sizes"
+property = "`Toolbar` `ToolbarDefault`"
+text = "⚙ 22px | 22px | ✅"
+columns = "C++ fallback | Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:708"
+section = "1.3.6 Icon Sizes"
+property = "`MainToolbar` `MainToolbarDefault`"
+text = "⚙ 22px | 22px | ✅"
+columns = "C++ fallback | Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:709"
+section = "1.3.6 Icon Sizes"
+property = "`Small` `SmallDefault`"
+text = "⚙ 16px | 16px | ✅"
+columns = "C++ fallback | Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:710"
+section = "1.3.6 Icon Sizes"
+property = "`Panel` `PanelDefault`"
+text = "⚙ 48px | 48px | ✅ Breeze index.theme matches C++ fallback (was 32 until KF5 v5.34.0, changed to 48 circa 2017)"
+columns = "C++ fallback | Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:711"
+section = "1.3.6 Icon Sizes"
+property = "`Dialog` `DialogDefault`"
+text = "⚙ 32px | 32px | ✅"
+columns = "C++ fallback | Breeze default | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:717"
+section = "1.3.7 Accessibility"
+property = "Font DPI override"
+text = "Plasma 6.7: `~/.config/kcmfonts` `[General] forceFontDPI`, UInt, default 0 = unset, \"Force font DPI on X11\" ([fontsaasettingsbase.kcfg:8-11](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/fontsaasettingsbase.kcfg#L8-L11)); the fonts KCM shows it on X11 only (`visible: Qt.platform.pluginName === \"xcb\"`, [main.qml:424-426](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/ui/main.qml#L424-L426)), and krdb hands it to X11 as `Xft.dpi` only off Wayland ([krdb.cpp:328-341, :423-425](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L328-L341)); the `plasma6.0-remove-dpi-settings` migration deletes `forceFontDPIWayland` ([kcms/fonts/kconf_update/plasma6.0-remove-dpi-settings.cpp:25](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/kconf_update/plasma6.0-remove-dpi-settings.cpp#L25)); the key is `kcmfonts`' alone, a file name without `rc`, since KConfig joins a name it is given to the config directory as it stands and adds `rc` only to an empty one ([kconfig.cpp:649, :652-678](https://invent.kde.org/frameworks/kconfig/-/blob/v6.31.0/src/core/kconfig.cpp#L652-L678), KConfig v6.31.0): the KCM binds its DPI setting to that file (`<kcfgfile name=\"kcmfonts\" />`, [fontsaasettingsbase.kcfg:6](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/fontsaasettingsbase.kcfg#L6)) and krdb reads it there ([krdb.cpp:330, :339-340](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L330-L340)), while the KCM's kdeglobals settings ([fontssettings.kcfg:6](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/fontssettings.kcfg#L6)) hold the fonts, not the DPI; no plasma-workspace or plasma-integration v6.7.5 source reads `forceFontDPI` from kdeglobals · Plasma 6.8: no `forceFontDPI` — the KCM's DPI setting and its kcfg entry are gone ([c675077b](https://invent.kde.org/plasma/plasma-workspace/-/commit/c675077b8f7371eb65bfa73c20d86a50828b13fc), first in v6.7.90), and so is krdb, its only reader ([fe367323](https://invent.kde.org/plasma/plasma-workspace/-/commit/fe367323b30bfa239243b2164d75faacb1be15e7)); `Xft.dpi` is `kwinrc [Xwayland] Scale` × 96 ([plasma-setup-xwayland/main.cpp:47-58](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.8.1/startkde/plasma-setup-xwayland/main.cpp#L47-L58)) | ✅ Plasma 6.7.5 (plasma-workspace `cc1ab796`); ✅ Plasma 6.8.1 (`fb9b679a`)"
+columns = "Source | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:718"
+section = "1.3.7 Accessibility"
+property = "Scale factor"
+text = "Plasma 6.7 on X11: `forceFontDPI / 96` (from `kcmfonts`; 0 = unset) · Plasma 6.7 on Wayland: **(none)** — the KCM hides the DPI setting (\"they should always be using the global scaling system instead\", [main.qml:424-426](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/fonts/ui/main.qml#L424-L426)); krdb's `Xft.dpi` there is `kwinrc [Xwayland] Scale` × 96 ([krdb.cpp:333-337](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L333-L337)), the Xwayland scale, not a text scale · Plasma 6.8: **(none)** — no `forceFontDPI` (Font DPI override above) | ✅ Plasma 6.7.5; ✅ Plasma 6.8.1"
+columns = "Source | "
+rows = [
+    "K3.84†",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:856",
+]
+targets = []
+verdicts = [
+    "K3.84†: out (R1.1)",
+]
+none_cell = "b: K3.84† (per-output scale in `kwinoutputconfig.json`)"
+note = "its rows' trace lines are verdicts only"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:719"
+section = "1.3.7 Accessibility"
+property = "Animation factor"
+text = "`kdeglobals [KDE] AnimationDurationFactor` (0 = disabled) | ✅ kwin.kcfg `<min>0</min>`; 0 is the intended \"disabled\" semantic"
+columns = "Source | "
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1029"
+section = "2.1.1 Base Font"
+property = "family"
+text = "`[General] font` field 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1030"
+section = "2.1.1 Base Font"
+property = "size"
+text = "`[General] font` field 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1031"
+section = "2.1.1 Base Font"
+property = "weight"
+text = "`[General] font` field 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1032"
+section = "2.1.1 Base Font"
+property = "style"
+text = "`[General] font` style field"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1033"
+section = "2.1.1 Base Font"
+property = "color"
+text = "`[Colors:Window] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1034"
+section = "2.1.1 Base Font"
+property = "line_height"
+text = "1.36 **(font metrics)** Noto Sans sTypo (ascender+|descender|+lineGap)/UPM=(1069+293+0)/1000 (Roboto-compatible metrics; lineGap=0)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1040"
+section = "2.1.2 Monospace Font"
+property = "family"
+text = "`[General] fixed` field 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1041"
+section = "2.1.2 Monospace Font"
+property = "size"
+text = "`[General] fixed` field 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1042"
+section = "2.1.2 Monospace Font"
+property = "weight"
+text = "`[General] fixed` field 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1043"
+section = "2.1.2 Monospace Font"
+property = "style"
+text = "`[General] fixed` style field"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1044"
+section = "2.1.2 Monospace Font"
+property = "color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1050"
+section = "2.1.3 Base Colors"
+property = "background_color"
+text = "`[Colors:Window] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1051"
+section = "2.1.3 Base Colors"
+property = "text_color"
+text = "`[Colors:Window] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1052"
+section = "2.1.3 Base Colors"
+property = "accent_color"
+text = "`[General] AccentColor` (propagated to `DecorationFocus`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1053"
+section = "2.1.3 Base Colors"
+property = "accent_text_color"
+text = "`[Colors:Selection] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1054"
+section = "2.1.3 Base Colors"
+property = "surface_color"
+text = "`[Colors:View] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1055"
+section = "2.1.3 Base Colors"
+property = "border.color"
+text = "**(preset)** — derived from background"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1056"
+section = "2.1.3 Base Colors"
+property = "muted_color"
+text = "`[Colors:Window] ForegroundInactive`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1057"
+section = "2.1.3 Base Colors"
+property = "shadow_color"
+text = "**(none)** — preset: #00000040/#60"
+rows = [
+    "K3.1",
+    "K3.2",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:857",
+]
+targets = [
+    "window.frame.shadow (= Shadow::Elevation of the ShadowSize step the reader reads; its box radius follows window.frame.corners)",
+    "token.elevation.<key> (Breeze's window shadow sizes: two layers and a composite offset each)",
+    "token.params.shadow.strength (ADD-A44)",
+    "reader:kde:breezerc [Common] ShadowSize, ShadowStrength, ShadowColor",
+    "menu.body.shadow, tooltip.body.shadow, popover.body.shadow, toolbar.bar.shadow @ variant floating, menu.body.shadow @ context combo_box",
+    "token.elevation.<key> (Breeze's popup shadow sizes)",
+]
+none_cell = "b: K3.1, K3.2 (breezerc `ShadowColor`, read)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1058"
+section = "2.1.3 Base Colors"
+property = "link_color"
+text = "`[Colors:View] ForegroundLink`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1059"
+section = "2.1.3 Base Colors"
+property = "selection_background"
+text = "`[Colors:Selection] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1060"
+section = "2.1.3 Base Colors"
+property = "selection_text_color"
+text = "`[Colors:Selection] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1061"
+section = "2.1.3 Base Colors"
+property = "selection_inactive_background"
+text = "**(none)** — selection bg unchanged on focus loss"
+rows = [
+    "K3.40",
+    "K1.173",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:858",
+]
+targets = [
+    "role.selection.<role> @ cond window_inactive (= kde_effects(kde_selection_inactive(<Selection's inactive input of that role>, <Window's inactive input of that role>, active(role.selection.background), <role kind>), kde_selection_inactive(<Selection's inactive background input>, <Window's inactive background input>, active(role.selection.background), background), inactive, <role kind>): KColorScheme's start for the Selection set's Inactive group, Window's colours (the background tinted toward Selection's) while token.kde.inactive_change_selection_color holds, else Selection's own (kcolorscheme.cpp:304-316, :374-378), with the inactive effects applied over it (:380-391; S2.2, R5.1))",
+    "token.kde.inactive, token.kde.inactive_change_selection_color, token.kde.inactive_enabled",
+    "reader:kde:kdeglobals [ColorEffects:Inactive] ChangeSelectionColor, Enable",
+    "list.row_background.fill, list.row.text.fill @ {selected} cond window_inactive` (the rows take `role.selection.*`, whose inactive values are K3.40's `kde_effects(kde_selection_inactive(…), …)` derivation)",
+]
+none_cell = "b: K3.40, K1.173 (D3: the cell is wrong for Breeze's default `ChangeSelectionColor`)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1062"
+section = "2.1.3 Base Colors"
+property = "text_selection_background"
+text = "← `defaults.selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1063"
+section = "2.1.3 Base Colors"
+property = "text_selection_color"
+text = "← `defaults.selection_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1064"
+section = "2.1.3 Base Colors"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `[Colors:Window] ForegroundNormal`, the KColorScheme `[ColorEffects:Disabled]` result (§2.1.6 `disabled_opacity`): #a0a1a3 / #686a6c"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1084"
+section = "2.1.4 Status Colors"
+property = "danger_color"
+text = "`[Colors:View] ForegroundNegative`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1085"
+section = "2.1.4 Status Colors"
+property = "danger_text_color"
+text = "`[Colors:Window] ForegroundNormal` ¹"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1086"
+section = "2.1.4 Status Colors"
+property = "warning_color"
+text = "`[Colors:View] ForegroundNeutral`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1087"
+section = "2.1.4 Status Colors"
+property = "warning_text_color"
+text = "`[Colors:Window] ForegroundNormal` ¹"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1088"
+section = "2.1.4 Status Colors"
+property = "success_color"
+text = "`[Colors:View] ForegroundPositive`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1089"
+section = "2.1.4 Status Colors"
+property = "success_text_color"
+text = "`[Colors:Window] ForegroundNormal` ¹"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1090"
+section = "2.1.4 Status Colors"
+property = "info_color"
+text = "`[Colors:View] ForegroundActive`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1091"
+section = "2.1.4 Status Colors"
+property = "info_text_color"
+text = "`[Colors:Window] ForegroundNormal` ¹"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1108"
+section = "2.1.5 Focus Ring"
+property = "focus_ring_color"
+text = "`[Colors:View] DecorationFocus`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1109"
+section = "2.1.5 Focus Ring"
+property = "focus_ring_width"
+text = "Breeze: 1.001px (stroke); 2px margin"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1110"
+section = "2.1.5 Focus Ring"
+property = "focus_ring_offset"
+text = "Breeze: 2px margin (outset)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1116"
+section = "2.1.6 Global Geometry"
+property = "border.corner_radius"
+text = "Breeze: 5px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1117"
+section = "2.1.6 Global Geometry"
+property = "border.corner_radius_lg"
+text = "**(none)** — preset"
+rows = []
+targets = []
+none_cell = "a: One radius step: Breeze `Frame_FrameRadius` (`mt:42`), Kirigami `cornerRadius` (`kirigami@eecf183a src/platform/units.cpp:46`); the window's larger corner is K1.10"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1118"
+section = "2.1.6 Global Geometry"
+property = "border.line_width"
+text = "Breeze: 1.001px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1119"
+section = "2.1.6 Global Geometry"
+property = "disabled_opacity"
+text = "**(Breeze src)** 1.0 — no disabled opacity: Breeze paints a disabled control from the palette's `Disabled` group, `enabled` gating only hover ([breezestyle.cpp:4900-4940](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L4900-L4940)); KColorScheme derives that group by `[ColorEffects:Disabled]` ([kcolorscheme.cpp:36-101](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L36-L101)): Breeze states Fade 0.65 and Darken 0.1 ([BreezeLight.colors:9-16](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L9-L16)), so a foreground is `mix(fg, bg, 0.65)` darkened and a background darkened. Computed with KColorScheme 6.31.0 on BreezeLight / BreezeDark.colors, Disabled: Button bg #f0f0f0 / #272a2e, fg #a8a9aa / #6d6f72; Window fg #a0a1a3 / #686a6c; View bg #f3f3f3 / #131517, fg #aaabac / #606263, `ForegroundLink` #a3cae2 / #164160"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1120"
+section = "2.1.6 Global Geometry"
+property = "border.opacity"
+text = "**(Breeze src)** 0.2 — `frameIntensityBias()` = `KColorScheme::frameContrast()` (see §2.11 `border.color`), the share of the foreground in every line: `mix(Window, WindowText, 0.2)` for frames and separators ([breezehelper.cpp:142-144](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L142-L144)), `mix(Button, ButtonText, 0.2)` for buttons (:250), the text colour at alpha 0.2 for progress bar and slider outlines (:1215)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1121"
+section = "2.1.6 Global Geometry"
+property = "border.shadow_enabled"
+text = "yes"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1127"
+section = "2.1.7 Accessibility"
+property = "text_scaling_factor"
+text = "Plasma 6.7 on X11: `forceFontDPI` / 96 (`kcmfonts`, 0 = unset; [krdb.cpp:338-341](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/kcms/krdb/krdb.cpp#L338-L341)) · Plasma 6.7 on Wayland and Plasma 6.8: **(none)** — no Plasma setting (Plasma 6.8 dropped the key and its reader, from v6.7.90 on and still at v6.8.1, [c675077b](https://invent.kde.org/plasma/plasma-workspace/-/commit/c675077b8f7371eb65bfa73c20d86a50828b13fc), [fe367323](https://invent.kde.org/plasma/plasma-workspace/-/commit/fe367323b30bfa239243b2164d75faacb1be15e7))"
+rows = []
+targets = []
+none_cell = "a: No text-only scale on Wayland; the font sizes are the text size (read)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1128"
+section = "2.1.7 Accessibility"
+property = "reduce_motion"
+text = "`AnimationDurationFactor` = 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1129"
+section = "2.1.7 Accessibility"
+property = "high_contrast"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No contrast setting (B, C23; K3.91)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1130"
+section = "2.1.7 Accessibility"
+property = "reduce_transparency"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No setting; transparency is MenuOpacity and the blur effect (K3.92)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1136"
+section = "2.1.8 Icon Sizes"
+property = "toolbar"
+text = "`MainToolbar`: 22"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1137"
+section = "2.1.8 Icon Sizes"
+property = "small"
+text = "`Small`: 16"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1138"
+section = "2.1.8 Icon Sizes"
+property = "large"
+text = "`Desktop`: 48 (Breeze default)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1139"
+section = "2.1.8 Icon Sizes"
+property = "dialog"
+text = "`Dialog`: 32"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1140"
+section = "2.1.8 Icon Sizes"
+property = "panel"
+text = "`Panel`: 48 (Breeze default = C++ fallback)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1147"
+section = "2.1.9 Icon Theme"
+property = "icon_theme"
+text = "⚙ `kdeglobals [Icons] Theme` (§1.3.6); **(KF6 src)** `KIconTheme::current()` reads the application's own `[Icons] Theme`, then Qt's theme name, then kdeglobals', `breeze` where it is unset ([kicontheme.cpp:676-687](https://invent.kde.org/frameworks/kiconthemes/-/blob/v6.31.0/src/kicontheme.cpp#L676-L687), KF 6.31.0); an override comes first (:667-669), which `KIconTheme::initTheme()`, called by an application outside the `kde` platform theme, sets from the same `[Icons] Theme`, `breeze` where it is unset (:105, :113), and `hicolor` last, where every step names none or `hicolor` (:688-690). The Breeze global theme sets `breeze`, Breeze Dark `breeze-dark` ([org.kde.breeze defaults:7-8](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/lookandfeel/org.kde.breeze/contents/defaults#L7-L8); [org.kde.breezedark defaults:7-8](https://invent.kde.org/plasma/plasma-workspace/-/blob/v6.7.5/lookandfeel/org.kde.breezedark/contents/defaults#L7-L8), plasma-workspace v6.7.5)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1157"
+section = "2.2 Window / Application Chrome"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1158"
+section = "2.2 Window / Application Chrome"
+property = "border.color"
+text = "`[WM]` decoration theme colors"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1159"
+section = "2.2 Window / Application Chrome"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1160"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_background"
+text = "`[WM] activeBackground` — Breeze 227,229,231 #e3e5e7, Breeze Dark 39,44,49 #272c31 in Breeze v6.7.5 (BreezeLight.colors:197; BreezeDark.colors:204)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1161"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.family"
+text = "`[WM] activeFont` field 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1162"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.size"
+text = "`[WM] activeFont` field 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1163"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.weight"
+text = "`[WM] activeFont` field 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1164"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.style"
+text = "`[WM] activeFont` style field"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1165"
+section = "2.2 Window / Application Chrome"
+property = "title_bar_font.color"
+text = "`[WM] activeForeground`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1166"
+section = "2.2 Window / Application Chrome"
+property = "inactive_title_bar_background"
+text = "`[WM] inactiveBackground`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1167"
+section = "2.2 Window / Application Chrome"
+property = "inactive_title_bar_text_color"
+text = "`[WM] inactiveForeground`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1168"
+section = "2.2 Window / Application Chrome"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius_lg`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1169"
+section = "2.2 Window / Application Chrome"
+property = "border.shadow_enabled"
+text = "← `defaults.border.shadow_enabled`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1170"
+section = "2.2 Window / Application Chrome"
+property = "border.padding_horizontal"
+text = "**(none)** — use §2.20 layout margins"
+rows = []
+targets = []
+none_cell = "a: The window has no padding; content margins are layout rows (K1.210, Q1.98)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1171"
+section = "2.2 Window / Application Chrome"
+property = "border.padding_vertical"
+text = "**(none)** — use §2.20 layout margins"
+rows = []
+targets = []
+none_cell = "a: As 1170"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1177"
+section = "2.3 Button"
+property = "background_color"
+text = "`[Colors:Button] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1178"
+section = "2.3 Button"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1179"
+section = "2.3 Button"
+property = "font.color"
+text = "`[Colors:Button] ForegroundNormal` — Breeze 35,38,41 #232629, Breeze Dark 252,252,252 #fcfcfc in Breeze v6.7.5 (BreezeLight.colors:39; BreezeDark.colors:40)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1180"
+section = "2.3 Button"
+property = "border.color"
+text = "`KColorUtils::mix(ButtonBG, ButtonFG, frameContrast=0.2)` — Plasma 6: #535659"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1181"
+section = "2.3 Button"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1182"
+section = "2.3 Button"
+property = "min_width"
+text = "`Button_MinWidth` = 80"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1183"
+section = "2.3 Button"
+property = "min_height"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: No minimum; height = content + `Button_MarginWidth` and frame metrics"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1184"
+section = "2.3 Button"
+property = "border.padding_horizontal"
+text = "`Button_MarginWidth` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1185"
+section = "2.3 Button"
+property = "border.padding_vertical"
+text = "`Button_MarginWidth` = 6 (same as horizontal)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1186"
+section = "2.3 Button"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1187"
+section = "2.3 Button"
+property = "icon_text_gap"
+text = "`Button_ItemSpacing` = 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1188"
+section = "2.3 Button"
+property = "primary_background"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1189"
+section = "2.3 Button"
+property = "primary_text_color"
+text = "← `defaults.accent_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1190"
+section = "2.3 Button"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1191"
+section = "2.3 Button"
+property = "border.shadow_enabled"
+text = "← `defaults.border.shadow_enabled`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1192"
+section = "2.3 Button"
+property = "hover_background"
+text = "← `background_color`: no hover fill — a non-flat button's fill is `palette.button()` unless it is down, checked or the default button ([breezehelper.cpp:693-707](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L693-L707)), and hover only sets the pen to `Highlight` #3daee9 (:710-712); the fill animates by `down && enabled` alone ([breezestyle.cpp:4547](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L4547))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1193"
+section = "2.3 Button"
+property = "hover_text_color"
+text = "← `font.color` (no change)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1194"
+section = "2.3 Button"
+property = "checked_background"
+text = "**(Breeze src)** `KColorUtils::mix(Button, ButtonText, 0.125)` for a checked, non-flat button, its pen the normal frame's and no shadow ([breezehelper.cpp:695-699, :729](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L695-L699)) — L `#e1e1e2`, D `#43464a`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1195"
+section = "2.3 Button"
+property = "checked_text_color"
+text = "← `font.color`: `ButtonText`, the role of every non-flat button's label ([breezestyle.cpp:5350-5362](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L5350-L5362))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1196"
+section = "2.3 Button"
+property = "active_background"
+text = "**(Breeze src)** `KColorUtils::mix(Button, Highlight, Metrics::Blend_Value)`, Blend 0.3: a pressed, enabled, non-flat button's fill, in place of `palette.button()` ([breezehelper.cpp:693-694, :704](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L693-L704); [breezemetrics.h:176](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L176)), whose animation the style drives by `down && enabled` alone ([breezestyle.cpp:4547](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L4547)) — Breeze #c3e5f6, Breeze Dark #2f5368 (Button #fcfcfc, #292c30; Selection #3daee9; computed with KF 6.30.0 `KColorUtils::mix`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1197"
+section = "2.3 Button"
+property = "active_text_color"
+text = "← `font.color`: a non-flat button's label is `ButtonText` in every state ([breezestyle.cpp:5350-5362](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L5350-L5362))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1198"
+section = "2.3 Button"
+property = "disabled_background"
+text = "**(Breeze src)** Disabled `[Colors:Button] BackgroundNormal`: a disabled button keeps the rest fill, `palette.button()` ([breezehelper.cpp:704](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L704)), from the palette's Disabled group, which a disabled widget's palette answers from ([qwidget.cpp:4577-4591](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/kernel/qwidget.cpp#L4577-L4591)) — #f0f0f0 / #272a2e (§2.1.6 `disabled_opacity`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1199"
+section = "2.3 Button"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `ButtonText`, the label's role (breezestyle.cpp:5350-5362) in the Disabled group — #a8a9aa / #6d6f72 (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1203"
+section = "2.4 Text Input"
+property = "background_color"
+text = "`[Colors:View] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1204"
+section = "2.4 Text Input"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1205"
+section = "2.4 Text Input"
+property = "font.color"
+text = "`[Colors:View] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1206"
+section = "2.4 Text Input"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1207"
+section = "2.4 Text Input"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1208"
+section = "2.4 Text Input"
+property = "placeholder_color"
+text = "`[Colors:View] ForegroundInactive`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1209"
+section = "2.4 Text Input"
+property = "caret_color"
+text = "`[Colors:View] DecorationFocus`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1210"
+section = "2.4 Text Input"
+property = "selection_background"
+text = "← `defaults.text_selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1211"
+section = "2.4 Text Input"
+property = "selection_text_color"
+text = "← `defaults.text_selection_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1212"
+section = "2.4 Text Input"
+property = "min_height"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: No minimum on Qt Widgets; the Quick TextArea background's implicit size is Q1.12"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1213"
+section = "2.4 Text Input"
+property = "border.padding_horizontal"
+text = "**(Breeze src)** 7 inside the frame line: Breeze insets a line edit's contents `LineEdit_FrameWidth` = 6 from its outer edge (`lineEditContentsRect`, [breezestyle.cpp:2228-2251](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L2228-L2251); [breezemetrics.h:50](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L50)), its 1px frame line the outermost of those 6, and QLineEdit starts the text `horizontalMargin` = 2 further in ([qlineedit_p.cpp:35-36](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qlineedit_p.cpp#L35-L36); `lineRect`, [qlineedit.cpp:2013-2014](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qlineedit.cpp#L2013-L2014)): 6 + 2 − 1. **(measured)** 2026-09-28, a Breeze QLineEdit (`kdialog --inputbox`, KWin, scale 1.0, Noto Sans 10pt): the text starts 8px from the frame's outer left edge, 7 inside its line"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1214"
+section = "2.4 Text Input"
+property = "border.padding_vertical"
+text = "**(Breeze src)** 6 inside the frame line: the same `LineEdit_FrameWidth` = 6 inset, and QLineEdit's `verticalMargin` = 1 (qlineedit_p.cpp:35-36), which its size hint adds above and below the font's height ([qlineedit.cpp:668-670](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qlineedit.cpp#L668-L670)) and its paint centres the line in (:2010): 6 + 1 − 1. **(measured)** the same field: 32px tall, its 18px line box 7px below the frame's outer top edge, 6 inside its line"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1215"
+section = "2.4 Text Input"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1216"
+section = "2.4 Text Input"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: `renderFrame` draws no shadow; Breeze's only control shadows are the button frame and slider / dial handles (`hp:728-732`, `hp:1178-1180`)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1217"
+section = "2.4 Text Input"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1218"
+section = "2.4 Text Input"
+property = "hover_border_color"
+text = "**(Breeze src)** `hoverColor()` = `[Colors:View] DecorationHover`: `frameOutlineColor` returns it for a hovered frame ([breezehelper.cpp:142-168](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L142-L168); the View set's hover decoration, :90, [breezehelper.h:64-67](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.h#L64-L67)), which a line edit's frame strokes ([breezestyle.cpp:4077-4080](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L4077-L4080)) — 61,174,233 #3daee9 in Breeze and Breeze Dark ([BreezeLight.colors:117](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L117); BreezeDark.colors:118)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1219"
+section = "2.4 Text Input"
+property = "focus_border_color"
+text = "**(Breeze src)** `focusColor()` = `[Colors:View] DecorationFocus`, which takes precedence over hover in `frameOutlineColor` (breezehelper.cpp:142-168; :89; breezehelper.h:70-73) — 61,174,233 #3daee9 in Breeze and Breeze Dark (BreezeLight.colors:116; BreezeDark.colors:117)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1220"
+section = "2.4 Text Input"
+property = "disabled_background"
+text = "**(Breeze src)** Disabled `[Colors:View] BackgroundNormal`: the frame fills `QPalette::Base` (breezestyle.cpp:4077) from the Disabled group (§2.3 `disabled_background`) — #f3f3f3 / #131517 (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1221"
+section = "2.4 Text Input"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `[Colors:View] ForegroundNormal`: QLineEdit draws its text in `QPalette::Text` ([qlineedit.cpp:2080](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qlineedit.cpp#L2080)), in the Disabled group — #aaabac / #606263 (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1227"
+section = "2.5 Checkbox / Radio Button"
+property = "background_color"
+text = "`[Colors:Button] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1228"
+section = "2.5 Checkbox / Radio Button"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1229"
+section = "2.5 Checkbox / Radio Button"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1230"
+section = "2.5 Checkbox / Radio Button"
+property = "border.color"
+text = "**(Breeze src)** checked: `palette.highlight()` = `[Colors:Selection] BackgroundNormal` ([breezehelper.cpp:853-854](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L853-854); radio :1005-1006); unchecked (`unchecked_border_color`): `separatorColor()` = `KColorUtils::mix(Window, WindowText, frameIntensityBias())` (:855-856, :1007-1008, [:329-332](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L329-332)), the bias being `frameContrast`, default 0.2, as §2.11 reads it — Breeze #c6c8c9, Breeze Dark #4c4e51"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1231"
+section = "2.5 Checkbox / Radio Button"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1232"
+section = "2.5 Checkbox / Radio Button"
+property = "indicator_color"
+text = "**(Breeze src)** `palette.text()` = `[Colors:View] ForegroundNormal`: the check mark's pen ([breezehelper.cpp:938](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L938)) and the radio dot's brush ([:1059](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L1059)); KColorScheme fills `QPalette::Text` from the View foreground ([kcolorscheme.cpp:673](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L673)) — Breeze #232629, Breeze Dark #fcfcfc"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1233"
+section = "2.5 Checkbox / Radio Button"
+property = "indicator_width"
+text = "`CheckBox_Size` = 20"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1234"
+section = "2.5 Checkbox / Radio Button"
+property = "label_gap"
+text = "`CheckBox_ItemSpacing` = 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1235"
+section = "2.5 Checkbox / Radio Button"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1236"
+section = "2.5 Checkbox / Radio Button"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: As 1216 (`renderCheckBox*`, `hp:831-981`)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1237"
+section = "2.5 Checkbox / Radio Button"
+property = "border.padding_horizontal"
+text = "**(none)** — checkmark fills indicator"
+rows = [
+    "K1.58†",
+    "K1.53",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:869",
+]
+targets = [
+    "checkbox.mark.glyph (Path, stroke: GlyphStroke width and join)",
+    "checkbox.mark.glyph @ {indeterminate} (three dots and their spacing, Path)",
+    "checkbox.values.indicator_cell",
+    "checkbox.box.min_width, checkbox.box.min_height, checkbox.box.corners",
+]
+none_cell = "b: K1.58† (mark inset in the box), K1.53 (box inset in the cell)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1238"
+section = "2.5 Checkbox / Radio Button"
+property = "border.padding_vertical"
+text = "**(none)** — checkmark fills indicator"
+rows = [
+    "K1.58†",
+    "K1.53",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:870",
+]
+targets = [
+    "checkbox.mark.glyph (Path, stroke: GlyphStroke width and join)",
+    "checkbox.mark.glyph @ {indeterminate} (three dots and their spacing, Path)",
+    "checkbox.values.indicator_cell",
+    "checkbox.box.min_width, checkbox.box.min_height, checkbox.box.corners",
+]
+none_cell = "b: K1.58†, K1.53"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1239"
+section = "2.5 Checkbox / Radio Button"
+property = "checked_background"
+text = "**(Breeze src)** `palette.button()` = `[Colors:Button] BackgroundNormal`, overlaid with `palette.highlight()` at alpha `highlightBackgroundAlpha` = `Metrics::Blend_Value` = 0.3 ([breezehelper.cpp:847-848, :862, :869](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L847-869); radio :999-1000, :1012, :1019; [:40](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L40); [breezemetrics.h:176](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezemetrics.h#L176)); v6.4.0 has a literal 0.33 there ([breezehelper.cpp:39](https://invent.kde.org/plasma/breeze/-/blob/v6.4.0/kstyle/breezehelper.cpp#L39)). Alpha 0.3 held in 8 bits is 77/255 — Breeze #c2e4f6, Breeze Dark #2f5368 (Button #fcfcfc, #292c30; Selection #3daee9)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1240"
+section = "2.5 Checkbox / Radio Button"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1241"
+section = "2.5 Checkbox / Radio Button"
+property = "radio_dot_diameter"
+text = "6 — radius `(min(w, h) − 12) / 2` of the `CheckBox_Size` rect inset by 1: (18 − 12) / 2 = 3 ([breezehelper.cpp:1041, :1062, :1068](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L1041-1068))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1242"
+section = "2.5 Checkbox / Radio Button"
+property = "check_mark_stroke_width"
+text = "**(Breeze src)** 2 — a two-segment polyline through (left + 4, centre), (centre x − 1, bottom − 5) and (centre x + 4.5, top + 5.5) of the indicator's frame rect ([breezehelper.cpp:913-927](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L913-L927)), stroked in `palette.text()` at `PenWidth::Frame * 2` = 2.002 with a miter join (:938-939; [breezemetrics.h:25](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L25)), rounded as `defaults.border.line_width` rounds `PenWidth::Frame`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1243"
+section = "2.5 Checkbox / Radio Button"
+property = "radio_indicator_width"
+text = "← `indicator_width`: Breeze answers `PM_ExclusiveIndicatorWidth` with the checkbox's `CheckBox_Size` ([breezestyle.cpp:848-852](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezestyle.cpp#L848-852))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1244"
+section = "2.5 Checkbox / Radio Button"
+property = "hover_background"
+text = "← `background_color`: no hover fill — the box keeps `palette.button()` ([breezehelper.cpp:862](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L862)), checked or not, and hover adds a ring inside it in `focusColor()`, `[Colors:View] DecorationFocus` #3daee9 (:897-907)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1245"
+section = "2.5 Checkbox / Radio Button"
+property = "disabled_background"
+text = "**(Breeze src)** Disabled `[Colors:Button] BackgroundNormal`, the same `palette.button()` (breezehelper.cpp:862) from the Disabled group (§2.3 `disabled_background`) — #f0f0f0 / #272a2e (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1246"
+section = "2.5 Checkbox / Radio Button"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `WindowText`: the label is drawn in `QPalette::WindowText` ([breezestyle.cpp:5736](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L5736)), from the Disabled group — #a0a1a3 / #686a6c (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1247"
+section = "2.5 Checkbox / Radio Button"
+property = "unchecked_background"
+text = "**(Breeze src)** `[Colors:Button] BackgroundNormal`: the box's `palette.button()` fill (breezehelper.cpp:862) is all an unchecked box draws inside its frame (:865-866) — Breeze #fcfcfc, Breeze Dark #292c30 ([BreezeLight.colors:31](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L31); BreezeDark.colors:32)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1248"
+section = "2.5 Checkbox / Radio Button"
+property = "unchecked_border_color"
+text = "**(Breeze src)** `separatorColor()` = `KColorUtils::mix(Window, WindowText, frameContrast)`, the unchecked box's pen ([breezehelper.cpp:855-858](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L855-L858), :329-332) — Breeze #c6c8c9, Breeze Dark #4c4e51 (the `border.color` row)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1253"
+section = "2.6 Menu"
+property = "background_color"
+text = "`[Colors:Window] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1254"
+section = "2.6 Menu"
+property = "separator_color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1255"
+section = "2.6 Menu"
+property = "font.family"
+text = "`[General] menuFont` field 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1256"
+section = "2.6 Menu"
+property = "font.size"
+text = "`[General] menuFont` field 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1257"
+section = "2.6 Menu"
+property = "font.weight"
+text = "`[General] menuFont` field 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1258"
+section = "2.6 Menu"
+property = "font.style"
+text = "`[General] menuFont` style field"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1259"
+section = "2.6 Menu"
+property = "font.color"
+text = "`[Colors:Window] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1260"
+section = "2.6 Menu"
+property = "row_height"
+text = "**(none)** — sizes to font"
+rows = []
+targets = []
+none_cell = "a: Content-sized; the derivation is K1.71 (`st:3602-3713`); Quick item padding Q1.28"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1261"
+section = "2.6 Menu"
+property = "border.padding_horizontal"
+text = "`MenuItem_MarginWidth` = 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1262"
+section = "2.6 Menu"
+property = "border.padding_vertical"
+text = "`MenuItem_MarginHeight` = 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1263"
+section = "2.6 Menu"
+property = "border.color"
+text = "**(none)** — popup border from §2.16"
+rows = [
+    "K1.64",
+    "K1.65",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:872",
+]
+targets = [
+    "menu.body.corners",
+    "menu.body.corners @ cond not_composited (ADD-A01)",
+    "menu.body.corners @ {placed_below} context any menu_bar / {placed_above} context any menu_bar / {placed_below} context any combo_box / {placed_above} context any combo_box (the seamless edge)",
+    "menu flags placed_below, placed_above (shared, set by the connector from the placement result)",
+    "menu.body.fill (alpha by MenuOpacity; kwin_blur material layer)",
+    "menu.body.stroke",
+    "menu.separator.stroke` (the line's paint)",
+    "reader:kde:breezerc [Style] MenuOpacity",
+]
+none_cell = "b: K1.64, K1.65 (the menu frame's outline, translucent variant)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1264"
+section = "2.6 Menu"
+property = "border.line_width"
+text = "**(none)** — popup border from §2.16"
+rows = [
+    "K1.64",
+    "K1.65",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:873",
+]
+targets = [
+    "menu.body.corners",
+    "menu.body.corners @ cond not_composited (ADD-A01)",
+    "menu.body.corners @ {placed_below} context any menu_bar / {placed_above} context any menu_bar / {placed_below} context any combo_box / {placed_above} context any combo_box (the seamless edge)",
+    "menu flags placed_below, placed_above (shared, set by the connector from the placement result)",
+    "menu.body.fill (alpha by MenuOpacity; kwin_blur material layer)",
+    "menu.body.stroke",
+    "menu.separator.stroke` (the line's paint)",
+    "reader:kde:breezerc [Style] MenuOpacity",
+]
+none_cell = "b: K1.64, K1.65"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1265"
+section = "2.6 Menu"
+property = "border.corner_radius"
+text = "**(none)** — items are rectangular"
+rows = [
+    "K1.60",
+    "Q1.26",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:874",
+]
+targets = [
+    "menu.item.{fill,stroke,corners} @ {hover} cond system_setting:menu_item_strong_focus / {focused} cond system_setting:menu_item_strong_focus` (Breeze fills the active item only under strong focus, `breezestyle.cpp:6016`, and draws the weak-focus line otherwise, K1.62; Breeze's `State_Selected` on QMenu's active action, which the pointer and the keys set: `hover` or `focused`, S7.2)",
+    "menu.item.{fill,stroke,corners} @ {hover} cond flavor:kirigami / {focused} cond flavor:kirigami` (qqc2's `highlighted`, set by the menu's current item from the pointer and the keys, `MenuItem.qml:122`: `hover` or `focused`, S7.2)",
+]
+none_cell = "b: K1.60, Q1.26: Breeze's highlighted item **is** rounded (`frameRadius`), so the cell's \"items are rectangular\" is wrong for KDE"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1266"
+section = "2.6 Menu"
+property = "border.shadow_enabled"
+text = "**(none)** — popup shadow from §2.16"
+rows = [
+    "K3.2",
+    "Q1.23",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:875",
+]
+targets = [
+    "menu.body.shadow, tooltip.body.shadow, popover.body.shadow, toolbar.bar.shadow @ variant floating, menu.body.shadow @ context combo_box",
+    "token.elevation.<key> (Breeze's popup shadow sizes)",
+    "reader:kde:breezerc [Common] ShadowSize, ShadowStrength, ShadowColor",
+    "menu.body.shadow @ cond flavor:kirigami",
+]
+none_cell = "b: K3.2, K1.74, Q1.23"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1267"
+section = "2.6 Menu"
+property = "icon_text_gap"
+text = "8 **(Breeze src)** icon-text gap"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1268"
+section = "2.6 Menu"
+property = "icon_size"
+text = "`Small`: 16"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1269"
+section = "2.6 Menu"
+property = "hover_background"
+text = "`[Colors:Selection] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1270"
+section = "2.6 Menu"
+property = "hover_text_color"
+text = "`[Colors:Selection] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1271"
+section = "2.6 Menu"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `[Colors:Window] ForegroundNormal` (§2.1.6 `disabled_opacity`): #a0a1a3 / #686a6c"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1277"
+section = "2.7 Tooltip"
+property = "background_color"
+text = "`[Colors:Tooltip] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1278"
+section = "2.7 Tooltip"
+property = "font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1279"
+section = "2.7 Tooltip"
+property = "font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1280"
+section = "2.7 Tooltip"
+property = "font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1281"
+section = "2.7 Tooltip"
+property = "font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1282"
+section = "2.7 Tooltip"
+property = "font.color"
+text = "`[Colors:Tooltip] ForegroundNormal` — Breeze 35,38,41 #232629, Breeze Dark 252,252,252 #fcfcfc in Breeze v6.7.5 (BreezeLight.colors:109; BreezeDark.colors:110)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1283"
+section = "2.7 Tooltip"
+property = "border.padding_horizontal"
+text = "`ToolTip_FrameWidth` = 3"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1284"
+section = "2.7 Tooltip"
+property = "border.padding_vertical"
+text = "`ToolTip_FrameWidth` = 3"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1285"
+section = "2.7 Tooltip"
+property = "max_width"
+text = "**(none)** — preset: 300"
+rows = [
+    "K1.83†",
+    "Q3.29",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:876",
+]
+targets = [
+    "tooltip.values.{show_delay,browse_timeout,display_time,hide_delay}",
+    "tooltip.label.text.wrap` (Word: plain text wraps only where it is wider than the screen, the space it has; rich text word-wraps earlier at QLabel's own width heuristic, the toolkit's layout, R23, not a theme value)",
+    "tooltip.body.max_width @ cond flavor:widgets` (`auto`: no other maximum width)",
+    "token.params.layout.grid_unit (ADD-A44)",
+    "Length expressions mul(token.params.layout.grid_unit, <n>)",
+]
+none_cell = "b: K1.83† (Qt: wraps only at the screen width), Q3.29 (Quick: gridUnit × 14)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1286"
+section = "2.7 Tooltip"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1287"
+section = "2.7 Tooltip"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1288"
+section = "2.7 Tooltip"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1289"
+section = "2.7 Tooltip"
+property = "border.shadow_enabled"
+text = "yes (KWin compositor)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1290"
+section = "2.7 Tooltip"
+property = "show_delay"
+text = "700 **(impl)** — Qt's `m_toolTipWakeUpDelay{700}` ([qstylehints_p.h:45](https://github.com/qt/qtbase/blob/d865bf9d4877fa09e1fc02e2ad14fb9fd43ef430/src/gui/kernel/qstylehints_p.h#L45)), which `QCommonStyle` returns for `SH_ToolTip_WakeUpDelay` ([qcommonstyle.cpp:5351-5356](https://github.com/qt/qtbase/blob/d865bf9d4877fa09e1fc02e2ad14fb9fd43ef430/src/widgets/styles/qcommonstyle.cpp#L5351-L5356)); Qt v6.10.0 states 700 there directly ([qcommonstyle.cpp:5375-5380](https://github.com/qt/qtbase/blob/v6.10.0/src/widgets/styles/qcommonstyle.cpp#L5375-L5380)); Kirigami's `Units.toolTipDelay` is 700 too ([platform/units.cpp:45](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/units.cpp#L45))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1304"
+section = "2.8 Scrollbar"
+property = "track_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1305"
+section = "2.8 Scrollbar"
+property = "thumb_color"
+text = "**(Breeze src)** thumb color"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1306"
+section = "2.8 Scrollbar"
+property = "thumb_hover_color"
+text = "**(Breeze src)** a hovered handle is `hoverColor()`, `[Colors:View] DecorationHover`, before any focus ([breezehelper.cpp:277-303](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L277-L303), :292), at full alpha while the pointer is over the scrollbar (`alpha × (0.7 + Blend_Value × grooveOpacity)`, [breezestyle.cpp:6400-6405](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L6400-L6405)), and the handle is filled with it at half alpha over the window, `overlayColors(Window, alphaColor(fg, 0.5))` ([breezehelper.cpp:1284](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1284)) — Breeze #96cfed, Breeze Dark #2f6888 (DecorationHover #3daee9; Window #eff0f1, #202326; computed as Qt 6.11.2 paints `KColorUtils::overlayColors`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1307"
+section = "2.8 Scrollbar"
+property = "groove_width"
+text = "`ScrollBar_Extend` = 21"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1308"
+section = "2.8 Scrollbar"
+property = "min_thumb_length"
+text = "`ScrollBar_MinSliderHeight` = 20"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1309"
+section = "2.8 Scrollbar"
+property = "thumb_width"
+text = "`ScrollBar_SliderWidth` = 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1310"
+section = "2.8 Scrollbar"
+property = "overlay_mode"
+text = "**(none)** — always persistent"
+rows = [
+    "Q1.41",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:877",
+]
+targets = [
+    "scrollbar.thumb.fill (= alpha(surface.foreground, <fraction>)), scrollbar.thumb.min_width, scrollbar.thumb.min_height, scrollbar.thumb.corners (Full) @ cond input:touch cond flavor:kirigami",
+    "scrollbar.values.auto_hide_delay @ cond input:touch cond flavor:kirigami",
+    "scrollbar.values.presentations (Appear: Slide from the edge; Disappear: Fade, = token.motion.durations.long) @ cond input:touch cond flavor:kirigami",
+]
+none_cell = "b: Desktop: persistent (the cell is right); touch: Q1.41 (overlay thumb)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1311"
+section = "2.8 Scrollbar"
+property = "thumb_active_color"
+text = "← `thumb_hover_color`: no pressed colour of its own — `scrollBarHandleColor` takes the pointer and the focus only ([breezehelper.cpp:277-303](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L277-L303)), and the slider passes it no pressed state ([breezestyle.cpp:6386, :6400](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L6386))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1317"
+section = "2.9 Slider"
+property = "fill_color"
+text = "← `defaults.accent_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1318"
+section = "2.9 Slider"
+property = "track_color"
+text = "← `defaults.muted_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1319"
+section = "2.9 Slider"
+property = "thumb_color"
+text = "**(Breeze src)** `[Colors:Button] BackgroundNormal`: Breeze fills the handle with `QPalette::Button` ([breezestyle.cpp:8122](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L8122); `renderSliderHandle`, [breezehelper.cpp:1191-1195](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1191-L1195)) — Breeze #fcfcfc, Breeze Dark #292c30 ([BreezeLight.colors:31](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L31); BreezeDark.colors:32)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1320"
+section = "2.9 Slider"
+property = "track_height"
+text = "`Slider_GrooveThickness` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1321"
+section = "2.9 Slider"
+property = "thumb_diameter"
+text = "`Slider_ControlThickness` = 20"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1322"
+section = "2.9 Slider"
+property = "tick_mark_length"
+text = "`Slider_TickLength` = 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1323"
+section = "2.9 Slider"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1324"
+section = "2.9 Slider"
+property = "thumb_hover_color"
+text = "← `thumb_color`, a replacement equal to it: the handle's fill is `QPalette::Button` in every state ([breezestyle.cpp:8122](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L8122)), `[Colors:Button] BackgroundNormal`, #fcfcfc / #292c30; hover turns only its outline `hoverColor()`, `[Colors:View] DecorationHover` #3daee9 (`sliderOutlineColor`, :8123; [breezehelper.cpp:248-275](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L248-L275))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1325"
+section = "2.9 Slider"
+property = "disabled_fill_color"
+text = "← `disabled_track_color`: a disabled slider draws no value fill, only the whole groove (`if (!enabled)`, [breezestyle.cpp:8071-8072](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L8071-L8072))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1326"
+section = "2.9 Slider"
+property = "disabled_track_color"
+text = "**(Breeze src)** `alphaColor(WindowText, 0.2)` laid at 0.7 over `Window` (`renderSliderGroove`, [breezehelper.cpp:1081-1097](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1081-L1097); [breezestyle.cpp:8069-8072](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L8069-L8072)), both from the Disabled group — Breeze #d9dcdd, Breeze Dark #2a2b2e (Disabled WindowText #a0a1a3 / #686a6c over Disabled Window #e3e5e7 / #1f2124; computed with KF 6.30.0 KColorScheme and `KColorUtils::overlayColors`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1327"
+section = "2.9 Slider"
+property = "disabled_thumb_color"
+text = "**(Breeze src)** Disabled `[Colors:Button] BackgroundNormal`, the handle's `QPalette::Button` (breezestyle.cpp:8122) in the Disabled group — #f0f0f0 / #272a2e (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1333"
+section = "2.10 Progress Bar"
+property = "fill_color"
+text = "**(Breeze src)** the accent at alpha 0.7 over the window: the contents are `renderProgressBarGroove` with `fg` = `HighlightColor` (`QPalette::Accent`, [breezestyle.cpp:68-72, :6289-6291](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L6289-L6291)), filled `KColorUtils::overlayColors(bg, alphaColor(fg, 0.7))` with `bg` = `QPalette::Window` ([breezehelper.cpp:1204-1219](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1204-L1219)); `overlayColors` paints over the opaque base in a 1×1 `QImage` ([kcolorutils.cpp:168-181](https://invent.kde.org/frameworks/kguiaddons/-/blob/7c766f6f99238c13acb8c50d8391600e964f3b8a/src/colors/kcolorutils.cpp#L168-L181)) — Breeze #72c2eb, Breeze Dark #3584ae (Accent #3daee9 over Window #eff0f1, #202326; computed with Qt 6.11.2 and KF6 KColorUtils)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1334"
+section = "2.10 Progress Bar"
+property = "track_color"
+text = "← `defaults.muted_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1335"
+section = "2.10 Progress Bar"
+property = "track_height"
+text = "`ProgressBar_Thickness` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1336"
+section = "2.10 Progress Bar"
+property = "min_width"
+text = "**(none)** — no minimum"
+rows = []
+targets = []
+none_cell = "a: No minimum"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1337"
+section = "2.10 Progress Bar"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1338"
+section = "2.10 Progress Bar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: `renderProgressBarGroove` draws no shadow (`hp:1204-1218`)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1339"
+section = "2.10 Progress Bar"
+property = "border.color"
+text = "**(Breeze src)** `WindowText` at alpha `frameIntensityBias()` 0.2 (`KColorScheme::frameContrast()`, see §2.11 `border.color`): the groove's `fg` is `alphaColor(WindowText, 0.2)` ([breezestyle.cpp:6299-6305](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L6299-L6305)), stroked `transparentize(fg, frameIntensityBias())`, which sets the alpha ([breezehelper.cpp:134-139, :1215](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1204-L1219)) — Breeze #23262933, Breeze Dark #fcfcfc33. The contents are stroked the same way in the accent, #3daee933"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1340"
+section = "2.10 Progress Bar"
+property = "border.line_width"
+text = "**(Breeze src)** `PenWidth::Frame` = 1.001 on the groove and the contents ([breezehelper.cpp:1215](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1215); [breezemetrics.h:25](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L25))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1341"
+section = "2.10 Progress Bar"
+property = "border.padding_horizontal"
+text = "**(Breeze src)** 0 — the contents rect is the groove rect with only its length cut to the progress ([breezestyle.cpp:2304, :2329-2338](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L2304)), starting at the groove's edge (:2333)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1342"
+section = "2.10 Progress Bar"
+property = "border.padding_vertical"
+text = "**(Breeze src)** 0 — the indicator spans the groove's whole thickness (`rect.height()`, [breezestyle.cpp:2333](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L2333); `rect.width()` vertical, :2335)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1346"
+section = "2.11 Tab Bar"
+property = "background_color"
+text = "**(Breeze src)** `QPalette::Window.darker(120)`: an unselected QWidget tab is filled darker than the window, with no pen ([breezehelper.cpp:1495-1496, :1503-1504](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1495-L1504)); `QColor::darker(120)` divides the HSV value by 1.2 ([qcolor.cpp:2993-3004](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/painting/qcolor.cpp#L2993-L3004)) — Breeze #c7c8c9, Breeze Dark #1b1d20 (Window #eff0f1, #202326). Hovered, the fill is `[Colors:View] DecorationHover` at alpha 0.2 in its place (:1497-1502)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1347"
+section = "2.11 Tab Bar"
+property = "active_background"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1348"
+section = "2.11 Tab Bar"
+property = "active_text_color"
+text = "← `defaults.text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1349"
+section = "2.11 Tab Bar"
+property = "bar_background"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1350"
+section = "2.11 Tab Bar"
+property = "min_width"
+text = "`TabBar_TabMinWidth` = 80"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1351"
+section = "2.11 Tab Bar"
+property = "min_height"
+text = "`TabBar_TabMinHeight` = 30"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1352"
+section = "2.11 Tab Bar"
+property = "border.padding_horizontal"
+text = "`TabBar_TabMarginWidth` = 8"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1353"
+section = "2.11 Tab Bar"
+property = "border.padding_vertical"
+text = "`TabBar_TabMarginHeight` = 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1354"
+section = "2.11 Tab Bar"
+property = "border.color"
+text = "**(Breeze src)** selected tab only: `KColorUtils::mix(Window, WindowText, frameIntensityBias())` ([breezehelper.cpp:1463-1468](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1463-L1468)); the bias is `KColorScheme::frameContrast()` ([breezehelper.cpp:105](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L105)), kdeglobals `[KDE] frameContrast`, default 0.2 ([kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538)), which neither Breeze colour scheme sets; `mix` interpolates the sRGB channels linearly ([kcolorutils.cpp:144-165](https://invent.kde.org/frameworks/kguiaddons/-/blob/7c766f6f99238c13acb8c50d8391600e964f3b8a/src/colors/kcolorutils.cpp#L144-L165)) — Breeze #c6c8c9, Breeze Dark #4c4e51. Unselected tabs draw no outline (`Qt::NoPen`, breezehelper.cpp:1504). Breeze also fills a 3px `QPalette::Highlight` strip along the selected North tab's top edge, rounded 5 (`TabBar_ActiveEffectSize` = 3, [breezemetrics.h:137](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L137); breezehelper.cpp:1471-1487), which no `tab` field models"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1355"
+section = "2.11 Tab Bar"
+property = "border.line_width"
+text = "`PenWidth::Frame` = 1.001"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1356"
+section = "2.11 Tab Bar"
+property = "border.corner_radius"
+text = "4.5, the selected tab's top corners only: `frameRadius(PenWidth::Frame)` = `Frame_FrameRadius` 5 − 0.5 × the pen width, which `frameRadius` takes as an `int`, so 1.001 → 1 ([breezehelper.h:345-348](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.h#L345-L348); [breezemetrics.h:42](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L42); breezehelper.cpp:1482), `corners = CornersTop` ([breezestyle.cpp:7245-7246](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7245-L7246)). Unselected tabs: 5, on the row's outer ends only (breezehelper.cpp:1505; breezestyle.cpp:7248-7253)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1357"
+section = "2.11 Tab Bar"
+property = "border.shadow_enabled"
+text = "no"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1358"
+section = "2.11 Tab Bar"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1359"
+section = "2.11 Tab Bar"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1360"
+section = "2.11 Tab Bar"
+property = "item_gap"
+text = "**(Breeze src)** 0 — QTabBar lays each tab where the previous one ends, `x += sz.width()` ([qtabbar.cpp:459-468](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qtabbar.cpp#L459-L468)); Breeze paints an unselected tab `TabBar_TabOverlap` = 1 wider towards the next and the selected tab's neighbours 5 under it ([breezestyle.cpp:7236-7262](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7236-L7262); [breezemetrics.h:135](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L135)), no gap"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1361"
+section = "2.11 Tab Bar"
+property = "active_indicator_color"
+text = "**(Breeze src)** `QPalette::Highlight`: `renderTabBarTab` fills a strip along the selected tab's edge with no pen, rounded `Frame_FrameRadius` at the tab's corners, after the tab's frame ([breezehelper.cpp:1471-1487](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1471-L1487))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1362"
+section = "2.11 Tab Bar"
+property = "active_indicator_width"
+text = "3 — `TabBar_ActiveEffectSize` ([breezemetrics.h:137](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L137)), the strip's height across a North or South tab"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1363"
+section = "2.11 Tab Bar"
+property = "active_indicator_side"
+text = "top — the strip lies along a North tab's top edge, a South tab's bottom one ([breezehelper.cpp:1472-1480](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1472-L1480))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1364"
+section = "2.11 Tab Bar"
+property = "hover_background"
+text = "**(Breeze src)** `alphaColor(hoverColor(), 0.2)`: `[Colors:View] DecorationHover` #3daee9 at alpha 0.2, #3daee933, in place of an unselected tab's `Window.darker(120)` fill ([breezehelper.cpp:1496-1503](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1496-L1503)); over the window it shows #cbe3f0 / #263f4d (Window #eff0f1, #202326; computed with KF 6.30.0 `KColorUtils::overlayColors`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1365"
+section = "2.11 Tab Bar"
+property = "hover_text_color"
+text = "← `font.color`: a tab's label is drawn in the widget's `foregroundRole()`, `WindowText`, in every state ([breezestyle.cpp:7073-7079](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7073-L7079))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1366"
+section = "2.11 Tab Bar"
+property = "active_outward_corner_radius"
+text = "**(Breeze src)** **(none)** — the selected tab is one rounded rectangle, `roundedPath(strokedRect(frameRect), corners, …)` ([breezehelper.cpp:1482](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1482)), rounded on its top corners only, `corners = CornersTop` ([breezestyle.cpp:7245-7246](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7245-L7246), see `border.corner_radius`)"
+rows = []
+targets = []
+none_cell = "a: One rounded rectangle, no outward corners (the cell's own source)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1370"
+section = "2.12 Sidebar"
+property = "background_color"
+text = "`[Colors:View] BackgroundNormal`: the KDE HIG's sidebar is the non-modal `GlobalDrawer` (\"It looks like a standard sidebar\", [content/hig/layout_and_nav.md:75](https://invent.kde.org/documentation/develop-kde-org/-/blob/cc5482a3522a353c11bcdbdbe69c731804c498a0/content/hig/layout_and_nav.md#L75), develop-kde-org `cc5482a3`), which KF 6.31.0 docks in the `View` set ([controls/GlobalDrawer.qml:337](https://invent.kde.org/frameworks/kirigami/-/blob/v6.31.0/src/controls/GlobalDrawer.qml#L337)), and System Settings' sidebar sets `colorSet: View`, `inherit: false` ([app/qml/CategoriesPage.qml:19-20](https://invent.kde.org/plasma/systemsettings/-/blob/v6.8.1/app/qml/CategoriesPage.qml#L19-L20), systemsettings v6.8.1): Breeze #ffffff, Breeze Dark #141618 ([BreezeLight.colors:115](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/colors/BreezeLight.colors#L115), [BreezeDark.colors:116](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/colors/BreezeDark.colors#L116), v6.7.5). Not every KDE side panel is one: a non-modal plain `OverlayDrawer` docks in the `Window` set ([templates/OverlayDrawer.qml:244](https://invent.kde.org/frameworks/kirigami/-/blob/v6.31.0/src/templates/OverlayDrawer.qml#L244)), and KIO's places panel (`KFilePlacesView`: Dolphin, the file dialog) clears its viewport to transparent over the window, text `WindowText` ([kfileplacesview.cpp:863-866](https://invent.kde.org/frameworks/kio/-/blob/v6.31.0/src/filewidgets/kfileplacesview.cpp#L863-L866)). None uses `[Colors:Complementary]`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1371"
+section = "2.12 Sidebar"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1372"
+section = "2.12 Sidebar"
+property = "font.color"
+text = "`[Colors:View] ForegroundNormal`, the set `background_color` takes: Breeze 35,38,41, Breeze Dark 252,252,252 ([BreezeLight.colors:123](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/colors/BreezeLight.colors#L123), [BreezeDark.colors:124](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/colors/BreezeDark.colors#L124), v6.7.5), equal to `[Colors:Window]`'s (:137, :138)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1373"
+section = "2.12 Sidebar"
+property = "selection_background"
+text = "← `defaults.selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1374"
+section = "2.12 Sidebar"
+property = "selection_text_color"
+text = "← `defaults.selection_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1375"
+section = "2.12 Sidebar"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1376"
+section = "2.12 Sidebar"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1377"
+section = "2.12 Sidebar"
+property = "border.corner_radius"
+text = "**(none)** — rectangular pane"
+rows = []
+targets = []
+none_cell = "a: Side panels are rectangular (`hp:504-544`); Kirigami drawers too"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1378"
+section = "2.12 Sidebar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = [
+    "Q1.56",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:882",
+]
+targets = [
+    "sidebar.edge_shadow.fill (Linear, its stops), sidebar.edge_shadow.min_width @ variant overlay",
+    "sidebar.edge_shadow.transitions (Opacity; = token.motion.durations.long, its timing)",
+]
+none_cell = "b: Modal Kirigami drawers cast an edge shadow: Q1.56; inline panels none"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1379"
+section = "2.12 Sidebar"
+property = "hover_background"
+text = "`[Colors:View] DecorationHover` blend"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1380"
+section = "2.12 Sidebar"
+property = "border.padding_horizontal"
+text = "❓ — the sidebar is named (`GlobalDrawer`, `background_color` above), but its padding is not stated: the drawer pads itself by the window's safe-area margins alone, a device inset rather than the style's ([controls/GlobalDrawer.qml:66-69](https://invent.kde.org/frameworks/kirigami/-/blob/v6.31.0/src/controls/GlobalDrawer.qml#L66-L69), KF 6.31.0), its one design padding is commented out (:335), and the rows' insets are each action delegate's (`BaseGlobalDrawerActionItem`; a nested one doubles or quadruples its own left padding, :549-553)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1381"
+section = "2.12 Sidebar"
+property = "border.padding_vertical"
+text = "❓ — as across"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1385"
+section = "2.13 Toolbar"
+property = "font.family"
+text = "`[General] toolBarFont` field 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1386"
+section = "2.13 Toolbar"
+property = "font.size"
+text = "`[General] toolBarFont` field 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1387"
+section = "2.13 Toolbar"
+property = "font.weight"
+text = "`[General] toolBarFont` field 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1388"
+section = "2.13 Toolbar"
+property = "font.style"
+text = "`[General] toolBarFont` style"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1389"
+section = "2.13 Toolbar"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1390"
+section = "2.13 Toolbar"
+property = "bar_height"
+text = "**(none)** — sizes to content"
+rows = [
+    "Q1.69",
+    "Q1.72",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:883",
+]
+targets = [
+    "toolbar.bar.padding, toolbar.bar.min_height @ cond flavor:kirigami",
+    "toolbar.title.text (= token.text.keyed.heading_1, elision End), toolbar.title.padding @ variant @global",
+    "toolbar.bar.padding, toolbar.bar.min_height, toolbar.values.item_gap @ variant @global",
+]
+none_cell = "b: Qt Widgets content-sized; Quick implicit 40 (Q1.69) and the global toolbar (Q1.72)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1391"
+section = "2.13 Toolbar"
+property = "item_gap"
+text = "`ToolBar_ItemSpacing` = 0"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1392"
+section = "2.13 Toolbar"
+property = "border.padding_horizontal"
+text = "`ToolBar_ItemMargin` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1393"
+section = "2.13 Toolbar"
+property = "border.padding_vertical"
+text = "`ToolBar_ItemMargin` = 6 — Qt sets the toolbar layout's margin on all four sides, `PM_ToolBarItemMargin` + `PM_ToolBarFrameWidth` ([qtoolbarlayout.cpp:87-89](https://github.com/qt/qtbase/blob/cb18a8e32caf93b3cd2373921ba1a4a41be90323/src/widgets/widgets/qtoolbarlayout.cpp#L87-L89)); Breeze returns `ToolBar_ItemMargin` = 6 and `ToolBar_FrameWidth` = 0 ([breezestyle.cpp:732-733, :807-808](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L732-L733); [breezemetrics.h:105, :110](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L105))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1394"
+section = "2.13 Toolbar"
+property = "background_color"
+text = "**(Breeze src)** the Header set's `[Colors:Header] BackgroundNormal` — Breeze #dee0e2, Breeze Dark #292c30 ([BreezeLight.colors:59](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L59); BreezeDark.colors:60): Breeze fills a `QMainWindow`'s tools area, its menu bar and top toolbars, with the tools-area palette's `Window`, the Header set ([breezestyle.cpp:1322, :1341-1347](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L1341-L1347); [breezetoolsareamanager.cpp:201-215](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezetoolsareamanager.cpp#L201-L215)), where the scheme has Header colours (:232; both Breeze schemes do, BreezeLight.colors:57) and the window decoration's border size is automatic, None or NoSides ([breezehelper.cpp:1904-1941](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1904-L1941)); an inactive window takes `[Colors:Header][Inactive]` (BreezeLight.colors:73, BreezeDark.colors:74). Otherwise the toolbar draws no fill of its own (`border.color` below) and shows the window's, ← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1395"
+section = "2.13 Toolbar"
+property = "icon_size"
+text = "22 — see §2.1.8 toolbar"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1396"
+section = "2.13 Toolbar"
+property = "border.color"
+text = "**(Breeze src)** the bottom edge only, in the Header set's `separatorColor()` = `KColorUtils::mix(Header bg, Header fg, frameContrast)`: Breeze draws no toolbar frame (a QToolBar's `CE_ToolBar` is `emptyControl`, [breezestyle.cpp:1466-1467](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L1466-L1467); [breezestyle.h:297-300](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.h#L297-L300)), but it strokes a line along the bottom of a `QMainWindow`'s tools area, its menu bar and top toolbars (`drawWidgetPrimitive`, breezestyle.cpp:1349-1350), in the tools area's palette, the Header set ([breezetoolsareamanager.cpp:201-215](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezetoolsareamanager.cpp#L201-L215)) — Breeze #b9bbbd, Breeze Dark #535659 (Header #dee0e2 / #232629, #292c30 / #fcfcfc, [BreezeLight.colors:59, :67](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L59); BreezeDark.colors:60, :68; computed with KF 6.30.0 `KColorUtils::mix`). This column follows Breeze's Qt Widgets style, as its other §2.13 cells do; qqc2-desktop-style's QML `ToolBar` draws a `Kirigami.Separator` there instead"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1397"
+section = "2.13 Toolbar"
+property = "border.corner_radius"
+text = "**(none)** — no frame (`border.color`)"
+rows = []
+targets = []
+none_cell = "a: `CE_ToolBar` paints nothing"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1398"
+section = "2.13 Toolbar"
+property = "border.line_width"
+text = "**(Breeze src)** 1, the bottom edge only: the tools-area line is stroked with `setPen(color)` (breezestyle.cpp:1349-1350), \"width 1\" ([qpainter.cpp:3647-3654](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/painting/qpainter.cpp#L3647-L3654)); the toolbar itself has no frame, `PM_ToolBarFrameWidth` = `ToolBar_FrameWidth` = 0 ([breezestyle.cpp:733](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L733); [breezemetrics.h:105](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L105))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1399"
+section = "2.13 Toolbar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow: `CE_ToolBar` paints nothing (`border.color`)"
+rows = []
+targets = []
+none_cell = "a: As 1397"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1404"
+section = "2.14 Status Bar"
+property = "font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1405"
+section = "2.14 Status Bar"
+property = "font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1406"
+section = "2.14 Status Bar"
+property = "font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1407"
+section = "2.14 Status Bar"
+property = "font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1408"
+section = "2.14 Status Bar"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1409"
+section = "2.14 Status Bar"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1410"
+section = "2.14 Status Bar"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1411"
+section = "2.14 Status Bar"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1412"
+section = "2.14 Status Bar"
+property = "border.corner_radius"
+text = "**(none)** — rectangular bar"
+rows = []
+targets = []
+none_cell = "a: Rectangular bar, only a top line (K1.160)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1413"
+section = "2.14 Status Bar"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: As 1412"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1414"
+section = "2.14 Status Bar"
+property = "border.padding_horizontal"
+text = "✅ 2 left / 14 right — Qt `QStatusBar::reformat()`: layout margins `QMargins()` (all 0), `addSpacing(2)` before the items, nothing after them ([qstatusbar.cpp:418-474](https://github.com/qt/qtbase/blob/d865bf9d4877fa09e1fc02e2ad14fb9fd43ef430/src/widgets/widgets/qstatusbar.cpp#L418-L474)); then the size grip, enabled by default (:200-201; KXmlGui leaves it so), 1px after the items (:466-467) and 13px wide: its size hint is `QSize(13, 13)` through `CT_SizeGrip` ([qsizegrip.cpp:198-202](https://github.com/qt/qtbase/blob/d865bf9d4877fa09e1fc02e2ad14fb9fd43ef430/src/widgets/widgets/qsizegrip.cpp#L198-L202)), horizontal policy `Minimum` (:183), and neither Breeze (`sizeFromContents` → parent, [breezestyle.cpp:1155-1156](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L1155-L1156)) nor `KStyle` ([kstyle.cpp](https://invent.kde.org/frameworks/frameworkintegration/-/blob/178c522c70c0c1295f59d4776596c8a361dec872/src/kstyle/kstyle.cpp), no `sizeFromContents`) changes it, `QCommonStyle` returning it as given ([qcommonstyle.cpp:5032-5035](https://github.com/qt/qtbase/blob/d865bf9d4877fa09e1fc02e2ad14fb9fd43ef430/src/widgets/styles/qcommonstyle.cpp#L5032-L5035)). Breeze paints the grip as nothing (`CE_SizeGrip` → `emptyControl`, [breezestyle.cpp:1505-1506](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L1505-L1506)), so the items end 1 + 13 = 14px of empty bar before the right edge. Context: a window that is neither maximized nor full screen; in those two states the grip is hidden (qsizegrip.cpp:76-89, :450-463) and the right is 0. `showMessage()` text: 6 left / 12 right (`messageRect()`, :97-98). Breeze has no status-bar metric (`breezemetrics.h`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1415"
+section = "2.14 Status Bar"
+property = "border.padding_vertical"
+text = "✅ 3 top / 2 bottom — Qt `QStatusBar::reformat()`: `addSpacing(3)` above the items row, `addSpacing(2)` below it (qstatusbar.cpp:437, :472). Breeze's 1px top separator is painted inside the bar, not laid out (`drawPanelStatusBarPrimitive`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1421"
+section = "2.15 List / Table"
+property = "background_color"
+text = "`[Colors:View] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1422"
+section = "2.15 List / Table"
+property = "item_font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1423"
+section = "2.15 List / Table"
+property = "item_font.color"
+text = "`[Colors:View] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1424"
+section = "2.15 List / Table"
+property = "alternate_row_background"
+text = "`[Colors:View] BackgroundAlternate`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1425"
+section = "2.15 List / Table"
+property = "selection_background"
+text = "← `defaults.selection_background`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1426"
+section = "2.15 List / Table"
+property = "selection_text_color"
+text = "← `defaults.selection_text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1427"
+section = "2.15 List / Table"
+property = "header_font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1428"
+section = "2.15 List / Table"
+property = "header_font.color"
+text = "`[Colors:Header] ForegroundNormal` — Breeze 35,38,41 #232629, Breeze Dark 252,252,252 #fcfcfc in Breeze v6.7.5 (BreezeLight.colors:67; BreezeDark.colors:68)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1429"
+section = "2.15 List / Table"
+property = "header_background"
+text = "`[Colors:Header] BackgroundNormal` — Breeze 222,224,226 #dee0e2, Breeze Dark 41,44,48 #292c30 in Breeze v6.7.5 (BreezeLight.colors:59; BreezeDark.colors:60)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1430"
+section = "2.15 List / Table"
+property = "grid_color"
+text = "**(none)** — Qt views use palette pen"
+rows = [
+    "K3.53",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:888",
+]
+targets = [
+    "role.@shade_light, role.@shade_midlight, role.@shade_mid, role.@shade_dark, role.@shade_shadow (ADD-A48)",
+    "token.params.color.contrast (ADD-A44)",
+    "reader:kde:kdeglobals [KDE] contrast",
+]
+none_cell = "b: Qt's grid pen is the shade role `Mid` (`SH_Table_GridLineColor`, qtbase v6.12.0 `qcommonstyle.cpp:5129-5134`), computed from `[KDE] contrast`: K3.53"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1431"
+section = "2.15 List / Table"
+property = "row_height"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: Content-sized (item margins K1.170); Quick padding Q1.79"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1432"
+section = "2.15 List / Table"
+property = "header_height"
+text = "**(none)** — content-sized: header font height + 2 × `Header_MarginWidth` 6 ([breezestyle.cpp:3856-3899](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezestyle.cpp#L3856-L3899), [breezemetrics.h:151-153](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezemetrics.h#L151-L153)); unset, as `row_height` is"
+rows = []
+targets = []
+none_cell = "a: Content-sized from metrics the cell cites; K1.179"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1433"
+section = "2.15 List / Table"
+property = "border.padding_horizontal"
+text = "2"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1434"
+section = "2.15 List / Table"
+property = "border.padding_vertical"
+text = "1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1435"
+section = "2.15 List / Table"
+property = "hover_background"
+text = "`[Colors:View] DecorationHover` blend"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1436"
+section = "2.15 List / Table"
+property = "hover_text_color"
+text = "← `item_font.color`: an item's text pen is `QPalette::Text`, or `HighlightedText` when selected, whatever the hover (QCommonStyle `CE_ItemViewItem`, [qcommonstyle.cpp:2300-2311](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/styles/qcommonstyle.cpp#L2300-L2311)); Breeze has no case for it and passes it on ([breezestyle.cpp:1541-1543](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L1541-L1543)) through KStyle, which overrides no `drawControl` ([kstyle.cpp](https://invent.kde.org/frameworks/frameworkintegration/-/blob/178c522c70c0c1295f59d4776596c8a361dec872/src/kstyle/kstyle.cpp))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1437"
+section = "2.15 List / Table"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `[Colors:View] ForegroundNormal`: the same `QPalette::Text` pen, from the `Disabled` group for a disabled item (qcommonstyle.cpp:2302-2311) — #aaabac / #606263 (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1438"
+section = "2.15 List / Table"
+property = "border.color"
+text = "**(Breeze src)** `frameOutlineColor()` at rest = `KColorUtils::mix(Window, WindowText, frameContrast)` ([breezehelper.cpp:142-144](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L142-L144)): a view is a framed scroll area, `QFrame::StyledPanel | QFrame::Sunken` ([qabstractscrollarea.cpp:278](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qabstractscrollarea.cpp#L278)), which Breeze strokes in it ([breezestyle.cpp:3968-3970](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L3968-L3970)) — Breeze #c6c8c9, Breeze Dark #4c4e51; `hoverColor()` / `focusColor()` instead for a view that takes hover (:3931-3936)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1439"
+section = "2.15 List / Table"
+property = "border.corner_radius"
+text = "**(Breeze src)** 4.5 — `renderFrame` rounds by `frameRadius()` = `Frame_FrameRadius` 5, less half the pen once a pen is set, `frameRadiusForNewPenWidth(5, PenWidth::Frame)`, which takes the 1.001 pen as an `int`, 1 ([breezehelper.cpp:480-486](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L480-L486); [breezehelper.h:345-354](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.h#L345-L354); [breezemetrics.h:42](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L42))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1440"
+section = "2.15 List / Table"
+property = "border.line_width"
+text = "**(Breeze src)** 1 — `renderFrame` sets the pen with `setPen(outline)` ([breezehelper.cpp:484](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L484)), \"style Qt::SolidLine, width 1\" ([qpainter.cpp:3647-3654](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/painting/qpainter.cpp#L3647-L3654))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1441"
+section = "2.15 List / Table"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow: `renderFrame` draws one rounded rect (breezehelper.cpp:475-501), and the frame shadow Breeze adds to some views repaints that outline ([breezeframeshadow.cpp:320-322](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezeframeshadow.cpp#L320-L322))"
+rows = []
+targets = []
+none_cell = "a: The cell's own source"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1454"
+section = "2.16 Popover / Dropdown"
+property = "background_color"
+text = "← `defaults.background_color`: qqc2-desktop-style's Popup fills `Kirigami.Theme.backgroundColor` ([Popup.qml:46-48](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/Popup.qml#L46-L48)) and sets no colour set, so it inherits one, the Window set where nothing above it sets another (Kirigami's default, [platformtheme.cpp:115, :308](https://invent.kde.org/frameworks/kirigami/-/blob/v6.31.0/src/platform/platformtheme.cpp#L115))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1455"
+section = "2.16 Popover / Dropdown"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1456"
+section = "2.16 Popover / Dropdown"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1457"
+section = "2.16 Popover / Dropdown"
+property = "border.color"
+text = "**(KF6 src)** qqc2-desktop-style's Popup strokes `Kirigami.ColorUtils.linearInterpolation(backgroundColor, textColor, frameContrast)` ([Popup.qml:50](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/Popup.qml#L50)), an interpolation in HSV ([colorutils.cpp:61-80](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/colorutils.cpp#L61-L80)) of the Window set (`background_color` above) at `KColorScheme::frameContrast()`, default 0.2 ([kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538)), which PlasmaDesktopTheme passes on ([plasmadesktoptheme.cpp:313](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L313)) — Breeze #c2c5c9, Breeze Dark #474c51 (computed with Qt 6.11.2 `QColor`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1458"
+section = "2.16 Popover / Dropdown"
+property = "border.line_width"
+text = "**(KF6 src)** 1 — `border.width: 1` ([Popup.qml:51](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/Popup.qml#L51))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1459"
+section = "2.16 Popover / Dropdown"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius_lg`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1460"
+section = "2.16 Popover / Dropdown"
+property = "border.shadow_enabled"
+text = "yes (KWin compositor)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1461"
+section = "2.16 Popover / Dropdown"
+property = "border.padding_horizontal"
+text = "**(KF6 src)** 12 — qqc2-desktop-style's Popup sets `padding: 12` ([Popup.qml:24](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/Popup.qml#L24))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1462"
+section = "2.16 Popover / Dropdown"
+property = "border.padding_vertical"
+text = "**(KF6 src)** 12 — the same `padding: 12` (Popup.qml:24), on all four sides"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1468"
+section = "2.17 Splitter"
+property = "divider_width"
+text = "Breeze splitter: 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1469"
+section = "2.17 Splitter"
+property = "divider_color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1470"
+section = "2.17 Splitter"
+property = "hover_color"
+text = "← `divider_color`: `drawSplitterControl` fills `separatorColor()` in every state ([breezestyle.cpp:7582-7588](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7582-L7588))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1476"
+section = "2.18 Separator"
+property = "line_color"
+text = "← `defaults.border.color`: Breeze draws a separator line (`QFrame::HLine` / `VLine`, a menu separator in an opaque menu) in `separatorColor()`, mix(Window, WindowText, frameContrast) ([breezehelper.cpp:329-332](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L329-L332); [breezestyle.cpp:6585-6591, :5984](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezestyle.cpp#L6585-L6591)), the colour it outlines its frames in (`frameOutlineColor`, breezehelper.cpp:144)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1477"
+section = "2.18 Separator"
+property = "line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1485"
+section = "2.19 Text Scale"
+property = "caption"
+text = "`smallestReadableFont` field 1"
+context = "What it is: Smallest readable (footnotes, timestamps)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1486"
+section = "2.19 Text Scale"
+property = "section_heading"
+text = "Level 2: body × 1.20; `Font.Normal` (400) unless `type: Primary` (kirigami `8319acc` [controls/Heading.qml:20-21,32,35](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/Heading.qml#L20-L35); `type` defaults to `Normal`, [templates/Heading.qml:89](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/Heading.qml#L89))"
+context = "What it is: Section divider (settings group header)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1487"
+section = "2.19 Text Scale"
+property = "dialog_title"
+text = "Level 1: body × 1.35; `Font.Normal` (400) unless `type: Primary` (kirigami `8319acc` [controls/Heading.qml:17-18,32,35](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/Heading.qml#L17-L35); `type` defaults to `Normal`, [templates/Heading.qml:89](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/Heading.qml#L89))"
+context = "What it is: Dialog/page title (sheet header)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1488"
+section = "2.19 Text Scale"
+property = "display"
+text = "**(none)** — no equivalent"
+context = "What it is: Large hero text (onboarding, banners)"
+rows = []
+targets = []
+none_cell = "a: Kirigami's largest heading is level 1 (Q1.3); no display style"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1503"
+section = "2.20 Layout Container Defaults"
+property = "widget_gap"
+text = "`Layout_DefaultSpacing` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1504"
+section = "2.20 Layout Container Defaults"
+property = "container_margin"
+text = "`Layout_ChildMarginWidth` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1505"
+section = "2.20 Layout Container Defaults"
+property = "window_margin"
+text = "`Layout_TopLevelMarginWidth` = 10"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1506"
+section = "2.20 Layout Container Defaults"
+property = "section_gap"
+text = "**(none)** — not specified"
+rows = [
+    "Q2.47",
+    "Q2.56†",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:893",
+]
+targets = [
+    "form.section_title.text (= token.text.keyed.heading_3_primary, centred), form.field_label.text (= token.text.keyed.heading_5) @ cond flavor:kirigami",
+    "form.values.group_gap, form.values.field_label_gap @ cond flavor:kirigami / variant collapsed cond flavor:kirigami",
+    "form.row_separator.opacity, form.row_separator.margin @ variant @cards",
+    "form.row_separator.opacity @ prev form.row[activatable] {hover} / next form.row[activatable] {hover}; form.row_separator.transitions (Opacity; = token.motion.durations.long)",
+    "form.row_icon.icon.size (= token.icons.sizes.keyed.small_medium.size), form.row_arrow.icon.size (= token.icons.sizes.keyed.small.size) @ variant action",
+    "form.page.padding, form.section_title.text (= token.text.keyed.heading_3_primary), form.values.group_gap, form.values.row_gap @ variant flat",
+    "separator @ context form variant flat (the groups' separator, its margins)",
+    "button @ context form.row variant action variant flat (actions as push buttons)",
+    "form.values.collapse, form.values.narrow_max_width",
+]
+none_cell = "b: Q2.47 (FormLayout: largeSpacing × 2 above section titles), Q2.56† (Kirigami Forms: largeSpacing + smallSpacing between groups)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1517"
+section = "2.21 Switch / Toggle"
+property = "track_width"
+text = "**(KF6 src)** 36: the indicator is `implicitHeight * 2` wide ([SwitchIndicator.qml:14](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L14)) and the track spans it (:41-46), at Kirigami's `gridUnit` 18 (`track_height`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1518"
+section = "2.21 Switch / Toggle"
+property = "track_height"
+text = "**(KF6 src)** 12: the indicator is `Kirigami.Units.gridUnit` tall ([SwitchIndicator.qml:15](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L15)), 18 — Kirigami's fixed default ([units.cpp:36](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/units.cpp#L36)), which the Plasma integration does not change: it sets only the durations ([plasmadesktopunits.cpp:23-55](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktopunits.cpp#L23-L55)) — and the track fills it less `Math.floor(height / 6)` = 3 above and below (SwitchIndicator.qml:41-46)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1519"
+section = "2.21 Switch / Toggle"
+property = "thumb_diameter"
+text = "**(KF6 src)** 18: the handle is the indicator's full height, `width: height` ([SwitchIndicator.qml:65-76](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L65-L76)), so it overhangs the 12-tall track by 3 above and below; at either end it sits flush with the track's end, its x clamped to `0 … width − handle` (:68)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1520"
+section = "2.21 Switch / Toggle"
+property = "track_radius"
+text = "**(KF6 src)** 6 = `Math.round(height / 2)` of the 12-tall track ([SwitchIndicator.qml:48](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L48)), pill; the handle's radius is `Math.floor(width / 2)` = 9 (:76)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1521"
+section = "2.21 Switch / Toggle"
+property = "checked_background"
+text = "**(KF6 src)** the off track (`unchecked_background`) with `Qt.alpha(highlightColor, 0.5)` laid over it up to the handle ([SwitchIndicator.qml:53-63](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L53-L63)), the border `highlightColor` (:27, :50) — L #92cae8, D #3e7797 (Button set, Selection #3daee9; computed from the colours as Qt 6.11.2's `QColor` stores them after `tint` and `Qt.alpha`, the 0.5 overlay in exact arithmetic and rounded once to 8 bits); an accent-derived blend, not the accent"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1522"
+section = "2.21 Switch / Toggle"
+property = "unchecked_background"
+text = "**(KF6 src)** `Qt.tint(textColor, Qt.alpha(backgroundColor, 0.9))` of the Button set ([SwitchIndicator.qml:21, :32-35, :49](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L32-L35); `tint`, [qquickvaluetypes.cpp:57-75](https://github.com/qt/qtdeclarative/blob/v6.11.2/src/quick/util/qquickvaluetypes.cpp#L57-L75)) — L #e6e7e7, D #3e4144 (Button #fcfcfc / #232629, #292c30 / #fcfcfc; computed with Qt 6.11.2 `QColor`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1523"
+section = "2.21 Switch / Toggle"
+property = "thumb_background"
+text = "`[Colors:Button] BackgroundNormal`: the handle is `handleColor`, `Kirigami.Theme.backgroundColor` of the Button set the indicator selects ([SwitchIndicator.qml:21-22, :29, :77](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L21-L29)), in both states — Breeze 252,252,252 #fcfcfc, Breeze Dark 41,44,48 #292c30 in Breeze v6.7.5 (BreezeLight.colors:31; BreezeDark.colors:32). A disabled switch's handle is the same colour in the Disabled group, which the item takes when it is not enabled ([plasmadesktoptheme.cpp:267-274, :300](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L267-L274)): Disabled `[Colors:Button] BackgroundNormal`, #f0f0f0 / #272a2e (:1115). Breeze's kstyle draws no switch: Qt Widgets has none"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1524"
+section = "2.21 Switch / Toggle"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1525"
+section = "2.21 Switch / Toggle"
+property = "unchecked_thumb_diameter"
+text = "← `thumb_diameter`: one handle, `width: height`, in both states ([SwitchIndicator.qml:65-78](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L65-L78))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1526"
+section = "2.21 Switch / Toggle"
+property = "unchecked_thumb_background"
+text = "← `thumb_background`: one `handleColor`, the Button set's background, in both states ([SwitchIndicator.qml:29](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L29))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1527"
+section = "2.21 Switch / Toggle"
+property = "hover_checked_background"
+text = "← `checked_background`: hover turns only the handle's border `hoverColor` ([SwitchIndicator.qml:27, :30](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L27-L30), :78), the checked track's border staying `highlightColor`; no fill reads `hovered` (:49, :62, :77). The checked track is the off track with `Qt.alpha(highlightColor, 0.5)` over it (:53-63) — L #92cae8, D #3e7797 (Button set, Selection #3daee9; computed from the colours as Qt 6.11.2's `QColor` stores them after `tint` and `Qt.alpha`, the 0.5 overlay in exact arithmetic and rounded once to 8 bits)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1528"
+section = "2.21 Switch / Toggle"
+property = "hover_unchecked_background"
+text = "← `unchecked_background`: hover turns only the borders, the off track's and the handle's, `hoverColor` (SwitchIndicator.qml:27, :30, :78), and no fill reads `hovered` (:49, :62, :77); the off track is `Qt.tint(textColor, Qt.alpha(backgroundColor, 0.9))` of the Button set (:21, :32-35, :49) — L #e6e7e7, D #3e4144 (computed as above)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1529"
+section = "2.21 Switch / Toggle"
+property = "disabled_checked_background"
+text = "**(KF6 src)** the checked track's composition (`hover_checked_background`) from the Disabled group, which a disabled item takes ([plasmadesktoptheme.cpp:267-274](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L267-L274)) — L #e6e7e8, D #26292c (Disabled Button #a8a9aa on #f0f0f0, #6d6f72 on #272a2e; Disabled Selection #e3e5e7, #1f2124; KF 6.30.0 KColorScheme). Computed from the colours at the precision KColorScheme returns them, which PlasmaDesktopTheme passes on as they are (:300, :302), and as Qt 6.11.2's `QColor` stores them after `tint` and `Qt.alpha`, the 0.5 overlay in exact arithmetic and rounded once to 8 bits: dark R 38.31. Rounding the off track and the highlight to 8 bits first gives #27292d with an exact 0.5, or #26292c with Qt's stored alpha; the scene graph's 8-bit premultiplied fill gives L #e6e6e7"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1530"
+section = "2.21 Switch / Toggle"
+property = "disabled_unchecked_background"
+text = "**(KF6 src)** the off track's tint (`hover_unchecked_background`) from the Disabled group (plasmadesktoptheme.cpp:267-274) — L #e9e9e9, D #2e3135 (computed as `disabled_checked_background`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1531"
+section = "2.21 Switch / Toggle"
+property = "disabled_thumb_color"
+text = "**(KF6 src)** Disabled `[Colors:Button] BackgroundNormal`, the handle's colour in the Disabled group — #f0f0f0 / #272a2e (`thumb_background` above)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1532"
+section = "2.21 Switch / Toggle"
+property = "unchecked_track_border_color"
+text = "**(KF6 src)** `handleBorderColor` = `Kirigami.ColorUtils.linearInterpolation(backgroundColor, textColor, frameContrast)` of the Button set, the border of the track when it is not checked ([SwitchIndicator.qml:21, :27, :30, :50](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L27-L30)), an interpolation in HSV ([colorutils.cpp:61-80](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/colorutils.cpp#L61-L80)) at `KColorScheme::frameContrast()`, default 0.2 ([kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538)), which PlasmaDesktopTheme passes on ([plasmadesktoptheme.cpp:313](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L313)) — L #cccfd2, D #4e5359 (Button #fcfcfc / #232629, #292c30 / #fcfcfc; computed with Qt 6.11.2 `QColor`); the handle's outline is the same colour (`thumb_border_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1533"
+section = "2.21 Switch / Toggle"
+property = "hover_unchecked_track_border_color"
+text = "**(KF6 src)** `hoverColor`, `[Colors:Button] DecorationHover` ([plasmadesktoptheme.cpp:311](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L311)) — #3daee9 in both ([BreezeLight.colors:33](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L33); BreezeDark.colors:34), on hover or keyboard focus: `handleBorderColor` turns it when the control is `hovered` or has `visualFocus` ([SwitchIndicator.qml:30](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L30))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1534"
+section = "2.21 Switch / Toggle"
+property = "disabled_unchecked_track_border_color"
+text = "**(KF6 src)** `handleBorderColor`'s rest branch in the Disabled group, which a disabled item takes ([plasmadesktoptheme.cpp:267-274](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L267-L274)) — L #e2e2e2, D #34373b (Disabled Button #f0f0f0 / #a8a9aa, #272a2e / #6d6f72; computed with KF 6.30.0 KColorScheme and Qt 6.11.2 `QColor`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1535"
+section = "2.21 Switch / Toggle"
+property = "checked_track_border_color"
+text = "**(KF6 src)** `highlightColor`, `[Colors:Selection] BackgroundNormal` ([SwitchIndicator.qml:27, :50](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L27); [plasmadesktoptheme.cpp:302](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L302)) — #3daee9 in both ([BreezeLight.colors:87](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L87); BreezeDark.colors:88), in every enabled state: the checked branch reads neither hover nor focus (:27). The checked fill, `Qt.alpha(highlightColor, 0.5)`, covers the track and its border up to the handle (:53-63), and over its own colour the border stays `highlightColor`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1536"
+section = "2.21 Switch / Toggle"
+property = "disabled_checked_track_border_color"
+text = "**(KF6 src)** `highlightColor` in the Disabled group ([plasmadesktoptheme.cpp:267-274](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L267-L274), :302) — #e3e5e7 / #1f2124 (Disabled Selection, KF 6.30.0 KColorScheme; the colours `disabled_checked_background` composes)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1537"
+section = "2.21 Switch / Toggle"
+property = "track_border_line_width"
+text = "**(KF6 src)** 1, checked or not and in every state: the track's `Rectangle` sets a `border.color` and no `border.width` ([SwitchIndicator.qml:38-51](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L38-L51)), whose default is 1 ([qquickrectangle.cpp:41-46](https://github.com/qt/qtdeclarative/blob/v6.11.2/src/quick/items/qquickrectangle.cpp#L41-L46)), drawn inside the rectangle's bounds (:369)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1538"
+section = "2.21 Switch / Toggle"
+property = "thumb_border_color"
+text = "**(KF6 src)** `handleBorderColor` ([SwitchIndicator.qml:30, :78](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L78)) — L #cccfd2, D #4e5359 (`unchecked_track_border_color`), checked or not: being checked changes only the track's border (:27)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1539"
+section = "2.21 Switch / Toggle"
+property = "hover_thumb_border_color"
+text = "**(KF6 src)** `hoverColor` #3daee9 on hover or keyboard focus, checked or not ([SwitchIndicator.qml:30, :78](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L78)); the fill stays `thumb_background` (:77)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1540"
+section = "2.21 Switch / Toggle"
+property = "disabled_thumb_border_color"
+text = "**(KF6 src)** `handleBorderColor`'s rest branch in the Disabled group — L #e2e2e2, D #34373b (`disabled_unchecked_track_border_color`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1541"
+section = "2.21 Switch / Toggle"
+property = "thumb_border_line_width"
+text = "**(KF6 src)** 1 — the handle's `Rectangle` sets a `border.color` and no `border.width` ([SwitchIndicator.qml:65-79](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/org.kde.desktop/private/SwitchIndicator.qml#L65-L79)), Qt Quick's default 1, inside its bounds (`track_border_line_width`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1548"
+section = "2.22 Dialog"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1549"
+section = "2.22 Dialog"
+property = "body_font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1550"
+section = "2.22 Dialog"
+property = "body_font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1551"
+section = "2.22 Dialog"
+property = "border.shadow_enabled"
+text = "yes (KWin compositor)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1552"
+section = "2.22 Dialog"
+property = "min_width"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: Content-sized (Kirigami desktop dialog windows have a minimum width, Q2.58†)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1553"
+section = "2.22 Dialog"
+property = "max_width"
+text = "**(none)** — sizes to content"
+rows = [
+    "Q1.113",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:895",
+]
+targets = [
+    "dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami",
+    "dialog.values.window_margin @ cond flavor:kirigami",
+]
+none_cell = "b: Q1.113 (Kirigami Dialog: window − largeSpacing × 2)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1554"
+section = "2.22 Dialog"
+property = "min_height"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: Content-sized"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1555"
+section = "2.22 Dialog"
+property = "max_height"
+text = "**(none)** — sizes to content"
+rows = [
+    "Q1.113",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:897",
+]
+targets = [
+    "dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami",
+    "dialog.values.window_margin @ cond flavor:kirigami",
+]
+none_cell = "b: Q1.113"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1556"
+section = "2.22 Dialog"
+property = "border.padding_horizontal"
+text = "`Layout_TopLevelMarginWidth` = 10"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1557"
+section = "2.22 Dialog"
+property = "border.padding_vertical"
+text = "`Layout_TopLevelMarginWidth` = 10"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1558"
+section = "2.22 Dialog"
+property = "button_gap"
+text = "`Layout_DefaultSpacing` = 6"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1559"
+section = "2.22 Dialog"
+property = "button_order"
+text = "OK left of Cancel (right-aligned group; Help/Reset left-aligned)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1560"
+section = "2.22 Dialog"
+property = "title_font.family"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1561"
+section = "2.22 Dialog"
+property = "title_font.size"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1562"
+section = "2.22 Dialog"
+property = "title_font.weight"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1563"
+section = "2.22 Dialog"
+property = "title_font.style"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1564"
+section = "2.22 Dialog"
+property = "title_font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1565"
+section = "2.22 Dialog"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius_lg`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1566"
+section = "2.22 Dialog"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1567"
+section = "2.22 Dialog"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1568"
+section = "2.22 Dialog"
+property = "icon_size"
+text = "**(none)** — per-dialog"
+rows = [
+    "K1.224†",
+    "Q1.116",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:898",
+]
+targets = [
+    "dialog.icon.glyph (ThemeIcon), dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size) @ variants {alert,warning} / variants {alert,info} / variants {alert,error} / variants {alert,@question}",
+    "dialog.message.text; dialog.values.details_min_lines",
+    "checkbox @ context dialog (the \"don't ask again\" check box)",
+    "dialog.icon.glyph (ThemeIcon), dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size) @ variants {alert,warning} / variants {alert,info} / variants {alert,error} / variants {alert,success}",
+    "dialog.title.text, dialog.subtitle.text @ variant alert cond flavor:kirigami",
+    "dialog.body.padding @ variant alert cond flavor:kirigami",
+]
+none_cell = "b: K1.224† (message box: `PM_MessageBoxIconSize`), Q1.116 (PromptDialog: iconSizes.huge)"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1569"
+section = "2.22 Dialog"
+property = "entrance"
+text = "`fade_rise` **(impl)** — KDE's in-window dialog, `Kirigami.Dialog`, fades in (opacity 0 → 1 in `Units.longDuration` 200 ms) while rising 2 grid units into place (`y: … + Platform.Units.gridUnit * 2 * (1 - opacity)`, [dialogs/Dialog.qml:303](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/dialogs/Dialog.qml#L303), the fade at [:306-311](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/dialogs/Dialog.qml#L306-L311); [platform/units.cpp:41](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/units.cpp#L41)). Note: KWin's default-on Scale effect (0.8 → 1, 200 ms; [scale/package/contents/code/main.js:35-80](https://invent.kde.org/plasma/kwin/-/blob/v6.7.5/src/plugins/scale/package/contents/code/main.js#L35-L80), [metadata.json:93](https://invent.kde.org/plasma/kwin/-/blob/v6.7.5/src/plugins/scale/package/metadata.json#L93)) animates toplevel windows such as a `QDialog`, not an in-window dialog, and Qt's [qdialog.cpp](https://github.com/qt/qtbase/blob/d865bf9d4877fa09e1fc02e2ad14fb9fd43ef430/src/widgets/dialogs/qdialog.cpp) animates nothing"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1599"
+section = "2.23 Spinner / Progress Ring"
+property = "diameter"
+text = "QQC2 BusyIndicator: 36"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1600"
+section = "2.23 Spinner / Progress Ring"
+property = "min_diameter"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No minimum; the spinner is an icon (K1.230, Q1.119–Q1.120)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1601"
+section = "2.23 Spinner / Progress Ring"
+property = "stroke_width"
+text = "**(none)** — icon-based"
+rows = []
+targets = []
+none_cell = "a: Icon-based, no stroke; the only stroked arc is the pull-to-refresh indicator (Q1.121, Q2.54†)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1602"
+section = "2.23 Spinner / Progress Ring"
+property = "fill_color"
+text = "← `defaults.text_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1611"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "background_color"
+text = "`[Colors:Button] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1612"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1613"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "font.color"
+text = "`[Colors:Button] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1614"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1615"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1616"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "min_height"
+text = "**(none)** — sizes to content"
+rows = []
+targets = []
+none_cell = "a: Content-sized"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1617"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "min_width"
+text = "**(none)** — sizes to content"
+rows = [
+    "Q1.124",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:902",
+]
+targets = [
+    "combo_box.body.padding @ cond flavor:kirigami",
+    "combo_box.body.padding (its trailing padding) @ variant editable cond flavor:kirigami",
+    "combo_box.body.min_width (the content's minimum) @ cond flavor:kirigami",
+]
+none_cell = "b: Quick: content min width 75 (Q1.124); Qt Widgets content-sized"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1618"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.padding_horizontal"
+text = "`ComboBox_FrameWidth` = 6 left / 0 right — the edit field is inset by `PM_ComboBoxFrameWidth` on the left, top and bottom but not the right (`labelRect.adjust(frameWidth, frameWidth, 0, -frameWidth)`, [breezestyle.cpp:3009](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L3009)), and ends at the 20px `MenuButton_IndicatorWidth` arrow column (`SC_ComboBoxEditField`, [:3005](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L3005); `SC_ComboBoxArrow`, [:2990-2999](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L2990-L2999))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1619"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "arrow_icon_size"
+text = "10 — `renderArrow` draws `min(w, h, ArrowSize)` with `ArrowSize` = 10 ([breezehelper.cpp:1511-1513](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1511-L1513); [breezemetrics.h:37](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L37)), centred in the 20px `MenuButton_IndicatorWidth` column (`arrow_area_width`; [breezestyle.cpp:7922-7927](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7922-L7927)): an open chevron, the polyline (0.5, 3.5) → (5, 8) → (9.5, 3.5) stroked `PenWidth::Symbol` 1.001, square cap, miter join (breezehelper.cpp:1566-1576)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1620"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "arrow_area_width"
+text = "20px"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1621"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1622"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = [
+    "K1.244",
+]
+named_at = [
+    "todo_v0.7.1_model-completeness-gap-map-kde.md:903",
+]
+targets = [
+    "combo_box.body.shadow @ !variant flat !variant editable",
+]
+none_cell = "b: K1.244 (D5): a non-editable combo draws the button's shadow, so the cell is wrong"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1623"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "border.padding_vertical"
+text = "`ComboBox_FrameWidth` = 6 — a non-editable combo box expands by it on both axes ([breezestyle.cpp:3366-3367](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L3366-L3367); `PM_ComboBoxFrameWidth` picks it, :727)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1624"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1625"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "hover_background"
+text = "← `background_color`: a non-editable combo box is a button frame whose hover turns only the pen `Highlight` ([breezehelper.cpp:710-712](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L710-L712)); its fill animates by `down || checked` alone ([breezestyle.cpp:7849](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L7849))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1626"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "disabled_background"
+text = "**(Breeze src)** Disabled `[Colors:Button] BackgroundNormal`, the button frame's `palette.button()` (breezehelper.cpp:704) from the Disabled group (§2.3 `disabled_background`) — #f0f0f0 / #272a2e (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1627"
+section = "2.24 ComboBox / Dropdown Trigger"
+property = "disabled_text_color"
+text = "**(Breeze src)** Disabled `ButtonText`, the label's role ([breezestyle.cpp:5788-5791](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L5788-L5791)) in the Disabled group — #a8a9aa / #6d6f72 (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1633"
+section = "2.25 Segmented Control"
+property = "background_color"
+text = "← `defaults.background_color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1634"
+section = "2.25 Segmented Control"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1635"
+section = "2.25 Segmented Control"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1636"
+section = "2.25 Segmented Control"
+property = "active_background"
+text = "`[Colors:Selection] BackgroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1637"
+section = "2.25 Segmented Control"
+property = "active_text_color"
+text = "`[Colors:Selection] ForegroundNormal`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1638"
+section = "2.25 Segmented Control"
+property = "segment_height"
+text = "`TabBar_TabMinHeight` = 30 (tab bar as proxy)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1639"
+section = "2.25 Segmented Control"
+property = "separator_width"
+text = "`TabBar_TabOverlap` = 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1640"
+section = "2.25 Segmented Control"
+property = "border.padding_horizontal"
+text = "`TabBar_TabMarginWidth` = 8 (tab bar as proxy — not a platform value)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1641"
+section = "2.25 Segmented Control"
+property = "border.corner_radius"
+text = "← `defaults.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1642"
+section = "2.25 Segmented Control"
+property = "border.color"
+text = "← `defaults.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1643"
+section = "2.25 Segmented Control"
+property = "border.line_width"
+text = "← `defaults.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1644"
+section = "2.25 Segmented Control"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: KDE has no segmented control"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1645"
+section = "2.25 Segmented Control"
+property = "border.padding_vertical"
+text = "`TabBar_TabMarginHeight` = 4 (tab bar as proxy — not a platform value)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1646"
+section = "2.25 Segmented Control"
+property = "disabled_opacity"
+text = "← `defaults.disabled_opacity`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1647"
+section = "2.25 Segmented Control"
+property = "hover_background"
+text = "`[Colors:View] DecorationHover` at alpha 0.2, #3daee933: the tab bar as a proxy, as this table's other KDE cells — not a platform value (§2.11 `hover_background`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1657"
+section = "2.26 Card / Container"
+property = "background_color"
+text = "**(KF6 src)** Kirigami's `Card`: `Kirigami.Theme.backgroundColor` of the View set, which the card selects ([templates/AbstractCard.qml:92-93](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/AbstractCard.qml#L92-L93); [DefaultCardBackground.qml:42, :74-82](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/private/DefaultCardBackground.qml#L42)) — `[Colors:View] BackgroundNormal`, #ffffff / #141618 ([BreezeLight.colors:115](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L115); BreezeDark.colors:116); hovered or pressed it tints toward `highlightColor` by 0.1 or 0.3 (:48-58)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1658"
+section = "2.26 Card / Container"
+property = "border.color"
+text = "**(KF6 src)** `linearInterpolation(backgroundColor, textColor, frameContrast)` of the View set ([DefaultCardBackground.qml:70, :86-89](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/private/DefaultCardBackground.qml#L70); HSV, [colorutils.cpp:61-80](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/colorutils.cpp#L61-L80); `frameContrast` = `KColorScheme::frameContrast()`, default 0.2, [kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538), which PlasmaDesktopTheme passes on, [plasmadesktoptheme.cpp:313](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L313)) — Breeze #ced1d4, Breeze Dark #3c4146 (computed with Qt 6.11.2 `QColor`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1659"
+section = "2.26 Card / Container"
+property = "border.line_width"
+text = "**(KF6 src)** 1 — `borderWidth: 1` ([DefaultCardBackground.qml:65, :86-89](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/private/DefaultCardBackground.qml#L65))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1660"
+section = "2.26 Card / Container"
+property = "border.corner_radius"
+text = "**(KF6 src)** 5 — `radius: Units.cornerRadius` ([DefaultCardBackground.qml:84](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/private/DefaultCardBackground.qml#L84)), 5 ([units.cpp:46](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/units.cpp#L46))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1661"
+section = "2.26 Card / Container"
+property = "border.shadow_enabled"
+text = "**(KF6 src)** yes — a `gridUnit`-sized shadow in `rgba(0, 0, 0, 0.05)`, offset 2 down ([DefaultCardBackground.qml:90-94](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/controls/private/DefaultCardBackground.qml#L90-L94)), and a darker rectangle 1 below the card (:96-109)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1662"
+section = "2.26 Card / Container"
+property = "border.padding_horizontal"
+text = "**(KF6 src)** 7 inside the border line: Kirigami's `Card` sets `padding: Units.largeSpacing`, 8 ([templates/AbstractCard.qml:96](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/AbstractCard.qml#L96); [units.cpp:39](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/platform/units.cpp#L39)), laid out from the card's outer edge (`KirigamiLayouts.Padding { anchors.fill: parent }`, AbstractCard.qml:100-108), and its 1px border (`DefaultCardBackground.qml:65`) is drawn inside that edge ([shadowedrectangle.frag:57-60](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/primitives/shaders/shadowedrectangle.frag#L57-L60)), the outermost of those 8: 8 − 1"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1663"
+section = "2.26 Card / Container"
+property = "border.padding_vertical"
+text = "**(KF6 src)** 7 inside the border line — the same `padding`, 8 from the outer edge on all four sides, less the 1px border (templates/AbstractCard.qml:96, :100-108)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1673"
+section = "2.27 Expander / Disclosure"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1674"
+section = "2.27 Expander / Disclosure"
+property = "font.color"
+text = "← `defaults.font.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1675"
+section = "2.27 Expander / Disclosure"
+property = "header_height"
+text = "**(none)** — content-sized"
+rows = []
+targets = []
+none_cell = "a: Content-sized"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1676"
+section = "2.27 Expander / Disclosure"
+property = "arrow_icon_size"
+text = "`ItemView_ArrowSize` = 10"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1677"
+section = "2.27 Expander / Disclosure"
+property = "border.padding_horizontal"
+text = "**(none)** — app-defined"
+rows = []
+targets = []
+none_cell = "a: KCollapsibleGroupBox has no header padding; its content is indented by `PM_IndicatorWidth` and set below the header (`kwa kcollapsiblegroupbox.cpp:314`)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1678"
+section = "2.27 Expander / Disclosure"
+property = "border.padding_vertical"
+text = "**(none)** — app-defined"
+rows = []
+targets = []
+none_cell = "a: As 1677"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1679"
+section = "2.27 Expander / Disclosure"
+property = "border.corner_radius"
+text = "`Frame_FrameRadius` = 5"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1680"
+section = "2.27 Expander / Disclosure"
+property = "border.color"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: No frame (`kwa kcollapsiblegroupbox.cpp:153-182`)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1681"
+section = "2.27 Expander / Disclosure"
+property = "border.line_width"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: As 1680"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1682"
+section = "2.27 Expander / Disclosure"
+property = "border.shadow_enabled"
+text = "**(none)** — no shadow"
+rows = []
+targets = []
+none_cell = "a: As 1680"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1683"
+section = "2.27 Expander / Disclosure"
+property = "arrow_side"
+text = "**(KF6 src)** leading — KDE's expander is KWidgetsAddons' `KCollapsibleGroupBox`, which paints its arrow in the style's `SE_CheckBoxIndicator` rect and its title in `SE_CheckBoxContents` ([kcollapsiblegroupbox.cpp:153-182](https://invent.kde.org/frameworks/kwidgetsaddons/-/blob/v6.30.0/src/kcollapsiblegroupbox.cpp#L153-L182)): Breeze's `renderArrow` chevron, `ArrowSize` 10 centred in the 20px indicator ([breezehelper.cpp:1511-1578](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1511-L1578))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1684"
+section = "2.27 Expander / Disclosure"
+property = "arrow_gap"
+text = "**(Breeze src)** 9 — the title starts `CheckBox_Size + CheckBox_ItemSpacing` = 24 from the edge (`checkBoxContentsRect`, [breezestyle.cpp:2222-2224](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L2222-L2224)) and the 10px arrow is centred in the 20px indicator (breezehelper.cpp:1567): (20 − 10) / 2 + 4"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1685"
+section = "2.27 Expander / Disclosure"
+property = "content_indent"
+text = "**(KF6 src)** 20 — `KCollapsibleGroupBox` sets its contents margins to `PM_IndicatorWidth` on the left, under the header ([kcollapsiblegroupbox.cpp:306-315](https://invent.kde.org/frameworks/kwidgetsaddons/-/blob/v6.30.0/src/kcollapsiblegroupbox.cpp#L306-L315)), which Breeze gives as `CheckBox_Size` = 20 ([breezestyle.cpp:848-852](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L848-L852))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1686"
+section = "2.27 Expander / Disclosure"
+property = "frame_enabled"
+text = "**(KF6 src)** no — `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and nothing else (kcollapsiblegroupbox.cpp:153-182)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1687"
+section = "2.27 Expander / Disclosure"
+property = "hover_background"
+text = "**(none)** — no fill: `KCollapsibleGroupBox::paintEvent` paints the arrow and the title only, hover setting `State_MouseOver` on both ([kcollapsiblegroupbox.cpp:153-182, :161-163](https://invent.kde.org/frameworks/kwidgetsaddons/-/blob/v6.30.0/src/kcollapsiblegroupbox.cpp#L153-L182))"
+rows = []
+targets = []
+none_cell = "a: The cell's own source"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1688"
+section = "2.27 Expander / Disclosure"
+property = "arrow_color"
+text = "**(Breeze src)** `arrowColor(palette, WindowText)` = `KColorUtils::mix(WindowText, Window, arrowShade)`, arrowShade 0.15 ([breezehelper.cpp:206-219, :38](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L206-L219)), the arrow primitive's colour outside tab bars and tool buttons ([breezestyle.cpp:4466-4470](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L4466-L4470)) — Breeze #424447, Breeze Dark #dbdbdc (computed with KF 6.30.0 `KColorUtils::mix`); hovered, `hoverColor()` #3daee9 (:4420-4421)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1693"
+section = "2.28 Link"
+property = "font"
+text = "← `defaults.font`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1694"
+section = "2.28 Link"
+property = "font.color"
+text = "`ForegroundLink`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1695"
+section = "2.28 Link"
+property = "visited_text_color"
+text = "`[Colors:View] ForegroundVisited` — 155,89,182 #9b59b6 in Breeze and Breeze Dark v6.7.5 (BreezeLight.colors:125; BreezeDark.colors:126)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1696"
+section = "2.28 Link"
+property = "underline_enabled"
+text = "yes (Kirigami LinkButton)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1697"
+section = "2.28 Link"
+property = "background_color"
+text = "**(none)** — inline"
+rows = []
+targets = []
+none_cell = "a: Inline text; KUrlLabel too changes only the text colour (K1.260†)"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1698"
+section = "2.28 Link"
+property = "hover_background"
+text = "**(none)**"
+rows = []
+targets = []
+none_cell = "a: As 1697"
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1699"
+section = "2.28 Link"
+property = "hover_text_color"
+text = "← `font.color`: Kirigami's `LinkButton` is `disabledColor`, `pressedColor` or `normalColor`, nothing on hover ([templates/LinkButton.qml:87-93](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/LinkButton.qml#L87-L93))"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1700"
+section = "2.28 Link"
+property = "active_text_color"
+text = "**(KF6 src)** `pressedColor` = `Qt.darker(normalColor)`, \"200% darker\" ([templates/LinkButton.qml:61-66](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/LinkButton.qml#L61-L66)): the HSV value halved, factor 2.0 ([qqmlbuiltinfunctions.cpp:660-682](https://github.com/qt/qtdeclarative/blob/v6.11.2/src/qml/qml/qqmlbuiltinfunctions.cpp#L660-L682)) — Breeze #14405c, Breeze Dark #0e4d79 (`ForegroundLink` #2980b9, #1d99f3; computed with Qt 6.11.2 `QColor::darker(200)`)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1701"
+section = "2.28 Link"
+property = "disabled_text_color"
+text = "**(KF6 src)** `disabledColor` = `Kirigami.Theme.textColor` ([templates/LinkButton.qml:68-73](https://invent.kde.org/frameworks/kirigami/-/blob/8319acc7dd1149664147ec1e22c39ae6143ed752/src/templates/LinkButton.qml#L68-L73)), the text colour, not a link colour, from the Disabled group a disabled item takes ([plasmadesktoptheme.cpp:267-274, :289](https://invent.kde.org/frameworks/qqc2-desktop-style/-/blob/v6.31.0/kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp#L267-L289)) — in the Window set #a0a1a3 / #686a6c (§2.1.6)"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1714"
+section = "2.29 Text Area (multi-line)"
+property = "border.padding_horizontal"
+text = "**(Breeze src)** 5 inside the frame line — a QTextEdit is a scroll area, which Breeze frames `Frame_FrameWidth` = 2 wide when it shares a layout with spacing (`PM_DefaultFrameWidth`, [breezestyle.cpp:659-720](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L659-L720); [breezemetrics.h:41](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L41)), its 1px line the outermost, and its document sets the text `documentMargin` = 4 in ([qtextdocument_p.cpp:180](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/text/qtextdocument_p.cpp#L180)): 2 + 4 − 1. **(measured)** 2026-09-28, a Breeze QTextEdit (`kdialog --textinputbox`, KWin, scale 1.0, Noto Sans 10pt): the text starts 6px from the frame's outer left edge"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1715"
+section = "2.29 Text Area (multi-line)"
+property = "border.padding_vertical"
+text = "**(Breeze src)** 5 — the same 2 + 4 − 1. **(measured)** the same field: its first 18px line box starts 6px below the frame's outer top edge"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1716"
+section = "2.29 Text Area (multi-line)"
+property = "border.color"
+text = "← `input.border.color`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1717"
+section = "2.29 Text Area (multi-line)"
+property = "border.line_width"
+text = "← `input.border.line_width`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1718"
+section = "2.29 Text Area (multi-line)"
+property = "border.corner_radius"
+text = "← `input.border.corner_radius`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"
+
+[[row]]
+line = "platform-facts.md@fc6109d1:1719"
+section = "2.29 Text Area (multi-line)"
+property = "border.shadow_enabled"
+text = "← `input.border.shadow_enabled`"
+rows = []
+targets = []
+note = "no gap-map row names this cell"

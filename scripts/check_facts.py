@@ -4,7 +4,8 @@
 Reads every fact file `docs/facts/<platform>/*.toml` (the platform directories below, and `palettes/`), each
 platform's `state-models.toml`, `docs/facts/sources.toml`, the core (its Rust sketches, as
 scripts/check_spec_names.py reads them, and its function table) and the widget catalogue (through
-scripts/spec_catalogue.py). `docs/facts/imported/` is the plan's lane input, not facts, and is skipped.
+scripts/spec_catalogue.py). `docs/facts/imported/` is the plan's lane input and `docs/facts/staged/` holds S19.2's
+staged inheritance bases: neither is facts, and both are skipped.
 scripts/check_fact_citations.py checks what the citations say; this script checks how the files are written.
 
 Run from the repository root:
@@ -18,8 +19,8 @@ wrong command line. A fact file that is no valid TOML is a finding of that file.
 
 Directories (S17 *Generations*): PLATFORMS maps each directory to the presets it covers: gnome (adwaita), kde
 (kde-breeze), macos (macos-monterey, macos-tahoe), ios (ios-13, ios-26), windows (windows-11), material
-(material-3). `palettes/` holds palette facts, `imported/` is skipped, any other directory or a stray file is a
-finding (a README.md is allowed anywhere).
+(material-3). `palettes/` holds palette facts, `imported/` and `staged/` are skipped, any other directory or a
+stray file is a finding (a README.md is allowed anywhere).
 
 A `[[fact]]` (S17 *Fields*):
 
@@ -89,8 +90,10 @@ bundled palette (bundled_palettes(): a file of PRESET_DIRS whose `[preset] kind`
 string it states holding a colour literal, and every such string in exactly one of the two (S11, S14). Today no
 bundled palette exists, so this rule checks nothing on the repository; the self-test runs it.
 
-existing_presets() is the one function that says which presets exist: today the stems of
-`native-theme/src/presets/*.toml` that are platform presets; the new model's preset list replaces it.
+existing_presets() is the one function that says which presets exist: the stems of the new model's presets,
+`native-theme/src/next/presets/<id>.toml` (`presets/` after the switch), that are platform presets, so today's
+presets in `native-theme/src/presets/` do not count (the M1a design's decision 8). The directory may be absent or
+empty: then no preset exists and the generation rule asks nothing of a fact without `preset:`.
 
     python3 scripts/check_facts.py --self-test   # each rule on inline fixtures: a passing and a failing case
 """
@@ -112,7 +115,7 @@ CORE = Path("docs/todo_v0.7.1_model-completeness-spec.md")
 CATALOGUE = Path("docs/todo_v0.7.1_model-completeness-spec-widgets.md")
 GAP_MAPS = [Path(f"docs/todo_v0.7.1_model-completeness-gap-map-{p}.md")
             for p in ("gnome", "ios", "kde", "macos", "material", "windows")]
-PRESET_DIRS = (Path("native-theme/src/presets"),)
+PRESET_DIRS = (Path("native-theme/src/next/presets"),)
 PLATFORMS = {
     "gnome": ("adwaita",),
     "kde": ("kde-breeze",),
@@ -123,6 +126,7 @@ PLATFORMS = {
 }
 PALETTES = "palettes"
 IMPORTED = "imported"
+STAGED = "staged"
 STATE_MODELS = "state-models.toml"
 ALL_PRESETS = tuple(p for ps in PLATFORMS.values() for p in ps)
 
@@ -237,8 +241,7 @@ def gap_map_rows(root: Path) -> set | None:
 
 
 def existing_presets(root: Path) -> set:
-    """The platform presets that exist: today the stems of native-theme/src/presets/*.toml (the new model's preset
-    list replaces this one function)."""
+    """The platform presets that exist: the stems of the new model's native-theme/src/next/presets/<id>.toml."""
     out = set()
     for d in PRESET_DIRS:
         if (root / d).is_dir():
@@ -436,13 +439,13 @@ def load(ctx: Context):
         if p.is_file():
             if p.name not in ("sources.toml", "README.md"):
                 findings.append((rel, 1, "not a facts directory's file (docs/facts holds sources.toml and the "
-                                         "platform, palettes and imported directories)"))
+                                         "platform, palettes, imported and staged directories)"))
             continue
-        if p.name == IMPORTED:
+        if p.name in (IMPORTED, STAGED):
             continue
         if p.name not in PLATFORMS and p.name != PALETTES:
             findings.append((rel, 1, f"not a facts directory (one of {', '.join(PLATFORMS)}, {PALETTES}, "
-                                     f"{IMPORTED})"))
+                                     f"{IMPORTED}, {STAGED})"))
             continue
         for f in sorted(p.rglob("*")):
             frel = f.relative_to(ctx.root).as_posix()
@@ -1568,7 +1571,7 @@ source = "microsoft-ui-xaml@2.5.1"
 os = "26100.4946"
 toolkit = "WindowsAppSDK 2.5.1"
 ''',
-    "native-theme/src/presets/catppuccin-mocha.toml": '''
+    "native-theme/src/next/presets/catppuccin-mocha.toml": '''
 [preset]
 id = "catppuccin-mocha"
 kind = "palette"
@@ -1731,17 +1734,18 @@ SELF_TEST_CASES = [
      "breeze@6.8.2", ["is not a palette entry"]),
     ("Catppuccin: a value not a colour", "docs/facts/palettes/catppuccin.toml", 'value = "#313244"',
      'value = "surface0"', ["is not a colour literal"]),
-    ("palette: a source naming no fact", "native-theme/src/presets/catppuccin-mocha.toml",
+    ("palette: a source naming no fact", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '= "catppuccin.mocha.surface0"', '= "catppuccin.mocha.surface9"', ["is not a palette-fact key"]),
-    ("palette: a colour in both", "native-theme/src/presets/catppuccin-mocha.toml",
+    ("palette: a colour in both", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.background" = "the guide',
      ["is in both", "is in neither"]),
-    ("palette: a pick naming no colour", "native-theme/src/presets/catppuccin-mocha.toml",
+    ("palette: a pick naming no colour", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.fg" = "the guide',
      ["'colors.dark.surfaces.window.fg' is not a stated colour literal's path", "is in neither"]),
     # the files
     ("a stray directory", "docs/facts/gtk/x.toml", None, "", ["not a facts directory"]),
     ("imported is skipped", "docs/facts/imported/rows.toml", None, "this is no TOML", []),
+    ("staged is skipped", "docs/facts/staged/bases.toml", None, "this is no TOML", []),
     ("bad TOML", "docs/facts/gnome/buttons.toml", "[[fact]]\nkey", "[[fact]\nkey", ["not valid TOML"]),
     ("a fact table in state-models", "docs/facts/macos/state-models.toml", None, '[[fact]]\nkey = "button.body.fill"\n',
      ["unknown table `fact`"]),
@@ -1788,6 +1792,16 @@ def self_test() -> int:
             failures.append(f"functions: got {sorted(ctx.functions)}")
         if ctx.presets != set(ALL_PRESETS):
             failures.append(f"existing presets: got {sorted(ctx.presets)}")
+        # only the new model's presets exist: today's directory and a stem that is no platform preset do not count
+        root = base / "presets"
+        if existing_presets(root):
+            failures.append(f"existing presets, no directory: got {sorted(existing_presets(root))}")
+        for rel in ("native-theme/src/presets/adwaita.toml", PRESET_DIRS[0] / "macos-tahoe.toml",
+                    PRESET_DIRS[0] / "nord.toml"):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text("", encoding="utf-8")
+        if existing_presets(root) != {"macos-tahoe"}:
+            failures.append(f"existing presets, today's and the new model's: got {sorted(existing_presets(root))}")
         dims = {k: key_info(ctx, k)[1] for k in ("button.body.min_width", "button.label.text.font.size",
                                                   "button.body.padding.top", "button.values.icon_text_gap",
                                                   "token.motion.durations.button", "role.view.foreground",
