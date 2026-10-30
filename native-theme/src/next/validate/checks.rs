@@ -17,6 +17,7 @@ use crate::next::expr::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref}
 use crate::next::inputs::{InputBases, InputName, InputValue};
 use crate::next::key::Key;
 use crate::next::layer::{Bases, Layer, Spelled};
+use crate::next::presets::PresetId;
 use crate::next::registry::{self, PartInfo};
 use crate::next::roles::{ColorRolesPatch, SurfaceSet};
 use crate::next::selector::{
@@ -52,9 +53,23 @@ pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
         }
     }
     for (index, rule) in layer.rules.iter().enumerate() {
-        checker.rule(rule, &format!("rules[{index}]"));
+        if !excluded(rule, cx.preset) {
+            checker.rule(rule, &format!("rules[{index}]"));
+        }
     }
     checker.problems
+}
+
+/// Whether a rule's `Preset` condition excludes the current preset: such a
+/// rule is neither validated nor applied, so one layer can carry rules for
+/// several presets' keyed names (S12).
+fn excluded(rule: &Rule, preset: Option<PresetId>) -> bool {
+    let conditions = &rule.selector.conditions;
+    let other =
+        |condition: &Condition| matches!(condition, Condition::Preset(id) if Some(*id) != preset);
+    let current =
+        |condition: &Condition| matches!(condition, Condition::Preset(id) if Some(*id) == preset);
+    conditions.all_of.iter().any(other) || conditions.none_of.iter().any(current)
 }
 
 /// What a walk is in: which checks its values take.
@@ -1504,10 +1519,10 @@ impl Uses {
 /// size, a setting for applications, and the variants `exempt_variant` and
 /// `content_variants` name), a keyed name no base states, an event no
 /// `presentations` list names.
-pub(super) fn unused(decl: &Declarations, layer: &Layer) -> Vec<Problem> {
+pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId>) -> Vec<Problem> {
     let mut uses = Uses::default();
     uses.bases(&layer.bases);
-    for rule in &layer.rules {
+    for rule in layer.rules.iter().filter(|rule| !excluded(rule, preset)) {
         let widget = match &rule.body {
             RuleBody::Colors(roles) => {
                 uses.walk(roles);
@@ -1985,5 +2000,17 @@ mod tests {
         assert_eq!(depth(&nested(MAX_DEPTH)), MAX_DEPTH);
         assert_eq!(depth(&nested(MAX_DEPTH + 1)), MAX_DEPTH + 1);
         assert_eq!(depth(&nested(200)), MAX_DEPTH + 1);
+    }
+
+    /// A rule names no preset here: no preset is bundled, so `PresetId` has
+    /// no value to name (S16). The test that a rule naming another preset
+    /// is skipped enters with the first bundled preset (M1a task 15).
+    #[test]
+    fn a_rule_naming_no_preset_is_validated() {
+        let rule = Rule::new(
+            Selector::default(),
+            RuleBody::Tokens(crate::next::tokens::TokensPatch::default()),
+        );
+        assert!(!excluded(&rule, None));
     }
 }

@@ -86,7 +86,7 @@ pub(crate) fn check_preset(
     };
     let mut problems: Vec<Problem> = checks::layer(layer, &cx);
     problems.extend(checks::declarations(declarations));
-    problems.extend(checks::unused(declarations, layer));
+    problems.extend(checks::unused(declarations, layer, preset));
     if problems.is_empty() {
         Ok(())
     } else {
