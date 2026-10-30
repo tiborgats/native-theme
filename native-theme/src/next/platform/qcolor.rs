@@ -40,27 +40,27 @@ fn half(x: f32) -> f32 {
 
 /// A colour as `QColor` stores it in its `Rgb` spec: four 16-bit channels.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Rgb16 {
-    pub(crate) r: u16,
-    pub(crate) g: u16,
-    pub(crate) b: u16,
-    pub(crate) a: u16,
+pub(super) struct Rgb16 {
+    pub(super) r: u16,
+    pub(super) g: u16,
+    pub(super) b: u16,
+    pub(super) a: u16,
 }
 
 /// A colour as `QColor` stores it in its `Hsv` spec: the hue in hundredths
 /// of a degree, `u16::MAX` where it is undefined (a grey), the rest in 16
 /// bits.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Hsv16 {
-    pub(crate) hue: u16,
-    pub(crate) saturation: u16,
-    pub(crate) value: u16,
-    pub(crate) alpha: u16,
+pub(super) struct Hsv16 {
+    pub(super) hue: u16,
+    pub(super) saturation: u16,
+    pub(super) value: u16,
+    pub(super) alpha: u16,
 }
 
 /// A channel over 65535 as a float: `redF()` and the others
 /// (`qcolor.cpp:1659-1664`, `:1777-1785`).
-pub(crate) fn unit(channel: u16) -> f32 {
+pub(super) fn unit(channel: u16) -> f32 {
     f32::from(channel) / 65535.0
 }
 
@@ -72,7 +72,7 @@ impl Rgb16 {
     /// floats, which `toRgb` clamps to `0..=1` before rounding. The model's
     /// alpha is in `0..=1` (S2.1), Qt's valid range; a non-finite channel is
     /// zero, as S2.2's totality reads it.
-    pub(crate) fn from_color(c: Color) -> Rgb16 {
+    pub(super) fn from_color(c: Color) -> Rgb16 {
         let finite = |x: f32| if x.is_finite() { x } else { 0.0 };
         let (r, g, b) = (finite(c.r), finite(c.g), finite(c.b));
         let a = finite(c.a).clamp(0.0, 1.0);
@@ -96,7 +96,7 @@ impl Rgb16 {
     }
 
     /// The colour's channels over 65535 (`redF()` and the others).
-    pub(crate) fn to_color(self) -> Color {
+    pub(super) fn to_color(self) -> Color {
         Color {
             r: unit(self.r),
             g: unit(self.g),
@@ -106,7 +106,7 @@ impl Rgb16 {
     }
 
     /// `QColor::toHsv` (`qcolor.cpp:2364-2405`).
-    pub(crate) fn to_hsv(self) -> Hsv16 {
+    pub(super) fn to_hsv(self) -> Hsv16 {
         let (r, g, b) = (self.r, self.g, self.b);
         let max = r.max(g).max(b);
         let min = r.min(g).min(b);
@@ -141,7 +141,7 @@ impl Hsv16 {
     /// `QColor::fromHsvF(h, s, v, a)` (`qcolor.cpp:2697-2710`) for a hue in
     /// `0..=1` and the rest in `0..=1`, the ranges its callers here clamp
     /// them to: each `qRound(x * 65535)`, the hue `qRound(h * 36000)`.
-    pub(crate) fn from_hsv_f(hue: f32, saturation: f32, value: f32, alpha: f32) -> Hsv16 {
+    pub(super) fn from_hsv_f(hue: f32, saturation: f32, value: f32, alpha: f32) -> Hsv16 {
         let channel = |x: f32| q_round(x.clamp(0.0, 1.0) * 65535.0);
         Hsv16 {
             hue: q_round(hue.clamp(0.0, 1.0) * 36000.0),
@@ -152,7 +152,7 @@ impl Hsv16 {
     }
 
     /// `hueF()`: -1 where the hue is undefined (`qcolor.cpp:1962-1967`).
-    pub(crate) fn hue_f(self) -> f32 {
+    pub(super) fn hue_f(self) -> f32 {
         if self.hue == u16::MAX {
             -1.0
         } else {
@@ -164,12 +164,12 @@ impl Hsv16 {
     /// `from_hsv_f` or `to_hsv` is at most 36000, Qt's 0, so the sector is
     /// `0..=5`.
     ///
-    /// `1.0f - (s * f)` is rounded once, a fused multiply-add, as the Qt
-    /// builds the vectors of today's KDE reader were generated with compute
-    /// it (`scripts/generate_qt_color_vectors.py`): the compiler contracts the
-    /// expression where the target has FMA, so a build that rounds the
-    /// product first differs by one 16-bit unit on rare inputs.
-    pub(crate) fn to_rgb(self) -> Rgb16 {
+    /// `1.0f - (s * f)` rounds the product, then the difference, as the
+    /// pinned build computes it (`sources.toml`'s Arch build for x86-64, a
+    /// target with no fused multiply-add); a build that fuses them gives
+    /// another 16-bit channel on rare inputs, which the vector table holds
+    /// (`tools/kde-vectors`).
+    pub(super) fn to_rgb(self) -> Rgb16 {
         let alpha = self.alpha;
         if self.saturation == 0 || self.hue == u16::MAX {
             let v = self.value;
@@ -192,14 +192,14 @@ impl Hsv16 {
         let f = h - f32::from(sector);
         let p = v * (1.0 - s);
         let (r, g, b) = if sector & 1 == 1 {
-            let q = v * (-s).mul_add(f, 1.0);
+            let q = v * (1.0 - s * f);
             match sector {
                 1 => (q, v, p),
                 3 => (p, q, v),
                 _ => (v, p, q),
             }
         } else {
-            let t = v * (-s).mul_add(1.0 - f, 1.0);
+            let t = v * (1.0 - s * (1.0 - f));
             match sector {
                 0 => (v, t, p),
                 2 => (p, v, t),

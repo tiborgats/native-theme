@@ -105,7 +105,9 @@ impl Platform {
             Platform::KdeShade => {
                 let (c, role, contrast) = (arg(0), arg(1), arg(2));
                 let role = match role {
-                    Some(Val::Name(Name::Variant(name))) => KdeShadeRole::from_name(name.as_str()),
+                    Some(Val::Name(Name::Variant(name))) => {
+                        <KdeShadeRole as crate::next::toml::read::Named>::from_name(name.as_str())
+                    }
                     _ => None,
                 };
                 let c = c.as_ref().map_or_else(transparent, color);
