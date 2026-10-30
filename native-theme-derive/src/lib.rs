@@ -164,7 +164,10 @@ fn gen_inventory_submit(
 ///   patch over a value (S6.1: a set field replaces, a `Vec` of pairs merges
 ///   by key, a list marked `keyed` by its items' own keys, any other list is
 ///   replaced whole, and a `Sides` or `Axes` field, patched as
-///   `Option<Sides<Option<T>>>`, member by member);
+///   `Option<Sides<Option<T>>>`, member by member; a `Vec` of pairs whose
+///   values are `Vec`s of pairs merges by key twice, and a `SurfaceMap` of
+///   a struct block, patched as `Option<SurfaceMap<<B>Patch>>`, set by set,
+///   each set's patch over that set's record);
 /// - the `Block` impl (the resolved type, sealed) and the `Table` impl: the
 ///   static `FIELDS` table of `FieldInfo { path, ty, may_be_absent, auto }`
 ///   and the `FORM`, a struct or an enum with its unit variants.
@@ -192,13 +195,18 @@ fn gen_inventory_submit(
 /// - `#[parts(auto)]`: the `Value<Px>` or `Value<FontSize>` may be `Auto`
 ///   (S6.3).
 /// - `#[parts(block = "fields" | "append" | "set")]`: the field holds a
-///   block (`B`, `Value<B>`, `Vec<B>`, `Option<B>`, or a map `Vec<(K, B)>`
-///   or `Vec<(K, Value<B>)>`) of that kind: a struct block, an append block
-///   or an enum block. An append block is held as `Value<B>` or a map's
+///   block (`B`, `Value<B>`, `Vec<B>`, `Option<B>`, a `SurfaceMap<B>`, or a
+///   map `Vec<(K, B)>`, `Vec<(K, Value<B>)>` or `Vec<(K, Vec<B>)>`) of that
+///   kind: a struct block, an append block or an enum block. An append block is held as `Value<B>` or a map's
 ///   `Value<B>`, and an `Option<B>` is `set` whole: an `append` elsewhere,
 ///   or `fields` on an `Option`, would act as `set`, so both are refused.
 /// - `#[parts(keyed)]`: a list whose items merge by their own key, through
 ///   the item type's `KeyedItem` impl.
+/// - `#[parts(inner_may_be_absent)]`, with `#[parts(required = "<field>")]`
+///   for each field it leaves out: on a struct block's field, every `Value`
+///   field of the block may be `Absent` in this place only (S6.3: an
+///   icon-size context's `IconStyle` but its `size`), its table entry
+///   holding the block's table so marked.
 /// - `#[parts(patch)]`: the field holds a struct block's patch, `<B>Patch`
 ///   (a keyframe's `PartStylePatch`): it resolves to `Resolved<B>Patch`
 ///   (`B` marked `resolved_patch`), and its table entry reaches `B`'s table
