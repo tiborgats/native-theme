@@ -127,24 +127,20 @@ impl fmt::Display for FeatureTag {
     }
 }
 
-/// A BCP 47 language tag, in the syntax RFC 5646 (section 2.1) gives every
-/// tag: subtags of one to eight ASCII letters and digits separated by
-/// hyphens, the first of letters only.
+/// A BCP 47 language tag, in RFC 5646's syntax (section 2.1's ABNF): a
+/// `langtag` (language with up to three extended language subtags, script,
+/// region, variants, extensions, private use), a private-use tag, or one of
+/// the grandfathered tags, letters in either case.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub struct LanguageTag(String);
 
 impl LanguageTag {
-    /// The tag `tag` spells (`"ar"`, `"zh-Hant"`), if it has that syntax.
+    /// The tag `tag` spells (`"ar"`, `"zh-Hant"`, `"sl-rozaj-biske"`), if it
+    /// has that syntax.
     #[must_use]
     pub fn new(tag: &str) -> Option<LanguageTag> {
-        let subtag = |s: &str| (1..=8).contains(&s.len());
-        let mut subtags = tag.split('-');
-        let first = subtags.next()?;
-        let well_formed = subtag(first)
-            && first.bytes().all(|b| b.is_ascii_alphabetic())
-            && subtags.all(|s| subtag(s) && s.bytes().all(|b| b.is_ascii_alphanumeric()));
-        well_formed.then(|| LanguageTag(tag.to_owned()))
+        is_language_tag(tag).then(|| LanguageTag(tag.to_owned()))
     }
 
     /// The tag as written.
@@ -157,6 +153,136 @@ impl LanguageTag {
 impl fmt::Display for LanguageTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+/// RFC 5646's `grandfathered` tags, `irregular` then `regular`.
+const GRANDFATHERED: [&str; 26] = [
+    "en-GB-oed",
+    "i-ami",
+    "i-bnn",
+    "i-default",
+    "i-enochian",
+    "i-hak",
+    "i-klingon",
+    "i-lux",
+    "i-mingo",
+    "i-navajo",
+    "i-pwn",
+    "i-tao",
+    "i-tay",
+    "i-tsu",
+    "sgn-BE-FR",
+    "sgn-BE-NL",
+    "sgn-CH-DE",
+    "art-lojban",
+    "cel-gaulish",
+    "no-bok",
+    "no-nyn",
+    "zh-guoyu",
+    "zh-hakka",
+    "zh-min",
+    "zh-min-nan",
+    "zh-xiang",
+];
+
+/// Whether `tag` is RFC 5646's `Language-Tag`: `langtag / privateuse /
+/// grandfathered`.
+fn is_language_tag(tag: &str) -> bool {
+    if GRANDFATHERED.iter().any(|g| g.eq_ignore_ascii_case(tag)) {
+        return true;
+    }
+    let subtags: Vec<&str> = tag.split('-').collect();
+    match subtags.split_first() {
+        Some((first, rest)) if first.eq_ignore_ascii_case("x") => is_private_use(rest),
+        _ => is_langtag(&subtags),
+    }
+}
+
+/// `subtag` has `len` characters, each passing `class`.
+fn subtag(subtag: &str, len: std::ops::RangeInclusive<usize>, class: fn(&u8) -> bool) -> bool {
+    len.contains(&subtag.len()) && subtag.bytes().all(|b| class(&b))
+}
+
+fn alpha(s: &str, len: std::ops::RangeInclusive<usize>) -> bool {
+    subtag(s, len, u8::is_ascii_alphabetic)
+}
+
+fn alphanum(s: &str, len: std::ops::RangeInclusive<usize>) -> bool {
+    subtag(s, len, u8::is_ascii_alphanumeric)
+}
+
+/// `variant = 5*8alphanum / (DIGIT 3alphanum)`.
+fn is_variant(s: &str) -> bool {
+    alphanum(s, 5..=8)
+        || (alphanum(s, 4..=4) && s.bytes().next().is_some_and(|b| b.is_ascii_digit()))
+}
+
+/// `singleton`: one letter or digit but `x`.
+fn is_singleton(s: &str) -> bool {
+    alphanum(s, 1..=1) && !s.eq_ignore_ascii_case("x")
+}
+
+/// `1*("-" (1*8alphanum))`, after the `x` of `privateuse`.
+fn is_private_use(rest: &[&str]) -> bool {
+    !rest.is_empty() && rest.iter().all(|s| alphanum(s, 1..=8))
+}
+
+/// `langtag = language ["-" script] ["-" region] *("-" variant)
+/// *("-" extension) ["-" privateuse]`.
+fn is_langtag(subtags: &[&str]) -> bool {
+    let Some((language, mut rest)) = subtags.split_first() else {
+        return false;
+    };
+    // language = 2*3ALPHA ["-" extlang] / 4ALPHA / 5*8ALPHA,
+    // extlang = 3ALPHA *2("-" 3ALPHA)
+    if !alpha(language, 2..=8) {
+        return false;
+    }
+    if language.len() <= 3 {
+        for _ in 0..3 {
+            match rest.split_first() {
+                Some((s, after)) if alpha(s, 3..=3) => rest = after,
+                _ => break,
+            }
+        }
+    }
+    // script = 4ALPHA
+    if let Some((s, after)) = rest.split_first()
+        && alpha(s, 4..=4)
+    {
+        rest = after;
+    }
+    // region = 2ALPHA / 3DIGIT
+    if let Some((s, after)) = rest.split_first()
+        && (alpha(s, 2..=2) || subtag(s, 3..=3, u8::is_ascii_digit))
+    {
+        rest = after;
+    }
+    while let Some((s, after)) = rest.split_first()
+        && is_variant(s)
+    {
+        rest = after;
+    }
+    // extension = singleton 1*("-" (2*8alphanum))
+    while let Some((s, after)) = rest.split_first()
+        && is_singleton(s)
+    {
+        rest = after;
+        let mut any = false;
+        while let Some((s, after)) = rest.split_first()
+            && alphanum(s, 2..=8)
+        {
+            rest = after;
+            any = true;
+        }
+        if !any {
+            return false;
+        }
+    }
+    match rest.split_first() {
+        None => true,
+        Some((x, after)) => x.eq_ignore_ascii_case("x") && is_private_use(after),
     }
 }
 

@@ -1048,13 +1048,67 @@ fn tags_follow_their_syntax() {
         Some(*b"tnum")
     );
     assert_eq!(FeatureTag::new("tn\u{7f}m"), None);
-    for tag in ["ar", "zh-Hant", "en-US", "x-private"] {
+}
+
+#[test]
+fn language_tags_follow_rfc_5646() {
+    for tag in [
+        "ar",
+        "zh-Hant",
+        "zh-Hant-TW",
+        "en-US",
+        "EN-us",
+        "es-419",
+        "zh-yue-HK",
+        "ar-afb",
+        "abc-def-ghi-jkl",
+        "sl-rozaj-biske",
+        "de-CH-1901",
+        "de-Latn-DE-1996",
+        "hy-Latn-IT-arevela",
+        "en-a-bbb-x-a-ccc",
+        "en-US-u-islamcal",
+        "qaa-Qaaa-QM-x-southern",
+        "abcde",
+        "x-private",
+        "X-a-12345678",
+        "i-klingon",
+        "I-KLINGON",
+        "en-GB-oed",
+        "zh-min-nan",
+        "sgn-BE-FR",
+        "art-lojban",
+    ] {
         assert_eq!(
             LanguageTag::new(tag).map(|t| t.to_string()),
-            Some(tag.to_owned())
+            Some(tag.to_owned()),
+            "{tag}"
         );
     }
-    for tag in ["", "en-", "1a", "en_US", "toolongsubtag"] {
+    for tag in [
+        "",
+        "a",
+        "a-b",
+        "en-",
+        "-en",
+        "en--US",
+        "1a",
+        "en_US",
+        "toolongsubtag",
+        "en-x",
+        "x",
+        "x-123456789",
+        "en-a",
+        "en-a-x-y",
+        "en-a-b",
+        "abcd-efg",
+        "en-abc-def-ghi-jkl",
+        "de-419-DE",
+        "en-US-x",
+        "en-1234567890",
+        "en-\u{e9}",
+        "i-unknown",
+    ] {
         assert_eq!(LanguageTag::new(tag), None, "{tag}");
     }
 }
