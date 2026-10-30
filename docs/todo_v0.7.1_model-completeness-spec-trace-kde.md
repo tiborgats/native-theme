@@ -411,7 +411,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.8 | `button.body.fill, button.body.stroke @ variant flat cond flavor:kirigami / {checked} cond flavor:kirigami / {default} cond flavor:kirigami` | rule |
 | Q1.8 | `button.menu_indicator.glyph @ variant menu cond flavor:kirigami` | rule |
 | Q1.9 | `button.body.bindings (surface Button) @ variant tool !variant flat cond flavor:kirigami` (a raised ToolButton binds the Button set; a flat one binds nothing and inherits its parent's theme, `ToolButton.qml:18-19`, `platformtheme.cpp:1060-1090`) | rule |
-| Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami / variants {tool,@highlighted} cond flavor:kirigami` | rule |
+| Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami` (the highlighted case needs `State_KeyboardFocusChange`, `breezestyle.cpp:4577`, as Q1.8's: ledger queue #48) | rule |
 | Q1.9 | `button.values.label_position @ variant tool cond flavor:kirigami (the tool button style: IconOnly, TextBesideIcon, TextUnderIcon)` | rule |
 | Q1.10 | `button.label.text.mnemonic_decoration @ cond mnemonics_visible` | rule |
 | Q1.10 | `cond mnemonics_visible (ADD-A12)` | condition |
@@ -1108,7 +1108,7 @@ rationale, each decided in the core's additions register (S22).
 | Q3.13 | `list.row_background.fill @ pos parity even variant alternating_rows (ADD-B06; Qt's views alternate on current & 1, zero-based)` | rule |
 | Q3.14 | `token.params.color.frame_contrast (ADD-A44)` | token |
 | Q3.14 | `reader:kde:kdeglobals [KDE] frameContrast (store the factor, not only finished colours)` | reader |
-| Q3.15 | `role.<set>.border = kirigami_lerp(background, foreground, token.params.color.frame_contrast) @ cond flavor:kirigami` (Kirigami's `ColorUtils.linearInterpolation`, in HSV, `Frame.qml:25`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`, ADD-A121; Breeze's QtWidgets frame, the base, is `mix`, `breezehelper.cpp:144`) | role |
+| Q3.15 | `menu.body.stroke, popover.body.stroke, tooltip.body.stroke = kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast) @ cond flavor:kirigami` (the frames Kirigami's own QML draws, `Frame.qml:25`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`, ADD-A121; `role.<set>.border` stays Breeze's `kcu_mix`, `breezehelper.cpp:144`, since Breeze draws Kirigami's buttons and fields, `:250`, `:684-706`) | rule |
 | Q3.16 | `PartStyle.fill.append = alpha(...) @ {hover} / {pressed} / {checked}` | rule |
 | Q3.17 | `PartStyle.icon.fill (text or highlighted-text role)` | field |
 | Q3.17 | `PartStyle.icon.fill @ {selected}` | rule |

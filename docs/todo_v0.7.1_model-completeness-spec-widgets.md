@@ -8272,10 +8272,10 @@ kde_effects(active(role.window.<role>), active(role.window.background), disabled
 KColorScheme role (below), so no effect applies to it: Breeze computes its frame colour from the palette group the
 widget is drawn in, `mix(Window, WindowText, frameIntensityBias())` (`breeze@c97883a kstyle/breezehelper.cpp:142-144`,
 the bias KColorScheme's `frameContrast`, `:105`), so `role.<set>.disabled.border` is the active `border`'s derivation
-(`mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
-`= mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`; under
-`cond flavor:kirigami` the active and disabled `border` are Kirigami's frame colour, which interpolates in HSV, `=
-kirigami_lerp(background, foreground, token.params.color.frame_contrast)` in the set (`Frame.qml:25`, Q3.15, S2.2). On a
+(`kcu_mix(background, foreground, token.params.color.frame_contrast)` in the set, Q3.15) over the set's disabled roles,
+`= kcu_mix(role.<set>.disabled.background, role.<set>.disabled.foreground, token.params.color.frame_contrast)`; under
+`cond flavor:kirigami` the role stays Breeze's, since Breeze draws Kirigami's buttons and fields; the frames
+Kirigami's own QML draws (Frame, Menu, Popup, ToolTip) stroke with `kirigami_lerp` on those parts (Q3.15, S2.2). On a
 platform that dims by opacity (libadwaita) the record stays absent but for the `View` pair above and the parts' `{disabled}` rules set `opacity`
 from `token.params.opacity` instead [GN-1.271, GN-1.272].
 
