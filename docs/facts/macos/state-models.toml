@@ -18,9 +18,11 @@
 # on state to draw. One bezel style per button (`bezelStyle` holds one raw value; the SDK's old names `recessed`,
 # `roundRect`, `inline` and `texturedRounded` are the raw values 13, 12, 15 and 11, `NSButtonCell.h:74-78`, so they
 # are `@accessory_bar`, `@accessory_bar_action`, `@badge` and `tool`, no variants of their own; `flat` is bordered NO,
-# which draws no bezel; `menu` is NSComboButton, another control), one border shape, one tint prominence, one image
-# position. The context: a button in a toolbar (`NSToolbarItem`, the probe's toolbar window; not analysed, pending
-# U94). Each variant was measured alone: no variant set is declared (the report lists the sets AppKit draws).
+# which draws no bezel; `menu` is NSComboButton in its `.unified` style, another control, whose default `.split`
+# style is the `split_button` widget, ADD-A123: the probe's `combo_unified` buttons, `combo_split` being no button),
+# one border shape, one tint prominence, one image position. The context: a button in a toolbar (`NSToolbarItem`,
+# the probe's toolbar window; not analysed, pending U94). Each variant was measured alone: no variant set is declared
+# (the report lists the sets AppKit draws).
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }
 available = true

@@ -28,7 +28,8 @@
 # (13, the SDK's old `recessed`), `@accessory_bar_action` (12, old `roundRect`), `@badge` (15, old `inline`),
 # `circular` (7, and the 26 border shape circle, which draws the same), `help` (9), `tool` (11, old
 # `texturedRounded`), `glass` (16); `flat` (bordered NO); `primary` and `tinted` (tintProminence primary, secondary);
-# `destructive`; `pill` (border shape capsule), `@rounded_rectangle`; `menu` (NSComboButton); `icon_only`, `with_icon`
+# `destructive`; `pill` (border shape capsule), `@rounded_rectangle`; `menu` (NSComboButton in its `.unified`
+# style; the default `.split` is the `split_button` widget's, ADD-A123); `icon_only`, `with_icon`
 # (the symbol "star"; with_icon's image colour is the base's icon fill: a push bezel with an image); `toggle`
 # (pushOnPushOff, `checked` its on state); `default` is the Return key equivalent. Facts are ordered from the least to
 # the most specific combination: for a key and a combination the last that holds applies (S17). A value read the same
@@ -13080,6 +13081,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.sizes.large.font_size"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.large"
+tolerance = 0
+
 [[fact]]
 key = "button.label.text.font.size"
 when = { conditions = ["preset:macos-tahoe"], sizes = ["mini"] }
@@ -13089,6 +13095,11 @@ rows = []
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.sizes.mini.font_size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.mini"
 tolerance = 0
 
 [[fact]]
@@ -13102,6 +13113,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.sizes.regular.font_size"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.regular"
+tolerance = 0
+
 [[fact]]
 key = "button.label.text.font.size"
 when = { conditions = ["preset:macos-tahoe"], sizes = ["small"] }
@@ -13112,6 +13128,107 @@ rows = []
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/geometry.toml#geometry.sizes.small.font_size"
 tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.small"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"] }
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.extraLarge-plain.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-default.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-default.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-default.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-default.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.extraLarge-default.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.extraLarge-combo_unified.font.weightTrait"
+tolerance = 0
+conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "button.values.icon_text_gap"
@@ -17819,6 +17936,12 @@ pending = "U94"
 rows = ["MAC-X16"]
 
 [[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U94"
+rows = ["MAC-X16"]
+
+[[fact]]
 key = "button.values.icon_text_gap"
 when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
@@ -20116,8 +20239,9 @@ rows = ["MAC-B08"]
 # grown by its edge), of circular, help and flat, dark pressed mini and a dark checked mini toggle are pending (U142),
 # as are the combinations no pass drew (U131, U132, U133). The toolbar's item views give min_height and the label's
 # font at regular for the push and toolbar bezels (the toolbar bezel 22 px high there, 20 px on the sheet); the
-# rest is pending (U134). NSComboButton (`menu`) at rest reads as the push bezel (fill, top corners, min_height,
-# font: those facts cite it); its states are pending (U137). The paddings are measured from the alignment rect, the
+# rest is pending (U134). NSComboButton in its `.unified` style (`menu`; its default `.split` style is the
+# `split_button` widget, ADD-A123, so its readings are cited by no button fact) at rest reads as the push bezel
+# (fill, top corners, min_height, font: those facts cite it); its states are pending (U137). The paddings are measured from the alignment rect, the
 # body's box, to the union of the title and image rects (geometry.toml; help records neither rect: pending U145). The
 # default button and a checked toggle, at rest and pressed, and most square bezels draw a gradient (the fill
 # `non_uniform`; MAC-B05): their fill and label are pending (U141); the accent they follow is therefore stated by no
@@ -20170,11 +20294,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.normal.layer.buttons.mini-toggle_on.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.mini-combo_split.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -20325,11 +20444,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.small-combo_split.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.small-combo_unified.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
@@ -20476,11 +20590,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.regular-combo_split.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.regular-combo_unified.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
@@ -20623,11 +20732,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.normal.layer.buttons.large-toggle_on.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.large-combo_split.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -20798,11 +20902,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.mini-combo_split.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.mini-combo_unified.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
@@ -20890,11 +20989,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.disabled.layer.buttons.small-with_icon.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.small-combo_split.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -20990,11 +21084,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.regular-combo_split.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.regular-combo_unified.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
@@ -21082,11 +21171,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.disabled.layer.buttons.large-with_icon.corner_top_left.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.large-combo_split.corner_top_left.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -22314,11 +22398,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.mini-combo_split.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.mini-combo_unified.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
@@ -22461,11 +22540,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.normal.layer.buttons.small-toggle_on.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.small-combo_split.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -22616,11 +22690,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.regular-combo_split.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.regular-combo_unified.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
@@ -22763,11 +22832,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.aqua.normal.layer.buttons.large-toggle_on.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.aqua.normal.layer.buttons.large-combo_split.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -22938,11 +23002,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.mini-combo_split.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.mini-combo_unified.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
@@ -23030,11 +23089,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.disabled.layer.buttons.small-with_icon.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.small-combo_split.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -23130,11 +23184,6 @@ tolerance = 0.25
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.regular-combo_split.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.regular-combo_unified.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
@@ -23222,11 +23271,6 @@ tolerance = 0.25
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.disabled.layer.buttons.large-with_icon.corner_top_right.radius_fit_px"
-tolerance = 0.25
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.darkAqua.normal.layer.buttons.large-combo_split.corner_top_right.radius_fit_px"
 tolerance = 0.25
 
 [[fact.cite]]
@@ -32143,11 +32187,6 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.mini-combo_split.min_height"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.mini-combo_unified.min_height"
 tolerance = 0
 
@@ -32242,11 +32281,6 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.small-combo_split.min_height"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.small-combo_unified.min_height"
 tolerance = 0
 
@@ -32308,11 +32342,6 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.regular-combo_split.min_height"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.regular-combo_unified.min_height"
 tolerance = 0
 
@@ -32370,11 +32399,6 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.large-with_icon.min_height"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/geometry.toml#geometry.styles_c.large-combo_split.min_height"
 tolerance = 0
 
 [[fact.cite]]
@@ -34867,17 +34891,7 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_split.font.familyName"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.font.familyName"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_split.font.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -34887,17 +34901,7 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_split.font.familyName"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.font.familyName"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_split.font.familyName"
 tolerance = 0
 
 [[fact.cite]]
@@ -34979,22 +34983,22 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_split.font.pointSize"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.font.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_split.font.pointSize"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.font.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.font.pointSize"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.regular"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.large"
 tolerance = 0
 
 [[fact]]
@@ -35010,12 +35014,12 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_split.font.pointSize"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.font.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.font.pointSize"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.mini"
 tolerance = 0
 
 [[fact]]
@@ -35031,12 +35035,12 @@ tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_split.font.pointSize"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.font.pointSize"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.font.pointSize"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.fonts.sizes.systemFontSizeForControlSize.small"
 tolerance = 0
 
 [[fact]]
@@ -35146,30 +35150,6 @@ conversion = ["ns_font_weight"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-default.font.weightTrait"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_split.font.weightTrait"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_split.font.weightTrait"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_split.font.weightTrait"
-tolerance = 0
-conversion = ["ns_font_weight"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_split.font.weightTrait"
 tolerance = 0
 conversion = ["ns_font_weight"]
 

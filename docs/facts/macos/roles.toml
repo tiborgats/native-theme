@@ -2,14 +2,15 @@
 # `[macos.colors.<appearance>]` of the os-probe, run 40969040283), with no accent colour set. Each fact cites the
 # main pass (Reduce Transparency on, the image's setting) and the pass with it off, which read every colour the same,
 # and the Increase Contrast pass where that pass reads the same colour; where it reads another, a fact under
-# `contrast_increased` follows. The accent-dependent NSColors (those the run's accent-red pass changes:
-# controlAccentColor, selectedContentBackgroundColor, alternateSelectedControlColor, selectedTextBackgroundColor,
-# selectedControlColor, keyboardFocusIndicatorColor, textInsertionPointColor) are inputs (S9.1): `input.accent`
-# (controlAccentColor) and `input.highlight` (selectedTextBackgroundColor, the Highlight colour setting; NSColor's
-# highlightColor, which the red accent leaves unchanged, is the bezels' highlight, not that setting) are stated as
-# values, and the roles that reference them by the SDK's declarations (`read`); the roles that follow the others
-# (selectedContentBackgroundColor, keyboardFocusIndicatorColor, selectedControlColor) are stated as their measured
-# values with the image's accent, as S9.1 names no input for them (the tie-break's report).
+# `contrast_increased` follows. The accent-dependent NSColors (among those the accent-red pass of run
+# 41006842699's macos-26 job changes: controlAccentColor, selectedContentBackgroundColor, alternateSelectedControlColor,
+# selectedTextBackgroundColor, selectedControlColor, keyboardFocusIndicatorColor, textInsertionPointColor): those
+# S9.1 names accent inputs (ADD-A123), `input.accent` (controlAccentColor), `input.highlight`
+# (selectedTextBackgroundColor, the Highlight colour setting), `input.selected_content_background`,
+# `input.keyboard_focus_indicator` and `input.selected_control`, are stated as their measured values, and the roles that take them
+# (`role.global.accent`, `role.global.selection_text_background`, `role.selection.background`,
+# `role.window.decoration_focus`, `role.@selected_control`) as references to them by the SDK's declarations (`read`);
+# highlightColor is `role.@highlight`, a literal per scheme, which the red accent leaves unchanged (no input).
 
 [[fact]]
 # windowBackgroundColor
@@ -633,11 +634,11 @@ tolerance = 0
 # The selected items' background, and in a window that is not key (MAC-X16).
 
 [[fact]]
-# selectedContentBackgroundColor (it follows the accent, an AppKit-derived input S9.1 names none for: the measured value)
-key = "role.selection.background"
+# selectedContentBackgroundColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0064e1"
-rows = []
+rows = ["MAC-L02"]
 
 [[fact.cite]]
 kind = "measured"
@@ -650,10 +651,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#0040dd"
-rows = ["MAC-X22"]
+rows = ["MAC-L02", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -661,10 +662,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#0059d1"
-rows = []
+rows = ["MAC-L02"]
 
 [[fact.cite]]
 kind = "measured"
@@ -677,15 +678,26 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#1774da"
-rows = ["MAC-X22"]
+rows = ["MAC-L02", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
 tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.selected_content_background"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:221"
+quote = "NSColor *selectedContentBackgroundColor"
 
 [[fact]]
 # unemphasizedSelectedContentBackgroundColor
@@ -2200,11 +2212,11 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-# keyboardFocusIndicatorColor (it follows the accent, an AppKit-derived input S9.1 names none for: the measured value)
-key = "role.window.decoration_focus"
+# keyboardFocusIndicatorColor (S9.1: an accent input, ADD-A123)
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0067f47f"
-rows = []
+rows = ["MAC-X13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2217,10 +2229,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#0022af"
-rows = ["MAC-X22"]
+rows = ["MAC-X13", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2228,10 +2240,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#1aa9ff7f"
-rows = []
+rows = ["MAC-X13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2244,10 +2256,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#469af5"
-rows = ["MAC-X22"]
+rows = ["MAC-X13", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2255,8 +2267,19 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-# selectedControlColor (it follows the accent: the measured value)
-key = "role.@selected_control"
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.keyboard_focus_indicator"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:243"
+quote = "NSColor *keyboardFocusIndicatorColor;"
+
+[[fact]]
+# selectedControlColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#b3d7ff"
 rows = ["MAC-DF04"]
@@ -2272,7 +2295,7 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#b3c6f5"
 rows = ["MAC-DF04", "MAC-X22"]
@@ -2283,7 +2306,7 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#3f638b"
 rows = ["MAC-DF04"]
@@ -2299,7 +2322,7 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#466280"
 rows = ["MAC-DF04", "MAC-X22"]
@@ -2307,6 +2330,70 @@ rows = ["MAC-DF04", "MAC-X22"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.selected_control"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:240"
+quote = "NSColor *selectedControlColor;"
+
+# highlightColor (NSColor.h:284: the colour highlightWithLevel: blends toward; the red accent leaves it unchanged, S9.1)
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#ffffff"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#b4b4b4"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]
@@ -2355,8 +2442,7 @@ quote = "The foreground for unemphasized text selection (e.g. when the associate
 # `input.selected_control` and `input.keyboard_focus_indicator` (their measured values, which the red accent changes),
 # and the roles that take them (`role.selection.background`, `role.@selected_control`, `role.window.decoration_focus`)
 # as references to them (`read`), as `input.accent` and `input.highlight` are; highlightColor is `role.@highlight`, a
-# literal per scheme, which the red accent leaves unchanged. macos-tahoe's roles above still state those three as
-# literals (the tie-break's report).
+# literal per scheme, which the red accent leaves unchanged, as macos-tahoe's above.
 
 [[fact]]
 # windowBackgroundColor
