@@ -443,7 +443,7 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
                 else:
                     value = next((v for v in values if name in (v.written, v.rust)), None)
                     if value is None:
-                        if name in deferred or any(name == d for d in deferred):
+                        if any(unsuffixed(name) == unsuffixed(d) for d in deferred):
                             continue
                         raise InputError(f"{where}: may_be_absent names `{name}`, no value of the entry")
                     wrapper = split_type(value.ty)[0]
@@ -867,6 +867,14 @@ def self_test() -> int:
     refused("deferral of no value", 'slice = ["knob"]\n[deferred.knob]\nnope = "placement"\n'
                                     '[hand_written]\nplacement = false\n', SELF_TEST_CATALOGUE, "no value of `knob`")
     refused("undeferred record absent", 'slice = ["knob"]\n', SELF_TEST_CATALOGUE, "a record: its members")
+    try:
+        deferring = parse_units('slice = ["knob"]\n[deferred.knob]\nspot = "placement"\ngap = "placement"\n'
+                                '[hand_written]\nplacement = false\n')
+        catalogue = SELF_TEST_CATALOGUE.replace("`spot` (all)", "`spot` (all), `gap_px` (all)")
+        kept = read_widget(spec_catalogue.entries(catalogue)[0], deferring, spec_catalogue.shared_types(catalogue), {})
+        expect("deferral by its Rust name", "gap" in [v.rust for v in kept.values], False)
+    except InputError as err:
+        failures.append(f"deferral by its Rust name, listed suffixed: refused with {err}")
     refused("names after the first sentence", SELF_TEST_UNITS,
             SELF_TEST_CATALOGUE.replace("`side` is not.", "`side` (all), `gap_px`."), "after its first sentence")
     refused("record value absent", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
