@@ -14,7 +14,8 @@
 //   desktop.toml       the desktop's visible top-level windows at the start
 //   window.png         the window's content (RenderTargetBitmap)
 //   popup-<pass>.png   each popup's child (RenderTargetBitmap)
-//   screen-<pass>.png  the primary display (GDI), the popups on screen
+//   screen-<pass>.png  the primary display (GDI), the popups on screen, and
+//                      screen-<pass>-window.png, the window's part of it
 // XAML coordinates are in effective pixels relative to the window's content;
 // HWND rectangles and the screen captures are in physical pixels.
 using System.Diagnostics;
@@ -41,6 +42,9 @@ public partial class App : Application
 {
     private const int SettleMilliseconds = 1500;
     private const int EventTimeoutMilliseconds = 8000;
+    // Off the anchor's centre, so a tooltip placed at the pointer and one
+    // placed at the anchor land apart.
+    private const double HoverInset = 8;
 
     private readonly Toml toml = new();
     private readonly Toml desktop = new();
@@ -315,9 +319,9 @@ public partial class App : Application
             Native.ClientToScreen(hwnd, ref origin);
             Rect bounds = anchor!.TransformToVisual(root).TransformBounds(new Rect(0, 0, anchor.ActualWidth, anchor.ActualHeight));
             double scale = root!.XamlRoot.RasterizationScale;
-            int x = origin.X + (int)Math.Round((bounds.X + bounds.Width / 2) * scale);
+            int x = origin.X + (int)Math.Round((bounds.X + HoverInset) * scale);
             int y = origin.Y + (int)Math.Round((bounds.Y + bounds.Height / 2) * scale);
-            section.Str("shown_by", "SendInput moving the pointer onto the anchor's centre");
+            section.Str("shown_by", "SendInput moving the pointer onto the anchor, HoverInset from its left edge");
             section.Point("cursor", x, y);
             section.Bool("send_input", MovePointer(x - 20, y - 10) && MovePointer(x, y));
         }
@@ -539,6 +543,15 @@ public partial class App : Application
                 graphics.CopyFromScreen(bounds.X, bounds.Y, 0, 0, new System.Drawing.Size(bounds.Width, bounds.Height));
             }
             bitmap.Save(Path.Combine(outDir, name), System.Drawing.Imaging.ImageFormat.Png);
+            IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            if (Native.DwmGetWindowAttribute(hwnd, Native.DWMWA_EXTENDED_FRAME_BOUNDS, out Native.RECT frame, Marshal.SizeOf<Native.RECT>()) == 0)
+            {
+                System.Drawing.Rectangle crop = System.Drawing.Rectangle.Intersect(
+                    new System.Drawing.Rectangle(frame.Left - bounds.X, frame.Top - bounds.Y, frame.Right - frame.Left, frame.Bottom - frame.Top),
+                    new System.Drawing.Rectangle(0, 0, bounds.Width, bounds.Height));
+                using System.Drawing.Bitmap windowPart = bitmap.Clone(crop, bitmap.PixelFormat);
+                windowPart.Save(Path.Combine(outDir, Path.GetFileNameWithoutExtension(name) + "-window.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
         }
         catch (Exception e)
         {
