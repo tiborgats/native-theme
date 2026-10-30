@@ -555,7 +555,7 @@ on to the next unit meanwhile.
   key, no state-model combination lacking a fact and every declaration agreeing with its facts; `check_facts_trace.py`
   and `check_function_vectors.py` over every fact green; `check_ledger.py --final` green (`imported/` empty, the staged
   file gone, the legacy list empty, every measured fact with a drift comparison, the unmeasured register with no open
-  entry). The full run calls `check_ledger.py --final` from then on.
+  entry, no S17 pending fact). The full run calls `check_ledger.py --final` from then on.
 
 ## M5 — Showcases (after M4)
 
