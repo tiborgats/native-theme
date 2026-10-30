@@ -185,6 +185,16 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:196"
 quote = "{ \"linear\",       TRUE,  FALSE, { 0.0,  0.0, 1.0,  1.0 } },"
 
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:558-559"
+quote = "case ADW_LINEAR: return linear (value, 1);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-easing.c:127-132"
+quote = "linear (double t, double d) { return t / d; }"
+
 [[fact]]
 key = "token.motion.timings.ease_in_out"
 value = { cubic_bezier = [0.42, 0.0, 0.58, 1.0] }
