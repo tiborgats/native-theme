@@ -17,8 +17,10 @@
 #   index.toml        the system image, emulator, SDK packages, device build,
 #                     Compose and build versions, the runner
 #   sdk.txt           each SDK archive: package path, revision, name, SHA-1, SHA-256
-#   build.txt, dependencies.txt, build-environment.txt   Gradle's output
-#   run<N>/capture/   the PNGs and the test's index.toml
+#   build.txt, dependencies.txt, build-environment.txt, gradle-version.txt
+#                     Gradle's output; accel-check.txt, the emulator's KVM check
+#   run<N>/capture/   the PNGs and index.toml (device.toml and each test's
+#                     fragment, merged)
 #   run<N>/           emulator.txt, instrument.txt, getprop.txt, logcat.txt
 #   run.txt           each step's exit status, the comparison
 #   sha256.txt        every PNG's SHA-256 (run 1)
