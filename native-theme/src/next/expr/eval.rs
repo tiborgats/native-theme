@@ -99,7 +99,8 @@ impl TypedExpr {
     /// The expression's value where it is used, its references read from
     /// `env`, the result limited as its field's [`Bound`] says.
     ///
-    /// Total (S2.2's *Totality*): `alpha` clamps its alpha, `mix` its
+    /// Total (S2.2's *Totality*): `alpha` clamps its alpha, `with_alpha` the
+    /// alpha it sets, `mix` its
     /// fraction, `pick` takes the floored index's Euclidean remainder, a
     /// non-finite result or operand is zero, and the field's bound zeroes a
     /// negative, clamps a fraction and floors an integer.
@@ -123,6 +124,13 @@ fn eval(node: &Node, env: &dyn Env) -> Val {
         Node::Alpha(operands) => {
             let [c, a] = operands.as_ref();
             Val::Color(arith::alpha(color(&eval(c, env)), number(&eval(a, env))))
+        }
+        Node::WithAlpha(operands) => {
+            let [c, a] = operands.as_ref();
+            Val::Color(arith::with_alpha(
+                color(&eval(c, env)),
+                number(&eval(a, env)),
+            ))
         }
         Node::Mix(operands) => {
             let [a, b, t] = operands.as_ref();
@@ -370,6 +378,15 @@ mod tests {
                 g: 0.0,
                 b: 0.0,
                 a: 0.25
+            })
+        );
+        assert_eq!(
+            value("with_alpha(surface.foreground, 0.8)", Ty::Color),
+            Val::Color(Color {
+                r: 1.0,
+                g: 0.0,
+                b: 0.0,
+                a: 0.8
             })
         );
         assert_eq!(

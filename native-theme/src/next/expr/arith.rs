@@ -1,5 +1,6 @@
-//! The model's own arithmetic (S2.2): `alpha`, `mix`, `mul`, `div`, `add`,
-//! `sub`, `min`, `max`, `floor`, `round` and `pick`, total as S2.2's *Totality* says.
+//! The model's own arithmetic (S2.2): `alpha`, `with_alpha`, `mix`, `mul`,
+//! `div`, `add`, `sub`, `min`, `max`, `floor`, `round` and `pick`, total as
+//! S2.2's *Totality* says.
 
 use super::ty::{BinOp, Bound};
 use crate::next::color::Color;
@@ -26,6 +27,16 @@ pub(super) fn finite_color(c: Color) -> Color {
 pub(super) fn alpha(c: Color, a: f32) -> Color {
     Color {
         a: finite(c.a * a).clamp(0.0, 1.0),
+        ..c
+    }
+}
+
+/// `with_alpha(c, a)`: `c` with its alpha set to `a`, clamped to `0..=1` as
+/// `QColor::setAlphaF` and CSS's relative colours clamp it; `alpha`
+/// multiplies instead, the two agreeing only on an opaque `c`.
+pub(super) fn with_alpha(c: Color, a: f32) -> Color {
+    Color {
+        a: finite(a).clamp(0.0, 1.0),
         ..c
     }
 }
@@ -169,6 +180,20 @@ mod tests {
         assert_close(alpha(c, 1.5), rgba(0.2, 0.4, 0.6, 1.0));
         assert_close(alpha(c, -1.0), rgba(0.2, 0.4, 0.6, 0.0));
         assert_close(alpha(c, f32::INFINITY), rgba(0.2, 0.4, 0.6, 0.0));
+    }
+
+    #[test]
+    fn with_alpha_sets_and_clamps() {
+        let c = rgba(0.2, 0.4, 0.6, 0.5);
+        // Set, not multiplied: `alpha` gives 0.4 here.
+        assert_close(with_alpha(c, 0.8), rgba(0.2, 0.4, 0.6, 0.8));
+        assert_close(alpha(c, 0.8), rgba(0.2, 0.4, 0.6, 0.4));
+        // The two agree on an opaque colour.
+        let opaque = rgba(0.2, 0.4, 0.6, 1.0);
+        assert_close(with_alpha(opaque, 0.8), alpha(opaque, 0.8));
+        assert_close(with_alpha(c, 1.5), rgba(0.2, 0.4, 0.6, 1.0));
+        assert_close(with_alpha(c, -1.0), rgba(0.2, 0.4, 0.6, 0.0));
+        assert_close(with_alpha(c, f32::NAN), rgba(0.2, 0.4, 0.6, 0.0));
     }
 
     #[test]

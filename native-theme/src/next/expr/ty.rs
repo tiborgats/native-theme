@@ -415,6 +415,8 @@ pub(super) enum Node {
     Round(Box<Node>, Ty),
     /// `alpha(c, a)`.
     Alpha(Box<[Node; 2]>),
+    /// `with_alpha(c, a)`.
+    WithAlpha(Box<[Node; 2]>),
     /// `mix(a, b, t)`.
     Mix(Box<[Node; 3]>),
     /// `pick(index, c0, c1, …)`.
@@ -683,10 +685,15 @@ impl Checker<'_> {
                 Ok((node, ty))
             }
             Func::Pick => self.pick(args, depth),
-            Func::Alpha => {
+            Func::Alpha | Func::WithAlpha => {
                 let nodes = self.arguments(func, args, depth, &[COLOR, NUMBER])?;
-                let nodes = <[Node; 2]>::try_from(nodes).map_err(|_| arity(func, args))?;
-                Ok((Node::Alpha(Box::new(nodes)), Ty::Color))
+                let nodes = Box::new(<[Node; 2]>::try_from(nodes).map_err(|_| arity(func, args))?);
+                let node = if func == Func::Alpha {
+                    Node::Alpha(nodes)
+                } else {
+                    Node::WithAlpha(nodes)
+                };
+                Ok((node, Ty::Color))
             }
             Func::Mix => {
                 let nodes = self.arguments(func, args, depth, &[COLOR, COLOR, NUMBER])?;

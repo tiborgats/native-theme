@@ -258,13 +258,17 @@ impl ElementDatum {
     }
 }
 
-/// A function of S2.2's closed set: the model's own arithmetic (`alpha`, `mix`,
-/// `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `round`, `pick`) and the platform
-/// functions, each implemented to its source.
+/// A function of S2.2's closed set: the model's own arithmetic (`alpha`,
+/// `with_alpha`, `mix`, `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`,
+/// `round`, `pick`) and the platform functions, each implemented to its
+/// source.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Func {
     /// `alpha(c, a)`: `c` with its alpha multiplied by `a`.
     Alpha,
+    /// `with_alpha(c, a)`: `c` with its alpha set to `a`, as QML's
+    /// `Qt.alpha` and CSS's relative colour `rgb(from c r g b / a)` set it.
+    WithAlpha,
     /// `mix(a, b, t)`: CSS `color-mix(in srgb, a (1−t)·100%, b t·100%)`.
     Mix,
     /// `kde_effects(c, background, group, role_kind)`: KColorScheme's effects.
@@ -345,8 +349,9 @@ pub enum Func {
 
 impl Func {
     /// Every function, in S2.2's table's order.
-    pub const ALL: [Func; 39] = [
+    pub const ALL: [Func; 40] = [
         Func::Alpha,
+        Func::WithAlpha,
         Func::Mix,
         Func::KdeEffects,
         Func::KdeSelectionInactive,
@@ -392,6 +397,7 @@ impl Func {
     pub const fn name(self) -> &'static str {
         match self {
             Func::Alpha => "alpha",
+            Func::WithAlpha => "with_alpha",
             Func::Mix => "mix",
             Func::KdeEffects => "kde_effects",
             Func::KdeSelectionInactive => "kde_selection_inactive",
