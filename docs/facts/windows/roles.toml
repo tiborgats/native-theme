@@ -4138,6 +4138,7 @@ rows = []
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:2042"
 quote = "<SolidColorBrush x:Key=\"SystemControlForegroundBaseMediumHighBrush\" Color=\"{ThemeResource SystemColorButtonTextColor}\" />"
+
 [[fact]]
 key = "role.@system_control_highlight_alt_base_high"
 when = { conditions = ["contrast_high"] }
