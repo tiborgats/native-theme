@@ -10,12 +10,15 @@
 //! or `not probed: …`) and the run goes on. On any other OS the probe prints
 //! that it supports macOS and Windows only and exits with success.
 //!
-//! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass]`.
-//! `--out` (or `--out=<dir>`) names the output directory, `os-probe-out` by
-//! default; `--not-key`, macOS only, makes the key-window section capture its
-//! window after a second window has taken the key; `--button-pass`, macOS
-//! only, runs the button pass alone: push buttons in a key window, captured
-//! per state, control size and appearance.
+//! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass
+//! [--focus | --not-key | --inactive]]`. `--out` (or `--out=<dir>`) names the
+//! output directory, `os-probe-out` by default; `--not-key`, macOS only,
+//! makes the key-window section capture its window after a second window has
+//! taken the key; `--button-pass`, macOS only, runs the button pass alone:
+//! buttons in titled windows, captured per state, control size and
+//! appearance over the window's background and three opaque backdrops, with
+//! the window key, or with each button focused (`--focus`), a second window
+//! key (`--not-key`) or another application active (`--inactive`).
 
 #![deny(unsafe_code)]
 #![deny(
@@ -51,7 +54,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass]   (default: os-probe-out; --not-key, macOS only: the key-window section captures its window after another window took the key; --button-pass, macOS only: the button pass alone)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --not-key | --inactive]]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus and --inactive, with --button-pass only: each button focused in turn, or another application active)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -63,6 +66,10 @@ struct Options {
     not_key: bool,
     /// Whether the macOS probe runs the button pass alone.
     button_pass: bool,
+    /// Whether the button pass focuses each button in turn.
+    focus: bool,
+    /// Whether the button pass captures with another application active.
+    inactive: bool,
 }
 
 /// The options from the command line, or the usage error.
@@ -78,12 +85,16 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
     let mut out = PathBuf::from("os-probe-out");
     let mut not_key = false;
     let mut button_pass = false;
+    let mut focus = false;
+    let mut inactive = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some(s) if s.starts_with("-psn_") => {}
             Some("--not-key") => not_key = true,
             Some("--button-pass") => button_pass = true,
+            Some("--focus") => focus = true,
+            Some("--inactive") => inactive = true,
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
                 None => return Err(format!("--out needs a directory\n{USAGE}")),
@@ -100,10 +111,28 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             }
         }
     }
+    if (focus || inactive) && !button_pass {
+        return Err(format!(
+            "--focus and --inactive need --button-pass\n{USAGE}"
+        ));
+    }
+    if [focus, inactive, not_key]
+        .iter()
+        .filter(|set| **set)
+        .count()
+        > 1
+        && button_pass
+    {
+        return Err(format!(
+            "the button pass takes one of --focus, --not-key and --inactive\n{USAGE}"
+        ));
+    }
     Ok(Options {
         out,
         not_key,
         button_pass,
+        focus,
+        inactive,
     })
 }
 
@@ -138,7 +167,16 @@ fn run(options: &Options) -> ExitCode {
     let mut doc = toml::Table::new();
     #[cfg(target_os = "macos")]
     if options.button_pass {
-        macos::button_probe(&mut doc, out_dir);
+        let mode = if options.focus {
+            macos::ButtonMode::Focus
+        } else if options.inactive {
+            macos::ButtonMode::Inactive
+        } else if options.not_key {
+            macos::ButtonMode::NotKey
+        } else {
+            macos::ButtonMode::Key
+        };
+        macos::button_probe(&mut doc, out_dir, mode);
     } else {
         macos::probe(&mut doc, out_dir, options.not_key);
     }
@@ -195,6 +233,8 @@ mod tests {
             out: PathBuf::from(out),
             not_key,
             button_pass: false,
+            focus: false,
+            inactive: false,
         })
     }
 
@@ -248,10 +288,46 @@ mod tests {
                 out: PathBuf::from(out),
                 not_key: false,
                 button_pass: true,
+                focus: false,
+                inactive: false,
             })
         };
         assert_eq!(parse(&["--button-pass"]), pass("os-probe-out"));
-        assert_eq!(parse(&["--out", "/tmp/bp", "--button-pass"]), pass("/tmp/bp"));
+        assert_eq!(
+            parse(&["--out", "/tmp/bp", "--button-pass"]),
+            pass("/tmp/bp")
+        );
         assert_eq!(parse(&["--button-pass", "--out=/tmp/bp"]), pass("/tmp/bp"));
+    }
+
+    /// The button pass's conditions come one at a time, with
+    /// `--button-pass` only.
+    #[test]
+    fn a_button_condition_needs_the_button_pass_and_comes_alone() {
+        let with = |focus: bool, not_key: bool, inactive: bool| -> Result<Options, String> {
+            Ok(Options {
+                out: PathBuf::from("os-probe-out"),
+                not_key,
+                button_pass: true,
+                focus,
+                inactive,
+            })
+        };
+        assert_eq!(
+            parse(&["--button-pass", "--focus"]),
+            with(true, false, false)
+        );
+        assert_eq!(
+            parse(&["--inactive", "--button-pass"]),
+            with(false, false, true)
+        );
+        assert_eq!(
+            parse(&["--button-pass", "--not-key"]),
+            with(false, true, false)
+        );
+        assert!(parse(&["--focus"]).is_err());
+        assert!(parse(&["--inactive"]).is_err());
+        assert!(parse(&["--button-pass", "--focus", "--inactive"]).is_err());
+        assert!(parse(&["--button-pass", "--focus", "--not-key"]).is_err());
     }
 }

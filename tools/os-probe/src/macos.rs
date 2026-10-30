@@ -2,12 +2,15 @@
 //! sizes and cell geometry for every NSControlSize, PNG renders of each
 //! control at regular size, and, last, a key window's captures: a sidebar
 //! material, a table header and a selected segment, sampled per appearance.
-//! With `--button-pass`, only the push buttons in a key window per state
-//! ([`buttons`]). The calls objc2-app-kit 0.3 marks `unsafe` are in [`ffi`];
-//! this file has none.
+//! With `--button-pass`, only the buttons in titled windows per state and
+//! condition ([`buttons`], its pixel work in [`layer`]). The calls
+//! objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has none.
 
 mod buttons;
 mod ffi;
+mod layer;
+
+pub(crate) use buttons::Mode as ButtonMode;
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -17,10 +20,11 @@ use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Sel};
 use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message, sel};
 use objc2_app_kit::{
-    NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
-    NSBezelStyle, NSBitmapFormat, NSBitmapImageRep, NSBox, NSBoxType, NSButton, NSButtonType,
-    NSColor, NSColorSpace, NSComboBox, NSControl, NSControlSize, NSControlStateValueOff,
-    NSControlStateValueOn, NSEventMask, NSFont, NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton,
+    NSAnimationContext, NSAppearance, NSAppearanceCustomization, NSApplication,
+    NSApplicationActivationPolicy, NSBezelStyle, NSBitmapFormat, NSBitmapImageRep, NSBox,
+    NSBoxType, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox, NSControl, NSControlSize,
+    NSControlStateValueOff, NSControlStateValueOn, NSEvent, NSEventMask, NSFont,
+    NSFontDescriptorSymbolicTraits, NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton,
     NSProgressIndicator, NSProgressIndicatorStyle, NSScreen, NSScrollView, NSScroller,
     NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView,
     NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableColumn, NSTableView, NSTableViewStyle,
@@ -29,7 +33,7 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{
     NSArray, NSData, NSDate, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion,
-    NSPoint, NSProcessInfo, NSRect, NSSize, NSString,
+    NSPoint, NSProcessInfo, NSRect, NSSize, NSString, NSUserDefaults,
 };
 use toml::{Table, Value};
 
@@ -97,6 +101,7 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
             out::put_table(&mut env, "accessibility", accessibility_table());
             out::put_table(&mut mac, "environment", env);
             out::put_table(&mut mac, "metrics", metrics_table(mtm));
+            out::put_table(&mut mac, "tokens", tokens_table(mtm));
             out::put_table(&mut mac, "controls", controls_table(mtm, &version, out_dir));
             // Last: it makes the application regular and active, which no
             // earlier section may see.
@@ -110,6 +115,7 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
             out::put(&mut mac, "environment", reason.clone());
             out::put(&mut mac, "metrics", reason.clone());
+            out::put(&mut mac, "tokens", reason.clone());
             out::put(&mut mac, "controls", reason.clone());
             out::put(&mut mac, "key_window", reason);
         }
@@ -118,8 +124,9 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
 }
 
 /// `--button-pass`: fill `doc` with `[os]`, `[probe]`, the environment and
-/// the button pass only; its captures go under `out_dir/<appearance>`.
-pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path) {
+/// the button pass in `mode` only; its captures go under
+/// `out_dir/<appearance>`.
+pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path, mode: ButtonMode) {
     let (os, version) = os_table();
     out::put_table(doc, "os", os);
     out::put_table(doc, "probe", crate::probe_table());
@@ -139,7 +146,7 @@ pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path) {
             out::put_table(
                 &mut mac,
                 "button_pass",
-                buttons::button_pass_table(mtm, &app, out_dir, &version),
+                buttons::button_pass_table(mtm, &app, out_dir, &version, mode),
             );
         }
         None => {
@@ -271,11 +278,33 @@ fn fonts_table() -> Table {
     out::put_table(&mut t, "named", named);
 
     let mut styles = Table::new();
+    let mut emphasized = Table::new();
+    out::put(
+        &mut emphasized,
+        "method",
+        out::text(
+            "the text style's preferredFontForTextStyle:options: font's fontDescriptor, fontDescriptorWithSymbolicTraits: of its symbolicTraits with NSFontDescriptorTraitBold added, then fontWithDescriptor:size: 0 (the descriptor's size)",
+        ),
+    );
     match ffi::text_styles() {
         Ok(text_styles) => {
             for (name, style) in text_styles {
                 match ffi::preferred_font(style) {
-                    Ok(font) => out::put_table(&mut styles, name, font_table(&font)),
+                    Ok(font) => {
+                        out::put_table(&mut styles, name, font_table(&font));
+                        let descriptor = font.fontDescriptor();
+                        let bold = descriptor.fontDescriptorWithSymbolicTraits(
+                            descriptor.symbolicTraits() | NSFontDescriptorSymbolicTraits::TraitBold,
+                        );
+                        match NSFont::fontWithDescriptor_size(&bold, 0.0) {
+                            Some(f) => out::put_table(&mut emphasized, name, font_table(&f)),
+                            None => out::put(
+                                &mut emphasized,
+                                name,
+                                out::unavailable("fontWithDescriptor:size: is nil"),
+                            ),
+                        }
+                    }
                     Err(reason) => out::put(&mut styles, name, out::unavailable(reason)),
                 }
             }
@@ -283,6 +312,7 @@ fn fonts_table() -> Table {
         Err(reason) => out::put(&mut styles, "error", out::unavailable(reason)),
     }
     out::put_table(&mut t, "preferredFontForTextStyle", styles);
+    out::put_table(&mut t, "preferredFontForTextStyle_emphasized", emphasized);
     t
 }
 
@@ -296,7 +326,17 @@ fn font_table(font: &NSFont) -> Table {
     );
     out::put(&mut t, "fontName", out::text(font.fontName().to_string()));
     out::put(&mut t, "pointSize", out::float(font.pointSize()));
-    out::put(&mut t, "weightTrait", weight_trait(font));
+    let weight = weight_trait_value(font);
+    out::put(
+        &mut t,
+        "weightTrait",
+        weight.clone().map_or_else(out::unavailable, out::float),
+    );
+    out::put(
+        &mut t,
+        "weightTrait_nearest_NSFontWeight",
+        weight.map_or_else(out::unavailable, nearest_weight),
+    );
     out::put(&mut t, "ascender", out::float(font.ascender()));
     out::put(&mut t, "descender", out::float(font.descender()));
     out::put(&mut t, "leading", out::float(font.leading()));
@@ -306,26 +346,43 @@ fn font_table(font: &NSFont) -> Table {
 }
 
 /// NSFontWeightTrait from the font descriptor's traits dictionary.
-fn weight_trait(font: &NSFont) -> Value {
-    let (traits_key, weight_key) = match ffi::font_trait_keys() {
-        Ok(keys) => keys,
+fn weight_trait_value(font: &NSFont) -> Result<f64, String> {
+    let (traits_key, weight_key) = ffi::font_trait_keys()?;
+    let descriptor = font.fontDescriptor();
+    let traits = descriptor
+        .objectForKey(traits_key)
+        .ok_or_else(|| "no NSFontTraitsAttribute".to_owned())?;
+    let dict = traits
+        .downcast_ref::<NSDictionary>()
+        .ok_or_else(|| "NSFontTraitsAttribute is not a dictionary".to_owned())?;
+    let key: &AnyObject = weight_key.as_ref();
+    let weight = dict
+        .objectForKey(key)
+        .ok_or_else(|| "no NSFontWeightTrait".to_owned())?;
+    weight
+        .downcast_ref::<NSNumber>()
+        .map(|n| n.doubleValue())
+        .ok_or_else(|| "NSFontWeightTrait is not a number".to_owned())
+}
+
+/// The `NSFontWeight` constant nearest to a weight trait: its name, its
+/// value as AppKit reports it, and the trait's difference from it.
+fn nearest_weight(trait_value: f64) -> Value {
+    let weights = match ffi::font_weights() {
+        Ok(weights) => weights,
         Err(reason) => return out::unavailable(reason),
     };
-    let descriptor = font.fontDescriptor();
-    let Some(traits) = descriptor.objectForKey(traits_key) else {
-        return out::unavailable("no NSFontTraitsAttribute");
+    let nearest = weights
+        .iter()
+        .min_by(|(_, a), (_, b)| (a - trait_value).abs().total_cmp(&(b - trait_value).abs()));
+    let Some((name, value)) = nearest else {
+        return out::unavailable("no NSFontWeight constants");
     };
-    let Some(dict) = traits.downcast_ref::<NSDictionary>() else {
-        return out::unavailable("NSFontTraitsAttribute is not a dictionary");
-    };
-    let key: &AnyObject = weight_key.as_ref();
-    let Some(weight) = dict.objectForKey(key) else {
-        return out::unavailable("no NSFontWeightTrait");
-    };
-    match weight.downcast_ref::<NSNumber>() {
-        Some(n) => out::float(n.doubleValue()),
-        None => out::unavailable("NSFontWeightTrait is not a number"),
-    }
+    let mut t = Table::new();
+    out::put(&mut t, "name", out::text(*name));
+    out::put(&mut t, "value", out::float(*value));
+    out::put(&mut t, "difference", out::float(trait_value - value));
+    Value::Table(t)
 }
 
 // ── Colours ─────────────────────────────────────────────────────────────────
@@ -508,6 +565,114 @@ fn color_value(color: &NSColor, srgb: &NSColorSpace) -> Value {
             color
         )),
     }
+}
+
+// ── Tokens ──────────────────────────────────────────────────────────────────
+
+/// The user defaults the tokens read, as `-[NSUserDefaults objectForKey:]`
+/// of the standard defaults (the global domain included) gives them.
+const TOKEN_DEFAULTS: [&str; 6] = [
+    "NSTextInsertionPointBlinkPeriodOn",
+    "NSTextInsertionPointBlinkPeriodOff",
+    "NSTextInsertionPointBlinkPeriod",
+    "InitialKeyRepeat",
+    "KeyRepeat",
+    "AppleKeyboardUIMode",
+];
+
+/// Timing values the theme tokens take: key repeat, double click, the caret
+/// blink defaults, the default animation duration and a continuous button's
+/// periodic delay.
+fn tokens_table(mtm: MainThreadMarker) -> Table {
+    let mut t = Table::new();
+    let mut event = Table::new();
+    out::put(
+        &mut event,
+        "keyRepeatDelay_s",
+        out::float(NSEvent::keyRepeatDelay()),
+    );
+    out::put(
+        &mut event,
+        "keyRepeatInterval_s",
+        out::float(NSEvent::keyRepeatInterval()),
+    );
+    out::put(
+        &mut event,
+        "doubleClickInterval_s",
+        out::float(NSEvent::doubleClickInterval()),
+    );
+    out::put_table(&mut t, "NSEvent", event);
+
+    let defaults = NSUserDefaults::standardUserDefaults();
+    let mut d = Table::new();
+    for key in TOKEN_DEFAULTS {
+        let value = match defaults.objectForKey(&ns(key)) {
+            None => out::text("absent (objectForKey: is nil)"),
+            Some(obj) => default_value(&obj),
+        };
+        out::put(&mut d, key, value);
+    }
+    out::put_table(&mut t, "user_defaults", d);
+
+    let mut animation = Table::new();
+    out::put(
+        &mut animation,
+        "currentContext_duration_s",
+        out::float(NSAnimationContext::currentContext().duration()),
+    );
+    NSAnimationContext::beginGrouping();
+    out::put(
+        &mut animation,
+        "in_beginGrouping_duration_s",
+        out::float(NSAnimationContext::currentContext().duration()),
+    );
+    NSAnimationContext::endGrouping();
+    out::put_table(&mut t, "NSAnimationContext", animation);
+
+    let mut periodic = Table::new();
+    out::put(
+        &mut periodic,
+        "method",
+        out::text(
+            "a new NSButton, buttonType momentaryPushIn, bezelStyle push: its cell's getPeriodicDelay:interval: as made and after setContinuous: YES",
+        ),
+    );
+    let button = NSButton::new(mtm);
+    button.setButtonType(NSButtonType::MomentaryPushIn);
+    button.setBezelStyle(NSBezelStyle::Push);
+    let read = |b: &NSButton| -> Value {
+        match b.cell() {
+            Some(cell) => {
+                let (delay, interval) = ffi::periodic_delay(&cell);
+                out::floats(&[f64::from(delay), f64::from(interval)])
+            }
+            None => out::unavailable("no cell"),
+        }
+    };
+    out::put(
+        &mut periodic,
+        "isContinuous_default",
+        out::boolean(button.isContinuous()),
+    );
+    out::put(&mut periodic, "default_delay_interval_s", read(&button));
+    button.setContinuous(true);
+    out::put(&mut periodic, "continuous_delay_interval_s", read(&button));
+    out::put_table(&mut t, "NSButton_periodic", periodic);
+    t
+}
+
+/// A user default's value: a number, a string, or its class.
+fn default_value(obj: &AnyObject) -> Value {
+    if let Some(n) = obj.downcast_ref::<NSNumber>() {
+        return out::float(n.doubleValue());
+    }
+    if let Some(s) = obj.downcast_ref::<NSString>() {
+        return out::text(s.to_string());
+    }
+    out::text(format!(
+        "an object of class {}",
+        obj.class().name().to_string_lossy()
+    ))
 }
 
 // ── Environment ─────────────────────────────────────────────────────────────
