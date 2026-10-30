@@ -9,7 +9,7 @@ the triage (every item has a destination) and, from M4, `--final` (the plan's M4
 | Milestone | Status | Closed at | Notes |
 |---|---|---|---|
 | D5 `v0.7.1-rc1` merged to `main` | done | fc6109d1 | PR #6, CI 39/39; `main` fast-forwarded on the maintainer's request (2026-10-29) |
-| M0 setup | in progress | | `v0.8.0-rc1` and `v0.8.0-tools` cut from fc6109d1; draft PRs #7 and #8 |
+| M0 setup | done | 2026-10-30 | `v0.8.0-rc1` and `v0.8.0-tools` cut from fc6109d1; draft PRs #7 and #8; the gate: spec checkers' self-tests and runs, `check_sources.py`, `update_sources.sh --verify`, the re-pin (no unresolved mapped citation; the rest listed), `check_ledger.py`, all green; the full run green |
 | Spikes M · G · K · I · W · A | done | 2026-10-30 | all six yes (rows below) |
 | M1a slice core | not started | | |
 | M1b slice complete | not started | | |
@@ -88,6 +88,7 @@ Each milestone's full `scripts/check_release.sh` run: commit, result, every warn
 
 | Commit | Milestone | Result | Warnings |
 |---|---|---|---|
+| 4f88c46b + 7d703911's cherry-pick | M0 | 178 ✅ 3 ⚠️ 0 ❌ (181 checks, 11 min) | `cargo outdated` cannot resolve `zbus`'s `blocking-api` feature in its temporary workspace (as in 0.7.0's release runs); visual assets and compatibility claims stale, warnings until M6 dates the CHANGELOG entry |
 
 ## Spec-change queue
 

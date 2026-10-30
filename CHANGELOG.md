@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - Unreleased
 
+### Added
+
+- **Development**: the 0.8.0 plan's facts tooling (`docs/todo_v0.7.1_model-completeness-plan.md`, M0). `docs/facts/sources.toml` pins every platform source the specification cites to the release set (Plasma 6.8.2, KDE Frameworks 6.31.0, Qt 6.12.0, libadwaita 1.10.0, GTK 4.24.1, material-web v2.5.0, Compose Material 3 1.5.0-beta02, microsoft-ui-xaml `winui3/release/2.5.1`, the `macos-15` and `macos-26` images' Xcode, the Android 17 emulator image), with the cited projects that are not platform sources and why; `scripts/check_sources.py` checks it against every citation `scripts/citations.py` finds in the planning documents, and `scripts/update_sources.sh` fetches the pins into a source cache and `--verify`s it. `scripts/check_facts.py` and `scripts/check_fact_citations.py` check the facts' form and, at the pins, each quote, absence, measurement and evidence file (specification S17); `scripts/repin_citations.py` moved the planning documents' citations to the release set; `scripts/check_ledger.py` checks that the plan's ledger gives every open backlog item a destination; `scripts/spec_catalogue.py` is the widget catalogue's parser, shared by the specification checkers, which gain `--self-test`.
+- **Development**: the measurement harnesses, run on CI by `.github/workflows/os-probe.yml`, which gains `jobs` and `images` inputs: the macOS probe's button pass in a key window (`--button-pass`); a GNOME container and host (libadwaita and GTK under mutter's headless mode) with a vector generator for libadwaita's colour function; a KDE container with `scripts/measure_kde_accent.sh` (Plasma's accent derivation, measured) and a Breeze render host for QML and Qt Widgets; an iOS simulator host for UIKit (iOS 18 and 26); a WinUI 3 host on `windows-11-arm` reporting popups' frames; an Android emulator host for Compose Material 3.
+
+### Changed
+
+- **Development**: `scripts/check_release.sh` has a `PLAN_EXCLUDED` list for the steps the 0.8.0 transition breaks until a named milestone (skipped by `--commit`, run and reported as warnings by the full run, matched both ways against `# PLAN_EXCLUDED:` marks in `ci.yml`), and checks the ledger, the pinned sources, the source cache and the facts.
+
 ## [0.7.0] - 2026-10-27
 
 ### Breaking Changes

@@ -687,9 +687,9 @@ tasks; the generator's drift check makes the code follow.
 ## Checklist
 
 - [x] D1, D4, D5, D7, D9, D10, D11, D12 decided (2026-10-29)
-- [ ] `v0.7.1-rc1` merged to `main` by the maintainer (D5)
-- [ ] M0 setup
-- [ ] Spikes M · G · K · I · W · A
+- [x] `v0.7.1-rc1` merged to `main` (D5; fast-forwarded on the maintainer's request, 2026-10-29)
+- [x] M0 setup (2026-10-30)
+- [x] Spikes M · G · K · I · W · A (2026-10-30, all yes)
 - [ ] M1a slice core
 - [ ] M1b slice complete
 - [ ] D6 checkpoint
