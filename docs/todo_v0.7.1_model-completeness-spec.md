@@ -2060,7 +2060,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
-| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared as S17's quote check compares text (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which
 may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
@@ -2621,8 +2621,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
 
   | `kind` | required | optional | not allowed |
   |---|---|---|---|
-  | `published` | `source`, `quote` | `conversion`, `absent` | `evidence`, `tolerance` |
-  | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent` |
+  | `published` | `source`, `quote` | `conversion`, `absent` | `evidence`, `tolerance`, `inputs` |
+  | `read` | `source`, `quote` | `conversion` | `evidence`, `tolerance`, `absent`, `inputs` |
   | `measured` | `evidence`, `tolerance` | `conversion`, `inputs` (a measured derivation, below) | `source`, `quote`, `absent` |
 
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
@@ -2667,7 +2667,8 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   each unit's dimension (`px`, `dp`, `sp` and logical points as px, `sp` being Android's text size before its
   scaling, S9.4; `pt`; `ms` and `s`; `deg`; `rem` and `em` have none, so a value written in them is cited where the
   platform states it in px, or measured); a member is added to a list, or to the conversions below, as a class 1
-  change; a span one notation reads (a `TimeSpan`, a byte list) is not read again by the number form. A literal
+  change; a span the number, colour or `TimeSpan` notations read (a `TimeSpan`, a byte list) is not read again by the number
+  form, while the text notations only add candidate strings and take no span. A literal
   without a unit takes the value literal's dimension in its
   canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
   within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
@@ -2689,8 +2690,9 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   `measured` citation with `inputs`, the references of its expression the harness varied as written there
   (`inputs = ["input.accent"]`). Its `evidence` path names a list of tables in a TOML evidence file, each a pass:
   the varied references as quoted keys (`"input.accent" = "#ff0000"`), `result` (the value measured) and
-  `conditions` (the pass's conditions, required unless the fact's `when` fixes the scheme), every value spelled as a
-  fact's `value` is (units written: `"4px"`, `"17pt"`); every other operand resolves from the preset under the fact's
+  `conditions` (the pass's conditions, including its `scheme:` condition, required unless the fact's `when` fixes
+  the scheme), every value spelled as a
+  fact's `value` is (units written: `"4px"`, `"17pt"`; `conversion` does not apply to them); every other operand resolves from the preset under the fact's
   `when` plus the pass's `conditions` (a list of condition strings, as `when.conditions` writes them), so `inputs`
   lists every operand that changes with the varied input. The checker checks the form: for each input and each
   scheme the fact covers, two passes that differ in that input alone, by more than its own type's quote-check precision, and whose results
@@ -2789,7 +2791,8 @@ reader, so the machine's own settings never enter: by default the no-reader stat
 scheme in turn, factor 1 and no font DPI of its own (`font_dpi: None`, so the preset's token converts its points). For every widget and
 every combination of its state model, it replaces the stand-in with one holding the combination's reader conditions (and
 passes its window conditions in `WindowConditions`), resolves, and queries the element, and compares each key with the
-fact that applies (within tolerance); a key and combination with no fact fails (R4). It compares every token,
+fact that applies (within tolerance; a measured derivation by evaluating its expression over each evidence pass, under
+the pass's conditions); a key and combination with no fact fails (R4). It compares every token,
 colour-role and input fact the same way, under its `when`. While 0.8.0 is built, the gate skips a fact whose key the
 model does not hold yet (the 0.8.0 plan enables its units one by one); 0.8.0 is released with none skipped.
 
