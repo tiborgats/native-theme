@@ -163,7 +163,7 @@ Roles: 144 = 106 stated + 4 followable + 13 followable→read + 21 not stated.
 | `motion.durations.control_normal`, `control_fast`, `control_fast_after`, `control_faster` | 4 stated | `00:00:00.250`, `.167`, `.168`, `.083` (Cany.xaml:603-606) |
 | `motion.timings.control_fast_out_slow_in` | stated | `ControlFastOutSlowInKeySpline` `0,0,0,1` (Cany.xaml:602) |
 | `motion.timings.fast_out_slow_in`, `slow_out_fast_in` | 2 not stated | Learn *Timing and easing* |
-| `motion.durations.connected`, `timings.connected` | 2 not stated | Learn / measure |
+| `motion.durations.connected_service`, `timings.connected_service` | 2 not stated | Learn / measure |
 | `motion.speed_factor` | not stated | reader (`SPI_GETCLIENTAREAANIMATION`) |
 | theme animations used by the samples (`FadeIn/Out`, `Reposition`, `SplitOpen/Close`, `DragItem/DragOver/DropTargetItem`) | (counted per widget) | parameters from uxtheme animation metrics (`ThemeGenerator::AddTimelinesForThemeAnimation(TAS_FADEIN, TA_FADEIN_SHOWN …)`, `dxaml/xcp/dxaml/lib/ThemeAnimations.cpp:75`, :95); `SplitOpenThemeAnimation::s_OpenDuration` (C++ constant, :681); measure |
 | `caret.color`, `width`, `blink_on`, `blink_off`, `blink_timeout` | 5 not stated | readers (W3-24); colour: C++ default |

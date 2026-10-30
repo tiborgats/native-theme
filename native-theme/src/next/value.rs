@@ -100,6 +100,20 @@ impl<T> SurfaceMap<T> {
             .map(|(_, value)| value)
     }
 
+    /// The value for `set`, if one is held, to change in place.
+    pub(crate) fn get_mut(&mut self, set: SurfaceSet) -> Option<&mut T> {
+        let index = self.entries.binary_search_by_key(&set, |(held, _)| *held);
+        index
+            .ok()
+            .and_then(|index| self.entries.get_mut(index))
+            .map(|(_, value)| value)
+    }
+
+    /// The sets and their values, in [`SurfaceSet`]'s order, taken out.
+    pub(crate) fn into_entries(self) -> impl Iterator<Item = (SurfaceSet, T)> {
+        self.entries.into_iter()
+    }
+
     /// Holds `value` for `set`, returning the value it replaces.
     pub fn insert(&mut self, set: SurfaceSet, value: T) -> Option<T> {
         match self.entries.binary_search_by_key(&set, |(held, _)| *held) {
