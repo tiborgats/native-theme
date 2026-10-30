@@ -45,6 +45,12 @@ SHARED_OVERRIDE = ["empty", "in_fill", "today", "other_month", "current", "multi
                    # the sixth check: the catalogue's drop-operation flags (a needed core change: SharedFlag)
                    "drop_copy", "drop_move"]
 
+# The S9 input paths' first segments (S9.1's declared inputs): an `input.<name>…` path whose name is one of these is an
+# input, not a part of the `input` widget. `highlight`, `selected_content_background`, `keyboard_focus_indicator` and
+# `selected_control` are the macOS accent inputs (ADD-A123).
+S9_INPUTS = ("accent", "accent_ramp", "highlight", "selected_content_background", "keyboard_focus_indicator",
+             "selected_control", "kde_scheme", "inactive", "seed", "tint")
+
 
 def snake(name: str) -> str:
     s = re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", name)
@@ -374,7 +380,7 @@ class Checker:
                 elif path[1] == "presentations" and "presentations" not in info["values"]:
                     self.add(src, ln, "value", f"{w}.values.presentations", ctx)
                 continue
-            if w == "input" and p0 in ("accent", "accent_ramp", "highlight", "kde_scheme", "inactive", "seed", "tint"):
+            if w == "input" and p0 in S9_INPUTS:
                 continue  # an S9 input path
             if p0 not in info["parts"]:
                 self.add(src, ln, "part", f"{w}.{p0}", ctx)
@@ -751,6 +757,11 @@ SELF_TEST_CATALOGUE = """
   - `body` — the root: `fill`.
   - `item` *(element)* — one item: `fill`.
 
+### input
+
+- **Parts:**
+  - `body` — the root: `fill`.
+
 ## Keyed components
 
 #### component.led (kde)
@@ -817,6 +828,9 @@ SELF_TEST_STRINGS = [
     ("button.body.fill @ not {hover}", [("notation", "not {a} (write `!{a}`)")]),
     ("button.body.fill @ pos parity odd", []),
     ("button.body.fill @ pos odd", [("notation", "pos odd (write `pos parity odd`)")]),
+    ("input.body.fill = input.selected_content_background", []),
+    ("input.body.fill = input.keyboard_focus_indicator input.selected_control input.highlight", []),
+    ("input.body.fill = input.selected_contrl", [("part", "input.selected_contrl")]),
 ]
 
 SELF_TEST_TRACE = """
@@ -850,7 +864,7 @@ SELF_TEST_BAD_CATALOGUE = """
 def self_test() -> int:
     failures = []
     ck = Checker(core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE)
-    if sorted(ck.w) != ["button", "component.led", "menu"]:
+    if sorted(ck.w) != ["button", "component.led", "input", "menu"]:
         failures.append(f"index: got {sorted(ck.w)}")
     if ck.v["state_flags"] != {"hover", "pressed", "selected", "disabled"} or ck.v["densities"] != {"compact"}:
         failures.append(f"core vocabulary: got {ck.v['state_flags']}, {ck.v['densities']}")
