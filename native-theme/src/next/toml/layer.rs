@@ -186,7 +186,7 @@ fn read_base(
                 for (name, item) in widgets {
                     let at = join(at, name);
                     if !bases.widgets.read_widget(name, item, &at, cx) {
-                        cx.unknown::<()>(&at, name);
+                        cx.problem(&at, ProblemKind::UnknownKey);
                     }
                 }
             }
@@ -593,7 +593,10 @@ fn read_for_preset(item: &Item, at: &str, cx: &mut Reader) -> Vec<(PresetId, Bas
     };
     for (id, item) in presets {
         let at = join(at, id);
-        let preset = PresetId::from_key(id).or_else(|| cx.unknown(&at, id));
+        let preset = PresetId::from_key(id);
+        if preset.is_none() {
+            cx.problem(&at, ProblemKind::UnknownKey);
+        }
         let mut bases = Bases::default();
         if let Some(fields) = table(item, &at, cx) {
             for (key, item) in fields {

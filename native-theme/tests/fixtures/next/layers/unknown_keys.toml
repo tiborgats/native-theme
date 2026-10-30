@@ -8,7 +8,7 @@
 # problem: widgets.button.body.shine: unknown key
 # problem: widgets.button.body.stroke.top.glow: unknown key
 # problem: widgets.button.values.icon_gap_px: unknown key
-# problem: widgets.toggle: unknown name "toggle"
+# problem: widgets.toggle: unknown key
 
 [preset]
 id = "mine"

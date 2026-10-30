@@ -165,7 +165,7 @@ fn spelling_key_of_a_field_with_a_unit() {
     );
     assert_eq!(
         problems("[widgets.button.label.text.font]\nsize_pt = 10\nsize_px = 13"),
-        ["widgets.button.label.text.font.size_px: states the field size states too"]
+        ["widgets.button.label.text.font.size_px: states the field size_pt states too"]
     );
 
     let corners = |lines: &str| match body_of(lines).corners {
@@ -618,12 +618,12 @@ fn spelling_per_contrast_input_bases() {
 
 #[test]
 fn spelling_for_preset() {
-    // No preset is bundled yet, so every `for_preset` id is unknown; its
-    // bases are read all the same, their problems reported.
+    // No preset is bundled yet, so every `for_preset` id is an unknown key;
+    // its bases are read all the same, their problems reported.
     assert_eq!(
         problems("[for_preset.adwaita.widgets.button.body]\nshine = 1"),
         [
-            "for_preset.adwaita: unknown name \"adwaita\"",
+            "for_preset.adwaita: unknown key",
             "for_preset.adwaita.widgets.button.body.shine: unknown key",
         ]
     );
@@ -656,14 +656,14 @@ fn unknown_key_reports_toml_path() {
              knob = {}\n[nonsense]"
         ),
         [
-            "colors.light.surfaces.window.backgroud: unknown key",
-            "nonsense: unknown key",
-            "rules[0].when.colour: unknown key",
-            "rules[0].set.text.font.wieght: unknown key",
-            "tokens.caret.colour: unknown key",
             "widgets.button.body.shine: unknown key",
             "widgets.button.body.stroke.top.glow: unknown key",
             "widgets.button.knob: unknown key",
+            "tokens.caret.colour: unknown key",
+            "colors.light.surfaces.window.backgroud: unknown key",
+            "rules[0].when.colour: unknown key",
+            "rules[0].set.text.font.wieght: unknown key",
+            "nonsense: unknown key",
         ]
     );
 }
@@ -685,9 +685,9 @@ fn every_problem_is_collected() {
     assert_eq!(
         found,
         [
-            "widgets.button.body.cursor: unknown name \"blink\"",
-            "widgets.button.body.min_width_px: expected a number",
             "widgets.button.body.opacity: expected a number",
+            "widgets.button.body.min_width_px: expected a number",
+            "widgets.button.body.cursor: unknown name \"blink\"",
             "widgets.button.values.icon_placement: unknown name \"left\"",
             "widgets.button.values.repeat_delay_ms: not a finite number",
         ]
@@ -725,7 +725,7 @@ fn corners_px_round_trips() {
     // A corner both ways is a duplicate key.
     assert_eq!(
         problems("[widgets.button.body]\ncorners_px = 6\ncorners.top_left_px = 4"),
-        ["widgets.button.body.corners_px: states the field corners states too"]
+        ["widgets.button.body.corners: states the field corners_px states too"]
     );
 }
 
@@ -876,10 +876,10 @@ fn when_reads_every_selector_part() {
              \"@Bad\"], context = [{ part = \"body\" }], position = { among = \"most\" } }"
         ),
         [
-            "rules[0].when.context[0].part: states `part` without `widget`",
-            "rules[0].when.position.among: expected \"same\", \"any\" or an array of widgets",
             "rules[0].when.states[0]: unknown name \"hovered\"",
             "rules[0].when.states[1]: \"Bad\" is not a key: 'B' is outside `[a-z0-9][a-z0-9_]*`",
+            "rules[0].when.context[0].part: states `part` without `widget`",
+            "rules[0].when.position.among: expected \"same\", \"any\" or an array of widgets",
         ]
     );
 }
@@ -914,7 +914,7 @@ fn a_presets_tables_are_whole_blocks() {
     let LayerError::Invalid(found) = error;
     let found: Vec<String> = found.iter().map(Problem::to_string).collect();
     assert!(
-        found.contains(&"widgets.button.label.text.font.size: missing".to_owned()),
+        found.contains(&"widgets.button.label.text.font.size_pt: missing".to_owned()),
         "{found:?}"
     );
     assert!(
@@ -1041,15 +1041,15 @@ fn declarations_refuse_what_s10_does_not_spell() {
     assert_eq!(
         found,
         [
-            "declare.component: unknown key",
-            "declare.conditions[0]: expected a keyed name, `@<key>`",
             "declare.flavours: unknown key",
+            "declare.conditions[0]: expected a keyed name, `@<key>`",
             "declare.params.layout.unit: unknown name \"em\"",
-            "declare.widget.button.breakpoints[0].combine: missing",
-            "declare.widget.button.data.body[0]: unknown name \"heat\"",
-            "declare.widget.button.data.knob: unknown name \"knob\"",
             "declare.widget.button.sizes[0]: unknown name \"huge\"",
-            "declare.widget.slider: unknown name \"slider\"",
+            "declare.widget.button.data.knob: unknown name \"knob\"",
+            "declare.widget.button.data.body[0]: unknown name \"heat\"",
+            "declare.widget.button.breakpoints[0].combine: missing",
+            "declare.widget.slider: unknown key",
+            "declare.component: unknown key",
         ]
     );
 }
@@ -1101,5 +1101,49 @@ fn try_from_names_every_missing_leaf() {
                 .map(|path| Problem::new(path, ProblemKind::Missing))
                 .to_vec()
         )
+    );
+}
+
+#[test]
+fn a_missing_field_is_reported_at_its_key() {
+    let error = crate::next::FocusIndicator::try_from(crate::next::FocusIndicatorPatch {
+        kind: Some(crate::next::FocusKind::Ring),
+        ..crate::next::FocusIndicatorPatch::default()
+    })
+    .unwrap_err();
+    let LayerError::Invalid(found) = error;
+    let found: Vec<String> = found.iter().map(Problem::to_string).collect();
+    for key in [
+        "width_px",
+        "offset.top_px",
+        "offset.left_px",
+        "corners.top_left",
+    ] {
+        assert!(
+            found.contains(&format!("{key}: missing")),
+            "{key}: {found:?}"
+        );
+    }
+}
+
+#[test]
+fn a_breakpoints_part_is_the_widgets_own() {
+    let declare = |measured: &str| {
+        read_preset(&format!(
+            "{PRESET_HEAD}[declare.widget.button]\nbreakpoints = [{{ measured = {measured}, \
+             width = {{ at_most = 1 }}, variant = \"@x\" }}]"
+        ))
+        .map(|preset| preset.declarations.widgets.len())
+    };
+    assert_eq!(declare("{ part = \"label\" }"), Ok(1));
+    let LayerError::Invalid(found) = declare("{ part = \"button.label\" }").unwrap_err();
+    assert_eq!(
+        found,
+        [Problem::new(
+            "declare.widget.button.breakpoints[0].measured.part",
+            ProblemKind::UnknownName {
+                name: "button.label".to_owned()
+            }
+        )]
     );
 }

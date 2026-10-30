@@ -2,7 +2,7 @@
 
 use ::toml::{Table, Value as Item};
 
-use super::model::{part_named, widget_named};
+use super::model::{part_named, widget_key};
 use super::read::{self, FromToml, MapKey, Reader, Spelling, join, read_map, table, text};
 use super::when::{density, named, names, state, variant};
 use crate::next::declare::{
@@ -200,7 +200,7 @@ fn container_sizes(item: &Item, at: &str, cx: &mut Reader) -> Vec<(WidgetRef, Ve
         .iter()
         .filter_map(|(name, item)| {
             let at = join(at, name);
-            let container = widget_named(name, &at, cx).map(WidgetRef::Typed);
+            let container = widget_key(name, &at, cx).map(WidgetRef::Typed);
             let sizes = keys(item, &at, cx);
             Some((container?, sizes))
         })
@@ -216,7 +216,7 @@ fn widgets(item: &Item, at: &str, cx: &mut Reader) -> Vec<(WidgetKind, WidgetDec
         .iter()
         .filter_map(|(name, item)| {
             let at = join(at, name);
-            let widget = widget_named(name, &at, cx)?;
+            let widget = widget_key(name, &at, cx)?;
             let fields = table(item, &at, cx)?;
             Some((widget, widget_decl(widget, fields, &at, cx)))
         })
@@ -497,13 +497,17 @@ fn comparison(item: &Item, at: &str, cx: &mut Reader) -> Option<(Comparison, Val
     Some((comparison?, length?))
 }
 
-/// `"allocation"`, `"window"`, or `{ part = "<part>" }` (S11's enum rule).
+/// `"allocation"`, `"window"`, or `{ part = "<part>" }` (S11's enum rule),
+/// the part one of the declared widget's own, by its bare name (S7.3).
 fn measured(item: &Item, at: &str, cx: &mut Reader) -> Option<Measured> {
     match read::variant(item, at, cx)? {
         ("allocation", None) => Some(Measured::Allocation),
         ("window", None) => Some(Measured::Window),
         ("part", Some(part)) => {
-            PartRef::read(part, Spelling::Item, &join(at, "part"), cx).map(Measured::Part)
+            let at = join(at, "part");
+            let name = text(part, &at, cx)?;
+            let widget = cx.widget?;
+            part_named(widget, name, &at, cx).map(|part| Measured::Part(PartRef::Typed(part)))
         }
         (name, None) => cx.unknown(at, name),
         (name, Some(_)) => {

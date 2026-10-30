@@ -29,6 +29,9 @@ pub(crate) struct Reader {
     /// The typed widget whose table is read: a bare part name names one of
     /// its parts.
     pub(crate) widget: Option<WidgetKind>,
+    /// The key each field was first read under, by the field's path in Rust
+    /// names: a second key for it is reported naming the first as written.
+    keys: Vec<(String, String)>,
 }
 
 impl Reader {
@@ -246,29 +249,43 @@ pub(crate) fn read_fields<P: Fields>(table: &Table, at: &str, cx: &mut Reader) -
     patch
 }
 
-/// Puts a field's value read under `key` into its slot; a second key for the
-/// field is combined where it can be, else a duplicate key.
+/// Puts a field's value read under `key` of the table at `table` into its
+/// slot; a second key for the field is combined where it can be, else a
+/// duplicate key, naming the first key as written.
 pub(crate) fn put<P>(
     slot: &mut Option<P>,
     value: P,
     combine: fn(&mut P, P) -> bool,
-    at: &str,
+    table: &str,
+    key: &str,
     field: &str,
     cx: &mut Reader,
 ) {
+    let field_at = join(table, field);
     match slot {
         Some(held) => {
             if !combine(held, value) {
-                cx.problem(
-                    at,
-                    ProblemKind::DuplicateKey {
-                        other: field.to_owned(),
-                    },
-                );
+                let other = cx
+                    .keys
+                    .iter()
+                    .find(|(at, _)| *at == field_at)
+                    .map_or_else(|| field.to_owned(), |(_, first)| first.clone());
+                cx.problem(&join(table, key), ProblemKind::DuplicateKey { other });
             }
         }
-        None => *slot = Some(value),
+        None => {
+            cx.keys.push((field_at, key.to_owned()));
+            *slot = Some(value);
+        }
     }
+}
+
+/// The key a field left out of a block stated whole is reported at: its
+/// name with the suffix of its type's first spelling (`top_px`, `size_pt`),
+/// as a file spells it.
+pub(crate) fn missing_key(name: &str, spellings: &[Spelling]) -> String {
+    let suffix = spellings.first().map_or("", |spelling| spelling.suffix());
+    format!("{name}{suffix}")
 }
 
 /// Never combines: a second key is a duplicate.
@@ -675,6 +692,7 @@ pub(crate) fn read_map<K: MapKey + PartialEq, V: FromToml>(
 ) -> Option<Vec<(K, V)>> {
     let table = table(item, at, cx)?;
     let mut out: Vec<(K, V)> = Vec::new();
+    let mut written: Vec<&String> = Vec::new();
     let mut whole = true;
     for (name, entry) in table {
         let at = join(at, name);
@@ -687,16 +705,19 @@ pub(crate) fn read_map<K: MapKey + PartialEq, V: FromToml>(
         let value = V::read(entry, spelling, &at, cx).map(|value| value.finish(&at, cx));
         match (key, value) {
             (Some(key), Some(value)) => {
-                if out.iter().any(|(held, _)| *held == key) {
+                let first = out.iter().position(|(held, _)| *held == key);
+                if let Some(first) = first {
+                    let other = written.get(first).map_or(name, |first| *first);
                     cx.problem(
                         &at,
                         ProblemKind::DuplicateKey {
-                            other: name.clone(),
+                            other: other.clone(),
                         },
                     );
                     whole = false;
                 } else {
                     out.push((key, value));
+                    written.push(name);
                 }
             }
             _ => whole = false,
@@ -768,14 +789,26 @@ fn read_members<V: FromToml, const N: usize>(
 ) -> Option<[Option<V>; N]> {
     let table = table(item, at, cx)?;
     let mut out: [Option<V>; N] = std::array::from_fn(|_| None);
+    let mut written: [Option<&String>; N] = [None; N];
     for (key, entry) in table {
         let at = join(at, key);
-        let found = names.iter().zip(out.iter_mut()).find_map(|(name, slot)| {
-            spelled(name, key, V::SPELLINGS).map(|spelling| (spelling, slot))
-        });
+        let found = names
+            .iter()
+            .zip(out.iter_mut().zip(written.iter_mut()))
+            .find_map(|(name, slot)| {
+                spelled(name, key, V::SPELLINGS).map(|spelling| (spelling, slot))
+            });
         match found {
-            Some((_, Some(_))) => cx.problem(&at, ProblemKind::DuplicateKey { other: key.clone() }),
-            Some((spelling, slot)) => *slot = V::read(entry, spelling, &at, cx),
+            Some((_, (_, Some(first)))) => cx.problem(
+                &at,
+                ProblemKind::DuplicateKey {
+                    other: (*first).clone(),
+                },
+            ),
+            Some((spelling, (slot, first))) => {
+                *first = Some(key);
+                *slot = V::read(entry, spelling, &at, cx);
+            }
             None => cx.problem(&at, ProblemKind::UnknownKey),
         }
     }

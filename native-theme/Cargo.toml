@@ -80,7 +80,7 @@ pollster = "1.0"
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
-toml.workspace = true
+toml = { workspace = true, features = ["preserve_order"] }
 unicase = "2.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]

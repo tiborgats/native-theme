@@ -139,7 +139,7 @@ impl FromToml for PaintLayer {
 /// A corner (S2.4, S11): `<corner>_px` for `Radius::Px`, the bare name for
 /// the other variants.
 impl FromToml for Radius {
-    const SPELLINGS: &'static [Spelling] = &[Spelling::Px, Spelling::Bare];
+    const SPELLINGS: &'static [Spelling] = &[Spelling::Bare, Spelling::Px];
 
     fn read(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
         if spelling == Spelling::Px {
@@ -296,6 +296,16 @@ pub(crate) fn widget_named(name: &str, at: &str, cx: &mut Reader) -> Option<Widg
     registry::widget(name)
         .map(|widget| widget.kind)
         .or_else(|| cx.unknown(at, name))
+}
+
+/// The typed widget a table's key names; an unknown key where it names
+/// none.
+pub(crate) fn widget_key(name: &str, at: &str, cx: &mut Reader) -> Option<WidgetKind> {
+    let widget = registry::widget(name).map(|widget| widget.kind);
+    if widget.is_none() {
+        cx.problem(at, ProblemKind::UnknownKey);
+    }
+    widget
 }
 
 /// A widget (S1): a typed widget's name; a keyed component, as

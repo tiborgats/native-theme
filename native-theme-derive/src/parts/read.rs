@@ -102,9 +102,10 @@ fn read_key(name: &str, slot: &TokenStream, reading: &Reading) -> TokenStream {
     quote! {
         if let ::core::option::Option::Some(spelling) = #t::spelled(#name, key, #spellings) {
             let _ = spelling;
+            let table = at;
             let at = #t::join(at, key);
             if let ::core::option::Option::Some(read_value) = #read {
-                #t::put(#slot, read_value, #combine, &at, #name, cx);
+                #t::put(#slot, read_value, #combine, table, key, #name, cx);
             }
             true
         } else {
@@ -173,7 +174,8 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
         .zip(&idents)
         .zip(&names)
         .zip(&locals)
-        .map(|(((f, _), name), local)| build_field(f, local, name));
+        .zip(&readings)
+        .map(|((((f, _), name), local), reading)| build_field(f, local, name, &reading.spellings));
 
     let from_toml = if own_toml {
         TokenStream::new()
@@ -286,11 +288,11 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
 /// One field of a block built whole from its patch, the patch's field bound
 /// to the field's name: bound again to an `Option` of the field's value,
 /// `None` where it is missing (each missing leaf recorded).
-fn build_field(f: &BlockField, ident: &Ident, name: &str) -> TokenStream {
+fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStream) -> TokenStream {
     let t = reader();
     let b = quote!(crate::next::blocks);
     let o = quote!(::core::option::Option);
-    let at = quote!(&#t::join(at, #name));
+    let at = quote!(&#t::join(at, &#t::missing_key(#name, #spellings)));
     let value = match &f.shape {
         _ if f.attrs.keyed => quote! {
             #t::required(#ident, #at, cx).map(|items| {
@@ -301,20 +303,25 @@ fn build_field(f: &BlockField, ident: &Ident, name: &str) -> TokenStream {
         },
         Shape::Compound(compound) => {
             let name_ty = format_ident!("{}", compound.name);
+            let inner = &compound.inner;
             let members: Vec<Ident> = compound
                 .members
                 .iter()
                 .map(|member| format_ident!("{member}"))
                 .collect();
-            let paths = compound
-                .members
-                .iter()
-                .map(|member| format!("{name}.{member}"));
+            let names = compound.members.iter();
             quote! {{
                 let held = #ident.unwrap_or(crate::next::#name_ty {
                     #(#members: #o::None),*
                 });
-                #(let #members = #t::required(held.#members, &#t::join(at, #paths), cx);)*
+                #(let #members = #t::required(
+                    held.#members,
+                    &#t::join(
+                        &#t::join(at, #name),
+                        &#t::missing_key(#names, <#inner as #t::FromToml>::SPELLINGS),
+                    ),
+                    cx,
+                );)*
                 match (#(#members),*) {
                     (#(#o::Some(#members)),*) => #o::Some(crate::next::#name_ty { #(#members),* }),
                     _ => #o::None,
@@ -553,10 +560,13 @@ fn struct_variant(owner: &Ident, ident: &Ident, snake: &str, fields: &[BlockFiel
         .zip(&locals)
         .zip(&names)
         .map(|((f, local), name)| {
+            let ty = &f.ty;
+            let spellings = reading(&f.shape, &quote!(#ty), ty).spellings;
+            let at = quote!(&#t::join(&at, &#t::missing_key(#name, #spellings)));
             if is_option(&f.ty) {
-                quote!(let #local = #t::optional(#local, true, &#t::join(&at, #name), cx);)
+                quote!(let #local = #t::optional(#local, true, #at, cx);)
             } else {
-                quote!(let #local = #t::required(#local, &#t::join(&at, #name), cx);)
+                quote!(let #local = #t::required(#local, #at, cx);)
             }
         });
     quote! {
