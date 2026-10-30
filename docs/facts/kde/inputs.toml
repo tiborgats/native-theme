@@ -1,0 +1,5126 @@
+# kde-breeze's inputs (S9.1): the scheme inputs `input.kde_scheme.*` from Breeze's scheme files as Plasma 6.8.2
+# installs them (breeze@6.8.2 colors/, the same colour keys as kcolorscheme's embedded copies), the inactive input
+# roles `input.inactive.*` as applyScheme() writes them on Plasma's default path (no AccentColor), and the accent
+# input. Generated from the pinned files by the KDE facts lane (every literal read from its cited line).
+
+# Plasma's default AccentColor is `transparent`, which applyScheme() takes for no accent ("Accent color from
+# color scheme"): the preset's base path
+
+[[fact]]
+key = "input.accent"
+value = "#00000000"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorssettings.kcfg:12-15"
+quote = "<entry name=\"accentColor\" key=\"AccentColor\" type=\"Color\"> <label>Accent color</label> <default>transparent</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:127-137"
+quote = "if (accent == QColor(Qt::transparent)) { return false; }"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/ui/AccentColorUI.qml:39-40"
+quote = "case 0: // colorScheme kcm.accentColor = \"transparent\";"
+
+[[fact]]
+key = "input.kde_scheme.button.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:31"
+quote = "BackgroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.button.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#a3d4fa"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:30"
+quote = "BackgroundAlternate=163,212,250"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:39"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:35"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:34"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#2980b9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:36"
+quote = "ForegroundLink=41,128,185"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:41"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:37"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:38"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:40"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.button.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:32"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.button.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:33"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.complementary.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#2a2e32"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:45"
+quote = "BackgroundNormal=42,46,50"
+
+[[fact]]
+key = "input.kde_scheme.complementary.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#1b1e20"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:44"
+quote = "BackgroundAlternate=27,30,32"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:53"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:49"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:48"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:50"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:55"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:51"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:52"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:54"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.complementary.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:46"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.complementary.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:47"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#dee0e2"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:59"
+quote = "BackgroundNormal=222,224,226"
+
+[[fact]]
+key = "input.kde_scheme.header.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#eff0f1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:58"
+quote = "BackgroundAlternate=239,240,241"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:67"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:63"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:62"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#2980b9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:64"
+quote = "ForegroundLink=41,128,185"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:69"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:65"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:66"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:68"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.header.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:60"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:61"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.selection.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:87"
+quote = "BackgroundNormal=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.selection.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#a3d4fa"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:86"
+quote = "BackgroundAlternate=163,212,250"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#ffffff"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:95"
+quote = "ForegroundNormal=255,255,255"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:91"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#ffffff"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:90"
+quote = "ForegroundActive=255,255,255"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#fdbc4b"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:92"
+quote = "ForegroundLink=253,188,75"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:97"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#b03745"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:93"
+quote = "ForegroundNegative=176,55,69"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#c65c00"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:94"
+quote = "ForegroundNeutral=198,92,0"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#176839"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:96"
+quote = "ForegroundPositive=23,104,57"
+
+[[fact]]
+key = "input.kde_scheme.selection.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:88"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.selection.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:89"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#f7f7f7"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:101"
+quote = "BackgroundNormal=247,247,247"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#eff0f1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:100"
+quote = "BackgroundAlternate=239,240,241"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:109"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:105"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:104"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#2980b9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:106"
+quote = "ForegroundLink=41,128,185"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:111"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:107"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:108"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:110"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:102"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:103"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.view.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#ffffff"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:115"
+quote = "BackgroundNormal=255,255,255"
+
+[[fact]]
+key = "input.kde_scheme.view.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#f7f7f7"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:114"
+quote = "BackgroundAlternate=247,247,247"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:123"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:119"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:118"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#2980b9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:120"
+quote = "ForegroundLink=41,128,185"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:125"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:121"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:122"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:124"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.view.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:116"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.view.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:117"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.window.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#eff0f1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:129"
+quote = "BackgroundNormal=239,240,241"
+
+[[fact]]
+key = "input.kde_scheme.window.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#e3e5e7"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:128"
+quote = "BackgroundAlternate=227,229,231"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:137"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:133"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:132"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#2980b9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:134"
+quote = "ForegroundLink=41,128,185"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:139"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:135"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:136"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:138"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.window.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:130"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.window.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:131"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.background_normal"
+when = { conditions = ["scheme:light"] }
+value = "#eff0f1"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:73"
+quote = "BackgroundNormal=239,240,241"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.background_alternate"
+when = { conditions = ["scheme:light"] }
+value = "#e3e5e7"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:72"
+quote = "BackgroundAlternate=227,229,231"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_normal"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:81"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_inactive"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:77"
+quote = "ForegroundInactive=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_active"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:76"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_link"
+when = { conditions = ["scheme:light"] }
+value = "#2980b9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:78"
+quote = "ForegroundLink=41,128,185"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_visited"
+when = { conditions = ["scheme:light"] }
+value = "#9b59b6"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:83"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_negative"
+when = { conditions = ["scheme:light"] }
+value = "#da4453"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:79"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_neutral"
+when = { conditions = ["scheme:light"] }
+value = "#f67400"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:80"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_positive"
+when = { conditions = ["scheme:light"] }
+value = "#27ae60"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:82"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.decoration_focus"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:74"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.decoration_hover"
+when = { conditions = ["scheme:light"] }
+value = "#3daee9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:75"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.wm.active_background"
+when = { conditions = ["scheme:light"] }
+value = "#e3e5e7"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:202"
+quote = "activeBackground=227,229,231"
+
+[[fact]]
+key = "input.kde_scheme.wm.active_foreground"
+when = { conditions = ["scheme:light"] }
+value = "#232629"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:204"
+quote = "activeForeground=35,38,41"
+
+[[fact]]
+key = "input.kde_scheme.wm.inactive_background"
+when = { conditions = ["scheme:light"] }
+value = "#eff0f1"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:205"
+quote = "inactiveBackground=239,240,241"
+
+[[fact]]
+key = "input.kde_scheme.wm.inactive_foreground"
+when = { conditions = ["scheme:light"] }
+value = "#707d8a"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:207"
+quote = "inactiveForeground=112,125,138"
+
+[[fact]]
+key = "input.kde_scheme.groups"
+when = { conditions = ["scheme:light"] }
+value = ["button", "complementary", "header", "selection", "tooltip", "view", "window"]
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:57"
+quote = "[Colors:Header]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127"
+quote = "[Colors:Window]"
+
+# the one [Inactive] group among the colour groups :29-139
+
+[[fact]]
+key = "input.kde_scheme.inactive_groups"
+when = { conditions = ["scheme:light"] }
+value = ["header"]
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-139"
+quote = "[Colors:Header][Inactive]"
+
+# every colour group of the file (:29-139) states all twelve keys
+
+[[fact]]
+key = "input.kde_scheme.unset_keys"
+when = { conditions = ["scheme:light"] }
+value = []
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-139"
+quote = "[Colors:Button]"
+absent = []
+
+[[fact]]
+key = "input.kde_scheme.button.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#292c30"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:32"
+quote = "BackgroundNormal=41,44,48"
+
+[[fact]]
+key = "input.kde_scheme.button.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#1e5774"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:31"
+quote = "BackgroundAlternate=30,87,116"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:40"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:36"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:35"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:37"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:42"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:38"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:39"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.button.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:41"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.button.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:33"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.button.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:34"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.complementary.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#202326"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:46"
+quote = "BackgroundNormal=32,35,38"
+
+[[fact]]
+key = "input.kde_scheme.complementary.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#1e5774"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:45"
+quote = "BackgroundAlternate=30,87,116"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:54"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:50"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:49"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:51"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:56"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:52"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:53"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.complementary.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:55"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.complementary.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:47"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.complementary.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:48"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#292c30"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:60"
+quote = "BackgroundNormal=41,44,48"
+
+[[fact]]
+key = "input.kde_scheme.header.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#202326"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:59"
+quote = "BackgroundAlternate=32,35,38"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:68"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:64"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:63"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:65"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:70"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:66"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:67"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.header.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:69"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.header.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:61"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:62"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.selection.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:88"
+quote = "BackgroundNormal=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.selection.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#1e5774"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:87"
+quote = "BackgroundAlternate=30,87,116"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:96"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:92"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:91"
+quote = "ForegroundActive=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#fdbc4b"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:93"
+quote = "ForegroundLink=253,188,75"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:98"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#b03745"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:94"
+quote = "ForegroundNegative=176,55,69"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#c65c00"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:95"
+quote = "ForegroundNeutral=198,92,0"
+
+[[fact]]
+key = "input.kde_scheme.selection.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#176839"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:97"
+quote = "ForegroundPositive=23,104,57"
+
+[[fact]]
+key = "input.kde_scheme.selection.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:89"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.selection.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:90"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#292c30"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:102"
+quote = "BackgroundNormal=41,44,48"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#202326"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:101"
+quote = "BackgroundAlternate=32,35,38"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:110"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:106"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:105"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:107"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:112"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:108"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:109"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:111"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:103"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:104"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.view.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#141618"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:116"
+quote = "BackgroundNormal=20,22,24"
+
+[[fact]]
+key = "input.kde_scheme.view.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#1d1f22"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:115"
+quote = "BackgroundAlternate=29,31,34"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:124"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:120"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:119"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:121"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:126"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:122"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:123"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.view.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:125"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.view.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:117"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.view.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:118"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.window.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#202326"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:130"
+quote = "BackgroundNormal=32,35,38"
+
+[[fact]]
+key = "input.kde_scheme.window.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#292c30"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:129"
+quote = "BackgroundAlternate=41,44,48"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:138"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:134"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:133"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:135"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:140"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:136"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:137"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.window.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:139"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.window.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:131"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.window.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:132"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.background_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#202326"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:74"
+quote = "BackgroundNormal=32,35,38"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.background_alternate"
+when = { conditions = ["scheme:dark"] }
+value = "#292c30"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:73"
+quote = "BackgroundAlternate=41,44,48"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_normal"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:82"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_inactive"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:78"
+quote = "ForegroundInactive=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_active"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:77"
+quote = "ForegroundActive=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_link"
+when = { conditions = ["scheme:dark"] }
+value = "#1d99f3"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:79"
+quote = "ForegroundLink=29,153,243"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_visited"
+when = { conditions = ["scheme:dark"] }
+value = "#9b59b6"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:84"
+quote = "ForegroundVisited=155,89,182"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_negative"
+when = { conditions = ["scheme:dark"] }
+value = "#da4453"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:80"
+quote = "ForegroundNegative=218,68,83"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_neutral"
+when = { conditions = ["scheme:dark"] }
+value = "#f67400"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:81"
+quote = "ForegroundNeutral=246,116,0"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.foreground_positive"
+when = { conditions = ["scheme:dark"] }
+value = "#27ae60"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:83"
+quote = "ForegroundPositive=39,174,96"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.decoration_focus"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:75"
+quote = "DecorationFocus=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.header.inactive.decoration_hover"
+when = { conditions = ["scheme:dark"] }
+value = "#3daee9"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:76"
+quote = "DecorationHover=61,174,233"
+
+[[fact]]
+key = "input.kde_scheme.wm.active_background"
+when = { conditions = ["scheme:dark"] }
+value = "#272c31"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:205"
+quote = "activeBackground=39,44,49"
+
+[[fact]]
+key = "input.kde_scheme.wm.active_foreground"
+when = { conditions = ["scheme:dark"] }
+value = "#fcfcfc"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:207"
+quote = "activeForeground=252,252,252"
+
+[[fact]]
+key = "input.kde_scheme.wm.inactive_background"
+when = { conditions = ["scheme:dark"] }
+value = "#202428"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:208"
+quote = "inactiveBackground=32,36,40"
+
+[[fact]]
+key = "input.kde_scheme.wm.inactive_foreground"
+when = { conditions = ["scheme:dark"] }
+value = "#a1a9b1"
+rows = ["K2.11"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:210"
+quote = "inactiveForeground=161,169,177"
+
+[[fact]]
+key = "input.kde_scheme.groups"
+when = { conditions = ["scheme:dark"] }
+value = ["button", "complementary", "header", "selection", "tooltip", "view", "window"]
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:58"
+quote = "[Colors:Header]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128"
+quote = "[Colors:Window]"
+
+# the one [Inactive] group among the colour groups :30-140
+
+[[fact]]
+key = "input.kde_scheme.inactive_groups"
+when = { conditions = ["scheme:dark"] }
+value = ["header"]
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-140"
+quote = "[Colors:Header][Inactive]"
+
+# every colour group of the file (:30-140) states all twelve keys
+
+[[fact]]
+key = "input.kde_scheme.unset_keys"
+when = { conditions = ["scheme:dark"] }
+value = []
+rows = ["K3.54"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-140"
+quote = "[Colors:Button]"
+absent = []
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.background_normal"
+value = "= input.kde_scheme.button.background_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.background_alternate"
+value = "= input.kde_scheme.button.background_alternate"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_normal"
+value = "= input.kde_scheme.button.foreground_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_inactive"
+value = "= input.kde_scheme.button.foreground_inactive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_active"
+value = "= input.kde_scheme.button.foreground_active"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_link"
+value = "= input.kde_scheme.button.foreground_link"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_visited"
+value = "= input.kde_scheme.button.foreground_visited"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_negative"
+value = "= input.kde_scheme.button.foreground_negative"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_neutral"
+value = "= input.kde_scheme.button.foreground_neutral"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.foreground_positive"
+value = "= input.kde_scheme.button.foreground_positive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.decoration_focus"
+value = "= input.kde_scheme.button.decoration_focus"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.button.inactive.decoration_hover"
+value = "= input.kde_scheme.button.decoration_hover"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:29-41"
+quote = "[Colors:Button]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:30-42"
+quote = "[Colors:Button]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.background_normal"
+value = "= input.kde_scheme.complementary.background_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.background_alternate"
+value = "= input.kde_scheme.complementary.background_alternate"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_normal"
+value = "= input.kde_scheme.complementary.foreground_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_inactive"
+value = "= input.kde_scheme.complementary.foreground_inactive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_active"
+value = "= input.kde_scheme.complementary.foreground_active"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_link"
+value = "= input.kde_scheme.complementary.foreground_link"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_visited"
+value = "= input.kde_scheme.complementary.foreground_visited"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_negative"
+value = "= input.kde_scheme.complementary.foreground_negative"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_neutral"
+value = "= input.kde_scheme.complementary.foreground_neutral"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.foreground_positive"
+value = "= input.kde_scheme.complementary.foreground_positive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.decoration_focus"
+value = "= input.kde_scheme.complementary.decoration_focus"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.complementary.inactive.decoration_hover"
+value = "= input.kde_scheme.complementary.decoration_hover"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:43-55"
+quote = "[Colors:Complementary]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:44-56"
+quote = "[Colors:Complementary]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.background_normal"
+value = "= input.kde_scheme.selection.background_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.background_alternate"
+value = "= input.kde_scheme.selection.background_alternate"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_normal"
+value = "= input.kde_scheme.selection.foreground_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_inactive"
+value = "= input.kde_scheme.selection.foreground_inactive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_active"
+value = "= input.kde_scheme.selection.foreground_active"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_link"
+value = "= input.kde_scheme.selection.foreground_link"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_visited"
+value = "= input.kde_scheme.selection.foreground_visited"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_negative"
+value = "= input.kde_scheme.selection.foreground_negative"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_neutral"
+value = "= input.kde_scheme.selection.foreground_neutral"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.foreground_positive"
+value = "= input.kde_scheme.selection.foreground_positive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.decoration_focus"
+value = "= input.kde_scheme.selection.decoration_focus"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.selection.inactive.decoration_hover"
+value = "= input.kde_scheme.selection.decoration_hover"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:85-97"
+quote = "[Colors:Selection]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:86-98"
+quote = "[Colors:Selection]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.background_normal"
+value = "= input.kde_scheme.tooltip.background_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.background_alternate"
+value = "= input.kde_scheme.tooltip.background_alternate"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_normal"
+value = "= input.kde_scheme.tooltip.foreground_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_inactive"
+value = "= input.kde_scheme.tooltip.foreground_inactive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_active"
+value = "= input.kde_scheme.tooltip.foreground_active"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_link"
+value = "= input.kde_scheme.tooltip.foreground_link"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_visited"
+value = "= input.kde_scheme.tooltip.foreground_visited"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_negative"
+value = "= input.kde_scheme.tooltip.foreground_negative"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_neutral"
+value = "= input.kde_scheme.tooltip.foreground_neutral"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.foreground_positive"
+value = "= input.kde_scheme.tooltip.foreground_positive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.decoration_focus"
+value = "= input.kde_scheme.tooltip.decoration_focus"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.tooltip.inactive.decoration_hover"
+value = "= input.kde_scheme.tooltip.decoration_hover"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:99-111"
+quote = "[Colors:Tooltip]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:100-112"
+quote = "[Colors:Tooltip]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.background_normal"
+value = "= input.kde_scheme.view.background_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.background_alternate"
+value = "= input.kde_scheme.view.background_alternate"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_normal"
+value = "= input.kde_scheme.view.foreground_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_inactive"
+value = "= input.kde_scheme.view.foreground_inactive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_active"
+value = "= input.kde_scheme.view.foreground_active"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_link"
+value = "= input.kde_scheme.view.foreground_link"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_visited"
+value = "= input.kde_scheme.view.foreground_visited"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_negative"
+value = "= input.kde_scheme.view.foreground_negative"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_neutral"
+value = "= input.kde_scheme.view.foreground_neutral"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.foreground_positive"
+value = "= input.kde_scheme.view.foreground_positive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.decoration_focus"
+value = "= input.kde_scheme.view.decoration_focus"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.view.inactive.decoration_hover"
+value = "= input.kde_scheme.view.decoration_hover"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:113-125"
+quote = "[Colors:View]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:114-126"
+quote = "[Colors:View]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.background_normal"
+value = "= input.kde_scheme.window.background_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.background_alternate"
+value = "= input.kde_scheme.window.background_alternate"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_normal"
+value = "= input.kde_scheme.window.foreground_normal"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_inactive"
+value = "= input.kde_scheme.window.foreground_inactive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_active"
+value = "= input.kde_scheme.window.foreground_active"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_link"
+value = "= input.kde_scheme.window.foreground_link"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_visited"
+value = "= input.kde_scheme.window.foreground_visited"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_negative"
+value = "= input.kde_scheme.window.foreground_negative"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_neutral"
+value = "= input.kde_scheme.window.foreground_neutral"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.foreground_positive"
+value = "= input.kde_scheme.window.foreground_positive"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.decoration_focus"
+value = "= input.kde_scheme.window.decoration_focus"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.kde_scheme.window.inactive.decoration_hover"
+value = "= input.kde_scheme.window.decoration_hover"
+rows = ["K3.54", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:127-139"
+quote = "[Colors:Window]"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:128-140"
+quote = "[Colors:Window]"
+
+[[fact]]
+key = "input.inactive.button.background_normal"
+value = "= input.kde_scheme.button.inactive.background_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.background_alternate"
+value = "= input.kde_scheme.button.inactive.background_alternate"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_normal"
+value = "= input.kde_scheme.button.inactive.foreground_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_inactive"
+value = "= input.kde_scheme.button.inactive.foreground_inactive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_active"
+value = "= input.kde_scheme.button.inactive.foreground_active"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_link"
+value = "= input.kde_scheme.button.inactive.foreground_link"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_visited"
+value = "= input.kde_scheme.button.inactive.foreground_visited"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_negative"
+value = "= input.kde_scheme.button.inactive.foreground_negative"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_neutral"
+value = "= input.kde_scheme.button.inactive.foreground_neutral"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.foreground_positive"
+value = "= input.kde_scheme.button.inactive.foreground_positive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.decoration_focus"
+value = "= input.kde_scheme.button.inactive.decoration_focus"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.button.decoration_hover"
+value = "= input.kde_scheme.button.inactive.decoration_hover"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.background_normal"
+value = "= input.kde_scheme.complementary.inactive.background_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.background_alternate"
+value = "= input.kde_scheme.complementary.inactive.background_alternate"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_normal"
+value = "= input.kde_scheme.complementary.inactive.foreground_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_inactive"
+value = "= input.kde_scheme.complementary.inactive.foreground_inactive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_active"
+value = "= input.kde_scheme.complementary.inactive.foreground_active"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_link"
+value = "= input.kde_scheme.complementary.inactive.foreground_link"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_visited"
+value = "= input.kde_scheme.complementary.inactive.foreground_visited"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_negative"
+value = "= input.kde_scheme.complementary.inactive.foreground_negative"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_neutral"
+value = "= input.kde_scheme.complementary.inactive.foreground_neutral"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.foreground_positive"
+value = "= input.kde_scheme.complementary.inactive.foreground_positive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.decoration_focus"
+value = "= input.kde_scheme.complementary.inactive.decoration_focus"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.complementary.decoration_hover"
+value = "= input.kde_scheme.complementary.inactive.decoration_hover"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+# Plasma 6.8 writes the file's active Window values into [Colors:Header][Inactive] when the
+# scheme does not tint (BUG 516396), and KColorScheme reads that group for Header's Inactive group
+
+[[fact]]
+key = "input.inactive.header.background_normal"
+value = "= input.kde_scheme.window.background_normal"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.background_alternate"
+value = "= input.kde_scheme.window.background_alternate"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_normal"
+value = "= input.kde_scheme.window.foreground_normal"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_inactive"
+value = "= input.kde_scheme.window.foreground_inactive"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_active"
+value = "= input.kde_scheme.window.foreground_active"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_link"
+value = "= input.kde_scheme.window.foreground_link"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_visited"
+value = "= input.kde_scheme.window.foreground_visited"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_negative"
+value = "= input.kde_scheme.window.foreground_negative"
+rows = ["K3.51", "K1.13", "K1.150", "K1.7"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_neutral"
+value = "= input.kde_scheme.window.foreground_neutral"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.foreground_positive"
+value = "= input.kde_scheme.window.foreground_positive"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.decoration_focus"
+value = "= input.kde_scheme.window.decoration_focus"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.header.decoration_hover"
+value = "= input.kde_scheme.window.decoration_hover"
+rows = ["K3.51", "K1.13", "K1.150"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:256-264"
+quote = "if (item == u\"Colors:Header\") { copyEntry(windowGroup, targetGroup, entry, writeConfigFlag); } else { copyEntry(sourceGroup, targetGroup, entry, writeConfigFlag); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.background_normal"
+value = "= input.kde_scheme.selection.inactive.background_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.background_alternate"
+value = "= input.kde_scheme.selection.inactive.background_alternate"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_normal"
+value = "= input.kde_scheme.selection.inactive.foreground_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_inactive"
+value = "= input.kde_scheme.selection.inactive.foreground_inactive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_active"
+value = "= input.kde_scheme.selection.inactive.foreground_active"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_link"
+value = "= input.kde_scheme.selection.inactive.foreground_link"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_visited"
+value = "= input.kde_scheme.selection.inactive.foreground_visited"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_negative"
+value = "= input.kde_scheme.selection.inactive.foreground_negative"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_neutral"
+value = "= input.kde_scheme.selection.inactive.foreground_neutral"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.foreground_positive"
+value = "= input.kde_scheme.selection.inactive.foreground_positive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.decoration_focus"
+value = "= input.kde_scheme.selection.inactive.decoration_focus"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.selection.decoration_hover"
+value = "= input.kde_scheme.selection.inactive.decoration_hover"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.background_normal"
+value = "= input.kde_scheme.tooltip.inactive.background_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.background_alternate"
+value = "= input.kde_scheme.tooltip.inactive.background_alternate"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_normal"
+value = "= input.kde_scheme.tooltip.inactive.foreground_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_inactive"
+value = "= input.kde_scheme.tooltip.inactive.foreground_inactive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_active"
+value = "= input.kde_scheme.tooltip.inactive.foreground_active"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_link"
+value = "= input.kde_scheme.tooltip.inactive.foreground_link"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_visited"
+value = "= input.kde_scheme.tooltip.inactive.foreground_visited"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_negative"
+value = "= input.kde_scheme.tooltip.inactive.foreground_negative"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_neutral"
+value = "= input.kde_scheme.tooltip.inactive.foreground_neutral"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.foreground_positive"
+value = "= input.kde_scheme.tooltip.inactive.foreground_positive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.decoration_focus"
+value = "= input.kde_scheme.tooltip.inactive.decoration_focus"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.tooltip.decoration_hover"
+value = "= input.kde_scheme.tooltip.inactive.decoration_hover"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.background_normal"
+value = "= input.kde_scheme.view.inactive.background_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.background_alternate"
+value = "= input.kde_scheme.view.inactive.background_alternate"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_normal"
+value = "= input.kde_scheme.view.inactive.foreground_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_inactive"
+value = "= input.kde_scheme.view.inactive.foreground_inactive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_active"
+value = "= input.kde_scheme.view.inactive.foreground_active"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_link"
+value = "= input.kde_scheme.view.inactive.foreground_link"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_visited"
+value = "= input.kde_scheme.view.inactive.foreground_visited"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_negative"
+value = "= input.kde_scheme.view.inactive.foreground_negative"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_neutral"
+value = "= input.kde_scheme.view.inactive.foreground_neutral"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.foreground_positive"
+value = "= input.kde_scheme.view.inactive.foreground_positive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.decoration_focus"
+value = "= input.kde_scheme.view.inactive.decoration_focus"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.view.decoration_hover"
+value = "= input.kde_scheme.view.inactive.decoration_hover"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.background_normal"
+value = "= input.kde_scheme.window.inactive.background_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.background_alternate"
+value = "= input.kde_scheme.window.inactive.background_alternate"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_normal"
+value = "= input.kde_scheme.window.inactive.foreground_normal"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_inactive"
+value = "= input.kde_scheme.window.inactive.foreground_inactive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_active"
+value = "= input.kde_scheme.window.inactive.foreground_active"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_link"
+value = "= input.kde_scheme.window.inactive.foreground_link"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_visited"
+value = "= input.kde_scheme.window.inactive.foreground_visited"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_negative"
+value = "= input.kde_scheme.window.inactive.foreground_negative"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_neutral"
+value = "= input.kde_scheme.window.inactive.foreground_neutral"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.foreground_positive"
+value = "= input.kde_scheme.window.inactive.foreground_positive"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.decoration_focus"
+value = "= input.kde_scheme.window.inactive.decoration_focus"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
+
+[[fact]]
+key = "input.inactive.window.decoration_hover"
+value = "= input.kde_scheme.window.inactive.decoration_hover"
+rows = ["K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:247-267"
+quote = "if (sourceGroup.hasGroup(u\"Inactive\"_s)) {"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:344-352"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; }"
