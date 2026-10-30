@@ -81,17 +81,22 @@ impl Reader {
     }
 }
 
-/// `at.key`, or `key` at the root; a key that is no bare TOML key is quoted.
-pub(crate) fn join(at: &str, key: &str) -> String {
+/// `key` as a TOML key: bare where TOML allows it, else quoted.
+pub(crate) fn toml_key(key: &str) -> String {
     let bare = !key.is_empty()
         && key
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
-    let key = if bare {
+    if bare {
         key.to_owned()
     } else {
         format!("{key:?}")
-    };
+    }
+}
+
+/// `at.key`, or `key` at the root; a key that is no bare TOML key is quoted.
+pub(crate) fn join(at: &str, key: &str) -> String {
+    let key = toml_key(key);
     if at.is_empty() {
         key
     } else {

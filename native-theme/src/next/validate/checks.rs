@@ -3,9 +3,7 @@
 
 use std::borrow::Cow;
 
-use super::walk::{
-    ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker, toml_key,
-};
+use super::walk::{ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::Table;
 use crate::next::blocks::motion::{Keyframe, PresentationKind, StepJump, Timing, TransitionKind};
@@ -30,7 +28,7 @@ use crate::next::selector::{
     Selector, SetMatch, SiblingMatch, StateFlag, ValuesPatch, VariantRef, WidgetOrPart, WidgetRef,
 };
 use crate::next::tokens::ABSENT_PARAM_GROUPS;
-use crate::next::toml::read::Named;
+use crate::next::toml::read::{Named, toml_key};
 use crate::next::units::Scalar;
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
 use crate::next::widgets::{

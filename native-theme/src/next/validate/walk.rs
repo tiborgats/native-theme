@@ -26,7 +26,7 @@ use crate::next::key::Key;
 use crate::next::registry::FieldInfo;
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
 use crate::next::selector::{PartRef, VariantRef, WidgetRef};
-use crate::next::toml::read::MapKey;
+use crate::next::toml::read::{MapKey, toml_key};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides, ViewBox};
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
 use crate::{IconRole, IconSet};
@@ -175,19 +175,6 @@ pub(crate) struct Path {
     /// An `inner_may_be_absent` place: the fields of the block walked next
     /// may be `Absent`, but those named.
     place: Option<&'static [&'static str]>,
-}
-
-/// `key` as a TOML key: bare where TOML allows it, else quoted.
-pub(crate) fn toml_key(key: &str) -> String {
-    let bare = !key.is_empty()
-        && key
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-');
-    if bare {
-        key.to_owned()
-    } else {
-        format!("{key:?}")
-    }
 }
 
 impl Path {
