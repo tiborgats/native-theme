@@ -5,6 +5,8 @@
 
 use native_theme_derive::ThemeParts;
 
+use std::borrow::Cow;
+
 use super::color::Color;
 use super::key::Key;
 use super::value::{SurfaceMap, Value};
@@ -379,6 +381,50 @@ macro_rules! role_paths {
             }
         }
     };
+    (
+        $(#[$meta:meta])*
+        $name:ident { $($(#[doc = $doc:literal])+ $variant:ident = $path:literal,)+ }
+        $(#[doc = $keyed_doc:literal])+
+        keyed $keyed:ident = $keyed_path:literal,
+    ) => {
+        $(#[$meta])*
+        #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+        pub enum $name {
+            $($(#[doc = $doc])+ $variant,)+
+            $(#[doc = $keyed_doc])+
+            $keyed(Key),
+        }
+
+        impl $name {
+            /// Every typed role, in its record's field order; the keyed
+            /// entries aside.
+            pub const ALL: &'static [$name] = &[$($name::$variant,)+];
+
+            /// The role's path in its record, as expressions and TOML spell
+            /// it (`status.error.fill`, `accent_ramp.light1`).
+            #[must_use]
+            pub fn path(&self) -> Cow<'static, str> {
+                match self {
+                    $($name::$variant => Cow::Borrowed($path),)+
+                    $name::$keyed(key) => Cow::Owned(format!(concat!($keyed_path, ".{}"), key)),
+                }
+            }
+
+            /// The role `path` names: a typed role, or a keyed entry by its
+            /// key.
+            #[must_use]
+            pub(crate) fn from_path(path: &str) -> Option<$name> {
+                Self::ALL
+                    .iter()
+                    .find(|role| role.path() == path)
+                    .cloned()
+                    .or_else(|| {
+                        let key = path.strip_prefix(concat!($keyed_path, "."))?;
+                        Key::new(key).ok().map($name::$keyed)
+                    })
+            }
+        }
+    };
 }
 
 role_paths! {
@@ -474,8 +520,9 @@ role_paths! {
 
 role_paths! {
     /// A global colour role: a typed colour field of [`GlobalRoles`], by its
-    /// path (`status.error.fill`); an accent-ramp entry is a keyed value,
-    /// `role.global.accent_ramp.<key>`, which no variant names.
+    /// path (`status.error.fill`), or an `accent_ramp` entry by its key
+    /// (`accent_ramp.light1`), so a `Binding::Role` binds every global role
+    /// a reference names (`role.global.accent_ramp.light1`).
     GlobalRole {
         /// `accent`.
         Accent = "accent",
@@ -560,6 +607,8 @@ role_paths! {
         /// `scrim`.
         Scrim = "scrim",
     }
+    /// An `accent_ramp` entry, by its key (`accent_ramp.light1`).
+    keyed AccentRamp = "accent_ramp",
 }
 
 #[cfg(test)]

@@ -274,8 +274,13 @@ fn every_s3_role_path_resolves_in_the_registry() {
             field.is_some_and(|f| written(f) == "Value<Color>"),
             "{path}"
         );
-        assert_eq!(GlobalRole::from_path(role.path()), Some(*role));
+        assert_eq!(GlobalRole::from_path(&role.path()), Some(role.clone()));
     }
+    let ramp = GlobalRole::AccentRamp(crate::key!("light1"));
+    assert_eq!(ramp.path(), "accent_ramp.light1");
+    assert_eq!(GlobalRole::from_path("accent_ramp.light1"), Some(ramp));
+    assert_eq!(GlobalRole::from_path("accent_ramp.Light1"), None);
+    assert_eq!(GlobalRole::from_path("accent_ramp"), None);
     for path in [
         "global.accent_ramp.light1",
         "keyed.shade_light",
