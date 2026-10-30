@@ -603,7 +603,8 @@ dev-dependencies and modules linked again.
   - a `measured` fact's evidence file is committed, the value at its `evidence` path equals the fact's value after its
     `conversion` within its tolerance, and the file records the pinned generation and toolkit versions (the exact
     builds listed);
-  - every evidence file is cited by a fact, except the legacy runs until M4. Evidence files are the files under
+  - every evidence file is cited by a fact, a state-model entry or a vector table (spec S17), except the legacy runs
+    until M4. Evidence files are the files under
     `docs/evidence/<harness>/<date>-run-<id>/<image>/`; READMEs are not evidence, and a run's README stays while any
     file of the run is cited. Spike and drift runs record their result in the ledger with the run's URL and commit
     evidence only where a fact cites it.
@@ -636,7 +637,8 @@ dev-dependencies and modules linked again.
   the table itself is the vector table, its rows carrying their citations; where nothing works, the function goes to the unmeasured register.
   `scripts/generate_qt_color_vectors.py`'s Python transcriptions are replaced (a transcription checks a port against
   another port). The model's own arithmetic has unit tests from the specification's definition.
-  `check_function_vectors.py` checks that every public function of `platform` and `placement` has a table and a test,
+  `check_function_vectors.py` checks that every `pub` or `pub(crate)` function of `platform` and every strategy of
+  `placement` has a table and a test (spec S2.2, S13),
   and that every platform function or placement strategy any fact or preset calls is one of them (the model's own
   arithmetic is not one). Without this, a derivation fact and the preset would both be evaluated by the same function,
   and a wrong function would pass the gate.
