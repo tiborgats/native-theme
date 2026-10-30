@@ -369,6 +369,32 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1321-1327"
 quote = "_gtk_css_position_value_new (gtk_css_number_value_new (0, GTK_CSS_PX),"
 
+# GtkMenuButton lays its arrow out after its content in one box (or alone as its child): never overlaid
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+value = "inline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1062-1064"
+quote = "gtk_box_append (GTK_BOX (box), image_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1185-1187"
+quote = "gtk_box_append (GTK_BOX (box), label_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1530-1532"
+quote = "gtk_box_append (GTK_BOX (box), inner_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:678"
+quote = "gtk_button_set_child (GTK_BUTTON (self->button), arrow);"
+
 [[fact]]
 key = "button.values.icon_placement"
 value = "leading"
@@ -2444,12 +2470,12 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:670-679"
 quote = "arrow = gtk_builtin_icon_new (\"arrow\");"
 
-# a menu button hides its arrow unless the arrow is its only child (`icon_only`) or it shows it beside its content
-# (`@with_arrow`): a label with direction `none`, an icon, AdwButtonContent or a custom child without
-# `always-show-arrow`
+# a menu button hides its arrow unless the arrow is its only child (`@arrow_only`, with `icon_only`) or it shows it
+# beside its content (`@with_arrow`): a label with direction `none`, an icon (`icon_only` alone), AdwButtonContent or
+# a custom child without `always-show-arrow`
 [[fact]]
 key = "button.menu_indicator"
-when = { variants = ["menu"], not_variants = ["@with_arrow", "icon_only"] }
+when = { variants = ["menu"], not_variants = ["@with_arrow", "@arrow_only"] }
 value = "absent"
 rows = []
 
@@ -3020,6 +3046,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
 quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.top_left"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "ltr" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
+quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.bottom_left"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "ltr" }
@@ -3031,6 +3074,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
 quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.bottom_left"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "ltr" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
+quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.top_left"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "rtl" }
@@ -3041,6 +3101,23 @@ rows = ["GN-1.42"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
 quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
+
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.top_left"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "rtl" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
+quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -3053,6 +3130,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
 quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.bottom_left"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "rtl" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:17-20"
+quote = "&:dir(ltr):not(:first-child) #{$child}, &:dir(rtl):not(:last-child) #{$child} { border-top-left-radius: 0; border-bottom-left-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.top_right"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "ltr" }
@@ -3063,6 +3157,23 @@ rows = ["GN-1.42"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
 quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
+
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.top_right"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "ltr" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
+quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
 
 [[fact]]
 key = "button.body.corners.bottom_right"
@@ -3075,6 +3186,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
 quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.bottom_right"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", last = false }, direction = "ltr" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
+quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.top_right"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "rtl" }
@@ -3086,6 +3214,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
 quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.top_right"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "rtl" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
+quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.bottom_right"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "rtl" }
@@ -3096,6 +3241,23 @@ rows = ["GN-1.42"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
 quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
+
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.bottom_right"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked"], not_variants = ["vertical"] }], position = { among = "any", first = false }, direction = "rtl" }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:24-27"
+quote = "&:dir(ltr):not(:last-child) #{$child}, &:dir(rtl):not(:first-child) #{$child} { border-top-right-radius: 0; border-bottom-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -3108,6 +3270,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:34-36"
 quote = "&:not(:first-child) #{$child} { border-top-left-radius: 0; border-top-right-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.top_left"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", first = false } }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:34-36"
+quote = "&:not(:first-child) #{$child} { border-top-left-radius: 0; border-top-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.top_right"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", first = false } }
@@ -3118,6 +3297,23 @@ rows = ["GN-1.42"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:34-36"
 quote = "&:not(:first-child) #{$child} { border-top-left-radius: 0; border-top-right-radius: 0;"
+
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.top_right"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", first = false } }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:34-36"
+quote = "&:not(:first-child) #{$child} { border-top-left-radius: 0; border-top-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -3130,6 +3326,23 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:40-42"
 quote = "&:not(:last-child) #{$child} { border-bottom-left-radius: 0; border-bottom-right-radius: 0;"
 
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.bottom_left"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", last = false } }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:40-42"
+quote = "&:not(:last-child) #{$child} { border-bottom-left-radius: 0; border-bottom-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
+
 [[fact]]
 key = "button.body.corners.bottom_right"
 when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", last = false } }
@@ -3140,6 +3353,23 @@ rows = ["GN-1.42"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:40-42"
 quote = "&:not(:last-child) #{$child} { border-bottom-left-radius: 0; border-bottom-right-radius: 0;"
+
+# the ring's corner at that square corner stays square: GTK grows only a rounded corner into the outline
+[[fact]]
+key = "button.body.focus.corners.bottom_right"
+when = { context = [{ scope = "any", widget = "layout", variants = ["@linked", "vertical"] }], position = { among = "any", last = false } }
+value = "0px"
+rows = ["GN-1.42", "GN-3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:40-42"
+quote = "&:not(:last-child) #{$child} { border-bottom-left-radius: 0; border-bottom-right-radius: 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-504"
+quote = "if (src->corner[i].width > 0) dest->corner[i].width = src->corner[i].width + d; if (src->corner[i].height > 0) dest->corner[i].height = src->corner[i].height + d; if (dest->corner[i].width <= 0 || dest->corner[i].height <= 0) { dest->corner[i].width = 0; dest->corner[i].height = 0;"
 
 # the linked box's 1 px overlap: each child's own negative margin toward its previous sibling, none on the first.
 # Physical left in either direction (CSS `margin-left`); a margin is a `Sides` value, stated for the left-to-right

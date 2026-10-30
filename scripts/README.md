@@ -771,7 +771,9 @@ data, part-style fields) and, through `spec_catalogue.py`, the parts, widget
 values, variants and flags each catalogue entry lists, then reports each name
 in a trace target or a catalogue backtick span that neither defines, notation
 the specification forbids, names the core's checks removed, and platform
-values written into the specification. Prints one line per problem
+values written into the specification. An `input.<name>` path is one of S9's
+inputs (`S9_INPUTS`, the macOS accent inputs among them) or a part of the
+`input` widget. Prints one line per problem
 (tab-separated: file, line, kind, name, context) and exits 0 when there is
 none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
 `trace-macos`, ...), `--cat` and
@@ -840,11 +842,14 @@ requires exactly one row per item, matched by source, heading and opening
 words, and exactly one item per row, so a closed or moved item's row is a
 finding; each destination must be one the plan names, and a row going
 `after 0.8.0`, `not this plan's work` or `settled by the model` needs a
-reason. The script's docstring states the whole rule. `--final` adds the
+reason. On every run it also checks the *Unmeasured register*'s Ids (`U` and
+a number, none shared by two rows) and that every pending fact
+(`pending = "U<n>"` in `docs/facts/<platform>/`) names one of its rows.
+The script's docstring states the whole rule. `--final` adds the
 plan's M4 gate: `docs/facts/imported/` empty, S19.2's staged file (named by
 `--staged-file PATH`, which `--final` requires) gone, the `LEGACY_EVIDENCE`
-list of `check_fact_citations.py` empty, and no unmeasured-register row
-without a decision; the drift comparison of every measured fact has no ledger
+list of `check_fact_citations.py` empty, no unmeasured-register row
+without a decision and no S17 pending fact; the drift comparison of every measured fact has no ledger
 table to read yet, so `--final` reports it as a finding until it has one.
 Prints one line per finding (file:line: what) and a summary with the counts,
 and exits 0 when there is none, 1 when there are some, 2 on an input it
@@ -939,7 +944,22 @@ not count, and with none the rule asks nothing). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
-colours it states. Offline. The docstring states every rule and list. Prints
+colours it states. ADD-A122's forms: a pending fact (`pending = "U<n>"` in
+place of `value`, no citation; one a later fact of its key shadows is a
+finding), a state model's `variant_products` (expanded and trimmed by the
+exclusive groups and `requires_variants`; a set also listed in
+`variant_sets` is a finding; the number of sets per entry is printed on
+stderr), S4.1's motion keys (no dropped word or toolkit prefix, and on a
+platform whose catalogue row lists every duration key, one of them), the
+accent ramp's `role.global.accent_ramp.<key>`, and no key inside an enum
+block. ADD-A123's forms: a text-keyed map's entry in a key as TOML writes it
+(`token.text.fallbacks.per_family."Segoe Fluent Icons"`, a quoted segment one
+segment; an unterminated quote is a finding), each function called with the
+arity its S2.2 signature gives (`with_alpha(c, a)` beside `alpha(c, a)`), a
+platform curve one of the core's `QtEasing` or `AdwEasing` members, a
+`token.motion.timings.<key>` a `Timing` (S4.1's sketch), and
+`requires_variants` as any one of its forms (a listed set holding none of
+them is trimmed from the count). Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
@@ -962,7 +982,12 @@ file its `sources.toml` entry names with `file`); no `absent` name occurs
 there as an identifier; per generation, every literal of the value equals a
 literal of its citations' quotes, read by the cited file's notation (on
 Apple's sources a point is a logical point, px) and converted as the
-citation says; a measured value has the committed evidence's shape and
+citation says (an absence citation holds a zero stated by omission; on a
+LinearGradientBrush an angle matches only the angle its points give; C++'s
+defaulted parameter is read from the quote's declaration; `ns_font_weight`
+converts an AppKit `NSFontWeight` to S2.8's CSS weight by WebKit's
+thresholds; a platform curve's name is the verifier's); a measured value
+has the committed evidence's shape and
 equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an
 image by the analysis output that names it in `input_image`), except
@@ -973,6 +998,7 @@ docstring holds the closed lists (notations, units, conversions, evidence
 path forms, `run.toml`'s fields). Prints one line per finding and a summary,
 and exits 0, 1, or 2 when the cache is missing or an input cannot be read;
 `check_release.sh --commit` skips it only when the cache folder is absent.
+Each evidence file and cited source file is read once per run.
 `--self-test` runs every notation and the example facts on a fixture cache.
 
 Requires Python 3.11 and git.
@@ -1073,9 +1099,11 @@ python3 scripts/check_function_vectors.py --self-test
 
 ## check_facts_trace.py
 
-Checks that every live trace row of the checked units (the specification's
-traceability, S20) is in a fact's or a state-model entry's `rows` of its
-platform's `docs/facts/` directory, or carries a verdict, on the platforms
+Checks that every live trace line of the checked units (the specification's
+traceability, S20) is carried by a fact or a state-model entry of its
+platform's `docs/facts/` directory that lists its row in `rows` and whose key
+lies on the line's target (each line of a row separately), or carries a
+verdict, on the platforms
 whose presets exist (the new model's `native-theme/src/next/presets/`).
 `--enabled` checks the units of `scripts/widget_units.toml` (until it
 exists, the slice: `button`, the colour roles and the slice's tokens, with

@@ -1,0 +1,1159 @@
+# Written by ../../analysis/measure_button_pass.py (its docstring is the method); do not edit.
+input_image = [
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/aqua/normal.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/aqua/pressed.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/aqua/disabled.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/aqua/clicked-regular-plain.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/aqua/clicked-regular-default.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/renders/aqua/push_button-regular.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/renders/aqua/push_button-regular.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/renders/aqua/push_button-regular-disabled.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/renders/aqua/push_button-regular-disabled.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/darkAqua/normal.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/darkAqua/pressed.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/darkAqua/disabled.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/darkAqua/clicked-regular-plain.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/darkAqua/clicked-regular-default.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/renders/darkAqua/push_button-regular.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/renders/darkAqua/push_button-regular.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/renders/darkAqua/push_button-regular-disabled.png",
+  "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/renders/darkAqua/push_button-regular-disabled.png",
+]
+
+[aqua]
+window_background = "#ffffffff"
+
+[aqua.normal.mini-plain]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.normal.mini-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.normal.mini-toggle_off]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.normal.mini-toggle_on]
+fill = "#0077f9ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.normal.small-plain]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.normal.small-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.normal.small-toggle_off]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.normal.small-toggle_on]
+fill = "#0077f9ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.normal.regular-plain]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.normal.regular-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.normal.regular-toggle_off]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.normal.regular-toggle_on]
+fill = "#0077f9ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.normal.large-plain]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.normal.large-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.normal.large-toggle_off]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.normal.large-toggle_on]
+fill = "#0077f9ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.normal.extraLarge-plain]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.normal.extraLarge-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.992
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.normal.extraLarge-toggle_off]
+fill = "#ecececff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.normal.extraLarge-toggle_on]
+fill = "#0077f9ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.992
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.pressed.mini-plain]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.pressed.mini-default]
+fill = "#006ee6ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.pressed.mini-toggle_off]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.pressed.mini-toggle_on]
+fill = "#006be1ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.pressed.small-plain]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.pressed.small-default]
+fill = "#006ee6ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.pressed.small-toggle_off]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.pressed.small-toggle_on]
+fill = "#006be1ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.pressed.regular-plain]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.pressed.regular-default]
+fill = "#006ee6ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.pressed.regular-toggle_off]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.pressed.regular-toggle_on]
+fill = "#006be1ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.pressed.large-plain]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.pressed.large-default]
+fill = "#006ee6ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.pressed.large-toggle_off]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.pressed.large-toggle_on]
+fill = "#006be1ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.pressed.extraLarge-plain]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.976
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.pressed.extraLarge-default]
+fill = "#006ee6ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.992
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.pressed.extraLarge-toggle_off]
+fill = "#d5d5d5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.976
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.pressed.extraLarge-toggle_on]
+fill = "#006be1ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.992
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.disabled.mini-plain]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.disabled.mini-default]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.disabled.mini-toggle_off]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.disabled.mini-toggle_on]
+fill = "#8fc2fbff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[aqua.disabled.small-plain]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.disabled.small-default]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.disabled.small-toggle_off]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.disabled.small-toggle_on]
+fill = "#8fc2fbff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[aqua.disabled.regular-plain]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.disabled.regular-default]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.disabled.regular-toggle_off]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.disabled.regular-toggle_on]
+fill = "#8fc2fbff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[aqua.disabled.large-plain]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.disabled.large-default]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.disabled.large-toggle_off]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.disabled.large-toggle_on]
+fill = "#8fc2fbff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[aqua.disabled.extraLarge-plain]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.disabled.extraLarge-default]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.disabled.extraLarge-toggle_off]
+fill = "#f5f5f5ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.disabled.extraLarge-toggle_on]
+fill = "#8fc2fbff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.982
+shadow = "absent"
+ring_pixels = 1500
+
+[aqua.all_states]
+stroke = "absent"
+shadow = "absent"
+
+[aqua.clicked.regular-plain]
+differing_pixels = 0
+equals_pressed = true
+
+[aqua.clicked.regular-default]
+differing_pixels = 0
+equals_pressed = true
+
+[aqua.offscreen.push_button-regular]
+reduce_transparency_independent = true
+
+[aqua.offscreen.push_button-regular-disabled]
+reduce_transparency_independent = true
+
+[darkAqua]
+window_background = "#1e1e1eff"
+
+[darkAqua.normal.mini-plain]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.normal.mini-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.normal.mini-toggle_off]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.normal.mini-toggle_on]
+fill = "#077dffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.normal.small-plain]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.normal.small-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.normal.small-toggle_off]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.normal.small-toggle_on]
+fill = "#077dffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.normal.regular-plain]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.normal.regular-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.normal.regular-toggle_off]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.normal.regular-toggle_on]
+fill = "#077dffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.normal.large-plain]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.normal.large-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.normal.large-toggle_off]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.normal.large-toggle_on]
+fill = "#077dffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.normal.extraLarge-plain]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.941
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.normal.extraLarge-default]
+fill = "#007affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.991
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.normal.extraLarge-toggle_off]
+fill = "#2f2f2fff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.941
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.normal.extraLarge-toggle_on]
+fill = "#077dffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.991
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.pressed.mini-plain]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.pressed.mini-default]
+fill = "#1987ffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.pressed.mini-toggle_off]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.pressed.mini-toggle_on]
+fill = "#1f8affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.pressed.small-plain]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.pressed.small-default]
+fill = "#1987ffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.pressed.small-toggle_off]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.pressed.small-toggle_on]
+fill = "#1f8affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.pressed.regular-plain]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.pressed.regular-default]
+fill = "#1987ffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.pressed.regular-toggle_off]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.pressed.regular-toggle_on]
+fill = "#1f8affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.pressed.large-plain]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.pressed.large-default]
+fill = "#1987ffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.pressed.large-toggle_off]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.pressed.large-toggle_on]
+fill = "#1f8affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.pressed.extraLarge-plain]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.973
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.pressed.extraLarge-default]
+fill = "#1987ffff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.991
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.pressed.extraLarge-toggle_off]
+fill = "#434343ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.973
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.pressed.extraLarge-toggle_on]
+fill = "#1f8affff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.991
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.disabled.mini-plain]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.disabled.mini-default]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.disabled.mini-toggle_off]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.disabled.mini-toggle_on]
+fill = "#164981ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 32
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 888
+
+[darkAqua.disabled.small-plain]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.disabled.small-default]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.disabled.small-toggle_off]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.disabled.small-toggle_on]
+fill = "#164981ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 38
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1044
+
+[darkAqua.disabled.regular-plain]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.disabled.regular-default]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.disabled.regular-toggle_off]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.disabled.regular-toggle_on]
+fill = "#164981ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1212
+
+[darkAqua.disabled.large-plain]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.disabled.large-default]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.disabled.large-toggle_off]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.disabled.large-toggle_on]
+fill = "#164981ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 46
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1308
+
+[darkAqua.disabled.extraLarge-plain]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.disabled.extraLarge-default]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.disabled.extraLarge-toggle_off]
+fill = "#262626ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 1.000
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.disabled.extraLarge-toggle_on]
+fill = "#164981ff"
+fill_pixels = 28
+stroke = "absent"
+edge_pixels = 54
+edge_min_coverage = 0.980
+shadow = "absent"
+ring_pixels = 1500
+
+[darkAqua.all_states]
+stroke = "absent"
+shadow = "absent"
+
+[darkAqua.clicked.regular-plain]
+differing_pixels = 0
+equals_pressed = true
+
+[darkAqua.clicked.regular-default]
+differing_pixels = 0
+equals_pressed = true
+
+[darkAqua.offscreen.push_button-regular]
+reduce_transparency_independent = true
+
+[darkAqua.offscreen.push_button-regular-disabled]
+reduce_transparency_independent = true
+
+[geometry.mini]
+padding_left = 8.0
+padding_right = 8.0
+
+[geometry.small]
+padding_left = 10.0
+padding_right = 10.0
+
+[geometry.regular]
+padding_left = 12.0
+padding_right = 12.0
+
+[geometry.large]
+padding_left = 14.0
+padding_right = 14.0

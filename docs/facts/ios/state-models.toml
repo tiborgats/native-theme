@@ -1,0 +1,998 @@
+# State models (S17), ios-13 and ios-26: what the pinned SDK headers declare (the iphonesimulator SDK of Xcode 16.4
+# and 26.6, as the iOS host's run 41020880059 copied them, its headers/README.txt) and what that run drew
+# (docs/evidence/ios-host/2026-10-30-run-41020880059/README.md).
+# - States: `pressed` (`isHighlighted`; a real touch draws the same, analysis.toml `press`), `disabled`, `checked` (a
+#   toggle's selected state) combine (UIControl.State is a bit mask; no exclusive group); `hover` (iPad pointer) and
+#   `focus_visible` (iPad focus) are drawn and unmeasured (pending U113, U112); the iPhone has no focus system (its
+#   cells' `can_become_focused` is false, so `focused` is never set there; on the iPad the focus engine draws its effect
+#   on the focused item, `focus_visible`); `@loading`, the flag `showsActivityIndicator` sets, is a state flag
+#   (S7.2's `Widget(Key)`) the drawing distinguishes: the activity indicator in place of the image (UIButtonConfiguration.h),
+#   the bezel and title as without it in every state at medium (analysis.toml `cells.<scheme>.<style>__activity_indicator_shown`).
+# - Conditions: the schemes; the idiom (the iPhone's facts; the iPad's styles at medium and rest read alike in
+#   focus1/index.toml, the rest pending U114); Increase Contrast, Bold Text and Button Shapes are not captured
+#   (pending U116-U118).
+# - Variants: one configuration style each (two exclusive groups on 26, so `primary` pairs with `glass` and `clear`
+#   alone), or one of the forms that are no configuration (the system types, the bar items, the paste control, the
+#   route picker); one corner style, content and pointer effect each. Collapsed, as UIKit draws them alike (each read
+#   the same in every key, state and scheme the run drew): the roles destructive and cancel (as normal on a standalone
+#   button, and the cancel bar item as a plain one), the indicator `none` (as automatic: no indicator), the corner style
+#   dynamic on the non-glass styles (their default) and capsule on glass (its default). The role `primary` does draw
+#   differently (its title semibold, weight trait 0.3, analysis.toml `cells.<scheme>.<style>__role_primary`), but the
+#   catalogue has no variant for it (the typed `primary` is the filled style): not stated (the tie-break's report).
+# - Variant sets (the products): each set is one UIKit draws differently from every set it contains: a style with any
+#   corner style (the bezel's radius), content (the image), `toggle` (the checked state) and pointer effect (the hover
+#   effect), and the menu buttons' sets (`menu` the trigger, `@indicator_popup` the indicator, `@menu_on_hold` the long
+#   press; no `toggle`: a selection menu is a pop-up button, `combo_box`); `flat` takes a corner style only with
+#   `toggle`, as plain draws a bezel only while checked (analysis.toml `cells.<scheme>.plain.<size>.selected`; no
+#   bezel at rest, pressed, disabled or toggled off).
+# - Context: a bar item or a back button is a `button` in `context toolbar.bar`.
+# - Not declared (the lane's report): `default_size` (no reading of a configuration's default `buttonSize`: the host
+#   sets it on every specimen and UIButtonConfiguration.h states no default; U129), `@padding_removed`, the system add
+#   bar item, iOS 26's `prominent` bar item style beyond `primary`, and the legacy `UIButton(type: .system)` with no
+#   configuration (drawn, analysis.toml `forms.<scheme>.system`, but the catalogue names no variant for it and does not
+#   say what iOS's base is, so `requires_variants` keeps every element to a style or a form).
+[[model]]
+when = { conditions = ["preset:ios-13"] }
+widget = "button"
+available = true
+variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
+sizes = ["mini", "small", "regular", "large"]
+densities = []
+flags = ["@loading"]
+axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+exclusive = []
+exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"]]
+requires_variants = ["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"]
+variant_products = [
+  [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["focus_visible"], conditions = ["idiom:phone"] }, { variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@share"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary"] }]
+rows = ["B-1", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†"]
+
+# the four `buttonSize` values (medium is the model's `regular`)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:21-26"
+quote = "typedef NS_ENUM(NSInteger, UIButtonConfigurationSize) { UIButtonConfigurationSizeMedium, UIButtonConfigurationSizeSmall, UIButtonConfigurationSizeMini, UIButtonConfigurationSizeLarge, }"
+
+# the configuration styles (borderless, bordered, borderedTinted and borderedProminent read as plain, gray, tinted and filled: `same.pairs` below)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:77-85"
+quote = "+ (instancetype)plainButtonConfiguration; + (instancetype)tintedButtonConfiguration; + (instancetype)grayButtonConfiguration; + (instancetype)filledButtonConfiguration;"
+
+# the corner styles, one per configuration (`@corner_fixed` … `@corner_large`, capsule `pill`; dynamic, the styles' default, draws as the base but on glass, whose default is capsule, so `pill` there is the base)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:39-52"
+quote = "typedef NS_ENUM(NSInteger, UIButtonConfigurationCornerStyle) {"
+
+# the menu indicator (`@indicator_popup`; automatic and none draw alike, no indicator: the base)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:65-72"
+quote = "typedef NS_ENUM(NSInteger, UIButtonConfigurationIndicator) {"
+
+# the activity indicator (the flag `@loading`, a configuration property: not drawn on the forms that are no configuration)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:115-116"
+quote = "/// Shows an activity indicator in place of an image. Its placement is controlled by the imagePlacement property. @property (nonatomic, readwrite, assign) BOOL showsActivityIndicator;"
+
+# the system button types (`@info` for detail disclosure and both info types, `@contact_add`, `close`)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:21-35"
+quote = "typedef NS_ENUM(NSInteger, UIButtonType) {"
+
+# the roles: destructive and cancel draw as normal on a standalone button (no variant); primary makes the title semibold, which no catalogue variant names (the cells `<style>__role_*`)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:37-42"
+quote = "typedef NS_ENUM(NSInteger, UIButtonRole) { UIButtonRoleNormal, UIButtonRolePrimary, UIButtonRoleCancel, UIButtonRoleDestructive }"
+
+# `done` and `@share` are bar button items' system items (and `back` a navigation bar's): drawn only in `context toolbar.bar`
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:28-55"
+quote = "typedef NS_ENUM(NSInteger, UIBarButtonSystemItem) {"
+
+# `hover`: a button tracks a pointer's hover
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:86"
+quote = "@property (nonatomic, assign, readonly, getter = isHovered) BOOL hovered API_AVAILABLE(ios(15.0), tvos(15.0)) API_UNAVAILABLE(watchos);"
+
+# the pointer effects (`@pointer_highlight`, `@pointer_lift`, `@pointer_hover`)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:93-94"
+quote = "/// Enables this button's built-in pointer interaction. @property (nonatomic, readwrite, assign, getter = isPointerInteractionEnabled) BOOL pointerInteractionEnabled API_AVAILABLE(ios(13.4)) API_UNAVAILABLE(watchos, tvos);"
+
+# `menu` (`@menu_on_hold`: the menu on a long press, not as the primary action)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:105"
+quote = "@property (nonatomic, readwrite, copy, nullable) UIMenu *menu API_AVAILABLE(ios(14.0), tvos(17.0)) API_UNAVAILABLE(watchos);"
+
+# `toggle`: `checked` is the selected state the primary action toggles; a button that is no toggle is not `checked`
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:110-113"
+quote = "/// Indicates if the button changes selection as its primary action. /// This shows the menu as options for selection if a menu is populated and showsMenuAsPrimaryAction is enabled. /// If no menu is provided or it is not the primary action, UIControlStateSelected is toggled on and off for the primary action. @property (nonatomic, readwrite, assign) BOOL changesSelectionAsPrimaryAction API_AVAILABLE(ios(15.0), tvos(17.0)) API_UNAVAILABLE(watchos);"
+
+# the styles the host found in this SDK
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#environment.styles"
+tolerance = 0
+
+# the default content size category (L) every capture was taken at
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#screen.preferred_content_size_category"
+tolerance = 0
+
+# the iPhone has no focus system (`focus_visible` not drawn under `idiom:phone`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#focus.phone_focus_system"
+tolerance = 0
+
+# the iPad has one, but no button became focusable or focused (`focus_visible` unmeasured, U112)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#focus.can_become_focused_any"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#focus.focus_system"
+tolerance = 0
+
+# `mini` reads as `small` on the iPhone (light, plain, at rest; analysis.toml `same.mini_small` for every state)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.light.plain.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.light.gray.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.light.tinted.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.light.filled.normal"
+tolerance = 0
+
+# the bordered styles read as plain, gray, tinted and filled (light, medium, at rest; every size and state: `same.pairs`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.light.borderless.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.light.bordered.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.light.bordered_tinted.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.light.bordered_prominent.medium.normal"
+tolerance = 0
+
+# a real touch draws as `isHighlighted` (light, plain, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.plain.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, plain, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.plain.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, gray, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.gray.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, gray, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.gray.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, tinted, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.tinted.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, tinted, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.tinted.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, filled, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.filled.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, filled, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.light.filled.pressed_selected.max_level_difference"
+tolerance = 1
+
+# `mini` reads as `small` on the iPhone (dark, plain, at rest; analysis.toml `same.mini_small` for every state)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.dark.plain.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.dark.gray.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.dark.tinted.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.mini_small.dark.filled.normal"
+tolerance = 0
+
+# the bordered styles read as plain, gray, tinted and filled (dark, medium, at rest; every size and state: `same.pairs`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.dark.borderless.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.dark.bordered.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.dark.bordered_tinted.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#same.pairs.dark.bordered_prominent.medium.normal"
+tolerance = 0
+
+# a real touch draws as `isHighlighted` (dark, plain, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.plain.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, plain, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.plain.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, gray, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.gray.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, gray, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.gray.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, tinted, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.tinted.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, tinted, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.tinted.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, filled, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.filled.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, filled, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#press.dark.filled.pressed_selected.max_level_difference"
+tolerance = 1
+
+# the destructive role reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_destructive.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_destructive.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_destructive.medium.normal.corner"
+tolerance = 0
+
+# the cancel role reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_cancel.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_cancel.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__role_cancel.medium.normal.corner"
+tolerance = 0
+
+# the indicator none reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_none.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_none.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_none.medium.normal.corner"
+tolerance = 0
+
+# the dynamic corner style reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.corner"
+tolerance = 0
+
+# spike I's run 40984711960 (the first pass) drew the same: its styles, the default category, mini as
+# small, and each of pressed, disabled and checked differing from rest, the toggle off as the plain button
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/index.toml#environment.styles"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/index.toml#screen.preferred_content_size_category"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.filled.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.highlighted_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.disabled_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.selected_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.light.plain.medium.toggle_off_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.filled.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.highlighted_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.disabled_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.selected_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/analysis.toml#compare.dark.plain.medium.toggle_off_normal"
+tolerance = 0
+
+# the role primary makes the title semibold (weight trait 0.3; 0.0 without the role), which no catalogue variant names
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__role_primary.medium.normal.font_weight"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.medium.normal.font_weight"
+tolerance = 0
+
+# `flat` draws a bezel only while checked: none at rest, a tinted one when selected
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.medium.selected.fill"
+tolerance = 0
+
+# `@loading`: the bezel under the activity indicator reads as without it
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__activity_indicator_shown.medium.normal.fill"
+tolerance = 0
+
+# the iPhone has no focus system: no cell can become focused
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#focus.phone_focus_system"
+tolerance = 0
+
+[[model]]
+when = { conditions = ["preset:ios-26"] }
+widget = "button"
+available = true
+variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
+sizes = ["mini", "small", "regular", "large"]
+densities = []
+flags = ["@loading"]
+axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+exclusive = []
+exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"], ["flat", "@gray", "tinted", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"]]
+requires_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"]
+variant_products = [
+  [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["focus_visible"], conditions = ["idiom:phone"] }, { variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@share"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] }]
+rows = ["B-1", "B-2", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†"]
+
+# the four `buttonSize` values (medium is the model's `regular`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:22-27"
+quote = "typedef NS_ENUM(NSInteger, UIButtonConfigurationSize) { UIButtonConfigurationSizeMedium, UIButtonConfigurationSizeSmall, UIButtonConfigurationSizeMini, UIButtonConfigurationSizeLarge, }"
+
+# the configuration styles (borderless, bordered, borderedTinted and borderedProminent read as plain, gray, tinted and filled: `same.pairs` below)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:78-86"
+quote = "+ (instancetype)plainButtonConfiguration; + (instancetype)tintedButtonConfiguration; + (instancetype)grayButtonConfiguration; + (instancetype)filledButtonConfiguration;"
+
+# iOS 26's glass styles: `glass`, `clear`, the prominent ones with `primary`
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:88-91"
+quote = "+ (instancetype)glassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos); + (instancetype)prominentGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos); + (instancetype)clearGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos); + (instancetype)prominentClearGlassButtonConfiguration API_AVAILABLE(ios(26.0), tvos(26.0)) API_UNAVAILABLE(watchos, visionos);"
+
+# the corner styles, one per configuration (`@corner_fixed` … `@corner_large`, capsule `pill`; dynamic, the styles' default, draws as the base but on glass, whose default is capsule, so `pill` there is the base)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:40-53"
+quote = "typedef NS_ENUM(NSInteger, UIButtonConfigurationCornerStyle) {"
+
+# the menu indicator (`@indicator_popup`; automatic and none draw alike, no indicator: the base)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:66-73"
+quote = "typedef NS_ENUM(NSInteger, UIButtonConfigurationIndicator) {"
+
+# the activity indicator (the flag `@loading`, a configuration property: not drawn on the forms that are no configuration)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButtonConfiguration.h:125-126"
+quote = "/// Shows an activity indicator in place of an image. Its placement is controlled by the imagePlacement property. @property (nonatomic, readwrite, assign) BOOL showsActivityIndicator;"
+
+# the system button types (`@info` for detail disclosure and both info types, `@contact_add`, `close`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:21-35"
+quote = "typedef NS_ENUM(NSInteger, UIButtonType) {"
+
+# the roles: destructive and cancel draw as normal on a standalone button (no variant); primary makes the title semibold, which no catalogue variant names (the cells `<style>__role_*`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:37-42"
+quote = "typedef NS_ENUM(NSInteger, UIButtonRole) { UIButtonRoleNormal, UIButtonRolePrimary, UIButtonRoleCancel, UIButtonRoleDestructive }"
+
+# `done` and `@share` are bar button items' system items (and `back` a navigation bar's): drawn only in `context toolbar.bar`
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:37-64"
+quote = "typedef NS_ENUM(NSInteger, UIBarButtonSystemItem) {"
+
+# `hover`: a button tracks a pointer's hover
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:86"
+quote = "@property (nonatomic, assign, readonly, getter = isHovered) BOOL hovered API_AVAILABLE(ios(15.0), tvos(15.0)) API_UNAVAILABLE(watchos);"
+
+# the pointer effects (`@pointer_highlight`, `@pointer_lift`, `@pointer_hover`)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:93-94"
+quote = "/// Enables this button's built-in pointer interaction. @property (nonatomic, readwrite, assign, getter = isPointerInteractionEnabled) BOOL pointerInteractionEnabled API_AVAILABLE(ios(13.4)) API_UNAVAILABLE(watchos, tvos);"
+
+# `menu` (`@menu_on_hold`: the menu on a long press, not as the primary action)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:105"
+quote = "@property (nonatomic, readwrite, copy, nullable) UIMenu *menu API_AVAILABLE(ios(14.0), tvos(17.0)) API_UNAVAILABLE(watchos);"
+
+# `toggle`: `checked` is the selected state the primary action toggles; a button that is no toggle is not `checked`
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:110-113"
+quote = "/// Indicates if the button changes selection as its primary action. /// This shows the menu as options for selection if a menu is populated and showsMenuAsPrimaryAction is enabled. /// If no menu is provided or it is not the primary action, UIControlStateSelected is toggled on and off for the primary action. @property (nonatomic, readwrite, assign) BOOL changesSelectionAsPrimaryAction API_AVAILABLE(ios(15.0), tvos(17.0)) API_UNAVAILABLE(watchos);"
+
+# the styles the host found in this SDK
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#environment.styles"
+tolerance = 0
+
+# the default content size category (L) every capture was taken at
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#screen.preferred_content_size_category"
+tolerance = 0
+
+# the iPhone has no focus system (`focus_visible` not drawn under `idiom:phone`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#focus.phone_focus_system"
+tolerance = 0
+
+# the iPad has one, but no button became focusable or focused (`focus_visible` unmeasured, U112)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#focus.can_become_focused_any"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#focus.focus_system"
+tolerance = 0
+
+# `mini` reads as `small` on the iPhone (light, plain, at rest; analysis.toml `same.mini_small` for every state)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.light.plain.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.light.gray.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.light.tinted.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.light.filled.normal"
+tolerance = 0
+
+# the bordered styles read as plain, gray, tinted and filled (light, medium, at rest; every size and state: `same.pairs`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.light.borderless.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.light.bordered.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.light.bordered_tinted.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.light.bordered_prominent.medium.normal"
+tolerance = 0
+
+# a real touch draws as `isHighlighted` (light, plain, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.plain.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, plain, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.plain.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, gray, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.gray.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, gray, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.gray.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, tinted, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.tinted.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, tinted, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.tinted.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, filled, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.filled.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (light, filled, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.light.filled.pressed_selected.max_level_difference"
+tolerance = 1
+
+# `mini` reads as `small` on the iPhone (dark, plain, at rest; analysis.toml `same.mini_small` for every state)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.dark.plain.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.dark.gray.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.dark.tinted.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.mini_small.dark.filled.normal"
+tolerance = 0
+
+# the bordered styles read as plain, gray, tinted and filled (dark, medium, at rest; every size and state: `same.pairs`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.dark.borderless.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.dark.bordered.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.dark.bordered_tinted.medium.normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#same.pairs.dark.bordered_prominent.medium.normal"
+tolerance = 0
+
+# a real touch draws as `isHighlighted` (dark, plain, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.plain.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, plain, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.plain.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, gray, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.gray.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, gray, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.gray.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, tinted, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.tinted.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, tinted, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.tinted.pressed_selected.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, filled, pressed)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.filled.pressed.max_level_difference"
+tolerance = 1
+
+# a real touch draws as `isHighlighted` (dark, filled, pressed_selected)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#press.dark.filled.pressed_selected.max_level_difference"
+tolerance = 1
+
+# the destructive role reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_destructive.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_destructive.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_destructive.medium.normal.corner"
+tolerance = 0
+
+# the cancel role reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_cancel.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_cancel.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__role_cancel.medium.normal.corner"
+tolerance = 0
+
+# the indicator none reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_none.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_none.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_none.medium.normal.corner"
+tolerance = 0
+
+# the dynamic corner style reads as the style alone (light, gray, medium, at rest; every state and key: analysis.toml `cells`)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.label_fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__corner_style_dynamic.medium.normal.corner"
+tolerance = 0
+
+# spike I's run 40984711960 (the first pass) drew the same: its styles, the default category, mini as
+# small, and each of pressed, disabled and checked differing from rest, the toggle off as the plain button
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/run1/index.toml#environment.styles"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/run1/index.toml#screen.preferred_content_size_category"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.filled.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.highlighted_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.disabled_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.selected_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.plain.medium.toggle_off_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.light.prominent_glass.medium.highlighted_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.filled.normal.mini_small"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.highlighted_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.disabled_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.selected_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.plain.medium.toggle_off_normal"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-26/analysis.toml#compare.dark.prominent_glass.medium.highlighted_normal"
+tolerance = 0
+
+# the role primary makes the title semibold (weight trait 0.3; 0.0 without the role), which no catalogue variant names
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__role_primary.medium.normal.font_weight"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.medium.normal.font_weight"
+tolerance = 0
+
+# `flat` draws a bezel only while checked: none at rest, a tinted one when selected
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.medium.normal.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.medium.selected.fill"
+tolerance = 0
+
+# `@loading`: the bezel under the activity indicator reads as without it
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__activity_indicator_shown.medium.normal.fill"
+tolerance = 0
+
+# the iPhone has no focus system: no cell can become focused
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#focus.phone_focus_system"
+tolerance = 0

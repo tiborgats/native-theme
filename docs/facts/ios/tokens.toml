@@ -1,0 +1,1516 @@
+# Tokens (ios-13, ios-26): what the iOS host's run 41020880059 read from UIKit
+# (docs/evidence/ios-host/2026-10-30-run-41020880059/README.md), each image's run1/index.toml: the eleven text styles'
+# fonts (`preferredFont(forTextStyle:compatibleWith:)`) at the default content size category (L), regular and bold
+# legibility weight alike in family and size (the weight differs; not stated: the lane's report); each text-role slot
+# references its keyed style, the style UIKit names for it (UIFontDescriptor.h's `UIFontTextStyle` constants);
+# each style's weight (its weight trait through S17's `ns_font_weight`), its line height (ascender less descender
+# plus leading, analysis.toml `[text_styles]`) and its `scaling_role` (its own slot: each is a Dynamic Type text style);
+# `token.text.scaling` Dynamic Type (UIFont.h); the motion durations the run reads, named by S4.1's rule;
+# `UILongPressGestureRecognizer`'s default minimum duration; the caret's width (`caretRect(for:)` of a UITextView and a
+# UITextField in every font the host tried). Each fact holds for both presets: the two runtimes read the same.
+# Sizes and line heights are logical px (S1's `Px`): UIFont's metrics are in UIKit points, UIKit's logical unit (see
+# button.toml's header).
+
+[[fact]]
+key = "token.text.keyed.large_title.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.6.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.7.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.6.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.7.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.large_title.font.size"
+value = "34px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.6.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.7.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.6.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.7.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.30.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.31.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.30.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.31.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1.font.size"
+value = "28px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.30.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.31.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.30.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.31.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.54.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.55.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.54.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.55.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2.font.size"
+value = "22px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.54.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.55.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.54.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.55.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.78.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.79.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.78.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.79.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3.font.size"
+value = "20px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.78.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.79.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.78.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.79.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.102.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.103.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.102.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.103.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline.font.size"
+value = "17px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.102.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.103.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.102.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.103.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.126.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.127.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.126.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.127.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.size"
+value = "15px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.126.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.127.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.126.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.127.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.150.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.151.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.150.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.151.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body.font.size"
+value = "17px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.150.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.151.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.150.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.151.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.174.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.175.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.174.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.175.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout.font.size"
+value = "16px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.174.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.175.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.174.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.175.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.198.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.199.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.198.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.199.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote.font.size"
+value = "13px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.198.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.199.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.198.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.199.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.222.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.223.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.222.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.223.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.size"
+value = "12px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.222.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.223.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.222.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.223.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.family"
+value = ".AppleSystemUIFont"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.246.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.247.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.246.font.family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.247.font.family"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.size"
+value = "11px"
+rows = ["TS-1", "TS-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.246.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#text_style.247.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.246.font.size_pt"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#text_style.247.font.size_pt"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.large_title.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.large_title.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.large_title.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.large_title.line_height"
+value = "41px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.large_title.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.large_title.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.large_title.scaling_role"
+value = "large_title"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:175"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:175"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
+
+[[fact]]
+key = "token.text.keyed.title_1.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title1.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title1.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.title_1.line_height"
+value = "34px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title1.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title1.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.title_1.scaling_role"
+value = "title1"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.title_2.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title2.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title2.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.title_2.line_height"
+value = "28px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title2.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title2.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.title_2.scaling_role"
+value = "title2"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:179"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:179"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.title_3.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title3.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title3.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.title_3.line_height"
+value = "25px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.title3.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.title3.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.title_3.scaling_role"
+value = "title3"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.headline.font.weight"
+value = 600
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.headline.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.headline.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.headline.line_height"
+value = "22px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.headline.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.headline.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.headline.scaling_role"
+value = "headline"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:181"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:181"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.subheadline.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.subheadline.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.subheadline.line_height"
+value = "20px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.subheadline.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.subheadline.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.subheadline.scaling_role"
+value = "subheadline"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.body.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.body.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.body.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.body.line_height"
+value = "22px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.body.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.body.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.body.scaling_role"
+value = "body"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:183"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:183"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.callout.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.callout.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.callout.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.callout.line_height"
+value = "21px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.callout.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.callout.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.callout.scaling_role"
+value = "callout"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.footnote.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.footnote.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.footnote.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.footnote.line_height"
+value = "18px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.footnote.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.footnote.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.footnote.scaling_role"
+value = "footnote"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:185"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:185"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.caption1.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.caption1.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.caption_1.line_height"
+value = "16px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.caption1.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.caption1.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.caption_1.scaling_role"
+value = "caption"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:186"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:186"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.weight"
+value = 400
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.caption2.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.caption2.regular.weight"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact]]
+# the font's ascender less its descender plus its leading at the default category
+key = "token.text.keyed.caption_2.line_height"
+value = "13px"
+rows = ["TS-2", "D-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#text_styles.caption2.regular.line_height"
+tolerance = 0.01
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#text_styles.caption2.regular.line_height"
+tolerance = 0.01
+
+[[fact]]
+# the style is its own Dynamic Type text style, so its own slot's curve scales it
+key = "token.text.keyed.caption_2.scaling_role"
+value = "caption2"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+# each text style's size per content size category, not a factor (run1/index.toml `[[text_style]]` reads every category)
+key = "token.text.scaling"
+value = "dynamic_type"
+rows = ["D-5", "TS-2"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:38"
+quote = "// Think carefully before using these methods. In most cases, a font returned by +preferredFontForTextStyle: will be more appropriate, and will respect the user's selected content size category."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:38"
+quote = "// Think carefully before using these methods. In most cases, a font returned by +preferredFontForTextStyle: will be more appropriate, and will respect the user's selected content size category."
+
+[[fact]]
+# CATransaction's animationDuration, the class's default (S4.1 step 2: the class; `animation` and `duration` dropped)
+key = "token.motion.durations.ca_transaction"
+value = "250ms"
+rows = ["X-MO-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#motion.ca_transaction_animation_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#motion.ca_transaction_animation_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+# UINavigationControllerHideShowBarDuration (UINavigationController.h:39; S4.1 step 1, `UI` and `duration` dropped)
+key = "token.motion.durations.navigation_controller_hide_show_bar"
+value = "200ms"
+rows = ["X-MO-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#motion.navigation_bar_hide_show_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#motion.navigation_bar_hide_show_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+# the duration UIKit gives an animation with its default spring (UIView.animate(springDuration:bounce:) with its defaults; S4.1 step 3, the catalogue's `default`)
+key = "token.motion.durations.default"
+value = "734.901ms"
+rows = ["X-MO-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#motion.spring_animation_default_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#motion.spring_animation_default_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+# UIKit's default spring: the SDK states its duration and bounce, the model's spring its mass, stiffness and damping
+key = "token.motion.timings.default"
+pending = "U128"
+rows = ["X-MO-1"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.toolbar.size"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.toolbar.weight"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.toolbar.scale"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.small.size"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.small.weight"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.small.scale"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.large.size"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.large.weight"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.large.scale"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.dialog.size"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.dialog.weight"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.dialog.scale"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.panel.size"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.panel.weight"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+# no context is tied to a symbol configuration in the run
+key = "token.icons.sizes.panel.scale"
+pending = "U127"
+rows = ["D-19"]
+
+[[fact]]
+key = "token.text.roles.large_title"
+value = "= token.text.keyed.large_title"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:175"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:175"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
+
+[[fact]]
+key = "token.text.roles.title1"
+value = "= token.text.keyed.title_1"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.title2"
+value = "= token.text.keyed.title_2"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:179"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:179"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.title3"
+value = "= token.text.keyed.title_3"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.headline"
+value = "= token.text.keyed.headline"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:181"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:181"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+value = "= token.text.keyed.subheadline"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.body"
+value = "= token.text.keyed.body"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:183"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:183"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.callout"
+value = "= token.text.keyed.callout"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.footnote"
+value = "= token.text.keyed.footnote"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:185"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:185"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.caption"
+value = "= token.text.keyed.caption_1"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:186"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:186"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+key = "token.text.roles.caption2"
+value = "= token.text.keyed.caption_2"
+rows = ["TS-1", "D-5"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
+quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+# UILongPressGestureRecognizer's minimumPressDuration, a new recognizer's
+key = "token.behavior.long_press"
+value = "500ms"
+rows = ["X-BT-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#motion.long_press_minimum_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#motion.long_press_minimum_duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+# caretRect(for:)'s width, 2 pt in every font the host tried (the caret's height follows the font)
+key = "token.caret.width"
+value = "2px"
+rows = ["X-CA-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.0.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.0.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.6.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.6.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.10.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#caret.rect.10.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.0.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.0.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.6.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.6.text_field_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.10.text_view_caret_rect_pt.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.10.text_field_caret_rect_pt.2"
+tolerance = 0

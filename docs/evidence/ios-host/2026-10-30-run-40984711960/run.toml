@@ -1,0 +1,15 @@
+# The image folders of run 40984711960 the facts cite (spec S17 *`evidence`*). The builds are the run's own records:
+# each folder's run1/index.toml `[environment]` and the job's environment.txt (sw_vers, xcodebuild -version, xcrun's
+# SDK), quoted in README.md.
+
+[images.ios-host-macos-15]
+preset = "ios-13"
+source = "xcode@16.4"
+os = "iOS 18.6 (22G86) simulator, iPhone 16 Pro (iPhone17,1), on macOS 15.7.9 (24G830), runner image macos-15"
+toolkit = "UIKit of the iOS 18.6 runtime (22G86); the host built with Xcode 16.4 (16F6) against the iphonesimulator 18.5 SDK (22F76)"
+
+[images.ios-host-macos-26]
+preset = "ios-26"
+source = "xcode@26.6"
+os = "iOS 26.5 (23F77) simulator, iPhone 17 Pro (iPhone18,1), on macOS 26.6.2 (25G83), runner image macos-26"
+toolkit = "UIKit of the iOS 26.5 runtime (23F77); the host built with Xcode 26.6 (17F113) against the iphonesimulator 26.5 SDK (23F81a)"

@@ -791,7 +791,7 @@ release = "Android 17 (API 37)"
 generations = ["material-3"]
 researched = "2026-10-29"
 proof = "git ls-remote https://android.googlesource.com/platform/frameworks/base refs/tags/android-17.0.0_r1 (annotated: the ^{} line)"
-sparse = ["data/fonts", "libs/WindowManager/Shell", "core/java/android/text", "core/java/android/hardware/display", "services/accessibility/java/com/android/server/accessibility", "services/core/java/com/android/server/am", "services/core/java/com/android/server/wm"]
+sparse = ["data/fonts", "libs/WindowManager/Shell", "core/java/android/text", "core/java/android/hardware/display", "services/accessibility/java/com/android/server/accessibility", "services/core/java/com/android/server/am", "services/core/java/com/android/server/wm", "graphics/java/android/graphics/drawable", "core/java/android/view", "core/res/res/values"]
 note = "The gap maps read main at 1cdfff55 (2025-03-26); android-17.0.0_r1 is the newest release tag (AOSP publishes no QPR source between its twice-yearly drops)."
 
 [[source]]

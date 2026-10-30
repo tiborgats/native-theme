@@ -1,0 +1,4068 @@
+# Written by analysis/measure_buttons.py (its docstring says what each value is).
+
+input_image = [
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/selected.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/normal.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/highlighted.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/disabled.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/toggle_off.png",
+  "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/selected.png",
+]
+
+[light.plain.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/mini/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/small/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/medium/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.plain.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.plain.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/plain/large/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/mini/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/small/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/medium/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.gray.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.gray.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/gray/large/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/mini/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.tinted.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/small/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.tinted.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/medium/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.tinted.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.tinted.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.tinted.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/tinted/large/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/mini/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/small/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/medium/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.filled.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.filled.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/filled/large/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.borderless.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/mini/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/small/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/medium/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/normal.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/highlighted.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#409bff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/disabled.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#c5c5c7"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.borderless.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/toggle_off.png"
+bezel = "#ffffff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.borderless.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/borderless/large/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/mini/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/small/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/medium/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/normal.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/highlighted.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#3c97fb"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/toggle_off.png"
+bezel = "#e9e9eb"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered/large/selected.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/mini/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_tinted.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/small/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_tinted.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/medium/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_tinted.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/normal.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/highlighted.png"
+bezel = "#e1efff"
+background = "#ffffff"
+text = "#3897ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_tinted.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/toggle_off.png"
+bezel = "#d1e7ff"
+background = "#ffffff"
+text = "#007aff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[light.bordered_tinted.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_tinted/large/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/mini/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/small/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/medium/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/normal.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/highlighted.png"
+bezel = "#409bff"
+background = "#ffffff"
+text = "#cfe6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/disabled.png"
+bezel = "#efeff0"
+background = "#ffffff"
+text = "#bababc"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[light.bordered_prominent.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/toggle_off.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[light.bordered_prominent.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/light/bordered_prominent/large/selected.png"
+bezel = "#007aff"
+background = "#ffffff"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.plain.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.plain.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/mini/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.plain.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/small/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.plain.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/medium/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.plain.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.plain.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/plain/large/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.gray.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/mini/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.gray.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/small/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.gray.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/medium/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.gray.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.gray.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/gray/large/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.tinted.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/mini/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.tinted.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.tinted.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/small/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.tinted.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.tinted.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/medium/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.tinted.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.tinted.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.tinted.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/tinted/large/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = true
+
+[dark.filled.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.filled.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/mini/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = true
+
+[dark.filled.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.filled.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/small/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = true
+
+[dark.filled.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.filled.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/medium/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = true
+
+[dark.filled.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.filled.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.filled.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/filled/large/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.borderless.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.borderless.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/mini/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.borderless.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/small/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.borderless.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/medium/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/normal.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/highlighted.png"
+bezel = "#000000"
+background = "#000000"
+text = "#3b9dff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/disabled.png"
+bezel = "#000000"
+background = "#000000"
+text = "#464649"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.borderless.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/toggle_off.png"
+bezel = "#000000"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.borderless.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/borderless/large/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/mini/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/small/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/medium/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/normal.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/highlighted.png"
+bezel = "#313134"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/toggle_off.png"
+bezel = "#262629"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered/large/selected.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_tinted.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/mini/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_tinted.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_tinted.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/small/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_tinted.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_tinted.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/medium/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_tinted.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/normal.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/highlighted.png"
+bezel = "#02172d"
+background = "#000000"
+text = "#2290ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_tinted.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/toggle_off.png"
+bezel = "#022140"
+background = "#000000"
+text = "#0a84ff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = false
+
+[dark.bordered_tinted.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_tinted/large/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.mini.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.mini.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = true
+
+[dark.bordered_prominent.mini.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_prominent.mini.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.mini.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/mini/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.small.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.small.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 956
+text_opaque = false
+bezel_opaque = true
+
+[dark.bordered_prominent.small.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 966
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_prominent.small.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.small.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/small/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 952
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.medium.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.medium.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = true
+
+[dark.bordered_prominent.medium.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_prominent.medium.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.medium.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/medium/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.large.normal]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/normal.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.large.highlighted]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/highlighted.png"
+bezel = "#3b9dff"
+background = "#000000"
+text = "#cee6ff"
+text_pixels = 1314
+text_opaque = false
+bezel_opaque = true
+
+[dark.bordered_prominent.large.disabled]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/disabled.png"
+bezel = "#1d1d1f"
+background = "#000000"
+text = "#5a5a5f"
+text_pixels = 1324
+text_opaque = false
+bezel_opaque = false
+
+[dark.bordered_prominent.large.toggle_off]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/toggle_off.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[dark.bordered_prominent.large.selected]
+image = "docs/evidence/ios-host/2026-10-30-run-40984711960/ios-host-macos-15/run1/screen/dark/bordered_prominent/large/selected.png"
+bezel = "#0a84ff"
+background = "#000000"
+text = "#ffffff"
+text_pixels = 1303
+text_opaque = true
+bezel_opaque = true
+
+[compare.light.plain.normal]
+mini_small = 0
+
+[compare.light.plain.highlighted]
+mini_small = 0
+
+[compare.light.plain.disabled]
+mini_small = 0
+
+[compare.light.plain.toggle_off]
+mini_small = 0
+
+[compare.light.plain.selected]
+mini_small = 0
+
+[compare.light.plain.mini]
+highlighted_normal = 1660
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14190
+
+[compare.light.plain.small]
+highlighted_normal = 1660
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14190
+
+[compare.light.plain.medium]
+highlighted_normal = 2170
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 21649
+
+[compare.light.plain.large]
+highlighted_normal = 2170
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 39401
+
+[compare.light.gray.normal]
+mini_small = 0
+
+[compare.light.gray.highlighted]
+mini_small = 0
+
+[compare.light.gray.disabled]
+mini_small = 0
+
+[compare.light.gray.toggle_off]
+mini_small = 0
+
+[compare.light.gray.selected]
+mini_small = 0
+
+[compare.light.gray.mini]
+highlighted_normal = 15140
+disabled_normal = 15140
+toggle_off_normal = 0
+selected_normal = 14180
+
+[compare.light.gray.small]
+highlighted_normal = 15140
+disabled_normal = 15140
+toggle_off_normal = 0
+selected_normal = 14180
+
+[compare.light.gray.medium]
+highlighted_normal = 22943
+disabled_normal = 22943
+toggle_off_normal = 0
+selected_normal = 21620
+
+[compare.light.gray.large]
+highlighted_normal = 40705
+disabled_normal = 40705
+toggle_off_normal = 0
+selected_normal = 39372
+
+[compare.light.tinted.normal]
+mini_small = 0
+
+[compare.light.tinted.highlighted]
+mini_small = 0
+
+[compare.light.tinted.disabled]
+mini_small = 0
+
+[compare.light.tinted.toggle_off]
+mini_small = 0
+
+[compare.light.tinted.selected]
+mini_small = 0
+
+[compare.light.tinted.mini]
+highlighted_normal = 15146
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15147
+
+[compare.light.tinted.small]
+highlighted_normal = 15146
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15147
+
+[compare.light.tinted.medium]
+highlighted_normal = 22955
+disabled_normal = 22953
+toggle_off_normal = 0
+selected_normal = 22955
+
+[compare.light.tinted.large]
+highlighted_normal = 40707
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 40707
+
+[compare.light.filled.normal]
+mini_small = 0
+
+[compare.light.filled.highlighted]
+mini_small = 0
+
+[compare.light.filled.disabled]
+mini_small = 0
+
+[compare.light.filled.toggle_off]
+mini_small = 0
+
+[compare.light.filled.selected]
+mini_small = 0
+
+[compare.light.filled.mini]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.filled.small]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.filled.medium]
+highlighted_normal = 22952
+disabled_normal = 22955
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.filled.large]
+highlighted_normal = 40704
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.borderless.normal]
+mini_small = 0
+
+[compare.light.borderless.highlighted]
+mini_small = 0
+
+[compare.light.borderless.disabled]
+mini_small = 0
+
+[compare.light.borderless.toggle_off]
+mini_small = 0
+
+[compare.light.borderless.selected]
+mini_small = 0
+
+[compare.light.borderless.mini]
+highlighted_normal = 1660
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14190
+
+[compare.light.borderless.small]
+highlighted_normal = 1660
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14190
+
+[compare.light.borderless.medium]
+highlighted_normal = 2170
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 21649
+
+[compare.light.borderless.large]
+highlighted_normal = 2170
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 39401
+
+[compare.light.bordered.normal]
+mini_small = 0
+
+[compare.light.bordered.highlighted]
+mini_small = 0
+
+[compare.light.bordered.disabled]
+mini_small = 0
+
+[compare.light.bordered.toggle_off]
+mini_small = 0
+
+[compare.light.bordered.selected]
+mini_small = 0
+
+[compare.light.bordered.mini]
+highlighted_normal = 15140
+disabled_normal = 15140
+toggle_off_normal = 0
+selected_normal = 14180
+
+[compare.light.bordered.small]
+highlighted_normal = 15140
+disabled_normal = 15140
+toggle_off_normal = 0
+selected_normal = 14180
+
+[compare.light.bordered.medium]
+highlighted_normal = 22943
+disabled_normal = 22943
+toggle_off_normal = 0
+selected_normal = 21620
+
+[compare.light.bordered.large]
+highlighted_normal = 40705
+disabled_normal = 40705
+toggle_off_normal = 0
+selected_normal = 39372
+
+[compare.light.bordered_tinted.normal]
+mini_small = 0
+
+[compare.light.bordered_tinted.highlighted]
+mini_small = 0
+
+[compare.light.bordered_tinted.disabled]
+mini_small = 0
+
+[compare.light.bordered_tinted.toggle_off]
+mini_small = 0
+
+[compare.light.bordered_tinted.selected]
+mini_small = 0
+
+[compare.light.bordered_tinted.mini]
+highlighted_normal = 15146
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15147
+
+[compare.light.bordered_tinted.small]
+highlighted_normal = 15146
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15147
+
+[compare.light.bordered_tinted.medium]
+highlighted_normal = 22955
+disabled_normal = 22953
+toggle_off_normal = 0
+selected_normal = 22955
+
+[compare.light.bordered_tinted.large]
+highlighted_normal = 40707
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 40707
+
+[compare.light.bordered_prominent.normal]
+mini_small = 0
+
+[compare.light.bordered_prominent.highlighted]
+mini_small = 0
+
+[compare.light.bordered_prominent.disabled]
+mini_small = 0
+
+[compare.light.bordered_prominent.toggle_off]
+mini_small = 0
+
+[compare.light.bordered_prominent.selected]
+mini_small = 0
+
+[compare.light.bordered_prominent.mini]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.bordered_prominent.small]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.bordered_prominent.medium]
+highlighted_normal = 22952
+disabled_normal = 22955
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.bordered_prominent.large]
+highlighted_normal = 40704
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.light.mini.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.mini.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.mini.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.mini.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.mini.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.small.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.small.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.small.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.small.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.small.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.medium.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.medium.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.medium.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.medium.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.medium.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.large.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.large.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.large.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.large.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.light.large.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.plain.normal]
+mini_small = 0
+
+[compare.dark.plain.highlighted]
+mini_small = 0
+
+[compare.dark.plain.disabled]
+mini_small = 0
+
+[compare.dark.plain.toggle_off]
+mini_small = 0
+
+[compare.dark.plain.selected]
+mini_small = 0
+
+[compare.dark.plain.mini]
+highlighted_normal = 1665
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14196
+
+[compare.dark.plain.small]
+highlighted_normal = 1665
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14196
+
+[compare.dark.plain.medium]
+highlighted_normal = 2177
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 21652
+
+[compare.dark.plain.large]
+highlighted_normal = 2177
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 39404
+
+[compare.dark.gray.normal]
+mini_small = 0
+
+[compare.dark.gray.highlighted]
+mini_small = 0
+
+[compare.dark.gray.disabled]
+mini_small = 0
+
+[compare.dark.gray.toggle_off]
+mini_small = 0
+
+[compare.dark.gray.selected]
+mini_small = 0
+
+[compare.dark.gray.mini]
+highlighted_normal = 15144
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 14192
+
+[compare.dark.gray.small]
+highlighted_normal = 15144
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 14192
+
+[compare.dark.gray.medium]
+highlighted_normal = 22945
+disabled_normal = 22951
+toggle_off_normal = 0
+selected_normal = 21641
+
+[compare.dark.gray.large]
+highlighted_normal = 40707
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 39393
+
+[compare.dark.tinted.normal]
+mini_small = 0
+
+[compare.dark.tinted.highlighted]
+mini_small = 0
+
+[compare.dark.tinted.disabled]
+mini_small = 0
+
+[compare.dark.tinted.toggle_off]
+mini_small = 0
+
+[compare.dark.tinted.selected]
+mini_small = 0
+
+[compare.dark.tinted.mini]
+highlighted_normal = 15148
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15148
+
+[compare.dark.tinted.small]
+highlighted_normal = 15148
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15148
+
+[compare.dark.tinted.medium]
+highlighted_normal = 22955
+disabled_normal = 22955
+toggle_off_normal = 0
+selected_normal = 22955
+
+[compare.dark.tinted.large]
+highlighted_normal = 40707
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 40707
+
+[compare.dark.filled.normal]
+mini_small = 0
+
+[compare.dark.filled.highlighted]
+mini_small = 0
+
+[compare.dark.filled.disabled]
+mini_small = 0
+
+[compare.dark.filled.toggle_off]
+mini_small = 0
+
+[compare.dark.filled.selected]
+mini_small = 0
+
+[compare.dark.filled.mini]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.filled.small]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.filled.medium]
+highlighted_normal = 22949
+disabled_normal = 22955
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.filled.large]
+highlighted_normal = 40701
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.borderless.normal]
+mini_small = 0
+
+[compare.dark.borderless.highlighted]
+mini_small = 0
+
+[compare.dark.borderless.disabled]
+mini_small = 0
+
+[compare.dark.borderless.toggle_off]
+mini_small = 0
+
+[compare.dark.borderless.selected]
+mini_small = 0
+
+[compare.dark.borderless.mini]
+highlighted_normal = 1665
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14196
+
+[compare.dark.borderless.small]
+highlighted_normal = 1665
+disabled_normal = 1715
+toggle_off_normal = 0
+selected_normal = 14196
+
+[compare.dark.borderless.medium]
+highlighted_normal = 2177
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 21652
+
+[compare.dark.borderless.large]
+highlighted_normal = 2177
+disabled_normal = 2193
+toggle_off_normal = 0
+selected_normal = 39404
+
+[compare.dark.bordered.normal]
+mini_small = 0
+
+[compare.dark.bordered.highlighted]
+mini_small = 0
+
+[compare.dark.bordered.disabled]
+mini_small = 0
+
+[compare.dark.bordered.toggle_off]
+mini_small = 0
+
+[compare.dark.bordered.selected]
+mini_small = 0
+
+[compare.dark.bordered.mini]
+highlighted_normal = 15144
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 14192
+
+[compare.dark.bordered.small]
+highlighted_normal = 15144
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 14192
+
+[compare.dark.bordered.medium]
+highlighted_normal = 22945
+disabled_normal = 22951
+toggle_off_normal = 0
+selected_normal = 21641
+
+[compare.dark.bordered.large]
+highlighted_normal = 40707
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 39393
+
+[compare.dark.bordered_tinted.normal]
+mini_small = 0
+
+[compare.dark.bordered_tinted.highlighted]
+mini_small = 0
+
+[compare.dark.bordered_tinted.disabled]
+mini_small = 0
+
+[compare.dark.bordered_tinted.toggle_off]
+mini_small = 0
+
+[compare.dark.bordered_tinted.selected]
+mini_small = 0
+
+[compare.dark.bordered_tinted.mini]
+highlighted_normal = 15148
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15148
+
+[compare.dark.bordered_tinted.small]
+highlighted_normal = 15148
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 15148
+
+[compare.dark.bordered_tinted.medium]
+highlighted_normal = 22955
+disabled_normal = 22955
+toggle_off_normal = 0
+selected_normal = 22955
+
+[compare.dark.bordered_tinted.large]
+highlighted_normal = 40707
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 40707
+
+[compare.dark.bordered_prominent.normal]
+mini_small = 0
+
+[compare.dark.bordered_prominent.highlighted]
+mini_small = 0
+
+[compare.dark.bordered_prominent.disabled]
+mini_small = 0
+
+[compare.dark.bordered_prominent.toggle_off]
+mini_small = 0
+
+[compare.dark.bordered_prominent.selected]
+mini_small = 0
+
+[compare.dark.bordered_prominent.mini]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.bordered_prominent.small]
+highlighted_normal = 15145
+disabled_normal = 15148
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.bordered_prominent.medium]
+highlighted_normal = 22949
+disabled_normal = 22955
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.bordered_prominent.large]
+highlighted_normal = 40701
+disabled_normal = 40707
+toggle_off_normal = 0
+selected_normal = 0
+
+[compare.dark.mini.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.mini.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.mini.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.mini.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.mini.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.small.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.small.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.small.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.small.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.small.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.medium.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.medium.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.medium.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.medium.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.medium.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.large.normal]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.large.highlighted]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.large.disabled]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.large.toggle_off]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0
+
+[compare.dark.large.selected]
+borderless_plain = 0
+bordered_gray = 0
+bordered_tinted_tinted = 0
+bordered_prominent_filled = 0

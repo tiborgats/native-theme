@@ -13,7 +13,9 @@ Run from the repository root:
     python3 scripts/check_facts.py
     python3 scripts/check_facts.py --self-test
 
-It prints one line per finding, `<file>:<line>: <what>`, and a summary line with the counts (on stderr). Exit 0
+It prints one line per finding, `<file>:<line>: <what>`, and on stderr a `# variant sets:` line per state-model
+entry stating `variant_sets` or `variant_products` (its widget's number of sets, below) and a summary line with the
+counts. Exit 0
 when there is none, 1 when there are some, 2 on an input it cannot read (sources.toml, the core, the catalogue) or a
 wrong command line. A fact file that is no valid TOML is a finding of that file.
 
@@ -24,9 +26,9 @@ stray file is a finding (a README.md is allowed anywhere).
 
 A `[[fact]]` (S17 *Fields*):
 
-- `key`, `value`, `rows` and at least one `[[fact.cite]]` are required; `when` is optional; `scheme_file` and
-  `accent` come both or neither, in `kde/` only (`scheme_file = "<sources.toml id> <path>"`, `accent` a colour
-  literal). Any other field is a finding.
+- `key`, `value`, `rows` and at least one `[[fact.cite]]` are required (a pending fact: below); `when` is optional;
+  `scheme_file` and `accent` come both or neither, in `kde/` only (`scheme_file = "<sources.toml id> <path>"`,
+  `accent` a colour literal). Any other field is a finding.
 - `key` is a field path without TOML's unit suffix (a segment ending in `_px`, `_ms`, `_deg` or `_pt` is a finding):
   `<widget>.<part>.<field>[.<leaf>…]` and `<widget>.values.<name>[.<leaf>…]`, `component.<key>.<part>.<field>…`
   and `component.<key>.values.<name>…`, where the widget or component is a catalogue entry, the part one of its
@@ -34,29 +36,52 @@ A `[[fact]]` (S17 *Fields*):
   (check_spec_names.Checker.field_ok), the value one of the entry's widget values (the catalogue's name without its
   unit suffix; a value whose type is not a `Value<…>` may name leaves, unchecked); `role.<set>.<role>`,
   `role.<set>.disabled.<role>`, `role.global.<path>`, `role.@<key>` (Checker.role_ok); `token.<path>`
-  (Checker.token_ok); `input.<path>`, where `input.kde_scheme.<set>.<key>`,
+  (Checker.token_ok), a duration or timing `token.motion.durations.<key>` or `token.motion.timings.<key>` (or the
+  whole map), stated whole; an accent ramp role `role.global.accent_ramp.<key>` (`GlobalRole::AccentRamp(Key)`, S3;
+  ADD-A122) or the whole ramp; `input.<path>`, where `input.kde_scheme.<set>.<key>`,
   `.<set>.inactive.<key>`, `.wm.<key>`, `.groups`, `.inactive_groups`, `.unset_keys` and `input.inactive.<set>.<key>`
   are checked against the core's surface sets, and any other input name only for its form: the presets declare their
-  inputs (S9.1, S10), and the registry (S18) will hold them. `input.<part>…` and `input.values…` are the `input`
+  inputs (S9.1, S10), and the registry (S18) will hold them. A key is read as a TOML dotted key (key_segments): an
+  entry of a map keyed by text (TEXT_MAP: a `Vec<(String, …)>` or `Vec<(LanguageTag, …)>`, `per_family`,
+  `per_language`) is its text as TOML writes it, bare where TOML allows (`Cantarell`, `zh-Hans`) and quoted, `"…"` or
+  `'…'`, where it does not (`token.text.fallbacks.per_family."Segoe Fluent Icons"`), a quoted segment being one
+  segment whatever it holds (S17, S11; ADD-A123); an unterminated quote, an empty segment, a quote inside a bare
+  segment, a quoted segment that is no such entry and an entry TOML cannot write bare are findings. Two keys equal as
+  TOML keys are one key (canonical_key). `input.<part>…` and `input.values…` are the `input`
   widget's. The registry replaces these sources once it is generated (S18). A whole part's key, `<widget>.<part>` or
   `component.<key>.<part>` (S17, ADD-A121), takes `"absent"` (`PartPatch::Absent`) or `{ drawn_as = { widget, part,
   variants } }` (`PartPatch::DrawnAs`, S11's `drawn_as` table: `widget` a catalogue entry, `part` one of its parts,
-  `variants` its variants), nothing else.
+  `variants` its variants), nothing else. A key never goes inside one of the core's enums (enum_inside): an enum
+  block is stated whole, by a reference or S11's spelling of its variant (S17, S6.1; ADD-A122).
+- S4.1's motion keys (ADD-A122; motion_key_problems), where the checker can tell: a duration's or timing's key keeps
+  no word of the closed list MOTION_WORDS (`animation`, `duration`, `time`, `ms`, `transition`, `timing`, `curve`,
+  `easing`, `spring`, each also in its plural) or MOTION_PAIRS (`key_spline`, `cubic_bezier`) unless it is made only
+  of them (Breeze's `animations`), and starts with no toolkit prefix of MOTION_PREFIXES (`adw`, `gtk`, `q`, `k`, `ns`,
+  `ui`, `c`, `md_sys_motion`, `units`); a duration key of a platform whose row of the catalogue's
+  *token.motion.durations* table lists every key (motion_duration_keys: the rows naming no family, DURATION_FAMILY:
+  `by family`, `one entry per`; DURATION_ROWS maps each row to its directory) is one of the row's backticked names.
+  The catalogue's timings are prose with families, so a timing key is checked by the words and prefixes only.
 - `value` is spelled as S11's Spelling table spells a preset value, with the key's own unit in the value (S17): a
   TOML number, a TOML bool, `"auto"`, `"absent"`, `"none"`, a colour literal (`#rrggbb`, `#rrggbbaa`,
   `srgb(r, g, b[, a])`, `display_p3(r, g, b[, a])`), a length `"<n>px"`, a duration `"<n>ms"`, an angle
   `"<n>deg"`, a font size `"<n>pt"` or `"<n>px"`, a name (an enum variant in snake_case, or `@<key>`), an expression
-  `"= …"` (S2.2's grammar: literals, references, calls of the core's function table, `active(<ref>)`, `srgb` and
-  `display_p3` as literal forms; role, token, `surface.` and `element.` references are checked by name), a list, or a
-  table (a block, or a one-key table for a variant with data) whose keys are snake_case and whose suffixed keys
-  (`_px`, `_ms`, `_deg`, `_pt`) take a plain number or an expression, `"auto"`, `"absent"` or `"none"`. A number
-  written as a string is a finding. Where the core's sketches type the key (PartStyle and its blocks, the widget
+  `"= …"` (S2.2's grammar: literals, references, calls of the core's function table with the arity its signature
+  gives, `alpha(c, a)` and `with_alpha(c, a)` two arguments, `pick(index, c0, c1, …)` three or more (core_functions;
+  ADD-A123), `active(<ref>)`, `srgb` and `display_p3` as literal forms; role, token, `surface.` and `element.`
+  references are checked by name), a list, or a table (a block, or a one-key table for a variant with data) whose
+  keys are snake_case and whose suffixed keys (`_px`, `_ms`, `_deg`, `_pt`) take a plain number or an expression,
+  `"auto"`, `"absent"` or `"none"`. A number written as a string is a finding. Where the core's sketches type the key (PartStyle and its blocks, the widget
   value's type, Tokens, the colour roles), the value must be of that dimension (KEY_DIMS). Where they type it, or a
   leaf of it, as one of the core's enums (core_enums), a name is a unit variant's snake_case name, `@<key>` where a
   variant holds a `Key`, or a name of the enum a one-field tuple variant holds (enum_name_ok); a table is a one-key
   table naming a variant with data (S11), and the payload table of a variant with named fields states only those
-  fields (`timing = { spring = { … } }` names `Timing::Spring`'s, its `damping_ratio` included, S2.7). An expression's
-  `surface.` reference is a `SurfaceRole` path, `surface.<role>` or `surface.disabled.<role>` (S2.2).
+  fields (`timing = { spring = { … } }` names `Timing::Spring`'s, its `damping_ratio` included, S2.7). A platform
+  curve names a member of the core's closed enums (S2.7; ADD-A123): `{ platform = { qt = "<QtEasing>" } }`,
+  `{ platform = { adw = "<AdwEasing>" } }` or `{ platform = "kirigami_velocity" }`, so a curve outside `QtEasing` or
+  `AdwEasing` is a finding (whether the quote names it is the verifier's, S17). Where the key's type is such an enum
+  and no variant of it holds one scalar (literal_enum: a `Timing`, as S4.1's sketch types `token.motion.timings.<key>`;
+  not a `Radius`, whose `Px` a length spells), a number, a bool, a list, a colour or a unit literal is a finding. An
+  expression's `surface.` reference is a `SurfaceRole` path, `surface.<role>` or `surface.disabled.<role>` (S2.2).
 - a text value (S11's text row; ADD-A120): where the key's type is `String` (a `Value<String>`: a font family, an
   icon theme), any TOML string is the text, except `"auto"`, `"absent"`, `"none"` and an expression, which must be
   one reference (S12 refuses a call) and, where it is a `token.` or `role.` path the sketches type, a text field's;
@@ -84,6 +109,20 @@ A `[[fact]]` (S17 *Fields*):
   the platform has no name for what it lacks (S17 *Absence*, ADD-A120); `tolerance` a number >= 0, or a table from a
   leaf path to such a number; `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`. A fact
   with a `read` citation states a plain `= input.…` reference (S17 *`read`*).
+- A pending fact (S17 *A pending measurement*, ADD-A122): `pending = "U<n>"` in place of `value` (exactly one of
+  them), no `[[fact.cite]]`; `key`, `pending` and `rows` required, `when`, `scheme_file` and `accent` as a fact's; the
+  id `U` and a number (PENDING_RX), an Id of the ledger's *Unmeasured register* (scripts/check_ledger.py checks that
+  it names a row). Its key, `rows` and `when` are checked as a fact's; the generation rule asks nothing of it. A
+  pending fact has no source position and is exempt from source order, which no checker reads (the verifier's), but
+  not from *Which fact applies* (pending_problems): a pending fact that a later fact of its key in its file and of its
+  run (the same `scheme_file` and `accent`, or neither) shadows on a combination both `when`s may hold in is a
+  finding. Two `when`s cannot hold together (whens_overlap) where one requires a name the other refuses; they name two
+  sizes, densities, directions or size classes on one axis, or two values of a one-valued condition (`scheme:`,
+  `preset:`, `flavor:`, `idiom:`, `input:`, `posture:`, `device_model:`, one container's `container_size:`); their
+  positions differ in `first`, `last`, `only` or `parity`; one requires a context the other refuses; or, by the
+  widget's state-model entries of the platform (any of them), they name two states of one exclusive group, two
+  variants of one `exclusive_variants` group, or two or more variants no listed or product set holds. Anything else
+  may hold together (`not_drawn` is not read: a shadowing there is a finding to narrow).
 - The generation rule (S17 *Generations*): a fact with `preset:<id>` in `when.conditions` has every citation serving
   that generation; a fact without one has citations that together serve each generation of its directory among the
   presets that exist (existing_presets(); a `preset:` in `not_conditions` takes that generation out). A citation's
@@ -95,8 +134,8 @@ A `[[model]]` in `<platform>/state-models.toml` (S17 *State models*): `widget` (
 may only hold `conditions` with `preset:` or `flavor:` ones. With `available = false` no other declaration. With
 `true`, `variants`, `sizes`, `densities`, `axes` (`{ states, conditions, contexts }`), `exclusive` and `not_drawn`
 are required, and `default_size`, `flags`, `requires_variants`, `sizes_by_variant`, `sizes_by_context`,
-`exclusive_variants`, `variant_sets` and `default_size_by_variant` optional (S10's declarations, S17; absent meaning
-none); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities, states,
+`exclusive_variants`, `variant_sets`, `variant_products` and `default_size_by_variant` optional (S10's declarations,
+S17; absent meaning none); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities, states,
 conditions, context selectors as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states`
 and in one group only, `default_size` is one of a non-empty `sizes`, `requires_variants` and `sizes_by_variant`'s
 variants are among `variants`, every listed size among `sizes`, a `sizes_by_context` context a catalogue widget.
@@ -104,8 +143,18 @@ ADD-A121 (variant_declaration_problems): each `exclusive_variants` group names v
 (a variant may be in several groups, S12); each `variant_sets` set holds two or more variants among `variants`, none
 twice, at most one of each `exclusive_variants` group, and no set is listed twice (in any order); each
 `default_size_by_variant` entry is `{ variant, size }`, its variant among `variants`, its size one that variant takes
-(its `sizes_by_variant` entry's sizes, else `sizes`), and no two entries name one variant (S12). The generation rule
-applies as to a fact.
+(its `sizes_by_variant` entry's sizes, else `sizes`), and no two entries name one variant (S12). ADD-A122
+(product_problems): `variant_products` is a list of products, each a non-empty list of groups `{ any = [...] }` (at
+most one of its variants, or none) or `{ one = [...] }` (exactly one), each naming variants among `variants`, no
+product naming one variant in two of its groups (or twice in one); its sets (product_sets) are every choice from each
+group, those of two or more variants, less those holding two variants of an `exclusive_variants` group and those
+`requires_variants` excludes (a set holding none of the variants it lists: any one of them keeps it, S10,
+ADD-A123), a set two products give being one set; a listed `variant_sets` set that a product gives is a finding (each
+set is stated once), and the exclusive groups check the listed sets only. The number of sets per entry
+(drawn_variant_sets: the listed and the products' sets, less those a `not_drawn` entry stating only `variants` and
+`not_variants` removes whole and the listed sets `requires_variants` excludes, each counted once; a listed set it
+excludes is no finding, as S17 trims the combinations by it) is printed on stderr, so the expansion is reviewed by its
+count. The generation rule applies as to a fact.
 
 A palette fact (`docs/facts/palettes/<project>.toml`, S17 *Palette facts*): `key = "<project>.<flavour>.<name>"`
 (`<project>` the file's stem), a colour literal as `value`, at least one citation; no `rows`, `when`,
@@ -122,6 +171,7 @@ empty: then no preset exists and the generation rule asks nothing of a fact with
 
     python3 scripts/check_facts.py --self-test   # each rule on inline fixtures: a passing and a failing case
 """
+import itertools
 import math
 import re
 import sys
@@ -156,7 +206,9 @@ STATE_MODELS = "state-models.toml"
 ALL_PRESETS = tuple(p for ps in PLATFORMS.values() for p in ps)
 
 FACT_REQUIRED = {"key", "value", "rows", "cite"}
+PENDING_REQUIRED = {"key", "pending", "rows"}
 FACT_OPTIONAL = {"when", "scheme_file", "accent"}
+PENDING_RX = re.compile(r"^U[1-9][0-9]*$")   # an Unmeasured register Id (S17 *A pending measurement*)
 PALETTE_REQUIRED = {"key", "value", "cite"}
 CITE_FIELDS = {
     # kind: (required, optional)
@@ -167,7 +219,7 @@ CITE_FIELDS = {
 MODEL_REQUIRED = {"widget", "available", "rows", "cite"}
 MODEL_DECLARATIONS = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn", "default_size", "flags",
                       "requires_variants", "sizes_by_variant", "sizes_by_context", "exclusive_variants",
-                      "variant_sets", "default_size_by_variant"}
+                      "variant_sets", "variant_products", "default_size_by_variant"}
 MODEL_AVAILABLE_REQUIRED = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn"}
 AXES_KEYS = {"states", "conditions", "contexts"}
 
@@ -204,7 +256,24 @@ KEY_DIMS = {"Px": "length", "Length": "length", "Ms": "duration", "Duration": "d
 SCALAR_DIMS = {"length", "duration", "angle", "font_size", "colour", "number", "bool", "text"}
 UNIT_OF = {"length": "px", "duration": "ms", "angle": "deg", "font_size": "pt"}
 WRAPPER = re.compile(r"(?:Value|Option|Box)<(.+)>")
+PRODUCT_GROUPS = {"any", "one"}   # a variant product's groups (S17 *Variant products*, ADD-A122)
+# S4.1's motion keys (ADD-A122): the closed list of words that only say the value is a duration, a curve or a motion,
+# each also in its plural, the two-word ones as word pairs; and the toolkit prefixes a snake_case key can still show
+MOTION_WORDS = {"animation", "duration", "time", "ms", "transition", "timing", "curve", "easing", "spring"}
+MOTION_WORDS |= {w + "s" for w in MOTION_WORDS - {"ms"}}
+MOTION_PAIRS = (("key", "spline"), ("key", "splines"), ("cubic", "bezier"), ("cubic", "beziers"))
+MOTION_PREFIXES = ("adw", "gtk", "q", "k", "ns", "ui", "c", "md_sys_motion", "units")
+# the catalogue's *token.motion.durations* table: each row's platform as the facts directory it is
+DURATION_ROWS = {"libadwaita": "gnome", "kde-breeze": "kde", "windows-11": "windows", "macos-*": "macos",
+                 "ios-*": "ios", "material-3": "material"}
+DURATION_FAMILY = ("by family", "one entry per")   # a row naming a family: its keys are not all listed
 PART_PATCH = "PartPatch"   # the type key_info gives a whole part's key, `<widget>.<part>` (S17, ADD-A121)
+# a map keyed by text (S11; ADD-A123): its key types, an entry's key a TOML bare key or a quoted one, and the stand-in
+# segment key_info walks the core's types with in its place
+TEXT_KEY_TYPES = ("String", "LanguageTag")
+TEXT_MAP = re.compile(rf"Vec<\(\s*(?:{'|'.join(TEXT_KEY_TYPES)})\s*,\s*(.+)\)>")
+TOML_BARE = re.compile(r"^[A-Za-z0-9_-]+$")
+TEXT_ENTRY = "text_entry"
 DRAWN_AS_KEYS = {"widget", "part", "variants"}
 
 
@@ -286,16 +355,42 @@ def core_enums(text: str) -> dict:
     return out
 
 
-def core_functions(text: str) -> set:
-    """The function names of S2.2's **Functions** table."""
+def core_functions(text: str) -> dict:
+    """{name: (the fewest arguments, the most or None)} of S2.2's **Functions** table, each function's arity its
+    signature's (`alpha(c, a)` and `with_alpha(c, a)` two; `pick(index, c0, c1, …)` two or more)."""
     m = re.search(r"\*\*Functions\*\*.*?\n\n(\|.*?)\n\n", text, re.S)
     if not m:
         raise InputError("core: no **Functions** table")
-    names = set()
+    out = {}
     for line in m.group(1).splitlines()[2:]:
         first = line.split("|")[1] if line.count("|") > 2 else ""
-        names |= set(re.findall(r"`([a-z_][a-z0-9_]*)\(", first))
-    return names
+        for name, params in re.findall(r"`([a-z_][a-z0-9_]*)\(([^)`]*)\)", first):
+            ps = [x.strip() for x in params.split(",") if x.strip()]
+            out[name] = (len(ps) - 1, None) if ps and ps[-1] in ("…", "...") else (len(ps), len(ps))
+    return out
+
+
+def motion_duration_keys(cat_text: str) -> dict:
+    """{facts directory: the duration keys its row of the catalogue's *token.motion.durations* table lists}, for each
+    row that names no family (DURATION_FAMILY): a row that does lists its keys incompletely and is left out, as is
+    every platform while the catalogue has no such table. A key is a backticked snake_case name of the row's Keys
+    cell; a row of another platform is an input error."""
+    m = re.search(r"\*\*token\.motion\.durations\*\*.*?\n\n(\|.*?)(?:\n\n|\Z)", cat_text, re.S)
+    if not m:
+        return {}
+    out = {}
+    for line in m.group(1).splitlines()[2:]:
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        label = cells[0]
+        if label not in DURATION_ROWS:
+            raise InputError(f"catalogue: *token.motion.durations* has a row {label!r}, not one of "
+                             f"{', '.join(DURATION_ROWS)}")
+        if any(f in cells[1] for f in DURATION_FAMILY):
+            continue
+        out[DURATION_ROWS[label]] = set(re.findall(r"`([a-z][a-z0-9_]*)`", cells[1]))
+    return out
 
 
 def gap_map_rows(root: Path) -> set | None:
@@ -454,6 +549,7 @@ class Context:
         self.structs = core_structs(core_text)
         self.enums = core_enums(core_text)
         self.functions = core_functions(core_text)
+        self.motion_durations = motion_duration_keys(cat_text)
         entries = self.sources_data.get("source", [])
         if not isinstance(entries, list):
             raise InputError(f"{SOURCES}: `source` is not an array of [[source]] tables")
@@ -555,14 +651,73 @@ def load(ctx: Context):
 
 # ------------------------------------------------------------------------------------------------- keys
 
+def key_segments(key: str):
+    """(the segments, the indices of the quoted ones) of a fact's key read as a TOML dotted key, or a problem: a
+    segment is bare (up to the next `.`) or a TOML string, `"…"` (its escapes read as TOML reads them) or `'…'`,
+    which is one segment whatever it holds (`token.text.fallbacks.per_family."Segoe Fluent Icons"`; S17, S11,
+    ADD-A123); an unterminated quote, an empty segment or a quote inside a bare one is a problem."""
+    segs, quoted, i = [], set(), 0
+    while True:
+        if i >= len(key) or key[i] == ".":
+            return f"key {key!r} has an empty segment"
+        if key[i] in "\"'":
+            q = key[i]
+            j = i + 1
+            while j < len(key) and key[j] != q:
+                j += 2 if q == '"' and key[j] == "\\" else 1
+            if j >= len(key):
+                return f"key {key!r}: the quote at {key[i:]!r} is not terminated (a quoted segment, S17)"
+            try:
+                segs.append(tomllib.loads(f"k = {key[i:j + 1]}")["k"])
+            except tomllib.TOMLDecodeError:
+                return f"key {key!r}: {key[i:j + 1]} is not a TOML string (a quoted segment, S17)"
+            quoted.add(len(segs) - 1)
+            i = j + 1
+            if i < len(key) and key[i] != ".":
+                return f"key {key!r}: a quoted segment ends at a `.` or the key's end"
+        else:
+            j = key.find(".", i)
+            j = len(key) if j < 0 else j
+            if any(q in key[i:j] for q in "\"'"):
+                return f"key {key!r}: a quote inside the segment {key[i:j]!r} (a quoted segment is quoted whole, S17)"
+            segs.append(key[i:j])
+            i = j
+        if i == len(key):
+            return segs, quoted
+        i += 1
+
+
+def canonical_key(key):
+    """A fact's key as the segments it names (two keys equal as TOML keys are one, S11, S17), or the key itself where
+    it does not read."""
+    parsed = key_segments(key) if isinstance(key, str) else None
+    return tuple(parsed[0]) if isinstance(parsed, tuple) else key
+
+
 def key_info(ctx: Context, key: str):
     """(problem or None, dimension or None, widget name or None, kind, the core's type of the key or None) of a
-    fact's key; kind is "widget", "role", "token" or "input"."""
+    fact's key; kind is "widget", "role", "token" or "input". A segment that is no snake_case name (a quoted one, a
+    TOML bare key such as `Cantarell`) is an entry of a map keyed by text (TEXT_MAP: `per_family`, `per_language`;
+    S17, S11, ADD-A123), the core's types walked with TEXT_ENTRY in its place."""
     if not isinstance(key, str) or not key:
         return "the key is not a non-empty string", None, None, None, None
-    segs = key.split(".")
-    if not all(SEG.match(s) for s in segs):
-        return f"key {key!r} is not a dotted path of snake_case segments", None, None, None, None
+    parsed = key_segments(key)
+    if isinstance(parsed, str):
+        return parsed, None, None, None, None
+    segs, quoted = parsed
+    for i, seg in enumerate(segs):
+        if i not in quoted and SEG.match(seg):
+            continue
+        prefix = key_info(ctx, ".".join(segs[:i])) if i else (None,) * 5
+        if not (prefix[0] is None and prefix[4] and TEXT_MAP.fullmatch(strip_type(prefix[4]))):
+            if i in quoted:
+                return (f"key {key!r}: the quoted segment {seg!r} is not an entry of a map keyed by text (S17, S11: "
+                        f"`per_family`'s families)"), None, None, None, None
+            return f"key {key!r} is not a dotted path of snake_case segments", None, None, None, None
+        if i not in quoted and not TOML_BARE.match(seg):
+            return (f"key {key!r}: the entry {seg!r} is bare where TOML needs it quoted (S17, S11)", None, None,
+                    None, None)
+        segs[i] = TEXT_ENTRY
     suffixed = next((s for s in segs[1:] if s.endswith(tuple(SUFFIX_DIMS))), None)
     if suffixed:
         return (f"key {key!r}: `{suffixed}` carries TOML's unit suffix (a key names the field, the value carries "
@@ -570,6 +725,10 @@ def key_info(ctx: Context, key: str):
     ck = ctx.ck
 
     def typed(type_str, rest, widget, kind):
+        inside = enum_inside(ctx, type_str, rest)
+        if inside:
+            return (f"key {key!r}: `{inside[1]}` is inside {inside[0]}, an enum, which a fact states whole (a "
+                    f"reference or S11's spelling of its variant; S17, S6.1)"), None, widget, kind, None
         t = type_at(ctx, type_str, rest)
         return None, KEY_DIMS.get(strip_type(t)) if t else None, widget, kind, t
 
@@ -580,12 +739,18 @@ def key_info(ctx: Context, key: str):
         if segs[1].startswith("@"):
             return None, "colour", None, "role", None
         if segs[1] == "global":
+            if segs[2:3] == ["accent_ramp"] and len(segs) > 4:
+                return (f"key {key!r}: an accent ramp role is `role.global.accent_ramp.<key>` "
+                        f"(`GlobalRole::AccentRamp(Key)`, S3; ADD-A122)"), None, None, "role", None
             return typed("GlobalRoles", segs[2:], None, "role")
         return typed("SurfaceRoles", segs[2:] if segs[2:3] != ["disabled"] else segs[3:], None, "role")
     if segs[0] == "token":
         rest = ".".join(segs[1:])
         if not rest or not ck.token_ok(rest):
             return f"key {key!r} names no token (S4)", None, None, "token", None
+        if segs[1:2] == ["motion"] and segs[2:3] in (["durations"], ["timings"]) and len(segs) > 4:
+            return (f"key {key!r}: a duration or timing is `token.motion.{segs[2]}.<key>`, stated whole (S4.1, "
+                    f"S17)"), None, None, "token", None
         return typed("Tokens", segs[1:], None, "token")
     if segs[0] == "input" and not (len(segs) > 1 and "input" in ctx.entries and (
             segs[1] == "values" or any(segs[1] in p.names for p in ctx.entries["input"].parts))):
@@ -626,6 +791,34 @@ def key_info(ctx: Context, key: str):
         return (f"key {key!r}: `{'.'.join(rest[1:])}` is not a field path (the core's blocks)", None, widget, "widget",
                 None)
     return typed("PartStyle", rest[1:], widget, "widget")
+
+
+def motion_key_problems(ctx, key, platform) -> list:
+    """S4.1's rule for a duration's or timing's key (ADD-A122), where the checker can tell: the key keeps no word of
+    MOTION_WORDS (or MOTION_PAIRS) unless it is made only of them, starts with no toolkit prefix of MOTION_PREFIXES,
+    and, a duration key of a platform whose catalogue row lists every key (motion_duration_keys), is one of them."""
+    m = re.fullmatch(r"token\.motion\.(durations|timings)\.([a-z0-9_]+)", key) if isinstance(key, str) else None
+    if not m:
+        return []
+    name = m.group(2)
+    words = name.split("_")
+    dropped = [w in MOTION_WORDS for w in words]
+    for i in range(len(words) - 1):
+        if (words[i], words[i + 1]) in MOTION_PAIRS:
+            dropped[i] = dropped[i + 1] = True
+    out = []
+    if any(dropped) and not all(dropped):
+        kept = [w for w, d in zip(words, dropped) if d]
+        out.append(f"key {key!r}: `{name}` keeps {', '.join(f'`{w}`' for w in kept)}, which S4.1's rule drops (a word "
+                   f"that only says the value is a duration, a curve or a motion)")
+    prefix = next((p for p in MOTION_PREFIXES if name == p or name.startswith(p + "_")), None)
+    if prefix:
+        out.append(f"key {key!r}: `{name}` keeps the toolkit's prefix `{prefix}`, which S4.1's rule drops")
+    listed = ctx.motion_durations.get(platform)
+    if m.group(1) == "durations" and listed is not None and name not in listed:
+        out.append(f"key {key!r}: `{name}` is not a key the catalogue's *token.motion.durations* row for {platform}/ "
+                   f"lists (S4.1)")
+    return out
 
 
 def input_problem(ctx, segs):
@@ -670,6 +863,31 @@ def type_at(ctx, type_str, segs):
             segs, t = segs[1:], m.group(1).strip()
             continue
         m = re.fullmatch(r"Vec<\(\s*\w+\s*,\s*(.+)\)>", t)
+        if m:
+            segs, t = segs[1:], m.group(1).strip()
+            continue
+        if t in ctx.structs:
+            fields = ctx.structs[t]
+            name = segs[0] if segs[0] in fields else check_spec_names.norm_value(segs[0])
+            if name not in fields:
+                return None
+            segs, t = segs[1:], fields[name]
+            continue
+        return None
+    return None
+
+
+def enum_inside(ctx, type_str, segs):
+    """(the core enum, the segment) where the path `segs` under a core type goes inside an enum, or None: an enum
+    block, as any enum, is stated whole, by a reference or S11's spelling of its variant (S17, S6.1; ADD-A122)."""
+    t, segs = (type_str or "").strip(), list(segs)
+    for _ in range(64):
+        if not segs:
+            return None
+        t = strip_type(t)
+        if t in ctx.enums:
+            return t, segs[0]
+        m = re.fullmatch(r"Sides<(.+)>", t) or re.fullmatch(r"Vec<\(\s*\w+\s*,\s*(.+)\)>", t)
         if m:
             segs, t = segs[1:], m.group(1).strip()
             continue
@@ -811,13 +1029,19 @@ def expression_problems(ctx, expr: str) -> list:
                 return
             if "." in text or text not in ctx.functions:
                 out.append(f"`{text}` is not a function of S2.2's table")
+            n = 0
             while True:
                 parse()
+                n += 1
                 k, v = take()
                 if v == ")":
                     break
                 if v != ",":
                     raise ValueError(f"expected `,` or `)` in {text}()")
+            lo, hi = ctx.functions.get(text, (n, n))
+            if n < lo or (hi is not None and n > hi):
+                want = f"{lo} or more" if hi is None else str(lo)
+                out.append(f"`{text}` takes {want} argument{'s' * (want != '1')} (S2.2's table), not {n}")
             return
         problem = ref_problem(ctx, text)
         if problem:
@@ -841,6 +1065,8 @@ def ref_problem(ctx, path):
     if len(segs) == 1:
         return None if NAME.match(head) else f"`{path}` is not a name"
     if head == "role":
+        if segs[1:3] == ["global", "accent_ramp"] and len(segs) > 4:
+            return f"`{path}`: an accent ramp role is `role.global.accent_ramp.<key>` (S3; ADD-A122)"
         return None if ck.role_ok(".".join(segs[1:])) else f"`{path}` names no colour role (S3)"
     if head == "token":
         return None if ck.token_ok(".".join(segs[1:])) else f"`{path}` names no token (S4)"
@@ -883,12 +1109,29 @@ def text_expression_problems(ctx, expr: str, where: str) -> list:
     return []
 
 
+def literal_enum(ctx, typ):
+    """The core enum a value of type `typ` is, where S11 spells it only as a variant (its name or a one-key table, a
+    reference, a keyword): a `Timing` (S4.1's `token.motion.timings.<key>`, S2.7; ADD-A123), a `PlatformCurve`; None
+    for any other type, and for an enum with a variant holding one scalar, whose literal spells it (`Radius::Px`)."""
+    e = strip_type(typ)
+    variants = ctx.enums.get(e)
+    if variants is None or any(form == "tuple" and strip_type(payload) in KEY_DIMS
+                               for form, payload in variants.values()):
+        return None
+    return e
+
+
 def value_problems(ctx, value, dim, where="value", typ=None) -> list:
     """Problems of a value spelled for a key of dimension `dim`; `typ` is the key's core type (S11's text row reads
     it: a text value inside a table or a list is found by its type)."""
     kind = text_kind(typ)
     if kind:
         dim = "text"
+    e = literal_enum(ctx, typ) if dim is None else None
+    if e and (isinstance(value, (bool, int, float, list)) or (isinstance(value, str) and (
+            HEX_LITERAL.match(value) or FUNC_COLOUR.match(value) or UNIT_LITERAL.match(value)))):
+        return [f"{where}: {value!r} where the key is a {e}, an enum (S11: a variant's snake_case name or a one-key "
+                f"table naming it)"]
     if isinstance(value, str) and dim == "text":
         if kind == "plain":
             return []
@@ -1254,14 +1497,25 @@ def fact_problems(ctx, item: Item) -> list:
         if "value" in d and not (isinstance(d["value"], str) and (HEX_LITERAL.match(d["value"])
                                                                   or FUNC_COLOUR.match(d["value"]))):
             out.append((item.ln("value"), f"palette value {d['value']!r} is not a colour literal"))
+    elif "pending" in d:
+        out += [(item.line, f"pending fact: missing `{f}`") for f in sorted(PENDING_REQUIRED - d.keys())]
+        out += [(item.ln(f), f"`{f}` is not a fact's field") for f in sorted(d.keys() - FACT_REQUIRED - FACT_OPTIONAL
+                                                                          - PENDING_REQUIRED)]
+        if "value" in d:
+            out.append((item.ln("value"), "a pending fact has `pending` in place of `value`: exactly one of them "
+                                          "(S17 *A pending measurement*)"))
+        if "cite" in d:
+            out.append((item.ln("cite"), "a pending fact has no [[fact.cite]] (S17 *A pending measurement*)"))
+        pid = d["pending"]
+        if not (isinstance(pid, str) and PENDING_RX.match(pid)):
+            out.append((item.ln("pending"), f"pending {pid!r} is not an Unmeasured register Id (`U` and a number, "
+                                            f"S17)"))
+        _, widget, kind, _ = fact_key(ctx, item, out)
+        return out + fact_shared_problems(ctx, item, widget, kind)
     else:
         out += [(item.line, f"missing `{f}`") for f in sorted(FACT_REQUIRED - d.keys())]
         out += [(item.ln(f), f"`{f}` is not a fact's field") for f in sorted(d.keys() - FACT_REQUIRED - FACT_OPTIONAL)]
-        dim, widget, kind, typ = None, None, None, None
-        if "key" in d:
-            problem, dim, widget, kind, typ = key_info(ctx, d["key"])
-            if problem:
-                out.append((item.ln("key"), problem))
+        dim, widget, kind, typ = fact_key(ctx, item, out)
         if "value" in d and typ == PART_PATCH:
             out += [(item.ln("value"), p) for p in part_patch_problems(ctx, d["value"], widget)]
         elif "value" in d:
@@ -1270,26 +1524,7 @@ def fact_problems(ctx, item: Item) -> list:
                 out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
                                             "(S11)") for c in item.cites if c.data.get("kind") == "measured"
                         and "tolerance" in c.data and c.data["tolerance"] != 0]
-        if "rows" in d:
-            out += rows_problems(ctx, item)
-        if "when" in d:
-            out += [(item.ln("when"), p) for p in when_problems(ctx, d["when"], widget, item.platform,
-                                                               only_conditions=kind in ("role", "token", "input"))]
-        sf, acc = "scheme_file" in d, "accent" in d
-        if sf != acc:
-            out.append((item.ln("scheme_file" if sf else "accent"), "scheme_file and accent come both or neither"))
-        if (sf or acc) and item.platform != "kde":
-            out.append((item.ln("scheme_file" if sf else "accent"), "scheme_file and accent are the kde/ accent "
-                                                                     "run's only"))
-        if sf:
-            m = re.fullmatch(r"(\S+) (\S+)", d["scheme_file"]) if isinstance(d["scheme_file"], str) else None
-            if not m:
-                out.append((item.ln("scheme_file"), "scheme_file is not `<sources.toml id> <path>`"))
-            elif m.group(1) not in ctx.sources:
-                out.append((item.ln("scheme_file"), f"scheme_file's entry {m.group(1)!r} is not a [[source]]"))
-        if acc and not (isinstance(d["accent"], str) and (HEX_LITERAL.match(d["accent"])
-                                                          or FUNC_COLOUR.match(d["accent"]))):
-            out.append((item.ln("accent"), f"accent {d['accent']!r} is not a colour literal"))
+        out += fact_shared_problems(ctx, item, widget, kind)
         if any(c.data.get("kind") == "read" for c in item.cites):
             v = d.get("value")
             if not (isinstance(v, str) and re.fullmatch(r"=\s*input\.[a-z0-9_.@]+\s*", v)):
@@ -1298,6 +1533,46 @@ def fact_problems(ctx, item: Item) -> list:
     for c in item.cites:
         out += cite_problems(ctx, item, c)
     out += generation_problems(ctx, item)
+    return out
+
+
+def fact_key(ctx, item: Item, out: list):
+    """(dimension, widget, kind, the core's type) of a fact's key, its problems appended to `out` (S4.1's motion keys
+    among them)."""
+    d = item.data
+    if "key" not in d:
+        return None, None, None, None
+    problem, dim, widget, kind, typ = key_info(ctx, d["key"])
+    if problem:
+        out.append((item.ln("key"), problem))
+    out += [(item.ln("key"), p) for p in motion_key_problems(ctx, d["key"], item.platform)]
+    return dim, widget, kind, typ
+
+
+def fact_shared_problems(ctx, item: Item, widget, kind) -> list:
+    """What a fact and a pending fact share: `rows`, `when` and the accent run's fields."""
+    d = item.data
+    out = []
+    if "rows" in d:
+        out += rows_problems(ctx, item)
+    if "when" in d:
+        out += [(item.ln("when"), p) for p in when_problems(ctx, d["when"], widget, item.platform,
+                                                           only_conditions=kind in ("role", "token", "input"))]
+    sf, acc = "scheme_file" in d, "accent" in d
+    if sf != acc:
+        out.append((item.ln("scheme_file" if sf else "accent"), "scheme_file and accent come both or neither"))
+    if (sf or acc) and item.platform != "kde":
+        out.append((item.ln("scheme_file" if sf else "accent"), "scheme_file and accent are the kde/ accent "
+                                                                 "run's only"))
+    if sf:
+        m = re.fullmatch(r"(\S+) (\S+)", d["scheme_file"]) if isinstance(d["scheme_file"], str) else None
+        if not m:
+            out.append((item.ln("scheme_file"), "scheme_file is not `<sources.toml id> <path>`"))
+        elif m.group(1) not in ctx.sources:
+            out.append((item.ln("scheme_file"), f"scheme_file's entry {m.group(1)!r} is not a [[source]]"))
+    if acc and not (isinstance(d["accent"], str) and (HEX_LITERAL.match(d["accent"])
+                                                      or FUNC_COLOUR.match(d["accent"]))):
+        out.append((item.ln("accent"), f"accent {d['accent']!r} is not a colour literal"))
     return out
 
 
@@ -1437,11 +1712,17 @@ def variant_declaration_problems(item: Item, variants, sizes) -> list:
                         for v in g if v not in variants]
                 out += [(item.ln("exclusive_variants"), f"exclusive_variants: a group names {v!r} twice")
                         for v in sorted({v for v in g if g.count(v) > 1})]
+    generated = set()
+    if "variant_products" in d:
+        problems, generated = product_problems(d, variants, groups)
+        out += [(item.ln("variant_products"), p) for p in problems]
     if "variant_sets" in d:
         vs = d["variant_sets"]
         if not (isinstance(vs, list) and all(str_list(s) for s in vs)):
             out.append((item.ln("variant_sets"), "variant_sets is not a list of lists of variants"))
         else:
+            out += [(item.ln("variant_sets"), f"variant_sets: {s} is also a set variant_products gives (a set is "
+                                              f"listed once, S17)") for s in vs if frozenset(s) in generated]
             seen = set()
             for s in vs:
                 where = f"variant_sets: {s}"
@@ -1482,6 +1763,84 @@ def variant_declaration_problems(item: Item, variants, sizes) -> list:
     return out
 
 
+def products_ok(vp) -> bool:
+    """`variant_products` has its form: a list of products, each a non-empty list of groups, each `{ any = [...] }`
+    or `{ one = [...] }` naming one or more variants."""
+    return isinstance(vp, list) and all(
+        isinstance(prod, list) and prod and all(
+            isinstance(g, dict) and len(g) == 1 and next(iter(g)) in PRODUCT_GROUPS and str_list(next(iter(g.values())))
+            and next(iter(g.values())) for g in prod) for prod in vp)
+
+
+def requires_ok(d, s) -> bool:
+    """The set is not one `requires_variants` excludes: where it lists variants, the set holds one of them (any one:
+    the forms the platform draws the widget only as, S10, ADD-A123)."""
+    req = d.get("requires_variants") if str_list(d.get("requires_variants")) else []
+    return not req or bool(set(req) & s)
+
+
+def product_sets(d, groups) -> set:
+    """The sets the entry's `variant_products` give (S17 *Variant products*): every choice of one variant or none from
+    each `any` group and one from each `one` group, those of two or more variants, less those that hold two variants
+    of an `exclusive_variants` group (`groups`) or that `requires_variants` excludes; a set two products give is one."""
+    vp = d.get("variant_products")
+    out = set()
+    if not products_ok(vp):
+        return out
+    for prod in vp:
+        choices = [([None] if k == "any" else []) + list(v) for g in prod for k, v in g.items()]
+        for pick in itertools.product(*choices):
+            chosen = [v for v in pick if v is not None]
+            sset = frozenset(chosen)
+            if len(sset) < 2 or len(sset) != len(chosen):
+                continue
+            if any(len(sset & set(g)) > 1 for g in groups) or not requires_ok(d, sset):
+                continue
+            out.add(sset)
+    return out
+
+
+def product_problems(d, variants, groups):
+    """(problems, the sets the products give) of `variant_products` (S17, ADD-A122): its form, every member among
+    `variants`, no product naming one variant in two of its groups (or twice in one)."""
+    vp = d["variant_products"]
+    if not products_ok(vp):
+        return ["variant_products is not a list of products, each a non-empty list of groups `{ any = [...] }` or "
+                "`{ one = [...] }` (S17)"], set()
+    out = []
+    for i, prod in enumerate(vp):
+        members = [v for g in prod for vs in g.values() for v in vs]
+        out += [f"variant_products[{i}]: {v!r} is not among variants" for v in dict.fromkeys(members)
+                if v not in variants]
+        out += [f"variant_products[{i}] names {v!r} in two of its groups or twice in one (S17)"
+                for v in sorted({v for v in members if members.count(v) > 1})]
+    return out, product_sets(d, groups)
+
+
+def drawn_variant_sets(d):
+    """(listed, from products, in all) counts of an entry's variant sets: the listed ones and the products' (each
+    trimmed as product_sets trims), less the sets a `not_drawn` entry stating only `variants` and `not_variants`
+    removes whole and the listed sets `requires_variants` excludes (S17: the combinations are the sets less those it
+    excludes; holding one of its forms keeps a set, S10, ADD-A123); a set the list and the products both give is
+    counted once."""
+    groups = d.get("exclusive_variants") if isinstance(d.get("exclusive_variants"), list) else []
+    groups = [g for g in groups if str_list(g)]
+    vs = d.get("variant_sets")
+    listed = {frozenset(x) for x in vs if str_list(x)} if isinstance(vs, list) else set()
+    products = product_sets(d, groups)
+    nd = d.get("not_drawn") if isinstance(d.get("not_drawn"), list) else []
+    gone = [(set(w.get("variants", [])), set(w.get("not_variants", []))) for w in nd
+            if isinstance(w, dict) and w and set(w) <= {"variants", "not_variants"}
+            and all(str_list(w[k]) for k in w)]
+
+    def drawn(sset):
+        return not any(a <= sset and not (n & sset) for a, n in gone)
+
+    listed = {x for x in listed if drawn(x) and requires_ok(d, x)}
+    products = {x for x in products if drawn(x)}
+    return len(listed), len(products), len(listed | products)
+
+
 def part_patch_problems(ctx, value, widget) -> list:
     """A whole part's value (S17, ADD-A121): `"absent"` or `{ drawn_as = { widget, part, variants } }` (S11)."""
     if value == "absent":
@@ -1494,6 +1853,116 @@ def part_patch_problems(ctx, value, widget) -> list:
     if "widget" not in da:
         return out + ["value.drawn_as: missing `widget`"]
     return out + part_problems(ctx, da, "value.drawn_as")
+
+
+# ------------------------------------------------------------------------------------------- pending facts
+
+def when_lists(when, k):
+    v = when.get(k, []) if isinstance(when, dict) else []
+    return set(v) if str_list(v) else set()
+
+
+def whens_overlap(a, b, model) -> bool:
+    """Whether some combination may hold both `when`s (S17 *Which fact applies*): False only where they cannot, by
+    S7's matching (a name one requires and the other refuses; two sizes, densities, schemes, presets, flavours,
+    idioms, input kinds, postures, device models or one container's two sizes; two directions, parities or
+    `first`/`last`/`only` values; a context one requires and the other refuses) and by the widget's state models
+    (`model`: two states of one exclusive group, which the reduction leaves one of; two variants of one
+    `exclusive_variants` group; two or more variants no listed or product set holds)."""
+    a = a if isinstance(a, dict) else {}
+    b = b if isinstance(b, dict) else {}
+    held = {}
+    for k in ("states", "variants", "conditions", "sizes", "densities"):
+        held[k] = when_lists(a, k) | when_lists(b, k)
+        if held[k] & (when_lists(a, f"not_{k}") | when_lists(b, f"not_{k}")):
+            return False
+    if len(held["sizes"]) > 1 or len(held["densities"]) > 1:
+        return False
+    kinds = {}
+    for c in held["conditions"]:
+        head, _, arg = c.partition(":")
+        if head in ("scheme", "preset", "flavor", "idiom", "input", "posture", "device_model"):
+            kinds.setdefault(head, set()).add(arg)
+        elif head == "container_size":
+            container, _, size = arg.partition(":")
+            kinds.setdefault(f"container_size:{container}", set()).add(size)
+    if any(len(v) > 1 for v in kinds.values()):
+        return False
+    if "direction" in a and "direction" in b and a["direction"] != b["direction"]:
+        return False
+    sa = a.get("size_class") if isinstance(a.get("size_class"), dict) else {}
+    sb = b.get("size_class") if isinstance(b.get("size_class"), dict) else {}
+    for axis in ("horizontal", "vertical"):
+        on = when_lists(sa, axis) | when_lists(sb, axis)
+        if len(on) > 1 or on & (when_lists(sa, f"not_{axis}") | when_lists(sb, f"not_{axis}")):
+            return False
+    pa = a.get("position") if isinstance(a.get("position"), dict) else {}
+    pb = b.get("position") if isinstance(b.get("position"), dict) else {}
+    if any(k in pa and k in pb and pa[k] != pb[k] for k in ("first", "last", "only", "parity")):
+        return False
+    for x, y in ((a, b), (b, a)):
+        ctx_x = x.get("context") if isinstance(x.get("context"), list) else []
+        not_y = y.get("not_context") if isinstance(y.get("not_context"), list) else []
+        if any(c in not_y for c in ctx_x):
+            return False
+    if model is not None:
+        states, groups, sets = model
+        if any(len(held["states"] & g) > 1 for g in states):
+            return False
+        if any(len(held["variants"] & g) > 1 for g in groups):
+            return False
+        if len(held["variants"]) > 1 and not any(held["variants"] <= x for x in sets):
+            return False
+    return True
+
+
+def widget_models(items) -> dict:
+    """{(platform, widget): (exclusive state groups, exclusive variant groups, variant sets)} over the widget's
+    state-model entries of the platform (every entry's, the listed and the products' sets)."""
+    out = {}
+    for it in items:
+        d = it.data
+        if it.table != "model" or d.get("available") is not True or not isinstance(d.get("widget"), str):
+            continue
+        states, groups, sets = out.setdefault((it.platform, d["widget"]), ([], [], set()))
+        ex = d.get("exclusive") if isinstance(d.get("exclusive"), list) else []
+        states += [set(g) for g in ex if str_list(g)]
+        ev = d.get("exclusive_variants") if isinstance(d.get("exclusive_variants"), list) else []
+        ev = [g for g in ev if str_list(g)]
+        groups += [set(g) for g in ev]
+        vs = d.get("variant_sets") if isinstance(d.get("variant_sets"), list) else []
+        sets |= {frozenset(x) for x in vs if str_list(x)} | product_sets(d, ev)
+    return out
+
+
+def pending_problems(ctx, items) -> list:
+    """S17 *Which fact applies*: a pending fact that a later fact of its key, in its file and of its run (the accent
+    run's `scheme_file` and `accent`, or neither), shadows on a combination both `when`s may hold in (whens_overlap)
+    is a finding: the combination would pass with the later fact's value."""
+    models = widget_models(items)
+    facts = {}
+    for it in items:
+        if it.table == "fact" and not it.palette and isinstance(it.data.get("key"), str):
+            facts.setdefault(it.file, []).append(it)
+    out = []
+    for file, fs in facts.items():
+        for i, pend in enumerate(fs):
+            d = pend.data
+            if "pending" not in d:
+                continue
+            widget = key_info(ctx, d["key"])[2]
+            model = models.get((pend.platform, widget)) if widget else None
+            run = (d.get("scheme_file"), d.get("accent"))
+            for later in fs[i + 1:]:
+                ld = later.data
+                if canonical_key(ld["key"]) != canonical_key(d["key"]) or (
+                        ld.get("scheme_file"), ld.get("accent")) != run:
+                    continue
+                if whens_overlap(d.get("when"), ld.get("when"), model):
+                    out.append((file, pend.line, f"pending fact {d['key']!r} ({d['pending']}) is shadowed by the later "
+                                                 f"fact at line {later.line} on a combination both `when`s hold in "
+                                                 f"(S17 *Which fact applies*: narrow its `when` or place it after)"))
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ palettes
@@ -1552,6 +2021,7 @@ def check(ctx: Context):
     for it in items:
         problems = model_problems(ctx, it) if it.table == "model" else fact_problems(ctx, it)
         findings += [(it.file, ln, what) for ln, what in problems]
+    findings += pending_problems(ctx, items)
     fact_keys = {it.data.get("key") for it in items if it.palette and isinstance(it.data.get("key"), str)}
     palettes = bundled_palettes(ctx.root)
     for path, text, data in palettes:
@@ -1563,13 +2033,18 @@ def check(ctx: Context):
         "palette": sum(1 for it in items if it.palette),
         "cites": sum(len(it.cites) for it in items),
         "palettes": len(palettes),
+        "pending": sum(1 for it in items if it.table == "fact" and "pending" in it.data),
+        "variant_sets": [(it.file, it.line, it.data["widget"], drawn_variant_sets(it.data)) for it in items
+                         if it.table == "model" and isinstance(it.data.get("widget"), str)
+                         and ("variant_sets" in it.data or "variant_products" in it.data)],
     }
     return findings, counts
 
 
 def summary(counts, n):
     vacuous = "no facts yet: " if not counts["files"] else ""
-    return (f"{vacuous}{counts['files']} fact files, {counts['facts']} facts, {counts['models']} state-model entries, "
+    return (f"{vacuous}{counts['files']} fact files, {counts['facts']} facts ({counts['pending']} pending), "
+            f"{counts['models']} state-model entries, "
             f"{counts['palette']} palette facts, {counts['cites']} citations; {counts['palettes']} bundled palettes "
             f"(new format): {n} findings")
 
@@ -1590,11 +2065,12 @@ pub enum Density { Compact, Keyed(Key) }
 pub enum SizeClass { Compact, Regular }
 pub enum SurfaceSet { Window, View, Header, Button }
 pub struct SurfaceRoles { pub background: Value<Color>, pub foreground: Value<Color> }
-pub struct GlobalRoles { pub accent: Value<Color>, pub status: StatusRoles }
+pub struct GlobalRoles { pub accent: Value<Color>, pub status: StatusRoles, pub accent_ramp: Vec<(Key, Value<Color>)> }
 pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: MotionTokens, pub focus: FocusIndicator,
                     pub icons: IconTokens, pub material: MaterialScheme }
 pub struct IconTokens { pub theme: Value<String> }
-pub struct MotionTokens { pub durations: Vec<(Key, Value<Ms>)>, pub speed_factor: Value<f32> }
+pub struct MotionTokens { pub durations: Vec<(Key, Value<Ms>)>, pub timings: Vec<(Key, Timing)>,
+                          pub speed_factor: Value<f32> }
 pub struct PartStyle { pub fill: Value<Paint>, pub stroke: Value<Stroke>, pub corners: Value<Corners>,
                        pub shadow: Value<Shadow>, pub text: Value<TextStyle>, pub focus: Value<FocusIndicator>,
                        pub padding: Sides<Value<Px>>, pub min_width: Value<Px>, pub opacity: Value<Fraction>,
@@ -1618,7 +2094,8 @@ pub struct Caret { pub width: X }
 pub struct Behavior { pub focus_visible_when: X }
 pub struct ScrollPhysics { pub friction: X }
 pub struct TouchBehavior { pub slop: X }
-pub struct FontFallbacks { pub families: Vec<String>, pub emoji: X }
+pub struct FontFallbacks { pub families: Vec<String>, pub emoji: X, pub per_language: Vec<(LanguageTag, Vec<String>)>,
+                           pub per_family: Vec<(String, Vec<String>)> }
 pub struct TextRendering { pub hinting: X }
 pub struct KdeTokens { pub disabled: KdeEffects, pub frame_width: Value<Px> }
 pub struct KdeEffects { pub intensity_amount: Value<f32> }
@@ -1627,7 +2104,10 @@ pub enum MaterialVariant { TonalSpot, FruitSalad, Cmf }
 pub struct Transition { pub properties: Vec<PropertyGroup>, pub duration: Value<Ms>, pub timing: Value<Timing> }
 pub enum PropertyGroup { Fill, Stroke }
 pub enum Timing { CubicBezier(f32, f32, f32, f32), Linear, Spring { mass: f32, stiffness: f32, damping_ratio: f32,
-                  rest_epsilon: f32 } }
+                  rest_epsilon: f32 }, Platform(PlatformCurve) }
+pub enum PlatformCurve { KirigamiVelocity, Qt(QtEasing), Adw(AdwEasing) }
+pub enum QtEasing { InQuad, OutQuad, InOutQuad, InCubic, OutCubic, InOutCubic, InOutSine, OutExpo }
+pub enum AdwEasing { EaseInCubic, EaseOutCubic, EaseInOutSine, EaseInExpo, EaseOutExpo }
 pub enum KdeShadeRole { Light, Mid }
 pub struct Material { pub blur: X }
 pub enum PlacementStrategy { Below }
@@ -1641,10 +2121,13 @@ pub enum FocusVisibleWhen { Always }
 | Function | Result | Definition |
 |---|---|---|
 | `alpha(c, a)` | colour | alpha |
+| `with_alpha(c, a)` | colour | the alpha set |
 | `mix(a, b, t)` | colour | mix |
 | `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)` | colour | KColorUtils |
 | `kde_shade(c, role: KdeShadeRole, contrast)` | colour | KColorScheme::shade |
 | `kirigami_lerp(a, b, balance)` | colour | Kirigami's ColorUtils.linearInterpolation |
+| `floor(x)`, `round(x)` | number | toward negative infinity; to the nearest, a half away from zero |
+| `pick(index, c0, c1, …)` | colour | the colour at `index` |
 
 A function is added only with its rule.
 '''
@@ -1682,6 +2165,15 @@ SELF_TEST_CATALOGUE = '''
 
 - **Parts:**
   - `body` — the root: `fill`.
+
+## Tokens
+
+**token.motion.durations** (`Vec<(Key, Value<Ms>)>`, S4.1). A scaled duration.
+
+| Platform | Keys (one per duration the platform states) | Rows |
+|---|---|---|
+| libadwaita | `button`; by family, the tab bar's | GN-3.18 |
+| kde-breeze | `animations` (Breeze's `Animations`), `message_widget` | K1.17 |
 '''
 
 SELF_TEST_SOURCES = '''
@@ -1988,6 +2480,22 @@ _SPRING_TIMING = "{ spring = { mass = 1, stiffness = 100, damping_ratio = 1, res
 _SPRING = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], duration_ms = 200, timing = '
            + _SPRING_TIMING + ' }]\nrows = []\n' + _CITE)
 _CMF = '[[fact]]\nkey = "token.material.variant"\nvalue = "cmf"\nrows = []\n' + _CITE
+_FILL = '[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["hover"] }\nvalue = "#ffffff"\nrows = []\n' + _CITE
+_PENDING = '\n[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["pressed"] }\npending = "U1"\nrows = []\n'
+_LATER = '\n[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["hover"] }\nvalue = "#eeeeee"\nrows = []\n' + _CITE
+_MAC_CITE = ('\n[[fact.cite]]\nkind = "published"\n'
+             'source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/x.h:1"\nquote = "x"\n')
+_MAC_PENDING = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:macos-monterey"], states = '
+                '["pressed"] }\npending = "U2"\nrows = []\n\n[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = '
+                '["preset:macos-monterey"], states = ["hover"] }\nvalue = "#ffffff"\nrows = []\n' + _MAC_CITE)
+_MOTION = '[[fact]]\nkey = "token.motion.durations.button"\nvalue = "200ms"\nrows = []\n' + _CITE
+_RAMP = '[[fact]]\nkey = "role.global.accent_ramp.light1"\nvalue = "#ff0000"\nrows = []\n' + _CITE
+_FALLBACK = ('[[fact]]\nkey = \'token.text.fallbacks.per_family."Segoe Fluent Icons"\'\nvalue = ["Segoe MDL2 Assets"]\n'
+             'rows = []\n' + _CITE)
+_UNTYPED = "'Segoe MDL2 Assets' is not a value as S11 spells it"   # a key that does not read types no value
+_TIMING = ('[[fact]]\nkey = "token.motion.timings.in_out_sine"\nvalue = { platform = { qt = "in_out_sine" } }\n'
+           'rows = []\n' + _CITE)
+_PRODUCTS = _SBV + '\nvariant_products = [[{ any = ["flat"] }, { one = ["@pill"] }]]'
 
 # (label, file, old, new, the findings wanted: substrings, one per finding)
 SELF_TEST_CASES = [
@@ -2240,6 +2748,141 @@ SELF_TEST_CASES = [
     ("palette: a pick naming no colour", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.fg" = "the guide',
      ["'colors.dark.surfaces.window.fg' is not a stated colour literal's path", "is in neither"]),
+    # a pending measurement (S17, ADD-A122)
+    ("pending: a pending fact after the facts that hold where it does", "docs/facts/gnome/pending.toml", None,
+     _FILL + _PENDING, []),
+    ("pending: with a value", "docs/facts/gnome/pending.toml", None,
+     _FILL + _PENDING.replace('pending = "U1"', 'pending = "U1"\nvalue = "#000000"'),
+     ["`pending` in place of `value`: exactly one of them"]),
+    ("pending: with a citation", "docs/facts/gnome/pending.toml", None, _FILL + _PENDING + _CITE,
+     ["a pending fact has no [[fact.cite]]"]),
+    ("pending: an id not of the register's form", "docs/facts/gnome/pending.toml", None,
+     _FILL + _PENDING.replace('"U1"', '"U01"'), ["pending 'U01' is not an Unmeasured register Id"]),
+    ("pending: an id not a string", "docs/facts/gnome/pending.toml", None,
+     _FILL + _PENDING.replace('"U1"', '1'), ["pending 1 is not an Unmeasured register Id"]),
+    ("pending: without rows", "docs/facts/gnome/pending.toml", None, _FILL + _PENDING.replace("rows = []\n", ""),
+     ["pending fact: missing `rows`"]),
+    ("pending: a when naming no state", "docs/facts/gnome/pending.toml", None,
+     _FILL + _PENDING.replace('"pressed"', '"pushed"'), ["'pushed' is not a state flag"]),
+    ("pending: shadowed by a later fact holding everywhere", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _LATER.replace('when = { states = ["hover"] }\n', ""), ["is shadowed by the later fact at line 8"]),
+    ("pending: shadowed where both hold (no exclusive group on gnome/)", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _LATER, ["is shadowed by the later fact"]),
+    ("pending: a later fact refusing its state", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _LATER.replace('states = ["hover"]', 'not_states = ["pressed"]'), []),
+    ("pending: a later fact under the other scheme", "docs/facts/gnome/pending.toml", None,
+     _PENDING.replace('when = {', 'when = { conditions = ["scheme:dark"],')
+     + _LATER.replace('when = {', 'when = { conditions = ["scheme:light"],'), []),
+    ("pending: a later fact of another key", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _LATER.replace('"button.body.fill"', '"button.body.stroke"').replace('"#eeeeee"', '"absent"'), []),
+    ("pending: two pending facts naming one row", "docs/facts/gnome/pending.toml", None,
+     _FILL + _PENDING + _PENDING.replace('"pressed"', '"focused"').replace("button.body.fill", "button.body.stroke"),
+     []),
+    ("pending: a later state of one exclusive group (macos-monterey's model)", "docs/facts/macos/pending.toml", None,
+     _MAC_PENDING, []),
+    ("pending: a later fact on a variant set the model does not draw", "docs/facts/macos/pending.toml", None,
+     _MAC_PENDING.replace('states = ["hover"]', 'variants = ["flat", "@pill"]'), []),
+    ("pending: a later fact on a single variant", "docs/facts/macos/pending.toml", None,
+     _MAC_PENDING.replace('states = ["hover"]', 'variants = ["flat"]'), ["is shadowed by the later fact"]),
+    # a state model's variant products (S17, ADD-A122)
+    ("products: a product's set", "docs/facts/macos/state-models.toml", _SBV, _PRODUCTS, []),
+    ("products: beside a listed set", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nvariant_products = [[{ any = ["flat"] }, { one = ["@pill"] }], '
+     '[{ one = ["flat"] }, { one = ["@pill"] }]]\nvariant_sets = []', []),
+    ("products: a set also listed", "docs/facts/macos/state-models.toml", _SBV,
+     _PRODUCTS + '\nvariant_sets = [["@pill", "flat"]]', ["is also a set variant_products gives"]),
+    ("products: a set the exclusive groups refuse is trimmed, not listed twice", "docs/facts/macos/state-models.toml",
+     _SBV, _PRODUCTS + '\nexclusive_variants = [["flat", "@pill"]]', []),
+    ("products: a variant not declared", "docs/facts/macos/state-models.toml", _SBV,
+     _PRODUCTS.replace('{ any = ["flat"] }', '{ any = ["flat", "primary"] }'),
+     ["variant_products[0]: 'primary' is not among variants"]),
+    ("products: one variant in two groups", "docs/facts/macos/state-models.toml", _SBV,
+     _PRODUCTS.replace('{ any = ["flat"] }', '{ any = ["flat", "@pill"] }'),
+     ["variant_products[0] names '@pill' in two of its groups"]),
+    ("products: a group of neither form", "docs/facts/macos/state-models.toml", _SBV,
+     _PRODUCTS.replace('{ one = ["@pill"] }', '{ all = ["@pill"] }'), ["variant_products is not a list of products"]),
+    ("products: an empty group", "docs/facts/macos/state-models.toml", _SBV,
+     _PRODUCTS.replace('{ one = ["@pill"] }', '{ one = [] }'), ["variant_products is not a list of products"]),
+    ("products: on an unavailable entry", "docs/facts/macos/state-models.toml", "available = false\n",
+     'available = false\nvariant_products = [[{ one = ["flat"] }, { one = ["@pill"] }]]\n',
+     ["`variant_products` on an entry with available = false"]),
+    # S4.1's motion keys (ADD-A122)
+    ("motion: a key the rule names", "docs/facts/gnome/motion.toml", None, _MOTION, []),
+    ("motion: a family's key where the row names a family", "docs/facts/gnome/motion.toml", None,
+     _MOTION.replace("durations.button", "durations.tab_bar"), []),
+    ("motion: a dropped word kept", "docs/facts/gnome/motion.toml", None,
+     _MOTION.replace("durations.button", "durations.scroll_animation"), ["keeps `animation`"]),
+    ("motion: a dropped word pair kept", "docs/facts/gnome/motion.toml", None,
+     _MOTION.replace("durations.button", "timings.control_key_spline").replace('"200ms"', '"linear"'),
+     ["keeps `key`, `spline`"]),
+    ("motion: a name of dropped words only", "docs/facts/kde/motion.toml", None,
+     _MOTION.replace("durations.button", "durations.animations").replace(
+         "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11", "breeze@6.8.2 kstyle/breezestyle.cpp:1"), []),
+    ("motion: a toolkit prefix kept", "docs/facts/gnome/motion.toml", None,
+     _MOTION.replace("durations.button", "durations.adw_toast_overlay_show"), ["keeps the toolkit's prefix `adw`"]),
+    ("motion: a key the platform's row does not list", "docs/facts/kde/motion.toml", None,
+     _MOTION.replace("durations.button", "durations.breeze_state").replace(
+         "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11", "breeze@6.8.2 kstyle/breezestyle.cpp:1"),
+     ["`breeze_state` is not a key the catalogue's *token.motion.durations* row for kde/ lists"]),
+    ("motion: a spring's word kept", "docs/facts/gnome/motion.toml", None,
+     _MOTION.replace("durations.button", "timings.spring_default_spatial").replace('"200ms"', '"linear"'),
+     ["keeps `spring`"]),
+    ("motion: a duration below its key", "docs/facts/gnome/motion.toml", None,
+     _MOTION.replace("durations.button", "durations.button.x"),
+     ["a duration or timing is `token.motion.durations.<key>`"]),
+    # a map keyed by text: its entry's key as TOML writes it, a quoted segment one segment (S11, S17; ADD-A123)
+    ("text key: a quoted family", "docs/facts/gnome/fallbacks.toml", None, _FALLBACK, []),
+    ("text key: a family in single quotes, a dot in it", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace("\'token.text.fallbacks.per_family.\"Segoe Fluent Icons\"\'",
+                       '"token.text.fallbacks.per_family.\'.AppleSystemUIFont\'"'), []),
+    ("text key: a bare family", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace('"Segoe Fluent Icons"', "Cantarell"), []),
+    ("text key: a bare language tag", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace('per_family."Segoe Fluent Icons"', "per_language.zh-Hans"), []),
+    ("text key: an unterminated quote", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace('"Segoe Fluent Icons"', '"Segoe Fluent Icons'), ["is not terminated", _UNTYPED]),
+    ("text key: a family that needs its quotes", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace('"Segoe Fluent Icons"', "Segoe Fluent Icons"), ["is bare where TOML needs it quoted", _UNTYPED]),
+    ("text key: a quote inside a bare segment", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace('"Segoe Fluent Icons"', 'Segoe"Fluent"'), ["a quote inside the segment", _UNTYPED]),
+    ("text key: a quoted segment outside a text map", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace("fallbacks.per_family", '"fallbacks".per_family'),
+     ["the quoted segment 'fallbacks' is not an entry of a map keyed by text", _UNTYPED]),
+    ("text key: a quoted segment below the entry", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace('Icons"', 'Icons"."x"'), ["the quoted segment 'x' is not an entry", _UNTYPED]),
+    ("text key: an empty segment", "docs/facts/gnome/fallbacks.toml", None,
+     _FALLBACK.replace("per_family.", "per_family.."), ["has an empty segment", _UNTYPED]),
+    # S4.1's MotionTokens: a timing key is a Timing, a platform curve one of the core's (S2.7; ADD-A123)
+    ("timing: a Qt curve", "docs/facts/gnome/motion.toml", None, _TIMING, []),
+    ("timing: a libadwaita curve", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace('qt = "in_out_sine"', 'adw = "ease_in_out_sine"'), []),
+    ("timing: Kirigami's curve", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace('{ qt = "in_out_sine" }', '"kirigami_velocity"'), []),
+    ("timing: a cubic Bézier", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace('{ platform = { qt = "in_out_sine" } }', "{ cubic_bezier = [0.4, 0, 0.2, 1] }"), []),
+    ("timing: a Qt curve outside QtEasing", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace('"in_out_sine" }', '"in_out_back" }'), ["'in_out_back' is not a unit variant of QtEasing"]),
+    ("timing: a libadwaita curve outside AdwEasing", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace('qt = "in_out_sine"', 'adw = "ease_out"'), ["'ease_out' is not a unit variant of AdwEasing"]),
+    ("timing: a toolkit outside PlatformCurve", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace("qt = ", "gtk = "), ["a variant of PlatformCurve with data is a one-key table"]),
+    ("timing: a duration as a timing", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace('{ platform = { qt = "in_out_sine" } }', '"200ms"'), ["where the key is a Timing, an enum"]),
+    ("timing: a key MotionTokens lacks", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace("motion.timings.", "motion.curves."), ["names no token"]),
+    # GlobalRole::AccentRamp (S3, ADD-A122), an enum stated whole (S6.1, S17), the negate conversion
+    ("accent ramp: one entry", "docs/facts/windows/ramp.toml", None,
+     _RAMP.replace("libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11",
+                   "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Common_themeresources_any.xaml:4"), []),
+    ("accent ramp: none (an empty ramp)", "docs/facts/gnome/ramp.toml", None,
+     _RAMP.replace("accent_ramp.light1", "accent_ramp").replace('"#ff0000"', "[]"), []),
+    ("accent ramp: below an entry", "docs/facts/gnome/ramp.toml", None,
+     _RAMP.replace("accent_ramp.light1", "accent_ramp.light1.red"), ["an accent ramp role is"]),
+    ("enum: a key inside an enum block", "docs/facts/gnome/text.toml", '"button.mark.glyph.source"',
+     '"button.mark.glyph.source.theme_icon"', ["`theme_icon` is inside GlyphSource, an enum",
+                                                "'go-next-symbolic' is not a value", "'go-next' is not a value"]),
+    ("negate: a negated margin", "docs/facts/windows/buttons.toml", "quote = '<x:Double",
+     'conversion = ["negate"]\nquote = \'<x:Double', []),
     # the files
     ("a stray directory", "docs/facts/gtk/x.toml", None, "", ["not a facts directory"]),
     ("imported is skipped", "docs/facts/imported/rows.toml", None, "this is no TOML", []),
@@ -2286,8 +2929,10 @@ def self_test() -> int:
             failures.append(f"empty: got {got}, {summary(counts, len(got))}")
         # the closed lists the docstring names
         ctx = fixture_context(root)
-        if ctx.functions != {"alpha", "mix", "kcu_mix", "kcu_tint", "kde_shade", "kirigami_lerp"}:
-            failures.append(f"functions: got {sorted(ctx.functions)}")
+        if ctx.functions != {"alpha": (2, 2), "with_alpha": (2, 2), "mix": (3, 3), "kcu_mix": (3, 3),
+                             "kcu_tint": (3, 3), "kde_shade": (3, 3), "kirigami_lerp": (3, 3), "floor": (1, 1),
+                             "round": (1, 1), "pick": (3, None)}:
+            failures.append(f"functions: got {ctx.functions}")
         if ctx.presets != set(ALL_PRESETS):
             failures.append(f"existing presets: got {sorted(ctx.presets)}")
         # only the new model's presets exist: today's directory and a stem that is no platform preset do not count
@@ -2340,10 +2985,65 @@ def self_test() -> int:
                            ("= surface.disabled", ["names no surface role"]),
                            ("= surface.disabled.nope", ["names no surface role"]),
                            ("= kde_shade(role.window.background, light, 4)", []),
-                           ("= kirigami_lerp(role.window.background, role.view.foreground, 0.2)", [])):
+                           ("= kirigami_lerp(role.window.background, role.view.foreground, 0.2)", []),
+                           ("= round(mul(token.kde.frame_width, 0.5))", ["`mul` is not a function"]),
+                           ("= round(token.kde.frame_width)", []),
+                           ("= mix(role.global.accent_ramp.light1, role.view.background, 0.5)", []),
+                           ("= role.global.accent_ramp.light1.x", ["an accent ramp role is"]),
+                           # each function's arity its signature's in S2.2's table (`with_alpha`, ADD-A123)
+                           ("= with_alpha(role.view.background, 0.5)", []),
+                           ("= with_alpha(role.view.background)", ["`with_alpha` takes 2 arguments"]),
+                           ("= with_alpha(role.view.background, 0.5, 1)", ["`with_alpha` takes 2 arguments"]),
+                           ("= alpha(role.view.background)", ["`alpha` takes 2 arguments"]),
+                           ("= round(token.kde.frame_width, 2)", ["`round` takes 1 argument (S2.2's table), not 2"]),
+                           ("= pick(1, #ffffff, #000000, #ff0000)", []),
+                           ("= pick(1, #ffffff)", ["`pick` takes 3 or more arguments"])):
             got = value_problems(ctx, expr, None)
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"expression {expr!r}: got {got}, want {want}")
+    # the sets variant products give, counted once (S17 *Variant products*: the specification's example form)
+    style = {"any": ["primary", "flat", "@raised"]}
+    d = {"variant_products": [[{"any": ["icon_only", "with_icon"]}, {"any": ["pill", "circular"]}, style],
+                              [{"one": ["with_icon"]}, {"one": ["@image_text_box"]}, {"any": ["pill", "circular"]},
+                               style],
+                              [{"one": ["menu"]}, {"any": ["icon_only", "with_icon"]}, {"any": ["flat"]}]],
+         "exclusive_variants": [["icon_only", "with_icon"]]}
+    # the first product: 3 x 3 x 4 choices less the empty one and the 2 + 2 + 3 single ones (28); the second: every
+    # one of its 3 x 4 choices (12); the third: 3 x 2 less the lone `menu` (5); none shared
+    for case, want in ((d, (0, 45, 45)),
+                       ({**d, "variant_sets": [["pill", "primary"], ["toggle", "primary"]]}, (2, 45, 46)),
+                       ({**d, "variant_products": d["variant_products"] + [[{"one": ["pill"]}, {"one": ["primary"]}]]},
+                        (0, 45, 45)),
+                       ({**d, "requires_variants": ["menu"]}, (0, 5, 5)),
+                       ({**d, "requires_variants": ["menu", "@image_text_box"]}, (0, 17, 17)),
+                       ({**d, "requires_variants": ["menu"], "variant_sets": [["pill", "primary"], ["menu", "pill"]]},
+                        (1, 5, 6)),
+                       ({**d, "not_drawn": [{"variants": ["menu"]}, {"variants": ["pill"], "states": ["hover"]}]},
+                        (0, 40, 40)),
+                       ({**d, "exclusive_variants": [["icon_only", "with_icon"], ["pill", "primary"]]},
+                        (0, 41, 41))):
+        if drawn_variant_sets(case) != want:
+            failures.append(f"variant set counts: got {drawn_variant_sets(case)}, want {want} for {case}")
+    # two whens a combination may hold together (S17 *Which fact applies*)
+    model = ([{"disabled", "pressed", "hover"}], [{"primary", "flat"}], {frozenset({"flat", "@pill"})})
+    for a, b, want in (({}, {"states": ["hover"]}, True),
+                       ({"states": ["hover"]}, {"not_states": ["hover"]}, False),
+                       ({"states": ["hover"]}, {"states": ["pressed"]}, False),
+                       ({"conditions": ["scheme:dark"]}, {"conditions": ["scheme:light"]}, False),
+                       ({"conditions": ["preset:macos-tahoe"]}, {"conditions": ["contrast_high"]}, True),
+                       ({"sizes": ["small"]}, {"sizes": ["large"]}, False),
+                       ({"direction": "ltr"}, {"direction": "rtl"}, False),
+                       ({"size_class": {"horizontal": ["compact"]}}, {"size_class": {"horizontal": ["regular"]}},
+                        False),
+                       ({"position": {"first": True}}, {"position": {"first": False}}, False),
+                       ({"context": [{"widget": "toolbar"}]}, {"not_context": [{"widget": "toolbar"}]}, False),
+                       ({"variants": ["primary"]}, {"variants": ["flat"]}, False),
+                       ({"variants": ["flat"]}, {"variants": ["@pill"]}, True),
+                       ({"variants": ["@pill"]}, {"variants": ["primary"]}, False),
+                       ({"conditions": ["container_size:sidebar:small"]},
+                        {"conditions": ["container_size:sidebar:large"]}, False)):
+        if whens_overlap(a, b, model) != want:
+            failures.append(f"whens {a} and {b}: got {not want}, want {want}")
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
@@ -2366,6 +3066,9 @@ def main(argv) -> int:
         return 2
     for f, ln, what in findings:
         print(f"{f}:{ln}: {what}")
+    for f, ln, widget, (listed, products, total) in counts["variant_sets"]:
+        print(f"# variant sets: {f}:{ln}: {widget}: {total} ({listed} listed, {products} from variant_products)",
+              file=sys.stderr)
     print(summary(counts, len(findings)), file=sys.stderr)
     return 1 if findings else 0
 
