@@ -95,7 +95,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-020 | `button.body.stroke (gradient paint; fill_clip box, AccentButtonStyle's BackgroundSizing OuterBorderEdge) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` (`Button_themeresources.xaml:238`) | rule |
 | W1-020 | `button.{body.fill,label.text.fill,body.stroke} @ {default} / {default,hover} / {default,pressed} / {default,disabled} context dialog.action_area` (the dialog's default button in AccentButtonStyle, in every state) | rule |
 | W1-021 | `button.body.fill, button.label.text.fill, button.body.stroke @ variant flat / {hover} variant flat / {pressed} variant flat / {disabled} variant flat` | rule |
-| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, `:255-256`) | rule |
+| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, `:255-256`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
 | W1-023 | `button.body.transitions (Fill)` | field |
 | W1-023 | `token.motion.durations.control_faster` | token |
@@ -286,6 +286,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-099 | `button.values.label_position @ variant tool context toolbar.bar (TextUnderIcon, TextBesideIcon, IconOnly)` | rule |
 | W1-099 | `button.{label.text,values.icon_text_gap} @ variant tool context toolbar.bar (the label font, the icon and label margins)` | rule |
 | W1-100 | `button.{body.fill,label.text.fill} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variants {tool,toggle} context toolbar.bar` | rule |
+| W1-100 | `button.body.stroke (fill_clip box) @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variants {tool,toggle} context toolbar.bar` (AppBarToggleButton's inner border `OuterBorderEdge` in all four checked states, `AppBarToggleButton_themeresources.xaml:343`, `:354`, `:367`, `:380`; ADD-A122) | rule |
 | W1-100 | `menu.check_indicator.glyph @ {checked} context button.body variant overflow` | rule |
 | W1-101 | `toolbar.separator.{stroke,corners,margin} (width and colour as the stroke's, the margin on both sides of the line, the radius)` | field |
 | W1-102 | `button.{icon.glyph,body.fill,body.min_width,body.min_height} @ variant overflow context toolbar.bar` | rule |
@@ -293,6 +294,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-102 | `menu.body.{fill,stroke,padding,min_width,max_width,max_height,shadow} @ context button.body variant overflow` | rule |
 | W1-102 | `WinUiFlyout (button.values.menu_placement @ variant overflow context toolbar.bar)` | placement |
 | W1-102 | `menu.{accelerator.text.fill,submenu_arrow.glyph.fill} @ context button.body variant overflow` | rule |
+| W1-102 | `button.values.menu_indicator_anchor (TopEnd), button.menu_indicator.{glyph,margin} @ variants {tool,menu} context toolbar.bar` (AppBarButton's flyout chevron: a font glyph with its family fallbacks, ADD-A122's `FontCodePoint.fallbacks`, its top and end margins, `AppBarButton_themeresources.xaml:31`, `:33`, `:35-36`, `:373`; ADD-A122) | rule |
 | W1-103 | `toolbar.bar.{fill,stroke,corners} @ {open}` | rule |
 | W1-103 | `toolbar.bar.min_height @ variant @compact / variant @minimal / variant @hidden` | rule |
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
@@ -662,11 +664,11 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-45† | `button.body.fill, combo_box.body.fill, switch.track.fill @ {hover} / {pressed} (appended translucent layers, not flattened colours)` | rule |
 | W3-46† | `role.@text_inverse` | role |
 | W3-46† | `banner.icon.glyph.fill @ variant info / variant success / variant warning / variant error (= role.@text_inverse on the backplates)` | rule |
-| W3-19 | `FocusIndicator.shadow (the inner ring, a shadow layer: its colour and width, R7, ADD-A17)` | field |
-| W3-20 | `FocusIndicator.offset` (per part: each control's FocusVisualMargin, ADD-A18; SelectorBar's on `view_switcher.item.focus`) | field |
+| W3-19 | `FocusIndicator.shadow (the inner ring: one inset layer cast by the ring's inner outline, spread FocusVisualSecondaryThickness's default, colour FocusStrokeColorInner; DependencyProperty.cpp:24-25, Common_themeresources.xaml:16, FocusRectManager.cpp:445-455; S2.10, R7, ADD-A17, ADD-A122)` | field |
+| W3-20 | `FocusIndicator.offset` (per part: each control's FocusVisualMargin, ADD-A18, which sets the ring's outer edge, `FocusRectNudging.h:389`, so the offset to its inner edge is `= sub(<the margin negated>, token.focus.width)`, S2.10, ADD-A122; SelectorBar's on `view_switcher.item.focus`) | field |
 | W3-20 | `FocusIndicator.corners` (stated per control as WinUI draws it: an expression over `part.corners` and the offsets, the part's radius plus FocusVisualMargin, cited) | field |
 | W3-20 | `FocusIndicator.kind` (Ring, its inner ring a shadow layer: the HighVisibility default; Reveal: `FocusKind::Keyed(@reveal)`; DottedLine: `FocusIndicator.dash` `Dotted`; ADD-A82) | field |
-| W3-21 | `token.behavior.focus_visible_when (Keyboard { … }; ADD-A16)` | token |
+| W3-21 | `token.behavior.focus_visible_when (Keyboard { timeout: None }: the system focus visual only on an element whose focus state is Keyboard, focusmgr.cpp:2729-2746; ADD-A16, ADD-A122)` | token |
 | W3-21 | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
 | W3-22 | `token.text.rendering (ADD-B04)` | token |
 | W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST` | reader |

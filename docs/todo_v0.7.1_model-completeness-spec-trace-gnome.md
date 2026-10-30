@@ -137,7 +137,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.38 | `button.body.shadow @ cond contrast_high (inset ring layer at rest)` | rule |
 | GN-1.39 | `button.values.icon_text_gap @ variant with_icon (AdwButtonContent's box)` | rule |
 | GN-1.39 | `button.label.{padding,text} @ variant with_icon / variant with_icon dir rtl (the label's heavier weight, its end padding)` | rule |
-| GN-1.39 | `button.label.padding @ variants {with_icon,@with_arrow} / variants {with_icon,@with_arrow} dir rtl (no end padding next to the arrow)` | rule |
+| GN-1.39 | `split_button.primary_label.padding (no end padding: `splitbutton > button > buttoncontent` drops the content's, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:638-643`; a menu button's label keeps its end padding beside the arrow, the `.arrow-button > box > buttoncontent` branch never matching, as GtkMenuButton puts its child in a `contents` node, `gtk@4.24.1 gtk/gtkmenubutton.c:1516`, `:1527-1532`; ADD-A122)` | field |
 | GN-1.40 | `button.menu_indicator.glyph (ThemeIcon, size) @ variant menu` | rule |
 | GN-1.40 | `button.menu_indicator.glyph @ variant @arrow_up / variant @arrow_start / variant @arrow_end / variant @arrow_none` | rule |
 | GN-1.41 | `badge.body.{fill,min_width,min_height,corners} @ variants {dot,attention} context view_switcher.item` (the accent radial dot on a stack or view switcher's button, which is a `view_switcher.item` element; Nested controls) | rule |
@@ -408,6 +408,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.175 | `rubber_band.body.{fill,stroke} @ context list` | rule |
 | GN-1.176 | `list.view.fill, list.row.text.fill @ {disabled}` | rule |
 | GN-1.176 | `role.view.disabled.background, role.view.disabled.foreground` (the `.view:disabled` pair) | role |
+| GN-1.176 | `role.window.disabled.background, role.window.disabled.foreground` (the GTK 3 compatibility colours `insensitive_bg_color`, `insensitive_fg_color`, `libadwaita@1.10.0 src/stylesheet/_compat-colors.scss:12-13`; ADD-A122) | role |
 | GN-1.177 | `list.row_background.corners @ {selected} variant grid` | rule |
 | GN-1.178 | `scroll_view.edge_effect.{fill,stroke} @ variant top {scrolled} context list variant table (under the column view's header)` | rule |
 | GN-1.279† | `list.branch_line.stroke (dash, ADD-A32), list.row_separator.stroke, list.column_separator.stroke (dash, ADD-A32) @ variant @tree_view / variant @tree_view cond contrast_high` | rule |

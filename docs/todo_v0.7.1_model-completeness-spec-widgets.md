@@ -1293,8 +1293,9 @@ spaces:
     states, W1-024, W3-28; GtkSvg's state transitions, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
     R25.12).
   - `menu_indicator` — the arrow or chevron of a button that opens a menu (GN-1.40, K1.27, B-18†, MAT-N8; KDE's
-    inline small and large arrows, K1.155): `glyph`, `min_width`, `transform` (its rotation, the file chooser's
-    server-list arrow turning while `open`, GN-P3-23†), `transitions` (the press animation; that rotation's).
+    inline small and large arrows, K1.155): `glyph`, `min_width`, `min_height`, `margin` (the offsets of an
+    overlaid indicator, `menu_indicator_anchor`), `transform` (its rotation, the file chooser's server-list arrow
+    turning while `open`, GN-P3-23†), `transitions` (the press animation; that rotation's).
 - **Widget values** (`ButtonValues`):
   - `icon_text_gap_px: Value<Px>` — between icon and label (today's `icon_text_gap`; a toolbar's in `context
     toolbar.bar`, K1.154, MAC-TL02).
@@ -1304,6 +1305,16 @@ spaces:
     per toolbar kind, W1-099, MAC-TL02, Q1.9, Q1.76), by rules in `context toolbar.bar`.
   - `subtitle_gap_px: Value<Px>` — iOS `titlePadding` (B-8).
   - `menu_indicator_gap_px: Value<Px>` — between label and indicator (K1.27 `Button_ItemSpacing`).
+  - `menu_indicator_anchor: Value<IndicatorAnchor>`, `IndicatorAnchor { Inline, TopEnd, BottomEnd }` — where the
+    `menu_indicator` lies (ADD-A122): `Inline` after the content in the layout, `menu_indicator_gap_px` from it; `TopEnd`,
+    `BottomEnd` over that corner of `body`, taking no layout space, its box `min_width` by `min_height` and its
+    `margin`'s top or bottom and right (the end side, mirrored with the layout, S1) the distances from `body`'s edges
+    at that corner. The one way an indicator's placement is stated: Breeze's `@inline_small` arrow, a small arrow
+    box at the bottom-right corner inset by fixed amounts (`breeze@6.8.2 kstyle/breezestyle.cpp:2940-2944`, mirrored
+    by `visualRect`, `:2949`; K1.155), and WinUI's AppBarButton flyout chevron, top-aligned with a top and an end
+    margin whose negative start margin only keeps it out of the layout
+    (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35-36`, `:373`, W1-102);
+    every other indicator is `Inline`.
   - `menu_placement: Placement` — where the menu a `menu`, `overflow` or `back` button opens goes (Nested controls:
     the host's value; B-18†, K-P3-5†, GN-P4-2†, W1-102, P4-12†; its arrowless popover on GNOME, GN-1.278†).
   - `menu_trigger: Value<MenuTrigger>`, `MenuTrigger { Primary, LongPress, LongPressOrSecondaryClick }` — the
@@ -1374,7 +1385,10 @@ spaces:
     cast button; `route_active` while a route plays, MAC-P3-9†, C-42†, W-P4-18†).
   - keyed, `adwaita`: `@raised`, `@osd`, `@opaque`, `@card`, `@with_arrow` (`.arrow-button`: a menu button showing
     its arrow beside an icon, a label or a custom child, `gtk@4.24.1 gtk/gtkmenubutton.c:72-75`, `:644-647`; an
-    arrow-only menu button is `.image-button`, `icon_only`, `:634-637`), `@arrow_up`,
+    arrow-only menu button is `.image-button`, `icon_only`, `:634-637`), `@arrow_only` (with `icon_only`: a menu button
+    whose only content is its arrow, `has_only_arrow`, `gtkmenubutton.c:631`, `:661-665`, which draws the arrow as its
+    `menu_indicator`, where `menu` with `icon_only` alone is an icon menu button whose arrow GTK hides, `:661-665`; set
+    from the button's content as `@custom_child` is; ADD-A122), `@arrow_up`,
     `@arrow_start`, `@arrow_end`, `@arrow_none` (GtkMenuButton's direction; down is the base), `@tab_button`
     (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@custom_child` (a button whose child is neither a
     label nor an image, so GTK sets neither `.text-button` nor `.image-button`, `gtk/gtkbutton.c:431-432`: the base
@@ -1407,6 +1421,10 @@ spaces:
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
     styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
+    one `exclusive_variants` group with `pill`, `[@corner_fixed, @corner_small, @corner_medium, @corner_large,
+    @corner_dynamic, pill]`, as a configuration holds one `cornerStyle` (B-4, `UIButton.Configuration.CornerStyle`
+    as the gap map reads Apple's documentation; the iOS lane confirms it against the pinned Xcode's
+    `UIButtonConfiguration.h`; ADD-A122),
     the role `@cancel` (iOS 26's further bar-item roles are an open item, Open items: added
     here when the facts state them); the system types `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`); the bar items' `@padding_removed` (TB-8; done is the typed `done`);
@@ -1416,7 +1434,11 @@ spaces:
   - keyed, `material-3`: `@elevated`, `@outlined` (container styles; icon buttons too, MAT-N4, MAT-N5), `@square`
     (the Expressive shape family, round the base; with `icon_only` the square icon button, MAT-N5, MAT-B10), `@narrow`,
     `@wide` (the Expressive icon button's narrow and wide leading and trailing spaces, default the base, under `cond
-    flavor:expressive`, MAT-N5), `@fab`, `@extended_fab`, `@lowered` (MAT-N1, MAT-N2), and the FAB's colour styles
+    flavor:expressive`, MAT-N5), `@fab`, `@extended_fab`, `@lowered` (MAT-N1, MAT-N2; the two forms an `exclusive_variants` group,
+    `[@fab, @extended_fab]`, each a composable of its own, `FloatingActionButton` and its sizes,
+    `ExtendedFloatingActionButton` and its sizes, `androidx@e4d933c9
+    compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:131`, `:601`,
+    ADD-A122), and the FAB's colour styles
     `@secondary`, `@tertiary`, `@surface` (its primary style is the typed `primary`, MAT-N1), the Expressive container
     styles `@secondary_container`, `@tertiary_container` and the branded FAB `@branded` (MAT-N1), and in both
     flavours `@primary_container`, Compose's default FAB container colour (`FloatingActionButtonDefaults.containerColor`,
@@ -1443,14 +1465,23 @@ spaces:
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
-  `@recording` (the key-sequence button held pressed while it records, K-RL02†, K-KA-43†); state flags used: hover,
+  `@recording` (the key-sequence button held pressed while it records, K-RL02†, K-KA-43†), `@keyboard_focus_change`
+  (flavour `kirigami`: the element's last focus change, in or out, was by the keyboard, Tab, Backtab or a shortcut,
+  as qqc2-desktop-style's style item tests the control's `focusReason`, `qqc2-desktop-style@6.31.0
+  plugin/kquickstyleitem.cpp:42-45`, `:884-890`, which Qt Quick sets on focus in and on focus out,
+  `qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:4237`, `:4250`; Breeze draws the pen it passes as focus only
+  with it, `breeze@6.8.2 kstyle/breezestyle.cpp:4518`, `:4577`, and `Button.qml` passes `highlighted` as focus, so a
+  `@highlighted` button keeps its pen after focus leaves it by Tab; the connector sets it from its toolkit's focus
+  reason, Q1.8, Q1.9; ADD-A122); state flags used: hover,
   pressed, focused, focus_visible, disabled, checked, indeterminate (WinUI's toggle), selected (a selected bar item,
   P3-3†, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21), dragged (a
   toolbar item dragged in the customization, MAC-P3-6†, P4-10†), over_dark_content (on `clear`: the clear glass's
   dimming layer where the content beneath is bright, X-MT-10).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the CommonStates of the Button, ToggleButton,
   AppBarButton, AppBarToggleButton, accent and subtle templates; their Checked* and Indeterminate* states name the
-  check state with them, so `checked` and `indeterminate` combine); `material-3`: `[focus_visible, hover]`,
+  check state with them, so `checked` and `indeterminate` each combine with that group) and `[indeterminate, checked]`
+  (the template takes the Indeterminate* states while `IsChecked` is null and the Checked* states only otherwise,
+  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); `material-3`: `[focus_visible, hover]`,
   provisional (Material's state-layer groups, above: Compose's ripple, `Button.kt:156-157`, `Surface.kt:253-264`, CONTRA-6; `pressed`
   combines; Material draws no dragged layer on a button, MAT-X29); others none (states combine: libadwaita's CSS
   and Breeze's branches combine flags; K1.29's
@@ -1459,7 +1490,9 @@ spaces:
   - parts: `subtitle` (all but `ios-*`, `kde-breeze`), `icon` (`ios-*` by a rule under `@loading`: a `spinner` element
     in `context button` in its place, B-10), `menu_indicator` (every preset: stated in the base, absent by a
     rule `@ !variants {menu}` on every preset, which `kde-breeze`'s rule extends with its own declared keyed variants,
-    `@ !variants {menu,@inline_small,@inline_large}`: each preset's rule names only the variants it declares, S12).
+    `@ !variants {menu,@inline_small,@inline_large}`, and `adwaita`'s by one more, `@ variants {menu,icon_only}
+    !variants {@arrow_only,@with_arrow}`, the icon menu button whose arrow GTK hides: each preset's rule names only
+    the variants it declares, S12).
   - fields: `body.shadow` (`windows-11`; `adwaita`, `kde-breeze`, `macos-*`, `ios-*`, `material-3` by rules outside
     the states, variants and conditions their rows draw it in: GN-1.25, GN-1.29, GN-1.38, K1.23, MAC-B04 on
     `macos-monterey`, MAC-X01 under `glass` on `macos-tahoe`, B-17, MAT-B1, MAT-N1), `body.cursor` (`adwaita`,
@@ -8258,11 +8291,11 @@ but `kde-breeze`), `shade` (every preset), `shade_darker` (every preset), `borde
 `background_visited` (every preset but `kde-breeze`), `background_negative` (every preset but `kde-breeze`),
 `background_neutral` (every preset but `kde-breeze`), `background_positive` (every preset but `kde-breeze`). So
 `kde-breeze` states every field whose active field it states (KColorScheme's disabled group, K3.50: `shade` and
-`shade_darker` are not KDE's); `adwaita` states only the `View` set's `background` and `foreground`, the `.view:disabled`
-pair (`libadwaita@1.10.0 src/stylesheet/widgets/_views.scss:6-9`, GN-1.176), and leaves every other field and set
-absent, as libadwaita dims by opacity elsewhere (below; libadwaita's GTK 3 compatibility colours `insensitive_bg_color`
-and `insensitive_fg_color`, `_compat-colors.scss:12-13`, name a disabled pair too, which no gap-map row carries yet,
-the ledger's queue #33); `macos-*`, `windows-11`,
+`shade_darker` are not KDE's); `adwaita` states the `background` and `foreground` of two sets and leaves every other
+field and set absent, as libadwaita's own widgets dim by opacity (below): the `View` set's, the `.view:disabled` pair
+(`libadwaita@1.10.0 src/stylesheet/widgets/_views.scss:6-9`), and the `Window` set's, the GTK 3 compatibility colours
+`insensitive_bg_color` and `insensitive_fg_color` (`src/stylesheet/_compat-colors.scss:12-13`), public named colours
+libadwaita defines for applications' own drawing and its stylesheet does not use itself (GN-1.176, ADD-A122); `macos-*`, `windows-11`,
 `ios-*` and `material-3` state the disabled text colour, `foreground` (today's `defaults.disabled_text_color`; on `ios-*`
 D-9, D-20), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
 KDE each field but `border` is the KColorScheme disabled effect applied to the active value (`kde_effects(c,
@@ -8389,9 +8422,9 @@ six computed backgrounds (`background_active` …) are KColorScheme's tints of t
 |---|---|---|---|
 | `accent` | the accent fill (libadwaita `accent_bg_color`, today's `accent_color`) | required | GN-3.14 |
 | `accent_foreground` | text/glyph on the accent (today's `accent_text_color`) | required | GN-3.14 |
-| `accent_standalone` | accent used as text or icon colour on the surface, distinct from the fill (libadwaita `accent_color`, OKLab-derived: `adw_standalone`); elsewhere `= role.global.accent` | required | GN-1.268, GN-3.13 |
+| `accent_standalone` | accent used as text or icon colour on the surface, distinct from the fill (libadwaita `accent_color`, OKLab-derived: `adw_standalone`); on `kde-breeze` `= role.window.foreground_active`, where `applyScheme()` writes the plain accent while the Selection set's background, the fill, takes `accentBackground` (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:178-181`, `:197-217`, `:229-236`; Kirigami's `activeTextColor`, Q3.5; ADD-A122); elsewhere `= role.global.accent` | required | GN-1.268, GN-3.13, Q3.5 |
 | `accent_ramp` | keyed: WinUI Light1-3, Dark1-3 | a list: empty where the platform has none | W3-12 (other group) |
-| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset: `error.fill`; on every preset but `windows-11`: `error.standalone`. may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset but `windows-11`); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset but `windows-11`); `error.foreground` (`ios-*`; on `macos-*` the value phase names it from the facts), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset but `windows-11`); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset but `windows-11`), `neutral.standalone` (every preset but `windows-11`), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), nor macOS beyond its system palette (no row names one; whether a text-on-status colour exists there is the value phase's); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part of a declared variant refers to an absent status role (a preset declares the typed severity variants, `success` and `warning` of `banner`, `dialog` and the rest, only where it states their role; S12's absent-operand check would refuse such a reference anyway); macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
+| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset: `error.fill`; on every preset but `windows-11`: `error.standalone`. may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset); `error.foreground` (`ios-*`; on `macos-*` the value phase names it from the facts), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset), `neutral.standalone` (every preset), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), nor macOS beyond its system palette (no row names one; whether a text-on-status colour exists there is the value phase's); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), its solid backgrounds only the attention and neutral ones (`SystemFillColorSolidAttentionBackground`, `SystemFillColorSolidNeutralBackground`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:176-177`) and its neutral status a fill and backgrounds with no text colour (`:169-170`, `:175`, `:177`; ADD-A122), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part of a declared variant refers to an absent status role (a preset declares the typed severity variants, `success` and `warning` of `banner`, `dialog` and the rest, only where it states their role; S12's absent-operand check would refuse such a reference anyway); macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
 | `shadow_reference` | what the platform names as the shadow colour (today's `shadow_color`; macOS `shadowColor`, Material `shadow`) | may_be_absent on `adwaita`, `windows-11`, `ios-*` (no named shadow colour: their shadows state each layer's colour, GN-3.01, W3-01, X-SH-1); `kde-breeze` names one (breezerc `ShadowColor`, K3.1, K3.2) | today's `shadow_color`, MAT-X5, K3.1 |
 | `selection_text_background` | the highlight behind selected text (today's `text_selection_background`) | required on every preset (every platform highlights selected text; a platform that does not distinguish it from selected items states a reference to the `Selection` set, below) | today's fields; GN-3.40, X-SE-1, MAC-X15, W3-25 |
 | `selection_text_foreground` | the selected text's colour (today's `text_selection_color`); absent where the text keeps its own colour | may_be_absent on `adwaita` (GN-3.41), `windows-11` (W3-25), `material-3` (Compose's `TextSelectionColors` holds a handle and a background colour only, gap-map-material's note on `compose/MaterialTheme.kt:279-281`), `ios-*` (X-SE-1 names the highlight colour alone) | today's fields |
@@ -8527,22 +8560,22 @@ facts win and this table is not consulted. The structure here is the slots and t
 | `display_large` | the largest hero text | `large_title` = (iOS: `extra_large_title` where iOS draws it, TS-4) | `display` | `title_1` = | `heading_1` = | `display_large` |
 | `display_medium` | hero text | `large_title` = | `display` = | `title_1` = | `heading_1` = | `display_medium` |
 | `display_small` | hero text, today's `text_scale.display` | `large_title` = | `display` = | `title_1` = | `heading_1` = | `display_small` |
-| `large_title` | page/screen title | `large_title` | `title_large` | `title_1` (AdwStatusPage's title, `_misc.scss:147-148`) | `heading_1` = | `headline_large` |
+| `large_title` | page/screen title | `large_title` | `title_large` | `title_1` (AdwStatusPage's title, `_misc.scss:147-148`) | `heading_1` = | `headline_medium` |
 | `title1` | dialog/page title, today's `dialog_title` | `title_1` | `title` | `title_2` | `heading_1` (Kirigami's dialog and page title, Q1.5) | `headline_small` |
 | `title2` | sheet/section title | `title_2` | `subtitle` | `title_3` | `heading_2` | `title_large` |
 | `title3` | sub-section title | `title_3` | `subtitle` = | `title_4` | `heading_3` | `title_large` = |
 | `headline` | section heading, today's `section_heading` | `headline` | `subtitle` = | `heading` | `heading_3` = | `title_medium` |
 | `subheadline` | secondary line under a heading | `subheadline` | `body` = | `body` = | `heading_4` | `title_small` |
-| `body` | running and UI text, today's `defaults.font` | `body` | `body` | `body` | `default` | `body_medium` |
+| `body` | running and UI text, today's `defaults.font` | `body` | `body` | `body` | `default` | `body_large` |
 | `body_emphasized` | emphasised body | `body_emphasized` | `body_strong` | `heading` = | `heading_5_primary` | `body_medium_emphasized` (expressive); `title_small` = (baseline: `= token.text.roles.subheadline`) |
-| `callout` | body-sized text, slightly set apart | `callout` | `body_large` | `body` = | `default` = | `body_large` |
+| `callout` | body-sized text, slightly set apart | `callout` | `body_large` | `body` = | `default` = | `body_large` = |
 | `footnote` | notes | `footnote` | `caption` = | `caption` = | `smallest_readable` = | `body_small` = |
 | `caption` | smallest readable, today's `text_scale.caption` | `caption_1` | `caption` | `caption` | `smallest_readable` | `body_small` |
 | `caption_emphasized` | emphasised caption | `caption_1_emphasized` | `caption` = | `caption_heading` | `smallest_readable` = | `body_small_emphasized` (expressive); `label_medium` (baseline) |
 | `caption2` | the smallest style | `caption_2` | `caption` = | `caption` = | `smallest_readable` = | `label_small` |
 | `label` | control labels | `control_content` (macOS), `body` = (iOS) | `body` = | `body` = | `default` = | `label_large` |
 | `monospace` | monospace text, today's `mono_font` | `monospaced` | `monospace` | `monospace` (the `monospace-font-name` setting) | `fixed` | `monospace` |
-| `numeric` | tabular figures | `body_monospaced_digits` (D-8) | `body` = | `numeric` | `default` = | `body_medium` = |
+| `numeric` | tabular figures | `body_monospaced_digits` (D-8) | `body` = | `numeric` | `default` = | `body_large` = |
 
 The assignment of KDE's levels follows Kirigami's own use (Q1.5: dialog and page title level 1, sheet header level 2,
 form
@@ -8554,6 +8587,24 @@ set exists only in Expressive [MAT-TS4]. Under `flavor:baseline`, `body_emphasiz
 points a slot at a style another slot owns references the owner slot likewise (S4.4, S12). Every
 cell above is a proposal: the value phase states the facts, and where a fact names another style, the fact, cited,
 replaces the cell.
+
+**Material's column against its sources** (ADD-A122). Compose, Material's reference (R1.6), assigns four slots by a
+use the slot names: `body` is `body_large`, Compose's default text style (`androidx@e4d933c9
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113`), so `callout` and
+`numeric`, which share it, reference `body`; `label` is `label_large`, a button's label (`Button.kt:169`); `title1` is
+`headline_small`, a dialog's title (`tokens/DialogTokens.kt:51-52`, `AlertDialog.kt:330`); `large_title` is
+`headline_medium`, the large top app bar's title (`tokens/AppBarLargeTokens.kt:28-29`, `AppBar.kt:727`), where the draft
+had `headline_large`; `monospace` is the platform's monospace family (MAT-X36†). The other cells, `display_large`,
+`display_medium`, `display_small` (the slots named after Material's display styles, which no Compose component
+assigns to a use), `title2`, `title3`, `headline`, `subheadline`, `body_emphasized`, `footnote`, `caption`,
+`caption_emphasized` and `caption2`, are **unsourced**: no Compose component or token assigns their use, and two
+uses near them point elsewhere (a navigation drawer's section headline is `title_small`,
+`tokens/NavigationDrawerTokens.kt:76-77`; a list item's supporting line is `body_medium`, `tokens/ListTokens.kt:320-321`),
+so they stay the draft's proposal until the maintainer confirms them or a source assigns them. The letter spacings
+Compose states in sp (`tokens/TypeScaleTokens.kt`, read by `tokens/TypographyTokens.kt:37-45`) are what Compose
+draws; where material-web's `latest` tokens state another in rem (body medium, display large, title medium, and the
+emphasised body large and display large), the facts cite Compose's, the look R1.6 names being the one Compose
+draws, and a rem value is never converted (S17's notations give rem no dimension).
 
 #### keyed text styles per platform
 
@@ -8760,7 +8811,10 @@ default timed-animation easing and spring parameters per animation (GN-3.19, GN-
 (Q3.26); Qt's default easing curve for its timelines (K3.37); WinUI's entering and exiting curves,
 `fast_out_slow_in` and `slow_out_fast_in`, and its control key spline `control_fast_out_slow_in`
 (`ControlFastOutSlowInKeySpline`, `Common_themeresources_any.xaml:602`) (W3-31); UIKit's default
-spring (X-MO-2) and AppKit's media-timing curves (MAC-X11); Material's easing and spring tokens (MAT-X13).
+spring (X-MO-2) and AppKit's media-timing curves (MAC-X11); Material's easing and spring tokens (MAT-X13). Every key,
+duration or timing, is named by S4.1's rule (ADD-A122): libadwaita's inline springs `floating_sheet_open`,
+`floating_sheet_close`, `bottom_sheet_open`, `bottom_sheet_close`, `navigation_view_push`, `navigation_view_pop`,
+`overlay_split_view_show`, `overlay_split_view_hide`, `carousel` (GN-3.20).
 
 **token.motion.speed_factor** (`Value<f32>`): read on KDE (K3.30, K3.90, Q3.24) and, by the Android reader, on
 `material-3` (the animator duration scale, MAT-X20, `readers (R18)`); a constant elsewhere (the platform has no speed
@@ -8824,7 +8878,11 @@ and `wheel_step_duration_max`, K-P3-18†). New fields: ADD-A45; `hide_pointer_d
 MAT-X32†): ADD-A86. GTK's step from the view's page size is `scroll_view.values.wheel_step` (GN-P3-15†), as are
 NSScrollView's line-scroll distances per axis; its page overlap is `scroll_view.values.page_overlap` (MAC-P3-17†).
 `focus_visible_when` (when focus becomes visible, a `FocusVisibleWhen`, the
-default of every widget's value): ADD-A16.
+default of every widget's value): ADD-A16. On `windows-11` it is `Keyboard { timeout: None }`: WinUI draws the system
+focus visual on the focused element only while its focus state is `Keyboard` (`microsoft-ui-xaml@2.5.1
+src/dxaml/xcp/core/dll/focusmgr.cpp:2729-2746`, `IsKeyboardFocused`, `src/dxaml/xcp/core/inc/uielement.h:867-870`) and
+`UseSystemFocusVisuals` holds, as the templates set it (`src/controls/dev/CommonStyles/Common_themeresources.xaml:9`),
+with no timeout (W3-21; ADD-A122).
 
 **token.focus** (S4/R12): the platform's one indicator (width, offset, kind, dash, corners, transition; its `dash` stated on every preset,
 `solid` where the ring is not dotted, S2.4, S2.10; an inner ring is a layer of its `shadow`, R7, ADD-A17; its corners `Radius::FollowPart`, R12's concentric default), by reference from every focusable part; parts that differ state their own (KDE's underline under tab
@@ -8832,7 +8890,12 @@ labels, K3.21; Material's inner offset, MAT-X10; WinUI's per-control margin, W3-
 (an active width, then settling) is material-web's `md-focus-ring` component, which Compose, the reference, does not
 draw: `reference (R1.6)` (MAT-X10; the system tokens' thickness and offsets stay `token.focus`'s);
 WinUI's opt-in kinds are `FocusKind::Keyed(@reveal)` (the Reveal glow) and the ring with `dash` `Dotted` (DottedLine)
-(W3-20, ADD-A82). Rows: GN-3.27–GN-3.29,
+(W3-20, ADD-A82). `windows-11`'s inner ring is `token.focus.shadow`, one `inset` layer cast by the ring's inner outline
+(S2.10): spread `FocusVisualSecondaryThickness`'s default (`microsoft-ui-xaml@2.5.1
+src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:24-25`), colour the secondary brush
+`SystemControlFocusVisualSecondaryBrush`, `FocusStrokeColorInnerBrush` (`src/controls/dev/CommonStyles/Common_themeresources.xaml:16`),
+drawn just inside the outer ring (`src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:445-455`); its `offset` is
+the inner edge's, `FocusVisualMargin` negated less the ring's width (S2.10) (W3-19, W3-20; ADD-A122). Rows: GN-3.27–GN-3.29,
 K3.20–K3.24, Q3.30, W3-19, W3-20, MAC-X13, X-FO-1, MAT-X10.
 
 **token.caret** (S4.2): colour, width, blink on and off times, blink timeout, blink style, secondary colour,

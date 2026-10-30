@@ -306,13 +306,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS1 | `token.text.roles.headline (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.subheadline (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.body (= token.text.keyed.<key>)` | token |
-| MAT-TS1 | `token.text.roles.callout (= token.text.keyed.<key>)` | token |
+| MAT-TS1 | `token.text.roles.callout (= token.text.roles.body, the slot owning body_large, Compose's default text style, MaterialTheme.kt:113, S4.4; ADD-A122)` | token |
 | MAT-TS1 | `token.text.roles.caption (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.caption2 (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.label (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.title3 (= token.text.roles.title2, the slot owning title_large, S4.4)` | token |
 | MAT-TS1 | `token.text.roles.footnote (= token.text.roles.caption, the slot owning body_small, S4.4)` | token |
-| MAT-TS1 | `token.text.roles.numeric (= token.text.roles.body, the slot owning body_medium, S4.4)` | token |
+| MAT-TS1 | `token.text.roles.numeric (= token.text.roles.body, the slot owning body_large, S4.4; ADD-A122)` | token |
 | MAT-TS2 | `token.text.keyed.display_large.letter_spacing` | token |
 | MAT-TS2 | `token.text.keyed.display_medium.letter_spacing` | token |
 | MAT-TS2 | `token.text.keyed.display_small.letter_spacing` | token |
@@ -556,7 +556,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X1 | `role.@primary_fixed, role.@primary_fixed_dim, role.@on_primary_fixed, role.@on_primary_fixed_variant (and the same for secondary and tertiary)` | role |
 | MAT-X1 | `role.@surface_dim, role.@surface_bright, role.@surface_container_lowest, role.@surface_container_low, role.@surface_container, role.@surface_container_high, role.@surface_container_highest` | role |
 | MAT-X1 | `role.@inverse_surface, role.@inverse_on_surface, role.@inverse_primary, role.@outline_variant, role.@surface_variant, role.@surface_tint, role.@background, role.@on_background` | role |
-| MAT-X1 | `role.global.scrim (= alpha(role.@scrim, <fraction>): Compose applies ScrimTokens.ContainerOpacity to the scrim role wherever it draws one)` (`ScrimTokens.kt`, `Scrim.kt:87`, `SheetDefaults.kt:530`; Compose sets the alpha, equal to `alpha()` while `role.@scrim` is opaque) | role |
+| MAT-X1 | `role.global.scrim (= alpha(role.@scrim, <fraction>): Compose applies ScrimTokens.ContainerOpacity to the scrim role wherever it draws one)` (`ScrimTokens.kt`, `Scrim.kt:87`, `SheetDefaults.kt:530`, `NavigationDrawer.kt:1068`, `SearchBar.kt:2055`; Compose sets the alpha, equal to `alpha()` while `role.@scrim` is opaque; only the internal, unpublished `StyleableExpandedDockedSearchBarWithGap` takes the role unscaled, `SearchBar.kt:1014-1030`, `ComponentStyles.kt:688`, ADD-A122) | role |
 | MAT-X2 | `token.elevation.<level0 … level5> (the six levels)` | token |
 | MAT-X2 | `PartStyle.shadow = Shadow::Elevation(<key>) per part and state (each component's level)` | field |
 | MAT-X3 | `token.elevation.<key> layers (material-web's key and ambient ShadowLayers per level)` | token |
