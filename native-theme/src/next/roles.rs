@@ -374,10 +374,6 @@ macro_rules! role_paths {
 
             /// The role `path` names.
             #[must_use]
-            #[cfg_attr(
-                not(test),
-                expect(dead_code, reason = "read by S11's reader (M1a task 7)")
-            )]
             pub(crate) fn from_path(path: &str) -> Option<$name> {
                 Self::ALL.iter().copied().find(|role| role.path() == path)
             }

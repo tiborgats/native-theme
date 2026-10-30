@@ -124,7 +124,8 @@ impl KeyedItem for Binding {
 
 /// A colour role a binding binds: `surface.x`, `role.<set>.x`,
 /// `role.global.x`, `role.@x`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum RoleRef {
     /// A role of whichever surface set is in scope.
     Surface(SurfaceRole),
@@ -138,7 +139,8 @@ pub enum RoleRef {
 
 /// The pointer's shape: CSS's cursor keywords (CSS Basic UI 4), plus Qt's
 /// `WhatsThis` and `None`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum CursorShape {
     /// CSS's `default`.
     Default,

@@ -58,7 +58,8 @@ pub enum FocusVisibleWhen {
 }
 
 /// What a focus indicator draws.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum FocusKind {
     /// A ring around the part.
     Ring,

@@ -24,7 +24,7 @@ pub struct Paint {
 
 /// One layer of a paint.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, own_toml)]
 #[non_exhaustive]
 pub struct PaintLayer {
     /// What the layer draws.
@@ -100,7 +100,8 @@ pub enum PaintKind {
 }
 
 /// A pattern, each drawn as its platform's source draws it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Pattern {
     /// A checkerboard.
     Checkerboard,
@@ -111,7 +112,8 @@ pub enum Pattern {
 }
 
 /// Qt's `Qt::BrushStyle` patterns.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum QtBrushStyle {
     /// `Qt::Dense1Pattern`.
     Dense1,
@@ -153,7 +155,8 @@ pub struct Stop {
 }
 
 /// How a layer combines with the layers beneath it.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum BlendMode {
     /// Drawn over the layers beneath.
     Normal,

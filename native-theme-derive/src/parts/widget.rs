@@ -256,6 +256,8 @@ pub(crate) fn expand(input: &DeriveInput) -> Result<TokenStream> {
         .iter()
         .map(|p| format_ident!("{}", camel_case(&p.ident.to_string())))
         .collect();
+    let part_names: Vec<String> = parts.iter().map(|p| p.ident.to_string()).collect();
+    let kind = format_ident!("{widget}");
     let part_docs: Vec<&Vec<Attribute>> = parts.iter().map(|p| &p.docs).collect();
     let fields: Vec<&Ident> = parts.iter().map(|p| &p.ident).collect();
     let enum_doc = format!("`{snake}`'s parts (S5), each styled by a part style.");
@@ -335,6 +337,43 @@ pub(crate) fn expand(input: &DeriveInput) -> Result<TokenStream> {
                     .filter_map(|(part, patch)| patch.map(|patch| (part, patch)))
                     .collect();
                 (parts, values)
+            }
+        }
+
+        impl #part_enum {
+            /// The part's name, as TOML and paths spell it.
+            #vis fn name(self) -> &'static str {
+                match self {
+                    #(#part_enum::#variants => #part_names,)*
+                }
+            }
+
+            /// The part `name` names.
+            #vis fn from_name(name: &str) -> ::core::option::Option<Self> {
+                match name {
+                    #(#part_names => ::core::option::Option::Some(#part_enum::#variants),)*
+                    _ => ::core::option::Option::None,
+                }
+            }
+        }
+
+        impl crate::next::toml::layer::WidgetPatch for #patch {
+            type Values = #values_patch;
+
+            const KIND: crate::next::WidgetKind = crate::next::WidgetKind::#kind;
+
+            fn part_slot(
+                &mut self,
+                name: &str,
+            ) -> ::core::option::Option<&mut ::core::option::Option<#w::PartPatch>> {
+                match name {
+                    #(#part_names => ::core::option::Option::Some(&mut self.#fields),)*
+                    _ => ::core::option::Option::None,
+                }
+            }
+
+            fn values_slot(&mut self) -> &mut ::core::option::Option<#values_patch> {
+                &mut self.values
             }
         }
 

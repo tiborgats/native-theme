@@ -28,6 +28,11 @@ pub(crate) struct TypeAttrs {
     /// `Resolved<T>Patch`, for a field holding the block's patch (a
     /// keyframe's part style).
     pub resolved_patch: bool,
+    /// `#[parts(toml)]`: an enum that is no block, read from TOML only (S11).
+    pub toml: bool,
+    /// `#[parts(own_toml)]`: a block whose TOML reading is written by hand,
+    /// its spelling having a shorthand (S2.4, S11).
+    pub own_toml: bool,
 }
 
 /// The attributes on one field.
@@ -77,10 +82,14 @@ pub(crate) fn parse_type_attrs(attrs: &[Attribute]) -> Result<TypeAttrs> {
                 flag(&mut out.own_resolved, &meta)
             } else if meta.path.is_ident("resolved_patch") {
                 flag(&mut out.resolved_patch, &meta)
+            } else if meta.path.is_ident("toml") {
+                flag(&mut out.toml, &meta)
+            } else if meta.path.is_ident("own_toml") {
+                flag(&mut out.own_toml, &meta)
             } else {
                 Err(meta.error(
-                    "unknown parts attribute: expected block, widget, append, own_resolved or \
-                     resolved_patch",
+                    "unknown parts attribute: expected block, widget, append, own_resolved, \
+                     resolved_patch, toml or own_toml",
                 ))
             }
         })?;

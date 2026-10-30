@@ -27,7 +27,8 @@ pub struct Placement {
 /// A platform's placement strategy, one per placement row of the
 /// traceability (S13), each named after the toolkit and the class or
 /// component whose placement it reproduces.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PlacementStrategy {
     /// GTK's popover.
     GtkPopover,
@@ -123,7 +124,8 @@ pub enum PlacementStrategy {
 }
 
 /// A slot of Material's scaffold.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum ScaffoldSlot {
     /// The floating action button's.
     Fab,
@@ -132,7 +134,8 @@ pub enum ScaffoldSlot {
 }
 
 /// How a platform moves content clear of the on-screen keyboard.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum KeyboardAvoidance {
     /// WinUI's content dialog.
     WinUiContentDialog,
@@ -192,7 +195,8 @@ pub struct PlacementParams {
 }
 
 /// The anchor's side an element goes to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PlacementSide {
     /// Below the anchor.
     Below,
@@ -207,7 +211,8 @@ pub enum PlacementSide {
 }
 
 /// An element's alignment along its side of the anchor.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PlacementAlign {
     /// Aligned with the anchor's start.
     Start,
@@ -218,7 +223,8 @@ pub enum PlacementAlign {
 }
 
 /// An element's width against its anchor's.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum AnchorWidth {
     /// The element's content's width.
     Content,
@@ -229,7 +235,8 @@ pub enum AnchorWidth {
 }
 
 /// The area an element is placed in.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum HostArea {
     /// The window.
     Window,

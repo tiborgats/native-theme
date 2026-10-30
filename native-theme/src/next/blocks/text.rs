@@ -39,7 +39,8 @@ pub struct Font {
 }
 
 /// A font's style.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum FontStyle {
     /// Upright.
     Normal,
@@ -50,7 +51,8 @@ pub enum FontStyle {
 }
 
 /// A variation axis's value.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, ThemeParts)]
+#[parts(toml)]
 pub enum AxisValue {
     /// A fixed value.
     Fixed(f32),
@@ -320,7 +322,8 @@ fn is_langtag(subtags: &[&str]) -> bool {
 
 /// The nineteen semantic slots of the text ramp (S4.4), one variant per
 /// `TextRoles` field.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum TextRole {
     /// `body`.
     Body,
@@ -406,7 +409,8 @@ pub struct TextStyle {
 }
 
 /// A case transform.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum TextCase {
     /// As written.
     Mixed,
@@ -447,7 +451,8 @@ pub struct Decoration {
 }
 
 /// A decoration's line.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum DecorationLine {
     /// Under the text.
     Underline,
@@ -458,7 +463,8 @@ pub enum DecorationLine {
 }
 
 /// A decoration's pattern (AppKit's patterns).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum DecorationStyle {
     /// A solid line.
     Solid,
@@ -512,7 +518,8 @@ pub enum FadeLength {
 }
 
 /// How text wraps.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Wrap {
     /// It does not wrap.
     None,
@@ -523,7 +530,8 @@ pub enum Wrap {
 }
 
 /// What a fade ends under.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum FadeUnder {
     /// A part.
     Part(PartRef),

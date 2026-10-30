@@ -1,6 +1,8 @@
 //! Inputs (S9): the colours a preset derives its roles from, which the
 //! accent, a reader or a palette replaces, and KDE's scheme inputs.
 
+use native_theme_derive::ThemeParts;
+
 use std::fmt;
 
 use super::color::Color;
@@ -39,7 +41,7 @@ impl InputName {
         not(test),
         expect(
             dead_code,
-            reason = "read by S11's reader and the evaluator (M1a tasks 7 and 10)"
+            reason = "read by the evaluator (M1a task 10)"
         )
     )]
     pub(crate) fn segments(&self) -> &[Key] {
@@ -101,7 +103,8 @@ impl InputValue {
 }
 
 /// A contrast condition, one at a time: the two exclude each other (S12).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Contrast {
     /// Increased contrast.
     Increased,

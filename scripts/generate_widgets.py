@@ -488,7 +488,8 @@ def wrap_doc(text: str, indent: str) -> list:
 
 def enum_code(e: EnumDecl) -> list:
     out = wrap_doc(e.doc, "")
-    out += ["#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]", f"pub enum {e.name} {{"]
+    out += ["#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]", "#[parts(toml)]",
+            f"pub enum {e.name} {{"]
     for v in e.variants:
         out += wrap_doc(words(v), "    ") + [f"    {v},"]
     return out + ["}", ""]
@@ -593,10 +594,13 @@ def widget_file(w: Widget, shared_names: set) -> str:
 def index_file(widgets: list, shared: dict) -> str:
     out = [HEADER] + [x.replace("///", "//!", 1) for x in wrap_doc(
         "The index over the enabled units' typed widgets (S1, S6.1): their kinds, typed variants and parts, their "
-        "patches, their slots and the registry's list.", "")] + [""]
+        "patches, their slots, their readers and the registry's list.", "")] + ["", "use native_theme_derive::ThemeParts;",
+                                                                            ""]
     imports = {("crate::next::blocks", "Apply"), ("crate::next::blocks", "MergeConflict"),
                ("crate::next::registry", "WidgetInfo"), ("super", "PartPatch"), ("super", "WidgetSlot"),
-               ("super", "WidgetTable")}
+               ("super", "WidgetTable"), ("crate::next::toml::read", "FromToml"),
+               ("crate::next::toml::read", "Reader"), ("crate::next::toml::read", "Spelling"),
+               ("crate::next::toml::layer", "read_widget")}
     exports = []
     for w in widgets:
         W = camel(w.name)
@@ -617,7 +621,8 @@ def index_file(widgets: list, shared: dict) -> str:
         for v in w.variants:
             holders.setdefault(v, []).append(w.name)
     out += wrap_doc("The catalogue's typed variants of the enabled units' widgets, one enum (S7); a widget "
-                    "declares the ones it has.", "") + ["#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]", "pub enum Variant {"]
+                    "declares the ones it has.", "") + ["#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]",
+                                                         "#[parts(toml)]", "pub enum Variant {"]
     for v, ws in holders.items():
         out += [f"    /// `{v}`, a typed variant of " + ", ".join(f"`{x}`" for x in ws) + ".", f"    {camel(v)},"]
     out += ["}", ""]
@@ -663,6 +668,31 @@ def index_file(widgets: list, shared: dict) -> str:
     for w in widgets:
         out.append(f"            WidgetValuesPatch::{camel(w.name)}(patch) => self.{w.name}.apply_values(patch),")
     out += ["        }", "    }", "}", ""]
+    out += ["impl TypedPart {", "    /// The part `part` of `widget`, by its bare name.",
+            "    pub(crate) fn from_names(widget: WidgetKind, part: &str) -> Option<TypedPart> {",
+            "        match widget {"]
+    for w in widgets:
+        W = camel(w.name)
+        out.append(f"            WidgetKind::{W} => {W}Part::from_name(part).map(TypedPart::{W}),")
+    out += ["        }", "    }", "}", ""]
+    out += ["impl WidgetsPatch {",
+            "    /// Reads the table of the widget `name` into its patch (S11); `false` where",
+            "    /// no typed widget is named `name`.",
+            "    pub(crate) fn read_widget(",
+            "        &mut self,", "        name: &str,", "        item: &::toml::Value,", "        at: &str,",
+            "        cx: &mut Reader,", "    ) -> bool {", "        match name {"]
+    for w in widgets:
+        out.append(f'            "{w.name}" => read_widget(&mut self.{w.name}, item, at, cx),')
+    out += ["            _ => return false,", "        }", "        true", "    }", "}", ""]
+    out += ["impl WidgetValuesPatch {", "    /// The values' patch of `widget` that `item` states (S11).",
+            "    pub(crate) fn read(",
+            "        widget: WidgetKind,", "        item: &::toml::Value,", "        at: &str,", "        cx: &mut Reader,",
+            "    ) -> Option<WidgetValuesPatch> {", "        match widget {"]
+    for w in widgets:
+        W = camel(w.name)
+        out.append(f"            WidgetKind::{W} => {W}ValuesPatch::read(item, Spelling::Bare, at, cx)"
+                   f".map(WidgetValuesPatch::{W}),")
+    out += ["        }", "    }", "}", ""]
     out += ["impl Apply<WidgetsPatch> for WidgetSlots {",
             "    fn apply(&mut self, patch: WidgetsPatch) -> Result<(), MergeConflict> {",
             f"        let WidgetsPatch {{ {', '.join(w.name for w in widgets)} }} = patch;"]
@@ -672,8 +702,6 @@ def index_file(widgets: list, shared: dict) -> str:
     out += ["        Ok(())", "    }", "}", ""]
     out += ["/// The typed widgets' tables, in `WidgetKind`'s order, for the field-path",
             "/// registry (S6.1).",
-            '#[cfg_attr(\n    not(test),\n    expect(\n        dead_code,\n        reason = "read by S11\'s reader and '
-            'the facts gate (M1a tasks 7 and 14)"\n    )\n)]',
             "pub(crate) const WIDGETS: &[WidgetInfo] = &["]
     for w in widgets:
         W = camel(w.name)

@@ -148,7 +148,8 @@ pub struct TextRendering {
 }
 
 /// Text antialiasing.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Antialiasing {
     /// None.
     None,
@@ -159,7 +160,8 @@ pub enum Antialiasing {
 }
 
 /// Font hinting.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Hinting {
     /// None.
     None,
@@ -172,7 +174,8 @@ pub enum Hinting {
 }
 
 /// The order of a display's subpixels.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum SubpixelOrder {
     /// None.
     None,
@@ -216,7 +219,8 @@ pub struct Caret {
 }
 
 /// How a caret blinks.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum BlinkStyle {
     /// On and off.
     Hard,
@@ -435,7 +439,8 @@ pub struct TextTokens {
 }
 
 /// How the text-scaling factor applies (S9.4).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum TextScaling {
     /// A product.
     Linear,
@@ -611,7 +616,8 @@ pub struct KdeEffects {
 }
 
 /// KDE's intensity effect.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum KdeIntensityEffect {
     /// KDE's "no effect" setting.
     None,
@@ -624,7 +630,8 @@ pub enum KdeIntensityEffect {
 }
 
 /// KDE's colour effect.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum KdeColorEffect {
     /// KDE's "no effect" setting.
     None,
@@ -637,7 +644,8 @@ pub enum KdeColorEffect {
 }
 
 /// KDE's contrast effect.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum KdeContrastEffect {
     /// KDE's "no effect" setting.
     None,
@@ -695,7 +703,8 @@ pub struct MaterialScheme {
 }
 
 /// material-color-utilities' `Variant`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum MaterialVariant {
     /// `TONAL_SPOT`.
     TonalSpot,

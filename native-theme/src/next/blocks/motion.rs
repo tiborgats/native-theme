@@ -63,7 +63,8 @@ pub enum Timing {
 }
 
 /// CSS's step positions (`steps()`'s second argument).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum StepJump {
     /// `jump-start`.
     JumpStart,
@@ -76,7 +77,8 @@ pub enum StepJump {
 }
 
 /// A platform's own timing curve; closed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PlatformCurve {
     /// Kirigami's velocity-based animations.
     KirigamiVelocity,
@@ -104,7 +106,8 @@ fn critical_damping(mass: f32, stiffness: f32) -> Option<f32> {
 
 /// The groups of a part's properties a transition animates. The focus
 /// indicator's motion is its own `transition` (S2.10).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PropertyGroup {
     /// The fill.
     Fill,
@@ -278,7 +281,8 @@ pub struct PresentationStep {
 }
 
 /// The event a presentation runs on.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PresentationEvent {
     /// The element appears.
     Appear,
@@ -291,7 +295,8 @@ pub enum PresentationEvent {
 }
 
 /// Where a clip reveal starts.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum RevealOrigin {
     /// The anchor the element is placed against.
     Anchor,
@@ -347,7 +352,8 @@ pub enum PresentationKind {
 
 /// An edge of an element, as a presentation names it; `Start` and `End` are
 /// mirrored with the layout (S2.4).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum EdgeSide {
     /// The top edge.
     Top,

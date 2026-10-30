@@ -12,7 +12,7 @@ use crate::next::value::Value;
 
 /// A part's four corners and their curve.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, own_toml)]
 #[non_exhaustive]
 pub struct Corners {
     /// The top-left corner.
@@ -34,7 +34,7 @@ pub struct Corners {
 /// A corner's radius. `Full`, `Concentric` and `FollowPart` resolve as they
 /// are; the connector computes each such corner at layout.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, own_toml)]
 pub enum Radius {
     /// A plain radius.
     Px(Value<Px>),
@@ -58,7 +58,8 @@ pub enum Radius {
 }
 
 /// A corner's curve.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum CornerCurve {
     /// A circular arc.
     Circular,
@@ -68,7 +69,7 @@ pub enum CornerCurve {
 
 /// The line drawn along a part's outline, per edge.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, own_toml)]
 #[non_exhaustive]
 pub struct Stroke {
     /// The top edge.
@@ -114,7 +115,8 @@ pub struct Edge {
 }
 
 /// A line's pattern.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, ThemeParts)]
+#[parts(toml)]
 pub enum DashPattern {
     /// A solid line: the one route for one.
     Solid,
@@ -130,7 +132,8 @@ pub enum DashPattern {
 }
 
 /// How a line meets the device's pixels; its width stays logical.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PixelSnap {
     /// Drawn where it falls.
     None,
@@ -141,7 +144,8 @@ pub enum PixelSnap {
 }
 
 /// A line's cap.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum LineCap {
     /// Ends at the line's end.
     Butt,
@@ -152,7 +156,8 @@ pub enum LineCap {
 }
 
 /// How a line's segments join.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum LineJoin {
     /// A sharp corner.
     Miter,
@@ -163,7 +168,8 @@ pub enum LineJoin {
 }
 
 /// Where a stroke lies relative to the part's box.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum StrokePosition {
     /// Inside the box.
     Inside,
@@ -174,7 +180,8 @@ pub enum StrokePosition {
 }
 
 /// How far a part's fill reaches under its stroke.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum FillClip {
     /// The whole box, beneath the part of the stroke inside it (CSS's
     /// `background-clip: border-box`).
@@ -187,7 +194,8 @@ pub enum FillClip {
 /// A shape replacing a part's corners' outline: a closed set implemented once
 /// in native-theme to `androidx.graphics.shapes` and `MaterialShapes.kt` at a
 /// pinned commit.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum ShapeKind {
     /// One of Material's shapes.
     Material(MaterialShape),
@@ -197,7 +205,8 @@ pub enum ShapeKind {
 /// file's order, each named as the file names it. The list is written from
 /// the file when the commit is pinned; until then it has no shape, so a
 /// preset states `shape = "absent"`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum MaterialShape {}
 
 /// A path, in logical px, in the coordinates of the rectangle it was made

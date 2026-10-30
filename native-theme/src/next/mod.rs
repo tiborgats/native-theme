@@ -6,16 +6,23 @@
 
 mod blocks;
 pub mod color;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "S12's checks read the declarations (M1a task 8)")
+)]
+mod declare;
 mod error;
 pub mod expr;
 mod inputs;
 mod key;
+mod layer;
 pub mod placement;
+mod presets;
 #[cfg_attr(
     not(test),
     expect(
         dead_code,
-        reason = "read by S11's reader and the facts gate (M1a tasks 7 and 14)"
+        reason = "the rest is read by S12's checks and the facts gate (M1a tasks 8 and 14)"
     )
 )]
 mod registry;
@@ -24,6 +31,7 @@ mod roles;
 mod roles_tokens_tests;
 mod selector;
 mod tokens;
+mod toml;
 mod units;
 mod value;
 mod widgets;
@@ -93,10 +101,12 @@ pub use blocks::text::{
 pub use blocks::transform::{ResolvedTransform, Transform, TransformPatch};
 pub use blocks::{Block, BlockPatch, FieldsBlock};
 pub use color::Color;
-pub use error::KeyError;
+pub use error::{KeyError, LayerError, Problem, ProblemKind};
 pub use expr::{Expr, ParseError};
 pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 pub use key::Key;
+pub use layer::{Bases, Layer};
+pub use presets::PresetId;
 pub use roles::{
     ColorRoles, ColorRolesPatch, DisabledRoles, DisabledRolesPatch, GlobalRole, GlobalRoles,
     GlobalRolesPatch, ResolvedColorRoles, ResolvedDisabledRoles, ResolvedGlobalRoles,
@@ -104,7 +114,13 @@ pub use roles::{
     StatusColorsPatch, StatusRoles, StatusRolesPatch, SurfaceRole, SurfaceRoles, SurfaceRolesPatch,
     SurfaceSet,
 };
-pub use selector::{Direction, PartRef, Scheme, SizeClass, VariantRef, WidgetOrPart, WidgetRef};
+pub use selector::{
+    Breakpoint, Combine, Comparison, Condition, ContextMatch, ContextScope, ControlSize, Density,
+    Direction, Idiom, InputKind, Measured, Parity, PartRef, PositionMatch, Posture, Rule, RuleBody,
+    Scheme, Selector, SetMatch, SharedFlag, SiblingMatch, SiblingScope, SizeClass, SizeClassMatch,
+    SizeClasses, SizeMatch, StateFlag, TiledEdges, ValuesPatch, VariantRef, WidgetOrPart,
+    WidgetRef,
+};
 pub use tokens::{
     Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
     FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens, IconTokensPatch,

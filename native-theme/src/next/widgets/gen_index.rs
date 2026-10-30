@@ -4,8 +4,10 @@
 // units and run the generator.
 
 //! The index over the enabled units' typed widgets (S1, S6.1): their kinds,
-//! typed variants and parts, their patches, their slots and the registry's
-//! list.
+//! typed variants and parts, their patches, their slots, their readers and the
+//! registry's list.
+
+use native_theme_derive::ThemeParts;
 
 use super::gen_button::ButtonTheme;
 pub use super::gen_button::{
@@ -15,6 +17,8 @@ pub use super::gen_button::{
 use super::{PartPatch, WidgetSlot, WidgetTable};
 use crate::next::blocks::{Apply, MergeConflict};
 use crate::next::registry::WidgetInfo;
+use crate::next::toml::layer::read_widget;
+use crate::next::toml::read::{FromToml, Reader, Spelling};
 
 /// The typed widgets, one variant per widget of an enabled unit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -25,7 +29,8 @@ pub enum WidgetKind {
 
 /// The catalogue's typed variants of the enabled units' widgets, one enum (S7);
 /// a widget declares the ones it has.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Variant {
     /// `primary`, a typed variant of `button`.
     Primary,
@@ -124,7 +129,8 @@ pub enum WidgetValuesPatch {
 
 /// A shared value type of the catalogue: Qt's tool-button style, WinUI's
 /// `LabelPosition`, AppKit's toolbar display mode.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum ButtonLabelPosition {
     /// Icon only.
     IconOnly,
@@ -178,6 +184,49 @@ impl WidgetSlots {
     }
 }
 
+impl TypedPart {
+    /// The part `part` of `widget`, by its bare name.
+    pub(crate) fn from_names(widget: WidgetKind, part: &str) -> Option<TypedPart> {
+        match widget {
+            WidgetKind::Button => ButtonPart::from_name(part).map(TypedPart::Button),
+        }
+    }
+}
+
+impl WidgetsPatch {
+    /// Reads the table of the widget `name` into its patch (S11); `false` where
+    /// no typed widget is named `name`.
+    pub(crate) fn read_widget(
+        &mut self,
+        name: &str,
+        item: &::toml::Value,
+        at: &str,
+        cx: &mut Reader,
+    ) -> bool {
+        match name {
+            "button" => read_widget(&mut self.button, item, at, cx),
+            _ => return false,
+        }
+        true
+    }
+}
+
+impl WidgetValuesPatch {
+    /// The values' patch of `widget` that `item` states (S11).
+    pub(crate) fn read(
+        widget: WidgetKind,
+        item: &::toml::Value,
+        at: &str,
+        cx: &mut Reader,
+    ) -> Option<WidgetValuesPatch> {
+        match widget {
+            WidgetKind::Button => {
+                ButtonValuesPatch::read(item, Spelling::Bare, at, cx).map(WidgetValuesPatch::Button)
+            }
+        }
+    }
+}
+
 impl Apply<WidgetsPatch> for WidgetSlots {
     fn apply(&mut self, patch: WidgetsPatch) -> Result<(), MergeConflict> {
         let WidgetsPatch { button } = patch;
@@ -190,13 +239,6 @@ impl Apply<WidgetsPatch> for WidgetSlots {
 
 /// The typed widgets' tables, in `WidgetKind`'s order, for the field-path
 /// registry (S6.1).
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "read by S11's reader and the facts gate (M1a tasks 7 and 14)"
-    )
-)]
 pub(crate) const WIDGETS: &[WidgetInfo] = &[WidgetInfo {
     kind: WidgetKind::Button,
     name: "button",

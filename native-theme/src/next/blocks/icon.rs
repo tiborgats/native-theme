@@ -53,7 +53,8 @@ pub struct IconStyle {
 }
 
 /// How an icon is recoloured.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum RenderingMode {
     /// A template: its alpha in the fill.
     Template,
@@ -98,7 +99,8 @@ pub struct Glyph {
 }
 
 /// What a glyph is drawn from.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(toml)]
 pub enum GlyphSource {
     /// A code point of a font.
     FontCodePoint {
@@ -138,7 +140,8 @@ pub enum GlyphSource {
 }
 
 /// A system control whose rendering a glyph takes (S15).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum SystemControl {
     /// AppKit's checkbox: the box and mark.
     AppKitCheckbox,
@@ -169,7 +172,8 @@ pub struct GlyphStroke {
 }
 
 /// How an icon role mirrors under right-to-left.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum Mirroring {
     /// Never mirrored.
     Never,
@@ -184,7 +188,8 @@ pub enum Mirroring {
 
 /// How a glyph mirrors under right-to-left; a glyph names no icon role, so
 /// it takes no other role's icon.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum GlyphMirroring {
     /// Never mirrored.
     Never,

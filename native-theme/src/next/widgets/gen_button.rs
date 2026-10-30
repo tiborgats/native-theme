@@ -120,7 +120,8 @@ pub struct ButtonValues {
 
 /// The values of `button`'s `icon_placement`: the image beside or above the
 /// title.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum IconPlacement {
     /// Leading.
     Leading,
@@ -133,7 +134,8 @@ pub enum IconPlacement {
 }
 
 /// The values of `button`'s `menu_trigger`: the touch-and-hold variant.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum MenuTrigger {
     /// Primary.
     Primary,
@@ -145,7 +147,8 @@ pub enum MenuTrigger {
 
 /// The values of `button`'s `back_display_mode`: UIKit's
 /// `backButtonDisplayMode`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum BackDisplayMode {
     /// Default.
     Default,
@@ -156,7 +159,8 @@ pub enum BackDisplayMode {
 }
 
 /// The values of `button`'s `display_mode`: iOS's paste control.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
 pub enum PasteDisplayMode {
     /// Icon.
     Icon,

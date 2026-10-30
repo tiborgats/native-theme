@@ -32,7 +32,7 @@ fn option() -> TokenStream {
 
 /// Where a block field's block sits in its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Wrap {
+pub(super) enum Wrap {
     /// `B`.
     Bare,
     /// `Value<B>`.
@@ -44,18 +44,18 @@ enum Wrap {
 }
 
 /// A block a field holds: its type as written, and the type's name.
-struct BlockRef {
-    ty: Box<Type>,
-    name: Ident,
+pub(super) struct BlockRef {
+    pub(super) ty: Box<Type>,
+    pub(super) name: Ident,
 }
 
 /// A map's values' block: the block, how it is patched, where it sits in the
 /// map's value, and the map's key type.
-struct MapBlock {
-    block: BlockRef,
-    kind: BlockKind,
-    wrap: Wrap,
-    key: Box<Type>,
+pub(super) struct MapBlock {
+    pub(super) block: BlockRef,
+    pub(super) kind: BlockKind,
+    pub(super) wrap: Wrap,
+    pub(super) key: Box<Type>,
 }
 
 impl MapBlock {
@@ -63,7 +63,7 @@ impl MapBlock {
     /// (S6.1): a struct block's `BlockPatch<B>`, held bare or as a `Value`,
     /// or an append block's own patch; `None` where an entry is set whole (an
     /// enum block, a list of blocks).
-    fn entry_patch(&self) -> Option<TokenStream> {
+    pub(super) fn entry_patch(&self) -> Option<TokenStream> {
         let b = blocks();
         let ty = &self.block.ty;
         match (self.kind, self.wrap) {
@@ -79,7 +79,7 @@ impl MapBlock {
 
 /// What a field holds, which decides its patch, its merge and its resolved
 /// type.
-enum Shape {
+pub(super) enum Shape {
     /// A value with no fields of its own.
     Leaf,
     /// A `Vec` of pairs: merged by key; its values a block's where the field
@@ -105,10 +105,10 @@ enum Shape {
 
 /// A compound value of the model: its type's name, its members, and the type
 /// each member holds.
-struct Compound {
-    name: &'static str,
-    members: &'static [&'static str],
-    inner: Box<Type>,
+pub(super) struct Compound {
+    pub(super) name: &'static str,
+    pub(super) members: &'static [&'static str],
+    pub(super) inner: Box<Type>,
 }
 
 /// The model's compound values and their members, in declaration order.
@@ -128,14 +128,14 @@ fn compound(ty: &Type) -> Option<Compound> {
     })
 }
 
-struct BlockField {
+pub(super) struct BlockField {
     /// `None` for a tuple variant's one field.
-    ident: Option<Ident>,
+    pub(super) ident: Option<Ident>,
     vis: Visibility,
-    ty: Type,
+    pub(super) ty: Type,
     docs: Vec<Attribute>,
-    attrs: FieldAttrs,
-    shape: Shape,
+    pub(super) attrs: FieldAttrs,
+    pub(super) shape: Shape,
 }
 
 /// How a later patch's field merges over the earlier one's.
@@ -187,6 +187,13 @@ impl BlockField {
     }
 
     fn patch_ty(&self) -> TokenStream {
+        let o = option();
+        let inner = self.patch_inner();
+        quote!(#o<#inner>)
+    }
+
+    /// The type a patch holds for the field, inside its `Option`.
+    pub(super) fn patch_inner(&self) -> TokenStream {
         let b = blocks();
         let o = option();
         match &self.shape {
@@ -201,7 +208,7 @@ impl BlockField {
                 block,
             } => {
                 let patch = renamed(&block.ty, &format_ident!("{}Patch", block.name));
-                quote!(#o<#patch>)
+                quote!(#patch)
             }
             Shape::Block {
                 kind: BlockKind::Fields,
@@ -209,27 +216,27 @@ impl BlockField {
                 block,
             } => {
                 let inner = &block.ty;
-                quote!(#o<#b::BlockPatch<#inner>>)
+                quote!(#b::BlockPatch<#inner>)
             }
             Shape::Compound(compound) => {
                 let m = model();
                 let name = format_ident!("{}", compound.name);
                 let inner = &compound.inner;
-                quote!(#o<#m::#name<#o<#inner>>>)
+                quote!(#m::#name<#o<#inner>>)
             }
             Shape::Surfaces(block) => {
                 let m = model();
                 let inner = &block.ty;
-                quote!(#o<#m::SurfaceMap<#b::BlockPatch<#inner>>>)
+                quote!(#m::SurfaceMap<#b::BlockPatch<#inner>>)
             }
             Shape::Map(Some(map)) if map.entry_patch().is_some() => {
                 let key = &map.key;
                 let entry = map.entry_patch();
-                quote!(#o<::std::vec::Vec<(#key, #entry)>>)
+                quote!(::std::vec::Vec<(#key, #entry)>)
             }
             Shape::Leaf | Shape::Map(_) | Shape::NestedMap | Shape::Block { .. } => {
                 let ty = &self.ty;
-                quote!(#o<#ty>)
+                quote!(#ty)
             }
         }
     }
@@ -473,7 +480,7 @@ impl BlockField {
 
 /// The type `ty` names, its last segment renamed to `name`, so the path to
 /// it is kept: `paint::Paint` -> `paint::PaintPatch`.
-fn renamed(ty: &Type, name: &Ident) -> Type {
+pub(super) fn renamed(ty: &Type, name: &Ident) -> Type {
     let mut out = ty.clone();
     if let Type::Path(type_path) = &mut out
         && let Some(seg) = type_path.path.segments.last_mut()
@@ -484,7 +491,7 @@ fn renamed(ty: &Type, name: &Ident) -> Type {
 }
 
 /// The pair a `Vec` of pairs holds: `(K, V)` of `Vec<(K, V)>`.
-fn map_pair(ty: &Type) -> Option<(&Type, &Type)> {
+pub(super) fn map_pair(ty: &Type) -> Option<(&Type, &Type)> {
     match generic_arg(ty, "Vec") {
         Some(Type::Tuple(tuple)) => match tuple.elems.iter().collect::<Vec<_>>().as_slice() {
             [key, value] => Some((*key, *value)),
@@ -496,7 +503,7 @@ fn map_pair(ty: &Type) -> Option<(&Type, &Type)> {
 
 /// `T` of `Wrapper<T>`, where the type's last segment is `wrapper` with one
 /// type argument.
-fn generic_arg<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
+pub(super) fn generic_arg<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
     if let Type::Path(type_path) = ty
         && type_path.qself.is_none()
         && let Some(seg) = type_path.path.segments.last()
@@ -612,7 +619,7 @@ fn block_ref(field: &syn::Field, inner: &Type) -> Result<BlockRef> {
     })
 }
 
-fn parse_field(field: &syn::Field) -> Result<BlockField> {
+pub(super) fn parse_field(field: &syn::Field) -> Result<BlockField> {
     let attrs = attrs::parse_field_attrs(&field.attrs)?;
     let ty = field.ty.clone();
     let compound = compound(&ty);
@@ -740,7 +747,7 @@ fn docs(attrs: &[Attribute]) -> Vec<Attribute> {
 }
 
 /// `FollowPart` -> `follow_part`.
-fn snake_case(name: &str) -> String {
+pub(super) fn snake_case(name: &str) -> String {
     let mut out = String::with_capacity(name.len().saturating_mul(2));
     for (i, ch) in name.chars().enumerate() {
         if ch.is_uppercase() && i > 0 {
@@ -880,6 +887,7 @@ fn expand_fields(
     });
     let idents: Vec<_> = fields.iter().map(|f| &f.ident).collect();
     let created = fields.iter().map(BlockField::created);
+    let read = super::read::struct_impls(name, fields, type_attrs.own_toml);
     let merges = fields.iter().map(|f| {
         let ident = &f.ident;
         let path = ident.as_ref().map(Ident::to_string).unwrap_or_default();
@@ -1024,6 +1032,8 @@ fn expand_fields(
                 ::core::result::Result::Ok(Self { #(#idents: #created),* })
             }
         }
+
+        #read
     }
 }
 
@@ -1205,6 +1215,11 @@ fn expand_enum(
         }
     }
     let form = quote!(#r::BlockForm::Enum { unit_variants: &[#(#units),*] });
+    let read = if type_attrs.own_toml {
+        TokenStream::new()
+    } else {
+        super::read::enum_impl(name, data)?
+    };
     let resolved_enum = if type_attrs.own_resolved {
         TokenStream::new()
     } else {
@@ -1228,5 +1243,7 @@ fn expand_enum(
             const FIELDS: &'static [#r::FieldInfo] = &[#(#infos),*];
             const FORM: #r::BlockForm = #form;
         }
+
+        #read
     })
 }

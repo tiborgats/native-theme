@@ -5,25 +5,41 @@ use syn::{DeriveInput, Error, Result};
 
 mod attrs;
 mod block;
+mod read;
 mod widget;
 
 pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     let type_attrs = attrs::parse_type_attrs(&input.attrs)?;
-    match (type_attrs.block, type_attrs.widget) {
-        (true, false) => block::expand(input, &type_attrs),
-        (false, true)
-            if !type_attrs.append && !type_attrs.own_resolved && !type_attrs.resolved_patch =>
+    match (type_attrs.block, type_attrs.widget, type_attrs.toml) {
+        (true, false, false) => block::expand(input, &type_attrs),
+        (false, true, false)
+            if !type_attrs.append
+                && !type_attrs.own_resolved
+                && !type_attrs.resolved_patch
+                && !type_attrs.own_toml =>
         {
             widget::expand(input)
         }
-        (false, true) => Err(Error::new_spanned(
+        (false, false, true)
+            if !type_attrs.append
+                && !type_attrs.own_resolved
+                && !type_attrs.resolved_patch
+                && !type_attrs.own_toml =>
+        {
+            read::expand_toml(input)
+        }
+        (false, false, true) => Err(Error::new_spanned(
             &input.ident,
-            "append, own_resolved and resolved_patch are a block's",
+            "append, own_resolved, resolved_patch and own_toml are a block's",
+        )),
+        (false, true, false) => Err(Error::new_spanned(
+            &input.ident,
+            "append, own_resolved, resolved_patch and own_toml are a block's",
         )),
         _ => Err(Error::new_spanned(
             &input.ident,
-            "ThemeParts expands blocks, marked `#[parts(block)]`, or widgets, marked \
-             `#[parts(widget)]`",
+            "ThemeParts expands blocks, marked `#[parts(block)]`, widgets, marked \
+             `#[parts(widget)]`, or enums read from TOML, marked `#[parts(toml)]`",
         )),
     }
 }
@@ -62,7 +78,7 @@ mod tests {
             "pub struct ProbePatch",
             "pub width : :: core :: option :: Option < Value < Px > >",
             "pub top : :: core :: option :: Option < EdgePatch >",
-            "pub stroke : :: core :: option :: Option < crate :: next :: blocks :: BlockPatch < Stroke >>",
+            "pub stroke : :: core :: option :: Option < crate :: next :: blocks :: BlockPatch < Stroke > >",
             "pub fill : :: core :: option :: Option < PaintPatch >",
             "pub corner : :: core :: option :: Option < Radius >",
             "pub struct ResolvedProbe",
@@ -167,8 +183,8 @@ mod tests {
             }
         });
         for expected in [
-            "pub status_colors : :: core :: option :: Option < :: std :: vec :: Vec < (Key , PaintPatch) >>",
-            "pub keyed : :: core :: option :: Option < :: std :: vec :: Vec < (Key , crate :: next :: blocks :: BlockPatch < TextStyle >) >>",
+            "pub status_colors : :: core :: option :: Option < :: std :: vec :: Vec < (Key , PaintPatch) > >",
+            "pub keyed : :: core :: option :: Option < :: std :: vec :: Vec < (Key , crate :: next :: blocks :: BlockPatch < TextStyle >) > >",
             "pub timings : :: core :: option :: Option < Vec < (Key , Timing) > >",
             "pub status_colors : :: std :: vec :: Vec < (Key , :: core :: option :: Option < ResolvedPaint >) >",
             "crate :: next :: blocks :: merge_slot_entries (& mut self . status_colors , status_colors) \
@@ -516,12 +532,128 @@ mod tests {
     }
 
     #[test]
+    fn struct_block_expands_its_readers() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub width: Value<Px>,
+                pub limit: Option<Value<Ms>>,
+                #[parts(may_be_absent)]
+                pub margin: Sides<Value<Px>>,
+                #[parts(block = "fields")]
+                pub stroke: Value<Stroke>,
+                #[parts(block = "fields")]
+                pub surfaces: SurfaceMap<SurfaceRoles>,
+                pub params: Vec<(Key, Value<Scalar>)>,
+                pub groups: Vec<(Key, Vec<(Key, Value<Scalar>)>)>,
+            }
+        });
+        for expected in [
+            "impl crate :: next :: toml :: read :: Fields for ProbePatch",
+            "crate :: next :: toml :: read :: spelled (\"width\" , key , < Value < Px > as \
+             crate :: next :: toml :: read :: FromToml > :: SPELLINGS)",
+            "crate :: next :: toml :: read :: put (& mut self . width , read_value , < Value < Px > \
+             as crate :: next :: toml :: read :: FromToml > :: combine , & at , \"width\" , cx)",
+            "crate :: next :: toml :: read :: read_map :: < Key , Value < Scalar > > (item , & at , cx)",
+            "crate :: next :: toml :: read :: read_nested_map :: < Key , Key , Value < Scalar > > \
+             (item , & at , cx)",
+            "crate :: next :: toml :: read :: read_surfaces :: < crate :: next :: blocks :: \
+             BlockPatch < SurfaceRoles >> (item , & at , cx)",
+            "impl crate :: next :: toml :: read :: FromToml for ProbePatch",
+            "impl crate :: next :: toml :: read :: FromToml for Probe",
+            "impl crate :: next :: toml :: read :: Build for Probe",
+            "let field_limit = crate :: next :: toml :: read :: optional (field_limit , options_none",
+            "let field_width = crate :: next :: toml :: read :: required (field_width",
+            "crate :: next :: toml :: read :: build_value :: < Stroke > (patch",
+            "impl :: core :: convert :: TryFrom < ProbePatch > for Probe",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn own_toml_leaves_the_readers_of_the_whole_block_to_the_hand() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block, own_toml)]
+            pub struct Probe {
+                pub width: Value<Px>,
+            }
+        });
+        assert!(
+            out.contains("impl crate :: next :: toml :: read :: Fields for ProbePatch"),
+            "{out}"
+        );
+        assert!(
+            out.contains("impl crate :: next :: toml :: read :: Build for Probe"),
+            "{out}"
+        );
+        assert!(!out.contains("FromToml for ProbePatch"), "{out}");
+        assert!(!out.contains("FromToml for Probe "), "{out}");
+    }
+
+    #[test]
+    fn an_enum_reads_its_variants() {
+        let out = expand(syn::parse_quote! {
+            #[parts(toml)]
+            pub enum Probe {
+                Ring,
+                FollowPart,
+                Dashed { on: Px, limit: Option<Value<Ms>> },
+                Center(f32, f32),
+                Layers(Vec<Layer>),
+                Keyed(Key),
+            }
+        });
+        for expected in [
+            "impl crate :: next :: toml :: read :: FromToml for Probe",
+            "\"ring\" => :: core :: option :: Option :: Some (Probe :: Ring)",
+            "\"follow_part\" => :: core :: option :: Option :: Some (Probe :: FollowPart)",
+            "if let :: core :: option :: Option :: Some (key) = name . strip_prefix ('@')",
+            "\"dashed\" =>",
+            "crate :: next :: toml :: read :: optional (field_limit , true",
+            "crate :: next :: toml :: read :: members :: < 2usize > (payload , \"an array of 2 values\"",
+            "\"layers\" => < Vec < Layer > as crate :: next :: toml :: read :: FromToml > :: read \
+             (payload , crate :: next :: toml :: read :: Spelling :: Item , & at , cx) . map \
+             (Probe :: Layers)",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+        assert!(!out.contains("Named for Probe"), "{out}");
+        let names = expand(syn::parse_quote! {
+            #[parts(toml)]
+            pub enum Side { Top, BottomEnd }
+        });
+        assert!(
+            names.contains("impl crate :: next :: toml :: read :: Named for Side"),
+            "{names}"
+        );
+        assert!(
+            names.contains("Side :: BottomEnd => \"bottom_end\""),
+            "{names}"
+        );
+    }
+
+    #[test]
     fn refusals_name_the_rule() {
         for (input, message) in [
             (
                 syn::parse_quote! { pub struct ButtonTheme { body: PartStyle } },
-                "ThemeParts expands blocks, marked `#[parts(block)]`, or widgets, marked \
-                 `#[parts(widget)]`",
+                "ThemeParts expands blocks, marked `#[parts(block)]`, widgets, marked \
+                 `#[parts(widget)]`, or enums read from TOML, marked `#[parts(toml)]`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(toml)]
+                    pub struct Probe { pub x: bool }
+                },
+                "`#[parts(toml)]` marks an enum",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(toml, own_toml)]
+                    pub enum Probe { A }
+                },
+                "append, own_resolved, resolved_patch and own_toml are a block's",
             ),
             (
                 syn::parse_quote! {
@@ -664,8 +796,8 @@ mod tests {
                     #[parts(wide)]
                     pub struct Probe { pub x: Value<Px> }
                 },
-                "unknown parts attribute: expected block, widget, append, own_resolved or \
-                 resolved_patch",
+                "unknown parts attribute: expected block, widget, append, own_resolved, \
+                 resolved_patch, toml or own_toml",
             ),
             (
                 syn::parse_quote! {
