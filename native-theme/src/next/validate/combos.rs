@@ -5,35 +5,39 @@
 //! Each check is decided per combination of rule applicability, never field
 //! by field: for the places a check reads, it gathers the rules reaching
 //! them (the rules stating one of them, and, following each expression's
-//! references, the rules stating what those name), enumerates the
-//! assignments of the atoms those rules' selectors name that honour S12's
-//! exclusions and only those, deduplicates the rules' applicability under
-//! each (the M1a design's decision 5), and evaluates the places under each
-//! distinct applicability as the query evaluates them (S2.2, S8): bases,
+//! references, the rules stating what those name), finds one assignment
+//! of the atoms those rules' selectors name for each distinct vector of the
+//! rules' applicability that S12's exclusions allow (the M1a design's
+//! decision 5, `outcomes`), and evaluates the places under each as the
+//! query evaluates them (S2.2, S8): bases,
 //! then the rules that apply, in the stack's order, a `Fields` patch over a
 //! reference composed lazily, interleaved with the referenced value's own
 //! rules by position.
 
-use std::collections::HashSet;
+#[cfg(test)]
+#[path = "combos_bench.rs"]
+mod bench;
+
 use std::fmt::Write as _;
 use std::rc::Rc;
 
 use super::LayerKind;
+use super::outcomes::{Item, Space, scheme_and_flavors};
 use super::stack::{
     BindingOp, Fact, Op, OpKind, Pos, Source, Stack, Target, Val, below, is_above, part_info, tail,
     widget_of,
 };
 use crate::next::blocks::part_style::RoleRef;
-use crate::next::declare::{Declarations, WidgetDecl};
+use crate::next::declare::Declarations;
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr, Ref};
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
 use crate::next::selector::{
-    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, PositionMatch,
-    Scheme, Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef,
-    WidgetOrPart, WidgetRef,
+    Condition, ContextMatch, ControlSize, Density, Direction, Parity, PositionMatch, Scheme,
+    Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart,
+    WidgetRef,
 };
 use crate::next::widgets::{Shown, TypedPart, WidgetKind};
 
@@ -41,7 +45,7 @@ use crate::next::widgets::{Shown, TypedPart, WidgetKind};
 /// condition, a state flag, a variant, a control size, a density, a
 /// direction, a size class, a place among siblings, a context match.
 #[derive(Clone, Debug, PartialEq)]
-enum Atom {
+pub(super) enum Atom {
     /// A condition.
     Cond(Condition),
     /// One of the element's state flags.
@@ -79,8 +83,6 @@ pub(super) struct World {
     applies: Vec<bool>,
     /// The scheme in force.
     scheme: Scheme,
-    /// The flavour in force; `None` where the preset declares none.
-    flavor: Option<Key>,
     /// The atoms' values, in the order the check gathered them.
     values: Vec<bool>,
 }
@@ -541,6 +543,16 @@ impl<'a> Stack<'a> {
             seen.push(seed.clone());
             match &seed {
                 Seed::Shown(part) => {
+                    // Where every step states the part drawn, it is drawn
+                    // under every world: no rule decides it.
+                    let varies = self.of(Target::Part(*part)).any(|(_, source)| {
+                        source.ops.iter().any(
+                            |op| matches!(&op.kind, OpKind::Shown(shown) if *shown != Shown::Drawn),
+                        )
+                    });
+                    if !varies {
+                        continue;
+                    }
                     for (_, source) in self.of(Target::Part(*part)) {
                         let shows = source
                             .ops
@@ -658,15 +670,14 @@ impl<'a> Stack<'a> {
             .map(|scheme| World {
                 applies: vec![true; self.rules.len()],
                 scheme,
-                flavor: None,
                 values: Vec::new(),
             })
             .collect()
     }
 
-    /// Every distinct world of the rules `seeds` reach (S12): their atoms'
-    /// assignments that honour S12's exclusions, deduplicated by the rules'
-    /// applicability, the scheme and the flavour.
+    /// Every distinct world of the rules `seeds` reach (S12): one for each
+    /// vector of the rules' applicability, the scheme and the flavour that
+    /// an assignment of their atoms honouring S12's exclusions gives.
     fn worlds(&self, seeds: Vec<Seed>) -> Rc<Vec<World>> {
         let mut rules = self.reach(seeds);
         rules.sort_unstable();
@@ -681,7 +692,6 @@ impl<'a> Stack<'a> {
         }
         let decl = self.decl();
         complete(&mut atoms, decl);
-        let groups = groups(&atoms, decl);
         let widgets: Vec<WidgetKind> = rules
             .iter()
             .filter_map(|rule| self.rules.get(*rule).and_then(|info| info.widget))
@@ -692,22 +702,16 @@ impl<'a> Stack<'a> {
                 held
             });
         let compiled = self.compile(&atoms, &rules);
-        let mut worlds: Vec<World> = Vec::new();
-        let mut known: HashSet<(Vec<bool>, Scheme, Option<Key>)> = HashSet::new();
-        let mut choice = vec![0_usize; groups.len()];
-        loop {
-            let values = assignment(&groups, &choice, atoms.len());
-            if admissible(&atoms, &values, decl, &widgets) {
-                let world = self.world(&atoms, &values, &compiled);
-                let key = (world.applies.clone(), world.scheme, world.flavor.clone());
-                if known.insert(key) {
-                    worlds.push(world);
-                }
-            }
-            if !advance(&mut choice, &groups) {
-                break;
-            }
-        }
+        let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
+        items.extend(scheme_and_flavors(&atoms));
+        // Each outcome is a distinct vector of the rules' applicability, the
+        // scheme and the flavour in force (S12): one world each.
+        let space = Space::new(&atoms, decl, &widgets);
+        let worlds: Vec<World> = space
+            .outcomes(&items)
+            .iter()
+            .map(|values| self.world(&atoms, values, &compiled))
+            .collect();
         let worlds = Rc::new(worlds);
         self.cache.borrow_mut().insert(rules, Rc::clone(&worlds));
         worlds
@@ -737,13 +741,6 @@ impl<'a> Stack<'a> {
         } else {
             Scheme::Light
         };
-        let flavor = self
-            .decl()
-            .flavors
-            .iter()
-            .find(|flavor| holds(&Condition::Flavor((*flavor).clone())))
-            .or(self.decl().flavors.first())
-            .cloned();
         let mut applies = vec![false; self.rules.len()];
         for (rule, needs) in compiled {
             let holds = needs.as_ref().is_some_and(|needs| {
@@ -758,23 +755,9 @@ impl<'a> Stack<'a> {
         World {
             applies,
             scheme,
-            flavor,
             values: values.to_vec(),
         }
     }
-}
-
-/// The atoms' values the groups' chosen patterns give.
-fn assignment(groups: &[Group], choice: &[usize], atoms: usize) -> Vec<bool> {
-    let mut values = vec![false; atoms];
-    for (group, chosen) in groups.iter().zip(choice) {
-        for (atom, value) in group.get(*chosen).into_iter().flatten() {
-            if let Some(slot) = values.get_mut(*atom) {
-                *slot = *value;
-            }
-        }
-    }
-    values
 }
 
 impl Bound {
@@ -1002,224 +985,6 @@ fn complete(atoms: &mut Vec<Atom>, decl: &Declarations) {
 /// A rule, and the atoms' values its selector needs (`None`: it never
 /// applies).
 type Compiled = (usize, Option<Vec<(usize, bool)>>);
-
-/// A group's patterns: each the atoms it sets and their values.
-type Group = Vec<Vec<(usize, bool)>>;
-
-/// The one-of groups S12's exclusions give (one value at a time of each
-/// one-of condition, one contrast condition, one control size, density,
-/// direction, size class per axis and parity), each a list of the
-/// patterns it allows; every other atom free.
-fn groups(atoms: &[Atom], decl: &Declarations) -> Vec<Group> {
-    let mut keyed: Vec<(String, bool, Vec<usize>)> = Vec::new();
-    let mut free: Vec<usize> = Vec::new();
-    for (index, atom) in atoms.iter().enumerate() {
-        let key: Option<(String, bool)> = match atom {
-            Atom::Cond(Condition::Scheme(_)) => Some(("scheme".to_owned(), true)),
-            Atom::Cond(Condition::ContrastIncreased | Condition::ContrastHigh) => {
-                Some(("contrast".to_owned(), false))
-            }
-            Atom::Cond(Condition::Idiom(_)) => Some(("idiom".to_owned(), false)),
-            Atom::Cond(Condition::Posture(_)) => Some(("posture".to_owned(), false)),
-            Atom::Cond(Condition::DeviceModel(_)) => Some(("device".to_owned(), false)),
-            Atom::Cond(Condition::Input(_)) => {
-                let all = atoms
-                    .iter()
-                    .filter(|a| matches!(a, Atom::Cond(Condition::Input(_))))
-                    .count()
-                    == 4;
-                Some(("input".to_owned(), all))
-            }
-            Atom::Cond(Condition::Flavor(_)) => {
-                Some(("flavor".to_owned(), !decl.flavors.is_empty()))
-            }
-            Atom::Cond(Condition::ContainerSize { container, .. }) => {
-                Some((format!("container:{container:?}"), true))
-            }
-            Atom::Size(_) => {
-                let all = atoms.iter().filter(|a| matches!(a, Atom::Size(_))).count() == 6;
-                Some(("size".to_owned(), all))
-            }
-            Atom::Density(_) => Some(("density".to_owned(), false)),
-            Atom::Dir(_) => Some(("direction".to_owned(), true)),
-            Atom::Class(vertical, _) => Some((format!("class:{vertical}"), false)),
-            Atom::Parity(among, _) => Some((format!("parity:{among:?}"), true)),
-            _ => None,
-        };
-        match key {
-            Some((key, exactly)) => match keyed.iter_mut().find(|(held, ..)| *held == key) {
-                Some((_, _, members)) => members.push(index),
-                None => keyed.push((key, exactly, vec![index])),
-            },
-            None => free.push(index),
-        }
-    }
-    let mut out: Vec<Group> = keyed
-        .into_iter()
-        .map(|(_, exactly, members)| {
-            let mut patterns: Group = members
-                .iter()
-                .map(|chosen| members.iter().map(|m| (*m, m == chosen)).collect())
-                .collect();
-            if !exactly {
-                patterns.push(members.iter().map(|m| (*m, false)).collect());
-            }
-            patterns
-        })
-        .collect();
-    out.extend(
-        free.into_iter()
-            .map(|atom| vec![vec![(atom, false)], vec![(atom, true)]]),
-    );
-    out
-}
-
-/// The next choice of each group's pattern; `false` past the last.
-fn advance(choice: &mut [usize], groups: &[Group]) -> bool {
-    for (chosen, group) in choice.iter_mut().zip(groups) {
-        let next = chosen.saturating_add(1);
-        if next < group.len() {
-            *chosen = next;
-            return true;
-        }
-        *chosen = 0;
-    }
-    false
-}
-
-/// Whether an assignment honours the exclusions no group expresses (S12):
-/// each declared exclusive flag group and exclusive variant group of the
-/// element's widget holding at most one, under the flavour in force; among
-/// one `among` set, `only` exactly when `first` and `last`, and `first`
-/// odd; `Tiled(e)` implying `Tiled(e')` for every `e'` within `e`, and
-/// `Maximized` every `Tiled`; one ancestor having one control size.
-fn admissible(
-    atoms: &[Atom],
-    values: &[bool],
-    decl: &Declarations,
-    widgets: &[WidgetKind],
-) -> bool {
-    let holds = |atom: &Atom| {
-        atoms
-            .iter()
-            .zip(values)
-            .find(|(held, _)| *held == atom)
-            .map(|(_, value)| *value)
-    };
-    let flavor = decl
-        .flavors
-        .iter()
-        .find(|flavor| holds(&Atom::Cond(Condition::Flavor((*flavor).clone()))) == Some(true))
-        .or(decl.flavors.first());
-    for widget in widgets {
-        let decls: WidgetDecl = match flavor {
-            Some(flavor) => decl.in_flavor(*widget, flavor),
-            None => decl.in_default_flavor(*widget),
-        };
-        for group in decls.exclusive.iter().flatten() {
-            let held = group
-                .iter()
-                .filter(|flag| holds(&Atom::State((*flag).clone())) == Some(true))
-                .count();
-            if held > 1 {
-                return false;
-            }
-        }
-        for group in decls.exclusive_variants.iter().flatten() {
-            let held = group
-                .iter()
-                .filter(|variant| holds(&Atom::Variant((*variant).clone())) == Some(true))
-                .count();
-            if held > 1 {
-                return false;
-            }
-        }
-    }
-    for atom in atoms {
-        match atom {
-            Atom::Only(among) => {
-                let first = holds(&Atom::First(among.clone())).unwrap_or(false);
-                let last = holds(&Atom::Last(among.clone())).unwrap_or(false);
-                if holds(atom) != Some(first && last) {
-                    return false;
-                }
-            }
-            Atom::First(among) => {
-                if holds(atom) == Some(true)
-                    && holds(&Atom::Parity(among.clone(), Parity::Even)) == Some(true)
-                {
-                    return false;
-                }
-            }
-            Atom::Cond(Condition::Tiled(edges)) => {
-                let maximized = holds(&Atom::Cond(Condition::Maximized)) == Some(true);
-                if maximized && holds(atom) == Some(false) {
-                    return false;
-                }
-                for other in atoms {
-                    if let Atom::Cond(Condition::Tiled(inner)) = other
-                        && within(inner, edges)
-                        && holds(atom) == Some(true)
-                        && holds(other) == Some(false)
-                    {
-                        return false;
-                    }
-                }
-            }
-            Atom::Context(context) => {
-                if holds(atom) == Some(true) && !one_size(context) {
-                    return false;
-                }
-                if let ContextScope::NearestAmong(_) = context.scope {
-                    for other in atoms {
-                        if let Atom::Context(second) = other
-                            && second.scope == context.scope
-                            && holds(atom) == Some(true)
-                            && holds(other) == Some(true)
-                            && sizes_conflict(context, second)
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    true
-}
-
-/// Whether every edge `inner` names `outer` names too.
-fn within(
-    inner: &crate::next::selector::TiledEdges,
-    outer: &crate::next::selector::TiledEdges,
-) -> bool {
-    (!inner.top || outer.top)
-        && (!inner.right || outer.right)
-        && (!inner.bottom || outer.bottom)
-        && (!inner.left || outer.left)
-}
-
-/// Whether one ancestor can match `context`'s sizes: it has one control
-/// size, so at most one size is required, and that one is not excluded.
-fn one_size(context: &ContextMatch) -> bool {
-    let all = &context.sizes.all_of;
-    let first = all.first();
-    all.iter().all(|size| Some(size) == first)
-        && first.is_none_or(|size| !context.sizes.none_of.contains(size))
-}
-
-/// Whether two matches of one nearest ancestor require sizes it cannot have
-/// together.
-fn sizes_conflict(a: &ContextMatch, b: &ContextMatch) -> bool {
-    let required = |c: &ContextMatch| c.sizes.all_of.first().copied();
-    match (required(a), required(b)) {
-        (Some(x), Some(y)) => x != y,
-        (Some(x), None) => b.sizes.none_of.contains(&x),
-        (None, Some(y)) => a.sizes.none_of.contains(&y),
-        (None, None) => false,
-    }
-}
 
 /// The atoms' values `selector` needs to match (S7): each part of a
 /// selector is a conjunction of atoms holding or not; `None` where its
@@ -1967,27 +1732,26 @@ impl Checks<'_, '_> {
         }
         let decl = stack.decl();
         complete(&mut atoms, decl);
-        let groups = groups(&atoms, decl);
         let widgets: Vec<WidgetKind> = registry::widgets().iter().map(|info| info.kind).collect();
         let compiled = stack.compile(&atoms, &rules);
-        let mut all: Vec<World> = Vec::new();
-        let mut choice = vec![0_usize; groups.len()];
-        loop {
-            let mut values = vec![false; atoms.len()];
-            for (group, chosen) in groups.iter().zip(&choice) {
-                for (atom, value) in group.get(*chosen).into_iter().flatten() {
-                    if let Some(slot) = values.get_mut(*atom) {
-                        *slot = *value;
-                    }
-                }
-            }
-            if admissible(&atoms, &values, decl, &widgets) {
-                all.push(stack.world(&atoms, &values, &compiled));
-            }
-            if !advance(&mut choice, &groups) {
-                break;
-            }
-        }
+        // The conditions, states and variants are outcomes of their own:
+        // a `DrawnAs` reads them (`reaches_again`).
+        let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
+        items.extend(
+            atoms
+                .iter()
+                .enumerate()
+                .filter(|(_, atom)| {
+                    matches!(atom, Atom::Cond(_) | Atom::State(_) | Atom::Variant(_))
+                })
+                .map(|(index, _)| Some(vec![(index, true)])),
+        );
+        let space = Space::new(&atoms, decl, &widgets);
+        let all: Vec<World> = space
+            .outcomes(&items)
+            .iter()
+            .map(|values| stack.world(&atoms, values, &compiled))
+            .collect();
         for first in &parts {
             for world in &all {
                 let (Shown::DrawnAs { .. }, Some(at)) = stack.shown(world, *first) else {

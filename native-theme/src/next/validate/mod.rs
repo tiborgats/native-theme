@@ -9,6 +9,9 @@ mod checks;
 mod combos;
 #[cfg(test)]
 mod combos_tests;
+mod outcomes;
+#[cfg(test)]
+mod outcomes_tests;
 mod stack;
 #[cfg(test)]
 mod tests;
