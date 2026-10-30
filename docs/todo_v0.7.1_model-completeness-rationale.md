@@ -470,15 +470,24 @@ code drives follow a set (Compose's state layer and elevation); its other state-
 precedences of their own (the list item's shape, `ListItemDefaults.kt:1144-1152`), so they stay rules on plain
 flags, in that order.
 
-**State layers** (Material's hover, focus, pressed and dragged overlays, C08; libadwaita's `currentColor`
-shares) are a paint layer a rule appends over the fill beneath (R6), with a colour derivation (R5.4).
-Material's ripple is the pressed layer's transition (R9). Where a platform times a state layer or the press ripple
-apart from the part's own paint (Compose fades its state layer by specs of its own, grows and fades the press ripple by
-its own, and snaps a toggle's, a chip's or an icon button's container colour), the layer states its role, and each
-transition times only the layers of the role it names (R9). A part holds at most one layer of each role, a later
-rule's layer of a role replacing the earlier, as Compose draws one state layer and one ripple; a role layer's colour
-follows the current style at once and only its alpha is timed, as Compose redraws them in the current colour; and the
-rest style states them at zero alpha, so they never appear or disappear.
+**State layers.** libadwaita's `currentColor` shares are CSS background layers, so paint layers a rule appends over
+the fill beneath (R6), with a colour derivation (R5.4), animated as CSS animates them. Material's hover, focus and
+dragged overlays and its press ripple (C08) are Compose's ripple node, which draws them apart from the container and
+over the content, times their alpha by specs of its own while drawing them in the current colour every frame, and
+grows and fades the ripple by its own lifecycle, while the container's colour may snap (a toggle's, a chip's, an icon
+button's).
+
+- *Paint layers with roles:* each layer names its role, transitions time a role's layers, a part holds one layer of a
+  role, role layers are timed by their alpha alone and stated at rest so they never appear. Against: each rule
+  compensates for the one before, and a rule that sets the fill still drops them.
+- *The state layer as a part of its own.* Against: a part more on every widget that draws one, the ripple still
+  sharing its fill.
+- *A block of the part, `interaction`, holding a state layer (colour, alpha) and a ripple (colour, alpha, its
+  geometry), drawn over the part's fill and content, set by field patches, with property groups of its own; its
+  colours change at once by the block's definition and transitions time its alphas.*
+
+**Decision:** the block. It holds one state layer and one ripple by its type, a rule setting the fill cannot touch it,
+and its alpha-only timing follows from its fields; Material's ripple is the `Ripple` group's transition (R9).
 
 ### R4 — The facts gate
 
@@ -718,8 +727,9 @@ MAT-X13–MAT-X15, X-MO-1).
   Breeze runs neither fade on a disabled button. Rejected: a transition per (from, to) pair of states, XAML's form (the style
   entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
   transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
-  that appears interpolates from its colour at zero alpha, and one that disappears to it; layers are matched by
-  their role and then their position in the stack (R3); colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
+  that appears interpolates from its colour at zero alpha, and one that disappears to it, a stroke that becomes
+  absent likewise, to zero width; layers are matched by their position in the stack; the `interaction` block's
+  colours change at once and its alphas move (R3); colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
@@ -727,19 +737,15 @@ MAT-X13–MAT-X15, X-MO-1).
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
   edge, scale, shape morph, clip reveal (WinUI's combo box opens by revealing from the selected item, W1-136),
   and the rest. `dialog.entrance` becomes one of them.
-- **Ripple:** a property transition of the pressed state layer whose origin is the point pressed, which the
-  toolkit has from the press itself: the layer grows from it, with the radius, durations and opacities Material
-  states (MAT-X9) as the transition's kind-specific values; its fade on release is the transition of the
+- **Ripple:** the `Ripple` group's transition of the part's `interaction` ripple into `{pressed}`, whose origin is
+  the point pressed, which the toolkit has from the press itself: the ripple grows from it, by the block's geometry
+  and the transition's fade-in, grow and centre's travel (MAT-X9), its alpha the block's; its fade on release is the transition of the
   style entered, {hover} if the pointer is still on the control, as the style entered governs: that style's
   transition `from {pressed}`, an interpolation of the ripple's alpha that starts no sooner than the ripple's
   minimum press (Compose's: when its grow ends) while the circle grows on, a release during the fade-in setting the
-  alpha to full; the ripple's own transition states its fade-in, grow and the centre's travel. One transition governs a property group per change, as in CSS,
-  except that a fill's layers are timed per role (R3): the part's own layers, the state layers and the press ripple
-  each by the last applicable transition naming their role, so a ripple never times the container. Weighed: the state
-  layer as a part of its own (a part more on every widget that draws one, and the ripple still sharing its fill);
-  transitions per layer position (positions shift as rules append layers); a ripple alone timing only its layer
-  (the container would still take the state layer's fade where Compose snaps it). A stroke's widths are a group of their own,
-  apart from its paint, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
+  alpha to full. One transition governs a property group per change, as in CSS; the state layer and the ripple have
+  groups of their own, so neither times the container (R3). A stroke's widths may be timed by a group of their own,
+  `StrokeWidth`, which overrides `Stroke` for them where stated, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
   different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
   group was weighed and rejected, a field-path list on every transition for one pair.
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
@@ -1299,14 +1305,13 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
 - R7: the elliptical corner, Breeze's round button on a box that is not square.
 - R9: a transition's `from` states; the platform curves widened to the curves a toolkit computes by a function of its
   own (CONTRA-7, settled; CONTRA-2's velocity curves stay members), R25.6 following.
-- R3, R9 (the independent checks' fixes): a fill layer's role and transitions timing per role, the press ripple's
-  release fade `from {pressed}`; Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
-  none under Kirigami (qqc2-desktop-style's style item paints with no widget); one layer per role, a later rule's
-  replacing the earlier, the role layers' alpha alone timed and stated at zero alpha at rest; the press ripple's
+- R3, R9 (the independent checks' fixes): Material's state layer and press ripple a block of the part,
+  `interaction`, with groups of its own (replacing paint layers with roles, which needed a compensating rule each
+  round); the press ripple's release fade `from {pressed}`; Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
+  none under Kirigami (qqc2-desktop-style's style item paints with no widget); the press ripple's
   lifecycle (its fade-in, grow and minimum press before the release fade); the checkbox's, radio's and switch's
-  `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state opacity
-  dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
-  property group of their own.
+  `state_layer` parts holding the block, their per-state opacity dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
+  property group that overrides `Stroke` where stated; a stroke becoming absent interpolating to zero width.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
