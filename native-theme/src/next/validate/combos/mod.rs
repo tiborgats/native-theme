@@ -15,7 +15,6 @@
 //! rules by position.
 
 #[cfg(test)]
-#[path = "combos_bench.rs"]
 mod bench;
 
 use std::fmt::Write as _;

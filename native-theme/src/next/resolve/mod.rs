@@ -1104,5 +1104,4 @@ pub(crate) fn refusals() -> Vec<LayerError> {
 }
 
 #[cfg(test)]
-#[path = "resolve_tests.rs"]
 mod tests;
