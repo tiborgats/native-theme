@@ -729,6 +729,78 @@ mod tests {
                 },
                 "a widget's input is named `<Widget>Theme`",
             ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill, stroke, fill))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "a field named twice",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill, stroke), absent(stroke, stroke))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "a field named twice",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill))]
+                        body: PartStyle,
+                        #[part(parent = "mark", fields(text))]
+                        label: PartStyle,
+                        #[part(parent = "label", fields(glyph))]
+                        mark: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "parents form a cycle: a part nests in itself",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill))]
+                        body: TextStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "a part is styled by a part style, `PartStyle`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill))]
+                        body: PartStyle,
+                        #[parts(may_be_absent)]
+                        values: ProbeValues,
+                    }
+                },
+                "a widget's field takes `#[part(...)]`, not `#[parts(...)]`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(widget)]
+                    #[part(root)]
+                    pub struct ProbeTheme {
+                        #[part(root, fields(fill))]
+                        body: PartStyle,
+                        values: ProbeValues,
+                    }
+                },
+                "`#[part(...)]` marks a widget's field, not the widget",
+            ),
         ] {
             assert_eq!(refused(input), message);
         }

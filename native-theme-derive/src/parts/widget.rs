@@ -48,6 +48,9 @@ fn idents(meta: &syn::meta::ParseNestedMeta<'_>, into: &mut Vec<Ident>) -> Resul
             .get_ident()
             .cloned()
             .ok_or_else(|| inner.error("a field's name"))?;
+        if into.contains(&ident) {
+            return Err(inner.error("a field named twice"));
+        }
         into.push(ident);
         Ok(())
     })
@@ -61,15 +64,36 @@ fn flag(slot: &mut bool, meta: &syn::meta::ParseNestedMeta<'_>) -> Result<()> {
     Ok(())
 }
 
+/// Whether `ty` names `PartStyle`, a part's one style type.
+fn is_part_style(ty: &Type) -> bool {
+    matches!(ty, Type::Path(path)
+    if path.qself.is_none()
+        && path.path.segments.last().is_some_and(|seg| {
+            seg.ident == "PartStyle" && seg.arguments.is_empty()
+        }))
+}
+
 /// The field's `#[part(...)]`, if it has one.
 fn parse_part(field: &syn::Field) -> Result<Option<Part>> {
     let Some(ident) = field.ident.clone() else {
         return Err(Error::new_spanned(field, "a widget has named fields"));
     };
+    if let Some(stray) = field.attrs.iter().find(|a| a.path().is_ident("parts")) {
+        return Err(Error::new_spanned(
+            stray,
+            "a widget's field takes `#[part(...)]`, not `#[parts(...)]`",
+        ));
+    }
     let mut attrs = field.attrs.iter().filter(|a| a.path().is_ident("part"));
     let Some(attr) = attrs.next() else {
         return Ok(None);
     };
+    if !is_part_style(&field.ty) {
+        return Err(Error::new_spanned(
+            &field.ty,
+            "a part is styled by a part style, `PartStyle`",
+        ));
+    }
     if let Some(again) = attrs.next() {
         return Err(Error::new_spanned(again, "one `#[part(...)]` per part"));
     }
@@ -145,6 +169,12 @@ pub(crate) fn expand(input: &DeriveInput) -> Result<TokenStream> {
             "a widget has no generic parameters",
         ));
     }
+    if let Some(stray) = input.attrs.iter().find(|a| a.path().is_ident("part")) {
+        return Err(Error::new_spanned(
+            stray,
+            "`#[part(...)]` marks a widget's field, not the widget",
+        ));
+    }
     let name = &input.ident;
     let widget = name
         .to_string()
@@ -186,6 +216,23 @@ pub(crate) fn expand(input: &DeriveInput) -> Result<TokenStream> {
                 .any(|p| p.ident == parent.value() && p.ident != part.ident)
         {
             return Err(Error::new_spanned(parent, "parent names another part"));
+        }
+    }
+    for part in &parts {
+        let mut seen = vec![&part.ident];
+        let mut next = part.parent.as_ref();
+        while let Some(parent) = next {
+            let Some(held) = parts.iter().find(|p| p.ident == parent.value()) else {
+                break;
+            };
+            if seen.contains(&&held.ident) {
+                return Err(Error::new_spanned(
+                    parent,
+                    "parents form a cycle: a part nests in itself",
+                ));
+            }
+            seen.push(&held.ident);
+            next = held.parent.as_ref();
         }
     }
 
