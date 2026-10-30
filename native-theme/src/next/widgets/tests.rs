@@ -361,13 +361,32 @@ fn button_values_resolve_by_type() {
     let _: Option<ButtonLabelPosition> = resolved.label_position;
     assert_eq!(resolved.icon_text_gap, Some(Px(4.0)));
 
-    let created = <ButtonValues as crate::next::blocks::Create>::create(ButtonValuesPatch {
+    // Created where every value left unset may be `Absent` (S6.1), those
+    // values then `Absent`; a value left unset that may not be is the merge
+    // conflict.
+    let stated = ButtonValuesPatch {
+        icon_placement: Some(Value::Stated(IconPlacement::Leading)),
+        menu_indicator_gap: Some(Value::Stated(Px(2.0))),
         focus_visible_when: Some(Value::Stated(FocusVisibleWhen::Never)),
+        back_title_fallback: Some(Value::Stated(false)),
+        help_tooltip_on_click: Some(Value::Stated(false)),
         presentations: Some(Vec::new()),
         ..values(4.0)
-    });
+    };
+    let created = <ButtonValues as crate::next::blocks::Create>::create(stated.clone());
     assert_eq!(
         created.map(|v| (v.icon_text_gap, v.label_position, v.hit_extension.top)),
         Ok((Value::Stated(Px(4.0)), Value::Absent, Value::Absent))
+    );
+    let created = <ButtonValues as crate::next::blocks::Create>::create(ButtonValuesPatch {
+        back_title_fallback: None,
+        ..stated
+    });
+    assert_eq!(
+        created.map(|_| ()),
+        Err(crate::next::blocks::MergeConflict {
+            path: "back_title_fallback".to_owned(),
+            below: crate::next::blocks::Below::Missing,
+        })
     );
 }

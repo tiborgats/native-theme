@@ -33,7 +33,7 @@ pub mod transform;
 
 pub(crate) use merge::{
     Apply, Below, Create, Entry, KeyedItem, Merge, MergeConflict, apply_entries, apply_surfaces,
-    merge_by, merge_by_key, merge_by_key_nested, merge_slot, merge_slot_by_key,
+    created_value, merge_by, merge_by_key, merge_by_key_nested, merge_slot, merge_slot_by_key,
     merge_slot_by_key_nested, merge_slot_entries, merge_slot_keyed, merge_slot_surfaces,
     replace_slot,
 };

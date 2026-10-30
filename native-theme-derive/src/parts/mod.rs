@@ -375,31 +375,43 @@ mod tests {
     }
 
     #[test]
-    fn create_leaves_values_absent_and_requires_the_rest() {
+    fn create_leaves_absent_only_what_may_be_and_requires_the_rest() {
         let out = expand(syn::parse_quote! {
             #[parts(block)]
             pub struct Probe {
                 pub width: Value<Px>,
+                #[parts(may_be_absent)]
+                pub inset: Value<Px>,
+                #[parts(may_be_absent)]
                 pub margin: Sides<Value<Px>>,
                 pub flip: Axes<bool>,
                 pub case: TextCase,
                 #[parts(block = "fields")]
                 pub edge: Edge,
+                #[parts(block = "fields", inner_may_be_absent, required = "fill")]
+                pub status: StatusColors,
                 #[parts(block = "fields")]
                 pub stroke: Value<Stroke>,
             }
         });
         for expected in [
             "impl crate :: next :: blocks :: Create for Probe",
-            "width : width . unwrap_or (crate :: next :: Value :: Absent)",
-            "top : held . top . unwrap_or (crate :: next :: Value :: Absent)",
+            "fn create_in (patch : ProbePatch , inner : :: core :: option :: Option < & [& str] > ,)",
+            "width : crate :: next :: blocks :: created_value (width , false , inner , \"width\") ?",
+            "inset : crate :: next :: blocks :: created_value (inset , true , inner , \"inset\") ?",
+            "top : crate :: next :: blocks :: created_value (held . top , true , :: core :: option :: Option :: None , \"margin.top\") ?",
             "vertical : held . vertical . ok_or_else (|| { crate :: next :: blocks :: MergeConflict :: new \
              (crate :: next :: blocks :: Below :: Missing) . under (\"flip.vertical\") }) ?",
             "case : case . ok_or_else (|| crate :: next :: blocks :: MergeConflict :: new \
              (crate :: next :: blocks :: Below :: Missing) . under (\"case\")) ?",
-            "edge : < Edge as crate :: next :: blocks :: Create > :: create (edge . unwrap_or_default ())",
+            "edge : < Edge as crate :: next :: blocks :: Create > :: create_in (edge . unwrap_or_default () , \
+             :: core :: option :: Option :: None)",
+            "status : < StatusColors as crate :: next :: blocks :: Create > :: create_in (status . unwrap_or_default () , \
+             :: core :: option :: Option :: Some (& [\"fill\"]))",
             "< crate :: next :: Value < Stroke > as crate :: next :: blocks :: Entry < crate :: next :: blocks :: \
              BlockPatch < Stroke > >> :: create (patch)",
+            ":: core :: option :: Option :: None => crate :: next :: blocks :: created_value (:: core :: option :: \
+             Option :: None , false , inner , \"stroke\") ?",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }

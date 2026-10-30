@@ -26,7 +26,7 @@ pub(crate) enum Below {
     Auto,
     /// Nothing: a map entry's fields patched over a map lacking the entry,
     /// which no block can be built for from the patch alone, as a field the
-    /// patch leaves unset has no `Absent` (S12 refuses it; no value is
+    /// patch leaves unset may not be `Absent` (S12 refuses it; no value is
     /// invented for the field).
     Missing,
     /// A bare block: a map of bare blocks' entry set to a reference,
@@ -129,14 +129,41 @@ pub(crate) trait Entry<P>: Sized {
 }
 
 /// A struct block built from its patch alone, for a map entry the value
-/// lacks: each `Value` field the patch leaves unset is `Absent`, left for
-/// S12's absent checks; a field with no `Absent` (a plain value, an
-/// `Option`, a list) left unset is a [`Below::Missing`] conflict, as no value
-/// is invented for it.
+/// lacks (S6.1): only where every field the patch leaves unset may be
+/// `Absent` (S6.3's marks, their conditions S12's), those fields then
+/// `Absent`; a field left unset that may not be (a `Value` without the mark,
+/// a plain value, an `Option`, a list) is a [`Below::Missing`] conflict, the
+/// merge conflict S12 refuses, as no value is invented for it.
 pub(crate) trait Create: FieldsBlock {
-    /// The block `patch` states, or the first field it leaves unset that
-    /// cannot be `Absent`.
-    fn create(patch: Self::Patch) -> Result<Self, MergeConflict>;
+    /// The block `patch` states in a place whose marks `inner` gives: `None`,
+    /// the block's own; `Some(required)`, every `Value` field but those
+    /// named may also be `Absent` there (an `inner_may_be_absent` place).
+    /// The first field it leaves unset that may not be `Absent` is the
+    /// error.
+    fn create_in(patch: Self::Patch, inner: Option<&[&str]>) -> Result<Self, MergeConflict>;
+
+    /// The block `patch` states, under the block's own marks.
+    fn create(patch: Self::Patch) -> Result<Self, MergeConflict> {
+        Self::create_in(patch, None)
+    }
+}
+
+/// A created block's `Value` field: as the patch states it, else `Absent`
+/// where the field may be (`marked`, or the place's `inner` marks not
+/// requiring it), else a [`Below::Missing`] conflict at `field`.
+pub(crate) fn created_value<T>(
+    value: Option<Value<T>>,
+    marked: bool,
+    inner: Option<&[&str]>,
+    field: &str,
+) -> Result<Value<T>, MergeConflict> {
+    match value {
+        Some(value) => Ok(value),
+        None if marked || inner.is_some_and(|required| !required.contains(&field)) => {
+            Ok(Value::Absent)
+        }
+        None => Err(MergeConflict::new(Below::Missing).under(field)),
+    }
 }
 
 /// An entry of a map of bare struct blocks: `Set` replaces it with a stated

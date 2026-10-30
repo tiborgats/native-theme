@@ -274,32 +274,42 @@ impl BlockField {
     }
 
     /// The field's value in a block built from its patch alone (`Create`),
-    /// the patch's field bound to the field's name: a `Value` left unset is
-    /// `Absent`, left for S12's absent checks; any other field left unset is
-    /// a `Missing` conflict, as nothing else stands for "not stated".
+    /// the patch's field bound to the field's name and the place's marks to
+    /// `inner`: a `Value` left unset is `Absent` where it may be (its own
+    /// mark, or the place's, S6.3), left for S12's conditional checks; any
+    /// other field left unset is a `Missing` conflict, as no value is
+    /// invented for it (S6.1).
     fn created(&self) -> TokenStream {
         let b = blocks();
         let m = model();
         let o = option();
         let ident = &self.ident;
         let path = ident.as_ref().map(Ident::to_string).unwrap_or_default();
+        let marked = self.attrs.may_be_absent;
         let missing = quote! {
             #b::MergeConflict::new(#b::Below::Missing).under(#path)
         };
         let required = quote!(#ident.ok_or_else(|| #missing)?);
+        let unset_value = quote!(#b::created_value(#o::None, #marked, inner, #path)?);
         match &self.shape {
             Shape::Leaf if generic_arg(&self.ty, "Value").is_some() && !self.attrs.keyed => {
-                quote!(#ident.unwrap_or(#m::Value::Absent))
+                quote!(#b::created_value(#ident, #marked, inner, #path)?)
             }
             Shape::Compound(compound) => {
                 let (name, members) = self.members();
                 if generic_arg(&compound.inner, "Value").is_some() {
-                    quote! {
-                        match #ident {
-                            #o::Some(held) => #name { #(#members: held.#members.unwrap_or(#m::Value::Absent)),* },
-                            #o::None => #name { #(#members: #m::Value::Absent),* },
+                    let paths: Vec<String> = members
+                        .iter()
+                        .map(|member| format!("{path}.{member}"))
+                        .collect();
+                    quote! {{
+                        let held = #ident.unwrap_or(#name {
+                            #(#members: #o::None),*
+                        });
+                        #name {
+                            #(#members: #b::created_value(held.#members, #marked, #o::None, #paths)?),*
                         }
-                    }
+                    }}
                 } else {
                     let paths = members.iter().map(|member| format!("{path}.{member}"));
                     quote! {{
@@ -318,8 +328,14 @@ impl BlockField {
                 block,
             } => {
                 let ty = &block.ty;
+                let place = if self.attrs.inner_may_be_absent {
+                    let required = &self.attrs.required;
+                    quote!(#o::Some(&[#(#required),*]))
+                } else {
+                    quote!(#o::None)
+                };
                 quote! {
-                    <#ty as #b::Create>::create(#ident.unwrap_or_default())
+                    <#ty as #b::Create>::create_in(#ident.unwrap_or_default(), #place)
                         .map_err(|c| c.under(#path))?
                 }
             }
@@ -339,7 +355,7 @@ impl BlockField {
                     match #ident {
                         #o::Some(patch) => <#m::Value<#ty> as #b::Entry<#patch>>::create(patch)
                             .map_err(|c| c.under(#path))?,
-                        #o::None => #m::Value::Absent,
+                        #o::None => #unset_value,
                     }
                 }
             }
@@ -347,7 +363,7 @@ impl BlockField {
                 kind: BlockKind::Set,
                 wrap: Wrap::Value,
                 ..
-            } => quote!(#ident.unwrap_or(#m::Value::Absent)),
+            } => quote!(#b::created_value(#ident, #marked, inner, #path)?),
             Shape::Surfaces(_) => quote! {{
                 let mut held = #m::SurfaceMap::default();
                 #b::apply_surfaces(&mut held, #required).map_err(|c| c.under(#path))?;
@@ -999,7 +1015,11 @@ fn expand_fields(
         }
 
         impl #b::Create for #name {
-            fn create(patch: #patch) -> ::core::result::Result<Self, #b::MergeConflict> {
+            fn create_in(
+                patch: #patch,
+                inner: ::core::option::Option<&[&str]>,
+            ) -> ::core::result::Result<Self, #b::MergeConflict> {
+                let _ = inner;
                 let #patch { #(#idents),* } = patch;
                 ::core::result::Result::Ok(Self { #(#idents: #created),* })
             }

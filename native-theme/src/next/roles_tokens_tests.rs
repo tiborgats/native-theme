@@ -740,24 +740,6 @@ fn roles_patch(patch: SurfaceRolesPatch) -> BlockPatch<SurfaceRoles> {
     BlockPatch::Fields(patch)
 }
 
-/// The roles of a surface set no layer states, each `Absent`.
-fn absent_surface_roles() -> SurfaceRoles {
-    let mut roles = surface_roles(0.0);
-    for slot in [
-        &mut roles.background,
-        &mut roles.foreground,
-        &mut roles.foreground_inactive,
-        &mut roles.link,
-        &mut roles.negative,
-        &mut roles.border,
-        &mut roles.disabled.background,
-        &mut roles.disabled.foreground,
-    ] {
-        *slot = Value::Absent;
-    }
-    roles
-}
-
 #[test]
 fn surface_sets_patch_set_by_set_and_field_by_field() {
     let mut earlier = ColorRolesPatch {
@@ -846,7 +828,12 @@ fn surface_sets_patch_set_by_set_and_field_by_field() {
         (
             SurfaceSet::Card,
             roles_patch(SurfaceRolesPatch {
+                background: Some(color(0.2)),
+                foreground: Some(color(0.2)),
+                foreground_inactive: Some(color(0.2)),
                 link: Some(color(0.2)),
+                negative: Some(color(0.2)),
+                border: Some(color(0.2)),
                 ..SurfaceRolesPatch::default()
             }),
         ),
@@ -868,13 +855,31 @@ fn surface_sets_patch_set_by_set_and_field_by_field() {
         colors.surfaces.get(SurfaceSet::View),
         Some(&surface_roles(0.9))
     );
-    // A set the value lacks is built from its patch, each role it leaves
-    // unset `Absent`, left for S12's absent checks.
-    let card = SurfaceRoles {
-        link: color(0.2),
-        ..absent_surface_roles()
-    };
+    // A set the value lacks is built from its patch where every role it
+    // leaves unset may be `Absent`, those roles then `Absent` (S6.1).
+    let mut card = surface_roles(0.2);
+    card.disabled.background = Value::Absent;
+    card.disabled.foreground = Value::Absent;
     assert_eq!(colors.surfaces.get(SurfaceSet::Card), Some(&card));
+    // A role left unset that may not be `Absent` is the merge conflict S12
+    // refuses: no value is invented for it.
+    let link_only = ColorRolesPatch {
+        surfaces: surfaces(vec![(
+            SurfaceSet::Selection,
+            roles_patch(SurfaceRolesPatch {
+                link: Some(color(0.3)),
+                ..SurfaceRolesPatch::default()
+            }),
+        )]),
+        ..ColorRolesPatch::default()
+    };
+    assert_eq!(
+        colors.clone().apply(link_only),
+        Err(MergeConflict {
+            path: "surfaces.selection.background".to_owned(),
+            below: super::blocks::Below::Missing,
+        })
+    );
 
     let refused = colors.apply(ColorRolesPatch {
         surfaces: surfaces(vec![(SurfaceSet::Window, BlockPatch::Set(Value::Absent))]),
@@ -1193,3 +1198,31 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "kde",
     "material",
 ];
+
+#[test]
+fn status_roles_created_by_their_place_marks() {
+    use super::blocks::{Below, Create};
+    use super::roles::{StatusColorsPatch, StatusRoles, StatusRolesPatch};
+
+    // In `StatusRoles` every status colour may be `Absent` but `error.fill`
+    // (S6.3's place marks), so a block created from a patch leaving it unset
+    // is the merge conflict, and one stating it holds the rest `Absent`.
+    assert_eq!(
+        StatusRoles::create(StatusRolesPatch::default()),
+        Err(MergeConflict {
+            path: "error.fill".to_owned(),
+            below: Below::Missing,
+        })
+    );
+    let created = StatusRoles::create(StatusRolesPatch {
+        error: Some(StatusColorsPatch {
+            fill: Some(color(0.4)),
+            ..StatusColorsPatch::default()
+        }),
+        ..StatusRolesPatch::default()
+    });
+    assert_eq!(
+        created.map(|roles| (roles.error.fill, roles.error.foreground, roles.success.fill)),
+        Ok((color(0.4), Value::Absent, Value::Absent))
+    );
+}
