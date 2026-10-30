@@ -8,6 +8,8 @@
 # `token.text.scaling` Dynamic Type (UIFont.h); the motion durations the run reads, named by S4.1's rule;
 # `UILongPressGestureRecognizer`'s default minimum duration; the caret's width (`caretRect(for:)` of a UITextView and a
 # UITextField in every font the host tried). Each fact holds for both presets: the two runtimes read the same.
+# Sizes and line heights are logical px (S1's `Px`): UIFont's metrics are in UIKit points, UIKit's logical unit (see
+# button.toml's header).
 
 [[fact]]
 key = "token.text.keyed.large_title.font.family"
@@ -36,7 +38,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title.font.size"
-value = "34pt"
+value = "34px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -86,7 +88,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1.font.size"
-value = "28pt"
+value = "28px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -136,7 +138,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2.font.size"
-value = "22pt"
+value = "22px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -186,7 +188,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3.font.size"
-value = "20pt"
+value = "20px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -236,7 +238,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline.font.size"
-value = "17pt"
+value = "17px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -286,7 +288,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline.font.size"
-value = "15pt"
+value = "15px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -336,7 +338,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body.font.size"
-value = "17pt"
+value = "17px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -386,7 +388,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout.font.size"
-value = "16pt"
+value = "16px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -436,7 +438,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote.font.size"
-value = "13pt"
+value = "13px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -486,7 +488,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1.font.size"
-value = "12pt"
+value = "12px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -536,7 +538,7 @@ tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2.font.size"
-value = "11pt"
+value = "11px"
 rows = ["TS-1", "TS-3"]
 
 [[fact.cite]]
@@ -579,7 +581,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.large_title.line_height"
-value = "41pt"
+value = "41px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -628,7 +630,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.title_1.line_height"
-value = "34pt"
+value = "34px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -677,7 +679,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.title_2.line_height"
-value = "28pt"
+value = "28px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -726,7 +728,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.title_3.line_height"
-value = "25pt"
+value = "25px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -775,7 +777,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.headline.line_height"
-value = "22pt"
+value = "22px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -824,7 +826,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.subheadline.line_height"
-value = "20pt"
+value = "20px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -873,7 +875,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.body.line_height"
-value = "22pt"
+value = "22px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -922,7 +924,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.callout.line_height"
-value = "21pt"
+value = "21px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -971,7 +973,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.footnote.line_height"
-value = "18pt"
+value = "18px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -1020,7 +1022,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.caption_1.line_height"
-value = "16pt"
+value = "16px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
@@ -1069,7 +1071,7 @@ conversion = ["ns_font_weight"]
 [[fact]]
 # the font's ascender less its descender plus its leading at the default category
 key = "token.text.keyed.caption_2.line_height"
-value = "13pt"
+value = "13px"
 rows = ["TS-2", "D-4"]
 
 [[fact.cite]]
