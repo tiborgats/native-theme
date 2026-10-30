@@ -1,29 +1,37 @@
 # State models (S17). macos-tahoe's `button` entry states what the os-probe button passes measured: spike M's run
 # 40969040283 (hover draws nothing, `highlight:` is a real press, Reduce Transparency changes no push-button pixel) and
 # run 41006842699 (every bezel style, border shape, tint, image button and size, in a key window, another window key,
-# the application inactive, Increase Contrast on, the accent red, and the focus ring under Full Keyboard Access). The
-# variants AppKit draws that no fact states yet are not declared (the lane's report lists them for the pending form):
-# `@small_square`, `@shadowless_square` (their fill is not one colour), `glass` (not one linear overlay, with a
-# shadow), `menu` (NSComboButton: drawn dimmed in every state the pass set), and the nested identities.
+# the application inactive, Increase Contrast on, the accent red, and the focus ring under Full Keyboard Access).
+# Every variant AppKit draws is declared, so none falls through to the push bezel's facts: where no pass measured a
+# look (NSComboButton's states, the non-uniform square bezels, glass's shadow, a toolbar's buttons) the facts are
+# pending (button.toml's pending section; the register rows U90-U100).
 
 [[model]]
 # sizes: NSControl.ControlSize's five values, read back from each sheet's button; the default a new button's
 # (`buttonWithTitle:`, controlSize 0, regular). `hover` is not an axis (spike M); `pressed` is `highlight:`.
-# `focus_visible`: the focus ring, drawn with Full Keyboard Access on. Conditions: `window_inactive` with `not_main`
-# (another window key), and `app_inactive`, under which the window is neither key nor main (the inactive pass reads
-# both false), so `app_inactive` without the other two is not drawn. exclusive_variants: one bezel style (push the
-# base; `flat` is bordered NO, which no bezel style draws), one border shape, one tint prominence, one image position.
+# `focus_visible`: the focus ring, drawn on the first responder with Full Keyboard Access on; Full Keyboard Access by
+# itself changes no pixel (the focus pass's unfocused layers are byte-identical with the key pass's), so it is no
+# condition, and `focused` without the ring draws nothing. Conditions: `window_inactive` with `not_main` (another window
+# key), and `app_inactive`, under which the window is neither key nor main (the inactive pass reads both false), so
+# `app_inactive` without the other two is not drawn; a window key but not main, or main but not key, is drawn and
+# was not captured (pending U93). `checked` is the on state of a `toggle` (pushOnPushOff); a momentary button has no
+# on state to draw. One bezel style per button (`bezelStyle` holds one raw value; the SDK's old names `recessed`,
+# `roundRect`, `inline` and `texturedRounded` are the raw values 13, 12, 15 and 11, `NSButtonCell.h:74-78`, so they
+# are `@accessory_bar`, `@accessory_bar_action`, `@badge` and `tool`, no variants of their own; `flat` is bordered NO,
+# which draws no bezel; `menu` is NSComboButton, another control), one border shape, one tint prominence, one image
+# position. The context: a button in a toolbar (`NSToolbarItem`, the probe's toolbar window; not analysed, pending
+# U94). Each variant was measured alone: no variant set is declared (the report lists the sets AppKit draws).
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }
 available = true
-variants = ["toggle", "@flexible_push", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "icon_only", "with_icon"]
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"]
 sizes = ["mini", "small", "regular", "large", "extra_large"]
 default_size = "regular"
 densities = []
-axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [] }
+axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
-exclusive_variants = [["@flexible_push", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
-not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }]
+exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "menu"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }]
 rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17"]
 
 [[model.cite]]
@@ -83,7 +91,7 @@ quote = "typedef NS_ENUM(NSInteger, NSControlBorderShape) {"
 
 [[model.cite]]
 kind = "published"
-source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:86-87"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:87-88"
 quote = "@property BOOL hasDestructiveAction API_AVAILABLE(macos(11.0));"
 
 [[model.cite]]
@@ -209,4 +217,34 @@ tolerance = 0
 [[model.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.offscreen.push_button-regular-disabled.reduce_transparency_independent"
+tolerance = 0
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:74-78"
+quote = "NSBezelStyleTexturedRounded API_DEPRECATED_WITH_REPLACEMENT(\"NSBezelStyleToolbar\", macos(10.0, API_TO_BE_DEPRECATED)) = NSBezelStyleToolbar, NSBezelStyleRoundRect API_DEPRECATED_WITH_REPLACEMENT(\"NSBezelStyleAccessoryBarAction\", macos(10.0, API_TO_BE_DEPRECATED)) = NSBezelStyleAccessoryBarAction, NSBezelStyleRecessed API_DEPRECATED_WITH_REPLACEMENT(\"NSBezelStyleAccessoryBar\", macos(10.0, API_TO_BE_DEPRECATED)) = NSBezelStyleAccessoryBar,"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:16-27"
+quote = "NSButtonTypePushOnPushOff = 1,"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:23"
+quote = "@interface NSComboButton : NSControl"
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-not_key-styles_c.toml#not_key.styles_c.aqua.normal.regular-capsule.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/layers-inactive-styles_c.toml#inactive.styles_c.aqua.normal.regular-capsule.fill"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.toolbar.view_toolbar_controlSize_raw"
 tolerance = 0

@@ -810,3 +810,403 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/derivations.toml#derivation.caret_color_light"
 tolerance = 1
 inputs = ["input.accent"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTextInsertionIndicator.h:30-32"
+quote = "Defaults to NSColor.textInsertionPointColor."
+
+[[fact]]
+key = "token.caret.color"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "= input.accent"
+rows = ["MAC-X14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-derivations.toml#derivation.caret_color_dark"
+tolerance = 0
+inputs = ["input.accent"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTextInsertionIndicator.h:30-32"
+quote = "Defaults to NSColor.textInsertionPointColor."
+
+# The tie-break's additions (the verifier's keys the lane left out, each re-read at its source).
+
+[[fact]]
+# NSAnimationContext's duration, as a new context reads it (the main pass's [macos.tokens])
+key = "token.motion.durations.context_default"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "250ms"
+rows = ["MAC-X11"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.tokens.NSAnimationContext.currentContext_duration_s"
+tolerance = 0
+conversion = ["seconds_to_ms"]
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "26pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.largeTitle.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "22pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title1.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "17pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title2.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "15pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.title3.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "13pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.headline.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "11pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.subheadline.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "13pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.body.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "12pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.callout.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "10pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.footnote.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "10pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption1.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.font.size"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "10pt"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.pointSize"
+tolerance = 0
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.font.family"
+when = { conditions = ["preset:macos-tahoe"] }
+value = ".AppleSystemUIFont"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml#macos.fonts.preferredFontForTextStyle_emphasized.caption2.familyName"
+tolerance = 0
+
+[[fact]]
+key = "token.text.roles.large_title"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.large_title"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact]]
+key = "token.text.roles.title1"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.title_1"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:191"
+quote = "NSFontTextStyle const NSFontTextStyleTitle1"
+
+[[fact]]
+key = "token.text.roles.title2"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.title_2"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:192"
+quote = "NSFontTextStyle const NSFontTextStyleTitle2"
+
+[[fact]]
+key = "token.text.roles.title3"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.title_3"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:193"
+quote = "NSFontTextStyle const NSFontTextStyleTitle3"
+
+[[fact]]
+key = "token.text.roles.headline"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.headline"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:194"
+quote = "NSFontTextStyle const NSFontTextStyleHeadline"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.subheadline"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:195"
+quote = "NSFontTextStyle const NSFontTextStyleSubheadline"
+
+[[fact]]
+key = "token.text.roles.body"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.body"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:196"
+quote = "NSFontTextStyle const NSFontTextStyleBody"
+
+[[fact]]
+key = "token.text.roles.callout"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.callout"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:197"
+quote = "NSFontTextStyle const NSFontTextStyleCallout"
+
+[[fact]]
+key = "token.text.roles.footnote"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.footnote"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:198"
+quote = "NSFontTextStyle const NSFontTextStyleFootnote"
+
+[[fact]]
+key = "token.text.roles.caption"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.caption_1"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:199"
+quote = "NSFontTextStyle const NSFontTextStyleCaption1"
+
+[[fact]]
+key = "token.text.roles.caption2"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.caption_2"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:200"
+quote = "NSFontTextStyle const NSFontTextStyleCaption2"

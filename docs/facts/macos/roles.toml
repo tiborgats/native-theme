@@ -4,9 +4,12 @@
 # and the Increase Contrast pass where that pass reads the same colour; where it reads another, a fact under
 # `contrast_increased` follows. The accent-dependent NSColors (those the run's accent-red pass changes:
 # controlAccentColor, selectedContentBackgroundColor, alternateSelectedControlColor, selectedTextBackgroundColor,
-# selectedControlColor, keyboardFocusIndicatorColor, textInsertionPointColor) are inputs (S9.1): of them only
-# `input.accent` is stated here, as a value; the roles that follow them are not stated (no input names, no read
-# citation yet).
+# selectedControlColor, keyboardFocusIndicatorColor, textInsertionPointColor) are inputs (S9.1): `input.accent`
+# (controlAccentColor) and `input.highlight` (selectedTextBackgroundColor, the Highlight colour setting; NSColor's
+# highlightColor, which the red accent leaves unchanged, is the bezels' highlight, not that setting) are stated as
+# values, and the roles that reference them by the SDK's declarations (`read`); the roles that follow the others
+# (selectedContentBackgroundColor, keyboardFocusIndicatorColor, selectedControlColor) are stated as their measured
+# values with the image's accent, as S9.1 names no input for them (the tie-break's report).
 
 [[fact]]
 # windowBackgroundColor
@@ -266,31 +269,31 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-# disabledControlTextColor
+# tertiaryLabelColor (NSColor.h:203: disabled static text; disabledControlTextColor is text on disabled controls)
 key = "role.window.disabled.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
-value = "#0000003f"
+value = "#00000042"
 rows = []
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.disabledControlTextColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.disabledControlTextColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
 key = "role.window.disabled.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
-value = "#000000c1"
+value = "#0000008e"
 rows = ["MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.disabledControlTextColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -301,12 +304,12 @@ rows = []
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.disabledControlTextColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.disabledControlTextColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -317,7 +320,7 @@ rows = ["MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.disabledControlTextColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -627,50 +630,74 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
 tolerance = 0
 
-# The inactive group: the selected items' background in a window that is not key (MAC-X16).
+# The selected items' background, and in a window that is not key (MAC-X16).
+
+[[fact]]
+# selectedContentBackgroundColor (it follows the accent, an AppKit-derived input S9.1 names none for: the measured value)
+key = "role.selection.background"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#0064e1"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
+value = "#0040dd"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#0059d1"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
+value = "#1774da"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
 
 [[fact]]
 # unemphasizedSelectedContentBackgroundColor
 key = "role.selection.background"
-when = { conditions = ["preset:macos-tahoe", "scheme:light", "window_inactive"] }
-value = "#dcdcdc"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"] }
+value = "= role.@selected_control_secondary"
 rows = ["MAC-X16"]
 
 [[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.unemphasizedSelectedContentBackgroundColor"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.unemphasizedSelectedContentBackgroundColor"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.unemphasizedSelectedContentBackgroundColor"
-tolerance = 0
-
-[[fact]]
-key = "role.selection.background"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark", "window_inactive"] }
-value = "#464646"
-rows = ["MAC-X16"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.unemphasizedSelectedContentBackgroundColor"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedContentBackgroundColor"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.unemphasizedSelectedContentBackgroundColor"
-tolerance = 0
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:222"
+quote = "Alias for +secondarySelectedControlColor"
 
 # Keyed roles (`[declare] color_roles`).
 
@@ -2071,44 +2098,247 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-# highlightColor
+# selectedTextBackgroundColor: the Highlight colour setting
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
-value = "#ffffff"
+value = "#b3d7ff"
 rows = ["MAC-DF05†"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.highlightColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.selectedTextBackgroundColor"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.highlightColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedTextBackgroundColor"
 tolerance = 0
+
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
+value = "#b3c6f5"
+rows = ["MAC-DF05†", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.highlightColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.selectedTextBackgroundColor"
 tolerance = 0
 
 [[fact]]
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
-value = "#b4b4b4"
+value = "#3f638b"
 rows = ["MAC-DF05†"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.highlightColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.selectedTextBackgroundColor"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.highlightColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
+value = "#466280"
+rows = ["MAC-DF05†", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedTextBackgroundColor"
+tolerance = 0
+
+# The tie-break's additions (the verifier's keys the lane left out, each re-read at its source).
+
+[[fact]]
+# controlAccentColor
+key = "role.global.accent"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:278-279"
+quote = "NSColor *controlAccentColor"
+
+[[fact]]
+# alternateSelectedControlTextColor (text on the accent)
+key = "role.global.accent_foreground"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
 tolerance = 0
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.highlightColor"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
 tolerance = 0
+
+[[fact]]
+key = "role.global.accent_foreground"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+# keyboardFocusIndicatorColor (it follows the accent, an AppKit-derived input S9.1 names none for: the measured value)
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#0067f47f"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
+value = "#0022af"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#1aa9ff7f"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
+value = "#469af5"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+# selectedControlColor (it follows the accent: the measured value)
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#b3d7ff"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
+value = "#b3c6f5"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#3f638b"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
+value = "#466280"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+# selectedTextBackgroundColor
+key = "role.global.selection_text_background"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.highlight"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:233"
+quote = "NSColor *selectedTextBackgroundColor;"
+
+[[fact]]
+key = "role.global.selection_text_background"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"] }
+value = "= role.global.selection_text_background_unfocused"
+rows = ["MAC-X15", "MAC-I05"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:234"
+quote = "The background for unemphasized text selection (e.g. when the associated control/view/window is not key)"
+
+[[fact]]
+key = "role.global.selection_text_foreground"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"] }
+value = "= role.global.selection_text_foreground_unfocused"
+rows = ["MAC-I05"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:235"
+quote = "The foreground for unemphasized text selection (e.g. when the associated control/view/window is not key)"

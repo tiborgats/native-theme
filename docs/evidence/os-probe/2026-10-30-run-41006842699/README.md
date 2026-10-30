@@ -35,9 +35,19 @@ Contrast off, no accent colour set.
 - `button-pass-focus/<appearance>/unfocused-layer.png`, `focused-<size>-<kind>-layer.png`: the push sheet without
   and with each button focused (the latter the button's region only).
 - `button-pass[-accent-red]/<appearance>/caret/caret-{0,1}.png`: two captures of a text view's caret as it blinks.
-- `analysis.toml`: the output of `analysis/measure_button_layers.py` (its docstring is the method; `input_image`
-  names every file it reads): per pass, sheet, appearance, state and button the fill, stroke, corners, label and icon
-  colour and shadow; the focus ring; the caret; the cell geometry; the measured derivations' passes.
+- `layers-<pass>-<sheet>.toml`, `focus.toml`, `caret.toml`, `geometry.toml`, `derivations.toml`: the output of
+  `analysis/measure_button_layers.py` (its docstring is the method; `input_image` names every file it reads): per
+  pass, sheet, appearance, state and button the fill, stroke, corners, label and icon colour and shadow; the focus
+  ring; the caret; the cell geometry; the measured derivations' passes.
+- `tiebreak-corners.toml`: the output of `analysis/tiebreak_corners.py`, the corner radii the facts cite (a
+  least-squares circular corner per corner square, read from the same layers; the tie-break between the lane and its
+  verifier replaced the per-row fit of `layers-*.toml`'s `corner_*`, which was unstable on capsules and translucent
+  bezels).
+- `tiebreak-derivations.toml`: the output of `analysis/tiebreak_derivations.py`, the passes of the accent-following
+  looks (default, checked, primary, tinted; normal, pressed and disabled) under the image's accent and the red one,
+  measured with `measure_button_layers.py`'s own method, and the dark caret's colour as NSColor reports it. For it the
+  accent-red pass's `pressed-layer.png` and `disabled-layer.png` of the push and styles_b sheets are here too (byte
+  for byte as the run uploaded them).
 
 ## Reading the layers
 
