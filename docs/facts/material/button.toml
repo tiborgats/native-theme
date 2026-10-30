@@ -371,17 +371,6 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "@Composable get() = ButtonSmallTokens.ContainerShapeRound.value"
 
 [[fact]]
-key = "button.body.shape"
-value = "absent"
-rows = ["MAT-X12"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-184"
-quote = "public fun Button("
-absent = ["MaterialShapes", "RoundedPolygon"]
-
-[[fact]]
 key = "button.body.shadow"
 value = { elevation = "level0" }
 rows = ["MAT-B6"]
@@ -824,56 +813,6 @@ source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button.scss:91
 quote = "$label-text-color: md-sys-color.$on-primary;"
 
 [[fact]]
-key = "button.label.transform.scale_x"
-value = 1
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:90"
-quote = "scaleX: Float = 1f,"
-
-[[fact]]
-key = "button.label.transform.scale_y"
-value = 1
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:91"
-quote = "scaleY: Float = 1f,"
-
-[[fact]]
-key = "button.label.transform.rotate"
-value = "0deg"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:98"
-quote = "rotationZ: Float = 0f,"
-
-[[fact]]
-key = "button.label.transform.translate_x"
-value = "0px"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:93"
-quote = "translationX: Float = 0f,"
-
-[[fact]]
-key = "button.label.transform.translate_y"
-value = "0px"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:94"
-quote = "translationY: Float = 0f,"
-
-[[fact]]
 key = "button.icon.icon.size"
 value = "20px"
 rows = ["MAT-B7"]
@@ -1006,56 +945,6 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Icon.kt:138-184"
 quote = "public fun Icon("
 absent = ["animate", "Animatable"]
-
-[[fact]]
-key = "button.icon.transform.scale_x"
-value = 1
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:90"
-quote = "scaleX: Float = 1f,"
-
-[[fact]]
-key = "button.icon.transform.scale_y"
-value = 1
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:91"
-quote = "scaleY: Float = 1f,"
-
-[[fact]]
-key = "button.icon.transform.rotate"
-value = "0deg"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:98"
-quote = "rotationZ: Float = 0f,"
-
-[[fact]]
-key = "button.icon.transform.translate_x"
-value = "0px"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:93"
-quote = "translationX: Float = 0f,"
-
-[[fact]]
-key = "button.icon.transform.translate_y"
-value = "0px"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:94"
-quote = "translationY: Float = 0f,"
 
 [[fact]]
 key = "button.values.icon_text_gap"
@@ -1691,8 +1580,12 @@ quote = "val borderStroke = Stroke(strokeWidth)"
 
 # the states, in the tokens' order (hovered, focused, pressed, disabled). A state layer is a paint layer
 # over the container (MAT-X8). Compose shows the most recent of hover and focus (material3-ripple Ripple.kt): the
-# state model's exclusive group [focus_visible, hover] (its precedence a stand-in for ADD-A121's recency rule), and
-# the focus facts come after the hover facts to match it.
+# state model's exclusive group [focus_visible, hover] is the catalogue's provisional order (CONTRA-6, the
+# maintainer's open decision), and the focus facts come after the hover facts to match it. No fact names both flags,
+# so every fact holds under either answer; they differ only where an element is hovered and focused at once, where
+# the provisional order shows the focus layer and recency the layer of the later interaction. Compose draws the state
+# layer over the label and icon (Ripple.kt:373-377) in the content colour (LocalContentColor), the colour of both, so
+# the appended fill layer gives the same pixels (the catalogue's material-3 button, ADD-A121).
 
 [[fact]]
 key = "button.body.fill"
@@ -2643,10 +2536,10 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:934"
 quote = "start = ButtonWithIconStartpadding,"
 
-# no subtitle line; the menu indicator only on a menu button (the whole-part absence has no fact key: its field)
+# no subtitle line; the menu indicator only on a menu button (each a whole part's absence, `<widget>.<part>`, ADD-A121)
 
 [[fact]]
-key = "button.subtitle.text"
+key = "button.subtitle"
 value = "absent"
 rows = []
 
@@ -2657,7 +2550,7 @@ quote = "public fun Button("
 absent = ["subtitle", "supportingText"]
 
 [[fact]]
-key = "button.menu_indicator.glyph"
+key = "button.menu_indicator"
 when = { not_variants = ["menu"] }
 value = "absent"
 rows = []
@@ -4007,7 +3900,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4018,7 +3911,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_right"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4029,7 +3922,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4040,7 +3933,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4051,7 +3944,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4067,7 +3960,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_right"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4083,7 +3976,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4099,7 +3992,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4115,7 +4008,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_left"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4126,7 +4019,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-small;"
 key = "button.body.corners.top_right"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4137,7 +4030,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-small;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4148,7 +4041,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-small;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4335,7 +4228,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4346,7 +4239,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_right"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4357,7 +4250,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4368,7 +4261,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4379,7 +4272,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4395,7 +4288,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_right"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4411,7 +4304,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4427,7 +4320,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4443,7 +4336,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_left"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4454,7 +4347,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-small;"
 key = "button.body.corners.top_right"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4465,7 +4358,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-small;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4476,7 +4369,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-small;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.small"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4663,7 +4556,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_left"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4674,7 +4567,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_right"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4685,7 +4578,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4696,7 +4589,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4707,7 +4600,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_left"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4723,7 +4616,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_right"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4739,7 +4632,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4755,7 +4648,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4771,7 +4664,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_left"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4782,7 +4675,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_right"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4793,7 +4686,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4804,7 +4697,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -4991,7 +4884,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5002,7 +4895,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_right"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5013,7 +4906,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5024,7 +4917,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5035,7 +4928,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5051,7 +4944,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_right"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5067,7 +4960,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5083,7 +4976,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5099,7 +4992,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_left"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5110,7 +5003,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_right"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5121,7 +5014,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5132,7 +5025,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5319,7 +5212,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5330,7 +5223,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_right"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5341,7 +5234,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5352,7 +5245,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab", "@square"], variants = ["toggle"], states = ["checked"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5363,7 +5256,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5379,7 +5272,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_right"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5395,7 +5288,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5411,7 +5304,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], variants = ["toggle", "@square"], states = ["checked"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5427,7 +5320,7 @@ quote = "$corner-full: 9999px;"
 key = "button.body.corners.top_left"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5438,7 +5331,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_right"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5449,7 +5342,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_right"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -5460,7 +5353,7 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_left"
 when = { sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"], states = ["pressed"] }
 value = "= token.params.shape.large"
-rows = ["MAT-B10"]
+rows = ["MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10050,7 +9943,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10061,7 +9954,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10072,7 +9965,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10083,7 +9976,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10094,7 +9987,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10105,7 +9998,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10116,7 +10009,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10127,7 +10020,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10226,7 +10119,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10237,7 +10130,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10248,7 +10141,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10259,7 +10152,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10270,7 +10163,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-medium;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10281,7 +10174,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10292,7 +10185,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10303,7 +10196,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10402,7 +10295,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10413,7 +10306,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10424,7 +10317,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10435,7 +10328,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10446,7 +10339,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-large;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10457,7 +10350,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10468,7 +10361,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10479,7 +10372,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10578,7 +10471,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10589,7 +10482,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10600,7 +10493,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10611,7 +10504,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10622,7 +10515,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10633,7 +10526,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10644,7 +10537,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10655,7 +10548,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10754,7 +10647,7 @@ quote = "$container-shape-square: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10765,7 +10658,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10776,7 +10669,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10787,7 +10680,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.extra_large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10798,7 +10691,7 @@ quote = "$selected-container-shape-round: md-sys-shape.$corner-extra-large;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10809,7 +10702,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10820,7 +10713,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10831,7 +10724,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only", "toggle", "@square"], states = ["checked"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10842,7 +10735,7 @@ quote = "$selected-container-shape-square: md-sys-shape.$corner-full;"
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10858,7 +10751,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10874,7 +10767,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10890,7 +10783,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10906,7 +10799,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10922,7 +10815,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10938,7 +10831,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10954,7 +10847,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.small"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10970,7 +10863,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -10986,7 +10879,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11002,7 +10895,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11018,7 +10911,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.medium"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11034,7 +10927,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11050,7 +10943,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11066,7 +10959,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11082,7 +10975,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11098,7 +10991,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11114,7 +11007,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.top_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11130,7 +11023,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_right"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11146,7 +11039,7 @@ quote = "if (pressed) { shapes.pressedShape } else if (checked) { shapes.checked
 key = "button.body.corners.bottom_left"
 when = { variants = ["icon_only"], states = ["pressed"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
 value = "= token.params.shape.large"
-rows = ["MAT-N5", "MAT-B10"]
+rows = ["MAT-N5", "MAT-B10", "MAT-X12"]
 
 [[fact.cite]]
 kind = "published"
@@ -11310,18 +11203,6 @@ rows = ["MAT-N1"]
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab.scss:25"
 quote = "$icon-size: 24px;"
-
-[[fact]]
-key = "button.body.shape"
-when = { variants = ["@fab"] }
-value = "absent"
-rows = ["MAT-N1"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:130-196"
-quote = "public fun FloatingActionButton("
-absent = ["ButtonShapes", "pressedShape"]
 
 [[fact]]
 key = "button.body.fill"
@@ -13003,18 +12884,6 @@ source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-extended-fab.s
 quote = "@include md-sys-typescale.label-large;"
 
 [[fact]]
-key = "button.body.shape"
-when = { variants = ["@extended_fab"] }
-value = "absent"
-rows = ["MAT-N2"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:600-628"
-quote = "public fun ExtendedFloatingActionButton("
-absent = ["ButtonShapes", "pressedShape"]
-
-[[fact]]
 key = "button.body.fill"
 when = { variants = ["@extended_fab"] }
 value = "= role.@primary_container"
@@ -14349,6 +14218,43 @@ quote = "$focus-state-layer-color: md-sys-color.$primary;"
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-extended-fab-branded.scss:54"
 quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
+
+
+# the branded extended FAB's label turns primary while hovered, focused or pressed (its own tokens; material-web draws
+# the ripple beneath the label, fab/internal/shared.ts, and Compose has no branded FAB)
+
+[[fact]]
+key = "button.label.text.fill"
+when = { states = ["hover"], variants = ["@extended_fab", "@branded"] }
+value = "= role.@primary"
+rows = ["MAT-N2"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-extended-fab-branded.scss:58"
+quote = "$hover-label-text-color: md-sys-color.$primary;"
+
+[[fact]]
+key = "button.label.text.fill"
+when = { states = ["focus_visible"], variants = ["@extended_fab", "@branded"] }
+value = "= role.@primary"
+rows = ["MAT-N2"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-extended-fab-branded.scss:50"
+quote = "$focus-label-text-color: md-sys-color.$primary;"
+
+[[fact]]
+key = "button.label.text.fill"
+when = { states = ["pressed"], variants = ["@extended_fab", "@branded"] }
+value = "= role.@primary"
+rows = ["MAT-N2"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-extended-fab-branded.scss:88"
+quote = "$pressed-label-text-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.body.shadow"

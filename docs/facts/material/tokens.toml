@@ -411,6 +411,259 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:106-107"
 quote = "/// md.sys.motion.easing.emphasized (Easing) $easing-emphasized: $easing-standard;"
 
+# S4.1 motion: the motion scheme's springs (MAT-X13), each a Compose `spring(dampingRatio, stiffness)` stated by its
+# damping ratio (S2.7, ADD-A121): the standard scheme in the base (material-web's md.sys.motion.spring tokens, Compose's
+# StandardMotionTokens), the expressive scheme under flavour expressive (MaterialExpressiveTheme's MotionScheme.expressive(),
+# ExpressiveMotionTokens). Compose's spring has no mass and its rest threshold is the animated type's default, both in
+# animation-core, which the source cache does not hold (ledger queue #45, #50): the facts leave `mass`, `rest_epsilon`,
+# `initial_velocity`, `clamp` and `time_scale` out.
+
+[[fact]]
+key = "token.motion.timings.spring_default_spatial"
+value = { spring = { stiffness = 700, damping_ratio = 0.9 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:78-81"
+quote = "/// md.sys.motion.spring.default.spatial.damping (Spring) $spring-default-spatial-damping: 0.9; /// md.sys.motion.spring.default.spatial.stiffness (Spring) $spring-default-spatial-stiffness: 700;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/StandardMotionTokens.kt:20-21"
+quote = "const val SpringDefaultSpatialDamping = 0.9f const val SpringDefaultSpatialStiffness = 700.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:137-141"
+quote = "private val defaultSpatialSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringDefaultSpatialDamping, stiffness = StandardMotionTokens.SpringDefaultSpatialStiffness, )"
+
+[[fact]]
+key = "token.motion.timings.spring_default_effects"
+value = { spring = { stiffness = 1600, damping_ratio = 1 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:72-75"
+quote = "/// md.sys.motion.spring.default.effects.damping (Spring) $spring-default-effects-damping: 1; /// md.sys.motion.spring.default.effects.stiffness (Spring) $spring-default-effects-stiffness: 1600;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/StandardMotionTokens.kt:22-23"
+quote = "const val SpringDefaultEffectsDamping = 1.0f const val SpringDefaultEffectsStiffness = 1600.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:155-159"
+quote = "private val defaultEffectsSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringDefaultEffectsDamping, stiffness = StandardMotionTokens.SpringDefaultEffectsStiffness, )"
+
+[[fact]]
+key = "token.motion.timings.spring_fast_spatial"
+value = { spring = { stiffness = 1400, damping_ratio = 0.9 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:90-93"
+quote = "/// md.sys.motion.spring.fast.spatial.damping (Spring) $spring-fast-spatial-damping: 0.9; /// md.sys.motion.spring.fast.spatial.stiffness (Spring) $spring-fast-spatial-stiffness: 1400;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/StandardMotionTokens.kt:24-25"
+quote = "const val SpringFastSpatialDamping = 0.9f const val SpringFastSpatialStiffness = 1400.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:143-147"
+quote = "private val fastSpatialSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringFastSpatialDamping, stiffness = StandardMotionTokens.SpringFastSpatialStiffness, )"
+
+[[fact]]
+key = "token.motion.timings.spring_fast_effects"
+value = { spring = { stiffness = 3800, damping_ratio = 1 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:84-87"
+quote = "/// md.sys.motion.spring.fast.effects.damping (Spring) $spring-fast-effects-damping: 1; /// md.sys.motion.spring.fast.effects.stiffness (Spring) $spring-fast-effects-stiffness: 3800;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/StandardMotionTokens.kt:26-27"
+quote = "const val SpringFastEffectsDamping = 1.0f const val SpringFastEffectsStiffness = 3800.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:161-165"
+quote = "private val fastEffectsSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringFastEffectsDamping, stiffness = StandardMotionTokens.SpringFastEffectsStiffness, )"
+
+[[fact]]
+key = "token.motion.timings.spring_slow_spatial"
+value = { spring = { stiffness = 300, damping_ratio = 0.9 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:102-105"
+quote = "/// md.sys.motion.spring.slow.spatial.damping (Spring) $spring-slow-spatial-damping: 0.9; /// md.sys.motion.spring.slow.spatial.stiffness (Spring) $spring-slow-spatial-stiffness: 300;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/StandardMotionTokens.kt:28-29"
+quote = "const val SpringSlowSpatialDamping = 0.9f const val SpringSlowSpatialStiffness = 300.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:149-153"
+quote = "private val slowSpatialSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringSlowSpatialDamping, stiffness = StandardMotionTokens.SpringSlowSpatialStiffness, )"
+
+[[fact]]
+key = "token.motion.timings.spring_slow_effects"
+value = { spring = { stiffness = 800, damping_ratio = 1 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:96-99"
+quote = "/// md.sys.motion.spring.slow.effects.damping (Spring) $spring-slow-effects-damping: 1; /// md.sys.motion.spring.slow.effects.stiffness (Spring) $spring-slow-effects-stiffness: 800;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/StandardMotionTokens.kt:30-31"
+quote = "const val SpringSlowEffectsDamping = 1.0f const val SpringSlowEffectsStiffness = 800.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:167-171"
+quote = "private val slowEffectsSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringSlowEffectsDamping, stiffness = StandardMotionTokens.SpringSlowEffectsStiffness, )"
+
+[[fact]]
+key = "token.motion.timings.spring_default_spatial"
+when = { conditions = ["flavor:expressive"] }
+value = { spring = { stiffness = 380, damping_ratio = 0.8 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt:22-23"
+quote = "const val SpringDefaultSpatialDamping = 0.8f const val SpringDefaultSpatialStiffness = 380.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:201-205"
+quote = "private val defaultSpatialSpec = spring<Any>( dampingRatio = ExpressiveMotionTokens.SpringDefaultSpatialDamping, stiffness = ExpressiveMotionTokens.SpringDefaultSpatialStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:262-262"
+quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
+
+[[fact]]
+key = "token.motion.timings.spring_default_effects"
+when = { conditions = ["flavor:expressive"] }
+value = { spring = { stiffness = 1600, damping_ratio = 1 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt:24-25"
+quote = "const val SpringDefaultEffectsDamping = 1.0f const val SpringDefaultEffectsStiffness = 1600.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:219-223"
+quote = "private val defaultEffectsSpec = spring<Any>( dampingRatio = ExpressiveMotionTokens.SpringDefaultEffectsDamping, stiffness = ExpressiveMotionTokens.SpringDefaultEffectsStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:262-262"
+quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
+
+[[fact]]
+key = "token.motion.timings.spring_fast_spatial"
+when = { conditions = ["flavor:expressive"] }
+value = { spring = { stiffness = 800, damping_ratio = 0.6 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt:26-27"
+quote = "const val SpringFastSpatialDamping = 0.6f const val SpringFastSpatialStiffness = 800.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:207-211"
+quote = "private val fastSpatialSpec = spring<Any>( dampingRatio = ExpressiveMotionTokens.SpringFastSpatialDamping, stiffness = ExpressiveMotionTokens.SpringFastSpatialStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:262-262"
+quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
+
+[[fact]]
+key = "token.motion.timings.spring_fast_effects"
+when = { conditions = ["flavor:expressive"] }
+value = { spring = { stiffness = 3800, damping_ratio = 1 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt:28-29"
+quote = "const val SpringFastEffectsDamping = 1.0f const val SpringFastEffectsStiffness = 3800.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:225-229"
+quote = "private val fastEffectsSpec = spring<Any>( dampingRatio = ExpressiveMotionTokens.SpringFastEffectsDamping, stiffness = ExpressiveMotionTokens.SpringFastEffectsStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:262-262"
+quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
+
+[[fact]]
+key = "token.motion.timings.spring_slow_spatial"
+when = { conditions = ["flavor:expressive"] }
+value = { spring = { stiffness = 200, damping_ratio = 0.8 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt:30-31"
+quote = "const val SpringSlowSpatialDamping = 0.8f const val SpringSlowSpatialStiffness = 200.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:213-217"
+quote = "private val slowSpatialSpec = spring<Any>( dampingRatio = ExpressiveMotionTokens.SpringSlowSpatialDamping, stiffness = ExpressiveMotionTokens.SpringSlowSpatialStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:262-262"
+quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
+
+[[fact]]
+key = "token.motion.timings.spring_slow_effects"
+when = { conditions = ["flavor:expressive"] }
+value = { spring = { stiffness = 800, damping_ratio = 1 } }
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt:32-33"
+quote = "const val SpringSlowEffectsDamping = 1.0f const val SpringSlowEffectsStiffness = 800.0f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:231-235"
+quote = "private val slowEffectsSpec = spring<Any>( dampingRatio = ExpressiveMotionTokens.SpringSlowEffectsDamping, stiffness = ExpressiveMotionTokens.SpringSlowEffectsStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:262-262"
+quote = "motionScheme = motionScheme ?: MotionScheme.expressive(),"
+
 # ----------------------------------------------------------------------------------------------------
 # S4.1 speed factor: Android's animator duration scale (Settings.Global.ANIMATOR_DURATION_SCALE)
 
