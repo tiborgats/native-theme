@@ -183,37 +183,37 @@ padding_bottom = "10px"
 [geometry.styles_a.mini-small_square]
 min_height = "15px"
 padding_left = "1px"
-padding_top = "3px"
+padding_top = "2px"
 padding_right = "1px"
-padding_bottom = "3px"
+padding_bottom = "2px"
 
 [geometry.styles_a.small-small_square]
 min_height = "18px"
 padding_left = "1px"
-padding_top = "3px"
+padding_top = "2px"
 padding_right = "1px"
-padding_bottom = "3px"
+padding_bottom = "2px"
 
 [geometry.styles_a.regular-small_square]
 min_height = "20px"
 padding_left = "1px"
-padding_top = "3px"
+padding_top = "2px"
 padding_right = "1px"
-padding_bottom = "3px"
+padding_bottom = "2px"
 
 [geometry.styles_a.large-small_square]
 min_height = "20px"
 padding_left = "1px"
-padding_top = "3px"
+padding_top = "2px"
 padding_right = "1px"
-padding_bottom = "3px"
+padding_bottom = "2px"
 
 [geometry.styles_a.extraLarge-small_square]
 min_height = "20px"
 padding_left = "1px"
-padding_top = "3px"
+padding_top = "2px"
 padding_right = "1px"
-padding_bottom = "3px"
+padding_bottom = "2px"
 
 [geometry.styles_a.mini-shadowless_square]
 min_height = "17px"
@@ -357,18 +357,38 @@ padding_bottom = "2px"
 
 [geometry.styles_a.mini-circular]
 min_height = "8px"
+padding_left = "1px"
+padding_top = "-3px"
+padding_right = "1px"
+padding_bottom = "-1px"
 
 [geometry.styles_a.small-circular]
 min_height = "14px"
+padding_left = "3px"
+padding_top = "0px"
+padding_right = "3px"
+padding_bottom = "0px"
 
 [geometry.styles_a.regular-circular]
 min_height = "17px"
+padding_left = "4px"
+padding_top = "0px"
+padding_right = "4px"
+padding_bottom = "1px"
 
 [geometry.styles_a.large-circular]
 min_height = "21px"
+padding_left = "6px"
+padding_top = "2px"
+padding_right = "6px"
+padding_bottom = "3px"
 
 [geometry.styles_a.extraLarge-circular]
 min_height = "29px"
+padding_left = "10px"
+padding_top = "6px"
+padding_right = "10px"
+padding_bottom = "7px"
 
 [geometry.styles_b.mini-help]
 min_height = "16px"
@@ -387,38 +407,38 @@ min_height = "36px"
 
 [geometry.styles_b.mini-toolbar]
 min_height = "13px"
-padding_left = "4px"
-padding_top = "1px"
-padding_right = "4px"
-padding_bottom = "4px"
+padding_left = "3px"
+padding_top = "0px"
+padding_right = "3px"
+padding_bottom = "2px"
 
 [geometry.styles_b.small-toolbar]
 min_height = "16px"
-padding_left = "5px"
-padding_top = "1px"
-padding_right = "5px"
-padding_bottom = "4px"
+padding_left = "4px"
+padding_top = "0px"
+padding_right = "4px"
+padding_bottom = "2px"
 
 [geometry.styles_b.regular-toolbar]
 min_height = "20px"
-padding_left = "6px"
-padding_top = "2px"
-padding_right = "6px"
-padding_bottom = "5px"
+padding_left = "5px"
+padding_top = "1px"
+padding_right = "5px"
+padding_bottom = "3px"
 
 [geometry.styles_b.large-toolbar]
 min_height = "20px"
-padding_left = "6px"
-padding_top = "2px"
-padding_right = "6px"
-padding_bottom = "5px"
+padding_left = "5px"
+padding_top = "1px"
+padding_right = "5px"
+padding_bottom = "3px"
 
 [geometry.styles_b.extraLarge-toolbar]
 min_height = "20px"
-padding_left = "6px"
-padding_top = "2px"
-padding_right = "6px"
-padding_bottom = "5px"
+padding_left = "5px"
+padding_top = "1px"
+padding_right = "5px"
+padding_bottom = "3px"
 
 [geometry.styles_b.mini-glass]
 min_height = "13px"
@@ -667,18 +687,38 @@ padding_bottom = "10px"
 
 [geometry.styles_c.mini-circle]
 min_height = "8px"
+padding_left = "1px"
+padding_top = "-3px"
+padding_right = "1px"
+padding_bottom = "-1px"
 
 [geometry.styles_c.small-circle]
 min_height = "14px"
+padding_left = "3px"
+padding_top = "0px"
+padding_right = "3px"
+padding_bottom = "0px"
 
 [geometry.styles_c.regular-circle]
 min_height = "17px"
+padding_left = "4px"
+padding_top = "0px"
+padding_right = "4px"
+padding_bottom = "1px"
 
 [geometry.styles_c.large-circle]
 min_height = "21px"
+padding_left = "6px"
+padding_top = "2px"
+padding_right = "6px"
+padding_bottom = "3px"
 
 [geometry.styles_c.extraLarge-circle]
 min_height = "29px"
+padding_left = "10px"
+padding_top = "6px"
+padding_right = "10px"
+padding_bottom = "7px"
 
 [geometry.styles_c.mini-combo_split]
 min_height = "16px"
@@ -712,30 +752,50 @@ min_height = "36px"
 
 [geometry.styles_c.mini-icon_only]
 min_height = "16px"
+padding_left = "8px"
+padding_top = "2px"
+padding_right = "8px"
+padding_bottom = "2px"
 
 [geometry.styles_c.small-icon_only]
 min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
 
 [geometry.styles_c.regular-icon_only]
 min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
 
 [geometry.styles_c.large-icon_only]
 min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
 
 [geometry.styles_c.extraLarge-icon_only]
 min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
 
 [geometry.styles_c.mini-with_icon]
 min_height = "16px"
-padding_left = "22px"
-padding_top = "4px"
+padding_left = "8px"
+padding_top = "2px"
 padding_right = "8px"
 padding_bottom = "1px"
 icon_text_gap = "2px"
 
 [geometry.styles_c.small-with_icon]
 min_height = "20px"
-padding_left = "27px"
+padding_left = "10px"
 padding_top = "3px"
 padding_right = "10px"
 padding_bottom = "3px"
@@ -743,24 +803,24 @@ icon_text_gap = "2px"
 
 [geometry.styles_c.regular-with_icon]
 min_height = "24px"
-padding_left = "31px"
-padding_top = "5px"
+padding_left = "12px"
+padding_top = "4px"
 padding_right = "12px"
 padding_bottom = "3px"
 icon_text_gap = "2px"
 
 [geometry.styles_c.large-with_icon]
 min_height = "28px"
-padding_left = "33px"
-padding_top = "7px"
+padding_left = "14px"
+padding_top = "6px"
 padding_right = "14px"
 padding_bottom = "5px"
 icon_text_gap = "2px"
 
 [geometry.styles_c.extraLarge-with_icon]
 min_height = "36px"
-padding_left = "37px"
-padding_top = "11px"
+padding_left = "18px"
+padding_top = "10px"
 padding_right = "18px"
 padding_bottom = "9px"
 icon_text_gap = "2px"

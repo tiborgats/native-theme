@@ -37,6 +37,10 @@ literals are S2.2's (a TOML number; the colour, length, duration, angle and font
 expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's, a
 `Timing::Platform` curve's name among them (`{ platform = { qt = "in_out_sine" } }`: S2.7, ADD-A123;
 scripts/check_facts.py checks it is one of the core's `QtEasing` or `AdwEasing` members, or `kirigami_velocity`).
+ADD-A124 adds no citation form to S17: its names are names too, the press ripple's effect (`interaction.ripple.effect
+= "android_patterned"`, a `RippleEffect`, S2.12, implemented to its source as a platform curve is), a transition's
+`from` flags, a corner's `"ellipse"` and a `when.latest`, which the quote check does not read; their facts' literals
+(the ripple's alpha, the transition's duration) still need a quote.
 A text value (check_facts.text_leaves: where the key's type is text) is no literal source: it equals, whitespace-
 normalised and case-sensitive, a whole string one of those quotes holds by the text notations (quote_texts, below).
 A zero stated by omission (S17 *Absence*, ADD-A122): where one of those citations is an absence citation (it has
@@ -1355,6 +1359,38 @@ quote = "adw_timed_animation_new (GTK_WIDGET (self), 0, 1, 250, target); adw_tim
                                                "  self->animation = adw_timed_animation_new (GTK_WIDGET (self), 0, 1, "
                                                "250, target);\n  adw_timed_animation_set_easing (ADW_TIMED_ANIMATION "
                                                "(self->animation), ADW_EASE_OUT_CUBIC);\n",
+    "docs/facts/gnome/ripple.toml": '''
+[[fact]]
+key = "button.body.transitions"
+value = [{ properties = ["state_layer"], duration_ms = 150, timing = "linear", from = ["hover", "pressed"] }]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-ripple.c:1"
+quote = "AndroidPatterned: fade out over 150, alpha 0.1"
+
+[[fact]]
+key = "button.body.interaction.ripple.effect"
+value = "android_patterned"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-ripple.c:1"
+quote = "AndroidPatterned: fade out over 150, alpha 0.1"
+
+[[fact]]
+key = "button.body.interaction.ripple.alpha"
+value = 0.1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-ripple.c:1"
+quote = "AndroidPatterned: fade out over 150, alpha 0.1"
+''',
+    "cache/libadwaita@1.10.0/src/adw-ripple.c": "/* AndroidPatterned: fade out over 150, alpha 0.1 */\n",
     "docs/facts/macos/weight.toml": '''
 [[fact]]
 key = "button.label.text.font.weight"
@@ -1571,6 +1607,16 @@ SELF_TEST_CASES = [
     ("platform curve: the name not compared", "docs/facts/gnome/curve.toml", '"ease_out_cubic"', '"ease_in_expo"', []),
     ("platform curve: a duration no quote holds", "docs/facts/gnome/curve.toml", "duration_ms = 250",
      "duration_ms = 260", ["260ms is in no quote serving adwaita"]),
+    # ADD-A124's names are the verifier's (S17 *The quote check*, unchanged): a ripple effect's name and a transition's
+    # `from` flags are not compared, the facts' literals are
+    ("ripple: the effect's name not compared", "docs/facts/gnome/ripple.toml", 'value = "android_patterned"',
+     'value = "android_unpatterned"', []),
+    ("ripple: the from flags not compared", "docs/facts/gnome/ripple.toml", 'from = ["hover", "pressed"]',
+     'from = ["focus_visible"]', []),
+    ("ripple: an alpha no quote holds", "docs/facts/gnome/ripple.toml", "value = 0.1", "value = 0.12",
+     ["0.12 is in no quote serving adwaita"]),
+    ("ripple: a transition's duration no quote holds", "docs/facts/gnome/ripple.toml", "duration_ms = 150",
+     "duration_ms = 15", ["15ms is in no quote serving adwaita"]),
     # a LinearGradientBrush's angle is the one its points give, never a point's number (the ledger's queue #57)
     ("brush: a wrong angle a point's number holds", "docs/facts/windows/brush.toml", "angle_deg = 180",
      "angle_deg = 0", ["0deg is in no quote serving windows-11"]),

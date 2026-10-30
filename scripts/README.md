@@ -746,8 +746,11 @@ Reads the v0.7.1 specification's widget catalogue,
 components (`#### component.<key> (<platform>)`), each with its heading line,
 its items (the bold labels, `**Parts:**`, `**Widget values:**`, several to a
 line in many components), its parts (names, the parent a part nests in, the
-*(element)* mark and note, the field list) and its widget values (name and
-the type the catalogue states), with the source line of each. Variants, sizes
+*(element)* mark and note, the field list), its widget values (name and
+the type the catalogue states) and its recency sets (each `<name> = [<flag>,
+…]` its **Exclusive groups** item names after "Recency sets", ADD-A124, and
+per platform, with the exclusive groups, `state_groups`), with
+the source line of each. Variants, sizes
 and flags are prose in the catalogue, so their items' text and backticked
 names are given as they stand. A module, imported by `check_spec_names.py` and
 `check_spec_entries.py` and meant for the widget-declaration generator and the
@@ -773,7 +776,15 @@ in a trace target or a catalogue backtick span that neither defines, notation
 the specification forbids, names the core's checks removed, and platform
 values written into the specification. An `input.<name>` path is one of S9's
 inputs (`S9_INPUTS`, the macOS accent inputs among them) or a part of the
-`input` widget. Prints one line per problem
+`input` widget. ADD-A124's names are read from the core's sketches: a
+`latest <set>:<flag>` term names a recency set a targeted widget declares and
+a member of it, the catalogue's recency sets hold two or more state flags,
+none twice, no two of an entry ordering two flags oppositely, `PartStyle.`
+paths and the `interaction` block's fields are part-style fields, and
+`Radius::`, `PropertyGroup::` (and a `transitions (…)` note's groups, so
+`StateLayer` and `StrokeWidth`), `RippleEffect::` and a corner's or effect's
+TOML spelling name variants of their enums; a transition's `from {…}` is not
+empty and names no flag twice. Prints one line per problem
 (tab-separated: file, line, kind, name, context) and exits 0 when there is
 none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
 `trace-macos`, ...), `--cat` and
@@ -959,7 +970,20 @@ arity its S2.2 signature gives (`with_alpha(c, a)` beside `alpha(c, a)`), a
 platform curve one of the core's `QtEasing` or `AdwEasing` members, a
 `token.motion.timings.<key>` a `Timing` (S4.1's sketch), and
 `requires_variants` as any one of its forms (a listed set holding none of
-them is trimmed from the count). Offline. The docstring states every rule and list. Prints
+them is trimmed from the count). ADD-A124's forms: a state model's `recency`
+sets (two or more flags of `axes.states`, none twice, no two sets ordering
+two flags oppositely), with the gate's runs per order of the present flags
+counted per entry on stderr and summed in the summary (at most n! per state
+combination); a fact's `when.latest` (a set every state model it can hold
+under declares, a flag that is a member of it and that `not_states` does not
+refuse), which fact applies made order-aware (two latest flags of one set, or
+latest flags no one order allows, never hold together); a transition's
+`from` (stated in a single transition, never empty, no flag twice, no keyed
+flag the widget lacks) and a `state_layer` transition only on a part with
+`interaction`; the `interaction` block's keys; `"ellipse"` on all four
+corners of one `when` or none, never with a `continuous` curve; and each
+state model's `exclusive` groups and `recency` sets equal to the catalogue's
+for its widget and preset, members and order (S10, S17). Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
@@ -986,7 +1010,9 @@ citation says (an absence citation holds a zero stated by omission; on a
 LinearGradientBrush an angle matches only the angle its points give; C++'s
 defaulted parameter is read from the quote's declaration; `ns_font_weight`
 converts an AppKit `NSFontWeight` to S2.8's CSS weight by WebKit's
-thresholds; a platform curve's name is the verifier's); a measured value
+thresholds; a platform curve's name is the verifier's, and so are
+ADD-A124's names, a ripple effect's, a transition's `from` flags); a
+measured value
 has the committed evidence's shape and
 equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an

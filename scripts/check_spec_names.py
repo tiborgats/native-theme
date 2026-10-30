@@ -4,9 +4,27 @@
 It reads the core (S…), builds the vocabulary it defines (state flags, shared flags, conditions, colour
 roles, tokens, element data, part-style fields), reads the widget catalogue and builds, per typed widget
 and keyed component, the parts, widget values, variants and flags its entry lists (the names in backticks
-inside its **Parts**, **Widget values**, **Variants** and **Flags** items). Then it extracts every
+inside its **Parts**, **Widget values**, **Variants** and **Flags** items) and its recency sets
+(spec_catalogue.recency_sets). Then it extracts every
 reference from the trace targets and from the catalogue's own backtick spans and reports each name
 neither defines, plus notation the specification forbids.
+
+ADD-A124's names, each read from the core's sketches (core_vocab), never listed here:
+
+- `latest <set>:<flag>` (the selector notation of `Selector.latest`, S7.2): the set is a recency set a widget the
+  string targets declares (the catalogue's recency sets), the flag a state flag (flag_ok) and a member of that set;
+- the catalogue's recency sets themselves (S10, S12): two or more flags, each a state flag, none twice, and no two
+  sets of one entry ordering two flags oppositely;
+- `PartStyle.<path>` and a part path's `interaction` (S2.12): `interaction.state_layer` and `interaction.ripple`
+  and their fields (`Interaction`, `StateLayerStyle`, `RippleStyle`), checked as any part-style field (field_ok);
+- `Radius::<V>` a variant of `Radius` (`Ellipse` among them), and a corner spelt in TOML, `top_left = "<v>"`, one of
+  its unit variants in snake_case (`"ellipse"`, `"follow_part"`; S11);
+- `PropertyGroup::<V>`, and the groups a `transitions (…)` note names (the capitalised word heading each `,` or `;`
+  piece before its `:` or `from`), a `PropertyGroup` or `TransitionKind` variant (`StateLayer`, `StrokeWidth`;
+  S2.7);
+- a transition's `from {…}` (`Transition.from`, S2.7, S12): not empty and no flag twice, its flags checked as any
+  state set's;
+- `RippleEffect::<V>`, `effect <V>` and `effect = "<v>"`: a `RippleEffect` variant (`AndroidPatterned`, S2.12).
 
     python3 scripts/check_spec_names.py            # report, exit 1 if anything is unknown
     python3 scripts/check_spec_names.py --index    # also write index.json (the catalogue's names per widget)
@@ -17,13 +35,15 @@ neither defines, plus notation the specification forbids.
 
 Output: one line per problem, tab-separated: file, line, kind, name, context.
 """
+import itertools
 import json
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-from spec_catalogue import catalogue_index
+from spec_catalogue import catalogue_index, recency_sets
+from spec_catalogue import entries as spec_entries
 
 DOCS = Path("docs")  # run from the repository root
 CORE = DOCS / "todo_v0.7.1_model-completeness-spec.md"
@@ -164,7 +184,33 @@ def core_vocab(text=None) -> dict:
     v["presentation_events"] = {snake(x) for x in enum_variants(code, "PresentationEvent") if x != "Keyed"}
     v["presentation_kinds"] = {x for x in enum_variants(code, "PresentationKind")}
     v["focus_visible_when"] = {x for x in enum_variants(code, "FocusVisibleWhen")}
+    v["interaction"] = set(struct_fields(code, "Interaction"))
+    v["state_layer_style"] = set(struct_fields(code, "StateLayerStyle"))
+    v["ripple_style"] = set(struct_fields(code, "RippleStyle"))
+    v["radius"] = set(enum_variants(code, "Radius"))
+    v["radius_units"] = {snake(x) for x in unit_variants(code, "Radius")}
+    v["property_groups"] = set(enum_variants(code, "PropertyGroup"))
+    v["transition_kinds"] = set(enum_variants(code, "TransitionKind"))
+    v["ripple_effects"] = set(enum_variants(code, "RippleEffect"))
     return v
+
+
+def unit_variants(code: str, name: str) -> list[str]:
+    """The variants of an enum that hold no data (S11 spells them as their snake_case name)."""
+    body = re.sub(r"\s+", " ", body_of(code, "enum", name))
+    out, depth, tok = [], 0, ""
+    for c in body + ",":
+        if c in "({<":
+            depth += 1
+        elif c in ")}>":
+            depth -= 1
+        if c == "," and depth == 0:
+            if re.fullmatch(r"\s*[A-Z]\w*\s*", tok):
+                out.append(tok.strip())
+            tok = ""
+        else:
+            tok += c
+    return out
 
 
 # ----------------------------------------------------------------------------------------- checking
@@ -326,11 +372,14 @@ class Checker:
             return True
         sub = {"text": self.v["text_style"], "icon": self.v["icon_style"], "glyph": self.v["glyph"],
                "focus": self.v["focus"], "corners": self.v["corners"], "stroke": self.v["stroke"],
-               "transform": self.v["transform"]}.get(f)
+               "transform": self.v["transform"], "interaction": self.v["interaction"]}.get(f)
         if sub is None:
             return True
         if s not in sub:
             return False
+        if f == "interaction" and len(segs) > 2 and not segs[2].startswith(("<", "*")):
+            leaf = {"state_layer": self.v["state_layer_style"], "ripple": self.v["ripple_style"]}.get(s)
+            return leaf is None or norm_value(segs[2]) in leaf
         if f == "text" and s == "font" and len(segs) > 2:
             return segs[2] in self.v["font"]
         if f == "glyph" and s == "stroke" and len(segs) > 2 and not segs[2].startswith(("<", "*")):
@@ -495,6 +544,77 @@ class Checker:
         for m in re.finditer(r"PlacementStrategy::(\w+)", s):
             if m.group(1) not in self.v["placements"]:
                 self.add(src, ln, "placement", m.group(1), ctx)
+        self.check_a124(src, ln, s, ctx)
+
+    def check_a124(self, src, ln, s, ctx):
+        """ADD-A124's names (the module docstring): recency terms, `PartStyle.` paths, radii, property groups, a
+        transition's `from` and the ripple effect."""
+        for clause in s.split(";"):
+            self.check_latest(src, ln, clause, ctx)
+        for m in re.finditer(r"(?<![\w.])PartStyle((?:\.(?:\{[^}]*\}|[a-z_][a-z0-9_]*))+)", s):
+            for path in self.expand(m.group(1)):
+                if not self.field_ok(path):
+                    self.add(src, ln, "field", "PartStyle." + ".".join(path), ctx)
+        for enum, key in (("Radius", "radius"), ("PropertyGroup", "property_groups"), ("RippleEffect", "ripple_effects")):
+            for m in re.finditer(rf"(?<![\w]){enum}::(\w+)", s):
+                if m.group(1) not in self.v[key]:
+                    self.add(src, ln, key, f"{enum}::{m.group(1)}", ctx)
+        for m in re.finditer(r"(?<![\w])(?:top|bottom)_(?:left|right)\s*=\s*\"([a-z_]+)\"", s):
+            if m.group(1) not in self.v["radius_units"]:
+                self.add(src, ln, "radius", f'"{m.group(1)}" (a corner\'s unit variant: {", ".join(sorted(self.v["radius_units"]))})', ctx)
+        for m in re.finditer(r"(?<![\w.])effect\s+([A-Z]\w*)|(?<![\w.])effect\s*=\s*\"([a-z_]+)\"", s):
+            ok = m.group(1) in self.v["ripple_effects"] if m.group(1) else \
+                m.group(2) in {snake(x) for x in self.v["ripple_effects"]}
+            if not ok:
+                self.add(src, ln, "ripple_effects", m.group(1) or m.group(2), ctx)
+        for note in transition_notes(s):
+            for group in note_groups(note):
+                if group not in self.v["property_groups"] and group not in self.v["transition_kinds"]:
+                    self.add(src, ln, "property_groups", group, ctx)
+        for m in re.finditer(r"(?<![\w])from\s*\{([^{}]*)\}", s):
+            flags = [f.strip() for f in m.group(1).split(",") if f.strip()]
+            if not flags:
+                self.add(src, ln, "from", "from {} (a transition's `from` names one or more flags, S12)", ctx)
+            for f in sorted({f for f in flags if flags.count(f) > 1}):
+                self.add(src, ln, "from", f"from {{…}} names {f} twice (S12)", ctx)
+
+    def check_latest(self, src, ln, clause, ctx):
+        """`latest <set>:<flag>` in one `;` clause: the set is declared by a widget the clause targets (the widget
+        paths before its selector, ` @ `, and before a value, ` = `), or by any widget where it targets none (a
+        `PartStyle.` rule), and the flag is a state flag and a member of that set."""
+        head = re.split(r"\s=\s", clause.split(" @ ", 1)[0], maxsplit=1)[0]
+        targets = [m.group(1) for m in re.finditer(r"(?<![\w.@:<>\-/])(component\.[a-z_][a-z0-9_]*|[a-z_][a-z0-9_]*)\.",
+                                                   head) if m.group(1) in self.w]
+        targets = list(dict.fromkeys(targets))
+        pool = targets or list(self.w)
+        for m in re.finditer(r"(?<![\w])latest\s+(@?[a-z_][a-z0-9_]*):(@?[a-z_][a-z0-9_]*)", clause):
+            name, flag = m.group(1), m.group(2)
+            sets = [self.w[w]["recency"][name] for w in pool if name in self.w[w].get("recency", {})]
+            if not sets:
+                self.add(src, ln, "recency", f"{name} (no recency set of {', '.join(targets) or 'any widget'})", ctx)
+            elif not self.flag_ok(flag, targets):
+                self.add(src, ln, "flag", flag, ctx)
+            elif not any(flag in members for members in sets):
+                self.add(src, ln, "recency-flag", f"{name}:{flag} (not a member of the set)", ctx)
+
+    def check_recency_declarations(self, entries):
+        """S10's and S12's rules on the catalogue's recency sets: two or more flags, each a state flag, none twice, and
+        no two sets of one entry ordering two flags oppositely."""
+        for e in entries:
+            sets = recency_sets(e)
+            for name, flags, line in sets:
+                if len(set(flags)) < 2:
+                    self.add("catalogue", line, "recency", f"{e.name}: {name} has fewer than two flags (S12)", name)
+                for f in sorted({f for f in flags if flags.count(f) > 1}):
+                    self.add("catalogue", line, "recency", f"{e.name}: {name} names {f} twice (S12)", name)
+                for f in dict.fromkeys(flags):
+                    if not self.flag_ok(f, [e.name]):
+                        self.add("catalogue", line, "flag", f, f"{e.name}: recency set {name}")
+            for (n1, f1, _), (n2, f2, line) in itertools.combinations(sets, 2):
+                for a, b in itertools.combinations([f for f in dict.fromkeys(f1) if f in f2], 2):
+                    if f2.index(a) > f2.index(b):
+                        self.add("catalogue", line, "recency", f"{e.name}: {n1} and {n2} order {a} and {b} oppositely "
+                                                               f"(S12)", n2)
 
     # -- files
     def check_trace(self, key, path):
@@ -523,6 +643,8 @@ class Checker:
                 self.add(key, i, "menu-selected", "{selected} on a menu item outside context combo_box (S7.2)", t)
 
     def check_catalogue(self, part=None):
+        if part is None:
+            self.check_recency_declarations(spec_entries(self.cat_text))
         lines = (Path(part).read_text() if part else self.cat_text).splitlines()
         in_rename = False
         in_mba = False
@@ -675,6 +797,31 @@ def menu_selected_problem(t):
     return False
 
 
+def transition_notes(s):
+    """The text inside each `transitions (…)` of a string, its nested parentheses included."""
+    for m in re.finditer(r"(?<![\w])transitions\s*\(", s):
+        i, depth = m.end(), 1
+        while i < len(s) and depth:
+            depth += s[i] == "("
+            depth -= s[i] == ")"
+            i += 1
+        yield s[m.end():i - 1]
+
+
+def note_groups(note):
+    """The property groups a `transitions (…)` note names: the leading `,`-separated pieces of each `;` clause, before
+    its first `:`, that are one capitalised word each, a `from {…}` after it allowed (`Fill from {pressed}; then Stroke,
+    StrokeWidth: = …`); a leading `then` is dropped, and the run ends at the first other piece (a path such as
+    `Timing::Spring`, a phrase)."""
+    for clause in note.split(";"):
+        head = re.split(r":(?!:)", re.sub(r"^\s*then\s+", "", clause), maxsplit=1)[0]
+        for piece in head.split(","):
+            piece = re.sub(r"\s+from\s*\{[^}]*\}\s*$", "", piece.strip())
+            if not re.fullmatch(r"[A-Z][a-z]+(?:[A-Z][a-z]+)*", piece):
+                break
+            yield piece
+
+
 # `Radius::FollowPart` is a focus indicator's corner only (S2.4, S2.10)
 FOLLOW_PART_OK = r"focus|FocusIndicator"
 
@@ -693,7 +840,7 @@ def platform_values(text):
 
 SELF_TEST_CORE = """
 ```rust
-pub enum StateFlag { Hover, Pressed, Selected, Disabled, Shared(SharedFlag), Widget(Key) }
+pub enum StateFlag { Hover, Pressed, Selected, Disabled, FocusVisible, Shared(SharedFlag), Widget(Key) }
 pub enum SharedFlag { Empty }
 pub enum Condition { WindowInactive, ContrastHigh }
 pub enum Scheme { Light, Dark }
@@ -707,7 +854,8 @@ pub enum SurfaceSet { View, Header }
 pub struct SurfaceRoles { pub background: Paint, pub foreground: Paint }
 pub struct GlobalRoles { pub accent: Paint, pub status: Status }
 pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: Motion }
-pub struct PartStyle { pub fill: X, pub stroke: X, pub corners: X, pub text: X, pub focus: X, pub padding: X }
+pub struct PartStyle { pub fill: X, pub stroke: X, pub corners: X, pub text: X, pub focus: X, pub padding: X,
+                       pub interaction: Value<Interaction>, pub transitions: X }
 pub struct ElementData { pub progress: f32 }
 pub struct TextRoles { pub body: X }
 pub struct TextTokens { pub roles: X, pub keyed: X, pub scaling: X }
@@ -734,6 +882,13 @@ pub enum PlacementStrategy { Below, Above }
 pub enum PresentationEvent { Appear, Keyed(Key) }
 pub enum PresentationKind { Fade }
 pub enum FocusVisibleWhen { Always, Keyboard }
+pub struct Interaction { pub state_layer: StateLayerStyle, pub ripple: RippleStyle }
+pub struct StateLayerStyle { pub color: X, pub alpha: X }
+pub struct RippleStyle { pub effect: X, pub color: X, pub max_radius: Value<Px> }
+pub enum Radius { Px(Value<Px>), Full { maximum: Value<Px> }, Ellipse, FollowPart }
+pub enum PropertyGroup { Fill, Stroke, StrokeWidth, StateLayer }
+pub enum TransitionKind { Interpolate, Keyed { key: Key, params: Vec<(Key, Value<Scalar>)> } }
+pub enum RippleEffect { AndroidPatterned }
 ```
 """
 
@@ -748,6 +903,8 @@ SELF_TEST_CATALOGUE = """
 - **Widget values:** `icon_text_gap_px: Value<Px>`.
 - **Variants:** typed `flat`; keyed `@osd`.
 - **Flags:** keyed `@busy`.
+- **Exclusive groups:** none. Recency sets: `material-3`: `state_layer = [focus_visible, hover]` and `elevation =
+  [pressed, focus_visible, hover]`.
 
 ## Overlays
 
@@ -831,7 +988,55 @@ SELF_TEST_STRINGS = [
     ("input.body.fill = input.selected_content_background", []),
     ("input.body.fill = input.keyboard_focus_indicator input.selected_control input.highlight", []),
     ("input.body.fill = input.selected_contrl", [("part", "input.selected_contrl")]),
+    # ADD-A124: recency terms, the interaction block, radii, property groups, `from` and the ripple effect
+    ("button.body.interaction.state_layer @ latest state_layer:hover / latest elevation:pressed", []),
+    ("button.body.fill @ latest glow:hover", [("recency", "glow (no recency set of button)")]),
+    ("button.body.fill @ latest state_layer:pressed", [("recency-flag", "state_layer:pressed (not a member of the set)")]),
+    ("button.body.fill @ latest state_layer:hovr", [("flag", "hovr")]),
+    ("menu.item.fill @ latest state_layer:hover", [("recency", "state_layer (no recency set of menu)")]),
+    ("PartStyle.fill @ latest elevation:hover; menu.item.fill @ {hover}", []),
+    ("PartStyle.fill @ latest glow:hover", [("recency", "glow (no recency set of any widget)")]),
+    ("button.body.fill = menu.item.fill @ latest elevation:hover", []),
+    ("button.body.interaction.state_layer.alpha, button.body.interaction.ripple.{effect,max_radius}", []),
+    ("button.body.interaction.state_layer.nope", [("field", "button.body.interaction.state_layer.nope")]),
+    ("button.body.interaction.nope", [("field", "button.body.interaction.nope")]),
+    ("PartStyle.interaction.{state_layer,ripple}.color, PartStyle.fill", []),
+    ("PartStyle.interaction.ripple.nope", [("field", "PartStyle.interaction.ripple.nope")]),
+    ("PartStyle.nope", [("field", "PartStyle.nope")]),
+    ("button.body.corners = Radius::Ellipse", []),
+    ("button.body.corners = Radius::Elipse", [("radius", "Radius::Elipse")]),
+    ('button.body.corners = { top_left = "ellipse", top_right = "follow_part" }', []),
+    ('button.body.corners = { top_left = "elipse" }',
+     [("radius", '"elipse" (a corner\'s unit variant: ellipse, follow_part)')]),
+    ("button.body.transitions (StateLayer from {hover}; then StrokeWidth, Stroke: Timing::Linear)", []),
+    ("button.body.transitions (StateLayers: = token.motion.timings.x)", [("property_groups", "StateLayers")]),
+    ("button.body.transitions (Fill, Interpolate, Keyed)", []),
+    ("button.body.transitions (TransitionKind::Keyed per state, AnimatedChevron; Fill, Geometry with Timing::Spring)",
+     []),
+    ("PropertyGroup::StrokeWidth", []),
+    ("PropertyGroup::StrokeWidths", [("property_groups", "PropertyGroup::StrokeWidths")]),
+    ("button.body.transitions (Fill from {pressed, hover})", []),
+    ("button.body.transitions (Fill from {})", [("from", "from {} (a transition's `from` names one or more flags, "
+                                                         "S12)")]),
+    ("button.body.transitions (Fill from {hover, hover})", [("from", "from {…} names hover twice (S12)")]),
+    ("button.body.transitions (Fill from {hovr})", [("flag", "hovr")]),
+    ("button.body.interaction.ripple.effect (effect AndroidPatterned), RippleEffect::AndroidPatterned", []),
+    ('button.body.interaction.ripple = { effect = "android_patterned" }', []),
+    ("button.body.interaction.ripple.effect (effect AndroidRipple)", [("ripple_effects", "AndroidRipple")]),
+    ("RippleEffect::Patterned", [("ripple_effects", "RippleEffect::Patterned")]),
+    ('button.body.interaction.ripple = { effect = "patterned" }', [("ripple_effects", "patterned")]),
 ]
+
+SELF_TEST_RECENCY = """
+## Buttons and toggles
+
+### toggle
+
+- **Parts:**
+  - `body` — the root: `fill`.
+- **Exclusive groups:** none. Recency sets: `material-3`: `one = [hover]`, `two = [hover, hover, pressed]`,
+  `three = [hover, nope]`, `four = [pressed, focus_visible, hover]` and `five = [hover, pressed]`.
+"""
 
 SELF_TEST_TRACE = """
 | Row | Target | Kind |
@@ -866,7 +1071,8 @@ def self_test() -> int:
     ck = Checker(core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE)
     if sorted(ck.w) != ["button", "component.led", "input", "menu"]:
         failures.append(f"index: got {sorted(ck.w)}")
-    if ck.v["state_flags"] != {"hover", "pressed", "selected", "disabled"} or ck.v["densities"] != {"compact"}:
+    if ck.v["state_flags"] != {"hover", "pressed", "selected", "disabled", "focus_visible"} or \
+            ck.v["densities"] != {"compact"}:
         failures.append(f"core vocabulary: got {ck.v['state_flags']}, {ck.v['densities']}")
     for s, want in SELF_TEST_STRINGS:
         ck.problems = []
@@ -894,6 +1100,19 @@ def self_test() -> int:
             (n + 6, "follow-part", "FollowPart outside a focus indicator")]
     if got != want:
         failures.append(f"catalogue: got {got}, want {want}")
+    rec = Checker(core_text=SELF_TEST_CORE, cat_text=SELF_TEST_RECENCY)
+    rec.check_catalogue()
+    got = [(p[1], p[2], p[3]) for p in rec.problems]
+    want = [(8, "recency", "toggle: one has fewer than two flags (S12)"),
+            (8, "recency", "toggle: two names hover twice (S12)"), (9, "flag", "nope"),
+            (9, "recency", "toggle: two and four order hover and pressed oppositely (S12)"),
+            (9, "recency", "toggle: four and five order pressed and hover oppositely (S12)")]
+    if sorted(got) != sorted(want):
+        failures.append(f"recency declarations: got {got}, want {want}")
+    ck.problems = []
+    ck.check_catalogue()
+    if ck.problems:
+        failures.append(f"clean recency declarations: got {ck.problems}")
     got = [(i, v) for i, v, _ in platform_values("a 12px gap, 250 ms\nS2.4, <8px, #a1b2c3, bold, InOutCubic")]
     want = [(1, "12px"), (1, "250 ms"), (2, "#a1b2c3"), (2, "bold"), (2, "InOutCubic")]
     if got != want:
