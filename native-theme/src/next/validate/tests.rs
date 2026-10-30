@@ -453,9 +453,51 @@ fn refusal_kde_accent_argument() {
             "colors.light.global.accent: `kde_accent` does not take `disabled`",
         ]
     );
+    let decl = declare("surface_sets = [\"window\"]");
     assert_eq!(
-        bare(&accent("= kde_accent(window, background_normal, inactive)")),
+        found(
+            &accent("= kde_accent(window, background_normal, inactive)"),
+            &decl
+        ),
         NONE
+    );
+}
+
+#[test]
+fn kde_accent_set_is_declared() {
+    // One of KDE's sets, declared by the preset (S2.2, S12).
+    let decl = declare("surface_sets = [\"window\"]");
+    assert_eq!(
+        found(
+            &accent("= kde_accent(header, background_normal, inactive)"),
+            &decl
+        ),
+        ["colors.light.global.accent: `header` is not declared in `surface_sets`"]
+    );
+    assert_eq!(
+        found(
+            &accent("= kde_accent(window, background_normal, inactive)"),
+            &decl
+        ),
+        NONE
+    );
+}
+
+/// A palette's surface set the current preset does not declare is skipped,
+/// its roles with it, not refused (S12, S14).
+#[test]
+fn palette_skips_undeclared_surface_sets() {
+    let decl = declare("surface_sets = [\"window\"]");
+    let layer =
+        toml("[colors.light.surfaces.header]\nbackground = \"#000000\"\nforeground = \"= base\"");
+    assert_eq!(found_as(&layer, &decl, LayerKind::Palette), NONE);
+    assert_eq!(
+        found(&layer, &decl),
+        [
+            "colors.light.surfaces.header: `header` is not declared in `surface_sets`",
+            "colors.light.surfaces.header.foreground: `base` in a layer's bases, where nothing \
+             lies beneath",
+        ]
     );
 }
 

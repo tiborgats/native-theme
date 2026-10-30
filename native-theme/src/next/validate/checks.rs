@@ -1,6 +1,8 @@
 //! S12's structural checks: each value, patch, rule and declaration on its
 //! own, every problem collected, one problem per fault.
 
+use std::borrow::Cow;
+
 use super::walk::{ExprForm, Form, Node, Number, Path, Visit, Walk, Walker, toml_key};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{Keyframe, PresentationKind, StepJump, Timing, TransitionKind};
@@ -16,7 +18,7 @@ use crate::next::inputs::{InputBases, InputName};
 use crate::next::key::Key;
 use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::registry::{self, PartInfo};
-use crate::next::roles::SurfaceSet;
+use crate::next::roles::{ColorRolesPatch, SurfaceSet};
 use crate::next::selector::{
     Condition, ContextMatch, ControlSize, Density, PartRef, PositionMatch, Rule, RuleBody,
     Selector, SetMatch, SiblingMatch, StateFlag, ValuesPatch, VariantRef, WidgetOrPart, WidgetRef,
@@ -199,7 +201,8 @@ impl<'a> Checker<'a> {
             match roles {
                 Some(roles) => {
                     let at = join(&colors, scheme);
-                    self.walk(&at, Region::Roles, roles);
+                    let roles = self.palette_roles(roles);
+                    self.walk(&at, Region::Roles, &*roles);
                     if whole {
                         self.surfaces_stated(roles.surfaces.as_ref(), &join(&at, "surfaces"));
                     }
@@ -417,7 +420,8 @@ impl<'a> Checker<'a> {
         let widget = match &rule.body {
             RuleBody::Colors(roles) => {
                 self.conditions_only(&rule.selector, &when);
-                self.walk(&set, Region::Roles, roles);
+                let roles = self.palette_roles(roles);
+                self.walk(&set, Region::Roles, &*roles);
                 None
             }
             RuleBody::Tokens(tokens) => {
@@ -552,10 +556,38 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A surface set, declared (S10); a palette's is skipped where the
+    /// current preset does not declare it, not refused (S12, S14).
     fn surface_set(&mut self, set: SurfaceSet, at: &str) {
-        if !self.decl().surface_sets.contains(&set) {
+        if !self.decl().surface_sets.contains(&set) && self.cx.kind != LayerKind::Palette {
             self.undeclared(at, set.name(), "surface_sets");
         }
+    }
+
+    /// A palette's colour roles without the surface sets the current preset
+    /// does not declare, which are skipped, not validated (S12, S14); any
+    /// other layer's as they are.
+    fn palette_roles<'r>(&self, roles: &'r ColorRolesPatch) -> Cow<'r, ColorRolesPatch> {
+        let declared = &self.decl().surface_sets;
+        let skips = roles
+            .surfaces
+            .as_ref()
+            .is_some_and(|sets| sets.iter().any(|(set, _)| !declared.contains(&set)));
+        if self.cx.kind != LayerKind::Palette || !skips {
+            return Cow::Borrowed(roles);
+        }
+        let mut kept = roles.clone();
+        if let Some(sets) = kept.surfaces.take() {
+            let mut held = SurfaceMap::default();
+            for (set, value) in sets
+                .into_entries()
+                .filter(|(set, _)| declared.contains(set))
+            {
+                held.insert(set, value);
+            }
+            kept.surfaces = Some(held);
+        }
+        Cow::Owned(kept)
     }
 
     /// The inputs' bases (S9.1): each declared, an accent input only in a
@@ -655,6 +687,13 @@ impl<'a> Checker<'a> {
                 for name in wrong.into_iter().flatten() {
                     let name = name.to_owned();
                     self.problem(at, ProblemKind::KdeAccentArgument { name });
+                }
+                // One of KDE's sets, declared by the preset (S2.2).
+                if let Some(set) = name(0)
+                    .filter(|set| KDE_SETS.contains(set))
+                    .and_then(SurfaceSet::from_name)
+                {
+                    self.surface_set(set, at);
                 }
             }
             _ => {}
