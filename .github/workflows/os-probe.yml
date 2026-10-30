@@ -7,8 +7,9 @@ name: OS probe
 # the vector generator (tools/gnome-vectors); and the KDE jobs, in the KDE
 # container (tools/linux-containers/kde): its build, the accent run
 # (scripts/measure_kde_accent.sh) and the render host (tools/kde-host); the
-# Android host (tools/android-host) on the emulator; and the WinUI host
-# (tools/winui-host) on the Windows images.
+# Android host (tools/android-host) on the emulator; the WinUI host
+# (tools/winui-host) on the Windows images; and the iOS host (tools/ios-host) in
+# each macOS image's iOS simulator.
 # Evidence for the platform-fidelity review
 # (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
 # jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
@@ -21,11 +22,11 @@ on:
   workflow_dispatch:
     inputs:
       jobs:
-        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render, android-host, winui-host); empty runs every job"
+        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render, android-host, winui-host, ios-host); empty runs every job"
         required: false
         default: ""
       images:
-        description: "The probe and winui-host jobs' runner images, a JSON list (winui-host does nothing on macOS); the default is the 0.8.0 release set's"
+        description: "The probe, winui-host and ios-host jobs' runner images, a JSON list (winui-host does nothing on macOS, ios-host nothing on Windows); the default is the 0.8.0 release set's"
         required: false
         default: '["macos-15", "macos-26", "windows-11-arm"]'
 
@@ -729,3 +730,31 @@ jobs:
         with:
           name: winui-host-${{ matrix.os }}
           path: winui-host-out
+
+  # The iOS host (D3, D4, spike I): tools/ios-host, a Swift app built by the
+  # image's default Xcode, run in a simulator of the image's newest iOS runtime
+  # (iOS 18 on macos-15, iOS 26 on macos-26), twice, and compared
+  # (tools/ios-host/run.sh). Its matrix is the probe's images; an image
+  # without a simulator (Windows) runs no step, since an `if:` cannot read the
+  # matrix.
+  ios-host:
+    name: iOS host (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',ios-host,')
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'xcode-27' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/checkout@v6
+        if: runner.os == 'macOS'
+      - name: Build and run
+        if: runner.os == 'macOS'
+        run: bash tools/ios-host/run.sh ios-host-out
+      - name: Upload the renders
+        if: always() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-host-${{ matrix.os }}
+          path: ios-host-out
