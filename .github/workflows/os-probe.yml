@@ -6,7 +6,8 @@ name: OS probe
 # (tools/linux-containers/gnome): its build, the harness (tools/gnome-host) and
 # the vector generator (tools/gnome-vectors); and the KDE jobs, in the KDE
 # container (tools/linux-containers/kde): its build, the accent run
-# (scripts/measure_kde_accent.sh) and the render host (tools/kde-host).
+# (scripts/measure_kde_accent.sh) and the render host (tools/kde-host); and the
+# WinUI host (tools/winui-host) on the Windows images.
 # Evidence for the platform-fidelity review
 # (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3), and the measurement
 # jobs of the 0.8.0 plan (docs/todo_v0.7.1_model-completeness-plan.md, D2 and D3).
@@ -19,11 +20,11 @@ on:
   workflow_dispatch:
     inputs:
       jobs:
-        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render); empty runs every job"
+        description: "The jobs to run, comma-separated without spaces (probe, gnome-container, gnome-harness, gnome-vectors, kde-container, kde-accent, kde-render, winui-host); empty runs every job"
         required: false
         default: ""
       images:
-        description: "The probe job's runner images, a JSON list; the default is the 0.8.0 release set's"
+        description: "The probe and winui-host jobs' runner images, a JSON list (winui-host does nothing on macOS); the default is the 0.8.0 release set's"
         required: false
         default: '["macos-15", "macos-26", "windows-11-arm"]'
 
@@ -661,3 +662,34 @@ jobs:
         with:
           name: kde-render
           path: kde-render-out
+
+  # The WinUI host (D4, spike W): tools/winui-host, a C# WinUI 3 app on the
+  # release set's Windows App SDK (2.5.1, unpackaged and self-contained), built
+  # with the pinned .NET SDK and run twice by tools/winui-host/run.ps1: the
+  # window's, a Button's, a MenuFlyout's and a ToolTip's frames (frames.toml)
+  # and PNGs. Its steps run on the Windows images only.
+  winui-host:
+    name: WinUI host (${{ matrix.os }})
+    if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',winui-host,')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/checkout@v6
+        if: runner.os == 'Windows'
+      - uses: actions/setup-dotnet@v5
+        if: runner.os == 'Windows'
+        with:
+          dotnet-version: 10.0.403
+      - name: Build and run the host
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tools/winui-host/run.ps1 -Out winui-host-out
+      - name: Upload the host's output
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: winui-host-${{ matrix.os }}
+          path: winui-host-out
