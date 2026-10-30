@@ -7,7 +7,7 @@
 use native_theme_derive::ThemeParts;
 
 use super::paint::{Paint, PaintPatch, ResolvedPaint};
-use crate::next::units::Px;
+use crate::next::units::{Axes, Point, Px, Rect};
 use crate::next::value::Value;
 
 /// A part's four corners and their curve.
@@ -182,4 +182,108 @@ pub enum FillClip {
     /// To the stroke's inner edge, its corners the outline's radii less the
     /// inset (CSS's `background-clip: padding-box`).
     InnerEdge,
+}
+
+/// A shape replacing a part's corners' outline: a closed set implemented once
+/// in native-theme to `androidx.graphics.shapes` and `MaterialShapes.kt` at a
+/// pinned commit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ShapeKind {
+    /// One of Material's shapes.
+    Material(MaterialShape),
+}
+
+/// The shapes `MaterialShapes.kt` defines at the pinned commit, in that
+/// file's order, each named as the file names it. The list is written from
+/// the file when the commit is pinned; until then it has no shape, so a
+/// preset states `shape = "absent"`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum MaterialShape {}
+
+/// A path, in logical px, in the coordinates of the rectangle it was made
+/// for. Each `MoveTo` starts a closed outline; it is filled by the non-zero
+/// rule.
+#[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
+pub struct Path {
+    /// The path's commands, in order.
+    pub commands: Vec<PathCommand>,
+}
+
+/// A command of a [`Path`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PathCommand {
+    /// Starts a closed outline at a point.
+    MoveTo(Point),
+    /// A line to a point.
+    LineTo(Point),
+    /// A quadratic curve: its control point, then its end.
+    QuadTo(Point, Point),
+    /// A cubic curve: its two control points, then its end.
+    CubicTo(Point, Point, Point),
+    /// Closes the outline.
+    Close,
+}
+
+/// A part's outline: its shape where its `shape` is stated, else its corners.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Outline {
+    /// The rounded rectangle of four radii.
+    Corners(OutlineCorners),
+    /// A shape.
+    Shape(ShapeKind),
+}
+
+/// A rounded rectangle's corners as the connector computed them at layout (a
+/// stated `Radius::Px`, or the [`corners`](crate::next::corners)
+/// functions).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct OutlineCorners {
+    /// The radii, in the order top-left, top-right, bottom-right,
+    /// bottom-left.
+    pub radii: [Px; 4],
+    /// The corners' curve.
+    pub curve: CornerCurve,
+}
+
+/// The path of `shape` made for `rect`.
+#[must_use]
+pub fn outline(shape: &ShapeKind, rect: Rect) -> Path {
+    match (*shape, rect) {
+        (ShapeKind::Material(shape), _) => match shape {},
+    }
+}
+
+/// A `Full` corner: half the smaller side of the part's box, at most
+/// `maximum`, and at least 0.
+#[must_use]
+pub fn full(width: Px, height: Px, maximum: Option<Px>) -> Px {
+    let half = width.0.min(height.0) / 2.0;
+    let capped = maximum.map_or(half, |maximum| half.min(maximum.0));
+    Px(capped.max(0.0))
+}
+
+/// A `Concentric` corner: the container's radius less the part's inset from
+/// the container's edges at that corner, at least `minimum` (0 when absent).
+/// `container_radius` is the radius the connector computed for the
+/// container's matching corner; 0 for a square container, or the display
+/// with no radius.
+///
+/// Where the two insets are equal, the result is the larger of
+/// `container_radius` less the inset and `minimum`. Where they differ, the
+/// rule is UIKit's (`UICornerConfiguration`, `UIView.effectiveRadius(corner:)`),
+/// read when the platform's values are; until then this takes the larger
+/// inset, which keeps the corner inside the container's.
+#[must_use]
+pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) -> Px {
+    let inset = inset.horizontal.0.max(inset.vertical.0);
+    let floor = minimum.map_or(0.0, |minimum| minimum.0);
+    Px((container_radius.0 - inset).max(floor).max(0.0))
+}
+
+/// A `FollowPart` corner: the part's radius plus the indicator's offset, at
+/// least 0.
+#[must_use]
+pub fn follow_part(part_radius: Px, offset: Px) -> Px {
+    Px((part_radius.0 + offset.0).max(0.0))
 }

@@ -153,12 +153,15 @@ fn gen_inventory_submit(
 ///   `BlockPatch` (`Set | Fields`) and one holding an append block by that
 ///   block's patch; with `#[parts(append)]`, a block whose one field is a list
 ///   (a paint), `<T>Patch` is instead `Set(Value<T>) | Append(list)`;
-/// - `Resolved<T>`, each `Value<U>` as `Option<U>` (a `Value<Px>` or
-///   `Value<FontSize>` marked `auto` as `Option<Length>`) and each block as
+/// - `Resolved<T>`, each `Value<U>` as `Option<U>`, a `Value<FontSize>` as
+///   `Option<Px>` (converted and scaled, S9.4), a `Value<Px>` or
+///   `Value<FontSize>` marked `auto` as `Option<Length>`, and each block as
 ///   its resolved type;
 /// - the merge of a later patch over an earlier one and the application of a
 ///   patch over a value (S6.1: a set field replaces, a `Vec` of pairs merges
-///   by key, any other list is replaced whole);
+///   by key, a list marked `keyed` by its items' own keys, any other list is
+///   replaced whole, and a `Sides` or `Axes` field, patched as
+///   `Option<Sides<Option<T>>>`, member by member);
 /// - the `Block` impl (the resolved type, sealed) and the `Table` impl: the
 ///   static `FIELDS` table of `FieldInfo { path, ty, may_be_absent, auto }`
 ///   and the `FORM`, a struct or an enum with its unit variants.
@@ -168,8 +171,8 @@ fn gen_inventory_submit(
 /// written by its bare name needs them in scope.
 ///
 /// An enum block is set whole only: it gets `Resolved<T>` and its table, the
-/// paths of a variant's fields `variant.field` (a tuple variant's one field:
-/// `variant`).
+/// paths of a variant's fields `variant.field` (a tuple variant's fields:
+/// `variant`, several only of plain values).
 ///
 /// # Type attributes
 ///
@@ -183,9 +186,11 @@ fn gen_inventory_submit(
 /// - `#[parts(auto)]`: the `Value<Px>` or `Value<FontSize>` may be `Auto`
 ///   (S6.3).
 /// - `#[parts(block = "fields" | "append" | "set")]`: the field holds a
-///   block (`B`, `Value<B>`, `Vec<B>`, or a map `Vec<(K, B)>` or
-///   `Vec<(K, Value<B>)>`) of that kind: a struct block, an append block or
-///   an enum block.
+///   block (`B`, `Value<B>`, `Vec<B>`, `Option<B>`, or a map `Vec<(K, B)>`
+///   or `Vec<(K, Value<B>)>`) of that kind: a struct block, an append block
+///   or an enum block.
+/// - `#[parts(keyed)]`: a list whose items merge by their own key, through
+///   the item type's `KeyedItem` impl.
 #[proc_macro_derive(ThemeParts, attributes(parts))]
 pub fn derive_theme_parts(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

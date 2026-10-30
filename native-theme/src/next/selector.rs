@@ -1,4 +1,40 @@
-//! Rules' selectors and the conditions they hold under (S7).
+//! Rules' selectors and the conditions they hold under (S7), and the
+//! references to widgets, parts and variants they name.
+
+use super::key::Key;
+use super::widgets::{TypedPart, Variant, WidgetKind};
+
+/// A widget: a typed one, or a keyed component a preset declares (S5.1).
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum WidgetRef {
+    /// A typed widget.
+    Typed(WidgetKind),
+    /// A keyed component.
+    Component(Key),
+}
+
+/// A part of a widget: a typed widget's, or a keyed component's (S1).
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PartRef {
+    /// A typed widget's part, naming its widget.
+    Typed(TypedPart),
+    /// A keyed component's part.
+    Component {
+        /// The component.
+        key: Key,
+        /// Its part.
+        part: Key,
+    },
+}
+
+/// A variant: the catalogue's typed one, or a keyed one a preset declares.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum VariantRef {
+    /// A typed variant.
+    Typed(Variant),
+    /// A keyed variant.
+    Keyed(Key),
+}
 
 /// A colour scheme.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]

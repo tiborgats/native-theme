@@ -94,6 +94,18 @@ impl SurfaceSet {
     }
 }
 
+/// A surface set's colour role: a field of S3's `SurfaceRoles`, by its path
+/// (`disabled.foreground`). Its variants come with the role records; until
+/// then it has none.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SurfaceRole {}
+
+/// A global colour role: a field of S3's `GlobalRoles`, by its path
+/// (`status.error.fill`). Its variants come with the role records; until then
+/// it has none.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum GlobalRole {}
+
 #[cfg(test)]
 mod tests {
     use super::*;

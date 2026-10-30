@@ -148,10 +148,34 @@ pub(crate) fn merge_slot<T: Merge>(
 /// Each later entry replaces the earlier entry of its key, or is added after
 /// the earlier entries.
 pub(crate) fn merge_by_key<K: PartialEq, V>(earlier: &mut Vec<(K, V)>, later: Vec<(K, V)>) {
-    for (key, value) in later {
-        match earlier.iter_mut().find(|(held, _)| *held == key) {
-            Some(entry) => entry.1 = value,
-            None => earlier.push((key, value)),
+    merge_by(earlier, later, |a, b| a.0 == b.0);
+}
+
+/// Each later item replaces the earlier item `same` pairs it with, or is
+/// added after the earlier items.
+pub(crate) fn merge_by<T>(earlier: &mut Vec<T>, later: Vec<T>, same: impl Fn(&T, &T) -> bool) {
+    for item in later {
+        match earlier.iter_mut().find(|held| same(held, &item)) {
+            Some(held) => *held = item,
+            None => earlier.push(item),
         }
+    }
+}
+
+/// A list item that merges by a key of its own (S6.1): a binding by its role
+/// or surface, a transition by its property group, a presentation by its
+/// event.
+pub(crate) trait KeyedItem: Sized {
+    /// Merges `later` into `earlier` by the items' keys.
+    fn merge_keyed(earlier: &mut Vec<Self>, later: Vec<Self>);
+}
+
+/// A later keyed list merges into the earlier by its items' keys.
+pub(crate) fn merge_slot_keyed<T: KeyedItem>(earlier: &mut Option<Vec<T>>, later: Option<Vec<T>>) {
+    let Some(later) = later else { return };
+    if let Some(held) = earlier.as_mut() {
+        T::merge_keyed(held, later);
+    } else {
+        *earlier = Some(later);
     }
 }

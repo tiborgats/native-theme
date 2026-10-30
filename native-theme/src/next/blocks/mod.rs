@@ -13,6 +13,8 @@ use std::fmt::Debug;
 use super::registry::{BlockForm, FieldInfo};
 use super::value::Value;
 
+pub mod focus;
+pub mod icon;
 #[cfg_attr(
     not(test),
     expect(
@@ -21,13 +23,17 @@ use super::value::Value;
     )
 )]
 mod merge;
+pub mod motion;
 pub mod outline;
 pub mod paint;
+pub mod part_style;
 pub mod shadow;
+pub mod text;
 pub mod transform;
 
 pub(crate) use merge::{
-    Apply, Merge, MergeConflict, merge_by_key, merge_slot, merge_slot_by_key, replace_slot,
+    Apply, KeyedItem, Merge, MergeConflict, merge_by, merge_by_key, merge_slot, merge_slot_by_key,
+    merge_slot_keyed, replace_slot,
 };
 
 /// Seals [`Block`]: only the `ThemeParts` derive implements it.
@@ -75,5 +81,7 @@ pub enum BlockPatch<T: FieldsBlock> {
     Fields(T::Patch),
 }
 
+#[cfg(test)]
+mod part_tests;
 #[cfg(test)]
 mod tests;

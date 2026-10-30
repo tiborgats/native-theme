@@ -114,7 +114,9 @@ mod tests {
             "{out}"
         );
         assert!(
-            out.contains("pub letter_spacing : :: core :: option :: Option < FontSize >"),
+            out.contains(
+                "pub letter_spacing : :: core :: option :: Option < crate :: next :: Px >"
+            ),
             "{out}"
         );
     }
@@ -154,6 +156,74 @@ mod tests {
             "pub status_colors : :: std :: vec :: Vec < (Key , :: core :: option :: Option < ResolvedPaint >) >",
             "crate :: next :: blocks :: merge_slot_by_key (& mut self . status_colors , status_colors)",
             "fields : < Paint as crate :: next :: blocks :: Table > :: FIELDS",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn compound_fields_patch_member_by_member() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(may_be_absent)]
+                pub margin: Sides<Value<Px>>,
+                pub flip: Axes<bool>,
+            }
+        });
+        for expected in [
+            "pub margin : :: core :: option :: Option < crate :: next :: Sides < :: core :: option :: Option < Value < Px > >> >",
+            "pub margin : crate :: next :: Sides < :: core :: option :: Option < Px > >",
+            "pub flip : crate :: next :: Axes < bool >",
+            "let held = self . margin . get_or_insert_with (|| crate :: next :: Sides { \
+             top : :: core :: option :: Option :: None , right : :: core :: option :: Option :: None , \
+             bottom : :: core :: option :: Option :: None , left : :: core :: option :: Option :: None })",
+            "crate :: next :: blocks :: replace_slot (& mut held . left , later . left)",
+            "if let :: core :: option :: Option :: Some (value) = later . vertical { self . flip . vertical = value ; }",
+            "path : \"margin\" , ty : crate :: next :: registry :: FieldType :: Block { ty : \"Sides<Value<Px>>\" , \
+             form : crate :: next :: registry :: BlockForm :: Struct , fields : & [crate :: next :: registry :: FieldInfo { \
+             path : \"top\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
+             may_be_absent : true , auto : false , }",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn keyed_lists_merge_by_their_items_keys() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(block = "set", keyed)]
+                pub bindings: Vec<Binding>,
+            }
+        });
+        for expected in [
+            "crate :: next :: blocks :: merge_slot_keyed (& mut self . bindings , bindings)",
+            "crate :: next :: blocks :: KeyedItem :: merge_keyed (& mut self . bindings , items)",
+            "pub bindings : :: std :: vec :: Vec < ResolvedBinding >",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn optional_blocks_and_plain_tuple_variants() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub enum Probe {
+                CubicBezier(f32, f32, f32, f32),
+                Fade {
+                    #[parts(block = "set")]
+                    start: Option<FadeLength>,
+                },
+            }
+        });
+        for expected in [
+            "CubicBezier (f32 , f32 , f32 , f32)",
+            "path : \"cubic_bezier\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"(f32,f32,f32,f32)\")",
+            "start : :: core :: option :: Option < ResolvedFadeLength >",
+            "path : \"fade.start\" , ty : crate :: next :: registry :: FieldType :: Block { ty : \"Option<FadeLength>\"",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -248,7 +318,7 @@ mod tests {
                     #[parts(block)]
                     pub struct Probe { #[parts(block = "append")] pub fill: Paint }
                 },
-                "an append block is held as `Value<B>` or `Vec<B>`",
+                "an append block is held as `Value<B>`, `Vec<B>` or `Option<B>`",
             ),
             (
                 syn::parse_quote! {
@@ -262,7 +332,7 @@ mod tests {
                     #[parts(block)]
                     pub enum Probe { Pair(Value<Px>, Value<Px>) }
                 },
-                "a block's tuple variant holds one field",
+                "a block's tuple variant of several fields holds plain values, unmarked",
             ),
             (
                 syn::parse_quote! {
@@ -277,6 +347,27 @@ mod tests {
                     pub struct Probe { pub x: Value<Px> }
                 },
                 "duplicate parts attribute",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(keyed)] pub kind: Value<Px> }
+                },
+                "keyed marks a `Vec`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "set")] pub offset: Sides<Value<Px>> }
+                },
+                "a compound value's members hold no block",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(auto)] pub gap: Sides<Value<Deg>> }
+                },
+                "auto marks a field holding a `Value<Px>` or a `Value<FontSize>`",
             ),
             (
                 syn::parse_quote! {

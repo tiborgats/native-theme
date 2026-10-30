@@ -39,6 +39,8 @@ enum Wrap {
     Value,
     /// `Vec<B>`.
     List,
+    /// `Option<B>`.
+    Option,
 }
 
 /// A block a field holds: its type as written, and the type's name.
@@ -61,6 +63,34 @@ enum Shape {
         wrap: Wrap,
         block: BlockRef,
     },
+    /// A compound value (`Sides<T>`, `Axes<T>`), patched member by member
+    /// (S6.1).
+    Compound(Compound),
+}
+
+/// A compound value of the model: its type's name, its members, and the type
+/// each member holds.
+struct Compound {
+    name: &'static str,
+    members: &'static [&'static str],
+    inner: Box<Type>,
+}
+
+/// The model's compound values and their members, in declaration order.
+const COMPOUNDS: &[(&str, &[&str])] = &[
+    ("Sides", &["top", "right", "bottom", "left"]),
+    ("Axes", &["horizontal", "vertical"]),
+];
+
+/// The compound value `ty` is, if any.
+fn compound(ty: &Type) -> Option<Compound> {
+    COMPOUNDS.iter().find_map(|(name, members)| {
+        generic_arg(ty, name).map(|inner| Compound {
+            name,
+            members,
+            inner: Box::new(inner.clone()),
+        })
+    })
 }
 
 struct BlockField {
@@ -77,12 +107,18 @@ struct BlockField {
 enum MergeKind {
     Replace,
     ByKey,
+    Keyed,
+    Members,
     Nested,
 }
 
 impl BlockField {
     fn merge_kind(&self) -> MergeKind {
+        if self.attrs.keyed {
+            return MergeKind::Keyed;
+        }
         match &self.shape {
+            Shape::Compound(_) => MergeKind::Members,
             Shape::Leaf => MergeKind::Replace,
             Shape::Map(_) => MergeKind::ByKey,
             Shape::Block {
@@ -97,6 +133,16 @@ impl BlockField {
             } => MergeKind::Nested,
             Shape::Block { .. } => MergeKind::Replace,
         }
+    }
+
+    /// A field holding no `Value`, no block and no mark: its resolved type is
+    /// its own.
+    fn is_plain_leaf(&self) -> bool {
+        matches!(self.shape, Shape::Leaf)
+            && !holds_value(&self.ty, None)
+            && !self.attrs.may_be_absent
+            && !self.attrs.auto
+            && !self.attrs.keyed
     }
 
     fn patch_ty(&self) -> TokenStream {
@@ -124,6 +170,12 @@ impl BlockField {
                 let inner = &block.ty;
                 quote!(#o<#b::BlockPatch<#inner>>)
             }
+            Shape::Compound(compound) => {
+                let m = model();
+                let name = format_ident!("{}", compound.name);
+                let inner = &compound.inner;
+                quote!(#o<#m::#name<#o<#inner>>>)
+            }
             Shape::Leaf | Shape::Map(_) | Shape::Block { .. } => {
                 let ty = &self.ty;
                 quote!(#o<#ty>)
@@ -131,10 +183,27 @@ impl BlockField {
         }
     }
 
+    /// A compound field's type, as the model names it, and its members.
+    fn members(&self) -> (TokenStream, Vec<Ident>) {
+        match &self.shape {
+            Shape::Compound(compound) => {
+                let m = model();
+                let name = format_ident!("{}", compound.name);
+                let members = compound
+                    .members
+                    .iter()
+                    .map(|member| format_ident!("{member}"))
+                    .collect();
+                (quote!(#m::#name), members)
+            }
+            Shape::Leaf | Shape::Map(_) | Shape::Block { .. } => (TokenStream::new(), Vec::new()),
+        }
+    }
+
     fn block(&self) -> Option<&BlockRef> {
         match &self.shape {
             Shape::Block { block, .. } | Shape::Map(Some(block)) => Some(block),
-            Shape::Leaf | Shape::Map(None) => None,
+            Shape::Leaf | Shape::Map(None) | Shape::Compound(_) => None,
         }
     }
 
@@ -146,8 +215,30 @@ impl BlockField {
         let r = registry();
         let b = blocks();
         let written = type_string(&self.ty);
-        let ty = match self.block() {
-            Some(block) => {
+        let may_be_absent = self.attrs.may_be_absent;
+        let auto = self.attrs.auto;
+        let ty = match (self.block(), &self.shape) {
+            (_, Shape::Compound(compound)) => {
+                let inner = type_string(&compound.inner);
+                let members = compound.members.iter().map(|member| {
+                    quote! {
+                        #r::FieldInfo {
+                            path: #member,
+                            ty: #r::FieldType::Leaf(#inner),
+                            may_be_absent: #may_be_absent,
+                            auto: #auto,
+                        }
+                    }
+                });
+                quote! {
+                    #r::FieldType::Block {
+                        ty: #written,
+                        form: #r::BlockForm::Struct,
+                        fields: &[#(#members),*],
+                    }
+                }
+            }
+            (Some(block), _) => {
                 let inner = &block.ty;
                 quote! {
                     #r::FieldType::Block {
@@ -157,10 +248,8 @@ impl BlockField {
                     }
                 }
             }
-            None => quote!(#r::FieldType::Leaf(#written)),
+            (None, _) => quote!(#r::FieldType::Leaf(#written)),
         };
-        let may_be_absent = self.attrs.may_be_absent;
-        let auto = self.attrs.auto;
         quote! {
             #r::FieldInfo { path: #path, ty: #ty, may_be_absent: #may_be_absent, auto: #auto }
         }
@@ -237,18 +326,28 @@ fn type_string(ty: &Type) -> String {
     quote!(#ty).to_string().split_whitespace().collect()
 }
 
-/// The resolved form of a type: each `Value<T>` to `Option<T>` (a `Value<Px>`
-/// or `Value<FontSize>` that may be `Auto` to `Option<Length>`), the block
-/// `block` to its resolved type, through `Option`, `Vec` and tuples.
+/// The resolved form of a type: each `Value<T>` to `Option<T>`, a
+/// `Value<FontSize>` to `Option<Px>` (converted from points and scaled,
+/// S9.4), a `Value<Px>` or `Value<FontSize>` that may be `Auto` to
+/// `Option<Length>` (S6.1), the block `block` to its resolved type, through
+/// `Option`, `Vec`, tuples, `Sides` and `Axes`.
 fn resolved_ty(ty: &Type, block: Option<&BlockRef>, auto: bool) -> TokenStream {
     let o = option();
+    let m = model();
     if let Some(inner) = generic_arg(ty, "Value") {
         if auto && holds_value(ty, Some(AUTO_UNITS)) {
-            let m = model();
             return quote!(#o<#m::Length>);
+        }
+        if holds_value(ty, Some(&["FontSize"])) {
+            return quote!(#o<#m::Px>);
         }
         let inner = resolved_ty(inner, block, auto);
         return quote!(#o<#inner>);
+    }
+    if let Some(compound) = compound(ty) {
+        let name = format_ident!("{}", compound.name);
+        let inner = resolved_ty(&compound.inner, block, auto);
+        return quote!(#m::#name<#inner>);
     }
     if let Some(inner) = generic_arg(ty, "Option") {
         let inner = resolved_ty(inner, block, auto);
@@ -283,8 +382,8 @@ fn block_ref(field: &syn::Field, inner: &Type) -> Result<BlockRef> {
     let name = plain_ident(inner).cloned().ok_or_else(|| {
         Error::new_spanned(
             &field.ty,
-            "a block field's type is `B`, `Value<B>`, `Vec<B>` or a map of `B` or `Value<B>`, \
-             `B` a block",
+            "a block field's type is `B`, `Value<B>`, `Vec<B>`, `Option<B>` or a map of `B` or \
+             `Value<B>`, `B` a block",
         )
     })?;
     Ok(BlockRef {
@@ -296,42 +395,59 @@ fn block_ref(field: &syn::Field, inner: &Type) -> Result<BlockRef> {
 fn parse_field(field: &syn::Field) -> Result<BlockField> {
     let attrs = attrs::parse_field_attrs(&field.attrs)?;
     let ty = field.ty.clone();
-    if attrs.may_be_absent && !holds_value(&ty, None) {
+    let compound = compound(&ty);
+    let held = compound.as_ref().map_or(&ty, |c| &*c.inner);
+    if attrs.keyed && generic_arg(&ty, "Vec").is_none() {
+        return Err(Error::new_spanned(&field.ty, "keyed marks a `Vec`"));
+    }
+    if attrs.may_be_absent && !holds_value(held, None) {
         return Err(Error::new_spanned(
             &field.ty,
             "may_be_absent marks a field holding a `Value`",
         ));
     }
-    if attrs.auto && !holds_value(&ty, Some(AUTO_UNITS)) {
+    if attrs.auto && !holds_value(held, Some(AUTO_UNITS)) {
         return Err(Error::new_spanned(
             &field.ty,
             "auto marks a field holding a `Value<Px>` or a `Value<FontSize>`",
         ));
     }
-    let shape = match (attrs.block, map_pair(&ty)) {
-        (Some(_), Some((_, value))) => {
-            let inner = generic_arg(value, "Value").unwrap_or(value);
-            Shape::Map(Some(block_ref(field, inner)?))
+    let shape = if let Some(compound) = compound {
+        if attrs.block.is_some() {
+            return Err(Error::new_spanned(
+                &field.ty,
+                "a compound value's members hold no block",
+            ));
         }
-        (Some(kind), None) => {
-            let (wrap, inner) = if let Some(inner) = generic_arg(&ty, "Value") {
-                (Wrap::Value, inner)
-            } else if let Some(inner) = generic_arg(&ty, "Vec") {
-                (Wrap::List, inner)
-            } else {
-                (Wrap::Bare, &ty)
-            };
-            let block = block_ref(field, inner)?;
-            if kind == BlockKind::Append && wrap == Wrap::Bare {
-                return Err(Error::new_spanned(
-                    &field.ty,
-                    "an append block is held as `Value<B>` or `Vec<B>`",
-                ));
+        Shape::Compound(compound)
+    } else {
+        match (attrs.block, map_pair(&ty)) {
+            (Some(_), Some((_, value))) => {
+                let inner = generic_arg(value, "Value").unwrap_or(value);
+                Shape::Map(Some(block_ref(field, inner)?))
             }
-            Shape::Block { kind, wrap, block }
+            (Some(kind), None) => {
+                let (wrap, inner) = if let Some(inner) = generic_arg(&ty, "Value") {
+                    (Wrap::Value, inner)
+                } else if let Some(inner) = generic_arg(&ty, "Vec") {
+                    (Wrap::List, inner)
+                } else if let Some(inner) = generic_arg(&ty, "Option") {
+                    (Wrap::Option, inner)
+                } else {
+                    (Wrap::Bare, &ty)
+                };
+                let block = block_ref(field, inner)?;
+                if kind == BlockKind::Append && wrap == Wrap::Bare {
+                    return Err(Error::new_spanned(
+                        &field.ty,
+                        "an append block is held as `Value<B>`, `Vec<B>` or `Option<B>`",
+                    ));
+                }
+                Shape::Block { kind, wrap, block }
+            }
+            (None, Some(_)) => Shape::Map(None),
+            (None, None) => Shape::Leaf,
         }
-        (None, Some(_)) => Shape::Map(None),
-        (None, None) => Shape::Leaf,
     };
     Ok(BlockField {
         ident: field.ident.clone(),
@@ -485,6 +601,19 @@ fn expand_fields(
         match f.merge_kind() {
             MergeKind::Replace => quote!(#b::replace_slot(&mut self.#ident, #ident);),
             MergeKind::ByKey => quote!(#b::merge_slot_by_key(&mut self.#ident, #ident);),
+            MergeKind::Keyed => quote!(#b::merge_slot_keyed(&mut self.#ident, #ident);),
+            MergeKind::Members => {
+                let (name, members) = f.members();
+                let none = members
+                    .iter()
+                    .map(|m| quote!(#m: ::core::option::Option::None));
+                quote! {
+                    if let ::core::option::Option::Some(later) = #ident {
+                        let held = self.#ident.get_or_insert_with(|| #name { #(#none),* });
+                        #(#b::replace_slot(&mut held.#members, later.#members);)*
+                    }
+                }
+            }
             MergeKind::Nested => quote! {
                 #b::merge_slot(&mut self.#ident, #ident).map_err(|c| c.under(#path))?;
             },
@@ -500,6 +629,23 @@ fn expand_fields(
             MergeKind::ByKey => quote! {
                 if let ::core::option::Option::Some(entries) = #ident { #b::merge_by_key(&mut self.#ident, entries); }
             },
+            MergeKind::Keyed => quote! {
+                if let ::core::option::Option::Some(items) = #ident {
+                    #b::KeyedItem::merge_keyed(&mut self.#ident, items);
+                }
+            },
+            MergeKind::Members => {
+                let (_, members) = f.members();
+                quote! {
+                    if let ::core::option::Option::Some(later) = #ident {
+                        #(
+                            if let ::core::option::Option::Some(value) = later.#members {
+                                self.#ident.#members = value;
+                            }
+                        )*
+                    }
+                }
+            }
             MergeKind::Nested => quote! {
                 if let ::core::option::Option::Some(field_patch) = #ident {
                     #b::Apply::apply(&mut self.#ident, field_patch).map_err(|c| c.under(#path))?;
@@ -656,19 +802,45 @@ fn expand_enum(
                 }
             }
             Fields::Unnamed(unnamed) => {
-                let field = match unnamed.unnamed.iter().collect::<Vec<_>>().as_slice() {
-                    [only] => parse_field(only)?,
-                    _ => {
-                        return Err(Error::new_spanned(
-                            variant,
-                            "a block's tuple variant holds one field",
-                        ));
+                let fields = unnamed
+                    .unnamed
+                    .iter()
+                    .map(parse_field)
+                    .collect::<Result<Vec<_>>>()?;
+                match fields.as_slice() {
+                    [only] => {
+                        let ty = only.resolved_ty();
+                        let field_docs = &only.docs;
+                        variants.push(quote!(#(#docs)* #ident(#(#field_docs)* #ty)));
+                        infos.push(only.field_info(&snake));
                     }
-                };
-                let ty = field.resolved_ty();
-                let field_docs = &field.docs;
-                variants.push(quote!(#(#docs)* #ident(#(#field_docs)* #ty)));
-                infos.push(field.field_info(&snake));
+                    several => {
+                        if several.iter().any(|f| !f.is_plain_leaf()) {
+                            return Err(Error::new_spanned(
+                                variant,
+                                "a block's tuple variant of several fields holds plain values, \
+                                 unmarked",
+                            ));
+                        }
+                        let tys = several.iter().map(|f| &f.ty);
+                        variants.push(quote!(#(#docs)* #ident(#(#tys),*)));
+                        let written = several
+                            .iter()
+                            .map(|f| type_string(&f.ty))
+                            .collect::<Vec<_>>()
+                            .join(",");
+                        let written = format!("({written})");
+                        let r = registry();
+                        infos.push(quote! {
+                            #r::FieldInfo {
+                                path: #snake,
+                                ty: #r::FieldType::Leaf(#written),
+                                may_be_absent: false,
+                                auto: false,
+                            }
+                        });
+                    }
+                }
             }
             Fields::Unit => {
                 variants.push(quote!(#(#docs)* #ident));

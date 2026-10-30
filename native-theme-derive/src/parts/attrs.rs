@@ -34,6 +34,9 @@ pub(crate) struct FieldAttrs {
     /// `#[parts(block = "fields" | "append" | "set")]`: the field holds a
     /// block of that kind.
     pub block: Option<BlockKind>,
+    /// `#[parts(keyed)]`: a list whose items merge by their own key (S6.1:
+    /// the bindings by role or surface, the transitions by property group).
+    pub keyed: bool,
 }
 
 fn flag(slot: &mut bool, meta: &syn::meta::ParseNestedMeta<'_>) -> Result<()> {
@@ -70,6 +73,8 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
                 flag(&mut out.may_be_absent, &meta)
             } else if meta.path.is_ident("auto") {
                 flag(&mut out.auto, &meta)
+            } else if meta.path.is_ident("keyed") {
+                flag(&mut out.keyed, &meta)
             } else if meta.path.is_ident("block") {
                 if out.block.is_some() {
                     return Err(meta.error("duplicate parts attribute"));
@@ -91,7 +96,7 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
                 Ok(())
             } else {
                 Err(meta.error(
-                    "unknown parts field attribute: expected may_be_absent, auto or block",
+                    "unknown parts field attribute: expected may_be_absent, auto, keyed or block",
                 ))
             }
         })?;
