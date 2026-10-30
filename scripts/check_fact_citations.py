@@ -74,26 +74,46 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
 
 - Notations, by the cited file's type (notation_of): `css` (.css, .scss, .sass, .less, .html, .svg), `xaml` (.xaml),
   `ini` (.colors, .ini, .conf, `kdeglobals`, a name ending in `rc` without a suffix), `cpp` (.c, .cc, .cpp, .cxx, .h,
-  .hh, .hpp, .m, .mm), `qml` (.qml, .js), `kotlin` (.kt, .kts), `android` (an .xml file in a `res/` folder: Android's
-  resources), `data` (.toml, .json, .csv: an evidence file's), `text` (any other file, a JSON page's string). Each
-  reads, in this order, and no span is read twice:
+  .hh, .hpp, .m, .mm), `qml` (.qml, .js), `kotlin` (.kt, .kts), `kcfg` (.kcfg: KConfigXT), `android` (an .xml file
+  in a `res/` folder: Android's resources), `data` (.toml, .json, .csv: an evidence file's), `text` (any other file, a
+  JSON page's string). Each reads, in this order, and no span is read twice:
   - hex colours (every notation masks a `#<hex digits>` run): `#rgb`, `#rrggbb` everywhere; `#rgba`, `#rrggbbaa`
-    (RGBA) in `css` and `data`; `#argb`, `#aarrggbb` (ARGB) in `xaml` and `android`; other lengths read nothing;
+    (RGBA) in `css` and `data`; `#argb`, `#aarrggbb` (ARGB) in `xaml` and `android`, and `#aarrggbb` in `kcfg`
+    (QColor's string form); other lengths read nothing;
   - `data`: the model's own literal forms `srgb(r, g, b[, a])` and `display_p3(r, g, b[, a])` (fractions, S2.1), which
     a harness may write;
   - `css` and `data`: `rgb(r, g, b)`, `rgba(r, g, b, a)`, `rgb(r g b / a)`, the function names in any case
     (libadwaita writes `RGB(`; channels 0-255 or `%`, alpha 0-1 or `%`), SCSS's `rgba(<hex>, a)`; `css`: the names
     `black`, `white`, `transparent`;
   - `qml`: `Qt.rgba(r, g, b, a)` (fractions), and a quoted colour name of QML_NAMES in any case (`"transparent"`:
-    the names the cited QML uses, valued as qtbase's `qcolor.cpp` table); `cpp`: `QColor(r, g, b[, a])` and the C++
-    initialiser `{r, g, b[, a]}` (bytes); `ini`: a key's `r,g,b[,a]` (bytes);
+    the names the cited QML uses, valued as qtbase's `qcolor.cpp` table); `cpp`: `QColor::fromRgbF(r, g, b[, a])`
+    (fractions, an `f` suffix allowed), `QColor(r, g, b[, a])` (bytes), and the C++ initialiser `{r, g, b[, a]}`
+    (bytes) only in a colour context: after, in the quote, a colour type of CPP_COLOUR_TYPES_RX (`QColor`, and
+    KColorScheme's default tables `SerializedColors` and `DecorationColors`, kcolorscheme@6.31.0
+    src/kcolorscheme.cpp:101-122, :213), as `{ 2, 2, 2, 2 }` is WinUI's `XTHICKNESS` and `{ 0, 0, 0, 0 }` an
+    `XRECTF`, numbers (the ledger's queue #54): a quote of one row of KColorScheme's table holds its declaration
+    line too; `ini`: a key's `r,g,b[,a]` (bytes); `kcfg`: in a quote declaring a `Color` entry (`type="Color"`, any
+    case, as kconfig_compiler lower-cases it), a `<default>` element's `r,g,b[,a]` (bytes) or a colour name of
+    QML_NAMES in any case, which kconfig_compiler passes to `QColor( r,g,b[,a] )` and `QColor( "<name>" )`
+    (kconfig@6.31.0 src/kconfig_compiler/KConfigXmlParser.cpp:70-77; a `code="true"` default is code, read as any
+    text); a `.kcfg`'s numbers are the number form's (a XAML `Thickness`, `Margin` or `Padding` likewise: XAML has
+    no byte colour list);
   - `xaml`: a `TimeSpan` `[d.]h:m:s[.f]` (a duration), and a colour name of XAML_NAMES as an attribute's value or an
     element's content (`Color="Transparent"`: the names the cited theme resources use, valued as WinUI's
-    `KnownColors.h`, so `Transparent` is white with alpha 0);
+    `KnownColors.h`, so `Transparent` is white with alpha 0); a `<LinearGradientBrush …>` with `StartPoint` and
+    `EndPoint` adds S2.3's angle (xaml_linear_angle; the ledger's queue #38): the points' direction (dx, dy) in the
+    brush's coordinate space (y down), each axis scaled by a `ScaleTransform` that the quote gives the brush as its
+    `RelativeTransform` or `Transform` before its next brush, is `atan2(dx, -dy)` in degrees taken into `0..360`, 0
+    pointing to the top and growing clockwise, as CSS's `linear-gradient()` (WinUI's elevation border,
+    `StartPoint="0,0" EndPoint="0,3"`, is 180; under the light theme's `ScaleY="-1"`, 0); no angle where a point is
+    missing, the two coincide, or a brush transform is another one. The angle is the points' own: under
+    `MappingMode="RelativeToBoundingBox"` a diagonal is the drawn angle only on a square box (an axis-aligned
+    gradient, or `Absolute` mapping, is exact). The points' numbers stay numbers (an `extent` reads them);
   - `kotlin` (Compose): `Color(r, g, b[, a])` and `Color(red = r, green = g, blue = b[, alpha = a])` (Int arguments,
     decimal or `0x`, are bytes; Float ones, with an `f`, fractions), an eight-digit `0xAARRGGBB` integer (ARGB, as in
-    `Color(0xFF5C77FF)`; other `0x` integers read nothing), and `<n>.dp`, `<n>.sp` (px) and `<n>.em` (no literal);
-    a number's `f`, `F` or `L` suffix is Kotlin's type, not a unit;
+    `Color(0xFF5C77FF)`; other `0x` integers read nothing), and `[-]<n>.dp`, `[-]<n>.sp` (px) and `<n>.em` (no
+    literal); a number's `f`, `F` or `L` suffix is Kotlin's type, not a unit, and in `cpp` its `f` or `F` suffix
+    C++'s (`0.7f`);
   - on a source that serves only Apple's presets (Run.apple_only: an `sdk` or `snapshot` entry whose generations are
     all `macos-*` and `ios-*`, a snapshot of an Apple documentation site serving none, or measured evidence of an
     image mapped to such a preset): `<n> pt`, `<n>pt`, `<w>x<h> pt` and `<w> × <h> pt` are logical points, px (two
@@ -116,7 +136,8 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   previous item); everywhere else `pt` is a typographic point.
 - Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
   `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, the
-  result a duration).
+  result a duration), `negate` (− x: WinUI's `FocusVisualMargin="-3"`, an inward margin, is the model's outward
+  focus offset of 3px, the ledger's queue #38).
 - Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17); `srgb(…)` and
   `display_p3(…)` literals in their own space. A `display_p3(…)` value is the colour as Apple publishes it (S2.1: the
   preset cites the published value exactly and converts when the file is read), so it is compared in Display P3, not
@@ -133,6 +154,7 @@ import csv
 import io
 import itertools
 import json
+import math
 import re
 import subprocess
 import sys
@@ -157,6 +179,7 @@ CONVERSIONS = {
     "byte_to_fraction": lambda x: x / 255,
     "complement": lambda x: 1 - x,
     "seconds_to_ms": lambda x: x * 1000,
+    "negate": lambda x: -x,
 }
 # unit -> (dimension, factor to the dimension's canonical unit); None: no dimension (no literal)
 UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("pt", 1), "ms": ("duration", 1),
@@ -190,6 +213,7 @@ NOTATIONS = {
     "cpp": (".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".m", ".mm"),
     "qml": (".qml", ".js"),
     "kotlin": (".kt", ".kts"),
+    "kcfg": (".kcfg",),
     "data": (".toml", ".json", ".csv"),
 }
 
@@ -253,12 +277,24 @@ QML_NAME_RX = re.compile(r"""(["'])(""" + "|".join(QML_NAMES) + r")\1", re.I)
 XAML_NAME_RX = re.compile(r"""(?<=["'>])(""" + "|".join(XAML_NAMES) + r""")(?=["'<])""")
 QCOLOR_RX = re.compile(r"\bQColor\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d{1,3})\s*)?\)")
 BRACE_RX = re.compile(r"\{\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d{1,3})\s*)?\}")
+# the C++ types whose initialiser lists hold byte colours: Qt's colour, KColorScheme's default tables
+# (kcolorscheme@6.31.0 src/kcolorscheme.cpp:101-122, :213)
+CPP_COLOUR_TYPES_RX = re.compile(r"\b(?:QColor|SerializedColors|DecorationColors)\b")
+CPP_NUM = r"-?(?:\d+(?:\.\d*)?|\.\d+)[fF]?"
+QCOLOR_F_RX = re.compile(rf"\bQColor::fromRgbF\(\s*({CPP_NUM})\s*,\s*({CPP_NUM})\s*,\s*({CPP_NUM})\s*"
+                         rf"(?:,\s*({CPP_NUM})\s*)?\)")
+XAML_LINEAR_RX = re.compile(r"<LinearGradientBrush(?=[\s/>])[^>]*>")
+XAML_POINT_RX = re.compile(rf"\b(Start|End)Point\s*=\s*\"\s*({NUM})\s*,\s*({NUM})\s*\"")
+XAML_SCALE_RX = re.compile(r"<LinearGradientBrush\.(?:Relative)?Transform>\s*(?:<ScaleTransform\b([^>]*)/>)?")
+XAML_SCALE_ATTR_RX = re.compile(rf"\bScale([XY])\s*=\s*\"\s*({NUM})\s*\"")
+KCFG_COLOUR_RX = re.compile(r"\btype\s*=\s*\"color\"", re.I)
+KCFG_DEFAULT_RX = re.compile(r"<default>\s*([^<]*?)\s*</default>")
 BYTES_RX = re.compile(r"(?<![\w.,])(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d{1,3}))?(?![\w.,])")
 TIMESPAN_RX = re.compile(r"(?<![\w:.])(?:(\d+)\.)?(\d+):(\d+):(\d+(?:\.\d+)?)(?![\w:])")
 KT_COLOR_RX = re.compile(rf"\bColor\(\s*(?:red\s*=\s*)?({KT_NUM})\s*,\s*(?:green\s*=\s*)?({KT_NUM})\s*,\s*"
                          rf"(?:blue\s*=\s*)?({KT_NUM})\s*(?:,\s*(?:alpha\s*=\s*)?({KT_NUM})\s*)?\)")
 KT_HEX_RX = re.compile(r"\b0x([0-9A-Fa-f]+)(?:[uU]?L)?\b")
-KT_UNIT_RX = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\.(dp|sp|em)\b")
+KT_UNIT_RX = re.compile(r"(?<![\w.])(-?\d+(?:\.\d+)?)\.(dp|sp|em)\b")
 APPLE_PT_RX = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?:\s*[x×]\s*(\d+(?:\.\d+)?))?\s*pt\b")
 NUMBER_RX = re.compile(rf"(?<![\w.])(-(?=[\d.]))?(\d+(?:\.\d+)?{EXP}|\.\d+{EXP})([A-Za-z]*)(?!\w)")
 NAMES_RX = re.compile(r"(?<![\w-])(black|white|transparent)(?![\w-])")
@@ -272,6 +308,28 @@ def _kt_channels(groups):
     else:
         ch = [float(int(v, 16) if v.lower().startswith("0x") else int(v)) for v in vals]
     return tuple(ch[:3]) + ((ch[3],) if len(ch) == 4 else (255,))
+
+
+def xaml_linear_angle(text: str, tag):
+    """S2.3's angle of the `<LinearGradientBrush …>` tag `tag` matched in `text`, or None: the direction from its
+    `StartPoint` to its `EndPoint`, (dx, dy) in the brush's coordinate space (y down), each scaled by a
+    `ScaleTransform` that is the brush's `RelativeTransform` or `Transform` in the text before its next brush,
+    is `atan2(dx, -dy)` in degrees, in `0..360`: 0 points to the top, angles grow clockwise, as CSS's
+    `linear-gradient()` (`StartPoint="0,0" EndPoint="0,3"` is 180, flipped by `ScaleY="-1"` 0). None where a point is
+    missing, the two coincide, or a brush transform is anything but a `ScaleTransform`."""
+    points = {m.group(1): (float(m.group(2)), float(m.group(3))) for m in XAML_POINT_RX.finditer(tag.group(0))}
+    if set(points) != {"Start", "End"}:
+        return None
+    dx, dy = points["End"][0] - points["Start"][0], points["End"][1] - points["Start"][1]
+    nxt = XAML_LINEAR_RX.search(text, tag.end())
+    for m in XAML_SCALE_RX.finditer(text, tag.end(), nxt.start() if nxt else len(text)):
+        if m.group(1) is None:
+            return None
+        scale = {a: float(v) for a, v in XAML_SCALE_ATTR_RX.findall(m.group(1))}
+        dx, dy = dx * scale.get("X", 1.0), dy * scale.get("Y", 1.0)
+    if dx == 0 and dy == 0:
+        return None
+    return math.degrees(math.atan2(dx, -dy)) % 360
 
 
 def quote_literals(text: str, notation: str, apple: bool = False) -> list:
@@ -295,7 +353,7 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             lit = Lit("colour", "srgb", _hex(d, "rgba"))
         elif len(d) in (4, 8) and notation in ("css", "data"):
             lit = Lit("colour", "srgb", _hex(d, "rgba"))
-        elif len(d) in (4, 8) and notation in ("xaml", "android"):
+        elif (len(d) in (4, 8) and notation in ("xaml", "android")) or (len(d) == 8 and notation == "kcfg"):
             lit = Lit("colour", "srgb", _hex(d, "argb"))
         add(m.start(), m.end(), lit)
     if notation == "data":
@@ -328,12 +386,30 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
         for m in QML_NAME_RX.finditer(text):
             add(m.start(), m.end(), Lit("colour", "srgb", QML_NAMES[m.group(2).lower()]))
     if notation == "cpp":
+        for m in QCOLOR_F_RX.finditer(text):
+            vals = [float(g.rstrip("fF")) * 255 for g in m.groups() if g is not None]
+            if all(0 <= v <= 255 for v in vals):
+                add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
+                                                                                 else (255,))))
+        context = CPP_COLOUR_TYPES_RX.search(text)
         for rx in (QCOLOR_RX, BRACE_RX):
             for m in rx.finditer(text):
+                if rx is BRACE_RX and not (context and context.start() < m.start()):
+                    continue
                 vals = [float(g) for g in m.groups() if g is not None]
                 if all(v <= 255 for v in vals):
                     add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
                                                                                      else (255,))))
+    if notation == "kcfg" and KCFG_COLOUR_RX.search(text):
+        for m in KCFG_DEFAULT_RX.finditer(text):
+            v = m.group(1)
+            if re.fullmatch(r"\d+,\s*\d+,\s*\d+(?:,\s*\d+)?", v):
+                vals = [float(x) for x in v.split(",")]
+                if all(x <= 255 for x in vals):
+                    add(m.start(1), m.end(1), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
+                                                                                       else (255,))))
+            elif v.lower() in QML_NAMES:
+                add(m.start(1), m.end(1), Lit("colour", "srgb", QML_NAMES[v.lower()]))
     if notation == "ini":
         for m in BYTES_RX.finditer(text):
             vals = [float(g) for g in m.groups() if g is not None]
@@ -347,6 +423,10 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             add(m.start(), m.end(), Lit("num", "duration", ms))
         for m in XAML_NAME_RX.finditer(text):
             add(m.start(), m.end(), Lit("colour", "srgb", XAML_NAMES[m.group(1)]))
+        for m in XAML_LINEAR_RX.finditer(text):
+            angle = xaml_linear_angle(text, m)
+            if angle is not None:
+                found.append((m.start(), Lit("num", "angle", angle)))
     if notation == "kotlin":
         for m in KT_COLOR_RX.finditer(text):
             ch = _kt_channels(m.groups())
@@ -367,7 +447,8 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             continue
         x = float((m.group(1) or "") + m.group(2))
         unit = m.group(3)
-        if not unit or (notation == "kotlin" and unit in ("f", "F", "L")):
+        if not unit or (notation == "kotlin" and unit in ("f", "F", "L")) or (notation == "cpp"
+                                                                             and unit in ("f", "F")):
             found.append((m.start(), Lit("num", None, x)))
         elif unit in UNITS and UNITS[unit] is not None:
             dim, factor = UNITS[unit]
@@ -1248,6 +1329,17 @@ kind = "measured"
 evidence = "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/shadows.toml#button.disabled.opacity_percent"
 conversion = ["percent_to_fraction"]
 tolerance = 0
+
+[[fact]]
+key = "button.body.padding.top"
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Button_themeresources.xaml:10"
+quote = '<Setter Property="FocusVisualMargin" Value="-3" />'
+conversion = ["negate"]
 ''',
     "cache/hig-typography@2026-10-29/page.json": '{"sections": [{"text": "Large Title 26 pt"}, '
                                                  '{"text": "The   Body 17 pt style."}, {"text": "weight 590"}]}',
@@ -1287,7 +1379,7 @@ conditions = ["scheme:dark"]
     "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Button_themeresources.xaml":
         '<ResourceDictionary>\n\n\n\n\n<VisualState x:Name="PointerOver">\n'
         '  <DoubleAnimation Storyboard.TargetProperty="Opacity" Duration="0:0:0.083" />\n</VisualState>\n'
-        '<x:Double x:Key="Button_MinWidth">80</x:Double>\n',
+        '<x:Double x:Key="Button_MinWidth">80</x:Double>\n<Setter Property="FocusVisualMargin" Value="-3" />\n',
     "cache/catppuccin@1.7.1/palette.json": "\n" * 119 + '        "hex": "#313244",\n',
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml":
         "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
@@ -1423,6 +1515,8 @@ SELF_TEST_CASES = [
     ("shadow: a key the fact lacks", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
      "shadows.toml", "inset = false },\n", "inset = false, offset_px = 1 },\n",
      ["the evidence has 'layers.0.offset_px', the fact does not"]),
+    ("WinUI: a margin's sign without negate", "docs/facts/windows/more.toml", 'conversion = ["negate"]\n', "",
+     ["3px is in no quote serving windows-11"]),
     ("evidence: a conversion left out", "docs/facts/windows/more.toml", 'conversion = ["percent_to_fraction"]\n', "",
      ["the evidence holds 50, the fact 0.5"]),
     ("evidence: another converted value", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
@@ -1518,6 +1612,45 @@ SELF_TEST_NOTATIONS = [
     ("data", "display_p3(1, 0.5, 0) srgb(0, 0, 1, 0.5)", ["p3(255, 127.5, 0, 255)", "srgb(0, 0, 255, 127.5)"]),
     ("text", "<default>'Adwaita Sans 11'</default>", ["11"]),
     ("xaml", '<CornerRadius x:Key="ControlCornerRadius">4</CornerRadius> CornerRadius="4"', ["4", "4"]),
+    # a LinearGradientBrush's points as S2.3's angle (the ledger's queue #38, #54): WinUI's elevation border,
+    # Common_themeresources_any.xaml:186 (dark) and :382-385 (light, flipped)
+    ("xaml", '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" '
+             'EndPoint="0,3">', ["180deg", "0", "0", "0", "3"]),
+    ("xaml", '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" '
+             'EndPoint="0,3"> <LinearGradientBrush.RelativeTransform> <ScaleTransform ScaleY="-1" CenterY="0.5" />',
+     ["0deg", "0", "0", "0", "3", "-1", "0.5"]),
+    ("xaml", '<LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5"> <LinearGradientBrush EndPoint="1,0" '
+             'StartPoint="1,1"> <LinearGradientBrush StartPoint="1,0" EndPoint="0,0"> <LinearGradientBrush '
+             'StartPoint="0,0" EndPoint="1,1">',
+     ["90deg", "0", "0.5", "1", "0.5", "0deg", "1", "0", "1", "1", "270deg", "1", "0", "0", "0", "135deg", "0", "0",
+      "1", "1"]),
+    ("xaml", '<LinearGradientBrush StartPoint="0,0" EndPoint="0,1"> <LinearGradientBrush.RelativeTransform> '
+             '<RotateTransform Angle="90" />', ["0", "0", "0", "1", "90"]),
+    ("xaml", '<LinearGradientBrush StartPoint="0,0"> <LinearGradientBrush StartPoint="0,1" EndPoint="0,1">',
+     ["0", "0", "0", "1", "0", "1"]),
+    # a XAML Thickness, Margin or Padding is numbers (the ledger's queue #54)
+    ("xaml", '<Thickness x:Key="FocusThickness">2,2,2,2</Thickness> Margin="2,2,2,2" Padding="11,5,11,6"',
+     ["2", "2", "2", "2", "2", "2", "2", "2", "11", "5", "11", "6"]),
+    # C++'s brace list is a byte colour only after a colour type (the ledger's queue #54), fromRgbF, the f suffix
+    # (#47)
+    ("cpp", "const XTHICKNESS DefaultFocusVisualPrimaryThickness = { 2, 2, 2, 2 };", ["2", "2", "2", "2"]),
+    ("cpp", "static constexpr XRECTF DefaultValueRect = { 0, 0, 0, 0 };", ["0", "0", "0", "0"]),
+    ("cpp", "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background",
+     ["srgb(239, 240, 241, 255)"]),
+    ("cpp", "{ 239, 240, 241 }, // Background", ["239", "240", "241"]),
+    ("cpp", "{ 1, 2, 3 } QColor c{ 4, 5, 6 };", ["1", "2", "3", "srgb(4, 5, 6, 255)"]),
+    ("cpp", "QColor::fromRgbF(0.5f, 0, 1.0f, 0.25f); QColor::fromRgbF(1, 1, 1); qreal x = 0.7f; 2.F",
+     ["srgb(127.5, 0, 255, 63.75)", "srgb(255, 255, 255, 255)", "0.7", "2"]),
+    # .kcfg defaults (#47): a Color entry's <default> as kconfig_compiler reads it
+    # (kconfig@6.31.0 src/kconfig_compiler/KConfigXmlParser.cpp:70-77)
+    ("kcfg", '<entry name="accentColor" key="AccentColor" type="Color"> <label>Accent color</label> '
+             '<default>transparent</default>', ["srgb(0, 0, 0, 0)"]),
+    ("kcfg", '<entry name="Color" type="Color"> <default>255, 0, 0</default> <default>#a0ff0000</default> '
+             '<default code="true">QColor(Qt::red)</default>', ["srgb(255, 0, 0, 255)", "srgb(255, 0, 0, 160)"]),
+    ("kcfg", '<entry name="AnimationSteps" type = "Int"> <default>10</default> </entry> <default>255,0,0</default>',
+     ["10", "255", "0", "0"]),
+    # Kotlin's negative units (#47)
+    ("kotlin", "letterSpacing = -0.2.sp, 0.5.sp -1.dp", ["-0.2px", "0.5px", "-1px"]),
 ]
 
 # (quote, text value, whether a text notation reads it as a whole string; S17 *The quote check*)
@@ -1565,20 +1698,22 @@ def self_test() -> int:
             if got != want:
                 failures.append(f"{notation}{' (Apple)' if apple else ''} {text!r}: got {got}, want {want}")
     for names, x, want in ((["percent_to_fraction"], 50, "0.5"), (["byte_to_fraction"], 255, "1"),
-                           (["byte_to_fraction", "complement"], 51, "0.8"), (["seconds_to_ms"], 0.25, "250ms")):
+                           (["byte_to_fraction", "complement"], 51, "0.8"), (["seconds_to_ms"], 0.25, "250ms"),
+                           (["negate"], -3, "3")):
         got = [str(v) for v in convert([Lit("num", None, x)], names)]
         if got != [f"{x:g}", want]:
             failures.append(f"conversion {names}: got {got}")
     for quote, text, want in SELF_TEST_TEXTS:
         if (text in quote_texts(quote)) != want:
             failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
-    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "percent_to_fraction", "seconds_to_ms"]:
+    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "percent_to_fraction", "seconds_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
                        ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),
                        ("probe.toml", "data"), ("README.md", "text"), ("material3/Menu.kt", "kotlin"),
                        ("lib/java/com/google/android/material/color/res/values/colors.xml", "android"),
-                       ("res/values/dimens.xml", "android"), ("data/fonts/fonts.xml", "text")):
+                       ("res/values/dimens.xml", "android"), ("data/fonts/fonts.xml", "text"),
+                       ("kcms/colors/colorssettings.kcfg", "kcfg")):
         if notation_of(path) != want:
             failures.append(f"notation of {path}: got {notation_of(path)}")
     if not equal(Lit("num", "number", 1.0), Lit("num", None, 1.00009)) or equal(Lit("num", "number", 1.0),

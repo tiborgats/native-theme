@@ -1,8 +1,6 @@
 //! Evaluation (S2.2): a typed expression's value, its references answered by
 //! an [`Env`].
 
-use std::fmt;
-
 use super::arith;
 use super::ty::{Bound, Node, Ty, TypedExpr};
 use super::{Func, Name, Ref};
@@ -11,7 +9,7 @@ use crate::next::units::{Deg, FontSize, Ms, Px};
 
 /// An evaluated value.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Val {
+pub(crate) enum Val {
     /// A colour.
     Color(Color),
     /// A length.
@@ -39,7 +37,7 @@ pub enum Val {
 
 /// What an expression's references read: the theme, the query's element and
 /// the scope it is evaluated in.
-pub trait Env {
+pub(crate) trait Env {
     /// The resolved value `reference` names (S2.2):
     ///
     /// - a role (`role.<set>.…`, `role.global.…`, `role.@…`, `surface.…`)
@@ -70,30 +68,28 @@ pub trait Env {
     fn font_size(&self, size: FontSize) -> Px;
 }
 
-/// A call of a platform function not implemented yet: the one way
-/// [`TypedExpr::eval`] gives no value.
+/// A platform function implemented to its source (S2.2), the only kind a
+/// typed expression calls: typing refuses the others
+/// ([`TypeError::NotImplemented`](super::ty::TypeError::NotImplemented)).
 ///
-/// Each platform function is implemented to its source under
-/// `next::platform`, with its vector table, by the task that needs it (the
-/// M1a design's task 13 and the value phase); until then a call answers this.
+/// Each is implemented under `next::platform`, with its vector table, by the
+/// task that needs it (the M1a design's task 13 and the value phase); none is
+/// yet.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct NotImplemented {
-    /// The function.
-    pub func: Func,
-}
+pub(super) enum Platform {}
 
-impl fmt::Display for NotImplemented {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "the platform function `{}` is not implemented yet",
-            self.func
-        )
+impl Platform {
+    /// The implemented platform function `func` names; `None` for one not
+    /// implemented yet and for the model's own arithmetic.
+    pub(super) fn of(_func: Func) -> Option<Platform> {
+        None
+    }
+
+    /// The function's value over its typed arguments.
+    fn eval(self, _args: &[Node], _env: &dyn Env) -> Val {
+        match self {}
     }
 }
-
-impl std::error::Error for NotImplemented {}
 
 impl TypedExpr {
     /// The expression's value where it is used, its references read from
@@ -102,55 +98,42 @@ impl TypedExpr {
     /// Total (S2.2's *Totality*): `alpha` clamps its alpha, `mix` its
     /// fraction, `pick` takes the floored index's Euclidean remainder, a
     /// non-finite result or operand is zero, and the field's bound zeroes a
-    /// negative, clamps a fraction and floors an integer. Only a call of a
-    /// platform function not implemented yet gives [`NotImplemented`].
-    pub fn eval(&self, env: &dyn Env) -> Result<Val, NotImplemented> {
-        let value = eval(&self.node, env)?;
-        Ok(bounded(value, self.bound))
+    /// negative, clamps a fraction and floors an integer.
+    pub(crate) fn eval(&self, env: &dyn Env) -> Val {
+        bounded(eval(&self.node, env), self.bound)
     }
 }
 
-fn eval(node: &Node, env: &dyn Env) -> Result<Val, NotImplemented> {
-    Ok(match node {
+fn eval(node: &Node, env: &dyn Env) -> Val {
+    match node {
         Node::Lit(value) => value.clone(),
         Node::Font(size) => Val::FontSize(Px(arith::finite(env.font_size(*size).0))),
         Node::Ref(reference) => finite(env.get(reference)),
         Node::Binary(op, operands, ty) => {
             let [x, y] = operands.as_ref();
-            let (x, y) = (number(&eval(x, env)?), number(&eval(y, env)?));
+            let (x, y) = (number(&eval(x, env)), number(&eval(y, env)));
             of_type(ty, arith::binary(*op, x, y))
         }
-        Node::Floor(x, ty) => of_type(ty, arith::floor(number(&eval(x, env)?))),
+        Node::Floor(x, ty) => of_type(ty, arith::floor(number(&eval(x, env)))),
         Node::Alpha(operands) => {
             let [c, a] = operands.as_ref();
-            Val::Color(arith::alpha(color(&eval(c, env)?), number(&eval(a, env)?)))
+            Val::Color(arith::alpha(color(&eval(c, env)), number(&eval(a, env))))
         }
         Node::Mix(operands) => {
             let [a, b, t] = operands.as_ref();
             Val::Color(arith::mix(
-                color(&eval(a, env)?),
-                color(&eval(b, env)?),
-                number(&eval(t, env)?),
+                color(&eval(a, env)),
+                color(&eval(b, env)),
+                number(&eval(t, env)),
             ))
         }
         Node::Pick(index, colors) => {
-            let index = number(&eval(index, env)?);
-            let colors = colors
-                .iter()
-                .map(|c| eval(c, env).map(|c| color(&c)))
-                .collect::<Result<Vec<_>, _>>()?;
+            let index = number(&eval(index, env));
+            let colors: Vec<_> = colors.iter().map(|c| color(&eval(c, env))).collect();
             Val::Color(arith::pick(index, &colors).unwrap_or_else(transparent))
         }
-        Node::Platform(func, args) => platform(*func, args, env)?,
-    })
-}
-
-/// The platform functions' dispatch (S2.2): each function is implemented in
-/// its own file under `next::platform`, checked against its vector table, by
-/// the task that brings it; one not implemented yet answers
-/// [`NotImplemented`].
-fn platform(func: Func, _args: &[Node], _env: &dyn Env) -> Result<Val, NotImplemented> {
-    Err(NotImplemented { func })
+        Node::Platform(func, args) => func.eval(args, env),
+    }
 }
 
 /// A value of a computed number's type.
@@ -221,7 +204,8 @@ fn map_number(value: Val, f: impl Fn(f32) -> f32) -> Val {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::next::expr::{ElementDatum, Expr, FieldType, TypeEnv};
+    use crate::next::expr::ty::{FieldType, TypeEnv};
+    use crate::next::expr::{ElementDatum, Expr};
     use crate::next::key::Key;
 
     /// Synthetic values for the tests, none a platform's: each reference
@@ -257,6 +241,7 @@ mod tests {
                 Ref::Element(ElementDatum::Width) => Val::Length(Px(f32::INFINITY)),
                 Ref::Element(ElementDatum::Height) => Val::Length(Px(40.0)),
                 Ref::Element(ElementDatum::ItemIndex) => Val::Number(4.0),
+                Ref::Element(ElementDatum::Text) => Val::Text("Synthetic".to_owned()),
                 Ref::FontSize => Val::Length(Px(13.0)),
                 Ref::Base => Val::Length(Px(6.0)),
                 Ref::Active(_) => rgba(0.0, 0.0, 1.0, 1.0),
@@ -284,7 +269,7 @@ mod tests {
         }
     }
 
-    fn eval_as(text: &str, ty: Ty, bound: Bound) -> Result<Val, NotImplemented> {
+    fn eval_as(text: &str, ty: Ty, bound: Bound) -> Val {
         Expr::parse(text)
             .unwrap()
             .check(&FieldType::new(ty, bound), &Fixture)
@@ -293,7 +278,7 @@ mod tests {
     }
 
     fn value(text: &str, ty: Ty) -> Val {
-        eval_as(text, ty, Bound::Unbounded).unwrap()
+        eval_as(text, ty, Bound::Unbounded)
     }
 
     #[test]
@@ -303,6 +288,10 @@ mod tests {
         assert_eq!(value("font_size", Ty::Length), Val::Length(Px(13.0)));
         assert_eq!(value("element.height", Ty::Length), Val::Length(Px(40.0)));
         assert_eq!(value("values.weight", Ty::Number), Val::Number(2.5));
+        assert_eq!(
+            value("element.text", Ty::Text),
+            Val::Text("Synthetic".to_owned())
+        );
         assert_eq!(
             value("active(role.global.accent)", Ty::Color),
             Val::Color(Color {
@@ -411,7 +400,7 @@ mod tests {
 
     #[test]
     fn fraction_clamped() {
-        let fraction = |text| eval_as(text, Ty::Number, Bound::Fraction).unwrap();
+        let fraction = |text| eval_as(text, Ty::Number, Bound::Fraction);
         assert_eq!(fraction("mul(token.speed, 3)"), Val::Number(1.0));
         assert_eq!(fraction("sub(token.speed, 2)"), Val::Number(0.0));
         assert_eq!(fraction("token.speed"), Val::Number(0.5));
@@ -420,11 +409,11 @@ mod tests {
     #[test]
     fn bound_limits_the_result() {
         assert_eq!(
-            eval_as("sub(2px, token.gap)", Ty::Length, Bound::NonNegative).unwrap(),
+            eval_as("sub(2px, token.gap)", Ty::Length, Bound::NonNegative),
             Val::Length(Px(0.0))
         );
         assert_eq!(
-            eval_as("sub(2px, token.gap)", Ty::Length, Bound::Unbounded).unwrap(),
+            eval_as("sub(2px, token.gap)", Ty::Length, Bound::Unbounded),
             Val::Length(Px(-4.0))
         );
         assert_eq!(
@@ -432,8 +421,7 @@ mod tests {
                 "mul(values.weight, 3)",
                 Ty::Number,
                 Bound::Integer { max: 5 }
-            )
-            .unwrap(),
+            ),
             Val::Number(5.0)
         );
         assert_eq!(
@@ -441,8 +429,7 @@ mod tests {
                 "add(values.weight, 1)",
                 Ty::Number,
                 Bound::Integer { max: 5 }
-            )
-            .unwrap(),
+            ),
             Val::Number(3.0)
         );
         assert_eq!(
@@ -450,26 +437,8 @@ mod tests {
                 "sub(1, values.weight)",
                 Ty::Number,
                 Bound::Integer { max: 5 }
-            )
-            .unwrap(),
+            ),
             Val::Number(0.0)
         );
-    }
-
-    #[test]
-    fn platform_function_not_implemented() {
-        for (text, func) in [
-            ("qt_lighter(surface.foreground, 1.5)", Func::QtLighter),
-            (
-                "mix(kcu_overlay(surface.foreground, #000000), #ffffff, 0.5)",
-                Func::KcuOverlay,
-            ),
-        ] {
-            assert_eq!(
-                eval_as(text, Ty::Color, Bound::Unbounded),
-                Err(NotImplemented { func })
-            );
-        }
-        assert!(Func::QtLighter.is_platform());
     }
 }

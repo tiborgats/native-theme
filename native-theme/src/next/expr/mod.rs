@@ -1,17 +1,37 @@
 //! Expressions (S2.2): a derivation a field states instead of a value,
 //! `"= <expression>"` in TOML.
 //!
-//! [`Expr::parse`] reads the grammar, [`Expr::check`] types an expression
-//! against the field it is stated on when a layer is added, and
-//! [`TypedExpr::eval`] evaluates it where it is used, through an [`Env`] that
+//! [`Expr::parse`] reads the grammar; inside the crate, `Expr::check` types
+//! an expression against the field it is stated on when a layer is added, and
+//! `TypedExpr::eval` evaluates it where it is used, through an `Env` that
 //! answers its references. Evaluation is total: it clamps, floors and zeroes
-//! as S2.2's *Totality* says, so it gives a value for every typed expression;
-//! the one exception is a call of a platform function not implemented yet
-//! ([`NotImplemented`]).
+//! as S2.2's *Totality* says, and typing refuses a call of a platform function
+//! not implemented yet, so it gives a value for every typed expression.
 
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "typing and evaluation are called by S12's checks and S8's query (M1a tasks 8 to 11)"
+    )
+)]
 mod arith;
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "typing and evaluation are called by S12's checks and S8's query (M1a tasks 8 to 11)"
+    )
+)]
 mod eval;
 mod parse;
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "typing and evaluation are called by S12's checks and S8's query (M1a tasks 8 to 11)"
+    )
+)]
 mod ty;
 
 use std::fmt;
@@ -21,13 +41,7 @@ use super::key::Key;
 use super::roles::SurfaceSet;
 use super::units::{Deg, Ms, Px};
 
-pub use eval::{Env, NotImplemented, Val};
 pub use parse::{ParseError, ParseErrorKind};
-pub use ty::{
-    Bound, EnumTy, FieldType, KDE_GROUP, KDE_ROLE_KIND, KDE_SCHEME_KEY, KDE_WM_KEY,
-    NAME_INDEX_METHOD, SCHEME, SIDE, SURFACE_SET, TEXT_ROLE, TRACKING_DESIGN, Ty, TypeEnv,
-    TypeError, TypedExpr, UIKIT_PROMINENCE,
-};
 
 /// How deep an expression may nest: calls and `active(…)` inside each other
 /// (S2.2, S12).
@@ -420,26 +434,6 @@ impl Func {
     pub fn from_name(name: &str) -> Option<Func> {
         Func::ALL.into_iter().find(|func| func.name() == name)
     }
-
-    /// Whether this is a platform function, implemented to a platform's
-    /// source and checked against its vector table, rather than the model's
-    /// own arithmetic.
-    #[must_use]
-    pub const fn is_platform(self) -> bool {
-        !matches!(
-            self,
-            Func::Alpha
-                | Func::Mix
-                | Func::Mul
-                | Func::Div
-                | Func::Add
-                | Func::Sub
-                | Func::Min
-                | Func::Max
-                | Func::Floor
-                | Func::Pick
-        )
-    }
 }
 
 impl fmt::Display for Func {
@@ -565,21 +559,5 @@ mod tests {
         for datum in ElementDatum::ALL {
             assert_eq!(ElementDatum::from_name(datum.name()), Some(datum));
         }
-        let own: Vec<_> = Func::ALL.into_iter().filter(|f| !f.is_platform()).collect();
-        assert_eq!(
-            own,
-            [
-                Func::Alpha,
-                Func::Mix,
-                Func::Mul,
-                Func::Div,
-                Func::Add,
-                Func::Sub,
-                Func::Min,
-                Func::Max,
-                Func::Floor,
-                Func::Pick
-            ]
-        );
     }
 }
