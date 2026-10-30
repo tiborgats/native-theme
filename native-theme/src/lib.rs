@@ -275,6 +275,8 @@ pub mod kde;
 pub(crate) mod kde_metrics;
 /// Theme data model types, public through [`theme`].
 mod model;
+#[cfg_attr(not(nt_next_docs), doc(hidden))]
+pub mod next;
 pub mod pipeline;
 pub mod presets;
 /// Internal `ThemeReader` trait (see module docs for Option A rationale).
