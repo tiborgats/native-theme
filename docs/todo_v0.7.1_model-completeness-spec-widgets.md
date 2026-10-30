@@ -1315,11 +1315,12 @@ spaces:
     `min_width` by `min_height` where it states them) and its `margin`'s top or bottom and right (the end side, mirrored with the layout, S1) the distances from `body`'s edges
     at that corner. The one way an indicator's placement is stated: Breeze's `@inline_small` arrow, a small arrow
     box at the bottom-right corner inset by fixed amounts (`breeze@6.8.2 kstyle/breezestyle.cpp:2940-2944`, mirrored
-    by `visualRect`, `:2950`; K1.155), and WinUI's AppBarButton flyout chevron, top-aligned with a top and an end
+    by `visualRect`, `:2950`; K1.155), and WinUI's AppBarButton flyout chevron under the default label position (the label below the icon; the
+    label-beside-icon position is not expressible yet, W1-102), top-aligned with a top and an end
     margin, in a zero-width `Auto` column, which WinUI's arrange stretches to the column less the margins, so its
     negative start margin keeps it out of the layout and, with the end margin, makes its box wider than the glyph,
     which is centred in it: `min_width` is that width, the start margin negated less the end margin
-    (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35-36`, `:357-361`, `:373`;
+    (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35`, `:357-361`, `:373`;
     `src/dxaml/xcp/core/core/elements/framework.cpp:1833-1842`, `src/dxaml/xcp/core/core/elements/icon.cpp:809-814`;
     W1-102), `min_height` `auto`;
     every other indicator is `Inline`.
