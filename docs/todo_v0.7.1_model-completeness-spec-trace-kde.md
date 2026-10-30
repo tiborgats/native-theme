@@ -95,7 +95,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.24 | `button.label.text.fill @ variant flat (= role.window.foreground)` | rule |
 | K1.25 | `button.body.fill @ {checked} variant warning` | rule |
 | K1.25 | `button.body.stroke @ variant warning` | rule |
-| K1.26 | `button.body.corners @ variant circular (Full)` | rule |
+| K1.26 | `button.body.corners @ variant circular (Full)` (exact for a square box; Breeze draws a non-square round button as an ellipse, a radius of half the larger side that Qt clamps per axis, `breezehelper.cpp:727`, `qpainterpath.cpp:3457-3470`, which circular corners cannot state: the ledger's queue #48) | rule |
 | K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill)` | field |
 | K1.27 | `button.values.menu_indicator_gap` | field |
 | K1.28 | `button.icon.icon.size (= token.icons.sizes.small.size)` | field |
@@ -406,11 +406,11 @@ rationale, each decided in the core's additions register (S22).
 | Q1.6 | `window.values.default_size @ cond mobile_form_factor` | rule |
 | Q1.6 | `window.values.default_size ("absent") @ cond flavor:widgets` (a Qt Widgets window states no default size; Kirigami's window does) | rule |
 | Q1.7 | `token.size_classes (Kirigami's wideScreen width)` | token |
-| Q1.8 | `button.body.stroke (the highlighted pen) @ {focused} cond flavor:kirigami / variant @highlighted cond flavor:kirigami` | rule |
+| Q1.8 | `button.body.stroke (the highlighted pen) @ {focus_visible} cond flavor:kirigami` (QML passes `hasFocus` as active focus or `highlighted`, but Breeze draws the pen only with `State_KeyboardFocusChange`, `breezestyle.cpp:4518`, which the style item sets only after a keyboard focus reason, `kquickstyleitem.cpp:884-890`; a `@highlighted` button whose last focus change was by keyboard keeps the pen unfocused, which no flag names: the ledger's queue #48) | rule |
 | Q1.8 | `button.icon.icon.fill (= the label's text colour) @ cond flavor:kirigami` | rule |
 | Q1.8 | `button.body.fill, button.body.stroke @ variant flat cond flavor:kirigami / {checked} cond flavor:kirigami / {default} cond flavor:kirigami` | rule |
 | Q1.8 | `button.menu_indicator.glyph @ variant menu cond flavor:kirigami` | rule |
-| Q1.9 | `button.body.bindings (surface Button) @ variant tool cond flavor:kirigami / (surface Window) @ variants {tool,flat} cond flavor:kirigami` | rule |
+| Q1.9 | `button.body.bindings (surface Button) @ variant tool cond flavor:kirigami / (none: the parent's set) @ variants {tool,flat} cond flavor:kirigami` (a flat ToolButton inherits its parent's theme, `ToolButton.qml:17-18`, `platformtheme.cpp:1060-1090`) | rule |
 | Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami / variants {tool,@highlighted} cond flavor:kirigami` | rule |
 | Q1.9 | `button.values.label_position @ variant tool cond flavor:kirigami (the tool button style: IconOnly, TextBesideIcon, TextUnderIcon)` | rule |
 | Q1.10 | `button.label.text.mnemonic_decoration @ cond mnemonics_visible` | rule |
@@ -587,8 +587,8 @@ rationale, each decided in the core's additions register (S22).
 | Q1.93 | `layout.values.column_min_width @ variant @column_view` | rule |
 | Q1.94 | `layout.values.column_width @ variant @column_view` | rule |
 | Q1.94 | `layout.values.presentations (@column_scroll: = token.motion.durations.very_long, its timing) @ variant @column_view` | rule |
-| Q1.95 | `separator.line.stroke (Normal: mix by token.params.color.frame_contrast) @ cond flavor:kirigami` | rule |
-| Q1.95 | `separator.line.stroke (Light: mix by half the frame contrast) @ variant @light cond flavor:kirigami` | rule |
+| Q1.95 | `separator.line.stroke (Normal: kirigami_lerp by token.params.color.frame_contrast) @ cond flavor:kirigami` (`Separator.qml:65-69`) | rule |
+| Q1.95 | `separator.line.stroke (Light: kirigami_lerp by half the frame contrast) @ variant @light cond flavor:kirigami` | rule |
 | Q1.96 | `separator.line.stroke (= the bound surface's roles)` | field |
 | Q1.96 | `separator.line.bindings (Surface(Header)) @ context any toolbar / context any sidebar / context splitter.divider[@column_view]` | rule |
 | Q1.97 | `token.params.layout.small_spacing, token.params.layout.medium_spacing, token.params.layout.large_spacing, token.params.layout.grid_unit (ADD-A44)` | token |
@@ -599,7 +599,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.99 | `switch.values.track_inset (= floor(mul(token.params.layout.grid_unit, <fraction>)))` | field |
 | Q1.99 | `switch.track.min_width, switch.track.min_height, switch.thumb.min_height` | field |
 | Q1.100 | `switch.track_fill.fill (from the track's start to the thumb's trailing edge, under the thumb when unchecked)` | field |
-| Q1.101 | `switch.thumb.stroke (= mix by token.params.color.frame_contrast)` | field |
+| Q1.101 | `switch.thumb.stroke (= kirigami_lerp by token.params.color.frame_contrast)` (`SwitchIndicator.qml:30`) | field |
 | Q1.101 | `switch.thumb.stroke @ {hover} / {focus_visible}` | rule |
 | Q1.101 | `switch.track.stroke @ {checked}` | rule |
 | Q1.101 | `switch.track.stroke (the thumb's stroke) @ !{checked}` | rule |
@@ -623,7 +623,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.110 | `dialog.values.standard_button_icons` | field |
 | Q1.110 | `dialog.values.button_icons @ cond flavor:kirigami` | rule |
 | Q1.111 | `dialog.values.presentations (Appear: Fade with a Translate rise, ADD-B10, ADD-A25) @ cond flavor:kirigami` | rule |
-| Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= mix by token.params.color.frame_contrast), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` | rule |
+| Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= kirigami_lerp by token.params.color.frame_contrast), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` (the stroke: qqc2's `Dialog.qml:85`, Kirigami's `Dialog.qml:341`) | rule |
 | Q1.112 | `dialog.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
 | Q1.113 | `dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami` | rule |
 | Q1.113 | `dialog.values.window_margin @ cond flavor:kirigami` | rule |
@@ -828,7 +828,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.6 | `button.body.fill.append (a linear gloss layer) @ variant circular !variant flat cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow @ variant circular cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow (Absent) @ variant circular {pressed} / variant circular {checked} / variants {circular,flat}` | rule |
-| Q2.7 | `button.label.transform, button.icon.transform @ variant circular {pressed} / variant circular {checked}` | rule |
+| Q2.7 | `button.body.transform (a translation right and down) @ variant circular {pressed} cond flavor:kirigami / variant circular {checked} cond flavor:kirigami` (a `Translate` on the whole control, `RoundButton.qml:26-29`, not its content) | rule |
 | Q2.8 | `button.body.bindings (Surface(Selection)) @ variant circular !variant flat {focused} / variants {circular,@highlighted} !variant flat` | rule |
 | Q2.9 | `menu_bar.bar.bindings (Surface(Header)), menu_bar.item.padding, menu_bar.item.min_height, menu_bar.item.min_width @ cond flavor:kirigami` | rule |
 | Q2.10 | `menu_bar.item.fill @ {pressed} cond flavor:kirigami / {hover} cond flavor:kirigami` | rule |
@@ -863,7 +863,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.24 | `chip @ variant @interactive / variant closable` | rule |
 | Q2.25 | `badge.body.stroke, badge.body.fill @ variant info / variant success / variant warning / variant error` | rule |
 | Q2.26 | `badge.label.text.fill (= kirigami_badge_text, ADD-A53)` | field |
-| Q2.26 | `badge.body.stroke (= mix(element.color, the text, <fraction>)) @ variant custom_color` (where the application gives a colour; `badge.body` declares `color`, ADD-B16) | rule |
+| Q2.26 | `badge.body.stroke (= kirigami_lerp(element.color, the text, <fraction>)) @ variant custom_color` (`Badge.qml:49-51`) (where the application gives a colour; `badge.body` declares `color`, ADD-B16) | rule |
 | Q2.27 | `badge.label.text (= token.text.keyed.smallest_readable, its weight restated), badge.body.padding, badge.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100)` | field |
 | Q2.27 | `badge.body.corners (Full) @ !{multiline} / (the corner radius) @ {multiline}` | rule |
 | Q2.27 | `badge.body.padding (the pill's extra horizontal padding) @ !{multiline}` | rule |
@@ -1035,8 +1035,8 @@ rationale, each decided in the core's additions register (S22).
 | K3.51 | `token.kde.inactive, token.kde.inactive_enabled` | token |
 | K3.51 | `reader:kde:kdeglobals [ColorEffects:Inactive], [Colors:*][Inactive]` | reader |
 | K3.52 | `role.<set>.background_active / background_link / background_visited / background_negative / background_neutral / background_positive (ADD-A48)` | role |
-| K3.53 | `role.@shade_light, role.@shade_midlight, role.@shade_mid, role.@shade_dark, role.@shade_shadow (ADD-A48)` | role |
-| K3.53 | `token.params.color.contrast (ADD-A44)` | token |
+| K3.53 | `role.@shade_light, role.@shade_midlight, role.@shade_mid, role.@shade_dark, role.@shade_shadow (ADD-A48; each = kde_shade(role.window.background, <role>, token.params.color.contrast), ADD-A121)` | role |
+| K3.53 | `token.params.color.contrast (ADD-A44; kdeglobals' [KDE] contrast as stored, kde_shade scaling it as KColorScheme's contrastF does)` | token |
 | K3.53 | `reader:kde:kdeglobals [KDE] contrast` | reader |
 | K3.54 | `role.complementary.*` | role |
 | K3.54 | `role.<set>.foreground_inactive / foreground_active / link / link_visited / negative / neutral / positive / background_alternate / decoration_focus / decoration_hover (tooltip, header, button, selection)` | role |
@@ -1108,7 +1108,7 @@ rationale, each decided in the core's additions register (S22).
 | Q3.13 | `list.row_background.fill @ pos parity even variant alternating_rows (ADD-B06; Qt's views alternate on current & 1, zero-based)` | rule |
 | Q3.14 | `token.params.color.frame_contrast (ADD-A44)` | token |
 | Q3.14 | `reader:kde:kdeglobals [KDE] frameContrast (store the factor, not only finished colours)` | reader |
-| Q3.15 | `role.<set>.border = mix(background, foreground, token.params.color.frame_contrast)` | role |
+| Q3.15 | `role.<set>.border = kirigami_lerp(background, foreground, token.params.color.frame_contrast) @ cond flavor:kirigami` (Kirigami's `ColorUtils.linearInterpolation`, in HSV, `Frame.qml:25`, `Menu.qml:133`, `Popup.qml:50`, `ToolTip.qml:115`, ADD-A121; Breeze's QtWidgets frame, the base, is `mix`, `breezehelper.cpp:144`) | role |
 | Q3.16 | `PartStyle.fill.append = alpha(...) @ {hover} / {pressed} / {checked}` | rule |
 | Q3.17 | `PartStyle.icon.fill (text or highlighted-text role)` | field |
 | Q3.17 | `PartStyle.icon.fill @ {selected}` | rule |
@@ -1460,7 +1460,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-24† | `segmented_control.segment.padding, segmented_control.segment.min_width (= part.min_height: a square segment), segmented_control.icon.icon.size (= token.icons.sizes.keyed.small_medium.size), segmented_control.values.item_gap (negative: the overlap) @ variant @ka_segmented_button` | rule |
 | K-KA-24† | `segmented_control.segment.corners (the outer only) @ pos first variant @ka_segmented_button / pos last variant @ka_segmented_button / pos first variant @ka_segmented_button dir rtl / pos last variant @ka_segmented_button dir rtl` | rule |
 | K-KA-24† | `segmented_control.segment.fill (= role.<set>.background_alternate) @ {pressed} variant @ka_segmented_button / {selected} variant @ka_segmented_button` | rule |
-| K-KA-24† | `segmented_control.segment.stroke (= mix by token.params.color.frame_contrast) @ variant @ka_segmented_button; segmented_control.segment.stroke (= surface.decoration_focus) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the highlighted segment drawn above its neighbours: the connector's paint order)` | rule |
+| K-KA-24† | `segmented_control.segment.stroke (= kirigami_lerp by token.params.color.frame_contrast, SegmentedButton.qml:112) @ variant @ka_segmented_button; segmented_control.segment.stroke (= surface.decoration_focus) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the highlighted segment drawn above its neighbours: the connector's paint order)` | rule |
 | K-KA-24† | `segmented_control.segment.transitions (Fill, Stroke; = token.motion.durations.short, its timing) @ {hover} / {focus_visible} / {pressed} / {selected} variant @ka_segmented_button (the Behaviors run only while the segment is highlighted)` | rule |
 | K-KA-24† | `segmented_control.segment.shadow (a hard layer, one pixel lower) @ !{pressed} !{disabled} variant @ka_segmented_button` | rule |
 | K-KA-25† | `segmented_control.segment.fill.append @ {hover} variant @ka_radio_selector; segmented_control.segment.corners, segmented_control.segment.min_height, segmented_control.icon.icon.size (= kirigami_label_icon_size(body_font_height): Kirigami's label-icon size, computed from the body font's height (ascent plus descent), Q1.1, ADD-A100) @ variant @ka_radio_selector` | rule |

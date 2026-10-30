@@ -429,7 +429,7 @@ Two mechanisms recur and are written once here:
 | ID | Element | What is missing | Source | Nearest model field |
 |---|---|---|---|---|
 | GN-1.264 | Link focus ring | Default inset ring | published `A/w/_links.scss:34-36` | `defaults.focus_ring_*` |
-| GN-1.265 | Links on OSD | `$osd_link_color` (accent 50 % + white), visited 75 % | published `A/w/_links.scss:21-31`; `A/s/_colors.scss:293-294` | none |
+| GN-1.265 | Links on OSD | `$osd_link_color` (`color-mix(accent-bg 50 %, white)`), visited 75 %; `.osd` sets `--accent-bg-color` to white at 75 %, so the links are white at 87.5 % (visited 81.25 %), not the accent | published `A/w/_links.scss:21-31`; `A/s/_colors.scss:293-294`; `A/s/_common.scss:43-45` | none |
 | GN-1.266 | `button.link` | Button-shaped link: transparent in every state, underlined label | published `A/w/_links.scss:38-49` | none |
 | GN-1.267 | Underline geometry | Thickness and offset of `text-decoration: underline` | measure (probe; Pango underline metrics) | `link.underline_enabled` (on/off) |
 
