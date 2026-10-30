@@ -79,7 +79,7 @@ Also:
   Decision is a finding, and so is a missing section or table.
 - Every measured fact with a drift comparison. A measured fact is a
   `[[fact]]` of `docs/facts/<platform>/*.toml` (not `imported/`, not
-  `palettes/`) with a `[[fact.cite]]` of `kind = "measured"`; M4's drift run
+  `palettes/`, not `staged/`, S19.2's staged inheritance bases) with a `[[fact.cite]]` of `kind = "measured"`; M4's drift run
   records each one's comparison in the ledger, which has no per-fact table for
   it yet. Until it has one and this script matches each measured fact
   (platform, key, `when`) to exactly one of its lines with the run's URL, the
@@ -92,6 +92,7 @@ from __future__ import annotations
 import ast
 import re
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 from typing import NamedTuple
@@ -139,7 +140,7 @@ UNMEASURED_HEADER = ["Key and combination", "Attempts and evidence", "Options", 
 
 IMPORTED = DOCS / "facts" / "imported"
 FACTS = DOCS / "facts"
-NOT_PLATFORMS = {"imported", "palettes"}
+NOT_PLATFORMS = {"imported", "palettes", "staged"}
 CITATIONS = Path("scripts/check_fact_citations.py")
 LEGACY = "LEGACY_EVIDENCE"
 
@@ -441,13 +442,18 @@ def read_sources() -> dict[str, str | None]:
 def check_final(ledger: str, ledger_text: str, staged: Path) -> list[tuple[str, int, str]]:
     imported = sorted(str(p) for p in IMPORTED.rglob("*") if not p.is_dir()) if IMPORTED.is_dir() else []
     citations = CITATIONS.read_text(encoding="utf-8") if CITATIONS.exists() else None
+    return final_problems(ledger, ledger_text, imported, str(staged), staged.exists(), citations,
+                          measured_facts(platform_fact_texts(FACTS)))
+
+
+def platform_fact_texts(facts_dir: Path) -> dict[str, str]:
+    """{path: text} of every `<platform>/*.toml` under facts_dir, the folders of NOT_PLATFORMS left out."""
     facts = {}
-    if FACTS.is_dir():
-        for d in sorted(p for p in FACTS.iterdir() if p.is_dir() and p.name not in NOT_PLATFORMS):
+    if facts_dir.is_dir():
+        for d in sorted(p for p in facts_dir.iterdir() if p.is_dir() and p.name not in NOT_PLATFORMS):
             for f in sorted(d.glob("*.toml")):
                 facts[str(f)] = f.read_text(encoding="utf-8")
-    return final_problems(ledger, ledger_text, imported, str(staged), staged.exists(), citations,
-                          measured_facts(facts))
+    return facts
 
 
 def self_test() -> int:
@@ -634,6 +640,13 @@ kind = "read"
 """
     if measured_facts({"f.toml": facts, "s.toml": "[[widget]]\nname = 'button'\n"}) != 1:
         failures.append("measured facts: not 1")
+    with tempfile.TemporaryDirectory() as tmp:
+        for folder in ("gnome", "imported", "palettes", "staged"):
+            (Path(tmp) / folder).mkdir()
+            (Path(tmp) / folder / "a.toml").write_text(facts, encoding="utf-8")
+        got = sorted(Path(f).parent.name for f in platform_fact_texts(Path(tmp)))
+        if got != ["gnome"]:
+            failures.append(f"platform folders: got {got}, want ['gnome'] (imported, palettes, staged are none)")
     got_final = final_problems("L", ledger, ["docs/facts/imported/a.toml"], "staged.toml", True, "LEGACY_EVIDENCE = ()",
                                1)
     want_final = [

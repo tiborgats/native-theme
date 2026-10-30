@@ -88,14 +88,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-149† | `window.values.attention_flash (period_ms, count)` | field |
 | W1-149† | `reader:windows:SPI_GETFOREGROUNDFLASHCOUNT, GetCaretBlinkTime` | reader |
 | W1-149† | - (the taskbar button's flash: the shell's) | out (R1.1) |
-| W1-018 | `button.body.stroke (paint: Linear gradient over an absolute extent)` | field |
+| W1-018 | `button.body.stroke (paint: Linear gradient over an absolute extent; fill_clip inner_edge, the default style's BackgroundSizing InnerBorderEdge)` (`Button_themeresources.xaml:156`, ADD-A121) | field |
 | W1-018 | `button.body.stroke @ cond scheme:dark (gradient at the other edge)` | rule |
 | W1-019 | `button.body.stroke @ {hover} / {pressed} / {disabled}` | rule |
 | W1-020 | `button.{body.fill,label.text.fill} @ {hover} / {pressed} / {disabled} variant primary` | rule |
-| W1-020 | `button.body.stroke (gradient paint) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` | rule |
+| W1-020 | `button.body.stroke (gradient paint; fill_clip box, AccentButtonStyle's BackgroundSizing OuterBorderEdge) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` (`Button_themeresources.xaml:238`) | rule |
 | W1-020 | `button.{body.fill,label.text.fill,body.stroke} @ {default} / {default,hover} / {default,pressed} / {default,disabled} context dialog.action_area` (the dialog's default button in AccentButtonStyle, in every state) | rule |
 | W1-021 | `button.body.fill, button.label.text.fill, button.body.stroke @ variant flat / {hover} variant flat / {pressed} variant flat / {disabled} variant flat` | rule |
-| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` | rule |
+| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, `:255-256`) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
 | W1-023 | `button.body.transitions (Fill)` | field |
 | W1-023 | `token.motion.durations.control_faster` | token |

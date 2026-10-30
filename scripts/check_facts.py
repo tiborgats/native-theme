@@ -4,7 +4,8 @@
 Reads every fact file `docs/facts/<platform>/*.toml` (the platform directories below, and `palettes/`), each
 platform's `state-models.toml`, `docs/facts/sources.toml`, the core (its Rust sketches, as
 scripts/check_spec_names.py reads them, and its function table) and the widget catalogue (through
-scripts/spec_catalogue.py). `docs/facts/imported/` is the plan's lane input, not facts, and is skipped.
+scripts/spec_catalogue.py). `docs/facts/imported/` is the plan's lane input and `docs/facts/staged/` holds S19.2's
+staged inheritance bases: neither is facts, and both are skipped.
 scripts/check_fact_citations.py checks what the citations say; this script checks how the files are written.
 
 Run from the repository root:
@@ -18,8 +19,8 @@ wrong command line. A fact file that is no valid TOML is a finding of that file.
 
 Directories (S17 *Generations*): PLATFORMS maps each directory to the presets it covers: gnome (adwaita), kde
 (kde-breeze), macos (macos-monterey, macos-tahoe), ios (ios-13, ios-26), windows (windows-11), material
-(material-3). `palettes/` holds palette facts, `imported/` is skipped, any other directory or a stray file is a
-finding (a README.md is allowed anywhere).
+(material-3). `palettes/` holds palette facts, `imported/` and `staged/` are skipped, any other directory or a
+stray file is a finding (a README.md is allowed anywhere).
 
 A `[[fact]]` (S17 *Fields*):
 
@@ -37,7 +38,10 @@ A `[[fact]]` (S17 *Fields*):
   `.<set>.inactive.<key>`, `.wm.<key>`, `.groups`, `.inactive_groups`, `.unset_keys` and `input.inactive.<set>.<key>`
   are checked against the core's surface sets, and any other input name only for its form: the presets declare their
   inputs (S9.1, S10), and the registry (S18) will hold them. `input.<part>…` and `input.values…` are the `input`
-  widget's. The registry replaces these sources once it is generated (S18).
+  widget's. The registry replaces these sources once it is generated (S18). A whole part's key, `<widget>.<part>` or
+  `component.<key>.<part>` (S17, ADD-A121), takes `"absent"` (`PartPatch::Absent`) or `{ drawn_as = { widget, part,
+  variants } }` (`PartPatch::DrawnAs`, S11's `drawn_as` table: `widget` a catalogue entry, `part` one of its parts,
+  `variants` its variants), nothing else.
 - `value` is spelled as S11's Spelling table spells a preset value, with the key's own unit in the value (S17): a
   TOML number, a TOML bool, `"auto"`, `"absent"`, `"none"`, a colour literal (`#rrggbb`, `#rrggbbaa`,
   `srgb(r, g, b[, a])`, `display_p3(r, g, b[, a])`), a length `"<n>px"`, a duration `"<n>ms"`, an angle
@@ -47,7 +51,20 @@ A `[[fact]]` (S17 *Fields*):
   table (a block, or a one-key table for a variant with data) whose keys are snake_case and whose suffixed keys
   (`_px`, `_ms`, `_deg`, `_pt`) take a plain number or an expression, `"auto"`, `"absent"` or `"none"`. A number
   written as a string is a finding. Where the core's sketches type the key (PartStyle and its blocks, the widget
-  value's type, Tokens, the colour roles), the value must be of that dimension (KEY_DIMS).
+  value's type, Tokens, the colour roles), the value must be of that dimension (KEY_DIMS). Where they type it, or a
+  leaf of it, as one of the core's enums (core_enums), a name is a unit variant's snake_case name, `@<key>` where a
+  variant holds a `Key`, or a name of the enum a one-field tuple variant holds (enum_name_ok); a table is a one-key
+  table naming a variant with data (S11), and the payload table of a variant with named fields states only those
+  fields (`timing = { spring = { … } }` names `Timing::Spring`'s, its `damping_ratio` included, S2.7). An expression's
+  `surface.` reference is a `SurfaceRole` path, `surface.<role>` or `surface.disabled.<role>` (S2.2).
+- a text value (S11's text row; ADD-A120): where the key's type is `String` (a `Value<String>`: a font family, an
+  icon theme), any TOML string is the text, except `"auto"`, `"absent"`, `"none"` and an expression, which must be
+  one reference (S12 refuses a call) and, where it is a `token.` or `role.` path the sketches type, a text field's;
+  a number, bool, list or table is a finding. The key's type is followed into the value (text_leaves): a
+  `Vec<String>`'s entries (a family list) and a plain `String` inside a table, a struct's field or an enum variant's
+  payload as S11 spells it (`{ theme_icon = { name = "go-next-symbolic" } }`: the core's enums, core_enums), are
+  always text. A free string where the type is not text is a finding. A text value's measured citation has
+  tolerance 0.
 - `rows` lists gap-map row IDs as the gap maps write them (`†` included; ROW_RX): each must be a row of a gap map
   (`docs/todo_v0.7.1_model-completeness-gap-map-<platform>.md`), and none twice. `[]` is allowed (a combination no
   row names).
@@ -59,11 +76,14 @@ A `[[fact]]` (S17 *Fields*):
   names a preset of the fact's directory.
 - each citation (`[[fact.cite]]`) by `kind`: `published` requires `source`, `quote`, may have `conversion`, `absent`;
   `read` requires `source`, `quote`, may have `conversion`; `measured` requires `evidence`, `tolerance`, may have
-  `conversion`; nothing else. `source` is `<id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`, its id a
-  `[[source]]` of sources.toml; `quote` a non-empty string; `conversion` a list of check_fact_citations.CONVERSIONS'
-  names; `absent` a non-empty list of names; `tolerance` a number >= 0, or a table from a leaf path to such a number;
-  `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`. A fact with a `read` citation
-  states a plain `= input.…` reference (S17 *`read`*).
+  `conversion`, `inputs`; nothing else. `inputs` (S17 *A measured derivation*) is on a measured citation of an
+  expression value (`"= …"`) only, and such a citation always has it, without `conversion`: a non-empty list of the
+  expression's references as written there, none twice (check_fact_citations.py checks its evidence passes). `source` is
+  `<id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`, its id a `[[source]]` of sources.toml; `quote` a non-empty
+  string; `conversion` a list of check_fact_citations.CONVERSIONS' names; `absent` a list of non-empty names, `[]` where
+  the platform has no name for what it lacks (S17 *Absence*, ADD-A120); `tolerance` a number >= 0, or a table from a
+  leaf path to such a number; `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`. A fact
+  with a `read` citation states a plain `= input.…` reference (S17 *`read`*).
 - The generation rule (S17 *Generations*): a fact with `preset:<id>` in `when.conditions` has every citation serving
   that generation; a fact without one has citations that together serve each generation of its directory among the
   presets that exist (existing_presets(); a `preset:` in `not_conditions` takes that generation out). A citation's
@@ -74,12 +94,18 @@ A `[[model]]` in `<platform>/state-models.toml` (S17 *State models*): `widget` (
 `component.<key>`), `available` (a bool), `rows` and at least one `[[model.cite]]` (as a fact's) are required; `when`
 may only hold `conditions` with `preset:` or `flavor:` ones. With `available = false` no other declaration. With
 `true`, `variants`, `sizes`, `densities`, `axes` (`{ states, conditions, contexts }`), `exclusive` and `not_drawn`
-are required, and `default_size`, `flags`, `requires_variants`, `sizes_by_variant`, `sizes_by_context` optional (S10's
-declarations); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities,
-states, conditions, context selectors as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in
-`axes.states` and in one group only, `default_size` is one of a non-empty `sizes`, `requires_variants` and
-`sizes_by_variant`'s variants are among `variants`, every listed size among `sizes`, a `sizes_by_context` context a
-catalogue widget. The generation rule applies as to a fact.
+are required, and `default_size`, `flags`, `requires_variants`, `sizes_by_variant`, `sizes_by_context`,
+`exclusive_variants`, `variant_sets` and `default_size_by_variant` optional (S10's declarations, S17; absent meaning
+none); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities, states,
+conditions, context selectors as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states`
+and in one group only, `default_size` is one of a non-empty `sizes`, `requires_variants` and `sizes_by_variant`'s
+variants are among `variants`, every listed size among `sizes`, a `sizes_by_context` context a catalogue widget.
+ADD-A121 (variant_declaration_problems): each `exclusive_variants` group names variants among `variants`, none twice
+(a variant may be in several groups, S12); each `variant_sets` set holds two or more variants among `variants`, none
+twice, at most one of each `exclusive_variants` group, and no set is listed twice (in any order); each
+`default_size_by_variant` entry is `{ variant, size }`, its variant among `variants`, its size one that variant takes
+(its `sizes_by_variant` entry's sizes, else `sizes`), and no two entries name one variant (S12). The generation rule
+applies as to a fact.
 
 A palette fact (`docs/facts/palettes/<project>.toml`, S17 *Palette facts*): `key = "<project>.<flavour>.<name>"`
 (`<project>` the file's stem), a colour literal as `value`, at least one citation; no `rows`, `when`,
@@ -89,8 +115,10 @@ bundled palette (bundled_palettes(): a file of PRESET_DIRS whose `[preset] kind`
 string it states holding a colour literal, and every such string in exactly one of the two (S11, S14). Today no
 bundled palette exists, so this rule checks nothing on the repository; the self-test runs it.
 
-existing_presets() is the one function that says which presets exist: today the stems of
-`native-theme/src/presets/*.toml` that are platform presets; the new model's preset list replaces it.
+existing_presets() is the one function that says which presets exist: the stems of the new model's presets,
+`native-theme/src/next/presets/<id>.toml` (`presets/` after the switch), that are platform presets, so today's
+presets in `native-theme/src/presets/` do not count (the M1a design's decision 8). The directory may be absent or
+empty: then no preset exists and the generation rule asks nothing of a fact without `preset:`.
 
     python3 scripts/check_facts.py --self-test   # each rule on inline fixtures: a passing and a failing case
 """
@@ -112,7 +140,7 @@ CORE = Path("docs/todo_v0.7.1_model-completeness-spec.md")
 CATALOGUE = Path("docs/todo_v0.7.1_model-completeness-spec-widgets.md")
 GAP_MAPS = [Path(f"docs/todo_v0.7.1_model-completeness-gap-map-{p}.md")
             for p in ("gnome", "ios", "kde", "macos", "material", "windows")]
-PRESET_DIRS = (Path("native-theme/src/presets"),)
+PRESET_DIRS = (Path("native-theme/src/next/presets"),)
 PLATFORMS = {
     "gnome": ("adwaita",),
     "kde": ("kde-breeze",),
@@ -123,6 +151,7 @@ PLATFORMS = {
 }
 PALETTES = "palettes"
 IMPORTED = "imported"
+STAGED = "staged"
 STATE_MODELS = "state-models.toml"
 ALL_PRESETS = tuple(p for ps in PLATFORMS.values() for p in ps)
 
@@ -133,11 +162,12 @@ CITE_FIELDS = {
     # kind: (required, optional)
     "published": ({"source", "quote"}, {"conversion", "absent"}),
     "read": ({"source", "quote"}, {"conversion"}),
-    "measured": ({"evidence", "tolerance"}, {"conversion"}),
+    "measured": ({"evidence", "tolerance"}, {"conversion", "inputs"}),
 }
 MODEL_REQUIRED = {"widget", "available", "rows", "cite"}
 MODEL_DECLARATIONS = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn", "default_size", "flags",
-                      "requires_variants", "sizes_by_variant", "sizes_by_context"}
+                      "requires_variants", "sizes_by_variant", "sizes_by_context", "exclusive_variants",
+                      "variant_sets", "default_size_by_variant"}
 MODEL_AVAILABLE_REQUIRED = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn"}
 AXES_KEYS = {"states", "conditions", "contexts"}
 
@@ -170,9 +200,12 @@ SUFFIX_DIMS = {"_px": "length", "_ms": "duration", "_deg": "angle", "_pt": "font
 KEY_DIMS = {"Px": "length", "Length": "length", "Ms": "duration", "Duration": "duration", "Deg": "angle",
             "Angle": "angle", "FontSize": "font_size", "Color": "colour", "Paint": "paint", "Fraction": "number",
             "f32": "number", "f64": "number", "u8": "number", "u16": "number", "u32": "number", "i32": "number",
-            "bool": "bool"}
-SCALAR_DIMS = {"length", "duration", "angle", "font_size", "colour", "number", "bool"}
+            "bool": "bool", "String": "text"}
+SCALAR_DIMS = {"length", "duration", "angle", "font_size", "colour", "number", "bool", "text"}
 UNIT_OF = {"length": "px", "duration": "ms", "angle": "deg", "font_size": "pt"}
+WRAPPER = re.compile(r"(?:Value|Option|Box)<(.+)>")
+PART_PATCH = "PartPatch"   # the type key_info gives a whole part's key, `<widget>.<part>` (S17, ADD-A121)
+DRAWN_AS_KEYS = {"widget", "part", "variants"}
 
 
 class InputError(Exception):
@@ -181,31 +214,75 @@ class InputError(Exception):
 
 # ------------------------------------------------------------------------------------------------- the core
 
-def core_structs(text: str) -> dict:
-    """struct name -> {field: type} from the core's Rust sketches (comments stripped, fields split at top level)."""
-    code = check_spec_names.strip_comments(check_spec_names.rust_blocks(text))
-    out = {}
-    for m in re.finditer(r"pub struct (\w+)[^{;(]*\{", code):
+def split_top(body: str) -> list:
+    """`body` split at its top-level commas (outside <>, (), [] and {})."""
+    out, cur, d = [], "", 0
+    for c in body + ",":
+        if c in "<([{":
+            d += 1
+        elif c in ">)]}":
+            d -= 1
+        if c == "," and d == 0:
+            out.append(cur)
+            cur = ""
+        else:
+            cur += c
+    return out
+
+
+def fields_of(body: str, pub=True) -> dict:
+    """{field: type} of a struct body (`pub` fields) or of an enum variant's braces (no `pub`)."""
+    fields = {}
+    for piece in split_top(body):
+        fm = re.match(r"\s*pub (\w+)\s*:\s*(.+?)\s*$" if pub else r"\s*(\w+)\s*:\s*(.+?)\s*$", piece, re.S)
+        if fm:
+            fields[fm.group(1)] = " ".join(fm.group(2).split())
+    return fields
+
+
+def bodies(code: str, kind: str):
+    """(name, body) of every `pub <kind> <name> { … }` of the code."""
+    for m in re.finditer(rf"pub {kind} (\w+)[^{{;(]*\{{", code):
         i, depth = m.end(), 1
         while i < len(code) and depth:
             depth += code[i] == "{"
             depth -= code[i] == "}"
             i += 1
-        body = code[m.end():i - 1]
-        fields, cur, d = {}, "", 0
-        for c in body + ",":
-            if c in "<([{":
-                d += 1
-            elif c in ">)]}":
-                d -= 1
-            if c == "," and d == 0:
-                fm = re.match(r"\s*pub (\w+)\s*:\s*(.+?)\s*$", cur, re.S)
-                if fm:
-                    fields[fm.group(1)] = " ".join(fm.group(2).split())
-                cur = ""
+        yield m.group(1), code[m.end():i - 1]
+
+
+def core_structs(text: str) -> dict:
+    """struct name -> {field: type} from the core's Rust sketches (comments stripped, fields split at top level);
+    an enum's variant with named fields is a struct too, `<Enum>::<variant>` (the variant in snake_case, as S11
+    spells it)."""
+    code = check_spec_names.strip_comments(check_spec_names.rust_blocks(text))
+    out = {name: fields_of(body) for name, body in bodies(code, "struct")}
+    for name, payloads in core_enums(text).items():
+        for variant, (form, payload) in payloads.items():
+            if form == "struct":
+                out[f"{name}::{variant}"] = payload
+    return out
+
+
+def core_enums(text: str) -> dict:
+    """enum name -> {variant in snake_case: ("unit", None) | ("tuple", type) | ("struct", {field: type})}."""
+    code = check_spec_names.strip_comments(check_spec_names.rust_blocks(text))
+    out = {}
+    for name, body in bodies(code, "enum"):
+        variants = {}
+        for piece in split_top(body):
+            vm = re.match(r"\s*([A-Z]\w*)\s*(.*?)\s*$", piece, re.S)
+            if not vm:
+                continue
+            rest = vm.group(2)
+            if rest.startswith("{") and rest.endswith("}"):
+                payload = ("struct", fields_of(rest[1:-1], pub=False))
+            elif rest.startswith("(") and rest.endswith(")"):
+                payload = ("tuple", " ".join(rest[1:-1].split()))
             else:
-                cur += c
-        out[m.group(1)] = fields
+                payload = ("unit", None)
+            variants[check_spec_names.snake(vm.group(1))] = payload
+        out[name] = variants
     return out
 
 
@@ -237,8 +314,7 @@ def gap_map_rows(root: Path) -> set | None:
 
 
 def existing_presets(root: Path) -> set:
-    """The platform presets that exist: today the stems of native-theme/src/presets/*.toml (the new model's preset
-    list replaces this one function)."""
+    """The platform presets that exist: the stems of the new model's native-theme/src/next/presets/<id>.toml."""
     out = set()
     for d in PRESET_DIRS:
         if (root / d).is_dir():
@@ -376,6 +452,7 @@ class Context:
             raise InputError(str(err)) from err
         self.entries = {e.name: e for e in spec_catalogue.entries(cat_text)}
         self.structs = core_structs(core_text)
+        self.enums = core_enums(core_text)
         self.functions = core_functions(core_text)
         entries = self.sources_data.get("source", [])
         if not isinstance(entries, list):
@@ -436,13 +513,13 @@ def load(ctx: Context):
         if p.is_file():
             if p.name not in ("sources.toml", "README.md"):
                 findings.append((rel, 1, "not a facts directory's file (docs/facts holds sources.toml and the "
-                                         "platform, palettes and imported directories)"))
+                                         "platform, palettes, imported and staged directories)"))
             continue
-        if p.name == IMPORTED:
+        if p.name in (IMPORTED, STAGED):
             continue
         if p.name not in PLATFORMS and p.name != PALETTES:
             findings.append((rel, 1, f"not a facts directory (one of {', '.join(PLATFORMS)}, {PALETTES}, "
-                                     f"{IMPORTED})"))
+                                     f"{IMPORTED}, {STAGED})"))
             continue
         for f in sorted(p.rglob("*")):
             frel = f.relative_to(ctx.root).as_posix()
@@ -479,64 +556,76 @@ def load(ctx: Context):
 # ------------------------------------------------------------------------------------------------- keys
 
 def key_info(ctx: Context, key: str):
-    """(problem or None, dimension or None, widget name or None, kind) of a fact's key; kind is "widget", "role",
-    "token" or "input"."""
+    """(problem or None, dimension or None, widget name or None, kind, the core's type of the key or None) of a
+    fact's key; kind is "widget", "role", "token" or "input"."""
     if not isinstance(key, str) or not key:
-        return "the key is not a non-empty string", None, None, None
+        return "the key is not a non-empty string", None, None, None, None
     segs = key.split(".")
     if not all(SEG.match(s) for s in segs):
-        return f"key {key!r} is not a dotted path of snake_case segments", None, None, None
+        return f"key {key!r} is not a dotted path of snake_case segments", None, None, None, None
     suffixed = next((s for s in segs[1:] if s.endswith(tuple(SUFFIX_DIMS))), None)
     if suffixed:
         return (f"key {key!r}: `{suffixed}` carries TOML's unit suffix (a key names the field, the value carries "
-                f"the unit, S17)"), None, None, None
+                f"the unit, S17)"), None, None, None, None
     ck = ctx.ck
+
+    def typed(type_str, rest, widget, kind):
+        t = type_at(ctx, type_str, rest)
+        return None, KEY_DIMS.get(strip_type(t)) if t else None, widget, kind, t
+
     if segs[0] == "role":
         rest = ".".join(segs[1:])
         if not rest or not ck.role_ok(rest):
-            return f"key {key!r} names no colour role (S3)", None, None, "role"
+            return f"key {key!r} names no colour role (S3)", None, None, "role", None
         if segs[1].startswith("@"):
-            return None, "colour", None, "role"
+            return None, "colour", None, "role", None
         if segs[1] == "global":
-            return None, type_dim(ctx, "GlobalRoles", segs[2:]), None, "role"
-        return None, type_dim(ctx, "SurfaceRoles", segs[2:] if segs[2:3] != ["disabled"] else segs[3:]), None, "role"
+            return typed("GlobalRoles", segs[2:], None, "role")
+        return typed("SurfaceRoles", segs[2:] if segs[2:3] != ["disabled"] else segs[3:], None, "role")
     if segs[0] == "token":
         rest = ".".join(segs[1:])
         if not rest or not ck.token_ok(rest):
-            return f"key {key!r} names no token (S4)", None, None, "token"
-        return None, type_dim(ctx, "Tokens", segs[1:]), None, "token"
+            return f"key {key!r} names no token (S4)", None, None, "token", None
+        return typed("Tokens", segs[1:], None, "token")
     if segs[0] == "input" and not (len(segs) > 1 and "input" in ctx.entries and (
             segs[1] == "values" or any(segs[1] in p.names for p in ctx.entries["input"].parts))):
         problem = input_problem(ctx, segs[1:])
-        return (f"key {key!r}: {problem}" if problem else None), None if problem else "colour", None, "input"
+        return (f"key {key!r}: {problem}" if problem else None), None if problem else "colour", None, "input", None
     if segs[0] == "component":
         if len(segs) < 2:
-            return f"key {key!r} names no component", None, None, "widget"
+            return f"key {key!r} names no component", None, None, "widget", None
         widget, rest = f"component.{segs[1]}", segs[2:]
     else:
         widget, rest = segs[0], segs[1:]
     entry = ctx.entries.get(widget)
     if entry is None:
-        return f"key {key!r}: {widget} is not a catalogue entry", None, None, "widget"
+        return f"key {key!r}: {widget} is not a catalogue entry", None, None, "widget", None
+    if len(rest) == 1 and rest[0] != "values" and any(rest[0] in p.names for p in entry.parts):
+        return None, None, widget, "widget", PART_PATCH
     if len(rest) < 2:
-        return f"key {key!r} is not `{widget}.<part>.<field>` or `{widget}.values.<name>`", None, widget, "widget"
+        return (f"key {key!r} is not `{widget}.<part>.<field>`, `{widget}.<part>` or `{widget}.values.<name>`", None,
+                widget, "widget", None)
     if rest[0] == "values":
         norm = check_spec_names.norm_value
         value = next((v for v in entry.values if norm(v.name) == norm(rest[1])), None)
         if value is None:
-            return f"key {key!r}: `{rest[1]}` is not a widget value of {widget}", None, widget, "widget"
+            return f"key {key!r}: `{rest[1]}` is not a widget value of {widget}", None, widget, "widget", None
         if len(rest) > 2 and (value.type or "").startswith("Value<"):
-            return f"key {key!r}: {widget}'s value `{rest[1]}` has no leaves", None, widget, "widget"
-        return None, type_dim(ctx, value.type, rest[2:]) if value.type else None, widget, "widget"
+            return f"key {key!r}: {widget}'s value `{rest[1]}` has no leaves", None, widget, "widget", None
+        if not value.type:
+            return None, None, widget, "widget", None
+        return typed(value.type, rest[2:], widget, "widget")
     part = next((p for p in entry.parts if rest[0] in p.names), None)
     if part is None:
-        return f"key {key!r}: `{rest[0]}` is not a part of {widget}", None, widget, "widget"
+        return f"key {key!r}: `{rest[0]}` is not a part of {widget}", None, widget, "widget", None
     fld = check_spec_names.norm_value(rest[1])
     if fld not in {check_spec_names.norm_value(f) for f in part.fields}:
-        return f"key {key!r}: `{rest[1]}` is not a field of {widget}'s part `{rest[0]}`", None, widget, "widget"
+        return (f"key {key!r}: `{rest[1]}` is not a field of {widget}'s part `{rest[0]}`", None, widget, "widget",
+                None)
     if not ck.field_ok(rest[1:]):
-        return f"key {key!r}: `{'.'.join(rest[1:])}` is not a field path (the core's blocks)", None, widget, "widget"
-    return None, type_dim(ctx, "PartStyle", rest[1:]), widget, "widget"
+        return (f"key {key!r}: `{'.'.join(rest[1:])}` is not a field path (the core's blocks)", None, widget, "widget",
+                None)
+    return typed("PartStyle", rest[1:], widget, "widget")
 
 
 def input_problem(ctx, segs):
@@ -558,28 +647,32 @@ def input_problem(ctx, segs):
     return None
 
 
-def type_dim(ctx, type_str, segs):
-    """The dimension of the leaf `segs` names under a core type, or None where the sketches do not say."""
+def strip_type(t: str) -> str:
+    """The type inside its `Value<…>`, `Option<…>` and `Box<…>` wrappers."""
+    t = (t or "").strip()
+    while True:
+        m = WRAPPER.fullmatch(t)
+        if not m:
+            return t
+        t = m.group(1).strip()
+
+
+def type_at(ctx, type_str, segs):
+    """The core's type, wrappers kept, of the leaf `segs` names under a core type, or None where the sketches do
+    not say."""
     t, segs = (type_str or "").strip(), list(segs)
     for _ in range(64):
-        m = re.fullmatch(r"(?:Value|Option|Box)<(.+)>", t)
-        if m:
-            t = m.group(1).strip()
-            continue
+        if not segs:
+            return t or None
+        t = strip_type(t)
         m = re.fullmatch(r"Sides<(.+)>", t)
         if m:
-            if not segs:
-                return None
             segs, t = segs[1:], m.group(1).strip()
             continue
         m = re.fullmatch(r"Vec<\(\s*\w+\s*,\s*(.+)\)>", t)
         if m:
-            if not segs:
-                return None
             segs, t = segs[1:], m.group(1).strip()
             continue
-        if not segs:
-            return KEY_DIMS.get(t)
         if t in ctx.structs:
             fields = ctx.structs[t]
             name = segs[0] if segs[0] in fields else check_spec_names.norm_value(segs[0])
@@ -589,6 +682,69 @@ def type_dim(ctx, type_str, segs):
             continue
         return None
     return None
+
+
+def type_dim(ctx, type_str, segs):
+    """The dimension of the leaf `segs` names under a core type, or None where the sketches do not say."""
+    t = type_at(ctx, type_str, segs)
+    return KEY_DIMS.get(strip_type(t)) if t else None
+
+
+def text_kind(t):
+    """"plain" for a plain `String` (always text, S11), "text" for a `Value<String>` (or `Option<String>`, whose
+    keywords and `=` keep their meaning), else None."""
+    if not t or strip_type(t) != "String":
+        return None
+    return "plain" if t.strip() == "String" else "text"
+
+
+def child_type(ctx, t, key):
+    """The core's type of a table's key under the table's type: a struct's field (its unit suffix dropped), or an
+    enum's variant payload (a one-key table, S11), or None."""
+    s = strip_type(t)
+    if s in ctx.structs:
+        fields = ctx.structs[s]
+        return fields.get(key) or fields.get(re.sub(r"_(px|ms|deg|pt)$", "", key))
+    payload = ctx.enums.get(s, {}).get(key)
+    if payload and payload[0] == "struct":
+        return f"{s}::{key}"
+    if payload and payload[0] == "tuple":
+        return payload[1]
+    return None
+
+
+def enum_name_ok(ctx, e, name, depth=0):
+    """A name spells a value of the core's enum `e` (S11): a unit variant's snake_case name, `@<key>` where a variant
+    holds a `Key`, or a name of an enum a one-field tuple variant holds (`StateFlag::Shared(SharedFlag)`)."""
+    variants = ctx.enums.get(e, {})
+    if name.startswith("@"):
+        return any(form == "tuple" and payload == "Key" for form, payload in variants.values())
+    if variants.get(name, ("", None))[0] == "unit":
+        return True
+    return depth < 8 and any(form == "tuple" and payload in ctx.enums and enum_name_ok(ctx, payload, name, depth + 1)
+                             for form, payload in variants.values())
+
+
+def item_type(t):
+    """The item type of a `Vec<T>` (not of a keyed `Vec<(K, T)>`), or None."""
+    m = re.fullmatch(r"Vec<(.+)>", strip_type(t))
+    return m.group(1).strip() if m and not m.group(1).strip().startswith("(") else None
+
+
+def text_leaves(ctx, value, t, path=""):
+    """(path as S11 spells it, string) of every text value in `value` under the core's type `t` (S11's text row)."""
+    kind = text_kind(t)
+    if isinstance(value, str):
+        if kind == "plain" or (kind == "text" and not value.startswith("=") and value not in KEYWORDS):
+            return [(path, value)]
+        return []
+    sub = (lambda k: f"{path}.{k}" if path else str(k))
+    if isinstance(value, list):
+        it = item_type(t)
+        return [x for i, v in enumerate(value) for x in text_leaves(ctx, v, it, sub(i))] if it else []
+    if isinstance(value, dict) and t:
+        return [x for k, v in value.items() for x in text_leaves(ctx, v, child_type(ctx, t, k), sub(k))]
+    return []
 
 
 # ----------------------------------------------------------------------------------------------- values
@@ -689,7 +845,8 @@ def ref_problem(ctx, path):
     if head == "token":
         return None if ck.token_ok(".".join(segs[1:])) else f"`{path}` names no token (S4)"
     if head == "surface":
-        return None if len(segs) == 2 and segs[1] in ck.v["surface_roles"] else f"`{path}` names no surface role"
+        role = segs[2:] if segs[1] == "disabled" else segs[1:]
+        return None if len(role) == 1 and role[0] in ck.v["surface_roles"] else f"`{path}` names no surface role"
     if head == "element":
         return None if len(segs) == 2 and segs[1] in ck.v["element_data"] else f"`{path}` names no element data"
     if head in ("input", "part", "values"):
@@ -699,18 +856,57 @@ def ref_problem(ctx, path):
     return f"`{path}` is not a reference (S2.2)"
 
 
-def value_problems(ctx, value, dim, where="value") -> list:
+def dim_name(dim):
+    return "a text value" if dim == "text" else f"a {dim.replace('_', ' ')}"
+
+
+def expression_refs(expr: str) -> list:
+    """The references of an expression as written there (its paths that are not a call's name), in order."""
+    toks = [(m.lastgroup, m.group(m.lastgroup), m.end()) for m in TOKEN_RX.finditer(expr)]
+    out = []
+    for i, (kind, text, _) in enumerate(toks):
+        if kind == "path" and not (i + 1 < len(toks) and toks[i + 1][:2] == ("p", "(")) and text not in out:
+            out.append(text)
+    return out
+
+
+def text_expression_problems(ctx, expr: str, where: str) -> list:
+    """A text value's expression is one reference to a text field (S11's text row; S12 refuses a call)."""
+    m = re.fullmatch(r"\s*(@?[a-z_][a-z0-9_]*(?:\.@?[a-z0-9_][a-z0-9_]*)*)\s*", expr)
+    if not m:
+        return [f"{where}: a text value's expression is one reference to a text field (S11; S12 refuses a call)"]
+    ref = m.group(1)
+    if ref.split(".")[0] in ("token", "role"):
+        problem, dim = key_info(ctx, ref)[:2]
+        if not problem and dim is not None and dim != "text":
+            return [f"{where}: `{ref}` is a {dim.replace('_', ' ')}, not a text field"]
+    return []
+
+
+def value_problems(ctx, value, dim, where="value", typ=None) -> list:
+    """Problems of a value spelled for a key of dimension `dim`; `typ` is the key's core type (S11's text row reads
+    it: a text value inside a table or a list is found by its type)."""
+    kind = text_kind(typ)
+    if kind:
+        dim = "text"
+    if isinstance(value, str) and dim == "text":
+        if kind == "plain":
+            return []
+        if value.startswith("="):
+            out = [f"{where}: {p}" for p in expression_problems(ctx, value[1:])]
+            return out or text_expression_problems(ctx, value[1:], where)
+        return []
     if isinstance(value, bool):
         if dim not in (None, "bool"):
-            return [f"{where}: a bool where the key is a {dim}"]
+            return [f"{where}: a bool where the key is {dim_name(dim)}"]
         return []
     if isinstance(value, (int, float)):
         if isinstance(value, float) and not math.isfinite(value):
             return [f"{where}: a non-finite number"]
         if dim in UNIT_OF:
             return [f"{where}: a {dim.replace('_', ' ')} is spelled with its unit (\"{value}{UNIT_OF[dim]}\")"]
-        if dim in ("colour", "paint", "bool"):
-            return [f"{where}: a number where the key is a {dim}"]
+        if dim in ("colour", "paint", "bool", "text"):
+            return [f"{where}: a number where the key is {dim_name(dim)}"]
         return []
     if isinstance(value, str):
         s = value
@@ -720,7 +916,7 @@ def value_problems(ctx, value, dim, where="value") -> list:
             return []
         if HEX_LITERAL.match(s) or FUNC_COLOUR.match(s):
             if dim not in (None, "colour", "paint"):
-                return [f"{where}: a colour where the key is a {dim}"]
+                return [f"{where}: a colour where the key is {dim_name(dim)}"]
             return []
         m = UNIT_LITERAL.match(s)
         if m:
@@ -732,20 +928,36 @@ def value_problems(ctx, value, dim, where="value") -> list:
                     f"with S2.2's unit"]
         if NAME.match(s):
             if dim in SCALAR_DIMS:
-                return [f"{where}: the name {s!r} where the key is a {dim}"]
+                return [f"{where}: the name {s!r} where the key is {dim_name(dim)}"]
+            e = strip_type(typ)
+            if e in ctx.enums and not enum_name_ok(ctx, e, s):
+                return [f"{where}: {s!r} is not a unit variant of {e} (S11: its snake_case name)"]
             return []
         if s.startswith("#"):
             return [f"{where}: {s!r} is not a colour literal (#rrggbb, #rrggbbaa)"]
-        return [f"{where}: {s!r} is not a value as S11 spells it"]
+        return [f"{where}: {s!r} is not a value as S11 spells it (a free string is a text value only where the "
+                f"key's type is text)"]
     if isinstance(value, list):
+        if dim == "text":
+            return [f"{where}: a list where the key is a text value"]
+        it = item_type(typ)
         out = []
         for i, v in enumerate(value):
-            out += value_problems(ctx, v, None, f"{where}[{i}]")
+            out += value_problems(ctx, v, None, f"{where}[{i}]", it)
         return out
     if isinstance(value, dict):
         if dim in SCALAR_DIMS:
-            return [f"{where}: a table where the key is a {dim}"]
+            return [f"{where}: a table where the key is {dim_name(dim)}"]
         out = []
+        e = strip_type(typ)
+        if e in ctx.enums:
+            data = sorted(k for k, (form, _) in ctx.enums[e].items() if form != "unit")
+            if len(value) != 1 or next(iter(value)) not in data:
+                out.append(f"{where}: a variant of {e} with data is a one-key table naming it ({', '.join(data)}; S11)")
+        elif "::" in e and e in ctx.structs:
+            fields = ctx.structs[e]
+            out += [f"{where}.{k}: `{k}` is not a field of {e}" for k in value
+                    if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
         for k, v in value.items():
             w = f"{where}.{k}"
             if not NAME.match(k):
@@ -763,7 +975,7 @@ def value_problems(ctx, value, dim, where="value") -> list:
                 elif isinstance(v, float) and not math.isfinite(v):
                     out.append(f"{w}: a non-finite number")
                 continue
-            out += value_problems(ctx, v, None, w)
+            out += value_problems(ctx, v, None, w, child_type(ctx, typ, k) if typ else None)
         return out
     return [f"{where}: {type(value).__name__} is not a value"]
 
@@ -951,8 +1163,10 @@ def cite_problems(ctx, item: Item, cite: Cite) -> list:
             known = conversions()
             out += [(cite.ln("conversion"), f"conversion {x!r} is not one of {', '.join(known)}") for x in conv
                     if x not in known]
-    if "absent" in c and not (str_list(c["absent"]) and c["absent"] and all(x.strip() for x in c["absent"])):
-        out.append((cite.ln("absent"), "absent is not a non-empty list of names"))
+    if "absent" in c and not (str_list(c["absent"]) and all(x.strip() for x in c["absent"])):
+        out.append((cite.ln("absent"), "absent is not a list of names (`[]` where the platform has no name for it)"))
+    if kind == "measured":
+        out += inputs_problems(ctx, item, cite)
     if "tolerance" in c:
         t = c["tolerance"]
         if isinstance(t, dict):
@@ -964,6 +1178,30 @@ def cite_problems(ctx, item: Item, cite: Cite) -> list:
     if "evidence" in c and (not parse_evidence(c["evidence"]) or ".." in c["evidence"].split("#")[0].split("/")):
         out.append((cite.ln("evidence"), f"evidence {c['evidence']!r} is not "
                                          f"`docs/evidence/<harness>/<date>-run-<id>/<image>/<file>#<path>`"))
+    return out
+
+
+def inputs_problems(ctx, item: Item, cite: Cite) -> list:
+    """S17 *A measured derivation*: `inputs` only on an expression value's measured citation, and such a citation
+    always with them, each a reference of the expression as written there, none twice."""
+    c = cite.data
+    value = item.data.get("value") if item.table == "fact" and not item.palette else None
+    expr = isinstance(value, str) and value.startswith("=")
+    if "inputs" not in c:
+        return [(cite.line, "measured citation of an expression value: missing `inputs` (the references the harness "
+                            "varied, S17 *A measured derivation*)")] if expr else []
+    if not expr:
+        return [(cite.ln("inputs"), "`inputs` is only on a measured citation of an expression value (S17)")]
+    inputs = c["inputs"]
+    if not str_list(inputs) or not inputs:
+        return [(cite.ln("inputs"), "inputs is not a non-empty list of references")]
+    refs = expression_refs(value[1:])
+    out = [(cite.ln("conversion"), "a measured derivation has no `conversion` beside `inputs` (S17)")] \
+        if "conversion" in c else []
+    out += [(cite.ln("inputs"), f"input {x!r} is not a reference of the expression {value!r}") for x in inputs
+           if x not in refs]
+    out += [(cite.ln("inputs"), f"input {x!r} listed twice") for x in sorted({x for x in inputs
+                                                                             if inputs.count(x) > 1})]
     return out
 
 
@@ -1019,13 +1257,19 @@ def fact_problems(ctx, item: Item) -> list:
     else:
         out += [(item.line, f"missing `{f}`") for f in sorted(FACT_REQUIRED - d.keys())]
         out += [(item.ln(f), f"`{f}` is not a fact's field") for f in sorted(d.keys() - FACT_REQUIRED - FACT_OPTIONAL)]
-        dim, widget, kind = None, None, None
+        dim, widget, kind, typ = None, None, None, None
         if "key" in d:
-            problem, dim, widget, kind = key_info(ctx, d["key"])
+            problem, dim, widget, kind, typ = key_info(ctx, d["key"])
             if problem:
                 out.append((item.ln("key"), problem))
-        if "value" in d:
-            out += [(item.ln("value"), p) for p in value_problems(ctx, d["value"], dim)]
+        if "value" in d and typ == PART_PATCH:
+            out += [(item.ln("value"), p) for p in part_patch_problems(ctx, d["value"], widget)]
+        elif "value" in d:
+            out += [(item.ln("value"), p) for p in value_problems(ctx, d["value"], dim, typ=typ)]
+            if isinstance(d["value"], str) and text_leaves(ctx, d["value"], typ):
+                out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
+                                            "(S11)") for c in item.cites if c.data.get("kind") == "measured"
+                        and "tolerance" in c.data and c.data["tolerance"] != 0]
         if "rows" in d:
             out += rows_problems(ctx, item)
         if "when" in d:
@@ -1169,11 +1413,87 @@ def model_problems(ctx, item: Item) -> list:
                     out.append((item.ln(k), f"{k}: {x[sub]!r} is not a catalogue entry"))
                 out += [(item.ln(k), p) for p in names_problems(x["sizes"], f"{k}.sizes", lambda s: s in sizes,
                                                                   "among sizes")]
+        out += variant_declaration_problems(item, variants, sizes)
     out += cite_list_problems(item, "model")
     for c in item.cites:
         out += cite_problems(ctx, item, c)
     out += generation_problems(ctx, item)
     return out
+
+
+def variant_declaration_problems(item: Item, variants, sizes) -> list:
+    """`exclusive_variants`, `variant_sets` and `default_size_by_variant` (S10, S12, S17; ADD-A121)."""
+    d = item.data
+    out = []
+    groups = []
+    if "exclusive_variants" in d:
+        ev = d["exclusive_variants"]
+        if not (isinstance(ev, list) and all(str_list(g) for g in ev)):
+            out.append((item.ln("exclusive_variants"), "exclusive_variants is not a list of lists of variants"))
+        else:
+            groups = ev
+            for g in ev:
+                out += [(item.ln("exclusive_variants"), f"exclusive_variants: {v!r} is not among variants")
+                        for v in g if v not in variants]
+                out += [(item.ln("exclusive_variants"), f"exclusive_variants: a group names {v!r} twice")
+                        for v in sorted({v for v in g if g.count(v) > 1})]
+    if "variant_sets" in d:
+        vs = d["variant_sets"]
+        if not (isinstance(vs, list) and all(str_list(s) for s in vs)):
+            out.append((item.ln("variant_sets"), "variant_sets is not a list of lists of variants"))
+        else:
+            seen = set()
+            for s in vs:
+                where = f"variant_sets: {s}"
+                if len(set(s)) < 2:
+                    out.append((item.ln("variant_sets"), f"{where} holds fewer than two variants"))
+                out += [(item.ln("variant_sets"), f"{where}: {v!r} is not among variants") for v in s
+                        if v not in variants]
+                out += [(item.ln("variant_sets"), f"{where} names {v!r} twice") for v in sorted({v for v in s
+                                                                                               if s.count(v) > 1})]
+                out += [(item.ln("variant_sets"), f"{where} holds {', '.join(sorted(set(s) & set(g)))} of one "
+                                                  f"exclusive_variants group") for g in groups
+                        if len(set(s) & set(g)) > 1]
+                if frozenset(s) in seen:
+                    out.append((item.ln("variant_sets"), f"{where} is listed twice"))
+                seen.add(frozenset(s))
+    if "default_size_by_variant" in d:
+        dv = d["default_size_by_variant"]
+        if not isinstance(dv, list) or not all(isinstance(x, dict) and set(x) == {"variant", "size"}
+                                               and isinstance(x["variant"], str) and isinstance(x["size"], str)
+                                               for x in dv):
+            out.append((item.ln("default_size_by_variant"), "default_size_by_variant is not a list of "
+                                                            "{ variant, size }"))
+        else:
+            by_variant = {x["variant"]: x["sizes"] for x in d.get("sizes_by_variant", [])
+                          if isinstance(x, dict) and isinstance(x.get("variant"), str) and str_list(x.get("sizes"))} \
+                if isinstance(d.get("sizes_by_variant"), list) else {}
+            names = [x["variant"] for x in dv]
+            for x in dv:
+                v, size = x["variant"], x["size"]
+                if v not in variants:
+                    out.append((item.ln("default_size_by_variant"), f"default_size_by_variant: {v!r} is not among "
+                                                                    f"variants"))
+                elif size not in by_variant.get(v, sizes):
+                    out.append((item.ln("default_size_by_variant"), f"default_size_by_variant: {v!r} does not take "
+                                                                    f"the size {size!r}"))
+            out += [(item.ln("default_size_by_variant"), f"default_size_by_variant: two entries name {v!r}")
+                    for v in sorted({v for v in names if names.count(v) > 1})]
+    return out
+
+
+def part_patch_problems(ctx, value, widget) -> list:
+    """A whole part's value (S17, ADD-A121): `"absent"` or `{ drawn_as = { widget, part, variants } }` (S11)."""
+    if value == "absent":
+        return []
+    da = value.get("drawn_as") if isinstance(value, dict) and set(value) == {"drawn_as"} else None
+    if not isinstance(da, dict):
+        return [f"the key names a whole part of {widget}: its value is \"absent\" or "
+                f"{{ drawn_as = {{ widget, part, variants }} }} (S11, S17)"]
+    out = [f"value.drawn_as: unknown key `{k}`" for k in da if k not in DRAWN_AS_KEYS]
+    if "widget" not in da:
+        return out + ["value.drawn_as: missing `widget`"]
+    return out + part_problems(ctx, da, "value.drawn_as")
 
 
 # ------------------------------------------------------------------------------------------------ palettes
@@ -1271,21 +1591,24 @@ pub enum SizeClass { Compact, Regular }
 pub enum SurfaceSet { Window, View, Header, Button }
 pub struct SurfaceRoles { pub background: Value<Color>, pub foreground: Value<Color> }
 pub struct GlobalRoles { pub accent: Value<Color>, pub status: StatusRoles }
-pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: MotionTokens, pub focus: FocusIndicator }
+pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: MotionTokens, pub focus: FocusIndicator,
+                    pub icons: IconTokens, pub material: MaterialScheme }
+pub struct IconTokens { pub theme: Value<String> }
 pub struct MotionTokens { pub durations: Vec<(Key, Value<Ms>)>, pub speed_factor: Value<f32> }
 pub struct PartStyle { pub fill: Value<Paint>, pub stroke: Value<Stroke>, pub corners: Value<Corners>,
                        pub shadow: Value<Shadow>, pub text: Value<TextStyle>, pub focus: Value<FocusIndicator>,
                        pub padding: Sides<Value<Px>>, pub min_width: Value<Px>, pub opacity: Value<Fraction>,
-                       pub transitions: Vec<Transition> }
+                       pub transitions: Vec<Transition>, pub glyph: Value<Glyph> }
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>, pub spread: Value<Px>,
                          pub color: Value<Color>, pub inset: bool }
 pub struct ElementData { pub progress: f32 }
 pub struct TextRoles { pub body: X }
-pub struct TextTokens { pub roles: X, pub keyed: X, pub scaling: X }
+pub struct TextTokens { pub roles: X, pub keyed: X, pub scaling: X, pub fallbacks: FontFallbacks }
 pub struct TextStyle { pub font: Font, pub fill: Value<Paint> }
-pub struct Font { pub size: Value<FontSize>, pub weight: Value<u16> }
+pub struct Font { pub family: Value<String>, pub size: Value<FontSize>, pub weight: Value<u16> }
 pub struct IconStyle { pub size: Value<Px> }
-pub struct Glyph { pub stroke: X }
+pub struct Glyph { pub source: GlyphSource, pub stroke: X }
+pub enum GlyphSource { ThemeIcon { name: String, fallbacks: Vec<String> }, NamedSystemImage { name: String } }
 pub struct GlyphStroke { pub width: X }
 pub struct FocusIndicator { pub width: Value<Px>, pub corners: X }
 pub struct Corners { pub top_left: Radius }
@@ -1295,11 +1618,17 @@ pub struct Caret { pub width: X }
 pub struct Behavior { pub focus_visible_when: X }
 pub struct ScrollPhysics { pub friction: X }
 pub struct TouchBehavior { pub slop: X }
-pub struct FontFallbacks { pub emoji: X }
+pub struct FontFallbacks { pub families: Vec<String>, pub emoji: X }
 pub struct TextRendering { pub hinting: X }
 pub struct KdeTokens { pub disabled: KdeEffects, pub frame_width: Value<Px> }
 pub struct KdeEffects { pub intensity_amount: Value<f32> }
-pub struct MaterialScheme { pub primary: X }
+pub struct MaterialScheme { pub variant: MaterialVariant, pub primary: X }
+pub enum MaterialVariant { TonalSpot, FruitSalad, Cmf }
+pub struct Transition { pub properties: Vec<PropertyGroup>, pub duration: Value<Ms>, pub timing: Value<Timing> }
+pub enum PropertyGroup { Fill, Stroke }
+pub enum Timing { CubicBezier(f32, f32, f32, f32), Linear, Spring { mass: f32, stiffness: f32, damping_ratio: f32,
+                  rest_epsilon: f32 } }
+pub enum KdeShadeRole { Light, Mid }
 pub struct Material { pub blur: X }
 pub enum PlacementStrategy { Below }
 pub enum PresentationEvent { Appear, Keyed(Key) }
@@ -1314,6 +1643,8 @@ pub enum FocusVisibleWhen { Always }
 | `alpha(c, a)` | colour | alpha |
 | `mix(a, b, t)` | colour | mix |
 | `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)` | colour | KColorUtils |
+| `kde_shade(c, role: KdeShadeRole, contrast)` | colour | KColorScheme::shade |
+| `kirigami_lerp(a, b, balance)` | colour | Kirigami's ColorUtils.linearInterpolation |
 
 A function is added only with its rule.
 '''
@@ -1326,6 +1657,7 @@ SELF_TEST_CATALOGUE = '''
 - **Parts:**
   - `body` — the root: `fill`, `stroke`, `corners`, `shadow`, `padding`, `min_width`, `focus`, `transitions`.
   - `label` — the text: `text`.
+  - `mark` — the mark: `glyph`.
 - **Widget values:** `icon_text_gap_px: Value<Px>`, `repeat_delay_ms: Value<Ms>`.
 - **Variants:** typed `flat`, `primary`; keyed `@pill`.
 - **Flags:** keyed `@busy`.
@@ -1418,6 +1750,37 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:3"
 quote = "$hover_color: alpha(currentColor, .07);"
 ''',
+    "docs/facts/gnome/text.toml": '''
+[[fact]]
+key = "button.label.text.font.family"
+value = "Adwaita Sans"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_fonts.scss:1"
+quote = 'font-family: "Adwaita Sans", sans-serif;'
+
+[[fact]]
+key = "token.text.fallbacks.families"
+value = ["Adwaita Sans", "sans-serif"]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_fonts.scss:1"
+quote = 'font-family: "Adwaita Sans", sans-serif;'
+
+[[fact]]
+key = "button.mark.glyph.source"
+value = { theme_icon = { name = "go-next-symbolic", fallbacks = ["go-next"] } }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_fonts.scss:2"
+quote = '/* "go-next-symbolic", "go-next" */'
+''',
     "docs/facts/kde/colors.toml": '''
 [[fact]]
 key = "role.window.background"
@@ -1500,6 +1863,18 @@ tolerance = 0
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.systemFontSize"
 tolerance = 0
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"] }
+value = "= alpha(input.accent, 0.5)"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml#button.primary.fill"
+inputs = ["input.accent"]
+tolerance = 1
 ''',
     "docs/facts/macos/state-models.toml": '''
 [[model]]
@@ -1568,7 +1943,7 @@ source = "microsoft-ui-xaml@2.5.1"
 os = "26100.4946"
 toolkit = "WindowsAppSDK 2.5.1"
 ''',
-    "native-theme/src/presets/catppuccin-mocha.toml": '''
+    "native-theme/src/next/presets/catppuccin-mocha.toml": '''
 [preset]
 id = "catppuccin-mocha"
 kind = "palette"
@@ -1603,6 +1978,16 @@ def fixture_context(root: Path):
     return Context(root, core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE, sources_text=SELF_TEST_SOURCES,
                    rows=SELF_TEST_ROWS)
 
+
+_SBV = 'sizes_by_variant = [{ variant = "@pill", sizes = ["regular"] }]'
+_CITE = ('\n[[fact.cite]]\nkind = "published"\n'
+         'source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11"\n'
+         'quote = "&:hover { background-color: $hover_color; }"\n')
+_PART = '[[fact]]\nkey = "button.mark"\nvalue = "absent"\nrows = []\n' + _CITE
+_SPRING_TIMING = "{ spring = { mass = 1, stiffness = 100, damping_ratio = 1, rest_epsilon = 0.001 } }"
+_SPRING = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], duration_ms = 200, timing = '
+           + _SPRING_TIMING + ' }]\nrows = []\n' + _CITE)
+_CMF = '[[fact]]\nkey = "token.material.variant"\nvalue = "cmf"\nrows = []\n' + _CITE
 
 # (label, file, old, new, the findings wanted: substrings, one per finding)
 SELF_TEST_CASES = [
@@ -1683,8 +2068,10 @@ SELF_TEST_CASES = [
     ("pull_to_refresh: when with states", "docs/facts/macos/state-models.toml",
      'when = { conditions = ["preset:macos-tahoe"] }', 'when = { states = ["hover"] }',
      ["holds only `preset:` or `flavor:` conditions", "no citation serves macos-monterey"]),
-    ("pull_to_refresh: empty absent", "docs/facts/macos/state-models.toml",
-     'absent = ["refreshControl", "NSRefreshControl"]', "absent = []", ["absent is not a non-empty list"]),
+    ("pull_to_refresh: absent = [] (no name for it)", "docs/facts/macos/state-models.toml",
+     'absent = ["refreshControl", "NSRefreshControl"]', "absent = []", []),
+    ("pull_to_refresh: an empty absent name", "docs/facts/macos/state-models.toml",
+     'absent = ["refreshControl", "NSRefreshControl"]', 'absent = [""]', ["absent is not a list of names"]),
     ("model: absent on a read citation", "docs/facts/macos/state-models.toml",
      'kind = "published"\nsource = "xcode@26.6', 'kind = "read"\nsource = "xcode@26.6',
      ["read citation: `absent` is not allowed"]),
@@ -1706,6 +2093,120 @@ SELF_TEST_CASES = [
      'not_drawn = [{ states = ["hover"], conditions = ["window_hidden"] }]', ["'window_hidden' is not a condition"]),
     ("model: an unknown size", "docs/facts/macos/state-models.toml", '["small", "regular", "large"]',
      '["small", "regular", "huge"]', ["'huge' is not a size"]),
+    # a state model's variant declarations (S10, S12, S17; ADD-A121)
+    ("model: variant groups, sets and defaults", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nexclusive_variants = [["flat", "@pill"]]\ndefault_size_by_variant = [{ variant = "@pill", size = '
+     '"regular" }]', []),
+    ("model: a variant set", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nvariant_sets = [["flat", "@pill"]]', []),
+    ("model: an exclusive group naming an undeclared variant", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nexclusive_variants = [["flat", "primary"]]', ["exclusive_variants: 'primary' is not among variants"]),
+    ("model: an exclusive group naming a variant twice", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nexclusive_variants = [["flat", "flat"]]', ["a group names 'flat' twice"]),
+    ("model: a variant set of one exclusive group", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nexclusive_variants = [["flat", "@pill"]]\nvariant_sets = [["flat", "@pill"]]',
+     ["holds @pill, flat of one exclusive_variants group"]),
+    ("model: a variant set of one variant", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nvariant_sets = [["flat"]]', ["holds fewer than two variants"]),
+    ("model: a variant set naming an undeclared variant", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nvariant_sets = [["flat", "primary"]]', ["'primary' is not among variants"]),
+    ("model: a variant set listed twice", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nvariant_sets = [["flat", "@pill"], ["@pill", "flat"]]', ["is listed twice"]),
+    ("model: a variant set not a list of lists", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nvariant_sets = ["flat", "@pill"]', ["variant_sets is not a list of lists of variants"]),
+    ("model: a default size the variant does not take", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\ndefault_size_by_variant = [{ variant = "@pill", size = "small" }]',
+     ["default_size_by_variant: '@pill' does not take the size 'small'"]),
+    ("model: a default size for an undeclared variant", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\ndefault_size_by_variant = [{ variant = "primary", size = "small" }]',
+     ["default_size_by_variant: 'primary' is not among variants"]),
+    ("model: two default sizes for one variant", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\ndefault_size_by_variant = [{ variant = "flat", size = "small" }, { variant = "flat", size = "large" }]',
+     ["two entries name 'flat'"]),
+    ("model: a default size entry without its size", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\ndefault_size_by_variant = [{ variant = "flat" }]', ["is not a list of { variant, size }"]),
+    ("model: variant groups while unavailable", "docs/facts/macos/state-models.toml", "available = false\n",
+     'available = false\nexclusive_variants = [["flat", "@pill"]]\n',
+     ["`exclusive_variants` on an entry with available = false"]),
+    # a whole part's fact (S17, ADD-A121)
+    ("part: absent", "docs/facts/gnome/part.toml", None, _PART, []),
+    ("part: drawn as another widget's part", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"absent"', '{ drawn_as = { widget = "toolbar", part = "bar" } }'), []),
+    ("part: drawn as a widget with its variants", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"absent"', '{ drawn_as = { widget = "button", variants = ["flat", "@pill"] } }'), []),
+    ("part: a component's part absent", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"button.mark"', '"component.led.body"'), []),
+    ("part: neither absent nor drawn_as", "docs/facts/gnome/part.toml", None, _PART.replace('"absent"', '"none"'),
+     ["its value is \"absent\" or { drawn_as"]),
+    ("part: drawn_as a part of another widget", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"absent"', '{ drawn_as = { widget = "toolbar", part = "label" } }'),
+     ["'label' is not a part of toolbar"]),
+    ("part: drawn_as without a widget", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"absent"', '{ drawn_as = { part = "bar" } }'), ["missing `widget`"]),
+    ("part: drawn_as with an unknown key", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"absent"', '{ drawn_as = { widget = "toolbar", parts = "bar" } }'), ["unknown key `parts`"]),
+    ("part: drawn_as a variant of no widget", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"absent"', '{ drawn_as = { widget = "toolbar", variants = ["flat"] } }'),
+     ["'flat' is not a variant"]),
+    ("part: a part the widget lacks", "docs/facts/gnome/part.toml", None,
+     _PART.replace('"button.mark"', '"button.bezel"'),
+     ["is not `button.<part>.<field>`, `button.<part>` or `button.values.<name>`"]),
+    # a spring by its damping ratio, and enum names, read from the core (S2.7, S11; ADD-A121)
+    ("spring: by its damping ratio", "docs/facts/gnome/motion.toml", None, _SPRING, []),
+    ("spring: a damping coefficient", "docs/facts/gnome/motion.toml", None,
+     _SPRING.replace("damping_ratio = 1", "damping = 20"), ["`damping` is not a field of Timing::spring"]),
+    ("spring: a variant the timing lacks", "docs/facts/gnome/motion.toml", None,
+     _SPRING.replace("{ spring", "{ sprung"),
+     ["a variant of Timing with data is a one-key table naming it"]),
+    ("spring: a unit variant", "docs/facts/gnome/motion.toml", None,
+     _SPRING.replace(_SPRING_TIMING, '"linear"'), []),
+    ("spring: a name of no variant", "docs/facts/gnome/motion.toml", None,
+     _SPRING.replace(_SPRING_TIMING, '"lineal"'), ["'lineal' is not a unit variant of Timing"]),
+    ("spring: a property group of none", "docs/facts/gnome/motion.toml", None, _SPRING.replace('["fill"]', '["fil"]'),
+     ["value[0].properties[0]: 'fil' is not a unit variant of PropertyGroup"]),
+    ("Material: the CMF variant", "docs/facts/gnome/motion.toml", None, _CMF, []),
+    ("Material: a variant of none", "docs/facts/gnome/motion.toml", None, _CMF.replace('"cmf"', '"cmff"'),
+     ["'cmff' is not a unit variant of MaterialVariant"]),
+    # text values (S11's text row)
+    ("text: a family as a number", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"', "value = 11",
+     ["a number where the key is a text value"]),
+    ("text: a family as a list", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"', 'value = ["Adwaita Sans"]',
+     ["a list where the key is a text value"]),
+    ("text: a free string where the key is no text", "docs/facts/gnome/text.toml", '"button.label.text.font.family"',
+     '"button.label.text.font.size"', ["'Adwaita Sans' is not a value as S11 spells it"]),
+    ("text: a call", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"',
+     'value = "= mix(token.icons.theme, token.icons.theme, 0.5)"', ["one reference to a text field"]),
+    ("text: a reference to a text field", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"',
+     'value = "= token.icons.theme"', []),
+    ("text: a reference to a number", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"',
+     'value = "= token.kde.disabled.intensity_amount"', ["is a number, not a text field"]),
+    ("text: a list entry not text", "docs/facts/gnome/text.toml", '["Adwaita Sans", "sans-serif"]',
+     '["Adwaita Sans", 3]', ["value[1]: a number where the key is a text value"]),
+    ("text: a glyph name in a variant", "docs/facts/gnome/text.toml", '{ name = "go-next-symbolic", fallbacks',
+     '{ name = "auto", fallbacks', []),
+    ("text: a glyph name outside its variant", "docs/facts/gnome/text.toml", "{ theme_icon = { name",
+     "{ symbol = { name", ["a variant of GlyphSource with data is a one-key table naming it",
+                           "'go-next-symbolic' is not a value as S11 spells it",
+                           "value.symbol.fallbacks[0]: 'go-next' is not a value"]),
+    ("text: a measured family with a tolerance", "docs/facts/macos/family.toml", None,
+     '[[fact]]\nkey = "button.label.text.font.family"\nvalue = ".AppleSystemUIFont"\nrows = []\n\n'
+     '[[fact.cite]]\nkind = "measured"\nevidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/'
+     'probe.toml#macos.fonts.family"\ntolerance = 0\n\n'
+     '[[fact.cite]]\nkind = "measured"\nevidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/'
+     'probe.toml#macos.fonts.family"\ntolerance = 1\n', ["its measured citation's tolerance is 0"]),
+    # measured derivations (S17)
+    ("derivation: no inputs", "docs/facts/macos/buttons.toml", 'inputs = ["input.accent"]\n', "",
+     ["missing `inputs`"]),
+    ("derivation: inputs on a literal value", "docs/facts/macos/buttons.toml", "systemFontSize\"\ntolerance = 0\n",
+     'systemFontSize"\ntolerance = 0\ninputs = ["input.accent"]\n', ["`inputs` is only on a measured citation"]),
+    ("derivation: an input the expression lacks", "docs/facts/macos/buttons.toml", 'inputs = ["input.accent"]',
+     'inputs = ["input.accent", "input.focus"]', ["'input.focus' is not a reference of the expression"]),
+    ("derivation: a conversion beside inputs", "docs/facts/macos/buttons.toml", 'inputs = ["input.accent"]',
+     'inputs = ["input.accent"]\nconversion = ["percent_to_fraction"]', ["no `conversion` beside `inputs`"]),
+    ("derivation: an input twice", "docs/facts/macos/buttons.toml", 'inputs = ["input.accent"]',
+     'inputs = ["input.accent", "input.accent"]', ["'input.accent' listed twice"]),
+    ("derivation: inputs on a published citation", "docs/facts/gnome/buttons.toml", 'quote = "$hover_color',
+     'inputs = ["surface.foreground"]\nquote = "$hover_color', ["published citation: `inputs` is not allowed"]),
     # KDE accent run
     ("KDE accent: scheme_file without accent", "docs/facts/kde/colors.toml", 'accent = "#3daee9"\n', "",
      ["scheme_file and accent come both or neither"]),
@@ -1731,17 +2232,18 @@ SELF_TEST_CASES = [
      "breeze@6.8.2", ["is not a palette entry"]),
     ("Catppuccin: a value not a colour", "docs/facts/palettes/catppuccin.toml", 'value = "#313244"',
      'value = "surface0"', ["is not a colour literal"]),
-    ("palette: a source naming no fact", "native-theme/src/presets/catppuccin-mocha.toml",
+    ("palette: a source naming no fact", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '= "catppuccin.mocha.surface0"', '= "catppuccin.mocha.surface9"', ["is not a palette-fact key"]),
-    ("palette: a colour in both", "native-theme/src/presets/catppuccin-mocha.toml",
+    ("palette: a colour in both", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.background" = "the guide',
      ["is in both", "is in neither"]),
-    ("palette: a pick naming no colour", "native-theme/src/presets/catppuccin-mocha.toml",
+    ("palette: a pick naming no colour", "native-theme/src/next/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.fg" = "the guide',
      ["'colors.dark.surfaces.window.fg' is not a stated colour literal's path", "is in neither"]),
     # the files
     ("a stray directory", "docs/facts/gtk/x.toml", None, "", ["not a facts directory"]),
     ("imported is skipped", "docs/facts/imported/rows.toml", None, "this is no TOML", []),
+    ("staged is skipped", "docs/facts/staged/bases.toml", None, "this is no TOML", []),
     ("bad TOML", "docs/facts/gnome/buttons.toml", "[[fact]]\nkey", "[[fact]\nkey", ["not valid TOML"]),
     ("a fact table in state-models", "docs/facts/macos/state-models.toml", None, '[[fact]]\nkey = "button.body.fill"\n',
      ["unknown table `fact`"]),
@@ -1784,10 +2286,31 @@ def self_test() -> int:
             failures.append(f"empty: got {got}, {summary(counts, len(got))}")
         # the closed lists the docstring names
         ctx = fixture_context(root)
-        if ctx.functions != {"alpha", "mix", "kcu_mix", "kcu_tint"}:
+        if ctx.functions != {"alpha", "mix", "kcu_mix", "kcu_tint", "kde_shade", "kirigami_lerp"}:
             failures.append(f"functions: got {sorted(ctx.functions)}")
         if ctx.presets != set(ALL_PRESETS):
             failures.append(f"existing presets: got {sorted(ctx.presets)}")
+        # only the new model's presets exist: today's directory and a stem that is no platform preset do not count
+        root = base / "presets"
+        if existing_presets(root):
+            failures.append(f"existing presets, no directory: got {sorted(existing_presets(root))}")
+        for rel in ("native-theme/src/presets/adwaita.toml", PRESET_DIRS[0] / "macos-tahoe.toml",
+                    PRESET_DIRS[0] / "nord.toml"):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text("", encoding="utf-8")
+        if existing_presets(root) != {"macos-tahoe"}:
+            failures.append(f"existing presets, today's and the new model's: got {sorted(existing_presets(root))}")
+        types = {k: key_info(ctx, k)[4] for k in ("button.label.text.font.family", "token.text.fallbacks.families",
+                                                   "button.mark.glyph.source", "token.icons.theme")}
+        if types != {"button.label.text.font.family": "Value<String>", "token.text.fallbacks.families": "Vec<String>",
+                     "button.mark.glyph.source": "GlyphSource", "token.icons.theme": "Value<String>"}:
+            failures.append(f"key types: got {types}")
+        got = text_leaves(ctx, {"theme_icon": {"name": "a", "fallbacks": ["b", "c"]}}, "GlyphSource")
+        if got != [("theme_icon.name", "a"), ("theme_icon.fallbacks.0", "b"), ("theme_icon.fallbacks.1", "c")]:
+            failures.append(f"text leaves: got {got}")
+        if expression_refs(" alpha(input.accent, mix(role.view.background, input.accent, 0.5))") != [
+                "input.accent", "role.view.background"]:
+            failures.append(f"expression refs: got {expression_refs('alpha(input.accent, 0.5)')}")
         dims = {k: key_info(ctx, k)[1] for k in ("button.body.min_width", "button.label.text.font.size",
                                                   "button.body.padding.top", "button.values.icon_text_gap",
                                                   "token.motion.durations.button", "role.view.foreground",
@@ -1812,7 +2335,12 @@ def self_test() -> int:
                            ("= kcu_tint(surface.background, token.focus, 0.5", ["expected `,` or `)`"]),
                            ("= srgb(1, 2)", ["three or four numbers"]),
                            ("= element.nope", ["names no element data"]),
-                           ("= surface.nope", ["names no surface role"])):
+                           ("= surface.nope", ["names no surface role"]),
+                           ("= surface.disabled.foreground", []),
+                           ("= surface.disabled", ["names no surface role"]),
+                           ("= surface.disabled.nope", ["names no surface role"]),
+                           ("= kde_shade(role.window.background, light, 4)", []),
+                           ("= kirigami_lerp(role.window.background, role.view.foreground, 0.2)", [])):
             got = value_problems(ctx, expr, None)
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"expression {expr!r}: got {got}, want {want}")

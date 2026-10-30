@@ -65,6 +65,11 @@ system-icons = [
     "material-icons",
 ]
 
+[lints.rust]
+# `nt_next_docs` documents the hidden `next` module, so `missing_docs` reaches
+# it (scripts/check_release.sh, "Docs").
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(nt_next_docs)"] }
+
 [dependencies]
 arc-swap = "1.9.2"
 async-trait = "0.1.92"

@@ -1,0 +1,1013 @@
+# adwaita's state models (S17): the combinations libadwaita 1.10.0 and GTK 4.24.1 draw. Written by the GNOME facts
+# lane. States combine (no exclusive group: libadwaita's CSS selects each pseudo-class on its own).
+
+[[model]]
+widget = "button"
+available = true
+variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@raised", "@osd", "@opaque", "@card", "@with_arrow", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button", "@custom_child", "@image_text_box"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "popover" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }] }
+exclusive = []
+exclusive_variants = [["icon_only", "with_icon", "@custom_child"], ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"]]
+variant_sets = [
+  ["pill", "primary"],
+  ["pill", "destructive"],
+  ["pill", "flat"],
+  ["pill", "@raised"],
+  ["pill", "@opaque"],
+  ["pill", "@osd"],
+  ["pill", "@card"],
+  ["circular", "primary"],
+  ["circular", "destructive"],
+  ["circular", "flat"],
+  ["circular", "@raised"],
+  ["circular", "@opaque"],
+  ["circular", "@osd"],
+  ["circular", "@card"],
+  ["toggle", "primary"],
+  ["toggle", "destructive"],
+  ["toggle", "flat"],
+  ["toggle", "@raised"],
+  ["toggle", "@opaque"],
+  ["toggle", "@osd"],
+  ["toggle", "@card"],
+  ["toggle", "pill"],
+  ["toggle", "pill", "primary"],
+  ["toggle", "pill", "destructive"],
+  ["toggle", "pill", "flat"],
+  ["toggle", "pill", "@raised"],
+  ["toggle", "pill", "@opaque"],
+  ["toggle", "pill", "@osd"],
+  ["toggle", "pill", "@card"],
+  ["toggle", "circular"],
+  ["toggle", "circular", "primary"],
+  ["toggle", "circular", "destructive"],
+  ["toggle", "circular", "flat"],
+  ["toggle", "circular", "@raised"],
+  ["toggle", "circular", "@opaque"],
+  ["toggle", "circular", "@osd"],
+  ["toggle", "circular", "@card"],
+  ["icon_only", "primary"],
+  ["icon_only", "destructive"],
+  ["icon_only", "flat"],
+  ["icon_only", "@raised"],
+  ["icon_only", "@opaque"],
+  ["icon_only", "@osd"],
+  ["icon_only", "@card"],
+  ["icon_only", "pill"],
+  ["icon_only", "pill", "primary"],
+  ["icon_only", "pill", "destructive"],
+  ["icon_only", "pill", "flat"],
+  ["icon_only", "pill", "@raised"],
+  ["icon_only", "pill", "@opaque"],
+  ["icon_only", "pill", "@osd"],
+  ["icon_only", "pill", "@card"],
+  ["icon_only", "circular"],
+  ["icon_only", "circular", "primary"],
+  ["icon_only", "circular", "destructive"],
+  ["icon_only", "circular", "flat"],
+  ["icon_only", "circular", "@raised"],
+  ["icon_only", "circular", "@opaque"],
+  ["icon_only", "circular", "@osd"],
+  ["icon_only", "circular", "@card"],
+  ["toggle", "icon_only"],
+  ["toggle", "icon_only", "primary"],
+  ["toggle", "icon_only", "destructive"],
+  ["toggle", "icon_only", "flat"],
+  ["toggle", "icon_only", "@raised"],
+  ["toggle", "icon_only", "@opaque"],
+  ["toggle", "icon_only", "@osd"],
+  ["toggle", "icon_only", "@card"],
+  ["toggle", "icon_only", "pill"],
+  ["toggle", "icon_only", "pill", "primary"],
+  ["toggle", "icon_only", "pill", "destructive"],
+  ["toggle", "icon_only", "pill", "flat"],
+  ["toggle", "icon_only", "pill", "@raised"],
+  ["toggle", "icon_only", "pill", "@opaque"],
+  ["toggle", "icon_only", "pill", "@osd"],
+  ["toggle", "icon_only", "pill", "@card"],
+  ["toggle", "icon_only", "circular"],
+  ["toggle", "icon_only", "circular", "primary"],
+  ["toggle", "icon_only", "circular", "destructive"],
+  ["toggle", "icon_only", "circular", "flat"],
+  ["toggle", "icon_only", "circular", "@raised"],
+  ["toggle", "icon_only", "circular", "@opaque"],
+  ["toggle", "icon_only", "circular", "@osd"],
+  ["toggle", "icon_only", "circular", "@card"],
+  ["with_icon", "primary"],
+  ["with_icon", "destructive"],
+  ["with_icon", "flat"],
+  ["with_icon", "@raised"],
+  ["with_icon", "@opaque"],
+  ["with_icon", "@osd"],
+  ["with_icon", "@card"],
+  ["with_icon", "pill"],
+  ["with_icon", "pill", "primary"],
+  ["with_icon", "pill", "destructive"],
+  ["with_icon", "pill", "flat"],
+  ["with_icon", "pill", "@raised"],
+  ["with_icon", "pill", "@opaque"],
+  ["with_icon", "pill", "@osd"],
+  ["with_icon", "pill", "@card"],
+  ["with_icon", "circular"],
+  ["with_icon", "circular", "primary"],
+  ["with_icon", "circular", "destructive"],
+  ["with_icon", "circular", "flat"],
+  ["with_icon", "circular", "@raised"],
+  ["with_icon", "circular", "@opaque"],
+  ["with_icon", "circular", "@osd"],
+  ["with_icon", "circular", "@card"],
+  ["toggle", "with_icon"],
+  ["toggle", "with_icon", "primary"],
+  ["toggle", "with_icon", "destructive"],
+  ["toggle", "with_icon", "flat"],
+  ["toggle", "with_icon", "@raised"],
+  ["toggle", "with_icon", "@opaque"],
+  ["toggle", "with_icon", "@osd"],
+  ["toggle", "with_icon", "@card"],
+  ["toggle", "with_icon", "pill"],
+  ["toggle", "with_icon", "pill", "primary"],
+  ["toggle", "with_icon", "pill", "destructive"],
+  ["toggle", "with_icon", "pill", "flat"],
+  ["toggle", "with_icon", "pill", "@raised"],
+  ["toggle", "with_icon", "pill", "@opaque"],
+  ["toggle", "with_icon", "pill", "@osd"],
+  ["toggle", "with_icon", "pill", "@card"],
+  ["toggle", "with_icon", "circular"],
+  ["toggle", "with_icon", "circular", "primary"],
+  ["toggle", "with_icon", "circular", "destructive"],
+  ["toggle", "with_icon", "circular", "flat"],
+  ["toggle", "with_icon", "circular", "@raised"],
+  ["toggle", "with_icon", "circular", "@opaque"],
+  ["toggle", "with_icon", "circular", "@osd"],
+  ["toggle", "with_icon", "circular", "@card"],
+  ["@custom_child", "primary"],
+  ["@custom_child", "destructive"],
+  ["@custom_child", "flat"],
+  ["@custom_child", "@raised"],
+  ["@custom_child", "@opaque"],
+  ["@custom_child", "@osd"],
+  ["@custom_child", "@card"],
+  ["@custom_child", "pill"],
+  ["@custom_child", "pill", "primary"],
+  ["@custom_child", "pill", "destructive"],
+  ["@custom_child", "pill", "flat"],
+  ["@custom_child", "pill", "@raised"],
+  ["@custom_child", "pill", "@opaque"],
+  ["@custom_child", "pill", "@osd"],
+  ["@custom_child", "pill", "@card"],
+  ["@custom_child", "circular"],
+  ["@custom_child", "circular", "primary"],
+  ["@custom_child", "circular", "destructive"],
+  ["@custom_child", "circular", "flat"],
+  ["@custom_child", "circular", "@raised"],
+  ["@custom_child", "circular", "@opaque"],
+  ["@custom_child", "circular", "@osd"],
+  ["@custom_child", "circular", "@card"],
+  ["toggle", "@custom_child"],
+  ["toggle", "@custom_child", "primary"],
+  ["toggle", "@custom_child", "destructive"],
+  ["toggle", "@custom_child", "flat"],
+  ["toggle", "@custom_child", "@raised"],
+  ["toggle", "@custom_child", "@opaque"],
+  ["toggle", "@custom_child", "@osd"],
+  ["toggle", "@custom_child", "@card"],
+  ["toggle", "@custom_child", "pill"],
+  ["toggle", "@custom_child", "pill", "primary"],
+  ["toggle", "@custom_child", "pill", "destructive"],
+  ["toggle", "@custom_child", "pill", "flat"],
+  ["toggle", "@custom_child", "pill", "@raised"],
+  ["toggle", "@custom_child", "pill", "@opaque"],
+  ["toggle", "@custom_child", "pill", "@osd"],
+  ["toggle", "@custom_child", "pill", "@card"],
+  ["toggle", "@custom_child", "circular"],
+  ["toggle", "@custom_child", "circular", "primary"],
+  ["toggle", "@custom_child", "circular", "destructive"],
+  ["toggle", "@custom_child", "circular", "flat"],
+  ["toggle", "@custom_child", "circular", "@raised"],
+  ["toggle", "@custom_child", "circular", "@opaque"],
+  ["toggle", "@custom_child", "circular", "@osd"],
+  ["toggle", "@custom_child", "circular", "@card"],
+  ["with_icon", "@image_text_box"],
+  ["with_icon", "@image_text_box", "primary"],
+  ["with_icon", "@image_text_box", "destructive"],
+  ["with_icon", "@image_text_box", "flat"],
+  ["with_icon", "@image_text_box", "@raised"],
+  ["with_icon", "@image_text_box", "@opaque"],
+  ["with_icon", "@image_text_box", "@osd"],
+  ["with_icon", "@image_text_box", "@card"],
+  ["with_icon", "@image_text_box", "pill"],
+  ["with_icon", "@image_text_box", "pill", "primary"],
+  ["with_icon", "@image_text_box", "pill", "destructive"],
+  ["with_icon", "@image_text_box", "pill", "flat"],
+  ["with_icon", "@image_text_box", "pill", "@raised"],
+  ["with_icon", "@image_text_box", "pill", "@opaque"],
+  ["with_icon", "@image_text_box", "pill", "@osd"],
+  ["with_icon", "@image_text_box", "pill", "@card"],
+  ["with_icon", "@image_text_box", "circular"],
+  ["with_icon", "@image_text_box", "circular", "primary"],
+  ["with_icon", "@image_text_box", "circular", "destructive"],
+  ["with_icon", "@image_text_box", "circular", "flat"],
+  ["with_icon", "@image_text_box", "circular", "@raised"],
+  ["with_icon", "@image_text_box", "circular", "@opaque"],
+  ["with_icon", "@image_text_box", "circular", "@osd"],
+  ["with_icon", "@image_text_box", "circular", "@card"],
+  ["toggle", "with_icon", "@image_text_box"],
+  ["toggle", "with_icon", "@image_text_box", "primary"],
+  ["toggle", "with_icon", "@image_text_box", "destructive"],
+  ["toggle", "with_icon", "@image_text_box", "flat"],
+  ["toggle", "with_icon", "@image_text_box", "@raised"],
+  ["toggle", "with_icon", "@image_text_box", "@opaque"],
+  ["toggle", "with_icon", "@image_text_box", "@osd"],
+  ["toggle", "with_icon", "@image_text_box", "@card"],
+  ["toggle", "with_icon", "@image_text_box", "pill"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "primary"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "destructive"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "flat"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "@raised"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "@opaque"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "@osd"],
+  ["toggle", "with_icon", "@image_text_box", "pill", "@card"],
+  ["toggle", "with_icon", "@image_text_box", "circular"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "primary"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "destructive"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "flat"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "@raised"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "@opaque"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "@osd"],
+  ["toggle", "with_icon", "@image_text_box", "circular", "@card"],
+  ["menu", "primary"],
+  ["menu", "destructive"],
+  ["menu", "flat"],
+  ["menu", "@raised"],
+  ["menu", "@opaque"],
+  ["menu", "@osd"],
+  ["menu", "@card"],
+  ["menu", "pill"],
+  ["menu", "pill", "primary"],
+  ["menu", "pill", "destructive"],
+  ["menu", "pill", "flat"],
+  ["menu", "pill", "@raised"],
+  ["menu", "pill", "@opaque"],
+  ["menu", "pill", "@osd"],
+  ["menu", "pill", "@card"],
+  ["menu", "circular"],
+  ["menu", "circular", "primary"],
+  ["menu", "circular", "destructive"],
+  ["menu", "circular", "flat"],
+  ["menu", "circular", "@raised"],
+  ["menu", "circular", "@opaque"],
+  ["menu", "circular", "@osd"],
+  ["menu", "circular", "@card"],
+  ["menu", "@with_arrow"],
+  ["menu", "@with_arrow", "primary"],
+  ["menu", "@with_arrow", "destructive"],
+  ["menu", "@with_arrow", "flat"],
+  ["menu", "@with_arrow", "@raised"],
+  ["menu", "@with_arrow", "@opaque"],
+  ["menu", "@with_arrow", "@osd"],
+  ["menu", "@with_arrow", "@card"],
+  ["menu", "@with_arrow", "pill"],
+  ["menu", "@with_arrow", "pill", "primary"],
+  ["menu", "@with_arrow", "pill", "destructive"],
+  ["menu", "@with_arrow", "pill", "flat"],
+  ["menu", "@with_arrow", "pill", "@raised"],
+  ["menu", "@with_arrow", "pill", "@opaque"],
+  ["menu", "@with_arrow", "pill", "@osd"],
+  ["menu", "@with_arrow", "pill", "@card"],
+  ["menu", "@with_arrow", "circular"],
+  ["menu", "@with_arrow", "circular", "primary"],
+  ["menu", "@with_arrow", "circular", "destructive"],
+  ["menu", "@with_arrow", "circular", "flat"],
+  ["menu", "@with_arrow", "circular", "@raised"],
+  ["menu", "@with_arrow", "circular", "@opaque"],
+  ["menu", "@with_arrow", "circular", "@osd"],
+  ["menu", "@with_arrow", "circular", "@card"],
+  ["menu", "@with_arrow", "@arrow_up"],
+  ["menu", "@with_arrow", "@arrow_up", "primary"],
+  ["menu", "@with_arrow", "@arrow_up", "destructive"],
+  ["menu", "@with_arrow", "@arrow_up", "flat"],
+  ["menu", "@with_arrow", "@arrow_up", "@raised"],
+  ["menu", "@with_arrow", "@arrow_up", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_up", "@osd"],
+  ["menu", "@with_arrow", "@arrow_up", "@card"],
+  ["menu", "@with_arrow", "@arrow_up", "pill"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "primary"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "destructive"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "flat"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "@raised"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "@osd"],
+  ["menu", "@with_arrow", "@arrow_up", "pill", "@card"],
+  ["menu", "@with_arrow", "@arrow_up", "circular"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "primary"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "destructive"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "flat"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "@raised"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "@osd"],
+  ["menu", "@with_arrow", "@arrow_up", "circular", "@card"],
+  ["menu", "@with_arrow", "@arrow_start"],
+  ["menu", "@with_arrow", "@arrow_start", "primary"],
+  ["menu", "@with_arrow", "@arrow_start", "destructive"],
+  ["menu", "@with_arrow", "@arrow_start", "flat"],
+  ["menu", "@with_arrow", "@arrow_start", "@raised"],
+  ["menu", "@with_arrow", "@arrow_start", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_start", "@osd"],
+  ["menu", "@with_arrow", "@arrow_start", "@card"],
+  ["menu", "@with_arrow", "@arrow_start", "pill"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "primary"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "destructive"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "flat"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "@raised"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "@osd"],
+  ["menu", "@with_arrow", "@arrow_start", "pill", "@card"],
+  ["menu", "@with_arrow", "@arrow_start", "circular"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "primary"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "destructive"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "flat"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "@raised"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "@osd"],
+  ["menu", "@with_arrow", "@arrow_start", "circular", "@card"],
+  ["menu", "@with_arrow", "@arrow_end"],
+  ["menu", "@with_arrow", "@arrow_end", "primary"],
+  ["menu", "@with_arrow", "@arrow_end", "destructive"],
+  ["menu", "@with_arrow", "@arrow_end", "flat"],
+  ["menu", "@with_arrow", "@arrow_end", "@raised"],
+  ["menu", "@with_arrow", "@arrow_end", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_end", "@osd"],
+  ["menu", "@with_arrow", "@arrow_end", "@card"],
+  ["menu", "@with_arrow", "@arrow_end", "pill"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "primary"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "destructive"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "flat"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "@raised"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "@osd"],
+  ["menu", "@with_arrow", "@arrow_end", "pill", "@card"],
+  ["menu", "@with_arrow", "@arrow_end", "circular"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "primary"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "destructive"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "flat"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "@raised"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "@opaque"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "@osd"],
+  ["menu", "@with_arrow", "@arrow_end", "circular", "@card"],
+  ["menu", "icon_only"],
+  ["menu", "icon_only", "primary"],
+  ["menu", "icon_only", "destructive"],
+  ["menu", "icon_only", "flat"],
+  ["menu", "icon_only", "@raised"],
+  ["menu", "icon_only", "@opaque"],
+  ["menu", "icon_only", "@osd"],
+  ["menu", "icon_only", "@card"],
+  ["menu", "icon_only", "pill"],
+  ["menu", "icon_only", "pill", "primary"],
+  ["menu", "icon_only", "pill", "destructive"],
+  ["menu", "icon_only", "pill", "flat"],
+  ["menu", "icon_only", "pill", "@raised"],
+  ["menu", "icon_only", "pill", "@opaque"],
+  ["menu", "icon_only", "pill", "@osd"],
+  ["menu", "icon_only", "pill", "@card"],
+  ["menu", "icon_only", "circular"],
+  ["menu", "icon_only", "circular", "primary"],
+  ["menu", "icon_only", "circular", "destructive"],
+  ["menu", "icon_only", "circular", "flat"],
+  ["menu", "icon_only", "circular", "@raised"],
+  ["menu", "icon_only", "circular", "@opaque"],
+  ["menu", "icon_only", "circular", "@osd"],
+  ["menu", "icon_only", "circular", "@card"],
+  ["menu", "icon_only", "@arrow_up"],
+  ["menu", "icon_only", "@arrow_up", "primary"],
+  ["menu", "icon_only", "@arrow_up", "destructive"],
+  ["menu", "icon_only", "@arrow_up", "flat"],
+  ["menu", "icon_only", "@arrow_up", "@raised"],
+  ["menu", "icon_only", "@arrow_up", "@opaque"],
+  ["menu", "icon_only", "@arrow_up", "@osd"],
+  ["menu", "icon_only", "@arrow_up", "@card"],
+  ["menu", "icon_only", "@arrow_up", "pill"],
+  ["menu", "icon_only", "@arrow_up", "pill", "primary"],
+  ["menu", "icon_only", "@arrow_up", "pill", "destructive"],
+  ["menu", "icon_only", "@arrow_up", "pill", "flat"],
+  ["menu", "icon_only", "@arrow_up", "pill", "@raised"],
+  ["menu", "icon_only", "@arrow_up", "pill", "@opaque"],
+  ["menu", "icon_only", "@arrow_up", "pill", "@osd"],
+  ["menu", "icon_only", "@arrow_up", "pill", "@card"],
+  ["menu", "icon_only", "@arrow_up", "circular"],
+  ["menu", "icon_only", "@arrow_up", "circular", "primary"],
+  ["menu", "icon_only", "@arrow_up", "circular", "destructive"],
+  ["menu", "icon_only", "@arrow_up", "circular", "flat"],
+  ["menu", "icon_only", "@arrow_up", "circular", "@raised"],
+  ["menu", "icon_only", "@arrow_up", "circular", "@opaque"],
+  ["menu", "icon_only", "@arrow_up", "circular", "@osd"],
+  ["menu", "icon_only", "@arrow_up", "circular", "@card"],
+  ["menu", "icon_only", "@arrow_start"],
+  ["menu", "icon_only", "@arrow_start", "primary"],
+  ["menu", "icon_only", "@arrow_start", "destructive"],
+  ["menu", "icon_only", "@arrow_start", "flat"],
+  ["menu", "icon_only", "@arrow_start", "@raised"],
+  ["menu", "icon_only", "@arrow_start", "@opaque"],
+  ["menu", "icon_only", "@arrow_start", "@osd"],
+  ["menu", "icon_only", "@arrow_start", "@card"],
+  ["menu", "icon_only", "@arrow_start", "pill"],
+  ["menu", "icon_only", "@arrow_start", "pill", "primary"],
+  ["menu", "icon_only", "@arrow_start", "pill", "destructive"],
+  ["menu", "icon_only", "@arrow_start", "pill", "flat"],
+  ["menu", "icon_only", "@arrow_start", "pill", "@raised"],
+  ["menu", "icon_only", "@arrow_start", "pill", "@opaque"],
+  ["menu", "icon_only", "@arrow_start", "pill", "@osd"],
+  ["menu", "icon_only", "@arrow_start", "pill", "@card"],
+  ["menu", "icon_only", "@arrow_start", "circular"],
+  ["menu", "icon_only", "@arrow_start", "circular", "primary"],
+  ["menu", "icon_only", "@arrow_start", "circular", "destructive"],
+  ["menu", "icon_only", "@arrow_start", "circular", "flat"],
+  ["menu", "icon_only", "@arrow_start", "circular", "@raised"],
+  ["menu", "icon_only", "@arrow_start", "circular", "@opaque"],
+  ["menu", "icon_only", "@arrow_start", "circular", "@osd"],
+  ["menu", "icon_only", "@arrow_start", "circular", "@card"],
+  ["menu", "icon_only", "@arrow_end"],
+  ["menu", "icon_only", "@arrow_end", "primary"],
+  ["menu", "icon_only", "@arrow_end", "destructive"],
+  ["menu", "icon_only", "@arrow_end", "flat"],
+  ["menu", "icon_only", "@arrow_end", "@raised"],
+  ["menu", "icon_only", "@arrow_end", "@opaque"],
+  ["menu", "icon_only", "@arrow_end", "@osd"],
+  ["menu", "icon_only", "@arrow_end", "@card"],
+  ["menu", "icon_only", "@arrow_end", "pill"],
+  ["menu", "icon_only", "@arrow_end", "pill", "primary"],
+  ["menu", "icon_only", "@arrow_end", "pill", "destructive"],
+  ["menu", "icon_only", "@arrow_end", "pill", "flat"],
+  ["menu", "icon_only", "@arrow_end", "pill", "@raised"],
+  ["menu", "icon_only", "@arrow_end", "pill", "@opaque"],
+  ["menu", "icon_only", "@arrow_end", "pill", "@osd"],
+  ["menu", "icon_only", "@arrow_end", "pill", "@card"],
+  ["menu", "icon_only", "@arrow_end", "circular"],
+  ["menu", "icon_only", "@arrow_end", "circular", "primary"],
+  ["menu", "icon_only", "@arrow_end", "circular", "destructive"],
+  ["menu", "icon_only", "@arrow_end", "circular", "flat"],
+  ["menu", "icon_only", "@arrow_end", "circular", "@raised"],
+  ["menu", "icon_only", "@arrow_end", "circular", "@opaque"],
+  ["menu", "icon_only", "@arrow_end", "circular", "@osd"],
+  ["menu", "icon_only", "@arrow_end", "circular", "@card"],
+  ["menu", "icon_only", "@arrow_none"],
+  ["menu", "icon_only", "@arrow_none", "primary"],
+  ["menu", "icon_only", "@arrow_none", "destructive"],
+  ["menu", "icon_only", "@arrow_none", "flat"],
+  ["menu", "icon_only", "@arrow_none", "@raised"],
+  ["menu", "icon_only", "@arrow_none", "@opaque"],
+  ["menu", "icon_only", "@arrow_none", "@osd"],
+  ["menu", "icon_only", "@arrow_none", "@card"],
+  ["menu", "icon_only", "@arrow_none", "pill"],
+  ["menu", "icon_only", "@arrow_none", "pill", "primary"],
+  ["menu", "icon_only", "@arrow_none", "pill", "destructive"],
+  ["menu", "icon_only", "@arrow_none", "pill", "flat"],
+  ["menu", "icon_only", "@arrow_none", "pill", "@raised"],
+  ["menu", "icon_only", "@arrow_none", "pill", "@opaque"],
+  ["menu", "icon_only", "@arrow_none", "pill", "@osd"],
+  ["menu", "icon_only", "@arrow_none", "pill", "@card"],
+  ["menu", "icon_only", "@arrow_none", "circular"],
+  ["menu", "icon_only", "@arrow_none", "circular", "primary"],
+  ["menu", "icon_only", "@arrow_none", "circular", "destructive"],
+  ["menu", "icon_only", "@arrow_none", "circular", "flat"],
+  ["menu", "icon_only", "@arrow_none", "circular", "@raised"],
+  ["menu", "icon_only", "@arrow_none", "circular", "@opaque"],
+  ["menu", "icon_only", "@arrow_none", "circular", "@osd"],
+  ["menu", "icon_only", "@arrow_none", "circular", "@card"],
+  ["menu", "icon_only", "@with_arrow"],
+  ["menu", "icon_only", "@with_arrow", "primary"],
+  ["menu", "icon_only", "@with_arrow", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@card"],
+  ["menu", "icon_only", "@with_arrow", "pill"],
+  ["menu", "icon_only", "@with_arrow", "pill", "primary"],
+  ["menu", "icon_only", "@with_arrow", "pill", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "pill", "flat"],
+  ["menu", "icon_only", "@with_arrow", "pill", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "pill", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "pill", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "pill", "@card"],
+  ["menu", "icon_only", "@with_arrow", "circular"],
+  ["menu", "icon_only", "@with_arrow", "circular", "primary"],
+  ["menu", "icon_only", "@with_arrow", "circular", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "circular", "flat"],
+  ["menu", "icon_only", "@with_arrow", "circular", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "circular", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "circular", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "circular", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "pill", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_up", "circular", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "pill", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_start", "circular", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "pill", "@card"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "primary"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "destructive"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "flat"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "@raised"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "@opaque"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "@osd"],
+  ["menu", "icon_only", "@with_arrow", "@arrow_end", "circular", "@card"],
+  ["menu", "with_icon"],
+  ["menu", "with_icon", "primary"],
+  ["menu", "with_icon", "destructive"],
+  ["menu", "with_icon", "flat"],
+  ["menu", "with_icon", "@raised"],
+  ["menu", "with_icon", "@opaque"],
+  ["menu", "with_icon", "@osd"],
+  ["menu", "with_icon", "@card"],
+  ["menu", "with_icon", "pill"],
+  ["menu", "with_icon", "pill", "primary"],
+  ["menu", "with_icon", "pill", "destructive"],
+  ["menu", "with_icon", "pill", "flat"],
+  ["menu", "with_icon", "pill", "@raised"],
+  ["menu", "with_icon", "pill", "@opaque"],
+  ["menu", "with_icon", "pill", "@osd"],
+  ["menu", "with_icon", "pill", "@card"],
+  ["menu", "with_icon", "circular"],
+  ["menu", "with_icon", "circular", "primary"],
+  ["menu", "with_icon", "circular", "destructive"],
+  ["menu", "with_icon", "circular", "flat"],
+  ["menu", "with_icon", "circular", "@raised"],
+  ["menu", "with_icon", "circular", "@opaque"],
+  ["menu", "with_icon", "circular", "@osd"],
+  ["menu", "with_icon", "circular", "@card"],
+  ["menu", "with_icon", "@with_arrow"],
+  ["menu", "with_icon", "@with_arrow", "primary"],
+  ["menu", "with_icon", "@with_arrow", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@card"],
+  ["menu", "with_icon", "@with_arrow", "pill"],
+  ["menu", "with_icon", "@with_arrow", "pill", "primary"],
+  ["menu", "with_icon", "@with_arrow", "pill", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "pill", "flat"],
+  ["menu", "with_icon", "@with_arrow", "pill", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "pill", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "pill", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "pill", "@card"],
+  ["menu", "with_icon", "@with_arrow", "circular"],
+  ["menu", "with_icon", "@with_arrow", "circular", "primary"],
+  ["menu", "with_icon", "@with_arrow", "circular", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "circular", "flat"],
+  ["menu", "with_icon", "@with_arrow", "circular", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "circular", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "circular", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "circular", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "pill", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_up", "circular", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "pill", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_start", "circular", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "pill", "@card"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "primary"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "destructive"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "flat"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "@raised"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "@opaque"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "@osd"],
+  ["menu", "with_icon", "@with_arrow", "@arrow_end", "circular", "@card"],
+  ["menu", "@custom_child"],
+  ["menu", "@custom_child", "primary"],
+  ["menu", "@custom_child", "destructive"],
+  ["menu", "@custom_child", "flat"],
+  ["menu", "@custom_child", "@raised"],
+  ["menu", "@custom_child", "@opaque"],
+  ["menu", "@custom_child", "@osd"],
+  ["menu", "@custom_child", "@card"],
+  ["menu", "@custom_child", "pill"],
+  ["menu", "@custom_child", "pill", "primary"],
+  ["menu", "@custom_child", "pill", "destructive"],
+  ["menu", "@custom_child", "pill", "flat"],
+  ["menu", "@custom_child", "pill", "@raised"],
+  ["menu", "@custom_child", "pill", "@opaque"],
+  ["menu", "@custom_child", "pill", "@osd"],
+  ["menu", "@custom_child", "pill", "@card"],
+  ["menu", "@custom_child", "circular"],
+  ["menu", "@custom_child", "circular", "primary"],
+  ["menu", "@custom_child", "circular", "destructive"],
+  ["menu", "@custom_child", "circular", "flat"],
+  ["menu", "@custom_child", "circular", "@raised"],
+  ["menu", "@custom_child", "circular", "@opaque"],
+  ["menu", "@custom_child", "circular", "@osd"],
+  ["menu", "@custom_child", "circular", "@card"],
+  ["menu", "@custom_child", "@with_arrow"],
+  ["menu", "@custom_child", "@with_arrow", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "pill"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "pill", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "circular"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "circular", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "pill", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_up", "circular", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "pill", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_start", "circular", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "pill", "@card"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "primary"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "destructive"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "flat"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "@raised"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "@opaque"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "@osd"],
+  ["menu", "@custom_child", "@with_arrow", "@arrow_end", "circular", "@card"],
+  ["back", "icon_only"],
+]
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["open"], not_variants = ["menu", "back"] }, { variants = ["@with_arrow"], not_variants = ["menu"] }, { variants = ["@arrow_up"], not_variants = ["menu"] }, { variants = ["@arrow_start"], not_variants = ["menu"] }, { variants = ["@arrow_end"], not_variants = ["menu"] }, { variants = ["@arrow_none"], not_variants = ["menu"] }, { variants = ["@image_text_box"], not_variants = ["with_icon"] }, { variants = ["back"], not_variants = ["icon_only"] }]
+rows = ["GN-1.26", "GN-3.11"]
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:35-53"
+quote = "&.keyboard-activating, &:active {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:58"
+quote = "&:disabled {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-105"
+quote = "&:drop(active) {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:354"
+quote = "&.has-open-popup"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:431-432"
+quote = "add_or_remove_class (GTK_WIDGET (button), child_type == LABEL_CHILD, \"text-button\"); add_or_remove_class (GTK_WIDGET (button), child_type == ICON_CHILD, \"image-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-button-content.c:115"
+quote = "gtk_widget_add_css_class (self->button, \"image-text-button\");"
+
+# the content variants: a GtkButton has one child, a label, an icon or another widget (`with_icon` is AdwButtonContent,
+# which classes its button `.image-text-button`; `@custom_child` a widget with no class); `@image_text_box` is an
+# application's own icon-and-label box in a button it classes `.image-text-button` or `.text-button.image-button`
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:129-133"
+quote = "enum { LABEL_CHILD, ICON_CHILD, WIDGET_CHILD };"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:436-451"
+quote = "priv->child_type = child_type;"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:460-466"
+quote = "priv->child_type = WIDGET_CHILD;"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:77-91"
+quote = "&.text-button.image-button, &.image-text-button {"
+
+# a menu button's content (an icon, a label or a custom child, each in a box with the arrow) and its classes:
+# `.image-button` for an icon or the arrow alone, `.text-button` for a label, `.arrow-button` (`@with_arrow`) where the
+# arrow shows beside the content; one arrow direction at a time; only GtkMenuButton has an arrow
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:626-648"
+quote = "if (has_only_arrow || has_icon) gtk_widget_add_css_class (menu_button->button, \"image-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:644-647"
+quote = "gtk_widget_add_css_class (menu_button->button, \"arrow-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1062-1064"
+quote = "gtk_box_append (GTK_BOX (box), image_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1185-1187"
+quote = "gtk_box_append (GTK_BOX (box), label_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1530-1532"
+quote = "gtk_box_append (GTK_BOX (box), inner_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:602-621"
+quote = "switch (arrow_type) { case GTK_ARROW_NONE: gtk_widget_add_css_class (arrow, \"none\"); break;"
+
+# the menu button's style classes reach its inner button (`menubutton.<class> > button`)
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:404-407"
+quote = "&.circular > button { @extend %circular_button; } &.flat > button { @extend %button_basic_flat; } &.pill > button { @extend %pill_button; } &.destructive-action > button { @extend %destructive_button; }"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:413-421"
+quote = "&.suggested-action { background-color: var(--accent-bg-color); color: var(--accent-fg-color); } &.opaque {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:388-393"
+quote = "menubutton { &.osd { background: none; color: inherit; > button { @extend %osd_button; }"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:447-449"
+quote = "&.card > button { border-radius: $card_radius; }"
+
+# the variant sets: a plain button's content (an icon, AdwButtonContent, a custom child, an application's
+# icon-and-label box, or the label, the base), at most one shape (`.pill`, `.circular`), at most one colour style
+# (the stylesheet's alternatives: `:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque)`,
+# `_toolbars.scss:2`) and toggle or not; a menu button's content forms with their arrow (a label always shows it
+# unless its direction is `none`; an icon, AdwButtonContent or a custom child only with `always-show-arrow` and a
+# direction other than `none`; the arrow alone in any direction, `.image-button`), with the shape and style classes
+# its `menubutton` node passes to the inner button; AdwBackButton's inner button is a private icon button, which no
+# style class reaches
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:658-666"
+quote = "set_arrow_type (menu_button->arrow_widget, menu_button->arrow_type, has_only_arrow || ((is_text_button || menu_button->always_show_arrow) && (menu_button->arrow_type != GTK_ARROW_NONE)));"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:2"
+quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:527-536"
+quote = "adw_bin_set_child (ADW_BIN (self), button);"
+
+# AdwBackButton's button is an icon button (`.image-button`), never a label or an arrow
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:527-529"
+quote = "button = gtk_button_new_from_icon_name (\"go-previous-symbolic\");"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:1-8"
+quote = "%toolbar {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:77-85"
+quote = "popover {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_linked.scss:14-46"
+quote = "@each $widget, $child in $_linked_widgets {"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwidget.c:8256-8261"
+quote = "if (gtk_widget_is_focus (widget) && !gtk_widget_is_sensitive (widget))"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkwidget.c:8295-8312"
+quote = "_gtk_widget_synthesize_crossing (widget, NULL, device,"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktogglebutton.c:441-442"
+quote = "gtk_widget_set_state_flags (GTK_WIDGET (toggle_button), GTK_STATE_FLAG_CHECKED, FALSE);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
+quote = "/* GTK - The GIMP Toolkit"
+absent = ["GTK_STATE_FLAG_CHECKED"]
+
+# `open`: only GtkMenuButton (its toggle button checked while the popover shows) and AdwBackButton (checked while its
+# navigation menu shows) open anything
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1258-1281"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
+quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
+
+# the popover context: a popover nearer than the toolbar restores the raised look
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:77-96"
+quote = "// Reset styles for popovers popover { button:not(.flat):not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
