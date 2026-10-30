@@ -166,7 +166,7 @@ The sum of the agents' reported usage per milestone, against D7's cap (+15,000k 
 
 | Milestone | Tokens | Cap | Notes |
 |---|---|---|---|
-| M0 and the six spikes | about 7,230k (the agents' reported usage: research and inventory 528k, scripts and their fixes about 2,350k, the spec amendments' sixteen checks about 2,110k, the re-pin and its re-read 765k, the spikes 1,320k, hook tests 84k) | 15,000k for M0–M1b (D7) | the spec checks cost about three times what one plan review did: each round found narrower format gaps until the closed lists moved into the checkers |
+| M0 and the six spikes | about 7,230k (the agents' reported usage: research and inventory 528k, scripts and their fixes about 2,350k, the spec amendments' sixteen checks about 2,110k, the re-pin and its re-read 765k, the spikes 1,320k, hook tests 84k) | 15,000k for M0–M1b (D7); lifted by the maintainer on 2026-10-30 ("don't limit usage tokens, just do the job") | the spec checks cost about three times what one plan review did: each round found narrower format gaps until the closed lists moved into the checkers |
 
 ## Triage
 
