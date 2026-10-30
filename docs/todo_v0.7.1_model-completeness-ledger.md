@@ -187,6 +187,9 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 88 | 1 | catalogue (spec-widgets `:8659`) | still says "`highlight` (the separate highlight setting, an accent input, S9.1)", while after ADD-A123 `role.@highlight` is `highlightColor`, a literal, and the setting is `input.highlight` | the macOS lane's alignment (82a7cc27) | open: the next spec batch |
 | 89 | 2 | catalogue `button` on `macos-*` (`circular`) | the circular bezel draws a 17/21/29 px circle inside a wider frame (29×21), so `Full` corners on the frame's box would draw a capsule; the model needs the body's drawn box (a margin from the frame, or a drawn-box rule) for it | the macOS lane's alignment | open: the next spec batch |
 | 90 | 1 | `docs/facts/macos/` (focus) | tahoe's `button.body.focus.paint` stays literal (#0066f57f / #1aabff7f, within one level of `keyboardFocusIndicatorColor`); following the accent needs a focus pass under the red accent; MAC-X13's `token.focus.paint` is stated for neither macOS preset | the macOS lane's alignment | open: the OS probe's next pass |
+| 91 | 2 | spec S6.1, S17 (transition lists in facts) | S6.1 merges transition lists by group and `from`, but S17 does not say whether a fact states the merged list (the KDE lane wrote the base's four plus the disabled rule's two zero transitions) or the rule's own patch | the KDE lane's alignment (4ecd603e) | open: the next spec batch |
+| 92 | 1 | spec S2.7 | the timing a zero-duration transition carries is unstated (the KDE lane wrote `"linear"`, never run) | the KDE lane's alignment | open: the next spec batch |
+| 93 | 1–2 | catalogue `token.params.motion.kwin_speed_factor` (spec-widgets `:9048-9051`) | under `animations_off` it cannot be stated: kwinrc can override kdeglobals' 0, and the catalogue gives only the default | the KDE lane's alignment | open: the next spec batch |
 
 ## Unmeasured register
 
