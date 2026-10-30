@@ -1,10 +1,13 @@
 # Builds the WinUI host (WinUiHost.csproj, Release, for the runner's
 # architecture) with the .NET SDK on PATH, runs it twice, and checks that the
-# two runs wrote the same frames.toml and the same PNGs (SHA-256). Writes into
+# two runs wrote the same frames.toml and the same PNGs (SHA-256; desktop.toml,
+# the other processes' windows, is not compared). Writes into
 # -Out:
 #   build.txt        dotnet build's output
 #   run<N>/          the host's frames.toml, PNGs, stdout.txt, stderr.txt
 #   run.txt          each step's exit status, the tools' versions, the comparison
+#   processes-*.txt  the session's processes before and after the out-of-box
+#                    experience's processes are stopped
 #   sha256.txt       every output file's SHA-256
 param([Parameter(Mandatory = $true)] [string] $Out)
 
@@ -30,6 +33,26 @@ $exe = Get-ChildItem -Path (Join-Path $PSScriptRoot 'bin') -Recurse -Filter 'Win
 if ($null -eq $exe) { Note 'no WinUiHost.exe'; exit 1 }
 Note "host: $($exe.FullName)"
 
+# The runner's desktop shows the out-of-box experience's privacy page above
+# every window, the host's always-on-top window too, which hides it from the
+# screen captures and the pointer. Its candidate processes are stopped.
+function Processes([string] $file) {
+    Get-Process | Sort-Object Name | Format-Table Name, Id, SessionId, MainWindowTitle -AutoSize |
+        Out-String -Width 300 | Set-Content -Path (Join-Path $Out $file)
+}
+Processes 'processes-before.txt'
+foreach ($name in 'WWAHost', 'UserOOBEBroker', 'CloudExperienceHostBroker') {
+    $found = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+    if ($found.Count -gt 0) {
+        $found | Stop-Process -Force -ErrorAction SilentlyContinue
+        Note "stopped $name ($($found.Count))"
+    } else {
+        Note "no $name"
+    }
+}
+Start-Sleep -Seconds 5
+Processes 'processes-after.txt'
+
 $failed = $false
 foreach ($n in 1, 2) {
     $dir = Join-Path $Out "run$n"
@@ -49,11 +72,11 @@ foreach ($n in 1, 2) {
 }
 
 Get-ChildItem -Path $Out -Recurse -File |
-    Where-Object { $_.Name -notin @('stdout.txt', 'stderr.txt', 'run.txt', 'sha256.txt', 'build.txt') } |
+    Where-Object { $_.Name -notin @('stdout.txt', 'stderr.txt', 'run.txt', 'sha256.txt', 'build.txt') -and $_.Name -notlike 'processes-*' } |
     ForEach-Object { "$((Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant())  $($_.FullName.Substring($Out.Length + 1))" } |
     Set-Content -Path (Join-Path $Out 'sha256.txt')
 
-foreach ($file in Get-ChildItem -Path (Join-Path $Out 'run1') -File | Where-Object { $_.Name -notin @('stdout.txt', 'stderr.txt') }) {
+foreach ($file in Get-ChildItem -Path (Join-Path $Out 'run1') -File | Where-Object { $_.Name -notin @('stdout.txt', 'stderr.txt', 'desktop.toml') }) {
     $other = Join-Path (Join-Path $Out 'run2') $file.Name
     if (-not (Test-Path $other)) { Note "compare $($file.Name): missing in run2"; continue }
     $same = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash -eq (Get-FileHash -Algorithm SHA256 $other).Hash

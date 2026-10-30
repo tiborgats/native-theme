@@ -5,12 +5,13 @@
 // constrained to the window), and a ToolTip attached to the Button (once
 // opened by IsOpen, once by moving the pointer onto the Button with
 // SendInput). Writes into the folder given by `--out`:
-//   frames.toml        the runtime's versions, the desktop's visible top-level
-//                      windows at the start, the window's bounds, the
-//                      Button's bounds and, per pass, each open popup's frame
+//   frames.toml        the runtime's versions, the window's bounds, the
+//                      Button's bounds, the defaults the XAML does not state
+//                      (RecordDefaults) and, per pass, each open popup's frame
 //                      (VisualTreeHelper.GetOpenPopupsForXamlRoot, the child's
 //                      TransformToVisual) and each visible top-level window of
 //                      the process (the windowed popups' HWNDs)
+//   desktop.toml       the desktop's visible top-level windows at the start
 //   window.png         the window's content (RenderTargetBitmap)
 //   popup-<pass>.png   each popup's child (RenderTargetBitmap)
 //   screen-<pass>.png  the primary display (GDI), the popups on screen
@@ -42,6 +43,7 @@ public partial class App : Application
     private const int EventTimeoutMilliseconds = 8000;
 
     private readonly Toml toml = new();
+    private readonly Toml desktop = new();
     private readonly List<string> errors = new();
     private Toml.Section? result;
     private Window? window;
@@ -140,6 +142,7 @@ public partial class App : Application
                 errors.Add("window.png: RenderTargetBitmap failed");
             }
             CaptureScreen("screen-idle.png");
+            await RecordDefaults();
             await FlyoutPass("menu_flyout", false);
             await FlyoutPass("menu_flyout_constrained", true);
             await ToolTipPass("tooltip_programmatic", false);
@@ -204,6 +207,63 @@ public partial class App : Application
         section.Rect("display_outer_bounds", display.OuterBounds);
         section.Rect("display_work_area", display.WorkArea);
     }
+
+    // Values the pinned XAML does not state (spike W's coverage report): the
+    // C++ defaults of RepeatButton's timing and of the focus visual, and what
+    // the AccentButtonStyle resolves to, read from controls of the running
+    // WinUI. The accent button is added beside the anchor and removed again.
+    private async Task RecordDefaults()
+    {
+        Toml.Section section = toml.Add("[defaults]");
+        RepeatButton repeat = new();
+        section.Int("repeat_button_delay", (uint)repeat.Delay);
+        section.Int("repeat_button_interval", (uint)repeat.Interval);
+        section.Str("button_focus_visual_primary_thickness", anchor!.FocusVisualPrimaryThickness.ToString());
+        section.Str("button_focus_visual_secondary_thickness", anchor.FocusVisualSecondaryThickness.ToString());
+        section.Str("button_focus_visual_margin", anchor.FocusVisualMargin.ToString());
+        RecordControl(section, "button", anchor);
+
+        if (Resources.TryGetValue("AccentButtonStyle", out object? style) && style is Style accentStyle)
+        {
+            Button accent = new()
+            {
+                Content = "Button",
+                Style = accentStyle,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
+            };
+            root!.Children.Add(accent);
+            await Task.Delay(SettleMilliseconds);
+            RecordControl(section, "accent_button", accent);
+            root.Children.Remove(accent);
+            await Task.Delay(SettleMilliseconds);
+        }
+        else
+        {
+            section.Str("accent_button_error", "AccentButtonStyle not found in the application's resources");
+        }
+    }
+
+    private static void RecordControl(Toml.Section section, string name, Control control)
+    {
+        section.Str(name + "_padding", control.Padding.ToString());
+        section.Str(name + "_border_thickness", control.BorderThickness.ToString());
+        section.Str(name + "_corner_radius", control.CornerRadius.ToString());
+        section.Num(name + "_font_size", control.FontSize);
+        section.Str(name + "_font_family", control.FontFamily.Source);
+        section.Str(name + "_font_weight", control.FontWeight.Weight.ToString(CultureInfo.InvariantCulture));
+        section.Size(name + "_actual_size", control.ActualWidth, control.ActualHeight);
+        section.Str(name + "_background", BrushText(control.Background));
+        section.Str(name + "_foreground", BrushText(control.Foreground));
+        section.Str(name + "_border_brush", BrushText(control.BorderBrush));
+    }
+
+    private static string BrushText(Brush? brush) => brush switch
+    {
+        null => "none",
+        SolidColorBrush solid => $"#{solid.Color.A:X2}{solid.Color.R:X2}{solid.Color.G:X2}{solid.Color.B:X2} opacity {solid.Opacity.ToString("R", CultureInfo.InvariantCulture)}",
+        _ => brush.GetType().FullName ?? "",
+    };
 
     private async Task FlyoutPass(string pass, bool constrain)
     {
@@ -363,7 +423,7 @@ public partial class App : Application
         }, IntPtr.Zero);
         foreach (IntPtr hwnd in windows)
         {
-            Toml.Section section = toml.Add("[[desktop_window]]");
+            Toml.Section section = desktop.Add("[[window]]");
             StringBuilder name = new(256);
             Native.GetClassName(hwnd, name, name.Capacity);
             section.Str("class", name.ToString());
@@ -499,6 +559,7 @@ public partial class App : Application
             result?.Str("status", code == 0 ? "ok" : "failed");
             result?.StrArray("errors", errors);
             File.WriteAllText(Path.Combine(outDir, "frames.toml"), toml.Render());
+            File.WriteAllText(Path.Combine(outDir, "desktop.toml"), desktop.Render());
         }
         catch (Exception e)
         {
