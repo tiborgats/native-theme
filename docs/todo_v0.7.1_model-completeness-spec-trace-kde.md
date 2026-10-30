@@ -824,7 +824,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.3 | `component.delay_button.progress_overlay.transitions (Geometry: = mul(values.delay, sub(1, element.progress)) @ {pressed}; = mul(values.delay, mul(<fraction>, element.progress)) @ !{pressed}; ADD-B12)` (the overlay laid out at the extent the progress heads for, the whole button while pressed and none while released; `element.progress` the progress shown when the pressed state changed; `DelayButton.qml:48-52`) | component |
 | Q2.4 | `button.body.min_width, button.body.min_height, button.body.padding, button.icon.icon.size, button.body.corners, button.values.icon_text_gap @ variant circular cond flavor:kirigami` | rule |
 | Q2.5 | `button.body.fill @ variant circular cond flavor:kirigami / variant circular {checked} cond flavor:kirigami / variant circular {pressed} cond flavor:kirigami / variants {circular,flat} cond flavor:kirigami` | rule |
-| Q2.5 | `button.body.stroke (= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast): the control's palette.button and palette.buttonText, RoundButton.qml:77) @ variant circular cond flavor:kirigami / variants {circular,flat} cond flavor:kirigami / variants {circular,flat} !{hover} cond flavor:kirigami (no width)` | rule |
+| Q2.5 | `button.body.stroke (= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast): the control's palette.button and palette.buttonText, RoundButton.qml:77) @ variant circular !variant flat cond flavor:kirigami / button.body.stroke (= role.selection.background: a flat RoundButton strokes with Kirigami.Theme.highlightColor, the Selection set's background, RoundButton.qml:94) @ variants {circular,flat} cond flavor:kirigami / button.body.stroke (no width, RoundButton.qml:95) @ variants {circular,flat} !{hover} !{focus_visible} cond flavor:kirigami / button.body.fill (= kirigami_tint(surface.foreground, alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8)): Qt.tint over the border colour at 0.8, RoundButton.qml:86) @ {checked} variant circular cond flavor:kirigami / {pressed} variant circular cond flavor:kirigami` | rule |
 | Q2.6 | `button.body.fill.append (a linear gloss layer) @ variant circular !variant flat cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow @ variant circular cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow (Absent) @ variant circular {pressed} / variant circular {checked} / variants {circular,flat}` | rule |
@@ -1101,7 +1101,7 @@ rationale, each decided in the core's additions register (S22).
 | Q3.5 | `role.global.status.info = role.<set>.foreground_active` | role |
 | Q3.10 | `role.<set>.negative / neutral / positive foregrounds` | role |
 | Q3.11 | `role.<set>.decoration_hover` | role |
-| Q3.11 | `chip.body.stroke @ {hover}` (the chip's hover border, = role.<set>.decoration_hover); `switch.thumb.stroke` (the handle's border) | rule |
+| Q3.11 | `chip.body.stroke @ {hover}` (the chip's hover border, = role.<set>.decoration_hover); `switch.thumb.stroke`, `switch.thumb.stroke @ {hover}` (the handle's border, at rest and hovered) | rule |
 | Q3.12 | `role.<set>.decoration_focus` | role |
 | Q3.12 | `PartStyle.fill @ {focus_visible}` | rule |
 | Q3.13 | `role.<set>.background_alternate` | role |
