@@ -1189,7 +1189,7 @@ fn expand_append(
                 #check_patch
                 match self {
                     #patch::Set(value) => #w::Walk::walk(value, w),
-                    #patch::Append(items) => #w::Walk::walk(items, w),
+                    #patch::Append(items) => w.form("append", |w| #w::Walk::walk(items, w)),
                 }
             }
 

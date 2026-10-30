@@ -496,7 +496,19 @@ impl<'a> Stack<'a> {
             let toml = matches!(stacked.layer.spelled, Spelled::Toml);
             for (number, rule) in stacked.layer.rules.iter().enumerate() {
                 if !excluded(rule, cx.preset) {
-                    stack.rule(rule, &format!("rules[{number}].set"), index, toml);
+                    let set = if toml { "set" } else { "body" };
+                    stack.rule(rule, &format!("rules[{number}].{set}"), index, toml);
+                }
+            }
+        }
+        for source in &mut stack.sources {
+            if let Some(stacked) = layers.get(source.layer) {
+                let shorthands = &stacked.layer.shorthands;
+                for op in &mut source.ops {
+                    op.at = shorthands.written(&op.at);
+                }
+                for binding in &mut source.bindings {
+                    binding.at = shorthands.written(&binding.at);
                 }
             }
         }

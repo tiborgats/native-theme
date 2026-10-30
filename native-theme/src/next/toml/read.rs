@@ -11,6 +11,7 @@ use crate::next::color::Color;
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::Expr;
 use crate::next::key::Key;
+use crate::next::layer::Shorthands;
 use crate::next::roles::SurfaceSet;
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides};
 use crate::next::value::{SurfaceMap, Value};
@@ -32,6 +33,8 @@ pub(crate) struct Reader {
     /// The key each field was first read under, by the field's path in Rust
     /// names: a second key for it is reported naming the first as written.
     keys: Vec<(String, String)>,
+    /// The shorthands read.
+    pub(crate) shorthands: Shorthands,
 }
 
 impl Reader {
@@ -73,6 +76,12 @@ impl Reader {
     /// Whether a problem has been recorded.
     pub(crate) fn failed(&self) -> bool {
         !self.problems.is_empty()
+    }
+
+    /// Records that the key at `written` stands for the place `place`
+    /// (S11's shorthands).
+    pub(crate) fn shorthand(&mut self, place: String, written: &str) {
+        self.shorthands.add(place, written);
     }
 
     /// The problems recorded, in reading order.

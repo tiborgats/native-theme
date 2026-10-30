@@ -96,7 +96,14 @@ fn in_flavor(layer: &Layer, cx: &Context<'_>, flavor: Option<&Key>) -> Vec<Probl
             checker.rule(rule, &format!("rules[{index}]"));
         }
     }
-    checker.problems
+    let mut problems: Vec<Problem> = Vec::new();
+    for mut problem in checker.problems {
+        problem.path = layer.shorthands.written(&problem.path);
+        if !problems.contains(&problem) {
+            problems.push(problem);
+        }
+    }
+    problems
 }
 
 /// Whether a rule can apply while `flavor` is in force: its conditions name
@@ -538,8 +545,12 @@ impl<'a> Checker<'a> {
     }
 
     fn rule(&mut self, rule: &Rule, at: &str) {
-        let when = join(at, "when");
-        let set = join(at, "set");
+        let (when, set, target) = if self.toml {
+            ("when", "set", "target")
+        } else {
+            ("selector", "body", "body")
+        };
+        let (when, set, target) = (join(at, when), join(at, set), join(at, target));
         let widget = match &rule.body {
             RuleBody::Colors(roles) => {
                 self.conditions_only(&rule.selector, &when);
@@ -558,7 +569,7 @@ impl<'a> Checker<'a> {
             }
             RuleBody::Part(PartRef::Component { key, part }, _) => {
                 let name = format!("component.{key}.{part}");
-                self.undeclared(&join(at, "target"), &name, "component");
+                self.undeclared(&target, &name, "component");
                 None
             }
             RuleBody::Values(ValuesPatch::Typed(values)) => match values {
@@ -570,6 +581,16 @@ impl<'a> Checker<'a> {
             },
         };
         self.selector(&rule.selector, widget, &when);
+    }
+
+    /// A selector's size field `name`: a `when` key of its own in TOML, a
+    /// field of `size` in the model.
+    fn size_field(&self, name: &'static str) -> &'static str {
+        match (self.toml, name) {
+            (false, "sizes") => "size.sizes",
+            (false, "densities") => "size.densities",
+            _ => name,
+        }
     }
 
     /// A `Colors` or `Tokens` rule selects on conditions only (S7, S12).
@@ -584,17 +605,28 @@ impl<'a> Checker<'a> {
     }
 
     /// A selector's names, each declared (S10), each at its `when` key and
-    /// index (`rules[2].when.not_states[0]`, S11).
+    /// index (`rules[2].when.not_states[0]`, S11), or at its field and index
+    /// in a layer built in Rust (`rules[2].selector.states.none_of[0]`).
     fn selector(&mut self, selector: &Selector, widget: Option<WidgetKind>, at: &str) {
-        for (condition, item) in items(&selector.conditions, at, "conditions") {
+        for (condition, item) in items(&selector.conditions, at, "conditions", self.toml) {
             self.condition(condition, &item);
         }
         if let Some(widget) = widget {
             self.element(widget, &selector.variants, &selector.states, at);
-            for (size, item) in items(&selector.size.sizes, at, "sizes") {
+            for (size, item) in items(
+                &selector.size.sizes,
+                at,
+                self.size_field("sizes"),
+                self.toml,
+            ) {
                 self.size(widget, *size, &item);
             }
-            for (density, item) in items(&selector.size.densities, at, "densities") {
+            for (density, item) in items(
+                &selector.size.densities,
+                at,
+                self.size_field("densities"),
+                self.toml,
+            ) {
                 self.density(widget, density, &item);
             }
         }
@@ -619,10 +651,10 @@ impl<'a> Checker<'a> {
         states: &SetMatch<StateFlag>,
         at: &str,
     ) {
-        for (variant, item) in items(variants, at, "variants") {
+        for (variant, item) in items(variants, at, "variants", self.toml) {
             self.variant(widget, variant, &item);
         }
-        for (flag, item) in items(states, at, "states") {
+        for (flag, item) in items(states, at, "states", self.toml) {
             self.flag(widget, flag, &item);
         }
     }
@@ -635,7 +667,7 @@ impl<'a> Checker<'a> {
             return;
         };
         self.element(widget, &context.variants, &context.states, at);
-        for (size, item) in items(&context.sizes, at, "sizes") {
+        for (size, item) in items(&context.sizes, at, "sizes", self.toml) {
             self.size(widget, *size, &item);
         }
     }
@@ -718,8 +750,14 @@ impl<'a> Checker<'a> {
     /// once and only declared ones.
     fn inputs(&mut self, inputs: &InputBases, at: &str) {
         let decl = self.decl();
+        let toml = self.toml;
+        let entries = if toml {
+            at.to_owned()
+        } else {
+            join(at, "entries")
+        };
         for (name, value) in &inputs.entries {
-            let path = join(at, &name.to_string());
+            let path = join(&entries, &name.to_string());
             if !decl.inputs.contains(name) {
                 self.undeclared(&path, &name.to_string(), "inputs");
             }
@@ -728,12 +766,22 @@ impl<'a> Checker<'a> {
             }
             self.input_values(value, &path);
         }
+        let kde = |list: &str, field: &str| {
+            if toml {
+                format!("{at}.kde_scheme.{list}")
+            } else {
+                join(at, field)
+            }
+        };
         for (list, map) in [
-            ("groups", &inputs.kde_groups),
-            ("inactive_groups", &inputs.kde_inactive_groups),
+            (kde("groups", "kde_groups"), &inputs.kde_groups),
+            (
+                kde("inactive_groups", "kde_inactive_groups"),
+                &inputs.kde_inactive_groups,
+            ),
         ] {
             for (scheme, sets) in schemes(map) {
-                let path = format!("{at}.kde_scheme.{list}.{scheme}");
+                let path = format!("{list}.{scheme}");
                 for (index, set) in sets.iter().enumerate() {
                     let item = format!("{path}[{index}]");
                     if sets.iter().take(index).any(|earlier| earlier == set) {
@@ -744,8 +792,9 @@ impl<'a> Checker<'a> {
                 }
             }
         }
+        let unset_keys = kde("unset_keys", "kde_unset_keys");
         for (scheme, names) in schemes(&inputs.kde_unset_keys) {
-            let path = format!("{at}.kde_scheme.unset_keys.{scheme}");
+            let path = format!("{unset_keys}.{scheme}");
             for (index, name) in names.iter().enumerate() {
                 let item = format!("{path}[{index}]");
                 if names.iter().take(index).any(|earlier| earlier == name) {
@@ -2055,19 +2104,28 @@ fn spelled_key(key: &str, suffix: &str, toml: bool) -> String {
     }
 }
 
-/// A set test's items, each at its `when` key and index: `all_of` under
-/// `name`, `none_of` under `not_<name>` (S11).
-fn items<'s, T>(set: &'s SetMatch<T>, at: &str, name: &str) -> Vec<(&'s T, String)> {
+/// A set test's items, each at its `when` key and index, read from TOML:
+/// `all_of` under `name`, `none_of` under `not_<name>` (S11); built in
+/// Rust, under `name.all_of` and `name.none_of`.
+fn items<'s, T>(set: &'s SetMatch<T>, at: &str, name: &str, toml: bool) -> Vec<(&'s T, String)> {
+    let (all, none) = if toml {
+        (format!("{at}.{name}"), format!("{at}.not_{name}"))
+    } else {
+        (
+            format!("{at}.{name}.all_of"),
+            format!("{at}.{name}.none_of"),
+        )
+    };
     let all = set
         .all_of
         .iter()
         .enumerate()
-        .map(|(index, item)| (item, format!("{at}.{name}[{index}]")));
+        .map(|(index, item)| (item, format!("{all}[{index}]")));
     let none = set
         .none_of
         .iter()
         .enumerate()
-        .map(|(index, item)| (item, format!("{at}.not_{name}[{index}]")));
+        .map(|(index, item)| (item, format!("{none}[{index}]")));
     all.chain(none).collect()
 }
 

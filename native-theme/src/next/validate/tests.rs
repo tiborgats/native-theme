@@ -749,7 +749,7 @@ fn input_values_are_checked() {
     ));
     assert_eq!(
         found_as(&built, &decl, LayerKind::Reader),
-        ["inputs.accent.per_scheme.light: not a finite number"]
+        ["inputs.entries.accent.per_scheme.light: not a finite number"]
     );
     let fine = toml("[inputs.accent]\nlight = \"= role.window.foreground\"");
     assert_eq!(found_as(&fine, &decl, LayerKind::Reader), NONE);
@@ -1242,6 +1242,85 @@ fn problem_paths_spell_the_layer() {
     );
 }
 
+/// A shorthand is one key: one fault in it is one problem, at the key as
+/// written (S11, S12).
+#[test]
+fn shorthand_faults_at_the_key_as_written() {
+    for (text, problem) in [
+        (
+            "[widgets.button.body]\ncorners_px = -1",
+            "widgets.button.body.corners_px: out of range: at least zero",
+        ),
+        (
+            "[widgets.button.body]\nstroke = { width_px = -1 }",
+            "widgets.button.body.stroke.width_px: out of range: at least zero",
+        ),
+        (
+            "[widgets.button.body]\nstroke = { paint = \"= 4px\" }",
+            "widgets.button.body.stroke.paint: the expression does not type: a length where a \
+             paint is expected",
+        ),
+        (
+            "[widgets.button.body]\nfill = { layers = [\"= 4px\"] }",
+            "widgets.button.body.fill.layers[0]: the expression does not type: a length where a \
+             colour is expected",
+        ),
+        (
+            "[[rules]]\ntarget = \"button.body\"\nset = { fill.append = [\"= 4px\"] }",
+            "rules[0].set.fill.append[0]: the expression does not type: a length where a colour \
+             is expected",
+        ),
+        (
+            "[[rules]]\ntarget = \"button.body\"\nset = { corners_px = -1 }",
+            "rules[0].set.corners_px: out of range: at least zero",
+        ),
+    ] {
+        assert_eq!(bare(&toml(text)), [problem], "{text}");
+    }
+    // A corner of its own is its own key.
+    assert_eq!(
+        bare(&toml(
+            "[widgets.button.body]\ncorners = { top_left_px = 2, bottom_left_px = -1 }"
+        )),
+        ["widgets.button.body.corners.bottom_left_px: out of range: at least zero"]
+    );
+}
+
+/// A layer built in Rust names its places by the model's paths throughout:
+/// a rule's selector and body by their fields, an input below `entries`.
+#[test]
+fn rust_built_rules_spell_model_paths() {
+    let mut selector = crate::next::selector::Selector::default();
+    selector
+        .conditions
+        .none_of
+        .push(crate::next::selector::Condition::Flavor(key!("kirigami")));
+    let mut appended = Layer::default();
+    appended.rules.push(crate::next::selector::Rule::new(
+        selector,
+        crate::next::selector::RuleBody::Part(
+            crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
+                crate::next::widgets::ButtonPart::Body,
+            )),
+            PartPatch::Style(PartStylePatch {
+                fill: Some(PaintPatch::Append(vec![PaintLayer {
+                    kind: PaintKind::Color(Value::Expr(Expr::parse("4px").unwrap())),
+                    blend: BlendMode::Normal,
+                }])),
+                ..PartStylePatch::default()
+            }),
+        ),
+    ));
+    assert_eq!(
+        bare(&appended),
+        [
+            "rules[0].body.fill.append[0].kind.color: the expression does not type: a length \
+             where a colour is expected",
+            "rules[0].selector.conditions.none_of[0]: `@kirigami` is not declared in `flavors`",
+        ]
+    );
+}
+
 /// One fault is one problem at one path (S12).
 #[test]
 fn one_problem_per_fault() {
@@ -1666,7 +1745,7 @@ fn refusal_undeclared_every_kind() {
     ));
     assert_eq!(
         bare(&component),
-        ["rules[0].target: `component.sidebar.body` is not declared in `component`"]
+        ["rules[0].body: `component.sidebar.body` is not declared in `component`"]
     );
 }
 

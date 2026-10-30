@@ -61,6 +61,19 @@ impl std::error::Error for LayerError {}
 pub struct Problem {
     /// The model path, or the TOML key path where the layer was read from
     /// TOML (`widgets.button.body.fill`, `rules[2].when.states[0]`).
+    ///
+    /// A path starts at the layer. A base's place starts at its field of
+    /// [`Bases`](crate::next::Bases) (`widgets.button.body.fill`,
+    /// `tokens.motion.durations`), a preset's own bases' at
+    /// `for_preset.<id>`, a rule's at `rules[<index>]`. Below that, a layer
+    /// built in Rust names each place by the model's fields
+    /// (`rules[2].selector.states.none_of[0]`, `rules[2].body.fill`,
+    /// `inputs.entries.accent.per_scheme.light`), and a layer read from
+    /// TOML by its keys as written (`rules[2].when.not_states[0]`,
+    /// `rules[2].set.fill`, `inputs.accent.light`, a shorthand's own key:
+    /// `corners_px`). A layer keeps the spelling it was made with: one read
+    /// from TOML and changed through its fields afterwards is still named
+    /// by its TOML keys.
     pub path: String,
     /// The problem.
     pub kind: ProblemKind,

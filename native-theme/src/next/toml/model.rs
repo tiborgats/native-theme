@@ -111,9 +111,12 @@ impl FromToml for Paint {
                 }
                 read::required(layers, &join(at, "layers"), cx).map(|layers| Paint { layers })
             }
-            _ => PaintLayer::read(item, Spelling::Item, at, cx).map(|layer| Paint {
-                layers: vec![layer],
-            }),
+            _ => {
+                cx.shorthand(format!("{at}.layers[0]"), at);
+                PaintLayer::read(item, Spelling::Item, at, cx).map(|layer| Paint {
+                    layers: vec![layer],
+                })
+            }
         }
     }
 }
@@ -128,10 +131,13 @@ impl FromToml for PaintLayer {
                 let patch = read_fields(fields, at, cx);
                 PaintLayer::build(patch, at, true, cx)
             }
-            _ => Value::read(item, Spelling::Item, at, cx).map(|color| PaintLayer {
-                kind: PaintKind::Color(color),
-                blend: BlendMode::Normal,
-            }),
+            _ => {
+                cx.shorthand(format!("{at}.kind.color"), at);
+                Value::read(item, Spelling::Item, at, cx).map(|color| PaintLayer {
+                    kind: PaintKind::Color(color),
+                    blend: BlendMode::Normal,
+                })
+            }
         }
     }
 }
@@ -186,6 +192,11 @@ impl FromToml for CornersPatch {
 
     fn read(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
         if spelling == Spelling::Px {
+            if let Some(field) = at.strip_suffix("_px") {
+                for corner in ["top_left", "top_right", "bottom_right", "bottom_left"] {
+                    cx.shorthand(format!("{field}.{corner}_px"), at);
+                }
+            }
             let radius = Value::<Px>::read(item, Spelling::Px, at, cx)?;
             return Some(CornersPatch {
                 top_left: Some(Radius::Px(radius.clone())),
@@ -239,7 +250,18 @@ impl FromToml for StrokePatch {
             ("bottom", &mut patch.bottom),
             ("left", &mut patch.left),
         ] {
-            let at = join(at, name);
+            let edge_at = join(at, name);
+            for (key, set) in [
+                ("width_px", every.width.is_some()),
+                ("paint", every.paint.is_some()),
+                ("dash", every.dash.is_some()),
+                ("snap", every.snap.is_some()),
+            ] {
+                if set {
+                    cx.shorthand(join(&edge_at, key), &join(at, key));
+                }
+            }
+            let at = edge_at;
             let edge = edge.get_or_insert_with(EdgePatch::default);
             shorthand(&mut edge.width, &every.width, "width_px", &at, cx);
             shorthand(&mut edge.paint, &every.paint, "paint", &at, cx);

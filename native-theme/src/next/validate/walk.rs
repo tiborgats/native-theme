@@ -7,7 +7,9 @@
 //! the model's Rust names for a layer built in Rust, an enum's variant a step
 //! of its own (`top_left.concentric.minimum`); by the TOML keys as S11 spells
 //! them for a layer read from TOML (`min_width_px`, `top_left_px`,
-//! `durations.button_ms`).
+//! `durations.button_ms`). Where the model has no path (a rule's selector
+//! and patch, read from TOML), the TOML key; a shorthand's places are named
+//! at its key ([`Shorthands`](crate::next::layer::Shorthands)).
 
 use std::fmt::{self, Display};
 
@@ -159,6 +161,8 @@ enum Step {
     Key { key: String, suffix: &'static str },
     /// A list's item.
     Index(usize),
+    /// A patch's form, naming no place of the model: a paint's `append`.
+    Form(&'static str),
 }
 
 /// One step of a path, as S12's checks over combinations read it.
@@ -218,7 +222,7 @@ impl Path {
             .rev()
             .find_map(|step| match step {
                 Step::Field { marks, .. } => Some(*marks),
-                Step::Variant { .. } | Step::Key { .. } | Step::Index(_) => None,
+                Step::Variant { .. } | Step::Key { .. } | Step::Index(_) | Step::Form(_) => None,
             })
             .unwrap_or_default()
     }
@@ -227,7 +231,7 @@ impl Path {
     pub(crate) fn fields(&self) -> impl DoubleEndedIterator<Item = (&'static str, &'static str)> {
         self.steps.iter().filter_map(|step| match step {
             Step::Field { owner, name, .. } => Some((*owner, *name)),
-            Step::Variant { .. } | Step::Key { .. } | Step::Index(_) => None,
+            Step::Variant { .. } | Step::Key { .. } | Step::Index(_) | Step::Form(_) => None,
         })
     }
 
@@ -249,7 +253,7 @@ impl Path {
             Step::Field { owner, name, .. } | Step::Variant { owner, name, .. } => {
                 Some((*owner, *name))
             }
-            Step::Key { .. } | Step::Index(_) => None,
+            Step::Key { .. } | Step::Index(_) | Step::Form(_) => None,
         })
     }
 
@@ -273,7 +277,7 @@ impl Path {
         tail.iter()
             .filter_map(|step| match step {
                 Step::Key { key, .. } => Some(key.as_str()),
-                Step::Field { .. } | Step::Variant { .. } | Step::Index(_) => None,
+                Step::Field { .. } | Step::Variant { .. } | Step::Index(_) | Step::Form(_) => None,
             })
             .collect()
     }
@@ -290,11 +294,12 @@ impl Path {
 
     /// The steps below the root, outermost first.
     pub(crate) fn segments(&self) -> impl Iterator<Item = Segment<'_>> {
-        self.steps.iter().map(|step| match step {
-            Step::Field { owner, name, .. } => Segment::Field { owner, name },
-            Step::Variant { owner, name, .. } => Segment::Variant { owner, name },
-            Step::Key { key, .. } => Segment::Key(key),
-            Step::Index(index) => Segment::Index(*index),
+        self.steps.iter().filter_map(|step| match step {
+            Step::Field { owner, name, .. } => Some(Segment::Field { owner, name }),
+            Step::Variant { owner, name, .. } => Some(Segment::Variant { owner, name }),
+            Step::Key { key, .. } => Some(Segment::Key(key)),
+            Step::Index(index) => Some(Segment::Index(*index)),
+            Step::Form(_) => None,
         })
     }
 
@@ -324,6 +329,7 @@ impl Display for Path {
                     (Some((*name).to_owned()), "")
                 }
                 Step::Key { key, suffix } => (Some(toml_key(key)), *suffix),
+                Step::Form(name) => (Some((*name).to_owned()), ""),
                 Step::Index(index) => {
                     write!(f, "[{index}]")?;
                     first = false;
@@ -511,6 +517,14 @@ impl<'v> Walker<'v> {
         walk(self);
         self.path.steps.pop();
         self.path.part = part;
+    }
+
+    /// Walks below the patch form `name` (a paint's `append`), a step of
+    /// the path naming no place of the model.
+    pub(crate) fn form(&mut self, name: &'static str, walk: impl FnOnce(&mut Walker<'_>)) {
+        self.path.steps.push(Step::Form(name));
+        walk(self);
+        self.path.steps.pop();
     }
 
     /// Walks below the list item `index`.

@@ -23,6 +23,8 @@ pub struct Layer {
     pub rules: Vec<Rule>,
     /// How the layer's problems name their places.
     pub(crate) spelled: Spelled,
+    /// The shorthands a layer read from TOML was written with.
+    pub(crate) shorthands: Shorthands,
 }
 
 /// How a layer's problems name their places (S1's `Problem.path`): by the
@@ -40,6 +42,48 @@ pub(crate) enum Spelled {
 /// How a layer was written is not what it states: two layers stating the
 /// same are equal whichever way each was written.
 impl PartialEq for Spelled {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+/// The shorthands a layer read from TOML was written with (S11): a key
+/// standing for several places (`corners_px`, a stroke's `width_px`) or a
+/// form folding a place's steps (a colour for a paint layer). A problem at
+/// a place one stands for is the shorthand's own, at its key as written:
+/// one fault, one problem (S12).
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Shorthands(Vec<(String, String)>);
+
+impl Shorthands {
+    /// Records that the key written at `written` stands for the place
+    /// `place`, spelled as a walk spells it.
+    pub(crate) fn add(&mut self, place: String, written: &str) {
+        self.0.push((place, written.to_owned()));
+    }
+
+    /// `at`, or, where it lies at or below a place a shorthand stands for,
+    /// the shorthand's key with the rest of `at` below it; a shorthand
+    /// within another (a colour for a paint's one layer) folded too.
+    pub(crate) fn written(&self, at: &str) -> String {
+        let mut at = at.to_owned();
+        for _ in 0..self.0.len() {
+            let folded = self.0.iter().find_map(|(place, written)| {
+                at.strip_prefix(place.as_str())
+                    .filter(|rest| rest.is_empty() || rest.starts_with(['.', '[']))
+                    .map(|rest| format!("{written}{rest}"))
+            });
+            match folded {
+                Some(folded) => at = folded,
+                None => break,
+            }
+        }
+        at
+    }
+}
+
+/// How a layer was written is not what it states.
+impl PartialEq for Shorthands {
     fn eq(&self, _: &Self) -> bool {
         true
     }
