@@ -241,13 +241,23 @@ Each `### <widget>` section states, in this order:
   starts in. `pressed` is no member: Compose draws the press ripple apart from the state layer (`Ripple.kt:241-248`,
   `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
   focused shows both, two states drawn together (R3); the preset writes its `{pressed}` rule before the state-layer
-  rules, so the press layer is appended first and lies beneath (ADD-A121). Only the state layer (an appended
-  `fill` layer, or a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`:
-  every other field a state changes (a label's colour, a stroke, a shape) follows its own code or tokens, which have
-  no notion of order, so it is a plain `{hover}`, `{focus_visible}`, `{dragged}` or `{pressed}` rule, those rules
-  combining in the source's precedence, the later winning (the Expressive list item's shape, pressed over dragged over
-  selected over focused over hovered, `ListItemDefaults.kt:1144-1152`; its colours by `dragged` alone, `:751-772`; the
-  split button's shape by its pressed state alone, `SplitButton.kt:698`, `:705`). A control with an elevation shows the elevation of the
+  rules, so the press layer is appended first and lies beneath (ADD-A121). The appended layers carry their roles
+  (S2.3): the state layer `role = StateLayer`, the press layer `role = Ripple`, in an appended `fill` and in a
+  `state_layer` part's fill alike. Only the state layer (an appended
+  `fill` layer, or a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`: a
+  hover, focus or press that Compose draws as a `Surface`'s or clickable's ripple is a state layer wherever the row
+  writes it, a whole `fill` included (the year cell, `DatePicker.kt:2414-2428`, whose container follows `selected`
+  alone; the time picker's selectors, `TimePicker.kt:3089-3095`, `:3018`; the toolbar's buttons, whose tokens state
+  the hovered state layer, `material-web@2.5.0 tokens/versions/latest/sass/_md-comp-toolbar-vibrant.scss:48-51`), and
+  is written as one. Every other field a state changes (a label's colour, a stroke, a shape) follows its own code or
+  tokens, which have no notion of order, so it is a plain `{hover}`, `{focus_visible}`, `{dragged}` or `{pressed}` rule,
+  those rules combining: in the source's precedence where it has one, the later winning (the Expressive list item's
+  shape, pressed over dragged over selected over focused over hovered, `ListItemDefaults.kt:1144-1152`; its colours,
+  disabled over dragged over selected, `:751-772`; the split button's shape by its pressed state alone,
+  `SplitButton.kt:698`, `:705`), and where the source states none (the outlined button's hovered and focused outlines,
+  `_md-comp-outlined-button.scss:84`, `:100`, which Compose's border and material-web's CSS do not rank) in the row's
+  order, hover, focus_visible, pressed, dragged, disabled, the later winning, a reasoned choice the state models record
+  as the recency tie-break is (S17). A control with an elevation shows the elevation of the
   latest of hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`,
   `FloatingActionButton.kt:1300-1347`, `ToggleButton.kt:1589-1633`; the split button's halves through the button's
   `ButtonElevation`, `SplitButton.kt:687-1294`, `:709`, `:791`, `:917`), and of drag too on cards and chips
@@ -257,22 +267,21 @@ Each `### <widget>` section states, in this order:
   `focus_visible` before `hover` as in `state_layer`; an elevated button hovered after it was focused is at level 2,
   focused after it was hovered at level 1 (`tokens/ElevatedButtonTokens.kt:43-74`), and pressed while hovered at
   level 1. The rest elevation's shadow transitions are Compose's outgoing specs, its hovered one `from {hover}` and
-  its default one `from {pressed, dragged, focus_visible}`, each state's rule states Compose's incoming spec with no
+  its default one `from {pressed, focus_visible}` (cards and chips: `{pressed, dragged, focus_visible}`), each state's rule states Compose's incoming spec with no
   `from`, and the `{disabled}` rule a zero duration (`internal/Elevation.kt:46-113`, `Button.kt:1750-1770`; S2.7).
   The `from {hover}` transition is stated after the other, so it wins where hover and another flag end in one update,
   where Compose takes the spec of the elevation it showed: exact on buttons, FABs and toggle buttons, where at the pin's
   tokens only the hovered elevation differs from the rest one, and on cards and chips but where a drag and a hover
   end in one update (S2.7). The state layer's own fades are chosen the same way (`material3-ripple/…/Ripple.kt:313-322`,
   `:463-483`): by the interaction entered, or, going to none, by the one left, all linear. So the rest style states the
-  outgoing fade with no `from`, then the drag's outgoing one `from {dragged}` where the set holds `dragged`; each
-  state-layer rule states its incoming fade; and the rest style and each state-layer rule state last the press
-  ripple's release fade, `from {pressed}`, kind `Ripple` (R9). The `{pressed}` rule's `Ripple` transition is stated by
-  a rule of its own after the state-layer rules, so it governs the press while hovered or focused (MAT-X9). One limit
-  remains, recorded for the spec-change queue: one transition governs a part's whole `Fill` group per change, so where
-  one update changes two of its layers that Compose times apart, both take the governing one's timing: the hover or
-  focus layer changing while the press ripple holds, and a container colour that Compose snaps while the state layer
-  fades (a selected chip's, `Chip.kt:4070-4076`; a checked toggle button's, `ToggleButton.kt:1446-1452`; a checked
-  icon button's, `IconButton.kt:1428-1436`).
+  outgoing fade with no `from`, then the drag's outgoing one `from {dragged}` where the set holds `dragged`, both
+  `layer = StateLayer`; each state-layer rule states its incoming fade, `layer = StateLayer`; the `{pressed}` rule the
+  press ripple's `Ripple` transition and the rest style its release fade `from {pressed}`, both `layer = Ripple` (R9);
+  and the container's own layers take no transition where Compose snaps them (a selected chip's, `Chip.kt:4070-4076`;
+  a checked toggle button's, `ToggleButton.kt:178`, `:1446-1452`; a checked icon button's, `IconButton.kt:1428-1436`).
+  Each role is timed by its own transitions (S2.7), so a toggle clicked while hovered snaps its container, keeps its
+  hover layer and fades the press ripple by the ripple's own fade, and a hover that ends while the press holds fades
+  the hover layer by the outgoing spec while the ripple holds (MAT-X9).
   Compose's buttons, toggle buttons and cards name the state left by the elevation they were heading for, the first of
   pressed, hovered, focused (and dragged) with that value (`Button.kt:1758-1764`, `ToggleButton.kt:1644-1650`,
   `Card.kt:733-740`; the FAB and the chips keep the interaction itself, `FloatingActionButton.kt:1417-1430`,
@@ -6953,7 +6962,12 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Variants:** typed `primary` (GNOME's suggested look; Windows' accent style), `destructive` (GN-2.29), `flat`
   (GN-2.29), `toggle` (Windows' ToggleSplitButton: button's `toggle` meaning, R15; its state `checked`, W2-17); keyed
   `adwaita` `@opaque` (GN-2.29), `@raised` (kept raised in a toolbar, GN-1.151); `kde-breeze` `@ka_double_floating`
-  (K-KA-27†).
+  (K-KA-27†); `material-3`: Compose's four forms, as `button`'s (MAT-B1): the filled one the base
+  (`SplitButtonDefaults.LeadingButton` and `TrailingButton`, `SplitButton.kt:681-687`, `:761-767`, `:872-879`), the
+  tonal one `tinted` (`TonalLeadingButton`, `TonalTrailingButton`, `:993-999`, `:1053-1060`), and keyed `@outlined`
+  (`:1110-1116`, `:1170-1177`, no elevation) and `@elevated` (`:1227-1233`, `:1287-1294`), in one `exclusive_variants`
+  group; the split-button tokens state sizes and shapes only (`_md-comp-split-button-*.scss`), so the forms' colours
+  and elevations are Compose's (R1.6), its `ButtonDefaults` colours and elevations (MAT-N7).
 - **Sizes and densities:** `material-3` flavour `expressive`: `extra_small`, `small`, `regular`, `large`,
   `extra_large` (Material's xsmall … xlarge, MAT-N7, ADD-A62); `macos-*`: its control sizes (MAC-N28†).
 - **Flags:** none of its own; state flags used, on the `primary` and `secondary` elements (each half's own states,
@@ -6974,7 +6988,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   line between its halves, K-KA-27†). values: `menu_placement` (`kde-breeze` by a rule under
   `variant @ka_double_floating`, as for `arrow`, K-KA-27†); fields: `body.shadow` (all but `kde-breeze`; `kde-breeze` by its base, outside
   `variant @ka_double_floating`, whose shared shadow is the one drawn, K-KA-27†), `primary.shadow` (all but `material-3`),
-  `secondary.shadow` (all but `material-3`).
+  `secondary.shadow` (all but `material-3`; `material-3` by a rule under `@outlined`, whose halves have no
+  elevation, `SplitButton.kt:1116`, `:1177`).
 - **State-model source:** GNOME `_buttons.scss` (`splitbutton`); macOS `NSComboButton.Style.split`; Material
   split-button tokens; Windows SplitButton visual states; KDE Breeze's tool-button branches for `MenuButtonPopup`
   (`st:4426-4465`, `st:4987-5051`, K1.155); kirigami-addons `DoubleFloatingButton.qml`.

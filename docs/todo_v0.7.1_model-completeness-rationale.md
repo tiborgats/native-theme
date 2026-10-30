@@ -457,9 +457,9 @@ elevation's set, is drawn beside the state layer.
 - *The connector drops the older flags itself.* Against: it needs the sets, which are preset data a generic
   connector does not have.
 - *Named recency sets: the preset declares each, per widget, its members cited from the platform's code; a rule's
-  selector may require a flag to be the latest of a set, that is present and set after every other present flag of
-  the set (after the exclusive groups' drop); the connector reports the order it set the element's flags in, which it
-  has from setting them (element data, R25.3); flags it reports no order for count by the set's stated order, its
+  selector may require a flag to be the latest of a set, that is kept (after the exclusive groups' drop) and set
+  after every other kept flag of the set; the connector reports the order it set the element's flags in, which it
+  records (element data, R25.3); flags it reports no order for count by the set's stated order, its
   first as the latest.*
 
 **Decision:** named recency sets. The stated order is the tie-break, so a connector that reports nothing gets a
@@ -472,7 +472,10 @@ flags, in that order.
 
 **State layers** (Material's hover, focus, pressed and dragged overlays, C08; libadwaita's `currentColor`
 shares) are a paint layer a rule appends over the fill beneath (R6), with a colour derivation (R5.4).
-Material's ripple is the pressed state layer's transition (R9).
+Material's ripple is the pressed layer's transition (R9). Where a platform times a state layer or the press ripple
+apart from the part's own paint (Compose fades its state layer by specs of its own, grows and fades the press ripple by
+its own, and snaps a toggle's, a chip's or an icon button's container colour), the layer states its role, and each
+transition times only the layers of the role it names (R9).
 
 ### R4 — The facts gate
 
@@ -713,7 +716,7 @@ MAT-X13–MAT-X15, X-MO-1).
   entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
   transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
   that appears interpolates from its colour at zero alpha, and one that disappears to it; layers are matched by
-  their position in the stack; colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
+  their role and then their position in the stack (R3); colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
@@ -725,7 +728,12 @@ MAT-X13–MAT-X15, X-MO-1).
   toolkit has from the press itself: the layer grows from it, with the radius, durations and opacities Material
   states (MAT-X9) as the transition's kind-specific values; its fade on release is the transition of the
   style entered, {hover} if the pointer is still on the control, as the style entered governs: that style's
-  transition `from {pressed}`, of the ripple's kind.
+  transition `from {pressed}`, of the ripple's kind. One transition governs a property group per change, as in CSS,
+  except that a fill's layers are timed per role (R3): the part's own layers, the state layers and the press ripple
+  each by the last applicable transition naming their role, so a ripple never times the container. Weighed: the state
+  layer as a part of its own (a part more on every widget that draws one, and the ripple still sharing its fill);
+  transitions per layer position (positions shift as rules append layers); a ripple alone timing only its layer
+  (the container would still take the state layer's fade where Compose snaps it).
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
   indeterminate progress).
 - **Scroll physics:** deceleration, overscroll and its spring, snapping, distance per wheel step (GN-3.24,
@@ -1283,6 +1291,9 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
 - R7: the elliptical corner, Breeze's round button on a box that is not square.
 - R9: a transition's `from` states; the platform curves widened to the curves a toolkit computes by a function of its
   own (CONTRA-7, settled; CONTRA-2's velocity curves stay members), R25.6 following.
+- R3, R9 (the independent checks' fixes): a fill layer's role and transitions timing per role, the press ripple's
+  release fade `from {pressed}`; Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
+  none under Kirigami (qqc2-desktop-style's style item paints with no widget).
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
