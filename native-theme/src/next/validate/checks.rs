@@ -1727,7 +1727,9 @@ impl TypeEnv for Types<'_> {
                 _ => field_type(registry::tokens(), &joined(path)),
             },
             Ref::Part(path) if is_corner(path) => match self.region {
-                Region::Part(..) => Some(Ty::Length),
+                Region::Part(_, _, info, _) => {
+                    registry::find(info.fields, &joined(path)).map(|_| Ty::Length)
+                }
                 Region::Roles | Region::Tokens | Region::Values(_) => None,
             },
             Ref::Part(path) => match self.region {

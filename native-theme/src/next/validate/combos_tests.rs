@@ -753,3 +753,21 @@ fn combination_mapping_palette() {
         format!("{partial}\n[inputs.\"kde_scheme.window.background_normal\"]\nlight = \"#000000\"");
     assert_eq!(problems(&port, &preset), NONE);
 }
+
+/// `part.corners.<c>` names a field the part lists (S12): a part with no
+/// corners has none.
+#[test]
+fn combination_part_corner_on_a_part_without_corners() {
+    assert_eq!(
+        bare("[widgets.button.label]\npadding.top_px = \"= part.corners.top_left\""),
+        [
+            "widgets.button.label.padding.top_px: the expression does not type: `part.corners.top_left` names nothing"
+        ]
+    );
+    assert_eq!(
+        bare("[widgets.button.label]\npadding.top_px = \"= part.focus.corners.top_left\""),
+        [
+            "widgets.button.label.padding.top_px: the expression does not type: `part.focus.corners.top_left` names nothing"
+        ]
+    );
+}
