@@ -2123,7 +2123,7 @@ which the catalogue marks as such.
 of them (iOS's `UIButton.Configuration` styles, B-1): an element given two of one
 group is answered `NotAvailable(Variant)` (S8), the validation's combinations hold at most one of each group (S12),
 and a variant set a state model lists holds at most one of each group (S17). A variant in no group combines with any
-other. The gate checks the variant sets the platform draws, which the state model lists (`variant_sets`, S17), never
+other. The gate checks the variant sets the platform draws, which the state model lists (`variant_sets`, or `variant_products` compactly, S17), never
 every combination of the declared variants.
 
 `default_size_by_variant` gives the default size of an element that holds the variant and states no size, where it
@@ -2901,24 +2901,57 @@ quote = "<the @interface line>"
 absent = ["<the platform's name for it>"]
 ```
 
-An available widget's entry also states `variants`, `sizes`, `densities` (S10; `exclusive_variants`, `variant_sets` and
-`default_size_by_variant` are optional, absent meaning none), `axes = { states, conditions,
+An available widget's entry also states `variants`, `sizes`, `densities` (S10; `exclusive_variants`, `variant_sets`,
+`variant_products` and `default_size_by_variant` are optional, absent meaning none), `axes = { states, conditions,
 contexts }` (what the platform's drawing distinguishes: states by S1's `StateFlag` names, conditions by S7.1's,
 contexts as S11's context selectors), `exclusive` (the exclusive groups, each in its order of precedence, S10),
 `exclusive_variants` (S10), `variant_sets` (the sets of two or more variants the platform draws together on one
 element, each a list, `variant_sets = [["glass", "primary"], ["clear", "primary"]]`; none where it draws its variants
-one at a time; ADD-A121) and `not_drawn` (combinations the platform does not draw, as `when`s); `available` is always stated, and a declaration
+one at a time; ADD-A121) and `variant_products` (the same sets as products of groups, below; ADD-A122) and `not_drawn` (combinations the platform does not draw, as `when`s); `available` is always stated, and a declaration
 it leaves out is stated as none (no flags, no `requires_variants`, no `default_size` where `sizes` is empty, …) and
 checked so. Flavours are not an axis: a preset with flavours is checked
 once per flavour (below). A combination is a subset of `axes.states` (each
 state a flag) reduced by `exclusive`, with, from `axes.conditions`, one value or none per condition kind (a
 container size being a condition, one size per container), at most one of `axes.contexts`, from `variants` none,
-a single variant, or one of the sets `variant_sets` lists (so a platform's dozens of variants are never combined into sets it does
+a single variant, or one of the sets `variant_sets` lists or `variant_products` gives (so a platform's dozens of variants are never combined into sets it does
 not draw, and no fact is asked for one),
 one of `densities` or none, and one of `sizes` (none where the list is empty), less those `not_drawn` names and
 those `requires_variants`, `sizes_by_variant` and `sizes_by_context` exclude (ADD-A121). A listed set names only
 declared variants, holds at most one variant of each `exclusive_variants` group (S10) and is listed once, which
-`check_facts.py` checks; the gate also resolves each fact's own
+`check_facts.py` checks.
+
+**Variant products** (ADD-A122). Where the sets a platform draws are the combinations of independent choices
+(libadwaita's button: a content form, a shape, a colour style, a toggle, each class set or not), an entry states them
+as `variant_products` beside or in place of `variant_sets`: a list of products, each a list of groups, a group
+`{ any = [...] }` (at most one of its variants, or none) or `{ one = [...] }` (exactly one). A product's sets are
+every choice of one variant or none from each `any` group and one from each `one` group, keeping those of two or more
+variants and dropping those that hold two variants of an `exclusive_variants` group or that `requires_variants`
+excludes; they join `variant_sets`' sets, and `not_drawn` then removes combinations as for any set. So
+
+```toml
+variant_products = [
+  [{ any = ["icon_only", "with_icon", "@custom_child", "@image_text_box"] },   # the content form
+   { any = ["pill", "circular"] },                                            # the shape
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd"] },  # the colour style
+   { any = ["toggle"] }],
+  [{ one = ["menu"] },                                                        # a menu button
+   { any = ["icon_only", "with_icon", "@custom_child"] },
+   { any = ["@with_arrow"] },
+   { any = ["flat", "@raised", "@osd"] }],
+]
+```
+
+states two products in eleven lines where the list would hold hundreds of sets (the group members here show the
+form, the adwaita facts' own lists cite theirs). `check_facts.py` expands the products, checks each set as a listed
+one (declared variants, the exclusive groups, once over the list and the products together: a set a product already
+gives is not listed again), and prints the number of sets per widget, so the expansion is reviewed by its count and
+its groups, each group's members cited as the plain list's are. The gate checks every set the entry gives, never a
+sample, so a set the platform draws cannot pass unchecked; M1a task 14 bounds the cost by resolving each set's
+combinations once per scheme and flavour and reusing what the set's rules share, not by checking fewer. Rejected:
+the plain list alone, unreviewable at that size; and products left untrimmed, which would assert sets the platform
+does not draw, so the exclusive groups, `requires_variants` and `not_drawn` trim them as they trim listed sets.
+
+The gate also resolves each fact's own
 `when`, so a fact naming a size class, a position or a direction is checked too. A preset with flavours is checked
 once per flavour, each with its flavour's entries. An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
@@ -3190,7 +3223,7 @@ lines that cite it.
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
 | ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S4.2, S6.1, S11, S12, S17 |
 | ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp` (every Kirigami, qqc2-desktop-style and kirigami-addons `linearInterpolation` the KDE trace states written with it and its operands), `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17, S4.6 |
-| ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; `FontCodePoint.fallbacks`; the `negate` conversion; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms | S1, S2.2, S2.4, S2.9, S2.10, S3.3, S4.1, S6.1, S17, the catalogue |
+| ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; `FontCodePoint.fallbacks`; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms | S1, S2.2, S2.4, S2.9, S2.10, S3.3, S4.1, S6.1, S17, the catalogue |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
