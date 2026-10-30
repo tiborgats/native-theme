@@ -939,7 +939,15 @@ not count, and with none the rule asks nothing). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
-colours it states. Offline. The docstring states every rule and list. Prints
+colours it states. ADD-A122's forms: a pending fact (`pending = "U<n>"` in
+place of `value`, no citation; one a later fact of its key shadows is a
+finding), a state model's `variant_products` (expanded and trimmed by the
+exclusive groups and `requires_variants`; a set also listed in
+`variant_sets` is a finding; the number of sets per entry is printed on
+stderr), S4.1's motion keys (no dropped word or toolkit prefix, and on a
+platform whose catalogue row lists every duration key, one of them), the
+accent ramp's `role.global.accent_ramp.<key>`, and no key inside an enum
+block. Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
