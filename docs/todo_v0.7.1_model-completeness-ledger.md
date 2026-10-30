@@ -190,6 +190,7 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 91 | 2 | spec S6.1, S17 (transition lists in facts) | S6.1 merges transition lists by group and `from`, but S17 does not say whether a fact states the merged list (the KDE lane wrote the base's four plus the disabled rule's two zero transitions) or the rule's own patch | the KDE lane's alignment (4ecd603e) | open: the next spec batch |
 | 92 | 1 | spec S2.7 | the timing a zero-duration transition carries is unstated (the KDE lane wrote `"linear"`, never run) | the KDE lane's alignment | open: the next spec batch |
 | 93 | 1–2 | catalogue `token.params.motion.kwin_speed_factor` (spec-widgets `:9048-9051`) | under `animations_off` it cannot be stated: kwinrc can override kdeglobals' 0, and the catalogue gives only the default | the KDE lane's alignment | open: the next spec batch |
+| 94 | 2 | catalogue `button` (the label rule, spec-widgets `:1373-1396`) | Breeze centres a menu button's label in a space 6px wider than the catalogue's "the rest" (the inline arrow's start margin 6px and end margin −6px, `breezestyle.cpp:5367-5372`, `:3546-3556`), so at its preferred size the label sits 3px further toward the end than the model places it | the KDE lane's alignment (bb8db205) | open: the next spec batch |
 
 ## Unmeasured register
 
