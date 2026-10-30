@@ -748,7 +748,8 @@ its items (the bold labels, `**Parts:**`, `**Widget values:**`, several to a
 line in many components), its parts (names, the parent a part nests in, the
 *(element)* mark and note, the field list), its widget values (name and
 the type the catalogue states) and its recency sets (each `<name> = [<flag>,
-…]` its **Exclusive groups** item names after "Recency sets", ADD-A124), with
+…]` its **Exclusive groups** item names after "Recency sets", ADD-A124, and
+per platform, with the exclusive groups, `state_groups`), with
 the source line of each. Variants, sizes
 and flags are prose in the catalogue, so their items' text and backticked
 names are given as they stand. A module, imported by `check_spec_names.py` and
@@ -979,8 +980,10 @@ refuse), which fact applies made order-aware (two latest flags of one set, or
 latest flags no one order allows, never hold together); a transition's
 `from` (stated in a single transition, never empty, no flag twice, no keyed
 flag the widget lacks) and a `state_layer` transition only on a part with
-`interaction`; the `interaction` block's keys; and `"ellipse"` on all four
-corners of one `when` or none, never with a `continuous` curve. Offline. The docstring states every rule and list. Prints
+`interaction`; the `interaction` block's keys; `"ellipse"` on all four
+corners of one `when` or none, never with a `continuous` curve; and each
+state model's `exclusive` groups and `recency` sets equal to the catalogue's
+for its widget and preset, members and order (S10, S17). Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's

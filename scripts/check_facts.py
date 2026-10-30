@@ -32,7 +32,9 @@ A `[[fact]]` (S17 *Fields*):
 - `key` is a field path without TOML's unit suffix (a segment ending in `_px`, `_ms`, `_deg` or `_pt` is a finding):
   `<widget>.<part>.<field>[.<leaf>…]` and `<widget>.values.<name>[.<leaf>…]`, `component.<key>.<part>.<field>…`
   and `component.<key>.values.<name>…`, where the widget or component is a catalogue entry, the part one of its
-  parts, the field one of that part's fields (the catalogue's list) and the leaves the core's sub-fields
+  parts, the field one of that part's fields (the catalogue's list, so a field the catalogue moved off a part, as
+  ADD-A124 moved the checkbox's, radio's and switch's `state_layer.opacity`, is refused, a pending fact's too) and
+  the leaves the core's sub-fields
   (check_spec_names.Checker.field_ok), the value one of the entry's widget values (the catalogue's name without its
   unit suffix; a value whose type is not a `Value<…>` may name leaves, unchecked); `role.<set>.<role>`,
   `role.<set>.disabled.<role>`, `role.global.<path>`, `role.@<key>` (Checker.role_ok); `token.<path>`
@@ -183,8 +185,11 @@ entry's state combinations (state_combinations: every subset of `axes.states` re
 keeping its first present flag, less those a `not_drawn` entry stating only `states` and `not_states` removes),
 each run once per order of its flags that belong to a recency set, the orders giving every set the same latest flag
 counted once (combination_orders; at most n! for n such flags); the runs, the combinations, the most orders of one
-combination and its n are printed on stderr, and their sums in the summary. The generation rule applies as to a
-fact.
+combination and its n are printed on stderr, and their sums in the summary. The entry's `exclusive` groups and
+`recency` sets agree with the catalogue's for its widget and each preset it covers (catalogue_group_problems, whose
+docstring cites S10's and S17's lines: the members and the order of each are facts; spec_catalogue.state_groups reads
+the catalogue's per platform): a group or set either states and the other lacks, other members or another order is a
+finding. The generation rule applies as to a fact.
 
 A palette fact (`docs/facts/palettes/<project>.toml`, S17 *Palette facts*): `key = "<project>.<flavour>.<name>"`
 (`<project>` the file's stem), a colour literal as `value`, at least one citation; no `rows`, `when`,
@@ -201,6 +206,7 @@ empty: then no preset exists and the generation rule asks nothing of a fact with
 
     python3 scripts/check_facts.py --self-test   # each rule on inline fixtures: a passing and a failing case
 """
+import fnmatch
 import itertools
 import math
 import re
@@ -1796,6 +1802,7 @@ def model_problems(ctx, item: Item) -> list:
                                                                   "among sizes")]
         out += variant_declaration_problems(item, variants, sizes)
         out += recency_problems(item, states, ws, ck)
+        out += catalogue_group_problems(ctx, item, entry)
     out += cite_list_problems(item, "model")
     for c in item.cites:
         out += cite_problems(ctx, item, c)
@@ -1837,6 +1844,61 @@ def recency_problems(item: Item, states, ws, ck) -> list:
                 out.append((ln, f"recency: {n1} and {n2} order {a!r} and {b!r} oppositely (S12: a widget's sets agree "
                                 f"on their orders)"))
     return out
+
+
+def catalogue_group_problems(ctx, item: Item, entry) -> list:
+    """An available entry's `exclusive` groups and `recency` sets against the catalogue's for its widget and each
+    preset it covers (spec_catalogue.state_groups: a platform part whose preset name, a pattern such as `macos-*`
+    included, matches the preset; a preset no part names has none). S10 (spec lines 2525-2529): "Which flags form an
+    exclusive group comes from the platform's state model (the catalogue names the flags …); the order of precedence
+    inside a group is a fact"; S10 (2531-2536): a recency set's "members are a fact … its stated order is the
+    tie-break … stated in the state models with its reason, as an exclusive group's precedence is (S17)"; S17
+    (3354-3356, 3379-3381): the state models state "the exclusive groups' order of precedence, the recency sets with
+    their stated order", `exclusive` "each in its order of precedence" and `recency` "each in its stated order"; the
+    catalogue's Entry format (widgets file 222-224) writes the groups "in the order of precedence the preset's
+    `exclusive` array states". So a group (by its flags) or a set (by its name) the catalogue states and the entry
+    lacks, one the entry states and the catalogue does not, another membership and another order are findings; the
+    order of the groups among themselves is not a fact. A widget whose catalogue entry has no **Exclusive groups**
+    item is not compared."""
+    if entry is None or not any(spec_catalogue.RECENCY_ITEM.search(it.label) for it in entry.items):
+        return []
+    d = item.data
+    parts = spec_catalogue.state_groups(entry)
+    pres = [c[7:] for c in entry_conditions(item) if c.startswith("preset:")]
+    out = []
+    ex = [g for g in d.get("exclusive", []) if str_list(g)] if isinstance(d.get("exclusive"), list) else []
+    rec = recency_of(d)
+    for preset in pres or PLATFORMS.get(item.platform, ()):
+        labels = [k for k in parts if fnmatch.fnmatchcase(preset, k)]
+        cat_ex = [g for k in labels for g in parts[k]["exclusive"]]
+        cat_rec = {n: s for k in labels for n, s in parts[k]["recency"].items()}
+        where = f"the catalogue's {entry.name} for {preset} ({', '.join(labels) or 'none named'}, line " \
+                f"{parts[labels[0]]['line'] if labels else entry.line})"
+        for g in cat_ex:
+            mine = next((e for e in ex if set(e) == set(g)), None)
+            if mine is None:
+                out.append((item.ln("exclusive"), f"exclusive: {where} states the group {g}, which the entry lacks "
+                                                  f"(S10, S17)"))
+            elif list(dict.fromkeys(mine)) != g:
+                out.append((item.ln("exclusive"), f"exclusive: {mine} in another order than {where}'s {g} (the "
+                                                  f"precedence is a fact, S10, S17)"))
+        for e in ex:
+            if not any(set(e) == set(g) for g in cat_ex):
+                out.append((item.ln("exclusive"), f"exclusive: the group {e} is not one {where} states (S10, S17)"))
+        for name, s in cat_rec.items():
+            if name not in rec:
+                out.append((item.ln("recency") if "recency" in d else item.line,
+                            f"recency: {where} states the set {name} = {s}, which the entry lacks (S10, S17)"))
+            elif set(rec[name]) != set(s):
+                out.append((item.ln("recency"), f"recency.{name}: {rec[name]} holds other flags than {where}'s {s} "
+                                                f"(its members are a fact, S10)"))
+            elif list(dict.fromkeys(rec[name])) != s:
+                out.append((item.ln("recency"), f"recency.{name}: {rec[name]} in another order than {where}'s {s} "
+                                                f"(the stated order is a fact, S10, S17)"))
+        for name in rec:
+            if name not in cat_rec:
+                out.append((item.ln("recency"), f"recency: the set {name} is not one {where} states (S10, S17)"))
+    return list(dict.fromkeys(out))
 
 
 def state_combinations(d) -> set:
@@ -2512,6 +2574,8 @@ SELF_TEST_CATALOGUE = '''
 
 - **Parts:**
   - `bar` — the root: `fill`.
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (a note, `[hover, focused]`); `macos-*`:
+  `[pressed, hover]`; others none. Recency sets: `windows-11`: `glow = [focused, hover]`.
 
 ## Keyed components
 
@@ -2868,6 +2932,10 @@ _ELLIPSE = "".join(f'[[fact]]\nkey = "button.body.corners.{c}"\nwhen = {{ varian
                    f'rows = []\n{_CITE}\n' for c in ("top_left", "top_right", "bottom_right", "bottom_left")) + (
            '[[fact]]\nkey = "button.body.corners.curve"\nwhen = { variants = ["flat"] }\nvalue = "circular"\nrows = []\n'
            + _CITE)
+_TOOLBAR = ('[[model]]\nwidget = "toolbar"\navailable = true\nvariants = []\nsizes = []\ndensities = []\naxes = { states '
+            '= ["hover", "pressed", "disabled", "focused"], conditions = [], contexts = [] }\nexclusive = [["disabled", '
+            '"pressed", "hover"]]\nnot_drawn = []\nrecency = { glow = ["focused", "hover"] }\nrows = []\n\n[[model.cite]]\n'
+            'kind = "published"\nsource = "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/x.xaml:1"\nquote = "x"\n')
 _INTERACTION = ('[[fact]]\nkey = "button.body.interaction.state_layer.alpha"\nwhen = { states = ["hover"] }\nvalue = 0.08\n'
                 'rows = []\n' + _CITE + '\n[[fact]]\nkey = "button.body.interaction.ripple.effect"\nvalue = '
                 '"android_patterned"\nrows = []\n' + _CITE)
@@ -3352,6 +3420,47 @@ SELF_TEST_CASES = [
                           'bottom_left_px = 4, curve = "circular" }'), ["bottom_left: 4 beside `ellipse`"]),
     ("ellipse: no unit variant of that name", "docs/facts/gnome/ellipse.toml", None,
      _ELLIPSE.replace('"ellipse"', '"elipse"'), ["'elipse' is not a unit variant of Radius"] * 4),
+    # the state models' groups and recency sets against the catalogue's per platform (S10, S17; ADD-A124)
+    ("catalogue groups: as the catalogue states them", "docs/facts/windows/state-models.toml", None, _TOOLBAR, []),
+    ("catalogue groups: a group the entry lacks", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('[["disabled", "pressed", "hover"]]', "[]"),
+     ["states the group ['disabled', 'pressed', 'hover'], which the entry lacks"]),
+    ("catalogue groups: a group the catalogue does not state", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('"hover"]]', '"hover"], ["focused", "checked"]]').replace('"focused"], conditions',
+                                                                                '"focused", "checked"], conditions'),
+     ["the group ['focused', 'checked'] is not one the catalogue's toolbar for windows-11"]),
+    ("catalogue groups: another precedence", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('[["disabled", "pressed", "hover"]]', '[["pressed", "disabled", "hover"]]'),
+     ["in another order than the catalogue's toolbar for windows-11"]),
+    ("catalogue groups: a set the entry lacks", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('recency = { glow = ["focused", "hover"] }\n', ""),
+     ["states the set glow = ['focused', 'hover'], which the entry lacks"]),
+    ("catalogue groups: a set the catalogue does not state", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('"hover"] }', '"hover"], lift = ["pressed", "focused"] }'),
+     ["the set lift is not one the catalogue's toolbar for windows-11"]),
+    ("catalogue groups: a set's other order", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('glow = ["focused", "hover"]', 'glow = ["hover", "focused"]'),
+     ["recency.glow: ['hover', 'focused'] in another order"]),
+    ("catalogue groups: a set's other members", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace('glow = ["focused", "hover"]', 'glow = ["pressed", "hover"]'),
+     ["recency.glow: ['pressed', 'hover'] holds other flags"]),
+    ("catalogue groups: a platform the catalogue names none for", "docs/facts/gnome/state-models.toml", None,
+     _TOOLBAR.replace("microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/x.xaml:1",
+                      "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11"),
+     ["the group ['disabled', 'pressed', 'hover'] is not one the catalogue's toolbar for adwaita (none named",
+      "the set glow is not one the catalogue's toolbar for adwaita"]),
+    ("catalogue groups: a pattern's platform", "docs/facts/macos/state-models.toml", None,
+     _TOOLBAR.replace('[["disabled", "pressed", "hover"]]', '[["pressed", "hover"]]').replace(
+         'recency = { glow = ["focused", "hover"] }\n', "").replace(
+         'widget = "toolbar"', 'widget = "toolbar"\nwhen = { conditions = ["preset:macos-tahoe"] }').replace(
+         "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/x.xaml:1", _MAC_ID.replace("16.4", "26.6")), []),
+    # a key on a field the catalogue does not give the part (one the catalogue moved: S2.11's fields per part)
+    ("moved field: a field the part's entry no longer lists", "docs/facts/gnome/moved.toml", None,
+     _CMF.replace('"token.material.variant"', '"pull_to_refresh.indicator.opacity"').replace('"cmf"', "1"),
+     ["`opacity` is not a field of pull_to_refresh's part `indicator`"]),
+    ("moved field: a pending fact on it", "docs/facts/gnome/moved.toml", None,
+     _PENDING.replace('"button.body.fill"', '"pull_to_refresh.indicator.opacity"'),
+     ["`opacity` is not a field of pull_to_refresh's part `indicator`"]),
     # PartStyle.interaction (S2.11, S2.12; ADD-A124)
     ("interaction: the state layer's alpha and the ripple's effect", "docs/facts/gnome/interaction.toml", None,
      _INTERACTION, []),
