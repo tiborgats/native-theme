@@ -77,8 +77,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond maximized / cond tiled:top / cond tiled:right / cond tiled:bottom / cond tiled:left` | rule |
 | K1.16 | `cond shaded (ADD-A02)` | condition |
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond shaded` | rule |
-| K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.decoration_shadow; the activation timing)` | field |
-| K1.17 | `window.frame.transitions @ cond window_inactive (the deactivation timing)` | rule |
+| K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.decoration_shadow; the activation timing, = token.motion.timings.out_cubic, `breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:279`)` | field |
+| K1.17 | `window.frame.transitions @ cond window_inactive (the deactivation timing, = token.motion.timings.in_cubic, `breezedecoration.cpp:279`)` | rule |
 | K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.motion.speed_factor)), S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
 | K1.17 | `window.title.transitions (Text cross-fade; duration as the decoration states it, value phase)` | field |
 | K1.18 | `window.frame.shadow @ cond window_inactive (layers at half strength)` | rule |
@@ -117,7 +117,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.46† | `button.icon.icon.size (= token.icons.sizes.small.size), button.icon.glyph (ThemeIcon) @ variant clear_field context input` | rule |
 | K1.46† | `button.body.min_width, button.body.min_height, button.body.padding @ variant clear_field context input` | rule |
 | K1.46† | `button.icon.icon.state_effect @ variant clear_field context input {disabled} / variant clear_field {pressed} context input` (the field disabled; the button pressed) | rule |
-| K1.46† | `button.values.presentations (Appear, Disappear: Fade) @ variant clear_field context input` | rule |
+| K1.46† | `button.values.presentations (Appear, Disappear: Fade; = token.motion.durations.line_edit_icon_button) @ variant clear_field context input` | rule |
 | K1.46† | `input.values.clear_button_visibility` | field |
 | K1.46† | `input flags empty` | flag |
 | K1.47† | `input.block_caret.fill, input.block_caret.text (the character under the caret) @ {overwrite} (an input mask's caret; the connector sets overwrite on a masked field without selection)` | rule |
@@ -247,7 +247,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.131 | `reader:kde:breezerc [Style] TabBarDrawCenteredTabs` | reader |
 | K1.132 | `tab.label.text.fill @ {disabled}` | rule |
 | K1.132 | `tab.tab.transitions (Fill: the hover fade)` | field |
-| K1.133† | `tab.values.presentations` (Move: the tabs sliding to their new place, the step's duration an expression over `element.move_distance`, which the values declare, `data = { values = ["move_distance"] }`; ADD-A87) | field |
+| K1.133† | `tab.values.presentations` (Move: the tabs sliding to their new place, the step's duration an expression over `element.move_distance`, which the values declare, `data = { values = ["move_distance"] }`, and `token.motion.durations.tab_bar`, `qtabbar.cpp:2378-2379`; its timing `= token.motion.timings.in_out_quad`, `qtabbar_p.h:144`; ADD-A87) | field |
 | K1.133† | `tab.values.drag_hover_delay` | field |
 | K1.140 | `sidebar.pane.stroke (the inner edge only; the Inactive group's highlight) @ variant @side_panel` | rule |
 | K1.140 | `sidebar.pane.stroke (the Active group's highlight) @ {focus_within} variant @side_panel` | rule |
@@ -275,7 +275,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.154 | `button.values.icon_text_gap @ variant tool context toolbar.bar (beside or under)` | rule |
 | K1.155 | `split_button.secondary.fill, split_button.secondary.stroke, split_button.divider.stroke, split_button.arrow.glyph @ context toolbar.bar (the split sub-control and its separator line)` | rule |
 | K1.155 | `button.menu_indicator.glyph, button.menu_indicator.min_width @ variants {tool,@inline_small} / variants {tool,@inline_large}` | rule |
-| K1.155 | `button.values.menu_indicator_anchor (BottomEnd), button.menu_indicator.{min_height,margin} @ variants {tool,@inline_small}` (the small arrow's box at the button's bottom-right corner, inset from it, `breezestyle.cpp:2940-2944`, mirrored, `:2949`; ADD-A122) | rule |
+| K1.155 | `button.values.menu_indicator_anchor (BottomEnd), button.menu_indicator.{min_height,margin} @ variants {tool,@inline_small}` (the small arrow's box at the button's bottom-right corner, inset from it, `breezestyle.cpp:2940-2944`, mirrored, `:2950`; ADD-A122) | rule |
 | K1.155 | `button.menu_indicator.glyph.fill @ {hover} variant tool / {pressed} variant tool / {disabled} variant tool; split_button.arrow.glyph @ {hover} context toolbar.bar / {pressed} context toolbar.bar / {disabled} context toolbar.bar` (the split button's own states) | rule |
 | K1.156 | `toolbar.separator.stroke, toolbar.separator.min_height` | field |
 | K1.156 | `toolbar.separator (absent = true) @ !cond system_setting:toolbar_draw_item_separator` | rule |
@@ -320,7 +320,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.184† | `list.disclosure.glyph (the column view's triangle: fill = role.@shade_mid, stroke = role.@shade_dark) @ variant @column_view` | rule |
 | K1.184† | `list.disclosure.glyph.fill @ {selected} variant @column_view / {selected} variant @column_view cond window_inactive` | rule |
 | K1.184† | `role.@shade_mid, role.@shade_dark (KDE's 3-D shades, K3.53)` | role |
-| K1.185† | `list.values.presentations (@expand, @collapse: Slide; = mul(token.motion.durations.<key>, token.motion.speed_factor), its timing the source's)` | field |
+| K1.185† | `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled, S4.1's rule, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`; = token.motion.timings.in_out_quad, `src/widgets/itemviews/qtreeview_p.h:89`; drawn only while the style hint, `token.motion.durations.animations`, is above 0 when the view is made, `qtreeview.cpp:3148`)` | field |
 | K1.190 | `popover.body.shadow (Shadow::Elevation of Breeze's popup entry, K3.2)` | field |
 | K1.191 | `popover.body.corners @ cond not_composited (ADD-A01)` | rule |
 | K1.200 | `splitter.divider.fill @ variant @dock` | rule |
@@ -982,9 +982,9 @@ rationale, each decided in the core's additions register (S22).
 | K3.30 | `token.motion.speed_factor` | token |
 | K3.30 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | K3.30 | `cond animations_off (factor 0)` | condition |
-| K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: factor times a base while the factor is set, breezerc AnimationsDuration otherwise)` | token |
+| K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: while the factor is set, = floor(mul(<base>, token.motion.speed_factor)), truncated to whole ms, `breeze@6.8.2 kstyle/breezestyle.cpp:2080`, zero turning Breeze's animations off, `:2085`, a positive result turning them on, `:2081-2083`; breezerc AnimationsDuration otherwise)` | token |
 | K3.31 | `token.motion.timings.animations (Steps: its count read from AnimationSteps)` | token |
-| K3.31 | `token.motion.durations.animations` (the reader states it zero while breezerc [Style] AnimationsEnabled is off: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
+| K3.31 | `token.motion.durations.animations` (the reader states it zero while kdeglobals sets no `AnimationDurationFactor` and breezerc [Style] AnimationsEnabled is off, the factor's positive value overriding that switch, `breezestyle.cpp:2076-2083`: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
 | K3.31 | `PartStyle.transitions per part (each Breeze engine's parts in the rows above; the enable/disable cross-fade a transition on {disabled})` | field |
 | K3.31 | `navigation_view.values.presentations (Fade) @ cond system_setting:stacked_widget_transitions (the stacked-widget fade, off by default)` | rule |
 | K3.31 | `reader:kde:breezerc [Style] AnimationsEnabled, AnimationSteps, AnimationsDuration, StackedWidgetTransitionsEnabled` | reader |
@@ -995,8 +995,8 @@ rationale, each decided in the core's additions register (S22).
 | K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = max(<the source's floor>, token.motion.durations.animations), the style hint's duration, kcollapsiblegroupbox.cpp:114-116; = token.motion.timings.in_out_sine)` | field |
 | K3.37 | `token.motion.durations.message_widget` | token |
 | K3.37 | `token.motion.timings.in_out_sine` | token |
-| K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.animations, its timing)` | component |
-| K3.38† | `toolbar.values.presentations (Move: the toolbars' re-layout slide; = token.motion.durations.animations, its timing)` | field |
+| K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.animations, = token.motion.timings.in_out_quad, `qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:61`)` | component |
+| K3.38† | `toolbar.values.presentations (Move: the toolbars' re-layout slide; = token.motion.durations.animations, = token.motion.timings.in_out_quad, `qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:61`)` | field |
 | K3.39† | - | out (R1.1) |
 | K3.20 | `token.focus (FilledRing: width, paint, offset; corners Radius::FollowPart, R12's concentric default)` | token |
 | K3.20 | `input.body.focus, text_area.body.focus, combo_box.body.focus, button.body.focus, checkbox.box.focus, radio.ring.focus (circular), slider.thumb.focus (circular), dial.handle.focus, stepper.body.focus, group_box.body.focus (= token.focus)` | field |
@@ -1129,8 +1129,8 @@ rationale, each decided in the core's additions register (S22).
 | Q3.22 | `dialog.scrim.fill @ cond flavor:kirigami; sidebar.scrim.fill @ variant overlay; sheet.scrim.fill @ variant @overlay` | rule |
 | Q3.22 | `dialog.scrim.transitions, sidebar.scrim.transitions, sheet.scrim.transitions (Opacity; = token.motion.durations.long, its timing)` | field |
 | Q3.23 | `token.motion.durations.very_short, token.motion.durations.short, token.motion.durations.long, token.motion.durations.very_long` | token |
-| Q3.24 | `token.motion.durations.long (= max(round(mul(<the read longDuration>, token.motion.speed_factor)), <floor>): `qRound`, then `qMax`, `qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:44`, `:48`; ADD-A56, ADD-A122)` | token |
-| Q3.24 | `token.motion.durations.very_short, token.motion.durations.short (= floor(div(token.motion.durations.long, <divisor>)): C++'s integer division, `plasmadesktopunits.cpp:50-51`; ADD-A122), token.motion.durations.very_long (= mul(token.motion.durations.long, <factor>), `:53`)` | token |
+| Q3.24 | `token.motion.durations.long (= max(round(mul(<the read longDuration>, token.motion.speed_factor)), <floor>): `qRound`, then `qMax`, `qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:45`, `:49`; ADD-A56, ADD-A122)` | token |
+| Q3.24 | `token.motion.durations.very_short, token.motion.durations.short (= floor(div(token.motion.durations.long, <divisor>)): C++'s integer division, `plasmadesktopunits.cpp:51-52`; ADD-A122), token.motion.durations.very_long (= mul(token.motion.durations.long, <factor>), `:54`)` | token |
 | Q3.24 | `reader:kde:plasmarc [Units] longDuration` | reader |
 | Q3.24 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | Q3.25 | `token.motion.speed_factor @ cond animations_off` | rule |

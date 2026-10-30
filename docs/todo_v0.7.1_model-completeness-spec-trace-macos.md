@@ -94,7 +94,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W14† | `window.title @ variant @title_hidden` (`absent = true`: the title goes, the bar and its traffic lights stay) | rule |
 | MAC-W14† | `window.title_bar.{fill,stroke,min_height}, window.values.title_alignment @ variant @no_toolbar / @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-W15† | `window.title.text.fill @ cond window_inactive` | rule |
-| MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @recessed / @round_rect / @inline / @textured_rounded / @shadowless_square / flat (borderless)` | rule |
+| MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @shadowless_square / flat (borderless)` | rule |
 | MAC-B01 | `expander.header, expander.arrow @ variant @push_disclosure; expander.arrow (the disclosure bezel, MAC-EX01)` | rule |
 | MAC-B01 | `button.body.*, button.label.* @ {pressed} / {disabled} / {checked} per bezel variant` | rule |
 | MAC-B02 | `button.body.fill, button.label.text.fill @ {default} !cond window_inactive !cond app_inactive` | rule |

@@ -887,7 +887,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
+| GN-3.20 | `token.motion.timings.flap_reveal, token.motion.timings.leaflet_child (Timing::Spring, clamp true: the deprecated AdwFlap's reveal and AdwLeaflet's child transition, `libadwaita@1.10.0 src/adw-flap.c:1598-1601`, `adw-leaflet.c:2474-2478`)` | token |
 | GN-3.21 | `token.motion.durations.<timed animations defined in code>` | token |
+| GN-3.21 | `token.motion.durations.flap_fold, token.motion.durations.leaflet_mode (the deprecated AdwFlap's fold and AdwLeaflet's mode transition, `libadwaita@1.10.0 src/adw-flap.c:1551`, `adw-leaflet.c:2445`)` | token |
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
