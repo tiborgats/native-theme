@@ -7,7 +7,8 @@
 # the toggles, the Expressive sizes and the menu button; the icon buttons and the FABs are appended after these.
 # Compose draws a button as a Surface whose LocalContentColor is the button's content colour (the label's and the
 # icon's), so `body.bindings` binds `surface.foreground` to it. The pressed state's fill is Android's own ripple
-# (spike A): it is not stated from the 0.1 token and waits for the Android host's measurement (the lane report).
+# (spike A): it is not stated from the 0.1 token; a pending fact (S17, U70) at the file's end holds it until the
+# Android host's measurement.
 # dp is px (S17's units).
 
 # the base: md.comp.button.* (the filled colours), 40px high, 24px leading and trailing space
@@ -706,8 +707,8 @@ rows = ["MAT-X10"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 focus/internal/_focus-ring.scss:63"
-quote = "border-start-start-radius: calc($start-start + $outward-offset);"
+source = "material-web@2.5.0 focus/internal/_focus-ring.scss:62"
+quote = "border-start-end-radius: calc($start-end + $outward-offset);"
 
 [[fact]]
 key = "button.body.focus.corners.bottom_right"
@@ -716,8 +717,8 @@ rows = ["MAT-X10"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 focus/internal/_focus-ring.scss:63"
-quote = "border-start-start-radius: calc($start-start + $outward-offset);"
+source = "material-web@2.5.0 focus/internal/_focus-ring.scss:60"
+quote = "border-end-end-radius: calc($end-end + $outward-offset);"
 
 [[fact]]
 key = "button.body.focus.corners.bottom_left"
@@ -726,8 +727,8 @@ rows = ["MAT-X10"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 focus/internal/_focus-ring.scss:63"
-quote = "border-start-start-radius: calc($start-start + $outward-offset);"
+source = "material-web@2.5.0 focus/internal/_focus-ring.scss:61"
+quote = "border-end-start-radius: calc($end-start + $outward-offset);"
 
 [[fact]]
 key = "button.body.focus.corners.curve"
@@ -980,6 +981,17 @@ absent = []
 
 [[fact]]
 key = "button.values.menu_trigger"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-184"
+quote = "public fun Button("
+absent = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
 value = "absent"
 rows = []
 
@@ -1967,7 +1979,7 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-state.scss:23"
 quote = "$focus-state-layer-opacity: 0.1;"
 
-# pressed: the elevation only; the ripple's fill waits for the Android host's measurement
+# pressed: the elevation only; the ripple's fill is the pending fact at the file's end (U70)
 
 [[fact]]
 key = "button.body.shadow"
@@ -5432,6 +5444,18 @@ rows = ["MAT-N8"]
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:35"
 quote = "$with-icon-leading-icon-size: 18px;"
+
+# the indicator is the trailing icon: after the label in the row (ADD-A122's `Inline`)
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { variants = ["menu"] }
+value = "inline"
+rows = ["MAT-N8"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:30-31"
+quote = "/// md.comp.standard-menu-button.trailing-icon.size (Enabled / Trailing icon) $trailing-icon-size: 18px;"
 
 [[fact]]
 key = "button.menu_indicator.glyph.size"
@@ -14425,3 +14449,14 @@ quote = "$focus-state-layer-color: md-sys-color.$primary;"
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-extended-fab-branded.scss:54"
 quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
+
+# ---- pending (S17, ADD-A122): every pressed combination's fill. Compose draws the press as a ripple under the state
+# layer (material3-ripple Ripple.kt:375-376), on Android the platform's own RippleDrawable (spike A), so the 0.1
+# pressed state-layer token is not what it draws; no evidence measures it until the Android host's pass. The fact
+# stands last among the fills, so no later fill fact shadows it on any pressed combination.
+
+[[fact]]
+key = "button.body.fill"
+when = { states = ["pressed"] }
+pending = "U70"
+rows = ["MAT-X8"]
