@@ -65,6 +65,7 @@ What it reads from an entry
 import re
 import subprocess
 import sys
+import tempfile
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -903,6 +904,19 @@ def self_test() -> int:
             "only a length may be")
     refused("untyped value", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("`side: Value<Side>`", "`side` (a note)"),
             "states no type")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp) / OUT_DIR
+        folder.mkdir(parents=True)
+        for name, content in [("gen_same.rs", "a\n"), ("gen_differs.rs", "b\n"), ("gen_stale.rs", "c\n"),
+                              ("mod.rs", "d\n")]:
+            (folder / name).write_text(content, encoding="utf-8")
+        expect("differences", differences(Path(tmp), {"gen_same.rs": "a\n", "gen_differs.rs": "B\n",
+                                                       "gen_missing.rs": "e\n"}), [
+            f"{OUT_DIR / 'gen_differs.rs'}: differs from what the catalogue states (run scripts/generate_widgets.py)",
+            f"{OUT_DIR / 'gen_missing.rs'}: differs from what the catalogue states (run scripts/generate_widgets.py)",
+            f"{OUT_DIR / 'gen_stale.rs'}: stale, no enabled unit produces it",
+        ])
 
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
