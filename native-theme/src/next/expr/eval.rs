@@ -115,6 +115,7 @@ fn eval(node: &Node, env: &dyn Env) -> Val {
             of_type(ty, arith::binary(*op, x, y))
         }
         Node::Floor(x, ty) => of_type(ty, arith::floor(number(&eval(x, env)))),
+        Node::Round(x, ty) => of_type(ty, arith::round(number(&eval(x, env)))),
         Node::Alpha(operands) => {
             let [c, a] = operands.as_ref();
             Val::Color(arith::alpha(color(&eval(c, env)), number(&eval(a, env))))
@@ -331,6 +332,10 @@ mod tests {
         assert_eq!(
             value("floor(div(token.gap, 4))", Ty::Length),
             Val::Length(Px(1.0))
+        );
+        assert_eq!(
+            value("round(div(token.gap, 4))", Ty::Length),
+            Val::Length(Px(2.0))
         );
         assert_eq!(
             value("alpha(surface.foreground, 0.5)", Ty::Color),

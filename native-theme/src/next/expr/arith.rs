@@ -1,5 +1,5 @@
 //! The model's own arithmetic (S2.2): `alpha`, `mix`, `mul`, `div`, `add`,
-//! `sub`, `min`, `max`, `floor` and `pick`, total as S2.2's *Totality* says.
+//! `sub`, `min`, `max`, `floor`, `round` and `pick`, total as S2.2's *Totality* says.
 
 use super::ty::{BinOp, Bound};
 use crate::next::color::Color;
@@ -72,9 +72,15 @@ pub(super) fn binary(op: BinOp, x: f32, y: f32) -> f32 {
     })
 }
 
-/// `floor(x)`.
+/// `floor(x)`: toward negative infinity.
 pub(super) fn floor(x: f32) -> f32 {
     finite(x.floor())
+}
+
+/// `round(x)`: to the nearest integer, a half away from zero, as Qt's
+/// `qRound` and `f32::round` do (S2.2).
+pub(super) fn round(x: f32) -> f32 {
+    finite(x.round())
 }
 
 /// `pick(index, c0, c1, …)`: the colour at the floored index's Euclidean
@@ -203,6 +209,10 @@ mod tests {
         assert_eq!(binary(BinOp::Div, 3.0, 2.0), 1.5);
         assert_eq!(floor(-1.5), -2.0);
         assert_eq!(floor(2.9), 2.0);
+        assert_eq!(round(2.5), 3.0);
+        assert_eq!(round(-2.5), -3.0);
+        assert_eq!(round(2.4), 2.0);
+        assert_eq!(round(-1.5), -2.0);
     }
 
     #[test]
@@ -212,6 +222,7 @@ mod tests {
         assert_eq!(binary(BinOp::Mul, f32::MAX, f32::MAX), 0.0);
         assert_eq!(binary(BinOp::Add, f32::NAN, 1.0), 0.0);
         assert_eq!(floor(f32::INFINITY), 0.0);
+        assert_eq!(round(f32::NAN), 0.0);
         assert_eq!(finite(f32::NAN), 0.0);
         assert_eq!(
             finite_color(rgba(f32::NAN, f32::INFINITY, 0.5, f32::NEG_INFINITY)),

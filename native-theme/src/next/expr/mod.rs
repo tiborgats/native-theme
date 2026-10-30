@@ -259,7 +259,7 @@ impl ElementDatum {
 }
 
 /// A function of S2.2's closed set: the model's own arithmetic (`alpha`, `mix`,
-/// `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `pick`) and the platform
+/// `mul`, `div`, `add`, `sub`, `min`, `max`, `floor`, `round`, `pick`) and the platform
 /// functions, each implemented to its source.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Func {
@@ -293,8 +293,10 @@ pub enum Func {
     Min,
     /// `max(x, y)`.
     Max,
-    /// `floor(x)`.
+    /// `floor(x)`: toward negative infinity.
     Floor,
+    /// `round(x)`: to the nearest integer, a half away from zero.
+    Round,
     /// `qt_lighter(c, factor)`: `QColor::lighter`.
     QtLighter,
     /// `qt_darker(c, factor)`: `QColor::darker`.
@@ -343,7 +345,7 @@ pub enum Func {
 
 impl Func {
     /// Every function, in S2.2's table's order.
-    pub const ALL: [Func; 38] = [
+    pub const ALL: [Func; 39] = [
         Func::Alpha,
         Func::Mix,
         Func::KdeEffects,
@@ -360,6 +362,7 @@ impl Func {
         Func::Min,
         Func::Max,
         Func::Floor,
+        Func::Round,
         Func::QtLighter,
         Func::QtDarker,
         Func::KcuOverlay,
@@ -404,6 +407,7 @@ impl Func {
             Func::Min => "min",
             Func::Max => "max",
             Func::Floor => "floor",
+            Func::Round => "round",
             Func::QtLighter => "qt_lighter",
             Func::QtDarker => "qt_darker",
             Func::KcuOverlay => "kcu_overlay",

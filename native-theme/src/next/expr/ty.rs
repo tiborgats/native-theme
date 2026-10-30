@@ -410,6 +410,8 @@ pub(super) enum Node {
     Binary(BinOp, Box<[Node; 2]>, Ty),
     /// `floor(x)`, with its result's type.
     Floor(Box<Node>, Ty),
+    /// `round(x)`, with its result's type.
+    Round(Box<Node>, Ty),
     /// `alpha(c, a)`.
     Alpha(Box<[Node; 2]>),
     /// `mix(a, b, t)`.
@@ -655,13 +657,19 @@ impl Checker<'_> {
             Func::Max => self.same_type(func, BinOp::Max, args, expected, depth),
             Func::Mul => self.mul(args, expected, depth),
             Func::Div => self.div(args, expected, depth),
-            Func::Floor => {
+            Func::Floor | Func::Round => {
                 let [x] = args else {
                     return Err(arity(func, args));
                 };
                 let (node, ty) = self.infer(x, expected, depth)?;
                 arithmetic(func, &ty)?;
-                Ok((Node::Floor(Box::new(node), ty.clone()), ty))
+                let node = Box::new(node);
+                let node = if func == Func::Floor {
+                    Node::Floor(node, ty.clone())
+                } else {
+                    Node::Round(node, ty.clone())
+                };
+                Ok((node, ty))
             }
             Func::Pick => self.pick(args, depth),
             Func::Alpha => {
@@ -1218,6 +1226,8 @@ mod tests {
         );
         assert_eq!(typed("floor(token.gap)", Ty::Length), Ty::Length);
         assert_eq!(typed("floor(1.5)", Ty::Number), Ty::Number);
+        assert_eq!(typed("round(token.gap)", Ty::Length), Ty::Length);
+        assert_eq!(typed("round(1.5)", Ty::Number), Ty::Number);
     }
 
     // The mismatch classes S2.2 lists, one test each.
@@ -1337,6 +1347,7 @@ mod tests {
             ("max(token.turn, 1deg)", Func::Max, Ty::Angle),
             ("mul(token.focus_visible, 2)", Func::Mul, Ty::Bool),
             ("floor(surface.foreground)", Func::Floor, Ty::Color),
+            ("round(surface.foreground)", Func::Round, Ty::Color),
         ] {
             assert_eq!(
                 refused(text, Ty::Number),
