@@ -1054,19 +1054,22 @@ fn declarations_refuse_what_s10_does_not_spell() {
     );
 }
 
+/// A map entry whose value has a unit takes the unit's suffix on its key
+/// for every value, as a field does; a keyed scalar takes none, its number
+/// in the unit its declaration names (S11, ADD-A123).
 #[test]
-fn keyed_scalars_take_their_units_suffix() {
-    let layer = layer(
-        "[tokens.params.layout]\ngrid_unit_px = 18\n[tokens.params.opacity]\ndisabled = 0.5\n\
-         [tokens.motion.durations]\nbutton_ms = 150",
+fn map_entry_keys_take_their_units_suffix_and_scalars_none() {
+    let read = layer(
+        "[tokens.params.layout]\ngrid_unit = 18\n[tokens.params.opacity]\ndisabled = 0.5\n\
+         [tokens.motion.durations]\nbutton_ms = 150\nlong_ms = \"= token.motion.durations.button\"",
     );
-    let tokens = layer.bases.tokens;
+    let tokens = read.bases.tokens;
     assert_eq!(
         tokens.params,
         Some(vec![
             (
                 key!("layout"),
-                vec![(key!("grid_unit"), Value::Stated(Scalar::Px(Px(18.0))))]
+                vec![(key!("grid_unit"), Value::Stated(Scalar::Number(18.0)))]
             ),
             (
                 key!("opacity"),
@@ -1074,16 +1077,75 @@ fn keyed_scalars_take_their_units_suffix() {
             ),
         ])
     );
+    let durations = tokens.motion.unwrap().durations.unwrap();
     assert_eq!(
-        tokens.motion.unwrap().durations,
+        durations.first(),
+        Some(&(key!("button"), Value::Stated(crate::next::units::Ms(150.0))))
+    );
+    assert_eq!(durations.len(), 2);
+    // Every value of a duration takes the suffixed key: a number, an
+    // expression, `"absent"`.
+    for value in ["150", "\"= token.motion.durations.long\"", "\"absent\""] {
+        for key in ["button", "button_px"] {
+            assert_eq!(
+                problems(&format!("[tokens.motion.durations]\n{key} = {value}")),
+                [format!("tokens.motion.durations.{key}: unknown key")],
+                "{key} = {value}"
+            );
+        }
+    }
+    // A keyed scalar's suffixed key is another key, named as written.
+    let suffixed = layer("[tokens.params.layout]\ngap_px = 4");
+    assert_eq!(
+        suffixed.bases.tokens.params,
         Some(vec![(
-            key!("button"),
-            Value::Stated(crate::next::units::Ms(150.0))
+            key!("layout"),
+            vec![(key!("gap_px"), Value::Stated(Scalar::Number(4.0)))]
         )])
     );
+}
+
+/// `"auto"`, `"none"` and `"absent"` are exact: `"absent"` is `Absent`,
+/// `"none"` is `None` only in an `Option` field, `"auto"` is `Auto` only in a
+/// length or a font size, and elsewhere each is what the field's type spells
+/// by it (S11, ADD-A123).
+#[test]
+fn auto_none_and_absent_are_exact() {
+    let theme = |text: &str| {
+        let layer = layer(&format!("[tokens.icons]\ntheme = {text}"));
+        layer.bases.tokens.icons.and_then(|icons| icons.theme)
+    };
+    assert_eq!(theme("\"absent\""), Some(Value::Absent));
+    assert_eq!(theme("\"auto\""), Some(Value::Stated("auto".to_owned())));
+    assert_eq!(theme("\"none\""), Some(Value::Stated("none".to_owned())));
     assert_eq!(
-        problems("[tokens.motion.durations]\nbutton = 150"),
-        ["tokens.motion.durations.button: unknown key"]
+        theme("\"Absent\""),
+        Some(Value::Stated("Absent".to_owned()))
+    );
+    assert_eq!(
+        body_of("max_width_px = \"auto\"").max_width,
+        Some(Value::Auto)
+    );
+    assert_eq!(
+        problems("[widgets.button.body]\nmax_width_px = \"Auto\""),
+        ["widgets.button.body.max_width_px: expected a number"]
+    );
+    assert_eq!(
+        problems("[tokens.caret]\nblink_on_ms = \"auto\""),
+        ["tokens.caret.blink_on_ms: expected a number"]
+    );
+    let timeout = |text: &str| {
+        let layer = layer(&format!("[tokens.caret]\nblink_timeout_ms = {text}"));
+        layer
+            .bases
+            .tokens
+            .caret
+            .and_then(|caret| caret.blink_timeout)
+    };
+    assert_eq!(timeout("\"none\""), Some(None));
+    assert_eq!(
+        problems("[tokens.caret]\nblink_timeout_ms = \"None\""),
+        ["tokens.caret.blink_timeout_ms: expected a number"]
     );
 }
 

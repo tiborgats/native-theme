@@ -821,12 +821,34 @@ fn availability_is_the_default_flavours() {
 #[test]
 fn refusal_unit_mismatch() {
     let decl = declare("params = { layout = { unit = \"px\", keys = [\"gap\"] } }");
-    let gap = |key: &str| toml(&format!("[tokens.params.layout]\n{key} = 4"));
+    let gap = |scalar: crate::next::units::Scalar| {
+        let mut layer = Layer::default();
+        layer.bases.tokens.params = Some(vec![(
+            key!("layout"),
+            vec![(key!("gap"), Value::Stated(scalar))],
+        )]);
+        layer
+    };
     assert_eq!(
-        found(&gap("gap"), &decl),
+        found(&gap(crate::next::units::Scalar::Ms(Ms(4.0))), &decl),
         ["tokens.params.layout.gap: declared in `px`"]
     );
-    assert_eq!(found(&gap("gap_px"), &decl), NONE);
+    assert_eq!(
+        found(&gap(crate::next::units::Scalar::Px(Px(4.0))), &decl),
+        NONE
+    );
+    // In TOML a keyed scalar's number is in its declared unit; a suffixed
+    // key is another key (S11, ADD-A123).
+    let read = |text: &str| toml(&format!("[tokens.params.layout]\n{text}"));
+    assert_eq!(found(&read("gap = 4"), &decl), NONE);
+    assert_eq!(
+        found(&read("gap = \"= token.params.layout.gap\""), &decl),
+        NONE
+    );
+    assert_eq!(
+        found(&read("gap_ms = \"= token.params.layout.gap\""), &decl),
+        ["tokens.params.layout.gap_ms: `gap_ms` is not declared in `params`"]
+    );
 }
 
 #[test]

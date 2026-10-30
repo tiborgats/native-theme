@@ -926,17 +926,17 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// A stated keyed scalar against its declared unit: a suffixed one of
-    /// that unit, a bare number of a `number` or `fraction` one, a
+    /// A stated keyed scalar against its declared unit: a plain number, in
+    /// that unit (S10, S11: TOML's only spelling), or one of that unit; a
     /// fraction's within `0..=1`; a number that is not finite is that one
     /// problem only.
     fn unit(&mut self, at: &str, scalar: &Scalar, unit: ScalarUnit) {
         let fits = matches!(
             (scalar, unit),
-            (Scalar::Px(_), ScalarUnit::Px)
+            (Scalar::Number(_), _)
+                | (Scalar::Px(_), ScalarUnit::Px)
                 | (Scalar::Ms(_), ScalarUnit::Ms)
                 | (Scalar::Deg(_), ScalarUnit::Deg)
-                | (Scalar::Number(_), ScalarUnit::Number | ScalarUnit::Fraction)
                 | (Scalar::Fraction(_), ScalarUnit::Fraction)
         );
         if !fits {

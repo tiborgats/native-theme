@@ -513,21 +513,12 @@ impl FromToml for Fraction {
     }
 }
 
-/// A keyed scalar's unit is its key's suffix, `_px`, `_ms` or `_deg`; a
-/// number stated under a bare key is a `Number`, the declaration's unit
-/// (`fraction` or `number`, S10) deciding it when the layer is added (S12).
+/// A keyed scalar's key takes no unit suffix: its number is in the unit its
+/// declaration names (S10, S11), a `Number` here, which the declaration's
+/// unit decides when the layer is added (S12).
 impl FromToml for Scalar {
-    const SPELLINGS: &'static [Spelling] =
-        &[Spelling::Px, Spelling::Ms, Spelling::Deg, Spelling::Bare];
-
-    fn read(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
-        let n = number(item, at, cx)?;
-        Some(match spelling {
-            Spelling::Px => Scalar::Px(Px(n)),
-            Spelling::Ms => Scalar::Ms(Ms(n)),
-            Spelling::Deg => Scalar::Deg(Deg(n)),
-            Spelling::Bare | Spelling::Pt | Spelling::Item => Scalar::Number(n),
-        })
+    fn read(item: &Item, _: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
+        number(item, at, cx).map(Scalar::Number)
     }
 }
 

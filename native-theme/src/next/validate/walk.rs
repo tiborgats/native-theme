@@ -705,6 +705,7 @@ impl Walk for FontSize {
     }
 }
 
+/// A keyed scalar's key takes no unit suffix in TOML (S11).
 impl Walk for Scalar {
     const EXPR: ExprForm = ExprForm::Calls;
 
@@ -716,15 +717,6 @@ impl Walk for Scalar {
             }
             Scalar::Fraction(Fraction(n)) => w.number(*n, Number::Fraction),
             Scalar::Number(n) => w.number(*n, Number::Plain),
-        }
-    }
-
-    fn suffix(&self) -> &'static str {
-        match self {
-            Scalar::Px(_) => "_px",
-            Scalar::Ms(_) => "_ms",
-            Scalar::Deg(_) => "_deg",
-            Scalar::Fraction(_) | Scalar::Number(_) => "",
         }
     }
 }

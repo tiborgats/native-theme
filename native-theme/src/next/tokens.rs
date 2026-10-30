@@ -84,19 +84,23 @@ pub struct Tokens {
 /// their stated minimum.
 pub(crate) const ABSENT_PARAM_GROUPS: [&str; 1] = ["display"];
 
-/// Motion tokens (S4.1). Map keys carry no unit suffix: their values are
-/// plain numbers in the unit their declaration names (S10).
+/// Motion tokens (S4.1). A key names the platform's motion in snake_case
+/// and carries no unit suffix in a path (`token.motion.durations.button`);
+/// in TOML a duration's key takes `_ms` as a field's does (`button_ms`,
+/// S11).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
 pub struct MotionTokens {
-    /// The platform's durations, keyed; a scaled one is stated as
+    /// Keyed durations, in ms: a `token.motion.durations.<key>` is a
+    /// duration; a scaled one is stated as
     /// `= mul(token.motion.durations.x, token.motion.speed_factor)`.
     pub durations: Vec<(Key, Value<Ms>)>,
-    /// The platform's timings, keyed.
+    /// Keyed timings (S2.7): a `token.motion.timings.<key>` is a `Timing`,
+    /// stated whole (S6.1).
     #[parts(block = "set")]
     pub timings: Vec<(Key, Timing)>,
-    /// The factor the platform scales its animations' durations by.
+    /// The factor the platform scales its animations' durations by (R9).
     pub speed_factor: Value<f32>,
 }
 
