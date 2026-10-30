@@ -1,0 +1,974 @@
+# button (macos-tahoe): the push button (`bezelStyle` push) as AppKit draws it on macOS 26.6.2, measured in the
+# os-probe button pass of run 40969040283 (docs/evidence/os-probe/2026-10-29-run-40969040283/README.md): a key, main
+# window of the active application, Reduce Transparency on (the runner image's setting; the offscreen push-button
+# renders are pixel for pixel the same with it off, button-pass/analysis.toml `*.offscreen.*`), Increase Contrast
+# off, no accent colour set (controlAccentColor #007aff). A fill is the capture's pixel: the bezel composited over the
+# window background (windowBackgroundColor, #ffffff and #1e1e1e), not the layer's own colour and alpha. Each fill
+# fact cites every control size it was read at (mini to extraLarge), which all draw the same colour. The state model
+# is state-models.toml's: hover draws nothing (no fact states it), `default` is the Return key equivalent,
+# `checked` the `pushOnPushOff` button's on state (variant `toggle`). Facts are in the order: the base, the states,
+# `default` with its states, the checked toggle with its states.
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#ececec"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.mini-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.small-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.regular-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.large-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.extraLarge-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.mini-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.small-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.regular-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.large-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.extraLarge-toggle_off.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#2f2f2f"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.mini-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.small-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.regular-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.large-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.extraLarge-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.mini-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.small-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.regular-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.large-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.extraLarge-toggle_off.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["pressed"] }
+value = "#d5d5d5"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.mini-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.small-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.regular-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.large-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.extraLarge-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.mini-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.small-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.regular-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.large-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.extraLarge-toggle_off.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["pressed"] }
+value = "#434343"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.mini-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.small-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.regular-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.large-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.extraLarge-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.mini-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.small-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.regular-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.large-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.extraLarge-toggle_off.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["disabled"] }
+value = "#f5f5f5"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.mini-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.small-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.regular-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.large-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.extraLarge-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.mini-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.small-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.regular-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.large-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.extraLarge-toggle_off.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"] }
+value = "#262626"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.mini-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.small-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.regular-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.large-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.extraLarge-plain.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.mini-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.small-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.regular-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.large-toggle_off.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.extraLarge-toggle_off.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["default"] }
+value = "#007aff"
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.mini-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.small-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.regular-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.large-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.extraLarge-default.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["default"] }
+value = "#007aff"
+rows = ["MAC-B02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.mini-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.small-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.regular-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.large-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.extraLarge-default.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["default", "pressed"] }
+value = "#006ee6"
+rows = ["MAC-B02", "MAC-B03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.mini-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.small-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.regular-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.large-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.extraLarge-default.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["default", "pressed"] }
+value = "#1987ff"
+rows = ["MAC-B02", "MAC-B03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.mini-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.small-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.regular-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.large-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.extraLarge-default.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["default", "disabled"] }
+value = "#f5f5f5"
+rows = ["MAC-B02", "MAC-B03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.mini-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.small-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.regular-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.large-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.extraLarge-default.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["default", "disabled"] }
+value = "#262626"
+rows = ["MAC-B02", "MAC-B03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.mini-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.small-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.regular-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.large-default.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.extraLarge-default.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["checked"], variants = ["toggle"] }
+value = "#0077f9"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.mini-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.small-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.regular-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.large-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.normal.extraLarge-toggle_on.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["checked"], variants = ["toggle"] }
+value = "#077dff"
+rows = ["MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.mini-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.small-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.regular-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.large-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.normal.extraLarge-toggle_on.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["checked", "pressed"], variants = ["toggle"] }
+value = "#006be1"
+rows = ["MAC-B10"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.mini-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.small-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.regular-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.large-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.pressed.extraLarge-toggle_on.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["checked", "pressed"], variants = ["toggle"] }
+value = "#1f8aff"
+rows = ["MAC-B10"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.mini-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.small-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.regular-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.large-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.pressed.extraLarge-toggle_on.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["checked", "disabled"], variants = ["toggle"] }
+value = "#8fc2fb"
+rows = ["MAC-B10"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.mini-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.small-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.regular-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.large-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.disabled.extraLarge-toggle_on.fill"
+tolerance = 1
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["checked", "disabled"], variants = ["toggle"] }
+value = "#164981"
+rows = ["MAC-B10"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.mini-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.small-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.regular-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.large-toggle_on.fill"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.disabled.extraLarge-toggle_on.fill"
+tolerance = 1
+
+[[fact]]
+# No line of its own along the bezel's edge, in every state and size measured (the edge pixels are the fill at
+# some coverage, analysis.toml's `stroke`).
+key = "button.body.stroke"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.all_states.stroke"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.all_states.stroke"
+tolerance = 0
+
+[[fact]]
+# Nothing drawn in the 6 px round the frame, in every state and size measured (analysis.toml's `shadow`).
+key = "button.body.shadow"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.all_states.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.all_states.shadow"
+tolerance = 0
+
+[[fact]]
+# The push button's intrinsic height at the control size (`intrinsicContentSize`, the height AppKit sizes it to).
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["mini"] }
+value = "16px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.mini-plain.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.mini-default.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.mini-toggle_off.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.mini-toggle_on.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["small"] }
+value = "20px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.small-plain.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.small-default.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.small-toggle_off.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.small-toggle_on.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["regular"] }
+value = "24px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-plain.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-default.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-toggle_off.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-toggle_on.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["large"] }
+value = "28px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.large-plain.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.large-default.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.large-toggle_off.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.large-toggle_on.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.min_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"] }
+value = "36px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.extraLarge-plain.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.extraLarge-default.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.extraLarge-toggle_off.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.extraLarge-toggle_on.intrinsicContentSize_wh.1"
+tolerance = 0
+
+[[fact]]
+# The cell's title rect inset from the bounds (`titleRectForBounds:`, probe.toml [macos.controls.<appearance>.<size>.push_button.cell]),
+# the same in both appearances.
+key = "button.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["mini"] }
+value = "8px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.mini.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["mini"] }
+value = "8px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.mini.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["small"] }
+value = "10px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.small.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["small"] }
+value = "10px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.small.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["regular"] }
+value = "12px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.regular.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["regular"] }
+value = "12px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.regular.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["large"] }
+value = "14px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.large.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["large"] }
+value = "14px"
+rows = ["MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#geometry.large.padding_right"
+tolerance = 0

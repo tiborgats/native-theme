@@ -1,0 +1,132 @@
+# State models (S17). macos-tahoe's `button` entry states only what run 40969040283's button pass measured:
+# the push bezel (the base) and `pushOnPushOff` (`toggle`), every control size, both appearances, in a key window
+# of the active application. The states, conditions and variants the pass did not exercise (focus, `open`, the
+# window and application conditions, Increase Contrast, the other bezel styles and the 26 border shapes, the menu
+# and tool buttons, …) are not in it yet: the lane's report lists them as unmeasured.
+
+[[model]]
+# sizes: the five NSControl.ControlSize values the pass set and read back (`controlSize_raw`, 2 1 0 3 4);
+# `hover` is not an axis: a hovered button's capture differs from the normal one in no pixel, in either appearance
+# and for every kind (`diff_from_normal`, the hovered rows; the cursor over the button, the mouse-moved event
+# delivered); `pressed` is `highlight:`, which draws what a real mouse press draws (analysis.toml `clicked`);
+# Reduce Transparency is not an axis: the offscreen push-button renders are the same with it on and off.
+widget = "button"
+when = { conditions = ["preset:macos-tahoe"] }
+available = true
+variants = ["toggle"]
+sizes = ["mini", "small", "regular", "large", "extra_large"]
+densities = []
+axes = { states = ["pressed", "disabled", "default", "checked"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+not_drawn = []
+rows = ["MAC-B01", "MAC-B02", "MAC-B10", "MAC-X17"]
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.mini-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.small-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.large-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.extraLarge-plain.controlSize_raw"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.buttons.regular-toggle_on.state"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.aqua.hovered.regular-plain.diff_from_normal.regular-plain.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.aqua.hovered.regular-default.diff_from_normal.regular-default.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.aqua.hovered.regular-toggle_off.diff_from_normal.regular-toggle_off.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.aqua.hovered.regular-toggle_on.diff_from_normal.regular-toggle_on.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.clicked.regular-plain.equals_pressed"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.clicked.regular-default.equals_pressed"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.offscreen.push_button-regular.reduce_transparency_independent"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#aqua.offscreen.push_button-regular-disabled.reduce_transparency_independent"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.darkAqua.hovered.regular-plain.diff_from_normal.regular-plain.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.darkAqua.hovered.regular-default.diff_from_normal.regular-default.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.darkAqua.hovered.regular-toggle_off.diff_from_normal.regular-toggle_off.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.darkAqua.hovered.regular-toggle_on.diff_from_normal.regular-toggle_on.differing_pixels"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.clicked.regular-plain.equals_pressed"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.clicked.regular-default.equals_pressed"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.offscreen.push_button-regular.reduce_transparency_independent"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/button-pass/analysis.toml#darkAqua.offscreen.push_button-regular-disabled.reduce_transparency_independent"
+tolerance = 0
