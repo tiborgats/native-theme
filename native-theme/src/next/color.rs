@@ -30,7 +30,7 @@ pub struct Color {
 
 // The Display P3 and sRGB conversions of CSS Color Module Level 4, section 19,
 // "Sample code for Color Conversions" (https://drafts.csswg.org/css-color-4/#color-conversion-code,
-// its conversions.js, Editor's Draft of 29 October 2026): `lin_P3_to_XYZ`,
+// its conversions.js, the Editor's Draft dated 29 October 2026, read on 30 October 2026): `lin_P3_to_XYZ`,
 // `XYZ_to_lin_sRGB`, `lin_sRGB_to_XYZ` and `XYZ_to_lin_P3`, D65 throughout, no
 // chromatic adaptation; the matrices as the source writes them, in rational form.
 
@@ -80,11 +80,13 @@ const XYZ_TO_LIN_P3: [[f64; 3]; 3] = [
 
 impl Color {
     /// The colour a literal states: `#rrggbb`, `#rrggbbaa`, `srgb(r, g, b[, a])`
-    /// or `display_p3(r, g, b[, a])`, each number `["-"] digits ["." digits]`;
-    /// `None` for any other text, a non-finite channel or an alpha outside
-    /// `0..=1`.
+    /// or `display_p3(r, g, b[, a])`, each number `["-"] digits ["." digits]`,
+    /// with whitespace allowed around the whole, the name, the parentheses and
+    /// the commas, as in an expression; `None` for any other text, a
+    /// non-finite channel or an alpha outside `0..=1`.
     #[must_use]
     pub fn parse(text: &str) -> Option<Color> {
+        let text = text.trim();
         if let Some(hex) = text.strip_prefix('#') {
             return parse_hex(hex);
         }
@@ -92,35 +94,23 @@ impl Color {
         let mut numbers = rest.strip_suffix(')')?.split(',').map(|n| number(n.trim()));
         let [r, g, b] = [numbers.next()??, numbers.next()??, numbers.next()??];
         let a = numbers.next().unwrap_or(Some(1.0))?;
-        if numbers.next().is_some() {
+        if numbers.next().is_some() || !(0.0..=1.0).contains(&a) {
             return None;
         }
-        let [r, g, b] = match name {
-            "srgb" => [r, g, b],
-            "display_p3" => display_p3_to_srgb([r, g, b]),
+        let color = match name.trim_end() {
+            "srgb" => Color {
+                r: r as f32,
+                g: g as f32,
+                b: b as f32,
+                a: a as f32,
+            },
+            "display_p3" => from_display_p3([r, g, b], a),
             _ => return None,
         };
-        let color = Color {
-            r: r as f32,
-            g: g as f32,
-            b: b as f32,
-            a: a as f32,
-        };
-        let finite = [color.r, color.g, color.b].iter().all(|c| c.is_finite());
-        (finite && (0.0..=1.0).contains(&color.a)).then_some(color)
-    }
-
-    /// The colour a Display P3 value states (gamma-encoded channels), in
-    /// extended sRGB.
-    #[must_use]
-    pub fn from_display_p3(r: f32, g: f32, b: f32, a: f32) -> Color {
-        let [r, g, b] = display_p3_to_srgb([r, g, b].map(f64::from));
-        Color {
-            r: r as f32,
-            g: g as f32,
-            b: b as f32,
-            a,
-        }
+        [color.r, color.g, color.b]
+            .iter()
+            .all(|c| c.is_finite())
+            .then_some(color)
     }
 
     /// `[r, g, b, a]` in 8-bit sRGB, each channel clamped to `0..=1` first:
@@ -223,10 +213,17 @@ fn number(text: &str) -> Option<f64> {
     text.parse::<f64>().ok().filter(|n| n.is_finite())
 }
 
-/// Gamma-encoded Display P3 to gamma-encoded extended sRGB.
-fn display_p3_to_srgb(p3: [f64; 3]) -> [f64; 3] {
+/// The colour a Display P3 value states (gamma-encoded channels), in
+/// extended sRGB.
+fn from_display_p3(p3: [f64; 3], a: f64) -> Color {
     let xyz = multiply(&LIN_P3_TO_XYZ, p3.map(linear));
-    multiply(&XYZ_TO_LIN_SRGB, xyz).map(gamma)
+    let [r, g, b] = multiply(&XYZ_TO_LIN_SRGB, xyz).map(gamma);
+    Color {
+        r: r as f32,
+        g: g as f32,
+        b: b as f32,
+        a: a as f32,
+    }
 }
 
 fn multiply(matrix: &[[f64; 3]; 3], [x, y, z]: [f64; 3]) -> [f64; 3] {
@@ -298,13 +295,22 @@ mod tests {
             Color::parse("srgb( 0 , 0 , 0 , 0 )"),
             Some(rgba(0.0, 0.0, 0.0, 0.0))
         );
+        assert_eq!(Color::parse(" #ff0000 "), Some(rgba(1.0, 0.0, 0.0, 1.0)));
+        assert_eq!(
+            Color::parse(" srgb (1, 0, 0) "),
+            Some(rgba(1.0, 0.0, 0.0, 1.0))
+        );
+        assert_eq!(
+            Color::parse("display_p3 ( 1,0,0 )"),
+            Some(from_display_p3([1.0, 0.0, 0.0], 1.0))
+        );
         assert_eq!(
             Color::parse("display_p3(0.5, 0.25, 0.75)"),
-            Some(Color::from_display_p3(0.5, 0.25, 0.75, 1.0))
+            Some(from_display_p3([0.5, 0.25, 0.75], 1.0))
         );
         assert_eq!(
             Color::parse("display_p3(1, 0, 0, 0.5)"),
-            Some(Color::from_display_p3(1.0, 0.0, 0.0, 0.5))
+            Some(from_display_p3([1.0, 0.0, 0.0], 0.5))
         );
         for refused in [
             "",
@@ -320,6 +326,10 @@ mod tests {
             "srgb(0.5, 0.5, 0.5, 0.5, 0.5)",
             "srgb(0.5, 0.5, 0.5, 1.5)",
             "srgb(0.5, 0.5, 0.5, -0.5)",
+            "srgb(0.5, 0.5, 0.5, 1.0000000001)",
+            "display_p3(0.5, 0.5, 0.5, 1.0000000001)",
+            "# ff0000",
+            "sr gb(0.5, 0.5, 0.5)",
             "srgb(.5, 0.5, 0.5)",
             "srgb(0.5., 0.5, 0.5)",
             "srgb(+0.5, 0.5, 0.5)",
@@ -351,12 +361,9 @@ mod tests {
             ([0.5, 0.25, 0.75], [0.5378318, 0.2321319, 0.7770569]),
         ];
         for ([r, g, b], [er, eg, eb]) in p3_to_srgb {
+            assert_close(channels(from_display_p3([r, g, b], 0.5)), [er, eg, eb, 0.5]);
             assert_close(
-                channels(Color::from_display_p3(r, g, b, 0.5)),
-                [er, eg, eb, 0.5],
-            );
-            assert_close(
-                Color::from_display_p3(r, g, b, 1.0).to_display_p3(),
+                from_display_p3([r, g, b], 1.0).to_display_p3(),
                 [r, g, b, 1.0].map(f64::from),
             );
         }
