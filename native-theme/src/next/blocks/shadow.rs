@@ -30,8 +30,10 @@ pub type ResolvedShadow = Vec<ResolvedShadowLayer>;
 #[non_exhaustive]
 pub struct ShadowLayer {
     /// The horizontal offset, physical: not mirrored in right-to-left.
+    #[parts(signed)]
     pub x: Value<Px>,
     /// The vertical offset.
+    #[parts(signed)]
     pub y: Value<Px>,
     /// The blur radius.
     pub blur: Value<Px>,

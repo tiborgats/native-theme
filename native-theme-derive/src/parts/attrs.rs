@@ -58,6 +58,10 @@ pub(crate) struct FieldAttrs {
     /// `#[parts(patch)]`: the field holds a struct block's patch (`<B>Patch`),
     /// resolved as `Resolved<B>Patch`, its fields below its path as `B`'s.
     pub patch: bool,
+    /// `#[parts(signed)]` (S1): a length the field says may be negative (an
+    /// offset, a translation, a letter or word spacing, a margin); every
+    /// other length is refused negative (S12).
+    pub signed: bool,
 }
 
 fn flag(slot: &mut bool, meta: &syn::meta::ParseNestedMeta<'_>) -> Result<()> {
@@ -109,6 +113,8 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
                 flag(&mut out.keyed, &meta)
             } else if meta.path.is_ident("patch") {
                 flag(&mut out.patch, &meta)
+            } else if meta.path.is_ident("signed") {
+                flag(&mut out.signed, &meta)
             } else if meta.path.is_ident("inner_may_be_absent") {
                 flag(&mut out.inner_may_be_absent, &meta)
             } else if meta.path.is_ident("required") {
@@ -136,7 +142,7 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
             } else {
                 Err(meta.error(
                     "unknown parts field attribute: expected may_be_absent, auto, keyed, \
-                     inner_may_be_absent, required, patch or block",
+                     inner_may_be_absent, required, patch, signed or block",
                 ))
             }
         })?;

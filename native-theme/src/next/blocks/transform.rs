@@ -20,8 +20,10 @@ pub struct Transform {
     /// The rotation.
     pub rotate: Value<Deg>,
     /// The horizontal translation, mirrored in right-to-left.
+    #[parts(signed)]
     pub translate_x: Value<Px>,
     /// The vertical translation.
+    #[parts(signed)]
     pub translate_y: Value<Px>,
     /// The origin, in fractions of the part's box from its top-left corner,
     /// physical.

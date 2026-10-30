@@ -323,8 +323,10 @@ pub enum PresentationKind {
     /// under right-to-left (S2.4).
     Translate {
         /// The horizontal displacement.
+        #[parts(signed)]
         dx: Value<Px>,
         /// The vertical displacement.
+        #[parts(signed)]
         dy: Value<Px>,
     },
     /// A scale from a factor.

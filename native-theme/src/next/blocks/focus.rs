@@ -29,6 +29,7 @@ pub struct FocusIndicator {
     /// positive, as CSS's `outline-offset`; the ring is `width` wide outward
     /// from there, so a ring drawn inside the box flush with its edge has
     /// `offset` equal to minus `width`.
+    #[parts(signed)]
     pub offset: Sides<Value<Px>>,
     /// The ring's inner corners: `FollowPart`, concentric with the part
     /// (its outer corner `follow_part(part radius, offset + width)`), or

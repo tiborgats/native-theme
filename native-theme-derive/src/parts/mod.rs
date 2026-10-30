@@ -6,6 +6,7 @@ use syn::{DeriveInput, Error, Result};
 mod attrs;
 mod block;
 mod read;
+mod walk;
 mod widget;
 
 pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
@@ -443,7 +444,7 @@ mod tests {
             "fn create_in (patch : ProbePatch , inner : :: core :: option :: Option < & [& str] > ,)",
             "width : crate :: next :: blocks :: created_value (width , false , inner , \"width\") ?",
             "inset : crate :: next :: blocks :: created_value (inset , true , inner , \"inset\") ?",
-            "top : crate :: next :: blocks :: created_value (held . top , true , :: core :: option :: Option :: None , \"margin.top\") ?",
+            "top : crate :: next :: blocks :: created_value (held . top , true , inner , \"margin.top\" ,) ?",
             "vertical : held . vertical . ok_or_else (|| { crate :: next :: blocks :: MergeConflict :: new \
              (crate :: next :: blocks :: Below :: Missing) . under (\"flip.vertical\") }) ?",
             "case : case . ok_or_else (|| crate :: next :: blocks :: MergeConflict :: new \
@@ -581,7 +582,7 @@ mod tests {
             "crate :: next :: toml :: read :: spelled (\"width\" , key , < Value < Px > as \
              crate :: next :: toml :: read :: FromToml > :: SPELLINGS)",
             "crate :: next :: toml :: read :: put (& mut self . width , read_value , < Value < Px > \
-             as crate :: next :: toml :: read :: FromToml > :: combine , & at , \"width\" , cx)",
+             as crate :: next :: toml :: read :: FromToml > :: combine , table , key , \"width\" , cx)",
             "crate :: next :: toml :: read :: read_map :: < Key , Value < Scalar > > (item , & at , cx)",
             "crate :: next :: toml :: read :: read_nested_map :: < Key , Key , Value < Scalar > > \
              (item , & at , cx)",
@@ -594,6 +595,34 @@ mod tests {
             "let field_width = crate :: next :: toml :: read :: required (field_width",
             "crate :: next :: toml :: read :: build_value :: < Stroke > (patch",
             "impl :: core :: convert :: TryFrom < ProbePatch > for Probe",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
+    #[test]
+    fn a_block_and_its_patch_walk_their_fields_with_their_marks() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(signed, may_be_absent)]
+                pub margin: Sides<Value<Px>>,
+                pub params: Vec<(Key, Value<Scalar>)>,
+                #[parts(block = "fields", inner_may_be_absent, required = "fill")]
+                pub status: StatusColors,
+            }
+        });
+        for expected in [
+            "impl crate :: next :: validate :: walk :: Walk for Probe",
+            "impl crate :: next :: validate :: walk :: Walk for ProbePatch",
+            "w . field (\"Probe\" , \"margin\" , crate :: next :: validate :: walk :: Marks { \
+             may_be_absent : true , auto : false , signed : true }",
+            "crate :: next :: validate :: walk :: walk_map (& self . params , w) ;",
+            "if let :: core :: option :: Option :: Some (map) = & self . params { \
+             crate :: next :: validate :: walk :: walk_map (map , w) ; }",
+            "w . place (& [\"fill\"] ,",
+            "w . patch (& [\"margin\" , \"params\" , \"status\"] ,",
+            "if self . margin . is_some () { set . push (\"margin\") ; }",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }

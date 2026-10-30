@@ -907,6 +907,15 @@ fn expand_fields(
     let idents: Vec<_> = fields.iter().map(|f| &f.ident).collect();
     let created = fields.iter().map(BlockField::created);
     let read = super::read::struct_impls(name, fields, type_attrs.own_toml);
+    let walk =
+        super::walk::struct_walk(name, name, fields, false, &super::walk::Expr::ReferenceOnly);
+    let walk_patch = super::walk::struct_walk(
+        name,
+        &patch,
+        fields,
+        true,
+        &super::walk::Expr::ReferenceOnly,
+    );
     let merges = fields.iter().map(|f| {
         let ident = &f.ident;
         let path = ident.as_ref().map(Ident::to_string).unwrap_or_default();
@@ -1053,6 +1062,10 @@ fn expand_fields(
         }
 
         #read
+
+        #walk
+
+        #walk_patch
     }
 }
 
@@ -1081,6 +1094,8 @@ fn expand_append(
         "[`{name}`]'s patch (S6.1): the value set whole, or `{list_name}` appended to over \
          the value below."
     );
+    let w = quote!(crate::next::validate::walk);
+    let walk = super::walk::struct_walk(name, name, fields, false, &super::walk::Expr::Calls);
     let append_doc = format!(
         "Appends to `{list_name}` over the value below; over `Absent`, the appended items \
          are the whole value. Composed lazily over a reference (S2.2)."
@@ -1111,6 +1126,18 @@ fn expand_append(
                             ::core::result::Result::Ok(())
                         }
                     },
+                }
+            }
+        }
+
+        #walk
+
+        impl #w::Walk for #patch {
+            fn walk(&self, w: &mut #w::Walker<'_>) {
+                w.node(self);
+                match self {
+                    #patch::Set(value) => #w::Walk::walk(value, w),
+                    #patch::Append(items) => #w::Walk::walk(items, w),
                 }
             }
         }
@@ -1234,6 +1261,7 @@ fn expand_enum(
         }
     }
     let form = quote!(#r::BlockForm::Enum { unit_variants: &[#(#units),*] });
+    let walk = super::walk::enum_walk(name, data, &super::walk::Expr::ReferenceOnly)?;
     let read = if type_attrs.own_toml {
         TokenStream::new()
     } else {
@@ -1264,5 +1292,7 @@ fn expand_enum(
         }
 
         #read
+
+        #walk
     })
 }

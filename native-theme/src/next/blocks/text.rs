@@ -378,10 +378,10 @@ pub struct TextStyle {
     pub scaling_role: Option<TextRole>,
     /// The letter spacing, in points or pixels, converted and scaled as a
     /// line height, or an expression on `font_size`; may be negative.
-    #[parts(may_be_absent)]
+    #[parts(signed, may_be_absent)]
     pub letter_spacing: Value<FontSize>,
     /// The word spacing, as the letter spacing.
-    #[parts(may_be_absent)]
+    #[parts(signed, may_be_absent)]
     pub word_spacing: Value<FontSize>,
     /// The line height, in points or pixels (converted and scaled as a font
     /// size, S9.4), an expression on `font_size`, or `Auto`: the font's own
@@ -444,6 +444,7 @@ pub struct Decoration {
     pub thickness: Value<Px>,
     /// The distance from the baseline to the line's top edge, positive
     /// downward (an overline's and a strike line's are negative).
+    #[parts(signed)]
     pub offset: Value<Px>,
     /// The line's paint.
     #[parts(block = "append")]

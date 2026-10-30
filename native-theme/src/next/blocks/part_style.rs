@@ -61,7 +61,7 @@ pub struct PartStyle {
     /// The padding inside the box, per side.
     pub padding: Sides<Value<Px>>,
     /// The margin outside the box, per side; may be negative.
-    #[parts(may_be_absent)]
+    #[parts(signed, may_be_absent)]
     pub margin: Sides<Value<Px>>,
     /// The minimum width; `Auto`: no minimum beyond the content.
     #[parts(auto)]

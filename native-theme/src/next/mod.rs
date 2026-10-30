@@ -33,6 +33,7 @@ mod selector;
 mod tokens;
 mod toml;
 mod units;
+mod validate;
 mod value;
 mod widgets;
 
