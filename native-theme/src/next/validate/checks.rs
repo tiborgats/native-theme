@@ -1002,7 +1002,7 @@ impl<'a> Checker<'a> {
                 .filter(|(held, _)| *held == value)
                 .map(|(_, keys)| keys)
                 .collect();
-            if !listed.is_empty() && !listed.iter().any(|keys| keys.contains(key)) {
+            if !listed.iter().any(|keys| keys.contains(key)) {
                 let declaration = format!("widget.{}.keys.{value}", widget_name(widget));
                 self.undeclared(&at, key.as_str(), &declaration);
             }
@@ -1888,12 +1888,16 @@ fn ref_depth(reference: &Ref) -> usize {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::key;
     use crate::next::blocks::motion::Keyframe;
     use crate::next::blocks::motion::Loop;
     use crate::next::blocks::part_style::PartStylePatch;
     use crate::next::registry::FieldInfo;
     use crate::next::units::{Fraction, Ms};
+    use crate::next::validate::walk::Marks;
     use crate::next::widgets::ButtonPart;
+
+    const NO_PROBLEM: [&str; 0] = [];
 
     /// The problems of `looped` walked in `region`.
     fn walked(looped: &Loop, region: Region) -> Vec<String> {
@@ -2012,5 +2016,50 @@ mod tests {
             RuleBody::Tokens(crate::next::tokens::TokensPatch::default()),
         );
         assert!(!excluded(&rule, None));
+    }
+
+    /// A widget value's key is listed by the widget's `keys` entry for the
+    /// value (S10), every key refused where the widget lists none.
+    /// `button` holds no `Value<Key>` value, so the check is walked over a
+    /// key as a widget's value directly.
+    #[test]
+    fn a_widget_values_key_is_listed() {
+        let problems = |keys: Option<Vec<(&'static str, Vec<Key>)>>| {
+            let decl = Declarations {
+                widgets: vec![(
+                    WidgetKind::Button,
+                    WidgetDecl {
+                        keys,
+                        ..WidgetDecl::default()
+                    },
+                )],
+                ..Declarations::default()
+            };
+            let cx = Context {
+                declarations: &decl,
+                preset: None,
+                kind: LayerKind::Application,
+            };
+            let mut checker = Checker::new(&cx, false);
+            checker.region = Region::Values(WidgetKind::Button);
+            let toml = checker.toml;
+            let mut walker = Walker::new("probe", toml, &mut checker);
+            walker.field("ButtonValues", "mode", Marks::default(), "", |w| {
+                Walk::walk(&key!("compact"), w);
+            });
+            checker
+                .problems
+                .iter()
+                .map(Problem::to_string)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            problems(None),
+            ["probe.mode: `compact` is not declared in `widget.button.keys.mode`"]
+        );
+        assert_eq!(
+            problems(Some(vec![("mode", vec![key!("compact")])])),
+            NO_PROBLEM
+        );
     }
 }
