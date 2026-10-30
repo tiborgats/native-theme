@@ -119,8 +119,13 @@ source = "kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60"
 quote = "timeLine = new QTimeLine(500, q);"
 
 # the decoration's shadow fade (Breeze's Decoration class, whose shadow fade and active-state fade differ:
-# `decoration_shadow`): the factor (1 where kdeglobals sets none) times the literal 100, a float that
-# QVariantAnimation::setDuration(int) truncates to whole ms; the active-state animation is set to 0 and unused
+# `decoration_shadow`): the factor times the literal 100, a float that QVariantAnimation::setDuration(int)
+# truncates to whole ms; the active-state animation is set to 0 and unused. The decoration runs in KWin and reads the
+# factor from KSharedConfig::openConfig(), KWin's main config: kwinrc (KWin's about data names it `kwin`, and
+# KConfig's main config is the application name plus `rc`), cascaded over kdeglobals (the globals parsed first, the
+# main config last), 1 where neither sets it. So kwinrc's [KDE] AnimationDurationFactor, where set, wins over
+# kdeglobals' for the decoration alone; `token.motion.speed_factor` is kdeglobals' (the reader's input), equal to
+# the decoration's unless kwinrc sets its own
 
 [[fact]]
 key = "token.motion.durations.decoration_shadow"
@@ -136,6 +141,41 @@ quote = "// But the shadow is fine to animate like this! m_shadowAnimation->setD
 kind = "published"
 source = "qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51"
 quote = "void setDuration(int msecs);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381"
+quote = "KSharedConfig::Ptr config = KSharedConfig::openConfig(); const KConfigGroup cg(config, QStringLiteral(\"KDE\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:139"
+quote = "KAboutData aboutData(QStringLiteral(\"kwin\"), // The program name used internally"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:155"
+quote = "KAboutData::setApplicationData(aboutData);"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/ksharedconfig.cpp:136-139"
+quote = "if (fileName.isEmpty() && !flags.testFlag(KConfig::SimpleConfig)) { // Determine the config file name that KConfig will make up (see KConfigPrivate::changeFileName) fileName = KConfig::mainConfigName(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:648-649"
+quote = "QString appName = QCoreApplication::applicationName(); return appName + QLatin1String(\"rc\");"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:712-731"
+quote = "// Parse all desired files from the least to the most specific. bool globalConfigFileIsImmutable = false; if (d->wantGlobals()) { globalConfigFileIsImmutable = (d->parseGlobalSystemFiles() == KConfigIniBackend::ParseImmutable); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
 
 # Qt's own unscaled timings: the line edit's side-icon fade (QLineEditIconButton), the tab move (QTabBar's
 # ANIMATION_DURATION) and QVariantAnimation's own default, which QTreeView's expand takes (`variant`)

@@ -1675,6 +1675,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.right.paint"
 when = { states = ["focus_visible"], not_states = ["disabled"] }
@@ -1771,6 +1776,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -1871,6 +1881,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.left.paint"
 when = { states = ["focus_visible"], not_states = ["disabled"] }
@@ -1967,6 +1982,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -2705,6 +2725,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.top.paint"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -2801,6 +2826,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -2855,6 +2885,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.right.paint"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -2951,6 +2986,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -3005,6 +3045,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.bottom.paint"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -3103,6 +3148,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -3153,6 +3203,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -3253,6 +3308,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.left.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -3303,6 +3363,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -3411,6 +3476,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -4273,6 +4343,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.top.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -4323,6 +4398,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -4421,6 +4501,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -4475,6 +4560,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.bottom.paint"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -4573,6 +4663,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -4623,6 +4718,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -4723,6 +4823,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
 [[fact]]
 key = "button.body.stroke.left.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
@@ -4773,6 +4878,11 @@ quote = "if (isKeyFocusReason(m_focusReason)) { m_styleoption->state |= QStyle::
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4518"
+quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4577"
 quote = "bool visualFocus = activeFocus && option->state & QStyle::State_KeyboardFocusChange && (widget == nullptr || widget->focusProxy() == nullptr);"
 
 [[fact]]
@@ -9519,14 +9629,59 @@ source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:87-88"
 quote = "} else if (controlRoot.flat) { return Qt.alpha(Kirigami.Theme.backgroundColor, 0)"
 
 # checked or pressed, flat or not: Qt.tint of the text colour with the border colour at alpha 0.8, written
-# kirigami_tint(base, tint, 1) (S2.2, ADD-A122: Qt.tint blends by the tint's own alpha); the border colour, an
-# interpolation between two opaque Button-set colours, is opaque, so Qt.alpha's set alpha is the model's `alpha`
+# kirigami_tint(base, tint, 1) (S2.2, ADD-A122: Qt.tint blends by the tint's own alpha). Qt.alpha(c, 0.8) SETS the
+# alpha where the model's `alpha` multiplies it, so the expression equals RoundButton's colour only for an opaque
+# border colour: the interpolation of the Button set's background and foreground, opaque in KColorScheme's defaults
+# and in every colour scheme Breeze ships (three components each, as the disabled colours KColorScheme derives from
+# them). KConfig also reads a four-component colour (kconfiggroupgui.cpp:55-58), so a third-party scheme with a
+# translucent Button colour breaks the equality until the model gains an alpha-setting function (the ledger's
+# queue #71)
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["checked"] }
 value = "= kirigami_tint(surface.foreground, alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
 rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate {  35,  38, 41  }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:31"
+quote = "BackgroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:39"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:32"
+quote = "BackgroundNormal=41,44,48"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:40"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeClassic.colors:23"
+quote = "BackgroundNormal=239,240,241"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeClassic.colors:31"
+quote = "ForegroundNormal=35,38,39"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58"
+quote = "const QList<QByteArray> list = data.split(','); const int count = list.count(); if (count != 3 && count != 4) {"
 
 [[fact.cite]]
 kind = "published"
@@ -9581,6 +9736,46 @@ rows = ["Q2.5"]
 
 [[fact.cite]]
 kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate {  35,  38, 41  }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:31"
+quote = "BackgroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:39"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:32"
+quote = "BackgroundNormal=41,44,48"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:40"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeClassic.colors:23"
+quote = "BackgroundNormal=239,240,241"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeClassic.colors:31"
+quote = "ForegroundNormal=35,38,39"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58"
+quote = "const QList<QByteArray> list = data.split(','); const int count = list.count(); if (count != 3 && count != 4) {"
+
+[[fact.cite]]
+kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/util/qquickvaluetypes.cpp:62-79"
 quote = "QColor QQuickColorValueType::tint(const QColor &tintColor) const { int tintAlpha = tintColor.alpha(); if (tintAlpha == 0xFF) return tintColor; else if (tintAlpha == 0x00) return *this; // tint the base color and return the final color const QColor baseColor = QColor::toRgb(); const qreal a = tintColor.alphaF(); const qreal inv_a = 1.0 - a;"
 
@@ -9629,6 +9824,46 @@ key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["checked", "disabled"] }
 value = "= kirigami_tint(surface.disabled.foreground, alpha(kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.8), 1)"
 rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate {  35,  38, 41  }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:31"
+quote = "BackgroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:39"
+quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:32"
+quote = "BackgroundNormal=41,44,48"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:40"
+quote = "ForegroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeClassic.colors:23"
+quote = "BackgroundNormal=239,240,241"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeClassic.colors:31"
+quote = "ForegroundNormal=35,38,39"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/gui/kconfiggroupgui.cpp:55-58"
+quote = "const QList<QByteArray> list = data.split(','); const int count = list.count(); if (count != 3 && count != 4) {"
 
 [[fact.cite]]
 kind = "published"
