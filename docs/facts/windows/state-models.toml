@@ -1,5 +1,7 @@
 # windows-11's state models (S17): the combinations WinUI 2.5.1's control templates and their C++ draw.
 # Written by the Windows facts lane.
+# Variants (ADD-A121): each is one control class or one style (WinUI's `Style` holds one), so an element holds one of
+# them; the app-bar toggle (AppBarToggleButton, a ToggleButton) is the one set of two, `toggle` with `tool`.
 
 
 [[model]]
@@ -10,7 +12,9 @@ sizes = []
 densities = []
 axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ widget = "dialog", part = "action_area" }] }
 exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }, { variants = ["primary", "flat"] }, { variants = ["primary", "toggle"] }, { variants = ["primary", "menu"] }, { variants = ["primary", "tool"] }, { variants = ["primary", "@repeat"] }, { variants = ["flat", "toggle"] }, { variants = ["flat", "menu"] }, { variants = ["flat", "tool"] }, { variants = ["flat", "@repeat"] }, { variants = ["toggle", "menu"] }, { variants = ["toggle", "@repeat"] }, { variants = ["menu", "@repeat"] }, { variants = ["tool", "@repeat"] }]
+exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat"], ["primary", "flat", "menu", "tool", "@repeat"]]
+variant_sets = [["toggle", "tool"]]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }]
 rows = ["W1-018", "W1-019", "W1-020", "W1-022"]
 
 [[model.cite]]
@@ -113,3 +117,33 @@ quote = "if (!spIsCheckedReference) { if (!bIsEnabled) { IFC(GoToState(bUseTrans
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:194-198"
 quote = "<VisualStateGroup x:Name=\"DefaultButtonStates\"> <VisualState x:Name=\"NoDefaultButton\" /> <VisualState x:Name=\"PrimaryAsDefaultButton\"> <VisualState.Setters> <Setter Target=\"PrimaryButton.Style\" Value=\"{StaticResource AccentButtonStyle}\" />"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/ToggleButton.g.h:22-23"
+quote = "class __declspec(novtable) ToggleButtonGenerated: public DirectUI::ButtonBase"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/RepeatButton.g.h:22-23"
+quote = "class __declspec(novtable) RepeatButtonGenerated: public DirectUI::ButtonBase"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/Button.g.h:23-24"
+quote = "class __declspec(novtable) ButtonGenerated: public DirectUI::ButtonBase"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/AppBarButton.g.h:24-25"
+quote = "class __declspec(novtable) AppBarButtonGenerated: public DirectUI::Button"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/AppBarToggleButton.g.h:24-25"
+quote = "class __declspec(novtable) AppBarToggleButtonGenerated: public DirectUI::ToggleButton"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.idl:6"
+quote = "unsealed runtimeclass DropDownButton : Microsoft.UI.Xaml.Controls.Button"

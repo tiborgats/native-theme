@@ -114,6 +114,39 @@ source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-systemparamete
 quote = "Retrieves the number of lines to scroll when the vertical mouse wheel is moved. The <i>pvParam</i> parameter must point to a <b>UINT</b> variable that receives the number of lines. The default value is 3."
 
 
+# The system focus visual is drawn only on an element in the Keyboard focus state (focusmgr.cpp's GetFocusTarget);
+# a programmatic focus counts as Keyboard where the last input was a keyboard or a gamepad (CoerceFocusState);
+# no timeout.
+[[fact]]
+key = "token.behavior.focus_visible_when"
+value = { keyboard = {} }
+rows = ["W3-21"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2704-2706"
+quote = "// Get the element we need to draw the focus rect on. Returning nullptr will cause the focus rectangle // to not be drawn CDependencyObject* CFocusManager::GetFocusTarget()"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2731-2733"
+quote = "if (candidateAsElement && candidateAsElement->IsFocused() && candidateAsElement->IsKeyboardFocused())"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/uielement.h:867-870"
+quote = "bool IsKeyboardFocused() const { return GetFocusState() == DirectUI::FocusState::Keyboard; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:3199-3202"
+quote = "// Set the new focus state with the last input device type // if the focus state set as programmatic. if (focusState == DirectUI::FocusState::Programmatic) {"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:3218-3237"
+quote = "{ case DirectUI::InputDeviceType::Keyboard: // In case of non focus navigation keys from SIP, we do not want to display // focus rectangle, hence setting new focus state as a Pointer. if (m_contentRoot.GetInputManager().LastInputWasNonFocusNavigationKeyFromSIP()) { return DirectUI::FocusState::Pointer; } /* * Intentional fall through in the case where input is * a. any one of focus navigation key(Tab or an arrow key) from SIP or * b. any key from actual hardware keyboard */ __fallthrough; case DirectUI::InputDeviceType::GamepadOrRemote: return DirectUI::FocusState::Keyboard; default: // For all other rest of the cases, setting focus state to Pointer // will make sure that focus rectangle will not be drawn return DirectUI::FocusState::Pointer;"
+
 # Shape: WinUI's two corner radii (CornerRadius_themeresources.xaml), the same in every theme.
 
 [[fact]]
@@ -263,6 +296,44 @@ rows = ["W3-20"]
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+# The HighVisibility visual's inner ring (ADD-A17): a 1 px border in FocusStrokeColorInner drawn just inside the
+# outer ring, its bounds the outer ring's deflated by the outer thickness (FocusRectManager.cpp:450-455): an inset
+# shadow layer of spread 1, no blur, no offset.
+[[fact]]
+key = "token.focus.shadow"
+value = { layers = [ { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true } ] }
+rows = ["W3-19"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:25"
+quote = "const XTHICKNESS DefaultFocusVisualSecondaryThickness = { 1, 1, 1, 1 };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:388-398"
+quote = "case KnownPropertyIndex::FrameworkElement_FocusVisualSecondaryBrush: case KnownPropertyIndex::FrameworkElement_FocusVisualPrimaryBrush: { const FocusVisualType forFocusVisualType = m_nIndex == KnownPropertyIndex::FrameworkElement_FocusVisualSecondaryBrush ? FocusVisualType::Secondary : FocusVisualType::Primary; xref_ptr<CDependencyObject> spFocusBorderBrush; IFC_RETURN(GetDefaultFocusVisualBrush( forFocusVisualType, core, referenceObject, spFocusBorderBrush.ReleaseAndGetAddressOf())); defaultValue->SetObjectAddRef(spFocusBorderBrush.get());"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:16"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualSecondaryBrush\" ResourceKey=\"FocusStrokeColorInnerBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:30"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualSecondaryBrush\" ResourceKey=\"FocusStrokeColorInnerBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:44"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualSecondaryBrush\" ResourceKey=\"FocusStrokeColorInnerBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "{ XTHICKNESS* thickness = (type == FocusElementType::Outer ? &options.firstThickness : &options.secondThickness); xref_ptr<CSolidColorBrush> brush = (type == FocusElementType::Outer ? options.firstBrush : options.secondBrush); bool focusRectDirty = false; XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; } // Let's just not deal with negative sizes. bounds.Width = MAX(0.0f, bounds.Width);"
 
 # The type ramp: TextBlock_themeresources.xaml's styles (`UseVisualStyle Latest`), all based on BaseTextBlockStyle
 # (XamlAutoFontFamily, which WinUI resolves to Segoe UI Variable for a Latin-script default language, SemiBold,

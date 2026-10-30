@@ -4812,6 +4812,216 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:381"
 quote = "<SolidColorBrush x:Key=\"SystemFillColorSolidNeutralBackgroundBrush\" Color=\"{StaticResource SystemFillColorSolidNeutralBackground}\" />"
 
+# WinUI's status colours are fills alone (SystemFillColor{Success,Caution,Critical,Attention,Neutral}, which its
+# controls use only as backgrounds, with TextFillColorInverse on them): no standalone status colour (ADD-A121), no
+# solid background but the attention and neutral ones, no text colour on the neutral fill.
+[[fact]]
+key = "role.global.status.success.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.error.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.info.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:415-600"
+quote = "<ResourceDictionary x:Key=\"HighContrast\">"
+absent = []
+
 # WinUI has no destructive status: its four severities and the neutral fill
 [[fact]]
 key = "role.global.status.destructive.fill"
@@ -5030,7 +5240,7 @@ quote = "<Rectangle x:Name=\"SmokeLayerBackground\" Fill=\"{ThemeResource Conten
 
 # The Window set: the page background and default text WinUI states (Common_themeresources.xaml), the
 # text tiers, the controls' stroke; the status text colours refer to the global status roles (the catalogue's rule
-# for a platform without per-set values).
+# for a platform without per-set values: on windows-11, which has no standalone status colour, the `fill`, ADD-A121).
 
 [[fact]]
 key = "role.window.background"
@@ -5116,7 +5326,7 @@ quote = "<StaticResource x:Key=\"HyperlinkButtonForeground\" ResourceKey=\"Syste
 
 [[fact]]
 key = "role.window.negative"
-value = "= role.global.status.error.standalone"
+value = "= role.global.status.error.fill"
 rows = []
 
 [[fact.cite]]
@@ -5131,7 +5341,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorCriticalBrush\" Color=\"{Static
 
 [[fact]]
 key = "role.window.neutral"
-value = "= role.global.status.warning.standalone"
+value = "= role.global.status.warning.fill"
 rows = []
 
 [[fact.cite]]
@@ -5146,7 +5356,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorCautionBrush\" Color=\"{StaticR
 
 [[fact]]
 key = "role.window.positive"
-value = "= role.global.status.success.standalone"
+value = "= role.global.status.success.fill"
 rows = []
 
 [[fact.cite]]
