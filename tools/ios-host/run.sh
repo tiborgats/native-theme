@@ -265,9 +265,10 @@ done
 xcrun simctl shutdown "$udid" >/dev/null 2>&1
 xcrun simctl delete "$udid"
 
-# The focused state, on the newest "iPad Pro" of the same runtime (an iPhone
-# has no focus system: the render pass's index records it): the app's focus
-# mode, once.
+# The focused state, on the last "iPad Pro" the runtime lists among its
+# device types (iOS 18.6 and 26.5: the 12.9-inch 3rd generation; an iPhone has
+# no focus system: the render pass's index records it): the app's focus mode,
+# once.
 ipad=$(python3 -I - "$out/runtimes.json" "$runtime" <<'EOF'
 import json, sys
 runtime = next(r for r in json.load(open(sys.argv[1]))["runtimes"] if r["identifier"] == sys.argv[2])
