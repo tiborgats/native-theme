@@ -8,6 +8,7 @@ use super::eval::{Platform, Val};
 use super::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref};
 use crate::next::inputs::{KdeSchemeKey, KdeWmKey};
 use crate::next::key::Key;
+use crate::next::platform::kde_shade::KdeShadeRole;
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::Scheme;
 use crate::next::tokens::{KdeGroup, KdeRoleKind};
@@ -124,6 +125,12 @@ pub(crate) static KDE_SCHEME_KEY: EnumTy = EnumTy {
 pub(crate) static KDE_WM_KEY: EnumTy = EnumTy {
     name: "KdeWmKey",
     variants: &KdeWmKey::NAMES,
+};
+
+/// `KdeShadeRole` (S2.2), `kde_shade`'s `role`.
+pub(crate) static KDE_SHADE_ROLE: EnumTy = EnumTy {
+    name: "KdeShadeRole",
+    variants: &KdeShadeRole::NAMES,
 };
 
 /// `TrackingDesign` (S2.2), `sf_tracking`'s `design`.
@@ -755,6 +762,13 @@ impl Checker<'_> {
                 args,
                 depth,
                 &[COLOR, COLOR, COLOR, Param::Of(Ty::Enum(&KDE_ROLE_KIND))],
+                color(),
+            ),
+            Func::KdeShade => self.fixed(
+                func,
+                args,
+                depth,
+                &[COLOR, Param::Of(Ty::Enum(&KDE_SHADE_ROLE)), NUMBER],
                 color(),
             ),
             Func::KcuShade | Func::KqcSeriesColor => {
@@ -1570,6 +1584,28 @@ mod tests {
                 index: 1,
                 expected: Ty::Color,
                 found: Ty::Length
+            }
+        );
+    }
+
+    #[test]
+    fn kde_shade_is_implemented() {
+        assert_eq!(
+            typed("kde_shade(surface.foreground, dark, 4)", Ty::Color),
+            Ty::Color
+        );
+        assert_eq!(
+            refused("kde_shade(surface.foreground, highlight, 4)", Ty::Color),
+            TypeError::UnknownVariant {
+                ty: "KdeShadeRole",
+                name: Key::new("highlight").unwrap()
+            }
+        );
+        assert_eq!(
+            refused("kde_shade(surface.foreground, dark)", Ty::Color),
+            TypeError::Arity {
+                func: Func::KdeShade,
+                found: 2
             }
         );
     }

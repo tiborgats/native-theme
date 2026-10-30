@@ -529,6 +529,30 @@ fn refusal_kirigami_lerp_balance() {
     );
 }
 
+/// `kde_shade`'s role is one of `KdeShadeRole`'s, typed when the layer is
+/// added (S2.2, S12); a role reference reads the window set's background.
+#[test]
+fn kde_shade_typed_when_added() {
+    let decl = declare("surface_sets = [\"window\"]");
+    assert_eq!(
+        found(
+            &accent("= kde_shade(role.window.background, highlight, 4)"),
+            &decl
+        ),
+        [
+            "colors.light.global.accent: the expression does not type: `highlight` is not a \
+             KdeShadeRole"
+        ]
+    );
+    assert_eq!(
+        found(
+            &accent("= kde_shade(role.window.background, light, 4)"),
+            &decl
+        ),
+        NONE
+    );
+}
+
 #[test]
 fn refusal_too_deep() {
     let nested = |calls: usize| {

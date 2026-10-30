@@ -282,6 +282,9 @@ pub enum Func {
     KcuTint,
     /// `kcu_shade(c, luma, chroma)`: `KColorUtils::shade`.
     KcuShade,
+    /// `kde_shade(c, role, contrast)`: KColorScheme's `shade`, by
+    /// kdeglobals' contrast step.
+    KdeShade,
     /// `adw_standalone(c, scheme)`: libadwaita's standalone accent.
     AdwStandalone,
     /// `m3_role(role)`: material-color-utilities' dynamic scheme role.
@@ -353,7 +356,7 @@ pub enum Func {
 
 impl Func {
     /// Every function, in S2.2's table's order.
-    pub const ALL: [Func; 41] = [
+    pub const ALL: [Func; 42] = [
         Func::Alpha,
         Func::WithAlpha,
         Func::Mix,
@@ -362,6 +365,7 @@ impl Func {
         Func::KcuMix,
         Func::KcuTint,
         Func::KcuShade,
+        Func::KdeShade,
         Func::AdwStandalone,
         Func::M3Role,
         Func::Mul,
@@ -409,6 +413,7 @@ impl Func {
             Func::KcuMix => "kcu_mix",
             Func::KcuTint => "kcu_tint",
             Func::KcuShade => "kcu_shade",
+            Func::KdeShade => "kde_shade",
             Func::AdwStandalone => "adw_standalone",
             Func::M3Role => "m3_role",
             Func::Mul => "mul",

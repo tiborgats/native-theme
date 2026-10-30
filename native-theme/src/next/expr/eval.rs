@@ -6,6 +6,7 @@ use super::ty::{Bound, Node, Ty, TypedExpr};
 use super::{Func, Name, Ref};
 use crate::next::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::next::color::Color;
+use crate::next::platform::kde_shade::KdeShadeRole;
 use crate::next::units::{Deg, FontSize, Ms, Px};
 
 /// An evaluated value.
@@ -80,6 +81,8 @@ pub(crate) trait Env {
 /// M1a design's task 13 and the value phase).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Platform {
+    /// `kde_shade(c, role, contrast)`.
+    KdeShade,
     /// `kirigami_lerp(a, b, balance)`.
     KirigamiLerp,
 }
@@ -89,6 +92,7 @@ impl Platform {
     /// implemented yet and for the model's own arithmetic.
     pub(super) fn of(func: Func) -> Option<Platform> {
         match func {
+            Func::KdeShade => Some(Platform::KdeShade),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
             _ => None,
         }
@@ -98,6 +102,22 @@ impl Platform {
     fn eval(self, args: &[Node], env: &dyn Env) -> Val {
         let arg = |index: usize| args.get(index).map(|node| eval(node, env));
         match self {
+            Platform::KdeShade => {
+                let (c, role, contrast) = (arg(0), arg(1), arg(2));
+                let role = match role {
+                    Some(Val::Name(Name::Variant(name))) => KdeShadeRole::from_name(name.as_str()),
+                    _ => None,
+                };
+                let c = c.as_ref().map_or_else(transparent, color);
+                match role {
+                    Some(role) => Val::Color(crate::next::platform::kde_shade::kde_shade(
+                        c,
+                        role,
+                        contrast.as_ref().map_or(0.0, number),
+                    )),
+                    None => Val::Color(c),
+                }
+            }
             Platform::KirigamiLerp => {
                 let (a, b, balance) = (arg(0), arg(1), arg(2));
                 Val::Color(crate::next::platform::kirigami_lerp::kirigami_lerp(
@@ -404,6 +424,17 @@ mod tests {
                 r: grey,
                 g: grey,
                 b: grey,
+                a: 1.0
+            })
+        );
+        // KColorScheme's dark shade of Breeze Light's window background at
+        // Breeze's contrast 4 (`next::platform::kde_shade`).
+        assert_eq!(
+            value("kde_shade(#eff0f1, dark, 4)", Ty::Color),
+            Val::Color(Color {
+                r: 34977.0 / 65535.0,
+                g: 36393.0 / 65535.0,
+                b: 37752.0 / 65535.0,
                 a: 1.0
             })
         );
