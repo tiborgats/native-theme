@@ -64,7 +64,14 @@ const PARTS: &[(&str, bool, &[&str], &[&str])] = &[
     (
         "menu_indicator",
         true,
-        &["glyph", "min_width", "transform", "transitions"],
+        &[
+            "glyph",
+            "min_width",
+            "min_height",
+            "margin",
+            "transform",
+            "transitions",
+        ],
         &[],
     ),
 ];
@@ -75,6 +82,7 @@ const VALUES: &[(&str, &str, bool)] = &[
     ("label_position", "Value<ButtonLabelPosition>", true),
     ("subtitle_gap", "Value<Px>", true),
     ("menu_indicator_gap", "Value<Px>", false),
+    ("menu_indicator_anchor", "Value<IndicatorAnchor>", false),
     ("menu_trigger", "Value<MenuTrigger>", true),
     ("shows_icon", "Value<bool>", true),
     ("focus_visible_when", "Value<FocusVisibleWhen>", false),
@@ -341,6 +349,7 @@ fn button_values_resolve_by_type() {
         label_position: None,
         subtitle_gap: None,
         menu_indicator_gap: Some(Px(2.0)),
+        menu_indicator_anchor: Some(IndicatorAnchor::Inline),
         menu_trigger: Some(MenuTrigger::LongPressOrSecondaryClick),
         shows_icon: Some(true),
         focus_visible_when: Some(ResolvedFocusVisibleWhen::AnyFocus),
@@ -367,6 +376,7 @@ fn button_values_resolve_by_type() {
     let stated = ButtonValuesPatch {
         icon_placement: Some(Value::Stated(IconPlacement::Leading)),
         menu_indicator_gap: Some(Value::Stated(Px(2.0))),
+        menu_indicator_anchor: Some(Value::Stated(IndicatorAnchor::Inline)),
         focus_visible_when: Some(Value::Stated(FocusVisibleWhen::Never)),
         back_title_fallback: Some(Value::Stated(false)),
         help_tooltip_on_click: Some(Value::Stated(false)),

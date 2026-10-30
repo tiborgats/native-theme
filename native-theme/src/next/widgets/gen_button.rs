@@ -61,7 +61,10 @@ pub(crate) struct ButtonTheme {
     #[part(may_be_absent, fields(icon, glyph, transitions), absent(glyph))]
     icon: PartStyle,
     /// The arrow or chevron of a button that opens a menu.
-    #[part(may_be_absent, fields(glyph, min_width, transform, transitions))]
+    #[part(
+        may_be_absent,
+        fields(glyph, min_width, min_height, margin, transform, transitions)
+    )]
     menu_indicator: PartStyle,
     values: ButtonValues,
 }
@@ -85,6 +88,9 @@ pub struct ButtonValues {
     pub subtitle_gap: Value<Px>,
     /// Between label and indicator.
     pub menu_indicator_gap: Value<Px>,
+    /// Where the `menu_indicator` lies: `Inline` after the content in the
+    /// layout, `menu_indicator_gap_px` from it.
+    pub menu_indicator_anchor: Value<IndicatorAnchor>,
     /// The touch-and-hold variant.
     #[parts(may_be_absent)]
     pub menu_trigger: Value<MenuTrigger>,
@@ -131,6 +137,20 @@ pub enum IconPlacement {
     Top,
     /// Bottom.
     Bottom,
+}
+
+/// The values of `button`'s `menu_indicator_anchor`: where the `menu_indicator`
+/// lies: `Inline` after the content in the layout, `menu_indicator_gap_px` from
+/// it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
+pub enum IndicatorAnchor {
+    /// Inline.
+    Inline,
+    /// Top end.
+    TopEnd,
+    /// Bottom end.
+    BottomEnd,
 }
 
 /// The values of `button`'s `menu_trigger`: the touch-and-hold variant.

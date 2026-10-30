@@ -12,7 +12,7 @@ use native_theme_derive::ThemeParts;
 use super::gen_button::ButtonTheme;
 pub use super::gen_button::{
     BackDisplayMode, ButtonPart, ButtonPatch, ButtonValues, ButtonValuesPatch, IconPlacement,
-    MenuTrigger, PasteDisplayMode, ResolvedButtonValues,
+    IndicatorAnchor, MenuTrigger, PasteDisplayMode, ResolvedButtonValues,
 };
 use super::{PartPatch, WidgetSlot, WidgetTable};
 use crate::next::blocks::{Apply, MergeConflict};
