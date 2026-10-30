@@ -56,7 +56,8 @@ What it reads from an entry
   index; a type of the model is one of MODEL_TYPES; any other type is refused.
 - **may_be_absent** (absence_sections): the first sentence of each section, its names outside parentheses: `parts:`
   whole parts, `fields:` `<part>.<field>`, `values:` values (as the catalogue writes them). A name that is none of
-  the entry's is refused, and so is a record value (`Placement`, `Value<Placement>`), whose `Value` members, at any
+  the entry's is refused, and so is a name listed after a section's first sentence (prose may mention one there), and
+  a record value (`Placement`, `Value<Placement>`), whose `Value` members, at any
   depth, the mark allows `Absent` too (S6.3): those members' marks are not generated yet.
 - **Variants**: the sub-bullets starting `typed`, their first sentence's names outside parentheses; the keyed ones
   are the presets' (S10).
@@ -182,6 +183,21 @@ def drop_groups(text: str) -> str:
 def first_sentence(text: str) -> str:
     end = spec_catalogue.depth0_find(text, lambda t, i: t[i] == "." and (i + 1 == len(t) or t[i + 1] == " "))
     return text if end < 0 else text[:end]
+
+
+def listed_after_first(text: str) -> list:
+    """The names of text's sentences after the first that list names and nothing else (prose that mentions a name
+    is no list): a section's names belong in its first sentence."""
+    rest = text[len(first_sentence(text)):].lstrip(". ")
+    out = []
+    while rest:
+        sentence = first_sentence(rest)
+        names = depth0_names(sentence)
+        words = re.sub(r"`[^`]*`", "", drop_groups(sentence))
+        if names and not re.sub(r"\b(and|or)\b|[\s,;:.-]", "", words):
+            out += names
+        rest = rest[len(sentence):].lstrip(". ")
+    return out
 
 
 def depth0_names(text: str) -> list:
@@ -406,7 +422,12 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
     if item:
         text = item.text
         for label, start, end in spec_catalogue.absence_sections(text):
-            names = depth0_names(first_sentence(text[start:end].strip(" -")))
+            section = text[start:end].strip(" -")
+            names = depth0_names(first_sentence(section))
+            listed = listed_after_first(section)
+            if listed:
+                raise InputError(f"{where}: may_be_absent's `{label}:` lists {', '.join(f'`{n}`' for n in listed)} "
+                                 "after its first sentence, which only the first sentence may")
             for name in names:
                 if label == "parts":
                     part = by_name.get(name)
@@ -846,6 +867,8 @@ def self_test() -> int:
     refused("deferral of no value", 'slice = ["knob"]\n[deferred.knob]\nnope = "placement"\n'
                                     '[hand_written]\nplacement = false\n', SELF_TEST_CATALOGUE, "no value of `knob`")
     refused("undeferred record absent", 'slice = ["knob"]\n', SELF_TEST_CATALOGUE, "a record: its members")
+    refused("names after the first sentence", SELF_TEST_UNITS,
+            SELF_TEST_CATALOGUE.replace("`side` is not.", "`side` (all), `gap_px`."), "after its first sentence")
     refused("record value absent", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
                                    '[hand_written]\nplacement = false\n',
             SELF_TEST_CATALOGUE.replace("`spot` (all)", "`place` (all)"), "a record: its members")
