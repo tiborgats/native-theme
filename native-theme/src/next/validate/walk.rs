@@ -161,6 +161,29 @@ enum Step {
     Index(usize),
 }
 
+/// One step of a path, as S12's checks over combinations read it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Segment<'a> {
+    /// A field: its owner's name and its own.
+    Field {
+        /// The block holding the field.
+        owner: &'static str,
+        /// The field.
+        name: &'static str,
+    },
+    /// An enum's variant holding data.
+    Variant {
+        /// The enum.
+        owner: &'static str,
+        /// The variant, in snake_case.
+        name: &'static str,
+    },
+    /// A map's key, or a set's or scheme's name.
+    Key(&'a str),
+    /// A list's item.
+    Index(usize),
+}
+
 /// Where a walk is: the path from its root, each field with its marks.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Path {
@@ -265,6 +288,16 @@ impl Path {
         self.fields().any(|(o, n)| o == owner && n == name)
     }
 
+    /// The steps below the root, outermost first.
+    pub(crate) fn segments(&self) -> impl Iterator<Item = Segment<'_>> {
+        self.steps.iter().map(|step| match step {
+            Step::Field { owner, name, .. } => Segment::Field { owner, name },
+            Step::Variant { owner, name, .. } => Segment::Variant { owner, name },
+            Step::Key { key, .. } => Segment::Key(key),
+            Step::Index(index) => Segment::Index(*index),
+        })
+    }
+
     /// The path below this one by `key`, a field of no unit (`properties`,
     /// `layers[0].blend`), as text.
     pub(crate) fn join(&self, key: &str) -> String {
@@ -332,6 +365,10 @@ pub(crate) trait Visit {
 
     /// A patch's fields: every one its block has, and those it sets.
     fn patch(&mut self, path: &Path, all: &'static [&'static str], set: &[&'static str]);
+
+    /// The variant `name` of the enum `owner` a value holds, at the value's
+    /// path, before what the variant holds.
+    fn enum_variant(&mut self, _path: &Path, _owner: &'static str, _name: &'static str) {}
 }
 
 /// A walk in progress.
@@ -418,6 +455,7 @@ impl<'v> Walker<'v> {
         folded: bool,
         walk: impl FnOnce(&mut Walker<'_>),
     ) {
+        self.visit.enum_variant(&self.path, owner, name);
         let held = (self.path.part.take(), self.path.place.take());
         self.path.steps.push(Step::Variant {
             owner,
@@ -427,6 +465,12 @@ impl<'v> Walker<'v> {
         walk(self);
         self.path.steps.pop();
         (self.path.part, self.path.place) = held;
+    }
+
+    /// Hands the unit variant `name` of the enum `owner` a value holds to
+    /// the visit.
+    pub(crate) fn unit_variant(&mut self, owner: &'static str, name: &'static str) {
+        self.visit.enum_variant(&self.path, owner, name);
     }
 
     /// Walks the block `walk` walks as the style of a part whose catalogue

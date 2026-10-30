@@ -252,6 +252,96 @@ pub enum ProblemKind {
         /// The declared unit.
         unit: &'static str,
     },
+    /// `Absent` or `Auto` below a `Fields` patch under some combination of
+    /// the rules before it, references followed (S2.2, S12).
+    FieldsOver {
+        /// What lies below: `absent` or `auto`.
+        below: &'static str,
+    },
+    /// `DrawnAs` patches forming a cycle under some combination: the part,
+    /// followed through `DrawnAs`, is drawn again (S6.1, S12).
+    DrawnAsCycle,
+    /// `text_scale` read where `token.text.scaling` can be `DynamicType`,
+    /// whose lengths scale by `uifm_scaled` (S2.2, S9.4, S12).
+    TextScaleUnderDynamicType,
+    /// An expression's call meeting an operand that can resolve `Absent`
+    /// (S2.2, S12).
+    AbsentOperand {
+        /// The operand as written.
+        operand: String,
+    },
+    /// An expression's call meeting an operand that can resolve `Auto`, or
+    /// a `TextStyle` token reading `line_height` while that style's line
+    /// height can be `Auto` (S2.2, S12).
+    AutoOperand {
+        /// The operand as written.
+        operand: String,
+    },
+    /// An expression reading itself through references, under some
+    /// combination (S2.2, S12).
+    ExpressionCycle,
+    /// A chain of references longer than 32 (S2.2, S12).
+    ChainTooLong,
+    /// A `widget.<part>` reference naming a part that can resolve `Absent`
+    /// as a whole or `DrawnAs` (S2.2, S6.3, S12).
+    PartNotDrawn {
+        /// The part named.
+        part: String,
+    },
+    /// An expression naming a corner that can resolve `Concentric` or
+    /// `FollowPart`, or `Full` on a part other than the element's own part:
+    /// the connector computes it at layout (S2.4, S8, S12).
+    CornerAtLayout {
+        /// The operand as written.
+        operand: String,
+    },
+    /// A focus indicator's `FollowPart` corner whose two sides' offsets can
+    /// differ (S2.4, S2.10, S12).
+    UnequalOffsets {
+        /// The corner.
+        corner: String,
+    },
+    /// A `Concentric` corner whose two insets can differ, until the value
+    /// phase states UIKit's rule for them (S2.4, S12, ADD-A122).
+    UnequalInsets {
+        /// The corner.
+        corner: String,
+    },
+    /// Two `TextRoles` slots referencing one keyed text style directly
+    /// (S4.4, S12).
+    TextRoleShared {
+        /// The keyed style.
+        style: String,
+    },
+    /// A `TextRoles` slot referencing a slot later in S4.4's owner order
+    /// (S4.4, S12).
+    TextRoleOrder {
+        /// The slot referenced.
+        slot: String,
+    },
+    /// A part's `shape` stated while its corners' curve can be
+    /// `Continuous` (S2.4, S12).
+    ShapeOverContinuous,
+    /// A map entry's patch that can create its entry with a field left
+    /// unset that may not be `Absent` (S6.1, S12, ADD-A122).
+    EntryCreatedUnset {
+        /// The field left unset.
+        field: String,
+    },
+    /// A field laying the element out or sizing its content reading the
+    /// element's laid-out size, the element's own part no fixed box (S8,
+    /// S12).
+    ElementSizeInLayout {
+        /// The operand as written.
+        datum: String,
+    },
+    /// On `kde-breeze`, a mapping palette leaving an accent-dependent role
+    /// or an inactive input role to the preset's Breeze value (S9.1, S9.2,
+    /// S14, S12).
+    LeftToPreset {
+        /// The role or input, as its TOML path names it.
+        role: String,
+    },
     /// A declared keyed name nothing uses: no rule selects on it, no base
     /// states it, or no `presentations` list names the event (a typo's
     /// sign, S12).
@@ -343,6 +433,55 @@ impl fmt::Display for ProblemKind {
             ),
             ProblemKind::UnitMismatch { unit } => write!(f, "declared in `{unit}`"),
             ProblemKind::Unused { name } => write!(f, "`{name}` is declared but unused"),
+            ProblemKind::FieldsOver { below } => {
+                write!(f, "patches the fields of a value that can be `{below}`")
+            }
+            ProblemKind::DrawnAsCycle => f.write_str("drawn as itself through `drawn_as`"),
+            ProblemKind::TextScaleUnderDynamicType => {
+                f.write_str("`text_scale` where the text scaling can be `dynamic_type`")
+            }
+            ProblemKind::AbsentOperand { operand } => {
+                write!(f, "`{operand}` can be `absent` here")
+            }
+            ProblemKind::AutoOperand { operand } => write!(f, "`{operand}` can be `auto` here"),
+            ProblemKind::ExpressionCycle => f.write_str("the expression reads itself"),
+            ProblemKind::ChainTooLong => f.write_str("a chain of references longer than 32"),
+            ProblemKind::PartNotDrawn { part } => {
+                write!(
+                    f,
+                    "`widget.{part}` can be absent or drawn as another widget"
+                )
+            }
+            ProblemKind::CornerAtLayout { operand } => {
+                write!(f, "`{operand}` is a corner computed at layout")
+            }
+            ProblemKind::UnequalOffsets { corner } => {
+                write!(
+                    f,
+                    "`follow_part` on `{corner}`, whose sides' offsets can differ"
+                )
+            }
+            ProblemKind::UnequalInsets { corner } => {
+                write!(f, "`concentric` on `{corner}`, whose insets can differ")
+            }
+            ProblemKind::TextRoleShared { style } => {
+                write!(f, "another slot references `text.keyed.{style}` directly")
+            }
+            ProblemKind::TextRoleOrder { slot } => {
+                write!(f, "references `{slot}`, a slot later in the owner order")
+            }
+            ProblemKind::ShapeOverContinuous => {
+                f.write_str("a shape where the corners' curve can be `continuous`")
+            }
+            ProblemKind::EntryCreatedUnset { field } => {
+                write!(f, "can create the entry with `{field}` unset")
+            }
+            ProblemKind::ElementSizeInLayout { datum } => {
+                write!(f, "`{datum}` in a field laying the element out")
+            }
+            ProblemKind::LeftToPreset { role } => {
+                write!(f, "`{role}` left to the preset's value under the palette")
+            }
         }
     }
 }

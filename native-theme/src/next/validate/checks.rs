@@ -48,7 +48,42 @@ const KDE_SETS: [&str; 7] = [
 
 /// Every structural problem of `layer` against `cx`.
 pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
+    let mut problems = in_flavor(layer, cx, None);
+    // Under each flavour, the declarations in force are the default
+    // section's with that flavour's keys replacing it (S10): the bases are
+    // checked against each, a rule against those of the flavours it can
+    // apply under (S12's combinations under each `flavor:` condition).
+    let flavors = &cx.declarations.flavors;
+    if flavors.len() > 1 {
+        let union = problems.len();
+        for flavor in flavors {
+            for problem in in_flavor(layer, cx, Some(flavor)) {
+                let flavored = matches!(
+                    problem.kind,
+                    ProblemKind::Undeclared { .. }
+                        | ProblemKind::UndeclaredData { .. }
+                        | ProblemKind::WidgetUnavailable { .. }
+                        | ProblemKind::Missing
+                );
+                let known = problems
+                    .iter()
+                    .take(union)
+                    .any(|held| held.path == problem.path);
+                if flavored && !known && !problems.contains(&problem) {
+                    problems.push(problem);
+                }
+            }
+        }
+    }
+    problems
+}
+
+/// Every structural problem of `layer` against `cx`, a widget's names
+/// against `flavor`'s declarations where one is given, its rules then only
+/// those that can apply under it.
+fn in_flavor(layer: &Layer, cx: &Context<'_>, flavor: Option<&Key>) -> Vec<Problem> {
     let mut checker = Checker::new(cx, matches!(layer.spelled, Spelled::Toml));
+    checker.flavor = flavor;
     checker.bases(&layer.bases, "");
     for (preset, bases) in &layer.for_preset {
         if cx.preset == Some(*preset) {
@@ -56,11 +91,22 @@ pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
         }
     }
     for (index, rule) in layer.rules.iter().enumerate() {
-        if !excluded(rule, cx.preset) {
+        let under = flavor.is_none_or(|flavor| can_apply_under(rule, flavor));
+        if !excluded(rule, cx.preset) && under {
             checker.rule(rule, &format!("rules[{index}]"));
         }
     }
     checker.problems
+}
+
+/// Whether a rule can apply while `flavor` is in force: its conditions name
+/// no other flavour as holding, and not this one as not holding (one
+/// flavour holds at a time, S12).
+fn can_apply_under(rule: &Rule, flavor: &Key) -> bool {
+    let conditions = &rule.selector.conditions;
+    let other = |c: &Condition| matches!(c, Condition::Flavor(held) if held != flavor);
+    let this = |c: &Condition| matches!(c, Condition::Flavor(held) if held == flavor);
+    !conditions.all_of.iter().any(other) && !conditions.none_of.iter().any(this)
 }
 
 /// Whether a rule's `Preset` condition excludes the current preset: such a
@@ -218,6 +264,9 @@ struct Checker<'a> {
     in_bases: bool,
     /// The layer was read from TOML: its paths are spelled by its keys.
     toml: bool,
+    /// The flavour whose declarations a widget's names are checked
+    /// against; `None`: each flavour's, a name declared in any.
+    flavor: Option<&'a Key>,
 }
 
 impl<'a> Checker<'a> {
@@ -228,6 +277,7 @@ impl<'a> Checker<'a> {
             region: Region::Tokens,
             in_bases: false,
             toml,
+            flavor: None,
         }
     }
 
@@ -404,13 +454,29 @@ impl<'a> Checker<'a> {
     /// declared where some flavour declares it; which flavour a rule
     /// applies under is S12's combination check's.
     fn widget_decls(&self, widget: WidgetKind) -> std::vec::IntoIter<WidgetDecl> {
-        self.decl().in_each_flavor(widget).into_iter()
+        match self.flavor {
+            Some(flavor) => vec![self.decl().in_flavor(widget, flavor)].into_iter(),
+            None => self.decl().in_each_flavor(widget).into_iter(),
+        }
     }
 
-    /// Whether the widget is available under the default flavour (S10);
-    /// another flavour's availability is S12's combination check's.
+    /// Whether the widget is available under the default flavour (S10), or
+    /// under the flavour the walk checks against.
     fn available(&self, widget: WidgetKind) -> bool {
-        self.decl().in_default_flavor(widget).available != Some(false)
+        let decl = match self.flavor {
+            Some(flavor) => self.decl().in_flavor(widget, flavor),
+            None => self.decl().in_default_flavor(widget),
+        };
+        decl.available != Some(false)
+    }
+
+    /// The name of the widget's declaration `key` in the declarations
+    /// checked against: a flavour's under that flavour.
+    fn declaration(&self, widget: WidgetKind, key: &str) -> String {
+        match self.flavor {
+            Some(flavor) => format!("flavor.{flavor}.widget.{}.{key}", widget_name(widget)),
+            None => format!("widget.{}.{key}", widget_name(widget)),
+        }
     }
 
     fn variant(&mut self, widget: WidgetKind, variant: &VariantRef, at: &str) {
@@ -418,7 +484,7 @@ impl<'a> Checker<'a> {
             .widget_decls(widget)
             .any(|decl| decl.variants.as_ref().is_some_and(|v| v.contains(variant)));
         if !declared {
-            let declaration = format!("widget.{}.variants", widget_name(widget));
+            let declaration = self.declaration(widget, "variants");
             self.undeclared(at, &variant_name(variant), &declaration);
         }
     }
@@ -431,7 +497,7 @@ impl<'a> Checker<'a> {
             .widget_decls(widget)
             .any(|decl| decl.flags.as_ref().is_some_and(|f| f.contains(flag)));
         if !declared {
-            let declaration = format!("widget.{}.flags", widget_name(widget));
+            let declaration = self.declaration(widget, "flags");
             self.undeclared(at, &format!("@{key}"), &declaration);
         }
     }
@@ -451,7 +517,7 @@ impl<'a> Checker<'a> {
                     .any(|entry| entry.sizes.contains(&size))
         });
         if !declared {
-            let declaration = format!("widget.{}.sizes", widget_name(widget));
+            let declaration = self.declaration(widget, "sizes");
             self.undeclared(at, size.name(), &declaration);
         }
     }
@@ -466,7 +532,7 @@ impl<'a> Checker<'a> {
                 Density::Compact => "compact".to_owned(),
                 Density::Keyed(key) => format!("@{key}"),
             };
-            let declaration = format!("widget.{}.densities", widget_name(widget));
+            let declaration = self.declaration(widget, "densities");
             self.undeclared(at, &name, &declaration);
         }
     }
@@ -888,7 +954,19 @@ impl<'a> Checker<'a> {
         let Some(widget_info) = registry::widgets().iter().find(|w| w.kind == widget) else {
             return;
         };
-        if let Some(part) = other_element(widget_info.parts, info, other.as_str()) {
+        self.same_element_in(widget_info.parts, info, other, at);
+    }
+
+    /// A `widget.<other>` reference stated on `info`, one of `parts`, reads
+    /// a part of the same element (S2.2).
+    fn same_element_in(
+        &mut self,
+        parts: &'static [PartInfo],
+        info: &'static PartInfo,
+        other: &Key,
+        at: &str,
+    ) {
+        if let Some(part) = other_element(parts, info, other.as_str()) {
             self.problem(at, ProblemKind::OtherElementsPart { part });
         }
     }
@@ -1090,7 +1168,7 @@ impl<'a> Checker<'a> {
                 .map(|(_, keys)| keys)
                 .collect();
             if !listed.iter().any(|keys| keys.contains(key)) {
-                let declaration = format!("widget.{}.keys.{value}", widget_name(widget));
+                let declaration = self.declaration(widget, &format!("keys.{value}"));
                 self.undeclared(&at, key.as_str(), &declaration);
             }
         }
@@ -1410,6 +1488,10 @@ impl TypeEnv for Types<'_> {
                 }
                 _ => field_type(registry::tokens(), &joined(path)),
             },
+            Ref::Part(path) if is_corner(path) => match self.region {
+                Region::Part(..) => Some(Ty::Length),
+                Region::Roles | Region::Tokens | Region::Values(_) => None,
+            },
             Ref::Part(path) => match self.region {
                 Region::Part(_, _, info) => field_type(info.fields, &joined(path)),
                 Region::Roles | Region::Tokens | Region::Values(_) => None,
@@ -1425,6 +1507,11 @@ impl TypeEnv for Types<'_> {
                     .part(part.as_str())?;
                 match path.as_slice() {
                     [metric] if <FontMetric as Named>::from_name(metric.as_str()).is_some() => {
+                        Some(Ty::Length)
+                    }
+                    _ if is_corner(path)
+                        && registry::find(info.fields, &joined(path)).is_some() =>
+                    {
                         Some(Ty::Length)
                     }
                     _ => field_type(info.fields, &joined(path)),
@@ -1494,6 +1581,23 @@ fn field_type(fields: &'static [FieldInfo], path: &str) -> Option<Ty> {
             }
         }
         ty => ty,
+    }
+}
+
+/// Whether a part's path names one of its corners, `corners.<corner>` or
+/// `focus.corners.<corner>`: a corner operand, a length, which the query
+/// resolves (S8: a `Full` corner to half the box's smaller side).
+fn is_corner(path: &[Key]) -> bool {
+    let names: Vec<&str> = path.iter().map(Key::as_str).collect();
+    let corner = |name: &str| {
+        matches!(
+            name,
+            "top_left" | "top_right" | "bottom_right" | "bottom_left"
+        )
+    };
+    match names.as_slice() {
+        ["corners", name] | ["focus", "corners", name] => corner(name),
+        _ => false,
     }
 }
 
@@ -2121,6 +2225,50 @@ fn ref_depth(reference: &Ref) -> usize {
     depth
 }
 
+/// The checks no layer can reach through the enabled widgets yet, run
+/// directly: a widget's loop value's keyframe (no enabled widget's values
+/// hold a loop) and an *(element)* part's reference to its host (`button`
+/// has no *(element)* part).
+#[cfg(test)]
+pub(super) mod triggers {
+    use super::tests::{PARTS, looped};
+    use super::*;
+
+    fn checker_over<'a>(cx: &'a Context<'a>) -> Checker<'a> {
+        Checker::new(cx, false)
+    }
+
+    /// A keyframe of a loop stated as a widget's value with no part.
+    pub(in crate::next::validate) fn keyframe_without_part() -> Vec<Problem> {
+        let decl = Declarations::default();
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Application,
+            below: &[],
+        };
+        let mut checker = checker_over(&cx);
+        checker.walk("probe", Region::Values(WidgetKind::Button), &looped(None));
+        checker.problems
+    }
+
+    /// A synthetic *(element)* part's mark reading its host's label.
+    pub(in crate::next::validate) fn other_elements_part() -> Vec<Problem> {
+        let decl = Declarations::default();
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Application,
+            below: &[],
+        };
+        let mut checker = checker_over(&cx);
+        if let Some(mark) = PARTS.iter().find(|part| part.name == "mark") {
+            checker.same_element_in(&PARTS, mark, &crate::key!("label"), "probe");
+        }
+        checker.problems
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -2137,19 +2285,20 @@ mod tests {
     const NO_PROBLEM: [&str; 0] = [];
 
     /// The problems of `looped` walked in `region`.
-    fn walked(looped: &Loop, region: Region) -> Vec<String> {
+    pub(super) fn walked(looped: &Loop, region: Region) -> Vec<String> {
         let decl = Declarations::default();
         let cx = Context {
             declarations: &decl,
             preset: None,
             kind: LayerKind::Application,
+            below: &[],
         };
         let mut checker = Checker::new(&cx, false);
         checker.walk("probe", region, looped);
         checker.problems.iter().map(Problem::to_string).collect()
     }
 
-    fn looped(part: Option<PartRef>) -> Loop {
+    pub(super) fn looped(part: Option<PartRef>) -> Loop {
         Loop {
             period: Value::Stated(Ms(1000.0)),
             timing: Value::Stated(Timing::Linear),
@@ -2199,7 +2348,7 @@ mod tests {
     }
 
     /// A synthetic widget: a root, an *(element)* row and the row's mark.
-    static PARTS: [PartInfo; 4] = [
+    pub(super) static PARTS: [PartInfo; 4] = [
         part("body", true, false, None),
         part("label", false, false, None),
         part("row", false, true, None),
@@ -2276,6 +2425,7 @@ mod tests {
                 declarations: &decl,
                 preset: None,
                 kind: LayerKind::Application,
+                below: &[],
             };
             let mut checker = Checker::new(&cx, false);
             checker.region = Region::Values(WidgetKind::Button);

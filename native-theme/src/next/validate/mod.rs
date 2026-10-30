@@ -1,10 +1,15 @@
 //! Validation (S12): what adding a layer checks, every problem collected.
 //!
 //! The structural checks (`checks`) look at each value, patch, rule and
-//! declaration on its own; the checks over combinations of the rules'
-//! conditions are S12's second half (the M1a design's task 9).
+//! declaration on its own; the checks over combinations (`combos`) at what
+//! each place can resolve to under the combinations of the rules' selectors,
+//! over the stack flattened (`stack`).
 
 mod checks;
+mod combos;
+#[cfg(test)]
+mod combos_tests;
+mod stack;
 #[cfg(test)]
 mod tests;
 pub(crate) mod walk;
@@ -13,6 +18,7 @@ use super::declare::Declarations;
 use super::error::{LayerError, Problem};
 use super::layer::Layer;
 use super::presets::PresetId;
+pub(crate) use stack::Stacked;
 
 /// What a layer is to the stack (S8, S9, S14): which checks apply to it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -45,6 +51,9 @@ pub(crate) struct Context<'a> {
     pub(crate) preset: Option<PresetId>,
     /// What the layer is.
     pub(crate) kind: LayerKind,
+    /// The layers below it, bottom first: the stack the checks over
+    /// combinations read with it (S8, S12).
+    pub(crate) below: &'a [Stacked<'a>],
 }
 
 /// Every structural problem `layer` has against `cx` (S12).
@@ -56,11 +65,49 @@ pub(crate) struct Context<'a> {
     )
 )]
 pub(crate) fn check(layer: &Layer, cx: &Context<'_>) -> Result<(), LayerError> {
-    let problems = checks::layer(layer, cx);
+    let mut problems = checks::layer(layer, cx);
+    let mut layers = cx.below.to_vec();
+    layers.push(Stacked {
+        layer,
+        kind: cx.kind,
+    });
+    add(&mut problems, combinations(&layers, *cx));
     if problems.is_empty() {
         Ok(())
     } else {
         Err(LayerError::Invalid(problems))
+    }
+}
+
+/// Every problem the checks over combinations find in `layers`, the last
+/// the layer `cx` adds (S12).
+fn combinations(layers: &[Stacked<'_>], cx: Context<'_>) -> Vec<Problem> {
+    let stack = stack::Stack::new(layers, cx);
+    let mut problems = combos::check(&stack);
+    if cx.kind == LayerKind::Palette && combos::on_kde_breeze(cx.preset) {
+        let palette = layers.len().saturating_sub(1);
+        problems.extend(combos::mapping_palette(&stack, palette));
+    }
+    problems
+}
+
+/// Adds the problems the checks over combinations `found` at places the
+/// structural checks found none at, or below: one problem per fault, a
+/// place's own fault (an undeclared key, an ill-typed expression) the one
+/// reported there.
+fn add(problems: &mut Vec<Problem>, found: Vec<Problem>) {
+    let structural = problems.len();
+    for problem in found {
+        let at = &problem.path;
+        let taken = problems.iter().take(structural).any(|held| {
+            *at == held.path
+                || at
+                    .strip_prefix(held.path.as_str())
+                    .is_some_and(|rest| rest.starts_with('.') || rest.starts_with('['))
+        });
+        if !taken && !problems.contains(&problem) {
+            problems.push(problem);
+        }
     }
 }
 
@@ -83,10 +130,16 @@ pub(crate) fn check_preset(
         declarations,
         preset,
         kind: LayerKind::Preset,
+        below: &[],
     };
     let mut problems: Vec<Problem> = checks::layer(layer, &cx);
     problems.extend(checks::declarations(declarations));
     problems.extend(checks::unused(declarations, layer, preset));
+    let layers = [Stacked {
+        layer,
+        kind: LayerKind::Preset,
+    }];
+    add(&mut problems, combinations(&layers, cx));
     if problems.is_empty() {
         Ok(())
     } else {

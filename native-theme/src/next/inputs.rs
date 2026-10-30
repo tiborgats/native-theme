@@ -217,13 +217,6 @@ impl KdeSchemeKey {
     /// The [`SurfaceRoles`](super::roles::SurfaceRoles) field the key names,
     /// by the catalogue's key table.
     #[must_use]
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "read where KDE's scheme inputs bind their roles (S9.1, the kde-breeze preset)"
-        )
-    )]
     pub(crate) const fn role(self) -> SurfaceRole {
         match self {
             KdeSchemeKey::BackgroundNormal => SurfaceRole::Background,

@@ -208,7 +208,7 @@ pub(super) fn enum_walk(
         any_folded |= folded;
         match &variant.fields {
             Fields::Unit => {
-                arms.push(quote!(#name::#ident => {}));
+                arms.push(quote!(#name::#ident => w.unit_variant(#owner, #snake),));
                 suffixes.push(quote!(#name::#ident => "",));
                 units.push(snake.clone());
             }

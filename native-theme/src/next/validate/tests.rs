@@ -51,6 +51,23 @@ fn found_as(layer: &Layer, decl: &Declarations, kind: LayerKind) -> Vec<String> 
         declarations: decl,
         preset: None,
         kind,
+        below: &[],
+    };
+    strings(check(layer, &cx))
+}
+
+/// The problems of an application layer over `decl`, `below` the preset's
+/// layer beneath it.
+fn found_over(layer: &Layer, decl: &Declarations, below: &Layer) -> Vec<String> {
+    let below = [super::Stacked {
+        layer: below,
+        kind: LayerKind::Preset,
+    }];
+    let cx = Context {
+        declarations: decl,
+        preset: None,
+        kind: LayerKind::Application,
+        below: &below,
     };
     strings(check(layer, &cx))
 }
@@ -680,7 +697,9 @@ fn refusal_not_conditions() {
 
 #[test]
 fn refusal_widget_unavailable() {
-    let layer = toml("[widgets.button.icon]\ndrawn_as = { widget = \"button\", variants = [] }");
+    let layer = toml(
+        "[widgets.button.icon]\ndrawn_as = { widget = \"button\", part = \"body\", variants = [] }",
+    );
     let unavailable = declare("[declare.widget.button]\navailable = false");
     assert_eq!(
         found(&layer, &unavailable),
@@ -810,7 +829,10 @@ fn flavour_sections_inherit_the_widgets_keys() {
     let rule = "\n[[rules]]\nwhen = { conditions = [\"flavor:kirigami\"], variants = [\"@fab\"] }\n\
                 target = \"button.body\"\nset = { opacity = 0.5 }";
     assert_eq!(preset(&format!("{entry}{rule}")), NONE);
-    // A flavour's own variant set replaces the widget's under it.
+    // A flavour's own variant set replaces the widget's under it: a rule
+    // that can apply under the default flavour selects a variant only
+    // `kirigami` declares, and one under `kirigami` a variant `kirigami`'s
+    // set leaves out (S12's combinations under each `flavor:` condition).
     let replaced = entry.replace(
         "[declare.flavor.kirigami.widget.button]\n",
         "[declare.flavor.kirigami.widget.button]\nvariants = [\"@pill\"]\n",
@@ -820,6 +842,10 @@ fn flavour_sections_inherit_the_widgets_keys() {
     assert_eq!(
         preset(&format!("{replaced}{pill}{rule}")),
         [
+            "rules[0].when.variants[0]: `@pill` is not declared in \
+             `flavor.widgets.widget.button.variants`",
+            "rules[1].when.variants[0]: `@fab` is not declared in \
+             `flavor.kirigami.widget.button.variants`",
             "declare.flavor.kirigami.widget.button.default_size_by_variant[0].variant: `@fab` is \
              not declared in `declare.flavor.kirigami.widget.button.variants`"
         ]
@@ -837,7 +863,7 @@ fn availability_is_the_default_flavours() {
     );
     let layer = toml(
         "[[rules]]\nwhen = { conditions = [\"flavor:widgets\"] }\ntarget = \"button.icon\"\n\
-         set = { drawn_as = { widget = \"button\", variants = [] } }",
+         set = { drawn_as = { widget = \"button\", part = \"body\", variants = [] } }",
     );
     assert_eq!(found(&layer, &decl), NONE);
     let unavailable = declare(
@@ -876,7 +902,8 @@ fn refusal_not_a_block() {
         ]
     );
     let fields = toml("[tokens.text.keyed.body]\nline_height = \"= mul(font_size, 1.2)\"");
-    assert_eq!(found(&fields, &decl), NONE);
+    let preset = toml("[tokens.text.keyed.body]\nline_height = \"auto\"");
+    assert_eq!(found_over(&fields, &decl, &preset), NONE);
     // A keyed timing is a block stated whole: a reference names no variant.
     assert!(
         Layer::from_toml("[tokens.motion.timings]\nfast = \"= token.motion.timings.slow\"")
@@ -907,10 +934,7 @@ fn refusal_unit_mismatch() {
     // key is another key (S11, ADD-A123).
     let read = |text: &str| toml(&format!("[tokens.params.layout]\n{text}"));
     assert_eq!(found(&read("gap = 4"), &decl), NONE);
-    assert_eq!(
-        found(&read("gap = \"= token.params.layout.gap\""), &decl),
-        NONE
-    );
+    assert_eq!(found(&read("gap = \"= max(2px, 4px)\""), &decl), NONE);
     assert_eq!(
         found(&read("gap_ms = \"= token.params.layout.gap\""), &decl),
         ["tokens.params.layout.gap_ms: `gap_ms` is not declared in `params`"]
@@ -1190,8 +1214,10 @@ fn problem_paths_spell_the_layer() {
     let mut drawn = Layer::default();
     drawn.bases.widgets.button = Some(ButtonPatch {
         icon: Some(PartPatch::DrawnAs {
-            target: crate::next::selector::WidgetOrPart::Widget(
-                crate::next::selector::WidgetRef::Typed(crate::next::widgets::WidgetKind::Button),
+            target: crate::next::selector::WidgetOrPart::Part(
+                crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
+                    crate::next::widgets::ButtonPart::Body,
+                )),
             ),
             variants: Vec::new(),
         }),
@@ -1268,12 +1294,18 @@ fn one_problem_per_fault() {
 fn keyed_icon_context_fields_may_be_absent() {
     let decl = declare("icon_contexts = [\"menu\"]");
     let context = |text: &str| toml(&format!("[tokens.icons.sizes.keyed.menu]\n{text}"));
+    // The preset beneath states the context, so the patch creates no entry.
+    let preset = context("size_px = 16");
     assert_eq!(
-        found(&context("size_px = 16\nrendering_mode = \"absent\""), &decl),
+        found_over(
+            &context("size_px = 16\nrendering_mode = \"absent\""),
+            &decl,
+            &preset
+        ),
         NONE
     );
     assert_eq!(
-        found(&context("size_px = \"absent\""), &decl),
+        found_over(&context("size_px = \"absent\""), &decl, &preset),
         ["tokens.icons.sizes.keyed.menu.size_px: may not be absent"]
     );
 }
@@ -1487,8 +1519,8 @@ fn refusal_undeclared_every_kind() {
             "conditions = [\"@glow\"]",
         ),
         (
-            toml("[colors.light.surfaces.window]\nbackground = \"#000000\""),
-            "colors.light.surfaces.window: `window` is not declared in `surface_sets`",
+            toml("[colors.light.global]\naccent = \"= role.window.background\""),
+            "colors.light.global.accent: `window` is not declared in `surface_sets`",
             "surface_sets = [\"window\"]",
         ),
         (
@@ -1612,9 +1644,12 @@ fn refusal_undeclared_every_kind() {
             "spec_versions = [\"spec2025\"]",
         ),
     ];
+    // The near miss over a preset stating the same, so no map entry is
+    // created (S12).
     for (layer, problem, declaration) in rows {
         assert_eq!(bare(&layer), [problem], "{problem}");
-        assert_eq!(found(&layer, &declare(declaration)), NONE, "{declaration}");
+        let decl = declare(declaration);
+        assert_eq!(found_over(&layer, &decl, &layer), NONE, "{declaration}");
     }
     // A component: none is declared until components exist (M3), and
     // TOML names none yet.
@@ -1786,8 +1821,9 @@ fn refusal_other_items() {
         NONE
     );
     // A `DrawnAs`'s variant, declared.
-    let drawn =
-        toml("[widgets.button.icon]\ndrawn_as = { widget = \"button\", variants = [\"@pill\"] }");
+    let drawn = toml(
+        "[widgets.button.icon]\ndrawn_as = { widget = \"button\", part = \"body\", variants = [\"@pill\"] }",
+    );
     assert_eq!(
         bare(&drawn),
         [
@@ -1859,4 +1895,548 @@ fn refusal_unused_every_kind() {
             "declare.color_roles: `shade` is declared but unused",
         ]
     );
+}
+
+/// Every `LayerError` and `ProblemKind` variant, each triggered by a
+/// fixture: S11's reader's kinds by text it refuses, S12's by a layer or a
+/// stack it refuses. `index` matches every variant without a wildcard, and
+/// `COUNT` names how many there are, so a new variant does not compile
+/// until it is indexed, and fails here until a fixture triggers it.
+#[test]
+fn layer_error_every_variant_triggers() {
+    use crate::next::error::ProblemKind as K;
+    const COUNT: usize = 60;
+    fn index(kind: &K) -> usize {
+        match kind {
+            K::Toml(_) => 0,
+            K::UnknownKey => 1,
+            K::Mistyped { .. } => 2,
+            K::UnknownName { .. } => 3,
+            K::NotAKey(_) => 4,
+            K::Expression(_) => 5,
+            K::Missing => 6,
+            K::DuplicateKey { .. } => 7,
+            K::NotFinite => 8,
+            K::PartWithoutWidget => 9,
+            K::NotAPartField { .. } => 10,
+            K::AppendInBases => 11,
+            K::AbsentNotAllowed => 12,
+            K::AutoNotAllowed => 13,
+            K::CallNotAllowed => 14,
+            K::OutOfRange { .. } => 15,
+            K::NoLayer => 16,
+            K::MaskAtBottom => 17,
+            K::TooFewStops => 18,
+            K::NoProperties => 19,
+            K::ZeroDuration => 20,
+            K::KeyframesNotIncreasing => 21,
+            K::KeyframeWithoutPart => 22,
+            K::FollowPartOutsideFocus => 23,
+            K::RouteDuplicated { .. } => 24,
+            K::KdeAccentArgument { .. } => 25,
+            K::PickWithoutColors => 26,
+            K::TooDeep => 27,
+            K::BaseInBases => 28,
+            K::ElementOperand { .. } => 29,
+            K::SurfaceInRoles => 30,
+            K::IllTyped { .. } => 31,
+            K::OtherElementsPart { .. } => 32,
+            K::UndeclaredData { .. } => 33,
+            K::Undeclared { .. } => 34,
+            K::NotConditions => 35,
+            K::WidgetUnavailable { .. } => 36,
+            K::AccentInput => 37,
+            K::ListedTwice { .. } => 38,
+            K::SizeNotTaken { .. } => 39,
+            K::NotABlock => 40,
+            K::UnitMismatch { .. } => 41,
+            K::FieldsOver { .. } => 42,
+            K::DrawnAsCycle => 43,
+            K::TextScaleUnderDynamicType => 44,
+            K::AbsentOperand { .. } => 45,
+            K::AutoOperand { .. } => 46,
+            K::ExpressionCycle => 47,
+            K::ChainTooLong => 48,
+            K::PartNotDrawn { .. } => 49,
+            K::CornerAtLayout { .. } => 50,
+            K::UnequalOffsets { .. } => 51,
+            K::UnequalInsets { .. } => 52,
+            K::TextRoleShared { .. } => 53,
+            K::TextRoleOrder { .. } => 54,
+            K::ShapeOverContinuous => 55,
+            K::EntryCreatedUnset { .. } => 56,
+            K::ElementSizeInLayout { .. } => 57,
+            K::LeftToPreset { .. } => 58,
+            K::Unused { .. } => 59,
+        }
+    }
+    fn problems(result: Result<(), LayerError>) -> Vec<Problem> {
+        match result {
+            Ok(()) => Vec::new(),
+            Err(LayerError::Invalid(problems)) => problems,
+        }
+    }
+    let over = |layer: &Layer, decl: &Declarations, below: &[Layer]| {
+        let below: Vec<super::Stacked<'_>> = below
+            .iter()
+            .map(|layer| super::Stacked {
+                layer,
+                kind: LayerKind::Preset,
+            })
+            .collect();
+        let cx = Context {
+            declarations: decl,
+            preset: None,
+            kind: LayerKind::Application,
+            below: &below,
+        };
+        problems(check(layer, &cx))
+    };
+    let none = Declarations::default();
+    // S11's reader: text it refuses.
+    let read = |text: &str| match Layer::from_toml(text) {
+        Ok(layer) => over(&layer, &none, &[]),
+        Err(LayerError::Invalid(problems)) => problems,
+    };
+    let preset_problems = |body: &str| {
+        let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();
+        problems(check_preset(&file.declarations, &file.layer, None))
+    };
+    let mut keyed = Layer::default();
+    keyed.bases.colors.light = Some(ColorRolesPatch {
+        keyed: Some(vec![
+            (key!("a"), Value::Stated(color())),
+            (key!("a"), Value::Stated(color())),
+        ]),
+        ..ColorRolesPatch::default()
+    });
+    let nan = body(PartStylePatch {
+        opacity: Some(Value::Stated(Fraction(f32::NAN))),
+        ..PartStylePatch::default()
+    });
+    let append = body(PartStylePatch {
+        fill: Some(PaintPatch::Append(vec![layer_of(BlendMode::Normal)])),
+        ..PartStylePatch::default()
+    });
+    let stops = body(fill(vec![PaintLayer {
+        kind: PaintKind::Linear {
+            angle: crate::next::units::Deg(0.0),
+            stops: vec![Stop {
+                position: 0.0,
+                color: Value::Stated(color()),
+            }],
+            repeat: false,
+            extent: None,
+            offset: None,
+        },
+        blend: BlendMode::Normal,
+    }]));
+    let suspend = tokens(TokensPatch {
+        theme_change: Some(ThemeChange::Suspend {
+            duration: Value::Stated(Ms(0.0)),
+        }),
+        ..TokensPatch::default()
+    });
+    let keyframes = {
+        let keyframes = [0.5, 0.5]
+            .into_iter()
+            .map(|at| Keyframe {
+                at: Fraction(at),
+                part: None,
+                timing: Value::Absent,
+                patch: PartStylePatch::default(),
+            })
+            .collect();
+        let mut layer = Layer::default();
+        layer.bases.widgets.button = Some(ButtonPatch {
+            icon: Some(PartPatch::Style(PartStylePatch {
+                icon: Some(BlockPatch::Fields(IconStylePatch {
+                    animation: Some(BlockPatch::Set(Value::Stated(Loop {
+                        period: Value::Stated(Ms(1000.0)),
+                        timing: Value::Stated(Timing::Linear),
+                        keyframes,
+                    }))),
+                    ..IconStylePatch::default()
+                })),
+                ..PartStylePatch::default()
+            })),
+            ..ButtonPatch::default()
+        });
+        layer
+    };
+    let route = {
+        let mut layer = Layer::default();
+        layer.bases.widgets.button = Some(ButtonPatch {
+            label: Some(PartPatch::Style(PartStylePatch {
+                text: Some(BlockPatch::Fields(TextStylePatch {
+                    font: Some(FontPatch {
+                        axes: Some(vec![(AxisTag::new("wght").unwrap(), AxisValue::Fixed(1.0))]),
+                        ..FontPatch::default()
+                    }),
+                    ..TextStylePatch::default()
+                })),
+                ..PartStylePatch::default()
+            })),
+            ..ButtonPatch::default()
+        });
+        layer
+    };
+    let deep = body(PartStylePatch {
+        opacity: Some(Value::Expr((0..=MAX_DEPTH).fold(
+            Expr::Lit(crate::next::expr::Literal::Number(1.0)),
+            |expr, _| Expr::Call(Func::Floor, vec![expr]),
+        ))),
+        ..PartStylePatch::default()
+    });
+    let mismatch = {
+        let mut layer = Layer::default();
+        layer.bases.tokens.params = Some(vec![(
+            key!("layout"),
+            vec![(
+                key!("gap"),
+                Value::Stated(crate::next::units::Scalar::Ms(Ms(4.0))),
+            )],
+        )]);
+        layer
+    };
+    let layout = declare("params = { layout = { unit = \"px\", keys = [\"gap\"] } }");
+    let unavailable = declare("[declare.widget.button]\navailable = false");
+    let accents = declare("inputs = [\"accent\"]\naccent_inputs = [\"accent\"]");
+    let sets = declare("surface_sets = [\"window\", \"view\"]");
+    let chain = {
+        let names: Vec<String> = (0..34).map(|i| format!("\"k{i}\"")).collect();
+        let decl = declare(&format!(
+            "params = {{ layout = {{ unit = \"px\", keys = [{}] }} }}",
+            names.join(", ")
+        ));
+        let mut text = String::from("[tokens.params.layout]\n");
+        for i in 0..33 {
+            text.push_str(&format!("k{i} = \"= token.params.layout.k{}\"\n", i + 1));
+        }
+        text.push_str("k33 = 4\n");
+        over(&toml(&text), &decl, &[])
+    };
+    let styles = declare("text_styles = [\"body\", \"caption\"]");
+    let data = declare("[declare.widget.button]\ndata = { body = [\"width\"] }");
+    let shape = {
+        // No catalogue part lists `shape` with `corners` yet, and no shape
+        // can be stated (`MaterialShape` is filled at M1b): a reference on
+        // `button.body`'s, which the structural check refuses, is checked
+        // over its combinations here directly.
+        let mut layer = Layer::default();
+        layer.rules.push(crate::next::selector::Rule::new(
+            crate::next::selector::Selector::default(),
+            crate::next::selector::RuleBody::Part(
+                crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
+                    crate::next::widgets::ButtonPart::Body,
+                )),
+                PartPatch::Style(PartStylePatch {
+                    shape: Some(Value::Expr(Expr::Ref(Ref::Base))),
+                    corners: Some(BlockPatch::Fields(CornersPatch {
+                        curve: Some(crate::next::blocks::outline::CornerCurve::Continuous),
+                        ..CornersPatch::default()
+                    })),
+                    ..PartStylePatch::default()
+                }),
+            ),
+        ));
+        let layers = [super::Stacked {
+            layer: &layer,
+            kind: LayerKind::Application,
+        }];
+        let cx = Context {
+            declarations: &none,
+            preset: None,
+            kind: LayerKind::Application,
+            below: &[],
+        };
+        super::combos::check(&super::stack::Stack::new(&layers, cx))
+    };
+    let left = {
+        let decl = declare("surface_sets = [\"window\"]");
+        let preset = toml("[colors.light.surfaces.window]\ndecoration_focus = \"#000001\"");
+        let palette = toml("[colors.light.surfaces.window]\nlink = \"#000002\"");
+        let layers = [
+            super::Stacked {
+                layer: &preset,
+                kind: LayerKind::Preset,
+            },
+            super::Stacked {
+                layer: &palette,
+                kind: LayerKind::Palette,
+            },
+        ];
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Palette,
+            below: &[],
+        };
+        super::combos::mapping_palette(&super::stack::Stack::new(&layers, cx), 1)
+    };
+    let rule = |when: &str, target: &str, set: &str| {
+        format!("[[rules]]\nwhen = {when}\ntarget = \"{target}\"\nset = {set}\n")
+    };
+    let fixtures: Vec<(usize, Vec<Problem>)> = vec![
+        (0, read("[widgets")),
+        (1, read("[widgets.button.body]\nshine = 1")),
+        (2, read("[widgets.button.body]\nopacity = true")),
+        (
+            3,
+            read("[widgets.button.icon.icon]\nrendering_mode = \"glossy\""),
+        ),
+        (4, read("[colors.light.keyed]\nBad = \"#000000\"")),
+        (5, read("[widgets.button.body]\nopacity = \"= add(\"")),
+        (6, preset_problems("")),
+        (7, over(&keyed, &declare("color_roles = [\"a\"]"), &[])),
+        (8, over(&nan, &none, &[])),
+        (
+            9,
+            read("[widgets.button.icon]\ndrawn_as = { part = \"label\", variants = [] }"),
+        ),
+        (10, read("[widgets.button.label]\nopacity = 0.5")),
+        (11, over(&append, &none, &[])),
+        (12, read("[widgets.button.body]\nopacity = \"absent\"")),
+        (13, read("[widgets.button.body]\npadding.top_px = \"auto\"")),
+        (
+            14,
+            read("[widgets.button.values]\nshows_icon = \"= max(1, 2)\""),
+        ),
+        (15, read("[widgets.button.body]\nopacity = 1.5")),
+        (16, over(&body(fill(Vec::new())), &none, &[])),
+        (
+            17,
+            over(
+                &body(fill(vec![
+                    layer_of(BlendMode::Mask),
+                    layer_of(BlendMode::Normal),
+                ])),
+                &none,
+                &[],
+            ),
+        ),
+        (18, over(&stops, &none, &[])),
+        (
+            19,
+            over(
+                &transitions(vec![transition(Vec::new(), Timing::Linear)]),
+                &none,
+                &[],
+            ),
+        ),
+        (20, over(&suspend, &none, &[])),
+        (21, over(&keyframes, &none, &[])),
+        (22, super::checks::triggers::keyframe_without_part()),
+        (
+            23,
+            read("[widgets.button.body]\ncorners.top_left = \"follow_part\""),
+        ),
+        (24, over(&route, &none, &[])),
+        (
+            25,
+            read(
+                "[colors.light.global]\naccent = \"= kde_accent(osd, background_normal, inactive)\"",
+            ),
+        ),
+        (26, read("[colors.light.global]\naccent = \"= pick(1)\"")),
+        (27, over(&deep, &none, &[])),
+        (28, read("[colors.light.global]\naccent = \"= base\"")),
+        (
+            29,
+            read("[colors.light.global]\naccent = \"= mix(#000000, #ffffff, element.progress)\""),
+        ),
+        (
+            30,
+            read("[colors.light.global]\naccent = \"= surface.foreground\""),
+        ),
+        (31, read("[widgets.button.body]\nopacity = \"= #ff0000\"")),
+        (32, super::checks::triggers::other_elements_part()),
+        (
+            33,
+            read("[widgets.button.body]\nopacity = \"= element.progress\""),
+        ),
+        (
+            34,
+            read("[colors.light.global]\naccent = \"= role.window.background\""),
+        ),
+        (35, read(&rule("{ states = [\"hover\"] }", "tokens", "{}"))),
+        (
+            36,
+            over(
+                &toml(
+                    "[widgets.button.icon]\ndrawn_as = { widget = \"button\", part = \"body\", variants = [] }",
+                ),
+                &unavailable,
+                &[],
+            ),
+        ),
+        (
+            37,
+            over(&toml("[inputs.accent]\nlight = \"#3584e4\""), &accents, &[]),
+        ),
+        (
+            38,
+            over(
+                &toml("[inputs.kde_scheme.groups]\nlight = [\"window\", \"window\"]"),
+                &sets,
+                &[],
+            ),
+        ),
+        (
+            39,
+            preset_problems(
+                "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
+                 default_size_by_variant = [{ variant = \"primary\", size = \"large\" }]",
+            ),
+        ),
+        (
+            40,
+            over(
+                &toml("[tokens.text.keyed]\nbody = \"= token.text.roles.body\""),
+                &styles,
+                &[],
+            ),
+        ),
+        (41, over(&mismatch, &layout, &[])),
+        (
+            42,
+            read(&format!(
+                "{}{}",
+                rule(
+                    "{ conditions = [\"scheme:dark\"] }",
+                    "button.body",
+                    "{ stroke = \"absent\" }"
+                ),
+                rule(
+                    "{ conditions = [\"reduced_motion\"] }",
+                    "button.body",
+                    "{ stroke.top.width_px = 2 }"
+                )
+            )),
+        ),
+        (
+            43,
+            read("[widgets.button.icon]\ndrawn_as = { widget = \"button\", variants = [] }"),
+        ),
+        (
+            44,
+            read(
+                "[tokens.text]\nscaling = \"dynamic_type\"\n[widgets.button.body]\n\
+                  min_height_px = \"= mul(24px, text_scale)\"",
+            ),
+        ),
+        (
+            45,
+            read(
+                "[widgets.button.body]\nmargin.top_px = \"absent\"\n\
+                  min_width_px = \"= add(part.margin.top, 4px)\"",
+            ),
+        ),
+        (
+            46,
+            read(
+                "[widgets.button.body]\nmax_width_px = \"auto\"\n\
+                  min_width_px = \"= add(part.max_width, 4px)\"",
+            ),
+        ),
+        (
+            47,
+            read(
+                "[widgets.button.body]\nmin_width_px = \"= part.min_height\"\n\
+                  min_height_px = \"= part.min_width\"",
+            ),
+        ),
+        (48, chain),
+        (
+            49,
+            read(&format!(
+                "[widgets.button.label]\npadding.top_px = \"= widget.menu_indicator.min_height\"\n\
+                 [widgets.button.menu_indicator]\nabsent = true\n{}",
+                ""
+            )),
+        ),
+        (
+            50,
+            read(
+                "[widgets.button.body]\ncorners.top_left = { concentric = { minimum_px = 2 } }\n\
+                  focus.width_px = \"= part.corners.top_left\"",
+            ),
+        ),
+        (
+            51,
+            read(
+                "[widgets.button.body.focus]\ncorners.top_left = \"follow_part\"\n\
+                  offset.top_px = 2\noffset.left_px = 3",
+            ),
+        ),
+        (
+            52,
+            read(
+                "[widgets.button.body]\ncorners.top_left = { concentric = { minimum_px = 2 } }\n\
+                  margin.top_px = 2\nmargin.left_px = 3",
+            ),
+        ),
+        (
+            53,
+            over(
+                &toml(
+                    "[tokens.text.roles]\nbody = \"= token.text.keyed.body\"\n\
+                       caption = \"= token.text.keyed.body\"",
+                ),
+                &styles,
+                &[],
+            ),
+        ),
+        (
+            54,
+            over(
+                &toml(
+                    "[tokens.text.roles]\ncaption = \"= token.text.keyed.body\"\n\
+                       body = \"= token.text.roles.caption\"",
+                ),
+                &styles,
+                &[],
+            ),
+        ),
+        (55, shape),
+        (
+            56,
+            over(
+                &toml("[tokens.text.keyed.caption]\nline_height = \"auto\""),
+                &styles,
+                &[],
+            ),
+        ),
+        (
+            57,
+            over(
+                &toml("[widgets.button.body]\npadding.left_px = \"= mul(element.width, 0.1)\""),
+                &data,
+                &[],
+            ),
+        ),
+        (58, left),
+        (
+            59,
+            preset_problems("[declare]\nflavors = [\"widgets\", \"kirigami\"]"),
+        ),
+    ];
+    let mut covered = [false; COUNT];
+    for (expected, found) in &fixtures {
+        let kinds: Vec<usize> = found.iter().map(|problem| index(&problem.kind)).collect();
+        assert!(kinds.contains(expected), "variant {expected}: {found:?}");
+        if let Some(slot) = covered.get_mut(*expected) {
+            *slot = true;
+        }
+    }
+    let missing: Vec<usize> = (0..COUNT)
+        .filter(|i| !covered.get(*i).copied().unwrap_or(false))
+        .collect();
+    assert_eq!(missing, Vec::<usize>::new());
+    // `LayerError`'s every variant: `Invalid`, which every fixture above
+    // returns.
+    let error = LayerError::Invalid(Vec::new());
+    match error {
+        LayerError::Invalid(problems) => assert!(problems.is_empty()),
+    }
 }
