@@ -438,6 +438,11 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:137-141"
 quote = "private val defaultSpatialSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringDefaultSpatialDamping, stiffness = StandardMotionTokens.SpringDefaultSpatialStiffness, )"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:181"
+quote = "public val motionScheme: MotionScheme = standard(),"
+
 [[fact]]
 key = "token.motion.timings.spring_default_effects"
 value = { spring = { stiffness = 1600, damping_ratio = 1 } }
@@ -457,6 +462,11 @@ quote = "const val SpringDefaultEffectsDamping = 1.0f const val SpringDefaultEff
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:155-159"
 quote = "private val defaultEffectsSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringDefaultEffectsDamping, stiffness = StandardMotionTokens.SpringDefaultEffectsStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:181"
+quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
 key = "token.motion.timings.spring_fast_spatial"
@@ -478,6 +488,11 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:143-147"
 quote = "private val fastSpatialSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringFastSpatialDamping, stiffness = StandardMotionTokens.SpringFastSpatialStiffness, )"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:181"
+quote = "public val motionScheme: MotionScheme = standard(),"
+
 [[fact]]
 key = "token.motion.timings.spring_fast_effects"
 value = { spring = { stiffness = 3800, damping_ratio = 1 } }
@@ -497,6 +512,11 @@ quote = "const val SpringFastEffectsDamping = 1.0f const val SpringFastEffectsSt
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:161-165"
 quote = "private val fastEffectsSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringFastEffectsDamping, stiffness = StandardMotionTokens.SpringFastEffectsStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:181"
+quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
 key = "token.motion.timings.spring_slow_spatial"
@@ -518,6 +538,11 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:149-153"
 quote = "private val slowSpatialSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringSlowSpatialDamping, stiffness = StandardMotionTokens.SpringSlowSpatialStiffness, )"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:181"
+quote = "public val motionScheme: MotionScheme = standard(),"
+
 [[fact]]
 key = "token.motion.timings.spring_slow_effects"
 value = { spring = { stiffness = 800, damping_ratio = 1 } }
@@ -537,6 +562,11 @@ quote = "const val SpringSlowEffectsDamping = 1.0f const val SpringSlowEffectsSt
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:167-171"
 quote = "private val slowEffectsSpec = spring<Any>( dampingRatio = StandardMotionTokens.SpringSlowEffectsDamping, stiffness = StandardMotionTokens.SpringSlowEffectsStiffness, )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:181"
+quote = "public val motionScheme: MotionScheme = standard(),"
 
 [[fact]]
 key = "token.motion.timings.spring_default_spatial"

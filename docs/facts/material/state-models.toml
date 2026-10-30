@@ -14,8 +14,9 @@
 # icon), one FAB form, one Expressive icon-button width. `variant_sets` lists the sets the facts state (each drawn by
 # Compose or the tokens); the platform draws more (a style with a leading icon, the other FAB colours lowered, the
 # Expressive shapes and widths across the icon-button styles), which no fact states yet (the lane report).
-# `default_size_by_variant`: Compose's FloatingActionButton is the standard FAB, `regular`, where Expressive's
-# buttons default to `small` (ToggleButton.kt:111, Button.kt:1064).
+# `default_size_by_variant` (flavour expressive; S10 states it only where it differs from `default_size`): Compose's
+# FloatingActionButton is the standard FAB, `regular`, where Expressive's buttons default to `small` (ToggleButton.kt:111,
+# Button.kt:1064).
 # Flavour baseline: no Expressive sizes (the FAB's three baseline sizes only), icon toggles only (IconToggleButton);
 # flavour expressive: the five button sizes (default small: Compose's ToggleButton and Button use the small design),
 # the text toggles, `@square`, `@narrow`, `@wide`, the container and branded FAB styles; `@primary_container`
@@ -34,7 +35,6 @@ not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_
 sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "extra_large"] }, { variant = "@extended_fab", sizes = ["regular"] }]
 exclusive_variants = [["primary", "tinted", "flat", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container"], ["icon_only", "with_icon"], ["@fab", "@extended_fab"]]
 variant_sets = [["menu", "primary"], ["menu", "@outlined"], ["icon_only", "@outlined"], ["icon_only", "primary"], ["icon_only", "tinted"], ["icon_only", "toggle"], ["icon_only", "primary", "toggle"], ["icon_only", "tinted", "toggle"], ["icon_only", "@outlined", "toggle"], ["@fab", "primary"], ["@fab", "@secondary"], ["@fab", "@tertiary"], ["@fab", "@primary_container"], ["@fab", "@surface"], ["@fab", "@lowered"], ["@fab", "@surface", "@lowered"], ["@extended_fab", "primary"], ["@extended_fab", "@secondary"], ["@extended_fab", "@tertiary"], ["@extended_fab", "@primary_container"], ["@extended_fab", "@surface"], ["@extended_fab", "@lowered"], ["@extended_fab", "@surface", "@lowered"]]
-default_size_by_variant = [{ variant = "@fab", size = "regular" }]
 rows = ["MAT-B1", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N4", "MAT-N8", "MAT-X22"]
 
 [[model.cite]]
@@ -174,11 +174,6 @@ quote = "/** Default container color for a floating action button. */ public val
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/FabPrimaryContainerTokens.kt:22-23"
 quote = "inline val ContainerColor: ColorToken get() = ColorSchemeKeyTokens.PrimaryContainer"
-
-[[model.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:144-145"
-quote = "FabBaselineTokens.ContainerWidth, FabBaselineTokens.ContainerHeight,"
 
 [[model]]
 widget = "button"
