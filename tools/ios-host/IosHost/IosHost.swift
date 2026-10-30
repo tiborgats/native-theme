@@ -14,7 +14,9 @@
 // into a UIGraphicsImageRenderer of the screen's scale and the standard range)
 // to draw/, and cropped from the simulator's own screenshot of the page to
 // screen/. The screenshot is taken by tools/ios-host/run.sh: the app writes
-// sync/ready-<page>, the script writes sync/screen-<page>.png. index.toml
+// sync/ready-<page>-<attempt>, the script writes
+// sync/screen-<page>-<attempt>.png; a screenshot that a system banner covers
+// is taken again (`overlaySamples`), the retakes listed in sync/retakes. index.toml
 // records the simulator, the build (the DT keys Xcode writes into the
 // bundle's Info.plist), the screen and each cell's button frame.
 //
@@ -83,6 +85,42 @@ let sizes: [(name: String, size: UIButton.Configuration.Size)] = [
 
 let settleSeconds = 2.0
 
+// A screenshot whose crop differs from the app's drawing of a cell in more
+// than this many 8-bit samples by more than `overlayLevels` is taken again,
+// up to `maxRetakes` times, `retakeDelaySeconds` apart: a system banner (iOS
+// 26.5's "Ready for Apple Intelligence") can slide over the page. The drawing
+// and the screenshot of a page agree within 3 levels, except clear glass's
+// drawing (about 30 pixels up to 82 levels apart).
+let overlayLevels = 32
+let overlaySamples = 1500
+let maxRetakes = 5
+let retakeDelaySeconds = 6.0
+
+/// The number of samples (RGBA, 8 bits, sRGB) of two images of one size that
+/// differ by more than `overlayLevels`; `Int.max` where they cannot be compared.
+func differingSamples(_ first: CGImage, _ second: CGImage) -> Int {
+    guard first.width == second.width, first.height == second.height,
+        let a = samples(first), let b = samples(second), a.count == b.count
+    else { return Int.max }
+    var count = 0
+    for index in a.indices where abs(Int(a[index]) - Int(b[index])) > overlayLevels {
+        count += 1
+    }
+    return count
+}
+
+func samples(_ image: CGImage) -> [UInt8]? {
+    guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+        let context = CGContext(
+            data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+            bytesPerRow: image.width * 4, space: space,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+    else { return nil }
+    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    guard let data = context.makeImage()?.dataProvider?.data as Data? else { return nil }
+    return [UInt8](data)
+}
+
 let appearances: [(name: String, style: UIUserInterfaceStyle)] = [("light", .light), ("dark", .dark)]
 
 enum ButtonState: String, CaseIterable {
@@ -130,6 +168,9 @@ final class HostViewController: UIViewController {
     private let out: URL
     private var pageIndex = 0
     private var cells: [Cell] = []
+    private var drawn: [CGImage?] = []
+    private var attempt = 0
+    private var retakes: [String] = []
     private var entries: [String] = []
     private var failures: [String] = []
     private var started = false
@@ -223,22 +264,29 @@ final class HostViewController: UIViewController {
     private func draw() {
         let page = pages[pageIndex]
         let scale = view.window?.windowScene?.screen.scale ?? 1
+        drawn = []
         for cell in cells {
             let format = UIGraphicsImageRendererFormat(for: cell.view.traitCollection)
             format.scale = scale
             format.opaque = true
             format.preferredRange = .standard
             let renderer = UIGraphicsImageRenderer(bounds: cell.view.bounds, format: format)
-            var drawn = false
+            var succeeded = false
             let image = renderer.image { _ in
-                drawn = cell.view.drawHierarchy(in: cell.view.bounds, afterScreenUpdates: true)
+                succeeded = cell.view.drawHierarchy(in: cell.view.bounds, afterScreenUpdates: true)
             }
-            if !drawn { failures.append("\(page.path)/\(cell.state.rawValue): drawHierarchy returned false") }
+            if !succeeded { failures.append("\(page.path)/\(cell.state.rawValue): drawHierarchy returned false") }
+            drawn.append(image.cgImage)
             write(image, to: "draw/\(page.path)/\(cell.state.rawValue).png")
         }
-        let ready = out.appendingPathComponent("sync/ready-\(pageIndex)")
+        requestScreenshot(attempt: 0)
+    }
+
+    private func requestScreenshot(attempt: Int) {
+        self.attempt = attempt
+        let ready = out.appendingPathComponent("sync/ready-\(pageIndex)-\(attempt)")
         do {
-            try page.path.write(to: ready, atomically: true, encoding: .utf8)
+            try pages[pageIndex].path.write(to: ready, atomically: true, encoding: .utf8)
         } catch {
             failures.append("write \(ready.lastPathComponent): \(error)")
         }
@@ -246,7 +294,7 @@ final class HostViewController: UIViewController {
     }
 
     private func waitForScreenshot(since start: Date) {
-        let screenshot = out.appendingPathComponent("sync/screen-\(pageIndex).png")
+        let screenshot = out.appendingPathComponent("sync/screen-\(pageIndex)-\(attempt).png")
         if FileManager.default.fileExists(atPath: screenshot.path) {
             crop(screenshot)
         } else if Date().timeIntervalSince(start) > 300 {
@@ -268,7 +316,30 @@ final class HostViewController: UIViewController {
             finish()
             return
         }
+        let frames = cells.map { cell -> CGRect in
+            let frame = cell.view.convert(cell.view.bounds, to: nil)
+            return CGRect(
+                x: (frame.minX * scale).rounded(), y: (frame.minY * scale).rounded(),
+                width: (frame.width * scale).rounded(), height: (frame.height * scale).rounded())
+        }
+        let crops = frames.map { source.cropping(to: $0) }
+        let covered = zip(drawn, crops).contains { pair in
+            guard let drawnImage = pair.0, let cropped = pair.1 else { return false }
+            return differingSamples(drawnImage, cropped) > overlaySamples
+        }
         let manager = FileManager.default
+        if covered && attempt < maxRetakes {
+            try? manager.removeItem(at: screenshot)
+            retakes.append("\(page.path) attempt \(attempt): the screenshot differs from the drawing")
+            DispatchQueue.main.asyncAfter(deadline: .now() + retakeDelaySeconds) { [weak self] in
+                guard let self else { return }
+                self.requestScreenshot(attempt: self.attempt + 1)
+            }
+            return
+        }
+        if covered {
+            failures.append("\(page.path): the screenshot differs from the drawing after \(maxRetakes) retakes")
+        }
         do {
             try manager.moveItem(at: screenshot, to: out.appendingPathComponent("pages/\(pageIndex).png"))
         } catch {
@@ -278,13 +349,10 @@ final class HostViewController: UIViewController {
         if CGFloat(source.width) != native.width || CGFloat(source.height) != native.height {
             failures.append("\(page.path): screenshot \(source.width)x\(source.height), screen \(native)")
         }
-        for cell in cells {
-            let frame = cell.view.convert(cell.view.bounds, to: nil)
-            let pixels = CGRect(
-                x: (frame.minX * scale).rounded(), y: (frame.minY * scale).rounded(),
-                width: (frame.width * scale).rounded(), height: (frame.height * scale).rounded())
+        for (index, cell) in cells.enumerated() {
+            let pixels = frames[index]
             let name = "screen/\(page.path)/\(cell.state.rawValue).png"
-            if let cropped = source.cropping(to: pixels) {
+            if let cropped = crops[index] {
                 write(UIImage(cgImage: cropped, scale: scale, orientation: .up), to: name)
             } else {
                 failures.append("\(name): crop \(pixels) outside the screenshot")
@@ -391,6 +459,8 @@ final class HostViewController: UIViewController {
         } catch {
             failures.append("index.toml: \(error)")
         }
+        let retakeLog = retakes.map { $0 + "\n" }.joined()
+        try? retakeLog.write(to: out.appendingPathComponent("sync/retakes"), atomically: true, encoding: .utf8)
         let status = failures.isEmpty ? "ok\n" : failures.joined(separator: "\n") + "\n"
         try? status.write(to: out.appendingPathComponent("sync/done"), atomically: true, encoding: .utf8)
         exit(failures.isEmpty ? 0 : 1)

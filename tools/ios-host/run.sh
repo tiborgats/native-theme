@@ -4,17 +4,19 @@
 # simulator, creates and boots a simulator of the image's newest iOS runtime
 # of the SDK's major version (macos-15 also carries iOS 26 runtimes, which
 # would run an iOS 18 SDK build in iOS 26's compatibility look) on the newest
-# "iPhone <N> Pro" that runtime supports, runs the app twice, and
-# checks that the two runs wrote byte-identical files (shasum -a 256). For each
-# page the app draws, the script takes the simulator's screenshot
-# (`simctl io screenshot`) when the app writes sync/ready-<page> and hands it
-# over as sync/screen-<page>.png (tools/ios-host/IosHost/IosHost.swift). Writes
-# into $1:
-#   run<N>/       the app's draw/, screen/ and pages/ PNGs, index.toml,
-#                 sync/done (ok or the app's failures)
+# "iPhone <N> Pro" that runtime supports, runs the app twice, and checks that
+# the two runs wrote byte-identical measurements (shasum -a 256; below). For
+# each page the app draws, the script takes the simulator's screenshot
+# (`simctl io screenshot`) when the app writes sync/ready-<page>-<attempt> and
+# hands it over as sync/screen-<page>-<attempt>.png
+# (tools/ios-host/IosHost/IosHost.swift). Writes into $1:
+#   run<N>/       the app's draw/, screen/ and pages/ PNGs, index.toml;
+#                 sync/ (the handshake, outside the comparison): done (ok or
+#                 the app's failures), retakes (screenshots a banner covered)
 #   environment.txt (the OS, Xcode and its SDKs, the runtime and device chosen,
 #   the SDK's UIButton.Configuration styles and sizes), build.log, run.txt
-#   (each step's exit status), run<N>.sha256, sha256.txt
+#   (each step's exit status), run<N>.sha256, differ.txt (the files that
+#   differ between the runs), sha256.txt
 set -u
 out=$1
 mkdir -p "$out"
@@ -22,7 +24,7 @@ out=$(cd "$out" && pwd)
 log="$out/run.txt"
 : >"$log"
 note() { echo "$*" | tee -a "$log"; }
-manifest() { (cd "$1" && find . -type f ! -name '*.log' -print | LC_ALL=C sort | xargs shasum -a 256); }
+manifest() { (cd "$1" && find . -type f ! -path './sync/*' -print | LC_ALL=C sort | xargs shasum -a 256); }
 bundle=io.github.tiborgats.native-theme.ios-host
 build="${RUNNER_TEMP:-/tmp}/ios-host-build"
 
@@ -99,17 +101,24 @@ for run in 1 2; do
   container=$(xcrun simctl get_app_container "$udid" "$bundle" data)
   sync="$container/Documents/run$run/sync"
   page=0
+  attempt=0
+  taken=
   start=$(date +%s)
   while [ ! -e "$sync/done" ]; do
-    if [ -e "$sync/ready-$page" ]; then
+    if [ "$taken" != "$page-$attempt" ] && [ -e "$sync/ready-$page-$attempt" ]; then
       shot=$(date +%s)
-      xcrun simctl io "$udid" screenshot --type=png "$sync/.screen-$page.png" >/dev/null 2>&1
+      xcrun simctl io "$udid" screenshot --type=png "$sync/.screen-$page-$attempt.png" >/dev/null 2>&1
       status=$?
-      if [ $status -ne 0 ]; then note "screenshot $page: exit $status"; failed=1; fi
+      if [ $status -ne 0 ]; then note "screenshot $page-$attempt: exit $status"; failed=1; fi
       shot=$(($(date +%s) - shot))
-      if [ $shot -gt 10 ]; then note "run $run screenshot $page: $shot s"; fi
-      mv "$sync/.screen-$page.png" "$sync/screen-$page.png"
+      if [ $shot -gt 10 ]; then note "run $run screenshot $page-$attempt: $shot s"; fi
+      mv "$sync/.screen-$page-$attempt.png" "$sync/screen-$page-$attempt.png"
+      taken="$page-$attempt"
+    elif [ "$taken" = "$page-$attempt" ] && [ -e "$sync/ready-$page-$((attempt + 1))" ]; then
+      attempt=$((attempt + 1))
+    elif [ "$taken" = "$page-$attempt" ] && [ -e "$sync/ready-$((page + 1))-0" ]; then
       page=$((page + 1))
+      attempt=0
     elif [ $(($(date +%s) - start)) -gt 1800 ]; then
       note "run $run: no sync/done within 1800 s"
       failed=1
@@ -118,7 +127,8 @@ for run in 1 2; do
       sleep 0.05
     fi
   done
-  note "run $run: $page pages, done: $(tr '\n' ' ' <"$sync/done" 2>/dev/null)"
+  note "run $run: $(ls "$sync/../pages" 2>/dev/null | wc -l | tr -d ' ') pages, done: $(tr '\n' ' ' <"$sync/done" 2>/dev/null)"
+  if [ -s "$sync/retakes" ]; then sed "s/^/run $run retake: /" "$sync/retakes" | tee -a "$log"; fi
   [ "$(cat "$sync/done" 2>/dev/null)" = "ok" ] || failed=1
   xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
   rm -rf "$out/run$run"
@@ -129,12 +139,20 @@ xcrun simctl shutdown "$udid" >/dev/null 2>&1
 xcrun simctl delete "$udid"
 
 for run in 1 2; do manifest "$out/run$run" >"$out/run$run.sha256"; done
-if [ -s "$out/run1.sha256" ] && cmp -s "$out/run1.sha256" "$out/run2.sha256"; then
+# The measurement is the screenshot (screen/, pages/, index.toml): a file of
+# it that differs between the runs fails the job. drawHierarchy's copies
+# (draw/) of the Liquid Glass styles differ by a level or two between runs
+# (spike I), so a draw/ file that differs is listed and fails nothing.
+diff "$out/run1.sha256" "$out/run2.sha256" | sed -n 's/^< [0-9a-f]*  //p' >"$out/differ.txt"
+if [ ! -s "$out/run1.sha256" ]; then
+  note "run 1 wrote nothing"
+  failed=1
+elif [ ! -s "$out/differ.txt" ]; then
   note "run 1 and run 2 byte-identical ($(wc -l <"$out/run1.sha256" | tr -d ' ') files)"
 else
-  note "run 1 and run 2 differ: $(diff "$out/run1.sha256" "$out/run2.sha256" | grep -c '^<') files"
-  diff "$out/run1.sha256" "$out/run2.sha256" | grep '^<' | head -n 40 | tee -a "$log"
-  failed=1
+  note "run 1 and run 2 differ: $(grep -c . "$out/differ.txt") of $(wc -l <"$out/run1.sha256" | tr -d ' ') files, $(grep -vc '^\./draw/' "$out/differ.txt") outside draw/"
+  head -n 60 "$out/differ.txt" | tee -a "$log"
+  grep -qv '^\./draw/' "$out/differ.txt" && failed=1
 fi
 (cd "$out" && find . -name '*.png' -print | LC_ALL=C sort | xargs shasum -a 256) >"$out/sha256.txt"
 exit $failed
