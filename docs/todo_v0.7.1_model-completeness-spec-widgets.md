@@ -242,8 +242,8 @@ Each `### <widget>` section states, in this order:
   `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
   focused shows both, two states drawn together (R3). Both are the part's `interaction` block (S2.12), never a paint
   layer: the base states its alphas (the state layer's 0) and its colours `= surface.foreground`, the content colour
-  that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and the `{pressed}` rule the
-  `Ripple` transition; the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
+  that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
+  press starts (S2.12); the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
   it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour it was pressed in,
   as Android's `RippleDrawable` does (`Ripple.android.kt:79-82`). It draws over the part's content and beneath its
   stroke, as the ripple node and `Modifier.surface`'s border do (`Ripple.kt:373-377`, `Surface.kt:562-564`,
@@ -281,9 +281,9 @@ Each `### <widget>` section states, in this order:
   end in one update (S2.7). The state layer's own fades are chosen the same way (`material3-ripple/…/Ripple.kt:313-322`,
   `:463-483`): by the interaction entered, or, going to none, by the one left, all linear. So the rest style states the
   outgoing fade with no `from`, then the drag's outgoing one `from {dragged}` where the set holds `dragged`, both of
-  the `StateLayer` group; each state-layer rule states its incoming fade; the `{pressed}` rule the press ripple's
-  `Ripple` transition, Android's patterned `RippleDrawable` effect, whose release is its own exit (S2.7's press
-  ripple); and the container's
+  the `StateLayer` group; each state-layer rule states its incoming fade; the press ripple is no transition but the
+  block's `ripple.effect`, Android's patterned `RippleDrawable`, started by the press and ended by its own exit
+  (S2.12); and the container's
   `Fill` takes no transition where Compose snaps it (a selected chip's, `Chip.kt:4070-4076`; a checked toggle
   button's, `ToggleButton.kt:178`, `:1446-1452`; a checked icon button's, `IconButton.kt:1428-1436`). So a toggle
   clicked while hovered snaps its container, its state layer taking the checked colour at once at its alpha
@@ -2155,7 +2155,7 @@ spaces:
     host: Kirigami's search dialog field, Q1.118; a GTK linked box's overlap, each entry's negative start or top
     margin, GN-1.42), `min_width`, `min_height`, `max_width`, `opacity` (today's
     `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes rebind the accent
-    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†).
+    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11).
   - `text` — the entered text: `text`, `transitions` (RL-2†).
   - `placeholder` — the placeholder text: `text`, `transitions` (macOS's centred search placeholder moving to the
     leading edge on focus, MAC-N02).
@@ -2504,7 +2504,7 @@ spaces:
   - `body` — the trigger box (the root): `fill`, `stroke` (per state), `corners`, `shadow` (Breeze's button shadow on
     the non-flat, non-editable combo), `padding`, `margin` (a GTK linked box's overlap, the drop-down's button's
     negative start or top margin, GN-1.42), `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
-    Button set, View set when editable), `transitions`.
+    Button set, View set when editable), `transitions`, `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11).
   - `label` — the current value's text: `text`.
   - `placeholder` — WinUI's placeholder text: `text`.
   - `icon` — the leading icon (Material's), or the current item's icon (Qt's `CE_ComboBoxLabel`, Q1.122; AppKit's

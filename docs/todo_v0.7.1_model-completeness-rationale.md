@@ -490,8 +490,10 @@ button's).
 
 **Decision:** the block. It holds one state layer and one ripple by its type, a rule setting the fill cannot touch it,
 and its timing follows from its fields; its colours reference the content colour, `= surface.foreground`, so they
-follow every rebinding with no rule restating them; Material's ripple is the `Ripple` group's transition (R9), on
-Android the framework's `RippleDrawable`, as Compose draws it there.
+follow every rebinding with no rule restating them; Material's ripple is the block's effect, started by the press (R9), on
+Android the framework's `RippleDrawable`, as Compose draws it there. Weighed for the ripple: a transition kind (a
+transition with no timing of its own, started by an event rather than a value change, against R9's own rule, with
+checks to fence it in) against a field of the block whose start is the flag: the field.
 
 ### R4 — The facts gate
 
@@ -742,13 +744,13 @@ MAT-X13–MAT-X15, X-MO-1).
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
   edge, scale, shape morph, clip reveal (WinUI's combo box opens by revealing from the selected item, W1-136),
   and the rest. `dialog.entrance` becomes one of them.
-- **Ripple:** the `Ripple` group's transition of the part's `interaction` ripple into `{pressed}`, a platform's own
-  effect from a closed set implemented once in native-theme to its source, as platform curves are: its origin the
-  point pressed, which the toolkit has from the press itself, and its whole lifecycle, the release's exit included, the
-  effect's own. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
+- **Ripple:** no transition but a field of the part's `interaction` block, a platform's own effect from a closed set
+  implemented once in native-theme to its source, as platform curves are, which the press starts and whose whole
+  lifecycle, the release's exit included, is the effect's own (R3); its origin is the point pressed, which the
+  toolkit has from the press itself. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
   whose shader draws a wave with sparkles, so the ripple is that effect, implemented to its source, not a circle with
-  stated durations. One transition governs a property group per change, as in CSS; the state layer and the ripple have
-  groups of their own, so neither times the container (R3). A stroke's widths may be timed by a group of their own,
+  stated durations. One transition governs a property group per change, as in CSS; the state layer has a group of its own,
+  so it does not time the container (R3). A stroke's widths may be timed by a group of their own,
   `StrokeWidth`, which overrides `Stroke` for them where stated, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
   different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
   group was weighed and rejected, a field-path list on every transition for one pair.
@@ -1314,7 +1316,8 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
   round); Compose's state-layer fades by `from`; Breeze's zero transitions `from {disabled}` and
   none under Kirigami (qqc2-desktop-style's style item paints with no widget); the press ripple's
   effect (Android's patterned `RippleDrawable`, a closed set of effects implemented to their sources, the ripple keeping
-  its pressed colour); the press delay a touch behaviour (`token.behavior.touch.delay`, `delay_every_pointer`); the checkbox's, radio's and switch's
+  its pressed colour); the ripple a field of the block, `ripple.effect`, not a transition; the press delay a touch behaviour
+  (`token.behavior.touch.delay`); the checkbox's, radio's and switch's
   `state_layer` parts holding the block, their per-state opacity dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
   property group that overrides `Stroke` where stated; a stroke becoming absent interpolating to zero width.
 
