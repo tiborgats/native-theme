@@ -1312,12 +1312,16 @@ spaces:
   - `menu_indicator_anchor: Value<IndicatorAnchor>`, `IndicatorAnchor { Inline, TopEnd, BottomEnd }` — where the
     `menu_indicator` lies (ADD-A122): `Inline` after the content in the layout, `menu_indicator_gap_px` from it; `TopEnd`,
     `BottomEnd` over that corner of `body`, taking no layout space, its box its laid-out size (its content, at least
-    `min_width` by `min_height` where it states them, W1-102 stating none) and its `margin`'s top or bottom and right (the end side, mirrored with the layout, S1) the distances from `body`'s edges
+    `min_width` by `min_height` where it states them) and its `margin`'s top or bottom and right (the end side, mirrored with the layout, S1) the distances from `body`'s edges
     at that corner. The one way an indicator's placement is stated: Breeze's `@inline_small` arrow, a small arrow
     box at the bottom-right corner inset by fixed amounts (`breeze@6.8.2 kstyle/breezestyle.cpp:2940-2944`, mirrored
     by `visualRect`, `:2950`; K1.155), and WinUI's AppBarButton flyout chevron, top-aligned with a top and an end
-    margin whose negative start margin only keeps it out of the layout
-    (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35-36`, `:373`, W1-102);
+    margin, in a zero-width `Auto` column, which WinUI's arrange stretches to the column less the margins, so its
+    negative start margin keeps it out of the layout and, with the end margin, makes its box wider than the glyph,
+    which is centred in it: `min_width` is that width, the start margin negated less the end margin
+    (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35-36`, `:357-361`, `:373`;
+    `src/dxaml/xcp/core/core/elements/framework.cpp:1833-1842`, `src/dxaml/xcp/core/core/elements/icon.cpp:809-814`;
+    W1-102), `min_height` `auto`;
     every other indicator is `Inline`.
   - `menu_placement: Placement` — where the menu a `menu`, `overflow` or `back` button opens goes (Nested controls:
     the host's value; B-18†, K-P3-5†, GN-P4-2†, W1-102, P4-12†; its arrowless popover on GNOME, GN-1.278†).
@@ -3370,7 +3374,8 @@ spaces:
   events and with the widget's element (the strip and its page) for the strip's: a tab's `Appear`,
   `Disappear` (a tab opening and closing: GN-1.131; macOS's window tabs, MAC-X32†), `Move` (a tab moved to its new
   place: a reordered tab, GN-1.131, and Qt's slide, shorter for a short move, its duration an expression over
-  `element.move_distance`, which the values declare, `data = { values = ["move_distance"] }`, K1.133†, ADD-A87; tabs
+  `element.move_distance` and the tab's own `element.width` (`element.height` on vertical tabs), which the values
+  declare, `data = { values = ["move_distance", "width", "height"] }`, K1.133†, ADD-A87; tabs
   parting to open a gap for a dragged one, MAC-SF07†; the target strip's tabs while a torn-out window hovers it,
   W-SF09†, if the measurement finds a gap), `@attention` (GN-1.128), `@drag`, `@tear_out` (the source tab tearing
   out, W1-087), `@spring_load` (a tab a drag hovers switching to it, MAC-X21); the strip's `@scroll`, `@resize`
@@ -3474,7 +3479,7 @@ spaces:
     on macOS, iOS, WinUI's overlay acrylic), `stroke` (the inner edge only, flipping with the end variant and the
     direction, GN-1.139; the full frame under KDE's option, K1.140), `corners` (per corner: Material rounds the end
     corners only, MAT-SB7; floating glass, SD-6, MAC-SB06), `shadow`, `padding`, `margin` (the floating pane's
-    distance from the window's edges, by a rule under `floating`, which its `Concentric` corners' inset counts, S2.4;
+    distance from the window's edges, the container's (S2.4), by a rule under `floating`, which its `Concentric` corners' inset counts, S2.4;
     SD-6, MAC-SB06), `min_width`, `max_width`,
     `min_height` (Material's drawer container height, MAT-SB7; Kirigami's top and bottom drawers' minimum, Q1.60),
     `max_height` (Kirigami's top and bottom drawers' cap, Q1.60, below), `bindings` (the surface set it draws on: Kirigami's colour set by modality, Q1.53; GNOME's sidebar set),
@@ -3618,7 +3623,10 @@ spaces:
     K1.151; iOS's top or bottom hairline, TB-2, C-1; GNOME's border line, GN-1.154; GtkActionBar's top shade line,
     GN-1.157, GN-2.20), `shadow` (raised bars, GN-1.153; on-scroll elevation, MAT-TA1; the floating bar's, K-KA-28†,
     MAT-N25; animating between the expanded and collapsed elevations, MAT-P4-7†), `corners`, `margin` (the floating
-    bar's distance from the window's edges, by a rule under `floating`, MAT-N25), `padding` (the osd bar,
+    bar's distance from the window's edges, by a rule under `floating`: Material's `ScreenOffset`, its
+    `ContainerExternalPadding`, on the edge the bar is anchored to only, the others zero, as the application offsets
+    the bar on that axis alone, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingToolbar.kt:685-689`,
+    `src/androidDeviceTest/kotlin/androidx/compose/material3/FloatingToolbarTest.kt:112`, `:204`; MAT-N25), `padding` (the osd bar,
     GN-1.149; the floating bar), `min_height` (per variant: large title, compact, with search or prompt, C-1, TB-3,
     W1-103), `min_width` (the vertical floating toolbar, MAT-N25), `max_height` (Kirigami's global toolbar, Q1.74),
     `bindings` (KDE's Header set by position, Q1.68, Q1.71), `transitions` (MAT-TA1's on-scroll change; the header's
@@ -4417,8 +4425,8 @@ spaces:
 - **Parts:**
   - `bar` — the bar (the root): `fill` (paint with material; transparent at the scroll edge by `scrolled`, T-1),
     `stroke`
-    (the top hairline, one edge), `corners`, `shadow` (the floating capsule's, iOS 26, T-9), `margin` (the floating capsule's distance from the window's edges,
-    by a rule under `floating`, T-9), `min_height` (by size class: T-14, ADD-A20), `padding`.
+    (the top hairline, one edge), `corners`, `shadow` (the floating capsule's, iOS 26, T-9), `margin` (the floating capsule's distance from the window's edges, not the safe area's,
+    as T-9 measures it from the screen's edges, by a rule under `floating`), `min_height` (by size class: T-14, ADD-A20), `padding`.
   - `item` *(element)* — one destination: `fill`, `stroke`, `corners`, `padding`, `min_height` (Q2.34), `focus`
     (Q2.36), `bindings` (Kirigami's Window set, Q2.34), `transitions` (Q2.35); per-state colours (normal, selected,
     disabled, focused: T-3, MAT-N12). `item_icon`, `item_label`, `indicator` belong to `item` and are queried with it.
