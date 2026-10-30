@@ -1206,6 +1206,10 @@ final class HostViewController: UIViewController {
             return
         }
         armed = cell
+        // A press releases into the toggle's other selection: a retake
+        // presses the button in its state again.
+        if cell.state == .pressedSelected { button.isSelected = true }
+        if cell.state == .pressed { button.isSelected = false }
         touchDown = false
         captured = false
         rearm = false

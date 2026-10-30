@@ -9,7 +9,9 @@
 // outside draw/) is a text file that differs, or is not a PNG of the same size,
 // or differs by more than `tolerance`: iOS 26's Liquid Glass edges in the
 // simulator's screenshot vary by a level between runs in a few pixels (spike
-// I); drawHierarchy's copies (draw/) are listed and fail nothing, as is every
+// I; `tolerance`), and Liquid Glass over black by up to two levels in a few
+// dozen pixels (iOS 26.5, `glassTolerance`, a path holding `glass`);
+// drawHierarchy's copies (draw/) are listed and fail nothing, as is every
 // file under --list-only and every capture of the activity indicator, which
 // turns without end (a path holding `+activity_indicator_`).
 
@@ -18,6 +20,7 @@ import Foundation
 import ImageIO
 
 let tolerance = 1
+let glassTolerance = 2
 
 func samples(_ url: URL) -> (width: Int, height: Int, bytes: [UInt8])? {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -84,6 +87,6 @@ for path in list.split(separator: "\n").map(String.init) {
         largest = max(largest, difference)
     }
     print("\(path): \(pixels) pixels differ, by at most \(largest) levels")
-    if measured && largest > tolerance { failed = true }
+    if measured && largest > (path.contains("glass") ? glassTolerance : tolerance) { failed = true }
 }
 exit(failed ? 1 : 0)

@@ -33,7 +33,7 @@
 #   differ-levels.txt and press-differ-levels.txt (by how much), sha256.txt
 set -u
 out=$1
-quick=${IOS_HOST_QUICK:-1}
+quick=${IOS_HOST_QUICK:-0}
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 log="$out/run.txt"
