@@ -135,8 +135,14 @@ enum Region {
     Roles,
     /// The tokens.
     Tokens,
-    /// A typed widget's part.
-    Part(WidgetKind, TypedPart, &'static PartInfo),
+    /// A typed widget's part: the widget, the part, its catalogue entry
+    /// and the widget's parts.
+    Part(
+        WidgetKind,
+        TypedPart,
+        &'static PartInfo,
+        &'static [PartInfo],
+    ),
     /// A typed widget's values.
     Values(WidgetKind),
 }
@@ -408,7 +414,11 @@ impl<'a> Checker<'a> {
             }
             PartPatch::Style(style) => {
                 self.part_fields(style, widget, info, at);
-                self.region = Region::Part(widget, part, info);
+                let parts = registry::widgets()
+                    .iter()
+                    .find(|w| w.kind == widget)
+                    .map_or(&[] as &[PartInfo], |w| w.parts);
+                self.region = Region::Part(widget, part, info, parts);
                 let toml = self.toml;
                 let mut walker = Walker::new(at, toml, self);
                 walker.part(info.fields, |w| w.walk(style));
@@ -960,10 +970,12 @@ impl<'a> Checker<'a> {
             }
         }
         match self.region {
-            Region::Part(widget, part, info) => {
+            Region::Part(widget, part, info, parts) => {
                 self.element_data(reference, widget, DataOwner::Part(part), at);
-                if let Ref::Widget { part: other, .. } = reference {
-                    self.same_element(widget, info, other, at);
+                if let Ref::Widget { part: other, .. } = reference
+                    && let Some(part) = other_element(parts, info, other.as_str())
+                {
+                    self.problem(at, ProblemKind::OtherElementsPart { part });
                 }
             }
             Region::Values(widget) => self.element_data(reference, widget, DataOwner::Values, at),
@@ -1000,29 +1012,6 @@ impl<'a> Checker<'a> {
         if !declared {
             let datum = reference.to_string();
             self.problem(at, ProblemKind::UndeclaredData { datum });
-        }
-    }
-
-    /// A `widget.<part>` reference reads a part of the element its own part
-    /// is queried with (S2.2).
-    fn same_element(&mut self, widget: WidgetKind, info: &'static PartInfo, other: &Key, at: &str) {
-        let Some(widget_info) = registry::widgets().iter().find(|w| w.kind == widget) else {
-            return;
-        };
-        self.same_element_in(widget_info.parts, info, other, at);
-    }
-
-    /// A `widget.<other>` reference stated on `info`, one of `parts`, reads
-    /// a part of the same element (S2.2).
-    fn same_element_in(
-        &mut self,
-        parts: &'static [PartInfo],
-        info: &'static PartInfo,
-        other: &Key,
-        at: &str,
-    ) {
-        if let Some(part) = other_element(parts, info, other.as_str()) {
-            self.problem(at, ProblemKind::OtherElementsPart { part });
         }
     }
 
@@ -1559,7 +1548,7 @@ impl TypeEnv for Types<'_> {
                 Region::Roles | Region::Tokens | Region::Values(_) => None,
             },
             Ref::Part(path) => match self.region {
-                Region::Part(_, _, info) => field_type(info.fields, &joined(path)),
+                Region::Part(_, _, info, _) => field_type(info.fields, &joined(path)),
                 Region::Roles | Region::Tokens | Region::Values(_) => None,
             },
             Ref::Widget { part, path } => {
@@ -2310,6 +2299,8 @@ fn ref_depth(reference: &Ref) -> usize {
 pub(super) mod triggers {
     use super::tests::{PARTS, looped};
     use super::*;
+    use crate::next::units::Fraction;
+    use crate::next::widgets::ButtonPart;
 
     fn checker_over<'a>(cx: &'a Context<'a>) -> Checker<'a> {
         Checker::new(cx, false)
@@ -2339,8 +2330,16 @@ pub(super) mod triggers {
             below: &[],
         };
         let mut checker = checker_over(&cx);
-        if let Some(mark) = PARTS.iter().find(|part| part.name == "mark") {
-            checker.same_element_in(&PARTS, mark, &crate::key!("label"), "probe");
+        if let Some(mark) = PARTS.iter().find(|part| part.name == "mark")
+            && let Ok(expr) = Expr::parse("widget.label.opacity")
+        {
+            let region = Region::Part(
+                WidgetKind::Button,
+                TypedPart::Button(ButtonPart::Body),
+                mark,
+                &PARTS,
+            );
+            checker.walk("probe", region, &Value::<Fraction>::Expr(expr));
         }
         checker.problems
     }
@@ -2404,6 +2403,7 @@ mod tests {
             WidgetKind::Button,
             TypedPart::Button(ButtonPart::Icon),
             info,
+            &[],
         );
         assert!(walked(&looped(None), on_part).is_empty());
     }
@@ -2439,19 +2439,52 @@ mod tests {
     #[test]
     fn refusal_other_elements_part() {
         let part = |name: &str| PARTS.iter().find(|p| p.name == name).unwrap();
+        let read = |on: &str, text: &str| {
+            let decl = Declarations::default();
+            let cx = Context {
+                declarations: &decl,
+                preset: None,
+                kind: LayerKind::Application,
+                below: &[],
+            };
+            let mut checker = Checker::new(&cx, false);
+            let region = Region::Part(
+                WidgetKind::Button,
+                TypedPart::Button(ButtonPart::Body),
+                part(on),
+                &PARTS,
+            );
+            let value = Value::<Fraction>::Expr(Expr::parse(text).unwrap());
+            checker.walk("probe", region, &value);
+            checker
+                .problems
+                .iter()
+                .map(Problem::to_string)
+                .collect::<Vec<_>>()
+        };
         // The row's mark reads the host's label: another element.
         assert_eq!(
-            other_element(&PARTS, part("mark"), "label"),
-            Some("label".to_owned())
+            read("mark", "widget.label.opacity"),
+            ["probe: `widget.label` is another element's part"]
         );
         // The host's label reads the row's mark: another element.
         assert_eq!(
-            other_element(&PARTS, part("label"), "mark"),
-            Some("mark".to_owned())
+            read("label", "widget.mark.opacity"),
+            ["probe: `widget.mark` is another element's part"]
         );
-        // Within one element: the mark reads its row, the label the body.
-        assert_eq!(other_element(&PARTS, part("mark"), "row"), None);
-        assert_eq!(other_element(&PARTS, part("label"), "body"), None);
+        // Within one element: the mark reads its row, the label the body;
+        // the synthetic parts state no field, so the typing finds none.
+        for (on, text) in [
+            ("mark", "widget.row.opacity"),
+            ("label", "widget.body.opacity"),
+        ] {
+            assert!(
+                read(on, text)
+                    .iter()
+                    .all(|problem| !problem.contains("another element's part")),
+                "{on}: {text}"
+            );
+        }
         // A name the widget does not have is the typing's unknown name.
         assert_eq!(other_element(&PARTS, part("label"), "nope"), None);
     }
