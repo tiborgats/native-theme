@@ -359,11 +359,28 @@ impl fmt::Display for Ty {
     }
 }
 
+/// A type with its article: `a colour`, `an angle`, `a key of `…``.
+struct Article<'t>(&'t Ty);
+
+impl fmt::Display for Article<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = self.0.to_string();
+        if matches!(self.0, Ty::Key(_)) {
+            f.write_str(&name)
+        } else if name.starts_with(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']) {
+            write!(f, "an {name}")
+        } else {
+            write!(f, "a {name}")
+        }
+    }
+}
+
 impl fmt::Display for TypeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TypeError::Mismatch { expected, found } => {
-                write!(f, "a {found} where a {expected} is expected")
+                let (found, expected) = (Article(found), Article(expected));
+                write!(f, "{found} where {expected} is expected")
             }
             TypeError::ReferenceOnly { field } => {
                 write!(f, "a {field} field's expression is a reference only")
@@ -386,25 +403,30 @@ impl fmt::Display for TypeError {
                 found,
             } => write!(
                 f,
-                "`{func}`'s argument {index} is a {found} where a {expected} is expected"
+                "`{func}`'s argument {index} is {} where {} is expected",
+                Article(found),
+                Article(expected)
             ),
             TypeError::NotArithmetic { func, found } => write!(
                 f,
-                "`{func}` takes a number, length, duration or font size, not a {found}"
+                "`{func}` takes a number, length, duration or font size, not {}",
+                Article(found)
             ),
             TypeError::OperandsDiffer { func, left, right } => {
-                write!(f, "`{func}` over a {left} and a {right}")
+                write!(f, "`{func}` over {} and {}", Article(left), Article(right))
             }
             TypeError::NoNumber { func, left, right } => write!(
                 f,
-                "`{func}` over a {left} and a {right}: one operand is a number"
+                "`{func}` over {} and {}: one operand is a number",
+                Article(left),
+                Article(right)
             ),
             TypeError::UnknownVariant { ty, name } => write!(f, "`{name}` is not a {ty}"),
             TypeError::UndeclaredKey { set, key } => {
                 write!(f, "`@{key}` is not declared in `{set}`")
             }
             TypeError::UnexpectedName { name, expected } => match expected {
-                Some(ty) => write!(f, "the name `{name}` where a {ty} is expected"),
+                Some(ty) => write!(f, "the name `{name}` where {} is expected", Article(ty)),
                 None => write!(f, "the name `{name}` where no name is expected"),
             },
             TypeError::TooDeep => write!(f, "nested deeper than {MAX_DEPTH}"),

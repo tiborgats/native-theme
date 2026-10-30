@@ -1569,6 +1569,55 @@ fn presenting(
     layer
 }
 
+/// A keyed transition's or presentation step's parameter is typed by its
+/// declared unit, as any other keyed scalar (S2.7, S4.6, S12).
+#[test]
+fn keyed_kind_params_are_typed() {
+    let expr = |text: &str| Value::Expr(Expr::parse(text).unwrap());
+    let keyed = |value: Value<crate::next::units::Scalar>| {
+        let mut item = transition(vec![PropertyGroup::Fill], Timing::Linear);
+        item.kind = TransitionKind::Keyed {
+            key: key!("bounce"),
+            params: vec![(key!("amplitude"), value)],
+        };
+        transitions(vec![item])
+    };
+    let decl = declare("transition_kinds = { bounce = { amplitude = \"px\" } }");
+    assert_eq!(
+        found(&keyed(expr("token.nowhere")), &decl),
+        [
+            "widgets.button.body.transitions[0].kind.keyed.params.amplitude: the expression does \
+             not type: `token.nowhere` names nothing"
+        ]
+    );
+    assert_eq!(
+        found(&keyed(expr("#ff0000")), &decl),
+        [
+            "widgets.button.body.transitions[0].kind.keyed.params.amplitude: the expression does \
+             not type: a colour where a length is expected"
+        ]
+    );
+    assert_eq!(found(&keyed(expr("4px")), &decl), NONE);
+    let step = |value: Value<crate::next::units::Scalar>| {
+        presenting(
+            crate::next::blocks::motion::PresentationEvent::Appear,
+            crate::next::blocks::motion::PresentationKind::Keyed {
+                key: key!("wipe"),
+                params: vec![(key!("angle"), value)],
+            },
+        )
+    };
+    let decl = declare("presentation_kinds = { wipe = { angle = \"deg\" } }");
+    assert_eq!(
+        found(&step(expr("4px")), &decl),
+        [
+            "widgets.button.values.presentations[0].steps[0].kind.keyed.params.angle: the \
+             expression does not type: a length where an angle is expected"
+        ]
+    );
+    assert_eq!(found(&step(expr("90deg")), &decl), NONE);
+}
+
 /// Every kind of name S10 declares, each refused undeclared and passed
 /// declared (S10, S12).
 #[test]

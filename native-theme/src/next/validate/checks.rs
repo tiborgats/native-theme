@@ -274,6 +274,9 @@ struct Checker<'a> {
     /// The flavour whose declarations a widget's names are checked
     /// against; `None`: each flavour's, a name declared in any.
     flavor: Option<&'a Key>,
+    /// The declared parameters of the keyed transition or presentation kind
+    /// walked: what its `params` are typed by (S2.7, S10).
+    keyed_kind: Option<&'a [(Key, ScalarUnit)]>,
 }
 
 impl<'a> Checker<'a> {
@@ -285,6 +288,7 @@ impl<'a> Checker<'a> {
             in_bases: false,
             toml,
             flavor: None,
+            keyed_kind: None,
         }
     }
 
@@ -1126,13 +1130,19 @@ impl<'a> Checker<'a> {
     }
 
     /// The declared unit of the keyed scalar at `path`: a `params` group's,
-    /// or a material parameter's (S4.6, S10).
+    /// a material parameter's, or a keyed transition or presentation kind's
+    /// parameter's (S2.7, S4.6, S10).
     fn declared_unit(&self, path: &Path) -> Option<ScalarUnit> {
         let decl = self.decl();
         match (path.last_field(), path.keys().as_slice()) {
             (Some(("Tokens", "params")), [group, _]) => group_unit(decl, group),
             (Some(("Material", "params")), [key]) => decl
                 .material_params
+                .iter()
+                .find(|(held, _)| held.as_str() == *key)
+                .map(|(_, unit)| *unit),
+            (Some(("TransitionKind" | "PresentationKind", "params")), [key]) => self
+                .keyed_kind?
                 .iter()
                 .find(|(held, _)| held.as_str() == *key)
                 .map(|(_, unit)| *unit),
@@ -1175,7 +1185,12 @@ impl<'a> Checker<'a> {
         key: &Key,
         params: &[(Key, Value<Scalar>)],
     ) {
-        let Some((_, units)) = kinds.iter().find(|(held, _)| held == key) else {
+        let units = kinds
+            .iter()
+            .find(|(held, _)| held == key)
+            .map(|(_, units)| units);
+        self.keyed_kind = units.map(Vec::as_slice);
+        let Some(units) = units else {
             return;
         };
         let at = path.join("keyed.params");
