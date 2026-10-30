@@ -244,7 +244,7 @@ Each `### <widget>` section states, in this order:
   layer: the base states its alphas (the state layer's 0) and its colours `= surface.foreground`, the content colour
   that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
   press starts (S2.12); the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
-  it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour it was pressed in,
+  it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour of its first frame (S2.12),
   as Android's patterned `RippleDrawable` fixes it when the ripple first draws (`RippleDrawable.java:986-1018`). It draws over the part's content and beneath its
   stroke, as the ripple node and `Modifier.surface`'s border do (`Ripple.kt:373-377`, `Surface.kt:562-564`,
   `Border.kt:212-214`). Only the state layer (the `interaction` block's,
@@ -286,7 +286,7 @@ Each `### <widget>` section states, in this order:
   `Fill` takes no transition where Compose snaps it (a selected chip's, `Chip.kt:4070-4076`; a checked toggle
   button's, `ToggleButton.kt:178`, `:1446-1452`; a checked icon button's, `IconButton.kt:1428-1436`). So a toggle
   clicked while hovered snaps its container, its state layer taking the checked colour at once at its alpha
-  unchanged, and its ripple running its effect on in the colour it was pressed in; a hover that ends while the press
+  unchanged, and its ripple running its effect on in the colour of its first frame (S2.12); a hover that ends while the press
   holds fades the state layer's alpha by the outgoing spec while the ripple holds (MAT-X9). Where Compose animates a
   container or content colour itself, the part's `Fill`, or its text or icon, take that transition (`animateColorAsState`, `animateColor`: the list item, the date picker's cells,
   the selectable menu item, the tab's and the navigation bar's content, the toggle's outline; MAT-L, MAT-N16, MAT-M1,

@@ -485,7 +485,7 @@ button's).
 - *A block of the part, `interaction`, holding a state layer (colour, alpha) and a ripple (colour, alpha, its
   geometry), drawn over the part's fill and content and beneath its stroke, set by field patches, with
   a property group of its own, `StateLayer`; the state layer's colour changes at once and its alpha alone is timed; the ripple is the
-  platform's effect, keeping the colour it was pressed in.* Its cost: a field on a dozen Material parts that every
+  platform's effect, keeping the colour of its first frame (S2.12).* Its cost: a field on a dozen Material parts that every
   other preset states absent.
 
 **Decision:** the block. It holds one state layer and one ripple by its type, a rule setting the fill cannot touch it,
@@ -660,7 +660,8 @@ every preset and connector for one shape; and a shape (R25.5) is Material's clos
 `androidx.graphics.shapes`, so it would state Breeze's drawing by another platform's code, and it replaces the
 corners, whose stroke, inset, ring and shadow rules a shape does not carry. So it is one corner kind, the smallest exact form: on all four corners or
 none, with circular curves, its shadow and a focus ring that follows the part following the ellipse of their own
-boxes.
+boxes, where a ring is stated `FollowPart` on such a part (Breeze's own ring keeps its `Frame_FrameRadius` corners
+on a round button, `breeze@6.8.2 kstyle/breezestyle.cpp:6631-6647`, K3.20).
 
 **Stroke:** a width and paint per side, inside, centred or outside the edge: WinUI's gradient elevation strokes
 and the thicker accent bottom edge of a focused text box (W1-026); libadwaita's outlines outside the box. A
