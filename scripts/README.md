@@ -970,7 +970,10 @@ file its `sources.toml` entry names with `file`); no `absent` name occurs
 there as an identifier; per generation, every literal of the value equals a
 literal of its citations' quotes, read by the cited file's notation (on
 Apple's sources a point is a logical point, px) and converted as the
-citation says; a measured value has the committed evidence's shape and
+citation says (an absence citation holds a zero stated by omission; on a
+LinearGradientBrush an angle matches only the angle its points give; C++'s
+defaulted parameter is read from the quote's declaration); a measured value
+has the committed evidence's shape and
 equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an
 image by the analysis output that names it in `input_image`), except
@@ -981,6 +984,7 @@ docstring holds the closed lists (notations, units, conversions, evidence
 path forms, `run.toml`'s fields). Prints one line per finding and a summary,
 and exits 0, 1, or 2 when the cache is missing or an input cannot be read;
 `check_release.sh --commit` skips it only when the cache folder is absent.
+Each evidence file and cited source file is read once per run.
 `--self-test` runs every notation and the example facts on a fixture cache.
 
 Requires Python 3.11 and git.
