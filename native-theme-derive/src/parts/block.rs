@@ -497,11 +497,20 @@ fn parse_field(field: &syn::Field) -> Result<BlockField> {
                     (Wrap::Bare, &ty)
                 };
                 let block = block_ref(field, inner)?;
-                if kind == BlockKind::Append && wrap == Wrap::Bare {
-                    return Err(Error::new_spanned(
-                        &field.ty,
-                        "an append block is held as `Value<B>`, `Vec<B>` or `Option<B>`",
-                    ));
+                match (kind, wrap) {
+                    (BlockKind::Append, Wrap::Bare | Wrap::List | Wrap::Option) => {
+                        return Err(Error::new_spanned(
+                            &field.ty,
+                            "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+                        ));
+                    }
+                    (BlockKind::Fields, Wrap::Option) => {
+                        return Err(Error::new_spanned(
+                            &field.ty,
+                            "an `Option<B>` is set whole: mark it `block = \"set\"`",
+                        ));
+                    }
+                    _ => {}
                 }
                 Shape::Block { kind, wrap, block }
             }

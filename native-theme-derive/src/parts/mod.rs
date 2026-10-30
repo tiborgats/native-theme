@@ -399,7 +399,28 @@ mod tests {
                     #[parts(block)]
                     pub struct Probe { #[parts(block = "append")] pub fill: Paint }
                 },
-                "an append block is held as `Value<B>`, `Vec<B>` or `Option<B>`",
+                "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "append")] pub fills: Vec<Paint> }
+                },
+                "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "append")] pub fill: Option<Paint> }
+                },
+                "an append block is held as `Value<B>`, or as a map's `Value<B>`",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "fields")] pub repeat: Option<KeyRepeat> }
+                },
+                "an `Option<B>` is set whole: mark it `block = \"set\"`",
             ),
             (
                 syn::parse_quote! {

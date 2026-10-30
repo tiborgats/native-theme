@@ -188,7 +188,9 @@ fn gen_inventory_submit(
 /// - `#[parts(block = "fields" | "append" | "set")]`: the field holds a
 ///   block (`B`, `Value<B>`, `Vec<B>`, `Option<B>`, or a map `Vec<(K, B)>`
 ///   or `Vec<(K, Value<B>)>`) of that kind: a struct block, an append block
-///   or an enum block.
+///   or an enum block. An append block is held as `Value<B>` or a map's
+///   `Value<B>`, and an `Option<B>` is `set` whole: an `append` elsewhere,
+///   or `fields` on an `Option`, would act as `set`, so both are refused.
 /// - `#[parts(keyed)]`: a list whose items merge by their own key, through
 ///   the item type's `KeyedItem` impl.
 #[proc_macro_derive(ThemeParts, attributes(parts))]
