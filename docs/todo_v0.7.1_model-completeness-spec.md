@@ -1287,8 +1287,9 @@ widgets' values structs (`ButtonValues`) and the components' tables are themselv
 the list names, less the values it defers, each to a named later unit — the button's `Placement` values to the
 placement unit, ADD-A120 — a deferral ending in that unit's commit, and `--check` refusing a deferral to a unit
 already enabled), so a unit enters the model in the commit whose presets state it; a hand-written token field a
-later unit's type needs is staged with that unit (`Behavior.scroll` with the `scroll_view` unit, its `ScrollDecay`
-variants written then); its `--check`
+later unit's type needs is staged with that unit (`Behavior.scroll` with the unit that holds the `scroll_view`
+widget, its `ScrollDecay` variants written then), and the generator lists it for the connectors' tables then
+(S21.3); its `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
 archived); hand-written entries with no drift check.
@@ -2058,7 +2059,8 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 |---|---|
 | `Value::Stated(x)` | the value: `"<colour>"`; a plain number under a key with its unit's suffix (`_px`, `_ms`, `_deg`; a `FontSize` takes `_pt` or `_px` by its variant); `true`; a table for a block |
 | the key of a field with a unit | one key per field: the suffixed key for every value of a one-unit field (`min_width_px = <n>`, `min_width_px = "= …"`, `"auto"`, `"absent"`); a `FontSize` field takes `<field>_pt` or `<field>_px` for a stated number and the bare name for an expression, `"auto"` or `"absent"` (`line_height = "= mul(font_size, <n>)"`), which carry their own units; a `Radius` corner takes `<corner>_px` for `Radius::Px` (`top_left_px = <n>` or `"= …"`) and the bare name for the other variants (`top_left = { full = { maximum_px = "absent" } }`, `top_left = { concentric = { minimum_px = <n> } }`, `top_left = "follow_part"`); `corners_px` sets the four corners' `Radius::Px` at once, beside `corners.curve` (S2.4); two keys for one field in one table are otherwise a duplicate key (S12) |
-| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly; in a `Value` field a string starting `=` is an expression, and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
+| a text value (`String`: a font family, an icon name) | a TOML string taken as written (`".AppleSystemUIFont"`), compared exactly (a measured one's `tolerance` 0); in a `Value` field a string starting `=` is an expression, which
+may only be a reference to a text field (S12 refuses a call), and `"auto"`, `"absent"` and `"none"` mean `Auto`, `Absent` and `None` only where the field's type allows them; a plain `String` (`ThemeIcon.name`, a family list's entries) is always text (ADD-A120) |
 | `Value::Expr(e)` | `"= <expression>"` |
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
@@ -2652,8 +2654,9 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   first of them is written.
 - **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. For each generation the
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
-  `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value as written;
-  references and names are left to the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
+  `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value, which occurs in
+  a quote whitespace-normalised, case-sensitive, at identifier boundaries; references and names are left to the
+  verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
   held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
   that `scripts/check_fact_citations.py` holds, documents in its docstring and tests in its self-test: the number
@@ -2683,11 +2686,14 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
 - **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) has a
   `measured` citation with `inputs`, the references of its expression the harness varied as written there
   (`inputs = ["input.accent"]`); every other operand is resolved from the preset under the fact's `when`. Its
-  `evidence` path names a list of tables, each keyed by those references (their values in that pass) and `result`
-  (the value measured), `conversion` applying to `result`. The checker checks the form: two or more rows whose
-  inputs differ by more than `tolerance` and whose results do too; the gate evaluates the expression over each row
-  within `tolerance`. It is the one case where the evidence value is not compared with the fact's value directly
-  (ADD-A120).
+  `evidence` path names a list of tables in a TOML evidence file, each keyed by those references (their values in that
+  pass), `result` (the value measured) and, where the passes differ in more than the inputs, `conditions` (the
+  scheme of the pass), every value in S11's spelling so the gate reads them as it reads a preset's; `conversion`
+  applies to `result`. The checker checks the form: for each input, two pass tables that differ in that input alone,
+  by more than its own type's quote-check precision, and whose results differ by more than `tolerance`; `inputs` only
+  on an expression value, and an expression value's `measured` citation always with `inputs`. The gate evaluates the
+  expression over each pass within `tolerance`. It is the one case where the evidence value is not compared with the
+  fact's value directly (ADD-A120).
 - **`read`** facts state the reference the key takes from a reader input (`value = "= input.accent"`); the quote is the
   API's declaration at the pinned source or SDK; the gate checks them as derivations (the perturbed run changes the
   input).
@@ -3016,7 +3022,7 @@ lines that cite it.
 | ADD-A117 | the 0.8.0 plan's new scripts | S18 |
 | ADD-A118 | a connector contract's `pending` entries while 0.8.0 is built (the 0.8.0 plan) | S21.3 |
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
-| ADD-A120 | a unit may defer named values to the unit that holds their type, and token fields are staged by unit; a text value's spelling; an absence the platform has no name for (`absent = []`); a measured derivation's evidence under two or more input values (M1a's design and its first lanes) | S6.1, S11, S17 |
+| ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S6.1, S11, S17 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

@@ -601,7 +601,7 @@ dev-dependencies and modules linked again.
     pin, and every literal of its `value` (numbers after unit normalisation, colours in any notation, a derivation's
     operands), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
   - a `measured` fact's evidence file is committed, the value at its `evidence` path equals the fact's value after its
-    `conversion` within its tolerance, and the file records the pinned generation and toolkit versions (the exact
+    `conversion` within its tolerance (a measured derivation: the form of its passes, which the gate evaluates, spec S17), and the file records the pinned generation and toolkit versions (the exact
     builds listed);
   - every evidence file is cited by a fact, a state-model entry or a vector table (spec S17), except the legacy runs
     until M4. Evidence files are the files under
