@@ -2075,6 +2075,29 @@ source = "libadwaita@1.10.0 src/stylesheet/widgets/_views.scss:8"
 quote = "background-color: color-mix(in srgb, var(--window-bg-color) 60%, var(--view-bg-color));"
 conversion = ["percent_to_fraction"]
 
+# the window's disabled colours: the public compat colours libadwaita defines for applications (`_compat-colors.scss`)
+[[fact]]
+key = "role.window.disabled.background"
+value = "= mix(role.window.background, role.view.background, 0.4)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_compat-colors.scss:12"
+quote = "@define-color insensitive_bg_color color-mix(in srgb, @window_bg_color 60%, @view_bg_color);"
+conversion = ["percent_to_fraction", "complement"]
+
+[[fact]]
+key = "role.window.disabled.foreground"
+value = "= alpha(role.window.foreground, 0.5)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_compat-colors.scss:13"
+quote = "@define-color insensitive_fg_color color-mix(in srgb, @window_fg_color 50%, transparent);"
+conversion = ["percent_to_fraction"]
+
 [[fact]]
 key = "role.global.scrim"
 value = "= alpha(role.window.shade, 2)"
@@ -2176,6 +2199,3370 @@ rows = ["GN-1.276"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:251"
 quote = "--overview-fg-color: #ffffff;"
+
+# the roles libadwaita has no colour for (S17 *Absence*, ADD-A120): KDE's computed status backgrounds, active and
+# decoration roles, an alternate background, a darker shade beside the header's, the info and neutral statuses, a
+# find highlight, a shadow reference; and disabled roles (libadwaita draws a disabled widget by its `filter: opacity`,
+# not by colours), except where it states them (the view's, the window's compat colours above)
+[[fact]]
+key = "role.window.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.window.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.view.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.header.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.sidebar.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.secondary_sidebar.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.card.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.dialog.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.popover.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.selection.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.osd.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.shadow_reference"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.find_highlight"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.selection_text_foreground_unfocused"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:64-71"
+quote = "selection { background-color: color-mix(in srgb, var(--view-fg-color) 10%, transparent); color: transparent;"
+
+[[fact]]
+key = "role.global.status.destructive.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.destructive.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.success.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.warning.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.error.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.info.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.info.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.info.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.info.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.info.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.neutral.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.neutral.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+
+[[fact]]
+key = "role.global.status.neutral.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
 
 # no accent set: GNOME's default accent, blue, in both schemes
 [[fact]]

@@ -101,13 +101,25 @@ quote = "gtk_css_style_property_register (\"min-width\","
 
 [[fact]]
 key = "button.body.transform"
-value = "absent"
+value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1329-1334"
 quote = "_gtk_css_transform_value_new_none ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1335-1341"
+quote = "_gtk_css_position_value_new (gtk_css_number_value_new (50, GTK_CSS_PERCENT), gtk_css_number_value_new (50, GTK_CSS_PERCENT)));"
+conversion = ["percent_to_fraction"]
+
+# `none` is the identity transform: GTK's own identity of each transform function
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsstransformvalue.c:129-152"
+quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.y = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.z = gtk_css_number_value_new (0, GTK_CSS_PX); break; case GTK_CSS_TRANSFORM_ROTATE: transform->rotate.x = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.y = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.z = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->rotate.angle = gtk_css_number_value_new (0, GTK_CSS_DEG); break; case GTK_CSS_TRANSFORM_SCALE: transform->scale.x = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->scale.y = gtk_css_number_value_new (1, GTK_CSS_NUMBER);"
 
 [[fact]]
 key = "button.body.cursor"
@@ -119,6 +131,27 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
 quote = "/* GTK - The GIMP Toolkit"
 absent = ["gtk_widget_set_cursor", "gtk_widget_set_cursor_from_name"]
+
+# no shape in place of the corners, no touch target beyond the box
+[[fact]]
+key = "button.body.shape"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.body.touch_target"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
 
 # the label inherits the window's font (the system font, the body style); the weight below is the button's
 [[fact]]
@@ -179,13 +212,25 @@ quote = "gtk_css_number_value_new (0.0, GTK_CSS_PX));"
 
 [[fact]]
 key = "button.label.transform"
-value = "absent"
+value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1329-1334"
 quote = "_gtk_css_transform_value_new_none ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1335-1341"
+quote = "_gtk_css_position_value_new (gtk_css_number_value_new (50, GTK_CSS_PERCENT), gtk_css_number_value_new (50, GTK_CSS_PERCENT)));"
+conversion = ["percent_to_fraction"]
+
+# `none` is the identity transform: GTK's own identity of each transform function
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsstransformvalue.c:129-152"
+quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.y = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.z = gtk_css_number_value_new (0, GTK_CSS_PX); break; case GTK_CSS_TRANSFORM_ROTATE: transform->rotate.x = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.y = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.z = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->rotate.angle = gtk_css_number_value_new (0, GTK_CSS_DEG); break; case GTK_CSS_TRANSFORM_SCALE: transform->scale.x = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->scale.y = gtk_css_number_value_new (1, GTK_CSS_NUMBER);"
 
 [[fact]]
 key = "button.icon.icon.size"
@@ -244,6 +289,57 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_common.scss:19-22"
 quote = "-gtk-icon-palette: success var(--success-color),"
 
+# GTK's icons have no symbol variants, named scales, state effects or icon animations; a button's icon sets none
+[[fact]]
+key = "button.icon.icon.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.icon.icon.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.icon.icon.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.icon.icon.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.icon.transitions"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
 # GtkButton draws its image as a themed icon (the part's `icon`), not a glyph
 [[fact]]
 key = "button.icon.glyph"
@@ -257,13 +353,25 @@ quote = "gtk_image_set_from_icon_name (GTK_IMAGE (priv->child), icon_name);"
 
 [[fact]]
 key = "button.icon.transform"
-value = "absent"
+value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1329-1334"
 quote = "_gtk_css_transform_value_new_none ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1335-1341"
+quote = "_gtk_css_position_value_new (gtk_css_number_value_new (50, GTK_CSS_PERCENT), gtk_css_number_value_new (50, GTK_CSS_PERCENT)));"
+conversion = ["percent_to_fraction"]
+
+# `none` is the identity transform: GTK's own identity of each transform function
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsstransformvalue.c:129-152"
+quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.y = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.z = gtk_css_number_value_new (0, GTK_CSS_PX); break; case GTK_CSS_TRANSFORM_ROTATE: transform->rotate.x = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.y = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.z = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->rotate.angle = gtk_css_number_value_new (0, GTK_CSS_DEG); break; case GTK_CSS_TRANSFORM_SCALE: transform->scale.x = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->scale.y = gtk_css_number_value_new (1, GTK_CSS_NUMBER);"
 
 [[fact]]
 key = "button.values.icon_text_gap"
@@ -357,6 +465,98 @@ source = "gtk@4.24.1 gtk/gtksettings.c:1-2177"
 quote = "/* GTK - The GIMP Toolkit"
 absent = ["gtk-button-images"]
 
+# the widget values adwaita's buttons have none of (the catalogue's may_be_absent): no subtitle, no tool-button label
+# choice, no auto-repeat, no hit extension, no iOS back or paste modes, no Material scaffold; no presentations
+[[fact]]
+key = "button.values.subtitle_gap"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.label_position"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.repeat_delay"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.repeat_interval"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.back_display_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.display_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.hit_extension"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.scaffold_placement"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
+[[fact]]
+key = "button.values.presentations"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+
 [[fact]]
 key = "button.body.focus"
 value = "= token.focus"
@@ -375,7 +575,7 @@ quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer:
 # background and box-shadow, 200 ms ease-out-quad; libadwaita turns CSS transitions off while it switches styles
 [[fact]]
 key = "button.body.transitions"
-value = [{ properties = ["fill", "shadow"], kind = "interpolate", duration_ms = "= token.motion.durations.button", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true }]
+value = [{ properties = ["fill", "shadow"], kind = "interpolate", duration_ms = "= mul(token.motion.durations.button, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true }]
 rows = ["GN-1.36"]
 
 [[fact.cite]]
@@ -2261,13 +2461,18 @@ quote = "&.circular { // force circular button shape min-width: 34px; min-height
 [[fact]]
 key = "button.body.corners"
 when = { variants = ["circular"] }
-value = { top_left_px = 9999, top_right_px = 9999, bottom_right_px = 9999, bottom_left_px = 9999, curve = "circular" }
+value = { top_left = { full = { maximum_px = "absent" } }, top_right = { full = { maximum_px = "absent" } }, bottom_right = { full = { maximum_px = "absent" } }, bottom_left = { full = { maximum_px = "absent" } }, curve = "circular" }
 rows = ["GN-1.28"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:313-317"
 quote = "&.circular { // force circular button shape min-width: 34px; min-height: 34px; padding: 0; border-radius: 9999px;"
+# GTK scales radii that exceed the box down as CSS does, so `9999px` draws a capsule (half the smaller side)
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gskroundedrect.c:74-91"
+quote = "/* clamp border radius, following CSS specs */ factor = gsk_rounded_rect_get_corner_scale_factor (self);"
 
 [[fact]]
 key = "button.body.padding"
@@ -2283,13 +2488,18 @@ quote = "&.pill { padding: 10px 32px;"
 [[fact]]
 key = "button.body.corners"
 when = { variants = ["pill"] }
-value = { top_left_px = 9999, top_right_px = 9999, bottom_right_px = 9999, bottom_left_px = 9999, curve = "circular" }
+value = { top_left = { full = { maximum_px = "absent" } }, top_right = { full = { maximum_px = "absent" } }, bottom_right = { full = { maximum_px = "absent" } }, bottom_left = { full = { maximum_px = "absent" } }, curve = "circular" }
 rows = ["GN-1.28"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:323-325"
 quote = "&.pill { padding: 10px 32px; border-radius: 9999px;"
+# GTK scales radii that exceed the box down as CSS does, so `9999px` draws a capsule (half the smaller side)
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gskroundedrect.c:74-91"
+quote = "/* clamp border radius, following CSS specs */ factor = gsk_rounded_rect_get_corner_scale_factor (self);"
 
 [[fact]]
 key = "button.body.fill"
@@ -2540,6 +2750,134 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
 quote = "arrow {"
 
+# the arrow's themed icon per GtkMenuButton direction (down the base); GTK's CSS icon lookup passes no
+# fallback names and no text direction
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu"] }
+value = { theme_icon = { name = "pan-down-symbolic", fallbacks = [] } }
+rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:457-459"
+quote = "&.down { -gtk-icon-source: -gtk-icontheme('pan-down-symbolic'); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssimageicontheme.c:68-74"
+quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->name, NULL, size, icon_theme->scale, GTK_TEXT_DIR_NONE, GTK_ICON_LOOKUP_NONE);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "@arrow_up"] }
+value = { theme_icon = { name = "pan-up-symbolic", fallbacks = [] } }
+rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:460-462"
+quote = "&.up { -gtk-icon-source: -gtk-icontheme('pan-up-symbolic'); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssimageicontheme.c:68-74"
+quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->name, NULL, size, icon_theme->scale, GTK_TEXT_DIR_NONE, GTK_ICON_LOOKUP_NONE);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "@arrow_start"] }
+value = { theme_icon = { name = "pan-start-symbolic", fallbacks = [] } }
+rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:463-465"
+quote = "&.left { -gtk-icon-source: -gtk-icontheme('pan-start-symbolic'); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssimageicontheme.c:68-74"
+quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->name, NULL, size, icon_theme->scale, GTK_TEXT_DIR_NONE, GTK_ICON_LOOKUP_NONE);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "@arrow_end"] }
+value = { theme_icon = { name = "pan-end-symbolic", fallbacks = [] } }
+rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:466-468"
+quote = "&.right { -gtk-icon-source: -gtk-icontheme('pan-end-symbolic'); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssimageicontheme.c:68-74"
+quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->name, NULL, size, icon_theme->scale, GTK_TEXT_DIR_NONE, GTK_ICON_LOOKUP_NONE);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "@arrow_none"] }
+value = { theme_icon = { name = "open-menu-symbolic", fallbacks = [] } }
+rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:454-456"
+quote = "&.none { -gtk-icon-source: -gtk-icontheme('open-menu-symbolic'); }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssimageicontheme.c:68-74"
+quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->name, NULL, size, icon_theme->scale, GTK_TEXT_DIR_NONE, GTK_ICON_LOOKUP_NONE);"
+
+# the CSS icon lookup is direction-less (`GTK_TEXT_DIR_NONE`): no `-rtl` name, no flip
+[[fact]]
+key = "button.menu_indicator.glyph.mirroring"
+when = { variants = ["menu"] }
+value = "never"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssimageicontheme.c:68-74"
+quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->name, NULL, size, icon_theme->scale, GTK_TEXT_DIR_NONE, GTK_ICON_LOOKUP_NONE);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.axes"
+when = { variants = ["menu"] }
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
+quote = "arrow {"
+absent = ["font-variation-settings"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_extent"
+when = { variants = ["menu"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
+quote = "arrow {"
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_start"
+when = { variants = ["menu"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
+quote = "arrow {"
+
 [[fact]]
 key = "button.menu_indicator.min_width"
 when = { variants = ["menu"] }
@@ -2554,13 +2892,25 @@ quote = "arrow { min-height: 16px; min-width: 16px;"
 [[fact]]
 key = "button.menu_indicator.transform"
 when = { variants = ["menu"] }
-value = "absent"
+value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1329-1334"
 quote = "_gtk_css_transform_value_new_none ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1335-1341"
+quote = "_gtk_css_position_value_new (gtk_css_number_value_new (50, GTK_CSS_PERCENT), gtk_css_number_value_new (50, GTK_CSS_PERCENT)));"
+conversion = ["percent_to_fraction"]
+
+# `none` is the identity transform: GTK's own identity of each transform function
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsstransformvalue.c:129-152"
+quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.y = gtk_css_number_value_new (0, GTK_CSS_PX); transform->translate.z = gtk_css_number_value_new (0, GTK_CSS_PX); break; case GTK_CSS_TRANSFORM_ROTATE: transform->rotate.x = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.y = gtk_css_number_value_new (0, GTK_CSS_NUMBER); transform->rotate.z = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->rotate.angle = gtk_css_number_value_new (0, GTK_CSS_DEG); break; case GTK_CSS_TRANSFORM_SCALE: transform->scale.x = gtk_css_number_value_new (1, GTK_CSS_NUMBER); transform->scale.y = gtk_css_number_value_new (1, GTK_CSS_NUMBER);"
 
 [[fact]]
 key = "button.menu_indicator.transitions"
@@ -2612,6 +2962,23 @@ rows = ["GN-1.39"]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:638-643"
 quote = ".arrow-button > box > &, splitbutton > button > & { > box > label { &:dir(ltr) { padding-right: 0; } &:dir(rtl) { padding-left: 0; } }"
+
+# a card menu button: its inner button takes the card's radius (`menubutton.card > button`)
+[[fact]]
+key = "button.body.corners"
+when = { variants = ["menu", "@card"] }
+value = { top_left_px = 12, top_right_px = 12, bottom_right_px = 12, bottom_left_px = 12, curve = "circular" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:447-449"
+quote = "&.card > button { border-radius: $card_radius; }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:9"
+quote = "$card_radius: 12px;"
 
 [[fact]]
 key = "button.body.corners.top_left"

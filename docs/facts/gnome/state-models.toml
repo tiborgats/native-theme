@@ -7,9 +7,9 @@ available = true
 variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@raised", "@osd", "@opaque", "@card", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button"]
 sizes = []
 densities = []
-axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }] }
+axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "popover" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }] }
 exclusive = []
-not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }]
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["open"], not_variants = ["menu", "back"] }]
 rows = ["GN-1.26", "GN-3.11"]
 
 [[model.cite]]
@@ -88,3 +88,20 @@ source = "gtk@4.24.1 gtk/gtkbutton.c:1-1194"
 quote = "/* GTK - The GIMP Toolkit"
 absent = ["GTK_STATE_FLAG_CHECKED"]
 
+# `open`: only GtkMenuButton (its toggle button checked while the popover shows) and AdwBackButton (checked while its
+# navigation menu shows) open anything
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1258-1281"
+quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), TRUE);"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:341-345"
+quote = "gtk_widget_set_state_flags (button, GTK_STATE_FLAG_CHECKED, FALSE);"
+
+# the popover context: a popover nearer than the toolbar restores the raised look
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:77-96"
+quote = "// Reset styles for popovers popover { button:not(.flat):not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
