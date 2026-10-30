@@ -56,7 +56,8 @@ pub mod shapes {
 }
 
 pub mod timing {
-    //! Springs stated by their damping ratio, and the platforms' own curves
+    //! A timing's value at an elapsed fraction, the platforms' own curves
+    //! among them, and a spring's damping coefficient from its damping ratio
     //! (S2.7).
 
     pub use super::blocks::motion::{damping_coefficient, evaluate};

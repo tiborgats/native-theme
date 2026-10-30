@@ -1029,19 +1029,16 @@ fn spring_damping_coefficient_from_its_ratio() {
 fn platform_curves_evaluate_to_their_sources() {
     use PlatformCurve::{Adw, Qt};
     let ts = [0.0, 0.25, 0.5, 0.75, 0.9, 1.0];
-    let rows: [(PlatformCurve, [f32; 6]); 13] = [
-        (
-            Qt(QtEasing::InQuad),
-            [0.0, 0.0625, 0.25, 0.5625, 0.809_999_94, 1.0],
-        ),
+    let rows: [(PlatformCurve, [f64; 6]); 13] = [
+        (Qt(QtEasing::InQuad), [0.0, 0.0625, 0.25, 0.5625, 0.81, 1.0]),
         (
             Qt(QtEasing::OutQuad),
-            [0.0, 0.4375, 0.75, 0.9375, 0.99, 1.0],
+            [0.0, 0.4375, 0.75, 0.9375, 0.990_000_000_000_000_1, 1.0],
         ),
         (Qt(QtEasing::InOutQuad), [0.0, 0.125, 0.5, 0.875, 0.98, 1.0]),
         (
             Qt(QtEasing::InCubic),
-            [0.0, 0.015625, 0.125, 0.421875, 0.728_999_9, 1.0],
+            [0.0, 0.015625, 0.125, 0.421875, 0.729_000_000_000_000_1, 1.0],
         ),
         (
             Qt(QtEasing::OutCubic),
@@ -1053,22 +1050,29 @@ fn platform_curves_evaluate_to_their_sources() {
         ),
         (
             Qt(QtEasing::InOutSine),
-            [0.0, 0.146_446_62, 0.5, 0.853_553_4, 0.975_528_24, 1.0],
+            [
+                0.0,
+                0.146_446_609_406_726_2,
+                0.499_999_999_999_999_94,
+                0.853_553_390_593_273_7,
+                0.975_528_258_147_576_8,
+                1.0,
+            ],
         ),
         (
             Qt(QtEasing::OutExpo),
             [
                 0.0,
-                0.824_046_55,
-                0.969_718_75,
-                0.995_470_2,
-                0.999_044_9,
+                0.824_046_528_008_066_4,
+                0.969_718_749_999_999_9,
+                0.995_470_204_000_251_9,
+                0.999_044_921_874_999_9,
                 1.0,
             ],
         ),
         (
             Adw(AdwEasing::EaseInCubic),
-            [0.0, 0.015625, 0.125, 0.421875, 0.728_999_9, 1.0],
+            [0.0, 0.015625, 0.125, 0.421875, 0.729_000_000_000_000_1, 1.0],
         ),
         (
             Adw(AdwEasing::EaseOutCubic),
@@ -1076,36 +1080,68 @@ fn platform_curves_evaluate_to_their_sources() {
         ),
         (
             Adw(AdwEasing::EaseInOutSine),
-            [0.0, 0.146_446_62, 0.5, 0.853_553_4, 0.975_528_24, 1.0],
+            [
+                0.0,
+                0.146_446_609_406_726_2,
+                0.499_999_999_999_999_94,
+                0.853_553_390_593_273_7,
+                0.975_528_258_147_576_8,
+                1.0,
+            ],
         ),
         (
             Adw(AdwEasing::EaseInExpo),
             [
                 0.0,
-                0.005_524_271_6,
+                0.005_524_271_728_019_903,
                 0.03125,
-                0.176_776_69,
-                0.499_999_9,
+                0.176_776_695_296_636_9,
+                0.500_000_000_000_000_1,
                 1.0,
             ],
         ),
         (
             Adw(AdwEasing::EaseOutExpo),
-            [0.0, 0.823_223_3, 0.96875, 0.994_475_7, 0.998_046_9, 1.0],
+            [
+                0.0,
+                0.823_223_304_703_363_1,
+                0.96875,
+                0.994_475_728_271_98,
+                0.998_046_875,
+                1.0,
+            ],
         ),
     ];
     for (curve, expected) in rows {
+        let timing = Timing::Platform(curve);
         for (t, value) in ts.into_iter().zip(expected) {
-            assert_eq!(evaluate(curve, t), Some(value), "{curve:?} at {t}");
+            assert_eq!(evaluate(&timing, t), Some(value), "{curve:?} at {t}");
         }
     }
+    let qt = |easing| Timing::Platform(Qt(easing));
     // Qt's out-expo scales by 1.001: it passes 1 just before its end.
-    assert_eq!(evaluate(Qt(QtEasing::OutExpo), 0.999), Some(1.000_015_6));
+    assert_eq!(
+        evaluate(&qt(QtEasing::OutExpo), 0.999),
+        Some(1.000_015_661_615_618_2)
+    );
     // The elapsed fraction is clamped; a non-finite one is 0.
-    assert_eq!(evaluate(Qt(QtEasing::InQuad), 1.5), Some(1.0));
-    assert_eq!(evaluate(Qt(QtEasing::InQuad), f32::NAN), Some(0.0));
-    // Kirigami's curve follows the velocity, not the elapsed fraction.
-    assert_eq!(evaluate(PlatformCurve::KirigamiVelocity, 0.5), None);
+    assert_eq!(evaluate(&qt(QtEasing::InQuad), 1.5), Some(1.0));
+    assert_eq!(evaluate(&qt(QtEasing::InQuad), f64::NAN), Some(0.0));
+    assert_eq!(evaluate(&Timing::Linear, 0.3), Some(0.3));
+    // Kirigami's curve follows the velocity, not the elapsed fraction; a
+    // spring's time is its own.
+    let kirigami = Timing::Platform(PlatformCurve::KirigamiVelocity);
+    assert_eq!(evaluate(&kirigami, 0.5), None);
+    let spring = Timing::Spring {
+        mass: 1.0,
+        stiffness: 100.0,
+        damping_ratio: 1.0,
+        initial_velocity: 0.0,
+        rest_epsilon: 0.001,
+        clamp: false,
+        time_scale: Value::Stated(1.0),
+    };
+    assert_eq!(evaluate(&spring, 0.5), None);
 }
 
 #[test]

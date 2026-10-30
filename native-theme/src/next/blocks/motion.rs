@@ -137,29 +137,36 @@ pub enum AdwEasing {
     EaseOutExpo,
 }
 
-/// The fraction of the way from the old value to the new a platform curve
-/// gives at the elapsed fraction `t` (S2.7's forward reading), computed as
-/// the toolkit's own function computes it, in doubles. `t` is clamped to
-/// `0..=1`, the elapsed fraction's range, as `QEasingCurve::valueForProgress`
-/// clamps it (`qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1469-1478`),
-/// and a non-finite `t` is 0. `None` for [`PlatformCurve::KirigamiVelocity`],
-/// whose motion follows the velocity, not the elapsed fraction alone.
+/// The fraction of the way from the old value to the new `timing` gives at
+/// the elapsed fraction `t` (S2.7's forward reading), in doubles, as the
+/// toolkits compute it. `t` is clamped to `0..=1`, the elapsed fraction's
+/// range, as `QEasingCurve::valueForProgress` clamps it (`qtbase@6.12.0
+/// src/corelib/tools/qeasingcurve.cpp:1469-1478`), and a non-finite `t` is
+/// 0.
 ///
-/// The result may leave `0..=1` where the toolkit's does: Qt's out-expo
-/// scales by 1.001, so it passes 1 just before its end.
+/// A platform curve is computed as the toolkit's own function computes it;
+/// the result may leave `0..=1` where the toolkit's does (Qt's out-expo
+/// scales by 1.001, so it passes 1 just before its end). `Linear` is `t`.
+/// `None` for [`PlatformCurve::KirigamiVelocity`], whose motion follows the
+/// velocity, not the elapsed fraction alone, and, not implemented yet, for a
+/// cubic Bézier, steps and a spring (whose time is its own, the damping
+/// coefficient [`damping_coefficient`]'s).
 #[must_use]
-pub fn evaluate(curve: PlatformCurve, t: f32) -> Option<f32> {
+pub fn evaluate(timing: &Timing, t: f64) -> Option<f64> {
     let t = if t.is_finite() {
-        f64::from(t.clamp(0.0, 1.0))
+        t.clamp(0.0, 1.0)
     } else {
         0.0
     };
-    let value = match curve {
-        PlatformCurve::KirigamiVelocity => return None,
-        PlatformCurve::Qt(easing) => qt_easing(easing, t),
-        PlatformCurve::Adw(easing) => adw_easing(easing, t),
-    };
-    Some(value as f32)
+    match timing {
+        Timing::Linear => Some(t),
+        Timing::Platform(PlatformCurve::Qt(easing)) => Some(qt_easing(*easing, t)),
+        Timing::Platform(PlatformCurve::Adw(easing)) => Some(adw_easing(*easing, t)),
+        Timing::Platform(PlatformCurve::KirigamiVelocity)
+        | Timing::CubicBezier(..)
+        | Timing::Steps { .. }
+        | Timing::Spring { .. } => None,
+    }
 }
 
 /// Qt's easing functions, `qtbase@6.12.0 src/3rdparty/easing/easing.cpp`
