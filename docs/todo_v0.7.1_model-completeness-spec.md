@@ -62,7 +62,7 @@ platform is stated here: values come from the facts (S17) in the value phase.
   `T::try_from(TPatch) -> Result<T, LayerError>`, which refuses a patch leaving a leaf missing and names every such
   leaf (S12); a paint, whose patch is no field patch but `PaintPatch` (S6.1) and whose one field is its layers, is
   built from them, `Paint::try_from(Vec<PaintLayer>) -> Result<Paint, LayerError>`, which refuses an empty list (a
-  paint has a layer, S12), and an enum block (`PaintKind`, `Radius`, `Timing`) by its variants (ADD-A122). Validation refuses an `Absent` left where it is not allowed (S12), so a default
+  paint has a layer, S12), and an enum block (S6.1 lists them) by its variants (ADD-A122). Validation refuses an `Absent` left where it is not allowed (S12), so a default
   never stands in for a value. A layer is also built from TOML in S11's format, `Layer::from_toml(&str) ->
   Result<Layer, LayerError>`.
 - **Absence.** In the model, one route: `Value::Absent`, allowed where S6.3's two sources allow it: a block's
@@ -307,7 +307,7 @@ A field whose type is a block (`TextStyle`, `FocusIndicator`, `IconStyle`, `Timi
 and its expression may only be a reference to a token or field of that type (`= token.focus`, `= token.text.keyed.body`,
 `= token.motion.timings.standard`). A struct block field's patch is `Set(Value<T>)` (a whole block or a reference)
 or `Fields(TPatch)`, which applies its fields over the block below (refused over an `Absent` or `Auto` value, and
-for enum blocks such as `Timing`, which take `Set` only): the token's focus indicator with only its kind
+for enum blocks, S6.1 listing them, such as `Timing`, which take `Set` only): the token's focus indicator with only its kind
 changed (R2.1). In TOML (S11), a table under a rule's `set`, or in a layer's bases above the preset, is a `Fields`
 patch; a whole block is replaced there only by a reference or by `{ replace = { … } }`; in the preset's own bases a
 table is the whole block. A shadow names an elevation by `Shadow::Elevation(key)`, not by reference (R8). A colour
@@ -327,7 +327,8 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 (S12). **Against the merge** (S6.1, ADD-A122): a `Fields` patch or an `Append` that meets a reference is never a merge
 conflict. The merge keeps it on the reference with its position (a base's, in layer order, or its rule's place in the
 stack's order), since evaluation interleaves it with the referenced value's own rules by that position; a later `Set`
-replaces the reference and every patch kept on it. A merge conflict is only an `Absent` or `Auto` met directly; one a
+replaces the reference and every patch kept on it. A merge conflict is only a `Fields` patch meeting an `Absent` or
+`Auto` value directly (an `Append` over `Absent` is the appended layers, S6.1, and a paint is never `Auto`); one a
 reference can bring is S12's conservative check, as the merge does not see where the reference leads, so the merge
 refuses nothing that check would pass, and the check refuses what the merge cannot see.
 
@@ -346,7 +347,7 @@ refuses nothing that check would pass, and the check refuses what the merge cann
 | `mul(x, y)`, `div(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)`, `round(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56). `floor` rounds toward negative infinity; `round` to the nearest integer, a half away from zero, as Qt's `qRound` does (`qtbase@6.12.0 src/corelib/global/qnumeric.h:535-550`, `:570-573`) and Rust's `f32::round` (ADD-A122). A source's integer arithmetic is written with them: a non-negative real converted to an integer, as `QVariantAnimation::setDuration(int)` takes one, is `floor` (K1.17); `qRound` is `round`; a non-negative integer divided by an integer in C++ is `floor(div(…))` (Q3.24) |
 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | colour | `QColor::lighter`, `QColor::darker` in HSV, to qtbase `qcolor.cpp` (ADD-A50); `factor` is QColor's integer percent (`150` lightens by half), so a stated factor is a whole number; QML's `Qt.lighter`/`Qt.darker` take a real factor, which QML rounds to percent (`qRound(factor * 100)`, `qquickvaluetypes.cpp:52`), stated here as that integer |
 | `kcu_overlay(under, over)` | colour | `KColorUtils::overlayColors`, to `kcolorutils.cpp` (ADD-A51) |
-| `kirigami_tint(c, tint, alpha)` | colour | Kirigami's `ColorUtils.tintWithAlpha` (ADD-A52), to `kirigami@6.31.0 src/platform/colorutils.cpp:230-245`. QML's `Qt.tint(base, tint)` (`qtdeclarative@6.12.0 src/quick/util/qquickvaluetypes.cpp:62-79`) is the same blend with the tint's own alpha, so it is written `kirigami_tint(base, tint, 1)` (ADD-A122); the two differ only in their end tests, Qt's on the 8-bit alpha (`alpha()` 255 returns the tint, 0 the base) where Kirigami's compares the real alpha with 1 and 0, so for a tint whose 16-bit alpha is at least `0xff00` or below `0x0100` without being opaque or transparent Qt returns an end where Kirigami blends. The one `Qt.tint` the KDE trace states (Q2.5, `qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:86`) has a tint at alpha 0.8, far from either end; a fact that needs one near an end is a class 2 change (the reference selected by an enum operand, S2.2's vector tables). `Qt.alpha(c, a)` sets the alpha (`qquickvaluetypes.cpp:55-60`) where `alpha` multiplies it, which agree only on an opaque `c` |
+| `kirigami_tint(c, tint, alpha)` | colour | Kirigami's `ColorUtils.tintWithAlpha` (ADD-A52), to `kirigami@6.31.0 src/platform/colorutils.cpp:230-245`. QML's `Qt.tint(base, tint)` (`qtdeclarative@6.12.0 src/quick/util/qquickvaluetypes.cpp:62-79`) is the same blend with the tint's own alpha, so it is written `kirigami_tint(base, tint, 1)` (ADD-A122); the two differ only in their end tests, Qt's on the 8-bit alpha (`alpha()` 255 returns the tint, 0 the base) where Kirigami's compares the real alpha with 1 and 0. `QColor::alpha()` rounds the 16-bit alpha to 8 bits (`qt_div_257`, `qtbase@6.12.0 src/gui/painting/qcolor.cpp:1631`, `src/gui/painting/qdrawhelper_p.h:887-888`; an extended-RGB colour's by `qRound`, `qcolor.cpp:1629-1630`), so for a tint whose 16-bit alpha is at least `0xff7f` or at most `0x0080` without being opaque or transparent Qt returns an end where Kirigami blends. The one `Qt.tint` the KDE trace states (Q2.5, `qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:86`) has a tint at alpha 0.8, far from either end; a fact that needs one near an end is a class 2 change (the reference selected by an enum operand, S2.2's vector tables). `Qt.alpha(c, a)` sets the alpha (`qquickvaluetypes.cpp:55-60`) where `alpha` multiplies it, which agree only on an opaque `c` |
 | `kirigami_lerp(a, b, balance)` | colour | Kirigami's `ColorUtils.linearInterpolation`, to `kirigami@6.31.0 src/platform/colorutils.cpp:61-80`: hue, saturation, value and alpha each interpolated linearly in HSV, the last three clamped to `0..=1` (a hue ≤ 0 — QColor's −1 for a colour without one, and pure red's 0 — taken from the other colour, else 0; the hue's `fmod` by 1 not wrapped further); `balance` is clamped to `0..=1` (S12 refuses a stated one outside it), since Kirigami does not clamp it and outside that range the hue can leave `0..1`, where QColor's `fromHsvF` returns an invalid colour the model has no value for. Every `linearInterpolation` of Kirigami, qqc2-desktop-style and kirigami-addons the KDE trace states: the frame colours (Q3.15 lists each), Kirigami's list subtitle (Q1.87), separator (Q1.95) and badge (Q2.26, and inside `kirigami_badge_text`), kirigami-addons' page fill (K-KA-6†), status message (K-KA-10†), radio selector (K-KA-25†) and inside `ka_card_border` (ADD-A121) |
 | `kirigami_label_icon_size(font_height)`, `kirigami_badge_text(text_color, background)` | length, colour | Kirigami's `units.cpp` and `Badge.qml` (ADD-A53); `text_color` and `background` are colours (the theme's text colour and the badge's background, `Badge.qml:67-81`): `text_color`, or, where `ColorUtils.brightnessForColor` (luma above 0.5 is light) puts it on the same side as `background`, black on a light `background` and white on a dark one, then `kirigami_lerp(<that>, background, 0.17)` (`Badge.qml:72-80`) |
 | `ka_card_border(background, text)`, `ka_banner_line(type_text, frame)`, `ka_contrast_text(c)` | colour | kirigami-addons' FormCard background, banner and avatar code (ADD-A66): `ka_card_border` is `qt_darker(background, 120)` (QML's `Qt.darker(background, 1.2)`) where `background` is dark (alpha above 0, luma at most 0.6) and `kirigami_lerp(background, text, 0.15)` otherwise (`kirigami-addons@1.15.0 src/formcard/private/FormCardBackground.qml:16-23`); `ka_banner_line` is `type_text`'s HSL hue and saturation at `frame`'s HSL lightness, opaque (`src/components/Banner.qml:239-255`) |
@@ -559,7 +560,8 @@ its own layout's numbers, with the pure functions of `native_theme::corners`:
 ```rust
 pub fn full(width: Px, height: Px, maximum: Option<Px>) -> Px;                  // half the smaller side, at most
                                                                                 // `maximum`
-pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) -> Px;
+pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) -> Option<Px>;   // None: unequal
+                                                                                // insets (below)
 pub fn follow_part(part_radius: Px, offset: Px) -> Px;                          // part_radius + offset, at least 0
 ```
 
@@ -572,9 +574,10 @@ computed for the container's matching corner, which it has, as it lays out and q
 or the display with no radius (S4.6), passes 0, so the corner is its minimum, or square without one. `inset` is the
 part's distance from the container's edges at that corner, per axis; `concentric` returns the larger of
 `container_radius` less the inset and `minimum` (0 when absent) where the two distances are equal. Concentric corners
-are Apple's (iOS 26, macOS 26), so where the distances differ `concentric` follows UIKit's rule, stated as UIKit's:
+are Apple's (iOS 26, macOS 26), so where the distances differ `concentric` will follow UIKit's rule, stated as UIKit's:
 read in the value phase from `UICornerConfiguration` and `UIView.effectiveRadius(corner:)` (X-CR-2) and cited in the
-function's doc comment (another platform's concentric corners, a full-screen window following the display, MAT-W5†,
+function's doc comment; until the value phase states it, `concentric` refuses such a corner, returning `None`
+(ADD-A122) rather than inventing a rule, and the value phase replaces that `None` with UIKit's rule (another platform's concentric corners, a full-screen window following the display, MAT-W5†,
 sit at no inset).
 
 **The fill under the stroke** (`Stroke.fill_clip`, ADD-A121). With `Box` the part's fill covers its whole box (the
@@ -724,6 +727,10 @@ pub struct Keyframe { pub at: Fraction, pub part: Option<PartRef>,    // None: t
                                                         // style, a shape included (R25.5)
 ```
 
+A keyframe's `patch` resolves to `ResolvedPartStylePatch`, the derive's resolved patch type (S6.1): every field an
+`Option` of that field's type in `ResolvedPartStyle`, `None` where the keyframe does not set it, so the part keeps its
+resolved style there (ADD-A122).
+
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
 a transition starts when a property's resolved value changes; the transition stated by the style
 after the change governs, both directions; a later rule's transition for the same property group wins; a property
@@ -742,7 +749,10 @@ A spring is stated by its damping ratio, as the platforms that publish springs s
 (`libadwaita@1.10.0 src/adw-spring-params.c:85-96`) and which every libadwaita widget calls (`adw-carousel.c:1224`,
 `adw-bottom-sheet.c:216-218`), and Compose's `spring(dampingRatio, stiffness, visibilityThreshold)`
 (`androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MotionScheme.kt:138-158`).
-The damping coefficient the motion uses is `damping_ratio · 2·√(mass · stiffness)` (`adw-spring-params.c:93-94`); 0
+The damping coefficient the motion uses is `damping_ratio · 2·√(mass · stiffness)` (`adw-spring-params.c:93-94`),
+computed by `native_theme::timing::damping_coefficient(mass, stiffness, damping_ratio) -> Option<f32>` (`None` where
+`mass · stiffness` is negative or the result is not finite), which `timing::evaluate` uses for a spring
+(ADD-A122); a damping ratio of 0
 is undamped, below 1 underdamped, 1 critically damped, above 1 overdamped. A source stating the coefficient
 (libadwaita's `adw_spring_params_new_full`, AppKit's `CASpringAnimation.damping`) is converted by the inverse, a
 measured one by its analysis script (S17). `rest_epsilon` is libadwaita's `epsilon` and Compose's
@@ -1071,13 +1081,28 @@ pub enum SubpixelOrder { None, Rgb, Bgr, Vrgb, Vbgr }
 
 `MotionTokens { durations: Vec<(Key, Value<Ms>)>, timings: Vec<(Key, Timing)>, speed_factor: Value<f32> }`. A
 scaled duration is stated as `= mul(token.motion.durations.x, token.motion.speed_factor)` (R9); a spring scales by
-its `time_scale` (S2.7). **Keys** (ADD-A122): a duration's or timing's key is the platform's own name for it in snake_case, as
-keyed roles are named (S10): a resource's, variable's or curve's name less the toolkit's prefix and its type suffix
-(`ControlFastOutSlowInKeySpline` `control_fast_out_slow_in`, `$button_transition` `button`, `ease-out-quad`
-`ease_out_quad`); where the platform names none (a spring stated inline in a widget's code), the animated class's name
-less the toolkit's prefix (`AdwBottomSheet` `bottom_sheet`), followed, where that class runs several, by the
-transition each runs in the source's own words (`open`, `close`; `push`, `pop`; `show`, `hide`: `bottom_sheet_open`,
-`navigation_view_push`); the catalogue's *token.motion* lists name the rest. Map keys (keyed durations, params) carry no unit suffix: their values are plain numbers in
+its `time_scale` (S2.7). **Keys** (ADD-A122): a duration's or timing's key is the platform's own name for it in
+snake_case, as keyed roles are named (S10), from the first of these the source has:
+1. a name the platform gives the value itself, not private to one class (a resource, a style variable, a design token, a property of a class
+   of shared values such as Kirigami's `Units`, a named curve), less the toolkit's prefix and the words that only
+   say it is a duration or a curve (`Animation`, `Duration`, `KeySpline`, `transition`):
+   `ControlFastAnimationAfterDuration` `control_fast_after`, `ControlFastOutSlowInKeySpline`
+   `control_fast_out_slow_in`, `$button_transition` `button`, `Units.veryShortDuration` `very_short`,
+   `ease-out-quad` `ease_out_quad`, `QEasingCurve::InOutSine` `in_out_sine`;
+2. else the one class whose own code gives the value to its animations (inline, from a constant private to it, from
+   its own property's default or from a setting it reads): its name less the toolkit's prefix (`GtkRevealer` `revealer`, `GtkScrolledWindow`'s
+   `ANIMATION_DURATION` `scrolled_window`, `KMessageWidget` `message_widget`, Breeze's `Animations`, which gives
+   its state engines their duration and steps, `animations`), followed, where the class states different values
+   for its transitions, by the transition each is for in the source's words (`AdwBottomSheet` `bottom_sheet_open`,
+   `bottom_sheet_close`, whose springs differ in `clamp`; `AdwNavigationView` `navigation_view_push`; Breeze's `Decoration`, whose shadow fade and
+   active-state fade differ, `decoration_shadow`);
+3. else (a motion only documentation describes or the facts measure) the motion as the source names it, less the
+   same words (`connected` for WinUI's connected animation, `scroll_into_view`, `default_spring` for UIKit's).
+
+A setting the reader reads (breezerc's `AnimationsDuration`, plasmarc's `longDuration`) is an input to a value, never
+the source of its key. A key holds one value: two classes stating the same number have a key each, and a class taking
+its duration from another's (a style hint's, `SH_Widget_Animation_Duration`) states a reference to that key, not a key
+of its own. The catalogue's *token.motion* lists name every key. Map keys (keyed durations, params) carry no unit suffix: their values are plain numbers in
 the unit their declaration names (S10).
 
 ### S4.2 Caret and behaviour (R12, R17)
@@ -1355,15 +1380,18 @@ caption buttons' layout (R13).
 **S6.1** `#[derive(ThemeWidget)]` is replaced by `#[derive(ThemeParts)]`, which generates, per widget struct: its
 patch type (every field `Option<…>`, where `None` is "this patch does not set it"; paints with `Set`/`Append`), its
 resolved type (every `Value<T>` resolved to `Option<T>`, where `None` is "not drawn", possible only where
-`may_be_absent` allows), the field-path registry used by the TOML key check of `Layer::from_toml` (S12) and the facts gate, and the
+`may_be_absent` allows), for `PartStyle` also a resolved patch type, `ResolvedPartStylePatch`, a keyframe's resolved
+`patch` (every field an `Option` of that field's type in `ResolvedPartStyle`, `None` where the patch does not set it;
+S2.7, ADD-A122), the field-path registry used by the TOML key check of `Layer::from_toml` (S12) and the facts gate, and the
 `may_be_absent` table. A length that may be `Auto` resolves to `Option<Length>`, `Length = Px(f32) | Auto`, so "sized
 by content" reaches the toolkit; every other length resolves to `Option<Px>`. The resolved type is per type, not per
-part: a `PartStyle` length field that the catalogue marks `auto` on any part, `max_width`, `max_height` and
-`TextStyle.line_height` resolve to
+part: a `PartStyle` length field that the catalogue marks `auto` on any part, `min_width`, `min_height`, `max_width`,
+`max_height` and `TextStyle.line_height` resolve to
 `Option<Length>` on every part (`ResolvedPartStyle` is one type), validation refusing `Auto` where neither the part's
 entry nor the core (S6.3) marks it (S12); a widget's value struct, generated per widget, resolves a length to `Option<Length>` only
 where that widget's entry marks the value `auto`. An `Option<Value<T>>` field (S1: its `None` a meaning of its own,
-stated at the field: `Linear.extent` and `offset`, `Caret.blink_timeout`, `FocusVisibleWhen::Keyboard.timeout`)
+stated at the field: `Linear.extent` and `offset`, `Caret.blink_timeout`, `FocusVisibleWhen::Keyboard.timeout`,
+`KdeTokens.tint_factor`, `SizeClassThreshold.horizontal` and `vertical`)
 resolves to `Option<T>`, not `Option<Option<T>>`, `None` keeping the field's meaning (`extent`: over the box): the
 `Value` inside is never `Absent`, as no mark allows it there, and the derive refuses `may_be_absent` or `auto` on such
 a field (ADD-A122). The `may_be_absent` table is two-way, a field allowed `Absent` or not: a conditional mark
@@ -1397,19 +1425,22 @@ pub enum BlockPatch<T: FieldsBlock> { Set(Value<T>),     // a struct block field
                                       Fields(T::Patch) } // reference or `Absent`; or its fields over the block below
 pub enum PaintPatch { Set(Value<Paint>),                 // a `Value<Paint>` field's patch (S2.3, R6): the paint, a
                       Append(Vec<PaintLayer>) }          // reference or `Absent`; or layers appended over `base`
-// FieldsBlock: a struct block, its `Patch` the derive-generated `<T>Patch`; an enum block's field (`Timing`,
-// `PaintKind`) takes `Set` only, its patch an `Option<Value<T>>` (ADD-A122)
+// FieldsBlock: a struct block, its `Patch` the derive-generated `<T>Patch`. An enum block, an S2 enum one of whose
+// variants holds a `Value` (directly or in a block): `PaintKind`, `Radius`, `Shadow`, `Timing`, `TransitionKind`,
+// `PresentationKind`, `Elision`, `FadeLength`, `FocusVisibleWhen`, `Binding`; a field of one takes `Set` only, its
+// patch an `Option` of the field's type (`Option<Value<Timing>>`) (ADD-A122)
 ```
 
 **Compound fields** (`Sides`, `Axes`, and block fields that are not `Value`s, `FocusIndicator.corners`) patch per
 sub-field (`Sides<Option<Value<Px>>>`), with the same table spelling as a `Fields` patch.
 
 **Merging patches:** a field a later patch sets replaces the earlier value; a map (`Vec<(Key, …)>`, the bindings by
-role or surface, the presentations by event, the transitions by property group, a transition listing several groups
+role or surface, every `Surface(_)` binding one key, so a part has one surface binding, a later `Surface(_)` replacing
+an earlier one (ADD-A122), the presentations by event, the transitions by property group, a transition listing several groups
 being split per group first; every `Vec` of pairs) merges by key, the later entry replacing the earlier; any other list (`stops`, `layers`
 set with `Set`, `symbol_variants`, `fallbacks`) is replaced whole, an empty one included; `Append` adds paint layers over `base` (R6), and
 over an `Absent` base gives a paint of the appended layers; over a reference it composes lazily, as a `Fields` patch
-does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is.
+does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is. The one merge conflict is a `Fields` patch meeting an `Absent` or `Auto` value directly (S2.2), refused when the layer is added (S12), so resolution never meets it (S8).
 
 **S6.2** Inheritance code goes: `inherit_from`, `theme_inherit`, the `[uniform]`, `[per_platform]` and
 `[wrong_safety_nets]` registries and `resolve/inheritance.rs` are removed (R20). Their rules are converted once
@@ -2241,7 +2272,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - a map or table has a duplicate key (two TOML keys for one field included, S11); `Auto` is stated on a field
   marked `auto` neither by the catalogue for that part nor by the core (S6.3); a call is stated on a `Value<bool>`, `Value<Key>`, `Value<String>` or enum field (a
   reference is allowed); a paint has no layer, or its bottom layer is a `Mask`, or a `Shadow::Layers` no layer (S2.3,
-  S2.5; an elevation entry may be empty); `pick` has no colours;
+  S2.5; an elevation entry may be empty); `pick` has no colours; a `Transition` has an empty `properties` list (it
+  would animate nothing, S2.7; ADD-A122);
 - a stated number lies outside its type's range: a stated `kirigami_lerp` balance outside `0..=1` (S2.2), a negative
   length where the field cannot be negative (S1), a
   `Fraction` outside `0..=1`, a negative `Material.saturation` (a typo's sign; only a computed result is clamped,
@@ -2724,7 +2756,7 @@ tolerance = <t>
   `<widget>.<part>` (`component.<key>.<part>`), with `value = "absent"` (S6.3's `absent = true`,
   `PartPatch::Absent`) or the part's `drawn_as` table as S11 spells it (`PartPatch::DrawnAs`), and the gate compares
   it with the query's `Styled::NotDrawn` or `Styled::DrawnAs` (ADD-A121); a struct block field is stated per leaf (`….text.font.size`) or as a
-whole by a reference (S2.2: `= token.focus`), an enum block (`Timing`, S2.2) as a whole, by a reference or S11's
+whole by a reference (S2.2: `= token.focus`), an enum block (S6.1 lists them: `Timing`) as a whole, by a reference or S11's
 spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct blocks the valid keys decide (below). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
   sketches as `scripts/check_spec_names.py` reads them) until `docs/property-registry.toml` is generated (S18), and
@@ -2820,15 +2852,20 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   literal the quote check could match, and `Absent`, which means not drawn where the platform does act, at once.
 - **A pending measurement** (ADD-A122). A combination the state model draws, where the key's look differs (its source
   or a capture shows the difference) but no evidence measures it yet (Material's pressed ripple until the Android
-  host's pass), has a fact of its own with `pending = "<id>"` in place of `value` and no `cite`: `<id>` (`U<n>`) names
-  its entry in the 0.8.0 plan's unmeasured register, in the plan's ledger, which holds the attempts, their evidence and
-  the options. Its `when` is the combination's (`when = { states = ["pressed"] }`) and its `rows` are any fact's. So
-  the combination no longer falls through to a less specific fact that applies by file order (*Which fact applies*,
-  below) and passes the gate silently. `check_facts.py` checks the form (exactly one of `value` and `pending`, no
-  `cite` beside `pending`, the id's form); the plan's `check_ledger.py` checks that each pending fact's id names a
-  register entry, and with `--final` reports every pending fact as a finding, beside the register's undecided
-  entries, so 0.8.0 is not released while one remains (R21). The entry's decision resolves it, by a measured fact,
-  a catalogue or state-model correction (a `not_drawn` combination) or another option it records, and the commit
+  host's pass), has a fact of its own with `pending = "<id>"` in place of `value` and no `cite`. `<id>` is the Id of
+  its row in the *Unmeasured register* of the plan's findings ledger (`docs/todo_v0.7.1_model-completeness-ledger.md`,
+  column Id: `U` and a number, `U1` its first row, never reused, a decided row keeping its Id), whose row holds the key
+  and combination, the attempts and their evidence, the options and the decision. Its `when` is the combination's
+  (`when = { states = ["pressed"] }`) and its `rows` are any fact's. So the combination no longer falls through to a
+  less specific fact (*Which fact applies*, below) and passes the gate silently. `check_facts.py` checks the form
+  (exactly one of `value` and `pending`, no `cite` beside `pending`, the id `U` and a number). The plan's
+  `check_ledger.py` checks the register (each Id of that form and used once) and each pending fact against it: a
+  pending fact whose id names no register row is a finding with or without `--final`; with `--final` every pending
+  fact is a finding, whether or not its id names a row, beside the register's undecided rows, and the plan's final
+  gate requires no S17 pending fact, so 0.8.0 is not released while one remains (R21). The gate (below) reads no
+  ledger, a plan document archived with the plan: it lists each pending fact with its id, whatever the register
+  holds. The row's decision resolves the fact, by a measured fact, a catalogue or state-model correction (a
+  `not_drawn` combination) or another option it records, and the commit
   applying it replaces the pending fact. Rejected: `value = "pending"`, a reserved string a text or key value could
   equal and the quote check would read as a literal.
 - **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) has a
@@ -2930,9 +2967,13 @@ excludes; they join `variant_sets`' sets, and `not_drawn` then removes combinati
 
 ```toml
 variant_products = [
-  [{ any = ["icon_only", "with_icon", "@custom_child", "@image_text_box"] },   # the content form
+  [{ any = ["icon_only", "with_icon", "@custom_child"] },                     # the content form
    { any = ["pill", "circular"] },                                            # the shape
    { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd"] },  # the colour style
+   { any = ["toggle"] }],
+  [{ one = ["with_icon"] }, { one = ["@image_text_box"] },                    # with `with_icon` only
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd"] },
    { any = ["toggle"] }],
   [{ one = ["menu"] },                                                        # a menu button
    { any = ["icon_only", "with_icon", "@custom_child"] },
@@ -2941,11 +2982,13 @@ variant_products = [
 ]
 ```
 
-states two products in eleven lines where the list would hold hundreds of sets (the group members here show the
+states three products in fourteen lines where the list would hold hundreds of sets (the group members here show the
 form, the adwaita facts' own lists cite theirs). `check_facts.py` expands the products, checks each set as a listed
 one (declared variants, the exclusive groups, once over the list and the products together: a set a product already
 gives is not listed again), and prints the number of sets per widget, so the expansion is reviewed by its count and
-its groups, each group's members cited as the plain list's are. The gate checks every set the entry gives, never a
+its groups, each group's members cited as the plain list's are. Two products may give the same set (groups of
+independent choices can overlap); the products' sets form a set, so such a set is counted once in that number and
+checked once by the gate. The gate checks every set the entry gives, never a
 sample, so a set the platform draws cannot pass unchecked; M1a task 14 bounds the cost by resolving each set's
 combinations once per scheme and flavour and reusing what the set's rules share, not by checking fewer. Rejected:
 the plain list alone, unreviewable at that size; and products left untrimmed, which would assert sets the platform
@@ -2969,7 +3012,10 @@ of `[palette.sources]` and `[palette.picks]` (S11, S14).
 **Which fact applies.** Facts in a file are ordered as the platform's source orders them (CSS order for libadwaita,
 visual-state order for WinUI, branch order for Breeze), so their order is the platform's, independent of the preset's
 rule order. For a key and a combination, the fact that applies is the **last** in file order whose `when` holds, after
-the exclusive groups' reduction (S10), a pending fact applying as any fact does. Where the platform states a combination ({checked, hover} in GN-1.29), its
+the exclusive groups' reduction (S10), a pending fact applying as any fact does. The gate fails a pending fact that a later fact of its key
+shadows on any combination its `when` holds in (it would not apply there, and the combination would pass with the
+later fact's value), so a pending fact stands after the facts that hold where it does, its `when` narrowed
+(`not_states`, …) where a later fact is more specific. Where the platform states a combination ({checked, hover} in GN-1.29), its
 facts state it, and a preset that forgot it fails. A fact with `scheme_file` and `accent` (below) applies only in the
 accent run, for that scheme file and accent; the other runs consider only facts without them.
 
@@ -3223,7 +3269,7 @@ lines that cite it.
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
 | ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S4.2, S6.1, S11, S12, S17 |
 | ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp` (every Kirigami, qqc2-desktop-style and kirigami-addons `linearInterpolation` the KDE trace states written with it and its operands), `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17, S4.6 |
-| ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; `FontCodePoint.fallbacks`; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms | S1, S2.2, S2.4, S2.9, S2.10, S3.3, S4.1, S6.1, S17, the catalogue |
+| ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; `FontCodePoint.fallbacks`; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms; the first check's fixes: the one merge conflict (a `Fields` patch meeting `Absent` or `Auto` directly), the motion keys from a shared name, the one class or the source's words, the pending fact's register Id and a shadowed pending fact failing the gate, two products giving one set, the enum blocks listed, `min_width` and `min_height` as `Option<Length>`, one surface binding per part, `concentric`'s `None` for unequal insets, `damping_coefficient`, `ResolvedPartStylePatch` for a keyframe, a transition with no property group refused | S1, S2.2, S2.4, S2.7, S2.9, S2.10, S3.3, S4.1, S6.1, S10, S12, S17, the catalogue |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

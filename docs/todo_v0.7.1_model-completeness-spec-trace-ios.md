@@ -847,7 +847,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-1 | `token.motion.durations.*` | token |
 | X-MO-1 | `token.motion.timings.*` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
-| X-MO-2 | `token.motion.timings.spring_default (Timing::Spring)` | token |
+| X-MO-2 | `token.motion.timings.default_spring (Timing::Spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |
 | X-MO-3 | `toolbar.values.presentations event @title_change` (the title's cross-fade); `button.values.presentations @ variant back context toolbar.bar` (event `@title_change`: the back label's transition) | rule |

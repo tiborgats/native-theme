@@ -40,6 +40,10 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `avatar.fallback_icon` on `adwaita` (AdwAvatar's icon fallback, which GN-2.14 does not name; listed absent until the
   facts state it).
 - `button`: iOS 26's further bar-item roles (none declared yet).
+- `UIButton.Configuration.CornerStyle` (`button` on `ios-*`, B-4): its cases, and so the corner-style variants
+  `@corner_fixed` … `@corner_dynamic` and their `exclusive_variants` group with `pill`, are as the gap map reads Apple's
+  documentation until the iOS lane confirms them against the pinned Xcode's `UIButtonConfiguration.h` (listed as
+  stated; ADD-A122).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -1311,7 +1315,7 @@ spaces:
     `margin`'s top or bottom and right (the end side, mirrored with the layout, S1) the distances from `body`'s edges
     at that corner. The one way an indicator's placement is stated: Breeze's `@inline_small` arrow, a small arrow
     box at the bottom-right corner inset by fixed amounts (`breeze@6.8.2 kstyle/breezestyle.cpp:2940-2944`, mirrored
-    by `visualRect`, `:2949`; K1.155), and WinUI's AppBarButton flyout chevron, top-aligned with a top and an end
+    by `visualRect`, `:2950`; K1.155), and WinUI's AppBarButton flyout chevron, top-aligned with a top and an end
     margin whose negative start margin only keeps it out of the layout
     (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:35-36`, `:373`, W1-102);
     every other indicator is `Inline`.
@@ -1423,8 +1427,8 @@ spaces:
     styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
     one `exclusive_variants` group with `pill`, `[@corner_fixed, @corner_small, @corner_medium, @corner_large,
     @corner_dynamic, pill]`, as a configuration holds one `cornerStyle` (B-4, `UIButton.Configuration.CornerStyle`
-    as the gap map reads Apple's documentation; the iOS lane confirms it against the pinned Xcode's
-    `UIButtonConfiguration.h`; ADD-A122),
+    as the gap map reads Apple's documentation, unconfirmed: an Open item until the iOS lane confirms it against the
+    pinned Xcode's `UIButtonConfiguration.h`; ADD-A122),
     the role `@cancel` (iOS 26's further bar-item roles are an open item, Open items: added
     here when the facts state them); the system types `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`); the bar items' `@padding_removed` (TB-8; done is the typed `done`);
@@ -8567,7 +8571,7 @@ facts win and this table is not consulted. The structure here is the slots and t
 | `headline` | section heading, today's `section_heading` | `headline` | `subtitle` = | `heading` | `heading_3` = | `title_medium` |
 | `subheadline` | secondary line under a heading | `subheadline` | `body` = | `body` = | `heading_4` | `title_small` |
 | `body` | running and UI text, today's `defaults.font` | `body` | `body` | `body` | `default` | `body_large` |
-| `body_emphasized` | emphasised body | `body_emphasized` | `body_strong` | `heading` = | `heading_5_primary` | `body_medium_emphasized` (expressive); `title_small` = (baseline: `= token.text.roles.subheadline`) |
+| `body_emphasized` | emphasised body | `body_emphasized` | `body_strong` | `heading` = | `heading_5_primary` | `body_large_emphasized` (expressive, the emphasised form of `body`'s `body_large`); `title_small` = (baseline: `= token.text.roles.subheadline`) |
 | `callout` | body-sized text, slightly set apart | `callout` | `body_large` | `body` = | `default` = | `body_large` = |
 | `footnote` | notes | `footnote` | `caption` = | `caption` = | `smallest_readable` = | `body_small` = |
 | `caption` | smallest readable, today's `text_scale.caption` | `caption_1` | `caption` | `caption` | `smallest_readable` | `body_small` |
@@ -8594,14 +8598,15 @@ compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Mat
 `numeric`, which share it, reference `body`; `label` is `label_large`, a button's label (`Button.kt:169`); `title1` is
 `headline_small`, a dialog's title (`tokens/DialogTokens.kt:51-52`, `AlertDialog.kt:330`); `large_title` is
 `headline_medium`, the large top app bar's title (`tokens/AppBarLargeTokens.kt:28-29`, `AppBar.kt:727`), where the draft
-had `headline_large`; `monospace` is the platform's monospace family (MAT-X36†). The other cells, `display_large`,
+had `headline_large`; `monospace` is the platform's monospace family (MAT-X36†). The other twelve cells, `display_large`,
 `display_medium`, `display_small` (the slots named after Material's display styles, which no Compose component
 assigns to a use), `title2`, `title3`, `headline`, `subheadline`, `body_emphasized`, `footnote`, `caption`,
 `caption_emphasized` and `caption2`, are **unsourced**: no Compose component or token assigns their use, and two
 uses near them point elsewhere (a navigation drawer's section headline is `title_small`,
 `tokens/NavigationDrawerTokens.kt:76-77`; a list item's supporting line is `body_medium`, `tokens/ListTokens.kt:320-321`),
 so they stay the draft's proposal until the maintainer confirms them or a source assigns them. The letter spacings
-Compose states in sp (`tokens/TypeScaleTokens.kt`, read by `tokens/TypographyTokens.kt:37-45`) are what Compose
+Compose states in sp (`tokens/TypeScaleTokens.kt`, read by `tokens/TypographyTokens.kt`, each style's
+`letterSpacing` in its own block: `BodyLarge` `:27-35`, `BodyMedium` `:37-45`, `BodySmall` `:47-55`, `DisplayLarge` `:57-65`, `DisplayMedium` `:67-75`, `DisplaySmall` `:77-85`, `HeadlineLarge` `:87-95`, `HeadlineMedium` `:97-105`, `HeadlineSmall` `:107-115`, `LabelLarge` `:117-125`, `LabelMedium` `:127-135`, `LabelSmall` `:137-145`, `TitleLarge` `:147-155`, `TitleMedium` `:157-165`, `TitleSmall` `:167-175`, and the emphasised ones `BodyLargeEmphasized` `:178-186`, `BodyMediumEmphasized` `:188-196`, `BodySmallEmphasized` `:198-206`, `DisplayLargeEmphasized` `:208-216`, `DisplayMediumEmphasized` `:218-226`, `DisplaySmallEmphasized` `:228-236`, `HeadlineLargeEmphasized` `:238-246`, `HeadlineMediumEmphasized` `:248-256`, `HeadlineSmallEmphasized` `:258-266`, `LabelLargeEmphasized` `:268-276`, `LabelMediumEmphasized` `:278-286`, `LabelSmallEmphasized` `:288-296`, `TitleLargeEmphasized` `:298-306`, `TitleMediumEmphasized` `:308-316`, `TitleSmallEmphasized` `:318-326`) are what Compose
 draws; where material-web's `latest` tokens state another in rem (body medium, display large, title medium, and the
 emphasised body large and display large), the facts cite Compose's, the look R1.6 names being the one Compose
 draws, and a rem value is never converted (S17's notations give rem no dimension).
@@ -8798,23 +8803,26 @@ token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 
 | Platform | Keys (one per duration the platform states) | Rows |
 |---|---|---|
-| libadwaita | the CSS transition tokens; the timed animations defined in code; the revealer and stack defaults; the animated-scroll duration | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
-| kde-breeze | `breeze_state` (the Breeze state animation: factor times a base while the factor is set, breezerc `AnimationsDuration` otherwise); `qt_fixed` (Qt's own unscaled timings: side-icon fade, tab move); `kf_timeline` (KMessageWidget, KCollapsibleGroupBox); Kirigami `very_short`, `short`, `long`, `very_long` (derived from `long`, with the source's floor by `max`, ADD-A56) and `human_moment` (unscaled) | K3.31, K3.37, K3.38†, Q3.23–Q3.25, Q3.27 |
-| windows-11 | `control_normal`, `control_fast`, `control_fast_after`, `control_faster` (WinUI's `ControlNormalAnimationDuration`, `ControlFastAnimationDuration`, `ControlFastAnimationAfterDuration`, `ControlFasterAnimationDuration`, `Common_themeresources_any.xaml:603-606`); `connected` (connected animation); one entry per built-in theme transition the facts measure (entrance, content, add and delete, reorder, reposition, popup, pane, drill in, press tilt, fade, split open and close, drag item) | W3-30, W3-32, W3-33, W3-34 |
+| libadwaita | the CSS transition tokens; the timed animations defined in code, the deprecated AdwFlap's fold, `flap_fold`, and AdwLeaflet's mode transition, `leaflet_mode`, among them (`libadwaita@1.10.0 src/adw-flap.c:1551`, `adw-leaflet.c:2445`); the revealer and stack defaults, `revealer` and `stack`; the animated scroll, `scrolled_window` (GtkScrolledWindow's `ANIMATION_DURATION`, `gtk@4.24.1 gtk/gtkscrolledwindow.c:189`) | GN-3.18, GN-3.21, GN-3.22, GN-3.24 |
+| kde-breeze | `animations` (Breeze's `Animations`, its state engines' duration: a base times `AnimationDurationFactor` while kdeglobals sets the factor, breezerc `AnimationsDuration` otherwise, `breeze@6.8.2 kstyle/breezestyle.cpp:2070-2087`, `kstyle/animations/breezeanimations.cpp:49-55`; Qt's `SH_Widget_Animation_Duration` too, `breezestyle.cpp:937-938`, which the dock widgets' and toolbars' re-layout and KCollapsibleGroupBox's expansion reference, the last with the source's floor by `max`, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:114-116`); `decoration_shadow` (the decoration's shadow fade, a base times the speed factor, `floor`ed, `kdecoration/breezedecoration.cpp:389`); `line_edit_icon_button` (Qt's side-icon fade, unscaled, `qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:432`); `tab_bar` (Qt's tab move, `ANIMATION_DURATION`, unscaled, `src/widgets/widgets/qtabbar_p.h:30`); `message_widget` (KMessageWidget's timeline, `kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60`); Kirigami `very_short`, `short`, `long`, `very_long` (derived from `long`, with the source's floor by `max`, ADD-A56) and `human_moment` (unscaled) | K1.17, K3.31, K3.37, K3.38†, Q3.23–Q3.25, Q3.27 |
+| windows-11 | `control_normal`, `control_fast`, `control_fast_after`, `control_faster` (WinUI's `ControlNormalAnimationDuration`, `ControlFastAnimationDuration`, `ControlFastAnimationAfterDuration`, `ControlFasterAnimationDuration`, `Common_themeresources_any.xaml:603-606`); `connected` (the connected animation); one entry per built-in theme transition the facts measure, named as WinUI names its class less `Transition` and `Animation` (`EntranceThemeTransition` `entrance_theme`: entrance, content, add and delete, reorder, reposition, popup, pane, drill in, press tilt, fade, split open and close, drag item) | W3-30, W3-32, W3-33, W3-34 |
 | macos-* | the AppKit durations (`NSAnimationContext` default, window resize time, per-control durations the probe records), `navigation` | MAC-X11 |
-| ios-* | `navigation` (push and pop), `modal` styles, the symbol-effect durations | X-MO-1, X-MO-3, X-MO-4, X-MO-9 |
+| ios-* | `navigation` (push and pop), one per modal transition style by its `UIModalTransitionStyle` case (`cover_vertical`, …), the symbol-effect durations | X-MO-1, X-MO-3, X-MO-4, X-MO-9 |
 | material-3 | the motion-scheme duration tokens (short, medium, long, extra long families), the ripple's, the shadow transition's | MAT-X13, MAT-X9, MAT-X7 |
 
 **token.motion.timings** (`Vec<(Key, Timing)>`): cubic Béziers, springs (`Timing::Spring`), `Timing::Platform(PlatformCurve)` where a
 platform's curve is its own (Kirigami's velocity-based curves, `KirigamiVelocity`). Keys per platform: libadwaita's easing curves and
 default timed-animation easing and spring parameters per animation (GN-3.19, GN-3.20); Kirigami's curves in use
-(Q3.26); Qt's default easing curve for its timelines (K3.37); WinUI's entering and exiting curves,
+(Q3.26); Breeze's `animations` (`Timing::Steps`, its count breezerc's `AnimationSteps`, K3.31); `in_out_sine`, Qt's
+default easing curve for its timelines (`QTimeLine`'s, `qtbase@6.12.0 src/corelib/tools/qtimeline.cpp:24-25`, K3.37); WinUI's entering and exiting curves,
 `fast_out_slow_in` and `slow_out_fast_in`, and its control key spline `control_fast_out_slow_in`
 (`ControlFastOutSlowInKeySpline`, `Common_themeresources_any.xaml:602`) (W3-31); UIKit's default
-spring (X-MO-2) and AppKit's media-timing curves (MAC-X11); Material's easing and spring tokens (MAT-X13). Every key,
+spring, `default_spring` (X-MO-2), and AppKit's media-timing curves (MAC-X11); Material's easing and spring tokens (MAT-X13). Every key,
 duration or timing, is named by S4.1's rule (ADD-A122): libadwaita's inline springs `floating_sheet_open`,
 `floating_sheet_close`, `bottom_sheet_open`, `bottom_sheet_close`, `navigation_view_push`, `navigation_view_pop`,
-`overlay_split_view_show`, `overlay_split_view_hide`, `carousel` (GN-3.20).
+`overlay_split_view_show`, `overlay_split_view_hide`, `carousel` (GN-3.20), and the deprecated AdwFlap's and
+AdwLeaflet's, which applications built on them still draw: `flap_reveal` (`libadwaita@1.10.0 src/adw-flap.c:1598-1599`)
+and `leaflet_child` (`adw-leaflet.c:2474-2476`), each the class's spring for that transition.
 
 **token.motion.speed_factor** (`Value<f32>`): read on KDE (K3.30, K3.90, Q3.24) and, by the Android reader, on
 `material-3` (the animator duration scale, MAT-X20, `readers (R18)`); a constant elsewhere (the platform has no speed

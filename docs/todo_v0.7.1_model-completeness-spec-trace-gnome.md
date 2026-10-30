@@ -895,7 +895,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
-| GN-3.24 | `token.motion.durations.scroll_animation` | token |
+| GN-3.24 | `token.motion.durations.scrolled_window` | token |
 | GN-3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | GN-3.25 | `dialog.values.presentations @ cond reduced_motion (bottom sheet slide to crossfade)` | rule |
 | GN-3.25 | `navigation_view.values.presentations @ cond reduced_motion` | rule |

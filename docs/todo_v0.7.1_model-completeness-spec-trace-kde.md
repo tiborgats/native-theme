@@ -77,9 +77,9 @@ rationale, each decided in the core's additions register (S22).
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond maximized / cond tiled:top / cond tiled:right / cond tiled:bottom / cond tiled:left` | rule |
 | K1.16 | `cond shaded (ADD-A02)` | condition |
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond shaded` | rule |
-| K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.breeze_state; the activation timing)` | field |
+| K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.decoration_shadow; the activation timing)` | field |
 | K1.17 | `window.frame.transitions @ cond window_inactive (the deactivation timing)` | rule |
-| K1.17 | `token.motion.durations.breeze_state (= floor(mul(<the decoration's duration>, token.motion.speed_factor)): the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
+| K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.motion.speed_factor)), S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
 | K1.17 | `window.title.transitions (Text cross-fade; duration as the decoration states it, value phase)` | field |
 | K1.18 | `window.frame.shadow @ cond window_inactive (layers at half strength)` | rule |
 | K1.19† | - | out (R1.1) |
@@ -105,7 +105,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.29 | `button.body.fill @ {checked,pressed}` | rule |
 | K1.29 | `button.body.fill, button.body.stroke @ {default,hover}` | rule |
 | K1.30 | `button.body.transitions (Fill, Stroke)` | field |
-| K1.30 | `token.motion.durations.breeze, token.motion.speed_factor` | token |
+| K1.30 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.40 | `input.body.stroke @ variant warning` | rule |
 | K1.40 | `input.body.stroke (= qt_lighter of it, ADD-A50) @ variant warning {hover} / variant warning {focused}` | rule |
 | K1.41 | `input.body.stroke, input.body.shadow (Absent; only the fill stays) @ variant flat (the connector also sets it where the field is too short for frame and font)` | rule |
@@ -140,7 +140,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.55 | `checkbox.mark.glyph.draw_extent @ {checked} / {indeterminate}; checkbox.mark.transitions (Glyph)` | rule |
 | K1.55 | `radio.dot.transform @ {checked}; radio.dot.transitions (Transform)` | rule |
 | K1.55 | `checkbox.box.transitions (Fill); radio.ring.transitions` | field |
-| K1.55 | `token.motion.durations.breeze, token.motion.speed_factor` | token |
+| K1.55 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.56 | `checkbox.box.stroke, checkbox.box.fill @ {checked} variant warning / radio.ring.stroke, radio.ring.fill @ {checked} variant warning` | rule |
 | K1.57 | `checkbox.box.focus; radio.ring.focus` | field |
 | K1.58† | `checkbox.mark.glyph (Path, stroke: GlyphStroke width and join)` | field |
@@ -742,7 +742,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.13 | `banner.edge_line.stroke, banner.body.corners (none) @ variant @header cond flavor:widgets / variant @footer cond flavor:widgets` | rule |
 | K2.13 | `banner.icon.icon.size (= token.icons.sizes.toolbar.size)` | field |
 | K2.13 | `button @ variant close context banner` | rule |
-| K2.13 | `banner.values.presentations (Appear, Disappear: the height and Fade, its timing quadratic in the timeline's progress; = token.motion.durations.kf_timeline)` | field |
+| K2.13 | `banner.values.presentations (Appear, Disappear: the height and Fade, its timing quadratic in the timeline's progress; = token.motion.durations.message_widget)` | field |
 | K2.14 | `list.leading_icon.icon.size (= the icon view's size) @ context component.page_view` | rule |
 | K2.14 | `component.title_widget.{container.padding,title.text} @ context component.page_view` (the page title header is KTitleWidget, one home) | rule |
 | K2.14 | `component.page_view.header_separator.stroke` | component |
@@ -982,21 +982,21 @@ rationale, each decided in the core's additions register (S22).
 | K3.30 | `token.motion.speed_factor` | token |
 | K3.30 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | K3.30 | `cond animations_off (factor 0)` | condition |
-| K3.31 | `token.motion.durations.breeze_state (factor times a base while the factor is set, breezerc AnimationsDuration otherwise)` | token |
-| K3.31 | `token.motion.timings.breeze_state (Steps: its count read from AnimationSteps)` | token |
-| K3.31 | `token.motion.durations.breeze_state` (the reader states it zero while breezerc [Style] AnimationsEnabled is off: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
+| K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: factor times a base while the factor is set, breezerc AnimationsDuration otherwise)` | token |
+| K3.31 | `token.motion.timings.animations (Steps: its count read from AnimationSteps)` | token |
+| K3.31 | `token.motion.durations.animations` (the reader states it zero while breezerc [Style] AnimationsEnabled is off: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
 | K3.31 | `PartStyle.transitions per part (each Breeze engine's parts in the rows above; the enable/disable cross-fade a transition on {disabled})` | field |
 | K3.31 | `navigation_view.values.presentations (Fade) @ cond system_setting:stacked_widget_transitions (the stacked-widget fade, off by default)` | rule |
 | K3.31 | `reader:kde:breezerc [Style] AnimationsEnabled, AnimationSteps, AnimationsDuration, StackedWidgetTransitionsEnabled` | reader |
 | K3.33 | - | out (R1.1) |
 | K3.34 | - | out (R1.1) |
 | K3.35 | - (KWin's squash and maximize effects, which KWin runs on every window; its sliding popups, which only a window that asks for them through `KWindowEffects::slideWindow` gets: Plasma's own popups ask, `libplasma src/plasmaquick/popupplasmawindow.cpp:115`, `:132`, `src/plasmaquick/dialog.cpp:318`, and no Breeze, Kirigami, qqc2-desktop-style or plasma-integration source does, by search) | out (R1.1) |
-| K3.37 | `banner.values.presentations (Appear, Disappear: the message widget's height and opacity; = token.motion.durations.kf_timeline, = token.motion.timings.qt_timeline)` | field |
-| K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = token.motion.durations.kf_timeline, = token.motion.timings.qt_timeline)` | field |
-| K3.37 | `token.motion.durations.kf_timeline` | token |
-| K3.37 | `token.motion.timings.qt_timeline` | token |
-| K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.breeze_state, its timing)` | component |
-| K3.38† | `toolbar.values.presentations (Move: the toolbars' re-layout slide; = token.motion.durations.breeze_state, its timing)` | field |
+| K3.37 | `banner.values.presentations (Appear, Disappear: the message widget's height and opacity; = token.motion.durations.message_widget, = token.motion.timings.in_out_sine)` | field |
+| K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = max(<the source's floor>, token.motion.durations.animations), the style hint's duration, kcollapsiblegroupbox.cpp:114-116; = token.motion.timings.in_out_sine)` | field |
+| K3.37 | `token.motion.durations.message_widget` | token |
+| K3.37 | `token.motion.timings.in_out_sine` | token |
+| K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.animations, its timing)` | component |
+| K3.38† | `toolbar.values.presentations (Move: the toolbars' re-layout slide; = token.motion.durations.animations, its timing)` | field |
 | K3.39† | - | out (R1.1) |
 | K3.20 | `token.focus (FilledRing: width, paint, offset; corners Radius::FollowPart, R12's concentric default)` | token |
 | K3.20 | `input.body.focus, text_area.body.focus, combo_box.body.focus, button.body.focus, checkbox.box.focus, radio.ring.focus (circular), slider.thumb.focus (circular), dial.handle.focus, stepper.body.focus, group_box.body.focus (= token.focus)` | field |

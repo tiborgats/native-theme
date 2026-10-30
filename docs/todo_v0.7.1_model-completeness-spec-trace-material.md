@@ -359,7 +359,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS4 | `token.text.keyed.label_large_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_medium_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_small_emphasized` | token |
-| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_medium_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.roles.subheadline, the slot owning title_small, S4.4)` | token |
+| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_large_emphasized, the emphasised form of body's body_large, unsourced, under cond flavor:expressive; under cond flavor:baseline = token.text.roles.subheadline, the slot owning title_small, S4.4)` | token |
 | MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.body_small_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.keyed.label_medium, which no other slot takes)` | token |
 | MAT-TS5 | `token.text.keyed.display_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-TS5 | `token.text.keyed.display_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |

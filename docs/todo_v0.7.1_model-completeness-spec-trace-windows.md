@@ -95,7 +95,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-020 | `button.body.stroke (gradient paint; fill_clip box, AccentButtonStyle's BackgroundSizing OuterBorderEdge) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` (`Button_themeresources.xaml:238`) | rule |
 | W1-020 | `button.{body.fill,label.text.fill,body.stroke} @ {default} / {default,hover} / {default,pressed} / {default,disabled} context dialog.action_area` (the dialog's default button in AccentButtonStyle, in every state) | rule |
 | W1-021 | `button.body.fill, button.label.text.fill, button.body.stroke @ variant flat / {hover} variant flat / {pressed} variant flat / {disabled} variant flat` | rule |
-| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, `:255-256`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
+| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, set in the Checked, CheckedPointerOver and CheckedPressed states, `:255-256`, `:271-272`, `:287-288`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
 | W1-023 | `button.body.transitions (Fill)` | field |
 | W1-023 | `token.motion.durations.control_faster` | token |
@@ -294,7 +294,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-102 | `menu.body.{fill,stroke,padding,min_width,max_width,max_height,shadow} @ context button.body variant overflow` | rule |
 | W1-102 | `WinUiFlyout (button.values.menu_placement @ variant overflow context toolbar.bar)` | placement |
 | W1-102 | `menu.{accelerator.text.fill,submenu_arrow.glyph.fill} @ context button.body variant overflow` | rule |
-| W1-102 | `button.values.menu_indicator_anchor (TopEnd), button.menu_indicator.{glyph,margin} @ variants {tool,menu} context toolbar.bar` (AppBarButton's flyout chevron: a font glyph with its family fallbacks, ADD-A122's `FontCodePoint.fallbacks`, its top and end margins, `AppBarButton_themeresources.xaml:31`, `:33`, `:35-36`, `:373`; ADD-A122) | rule |
+| W1-102 | `button.values.menu_indicator_anchor (TopEnd), button.menu_indicator.{glyph,margin} @ variants {tool,menu} context toolbar.bar` (AppBarButton's flyout chevron: a font glyph with its family fallbacks, ADD-A122's `FontCodePoint.fallbacks`, its top and end margins, `AppBarButton_themeresources.xaml:31`, `:33`, `:35-36`, `:373`; ADD-A122. The margins are measured from ContentRoot, the whole control (`:356`; the chevron's panel in row 0 and the last column of its grid, `:372`), not from the drawn fill, AppBarButtonInnerBorder, inset by AppBarButtonInnerBorderMargin `2,6,2,6` from it (`:117`, `:351`), so the value phase states `margin` from `body`'s box by that inset (S2.11). The source gives the chevron no box: the FontIcon sets no Width, Height, MinWidth or MinHeight, only its glyph's font size, `:33`, `:373`, so `menu_indicator.{min_width,min_height}` are measured, S17) | rule |
 | W1-103 | `toolbar.bar.{fill,stroke,corners} @ {open}` | rule |
 | W1-103 | `toolbar.bar.min_height @ variant @compact / variant @minimal / variant @hidden` | rule |
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
@@ -657,7 +657,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-16 | `role.@fill_* tiers` | role |
 | W3-16 | `role.@fill_subtle` | role |
 | W3-16 | `role.@background_solid_*` | role |
-| W3-17 | `role.global.status.{info,success,warning,error,neutral}.{background,background_solid} (attention, success, caution, critical, neutral backgrounds and their solid variants)` | role |
+| W3-17 | `role.global.status.{info,success,warning,error,neutral}.background (the attention, success, caution, critical and neutral backgrounds, Common_themeresources_any.xaml:171-175; attention is info, as InfoBar's informational severity takes it, InfoBar_themeresources.xaml:8)` | role |
+| W3-17 | `role.global.status.{info,neutral}.background_solid (the two solid backgrounds WinUI states, SystemFillColorSolidAttentionBackground and SystemFillColorSolidNeutralBackground, Common_themeresources_any.xaml:176-177; success, warning and error have none, absent)` | role |
 | W3-18 | `role.global.status.neutral.fill` | role |
 | W3-18 | `role.@system_fill_solid_neutral` (`SystemFillColorSolidNeutral`, the solid neutral fill, a fill tier) | role |
 | W3-45† | `PartStyle.fill (an alpha Color layer appended over base, fill.append, S2.3, R6: the translucent fill drawn over what lies behind)` | field |
