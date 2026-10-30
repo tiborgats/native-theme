@@ -27,9 +27,18 @@ A trace line (row, target, kind) is checked when its row is live (a row of the g
 withdrawn; a line naming anything else is check_spec_trace.py's finding and is skipped here), its platform has a
 preset that exists (the facts gate checks the presets that exist; no preset, nothing is asked of that platform), and
 its target lies in a checked unit (with no option, every target). It passes when its kind is a verdict (S20:
-`out (R1.1)` … `readers (R18)`: the line carries a verdict), or when its row is in the `rows` of a fact or a
-state-model entry of the platform's facts directory (S17: `rows` lists the gap-map rows the fact carries). The rows
-are compared as the gap maps write them, `†` included.
+`out (R1.1)` … `readers (R18)`: the line carries a verdict), or when a fact or a state-model entry of the platform's
+facts directory lists its row in `rows` (S17: `rows` lists the gap-map rows the fact carries) and carries that line:
+each line of a row is counted separately (the ledger's queue #58), so a role fact naming a row carries the row's role
+line and not its `list.disclosure` or `keycap` lines. A fact (a pending fact too) carries a line when its `key` (a
+state-model entry: its `widget`) and one of the line's target paths (below; a `[declare.widget.<w>]` or
+`[declare.component.<k>]` head names `<w>` or `component.<k>`) are related, one a leading part of the other segment by
+segment, a unit suffix ignored (`button.body.stroke.top.paint` carries `button.body.{fill,stroke}`, the state model's
+`button` carries `button.body.fill @ {hover}`); a target naming a core struct's field (`FocusIndicator.offset`,
+`PartStyle.cursor`, an UpperCamel head) is carried by a key whose path passes through that struct to that field
+(key_types: `token.focus.width` and `button.body.focus.width` both carry `FocusIndicator.width`). A line whose target
+names no model path (a reader's `reader:…`, a `<widget>` placeholder) is carried by any fact or entry of its row. The
+rows are compared as the gap maps write them, `†` included.
 
 Where a target lies (target_paths): the target cell up to its first backtick (the code span; what follows is a note),
 cut at its selector (` @ `), split at commas outside braces into items; each item's leading dotted path, its brace
@@ -64,6 +73,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import check_facts
+import check_spec_names
 import check_spec_trace
 
 DOCS = Path("docs")
@@ -77,6 +87,7 @@ SLICE_DEFERRED = {"button": ("menu_placement", "scaffold_placement")}
 UNIT_SUFFIX = re.compile(r"_(?:px|ms|deg|pt)$")
 CONTEXT_RX = re.compile(r"context\s+(?:any\s+|nearest\s+\{([^}]*)\}\s*=\s*)?"
                         r"(component\.[a-z_][a-z0-9_]*|[a-z_][a-z0-9_]*)")
+DECLARE_RX = re.compile(r"\[declare\.((?:widget\.|component\.)[a-z_][a-z0-9_]*)\]")
 PATH_HEAD = re.compile(r"@?[A-Za-z_][A-Za-z0-9_]*(?:\.(?:\{[^}]*\}|@?[A-Za-z0-9_]+))*")
 
 
@@ -251,16 +262,89 @@ def read_lines(root: Path) -> list:
 
 
 def carried_rows(ctx) -> dict:
-    """{platform: the rows its facts' and state-model entries' `rows` list}."""
+    """{platform: {row: the keys of the facts and state-model entries whose `rows` list it}}: a fact's `key` (a
+    pending fact's too), a state-model entry's `widget`."""
     items, _, _ = check_facts.load(ctx)
     out = {}
     for it in items:
         if it.palette:
             continue
         rows = it.data.get("rows")
-        if isinstance(rows, list):
-            out.setdefault(it.platform, set()).update(r for r in rows if isinstance(r, str))
+        key = it.data.get("widget" if it.table == "model" else "key")
+        if isinstance(rows, list) and isinstance(key, str):
+            for r in rows:
+                if isinstance(r, str):
+                    out.setdefault(it.platform, {}).setdefault(r, set()).add(key)
     return out
+
+
+def related(a, b) -> bool:
+    """One path is a leading part of the other, segment by segment (a unit suffix ignored); a path is a dotted
+    string or a list of segments."""
+    sa = segs(a) if isinstance(a, str) else [UNIT_SUFFIX.sub("", x) for x in a]
+    sb = segs(b) if isinstance(b, str) else [UNIT_SUFFIX.sub("", x) for x in b]
+    n = min(len(sa), len(sb))
+    return sa[:n] == sb[:n]
+
+
+def key_types(ctx, key: str) -> list:
+    """(core struct, the key's segments below it) for each of the core's structs the key's path passes through
+    (check_facts.type_at's walk): a part's field from `PartStyle`, a token from `Tokens`, a colour role from
+    `GlobalRoles` or `SurfaceRoles`; [] for a widget value, an input or a key the sketches do not type."""
+    s = key.split(".")
+    if s[0] == "token":
+        t, rest = "Tokens", s[1:]
+    elif s[0] == "role" and len(s) > 1:
+        t, rest = ("GlobalRoles", s[2:]) if s[1] == "global" else ("SurfaceRoles",
+                                                                   [x for x in s[2:] if x != "disabled"])
+    elif s[0] == "input":
+        return []
+    else:
+        rest = s[3:] if s[0] == "component" else s[2:]
+        if not rest or s[1 + (s[0] == "component")] == "values":
+            return []
+        t = "PartStyle"
+    out = []
+    for _ in range(64):
+        t = check_facts.strip_type(t)
+        m = re.fullmatch(r"Sides<(.+)>", t) or re.fullmatch(r"Vec<\(\s*\w+\s*,\s*(.+)\)>", t)
+        if m and rest:
+            rest, t = rest[1:], m.group(1).strip()
+            continue
+        if t not in ctx.structs:
+            break
+        out.append((t, rest))
+        if not rest:
+            break
+        fields = ctx.structs[t]
+        name = rest[0] if rest[0] in fields else check_spec_names.norm_value(rest[0])
+        if name not in fields:
+            break
+        rest, t = rest[1:], fields[name]
+    return out
+
+
+def line_carried(ctx, line: Line, keys) -> bool:
+    """Whether a fact or state-model entry whose `rows` list the line's row carries the line (each line of a row
+    separately; the ledger's queue #58): its key (a state-model entry's widget) and one of the line's target paths
+    are related, the key lying under the target (`button.body.fill` under `button.body.{fill,stroke}`) or the target
+    under the key (a state model's `button`, under `[declare.widget.button]` too); a target naming a core struct's
+    field (`FocusIndicator.offset`, `PartStyle.cursor`) is carried by a key whose path passes through that struct to
+    that field (key_types). A line whose target names no path of the model (a reader's `reader:…`, a `<widget>`
+    placeholder) is carried by any fact or entry of its row, as nothing in it names a key."""
+    paths = [p for p in target_paths(line.target) if p.split(".")[0] != "reader"]
+    paths += [f"{m.group(1).replace('widget.', '', 1)}" for m in DECLARE_RX.finditer(line.target)]
+    if not paths:
+        return bool(keys)
+    for k in keys:
+        for p in paths:
+            head = p.split(".")[0]
+            if head[:1].isupper():
+                if any(t == head and related(rest, p.split(".")[1:]) for t, rest in key_types(ctx, k)):
+                    return True
+            elif related(k, p):
+                return True
+    return False
 
 
 def check(ctx, units, enabled=()):
@@ -281,7 +365,7 @@ def check(ctx, units, enabled=()):
         if line.kind in check_spec_trace.VERDICTS:
             t.verdicts += 1
             continue
-        if line.row in carried.get(line.platform, set()):
+        if line_carried(ctx, line, carried.get(line.platform, {}).get(line.row, ())):
             t.carried += 1
             t.carried_rows.add(line.row)
             continue
@@ -372,6 +456,17 @@ kind = "published"
 source = "libadwaita@1.10.0 a.scss:1"
 quote = "x"
 ''',
+    "docs/facts/gnome/roles.toml": '''
+[[fact]]
+key = "role.window.background"
+value = "#ffffff"
+rows = ["GN-1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 a.scss:1"
+quote = "x"
+''',
     "docs/facts/imported/gnome.toml": '''
 [[row]]
 rows = ["GN-1.3"]
@@ -452,11 +547,42 @@ def self_test() -> int:
         if rows_of(found) != want or len(found) != 3:
             failures.append(f"adwaita, slice: got {found}, want rows {want}, one finding per line")
         # a fact carrying the row passes it; the imported folder carries nothing
-        extra = {"docs/facts/gnome/tokens.toml": SELF_TEST_FACTS["docs/facts/gnome/button.toml"].replace(
-            '"GN-1.1"', '"GN-1.3", "GN-1.5", "GN-1.9†"')}
+        fact = SELF_TEST_FACTS["docs/facts/gnome/button.toml"]
+        extra = {"docs/facts/gnome/tokens.toml": "\n".join(
+            fact.replace('"button.body.fill"', f'"{k}"').replace('"GN-1.1"', f'"{r}"') for k, r in (
+                ("token.motion.durations.button", "GN-1.3"), ("token.behavior.scroll_lines_per_step", "GN-1.5"),
+                ("token.params.opacity.disabled", "GN-1.9†")))}
         found, _, _ = run(presets=("adwaita",), extra=extra)
         if found:
             failures.append(f"carried by a fact: got {found}")
+        # a fact carries only its row's lines its key lies on (the ledger's queue #58): a button fact naming the
+        # token rows carries none of their lines, and the state model's button none of GN-1.2's role line
+        extra = {"docs/facts/gnome/tokens.toml": fact.replace('"GN-1.1"', '"GN-1.3", "GN-1.5", "GN-1.9†"'),
+                 "docs/facts/gnome/roles.toml": None}
+        found, tallies, _ = run(presets=("adwaita",), extra=extra)
+        want = [("gnome", "GN-1.2"), ("gnome", "GN-1.3"), ("gnome", "GN-1.5"), ("gnome", "GN-1.9†")]
+        if rows_of(found) != want or tallies["gnome"].carried != 1:
+            failures.append(f"a row's other lines: got {found}, {tallies['gnome']}")
+        for target, keys, want in (
+                ("list.disclosure.glyph.fill @ {selected} variant @column_view", {"role.@shade_mid"}, False),
+                ("role.@shade_mid, role.@shade_dark (KDE's 3-D shades, K3.53)", {"role.@shade_mid"}, True),
+                ("keycap.key.fill (= role.window.background) @ context component.command_bar", {"role.@shade_dark"},
+                 False),
+                ("button.body.{fill,stroke} @ {hover}", {"button.body.stroke.top.paint"}, True),
+                ("button.body.padding_px @ variant flat", {"button.body.padding.top"}, True),
+                ("button.body.fill @ {hover}", {"button"}, True),
+                ("toolbar.bar.fill", {"button"}, False),
+                ("[declare.widget.button] default_size_by_variant: @pill regular", {"button"}, True),
+                ("[declare.component.led] available", {"component.led"}, True),
+                ("PartStyle.min_width per part", {"button.body.min_width"}, True),
+                ("PartStyle.min_width per part", {"button.body.fill"}, False),
+                ("FocusIndicator.width (the ring)", {"token.focus.width"}, True),
+                ("FocusIndicator.width (the ring)", {"button.body.focus.width"}, True),
+                ("FocusIndicator.corners", {"token.focus.width"}, False),
+                ("reader:kde:kdeglobals [KDE] contrast", {"token.params.color.contrast"}, True),
+                ("reader:kde:kdeglobals [KDE] contrast", set(), False)):
+            if line_carried(fixture_context(base / "case0"), Line("kde", "K1.1", target, "rule"), keys) != want:
+                failures.append(f"line {target!r} carried by {sorted(keys)}: got {not want}")
         # every line: the deferred, the staged, other widgets', input and the verdict lines' rows
         found, tallies, _ = run(presets=("adwaita", "macos-tahoe"), every=True)
         want = [("gnome", "GN-1.3"), ("gnome", "GN-1.4"), ("gnome", "GN-1.5"), ("gnome", "GN-1.6"),

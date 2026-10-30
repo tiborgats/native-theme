@@ -1085,9 +1085,11 @@ python3 scripts/check_function_vectors.py --self-test
 
 ## check_facts_trace.py
 
-Checks that every live trace row of the checked units (the specification's
-traceability, S20) is in a fact's or a state-model entry's `rows` of its
-platform's `docs/facts/` directory, or carries a verdict, on the platforms
+Checks that every live trace line of the checked units (the specification's
+traceability, S20) is carried by a fact or a state-model entry of its
+platform's `docs/facts/` directory that lists its row in `rows` and whose key
+lies on the line's target (each line of a row separately), or carries a
+verdict, on the platforms
 whose presets exist (the new model's `native-theme/src/next/presets/`).
 `--enabled` checks the units of `scripts/widget_units.toml` (until it
 exists, the slice: `button`, the colour roles and the slice's tokens, with
