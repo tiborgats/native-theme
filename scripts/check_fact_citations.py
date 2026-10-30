@@ -34,7 +34,9 @@ entries serve, a `preset:` in `not_conditions` taken out; whether or not the pre
 check_facts.py's generation rule asks), and for a palette fact once over all its citations, every literal of `value`
 equals a literal of the union of those citations' quotes, as written or after the citation's `conversion`. A value's
 literals are S2.2's (a TOML number; the colour, length, duration, angle and font-size literals of a string or an
-expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's.
+expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's, a
+`Timing::Platform` curve's name among them (`{ platform = { qt = "in_out_sine" } }`: S2.7, ADD-A123;
+scripts/check_facts.py checks it is one of the core's `QtEasing` or `AdwEasing` members, or `kirigami_velocity`).
 A text value (check_facts.text_leaves: where the key's type is text) is no literal source: it equals, whitespace-
 normalised and case-sensitive, a whole string one of those quotes holds by the text notations (quote_texts, below).
 A zero stated by omission (S17 *Absence*, ADD-A122): where one of those citations is an absence citation (it has
@@ -148,7 +150,11 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
 - Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
   `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, the
   result a duration), `negate` (− x: WinUI's `FocusVisualMargin="-3"`, an inward margin, is the model's outward
-  focus offset of 3px, the ledger's queue #38).
+  focus offset of 3px, the ledger's queue #38), `ns_font_weight` (an AppKit `NSFontWeight`, −1..1, to S2.8's CSS
+  weight: 100 times one more than the number of NS_WEIGHT_THRESHOLDS, −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5
+  and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
+  WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
+  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739).
 - Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17); `srgb(…)` and
   `display_p3(…)` literals in their own space. A `display_p3(…)` value is the colour as Apple publishes it (S2.1: the
   preset cites the published value exactly and converts when the file is read), so it is compared in Display P3, not
@@ -185,12 +191,15 @@ LEGACY_EVIDENCE = [
     "docs/evidence/os-probe/2026-10-26-run-40348854007",
 ]
 
+# S17's `ns_font_weight` (ADD-A123): the `NSFontWeight` thresholds, each one at or below the weight adding 100 to 100
+NS_WEIGHT_THRESHOLDS = (-0.6, -0.365, -0.115, 0.130, 0.235, 0.350, 0.5, 0.7)
 CONVERSIONS = {
     "percent_to_fraction": lambda x: x / 100,
     "byte_to_fraction": lambda x: x / 255,
     "complement": lambda x: 1 - x,
     "seconds_to_ms": lambda x: x * 1000,
     "negate": lambda x: -x,
+    "ns_font_weight": lambda x: 100 * (1 + sum(t <= x for t in NS_WEIGHT_THRESHOLDS)),
 }
 # unit -> (dimension, factor to the dimension's canonical unit); None: no dimension (no literal)
 UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("pt", 1), "ms": ("duration", 1),
@@ -1331,6 +1340,39 @@ class Run:
 # --------------------------------------------------------------------------------------------- self-test
 
 SELF_TEST_EXTRA = {
+    "docs/facts/gnome/curve.toml": '''
+[[fact]]
+key = "button.body.transitions"
+value = [{ properties = ["fill"], duration_ms = 250, timing = { platform = { adw = "ease_out_cubic" } } }]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-toggle.c:2-3"
+quote = "adw_timed_animation_new (GTK_WIDGET (self), 0, 1, 250, target); adw_timed_animation_set_easing (ADW_TIMED_ANIMATION (self->animation), ADW_EASE_OUT_CUBIC);"
+''',
+    "cache/libadwaita@1.10.0/src/adw-toggle.c": "  target = adw_callback_animation_target_new (cb, self, NULL);\n"
+                                               "  self->animation = adw_timed_animation_new (GTK_WIDGET (self), 0, 1, "
+                                               "250, target);\n  adw_timed_animation_set_easing (ADW_TIMED_ANIMATION "
+                                               "(self->animation), ADW_EASE_OUT_CUBIC);\n",
+    "docs/facts/macos/weight.toml": '''
+[[fact]]
+key = "button.label.text.font.weight"
+value = 600
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml#macos.fonts.weights.button"
+tolerance = 0
+conversion = ["ns_font_weight"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.weights.button"
+tolerance = 0
+conversion = ["ns_font_weight"]
+''',
     "docs/facts/gnome/more.toml": '''
 [[fact]]
 key = "button.body.shadow"
@@ -1486,9 +1528,9 @@ quote = "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opac
                                                "QColor::fromRgbF(0, 0, 0, opacity);\n    }\n",
     "cache/catppuccin@1.7.1/palette.json": "\n" * 119 + '        "hex": "#313244",\n',
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml":
-        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n",
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml":
-        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
+        "[macos.fonts.sizes]\nsystemFontSize = 13.0\n\n[macos.fonts.weights]\nbutton = 0.3\n",
     "docs/evidence/os-probe/2026-11-02-run-1/README.md": "The run's harness and commit.\n",
     "docs/evidence/kde-accent/2026-11-03-run-2/kde-breeze-light/kdeglobals":
         "[Colors:Header]\nBackgroundNormal=222,224,226\n\n[Colors:Header][Inactive]\nBackgroundNormal=227,229,231\n",
@@ -1524,6 +1566,11 @@ SELF_TEST_CASES = [
     ("zero by omission: a name the path does set", "docs/facts/gnome/zero.toml", '["delay", "timeout"]',
      '["delay", "g_signal_emit"]', ["absent name 'g_signal_emit' occurs"]),
     ("zero by omission: no name for it", "docs/facts/gnome/zero.toml", '["delay", "timeout"]', "[]", []),
+    # a platform curve's name is the verifier's, not the quote check's (S17 *The quote check*, S2.7; ADD-A123); its
+    # transition's literals still need a quote
+    ("platform curve: the name not compared", "docs/facts/gnome/curve.toml", '"ease_out_cubic"', '"ease_in_expo"', []),
+    ("platform curve: a duration no quote holds", "docs/facts/gnome/curve.toml", "duration_ms = 250",
+     "duration_ms = 260", ["260ms is in no quote serving adwaita"]),
     # a LinearGradientBrush's angle is the one its points give, never a point's number (the ledger's queue #57)
     ("brush: a wrong angle a point's number holds", "docs/facts/windows/brush.toml", "angle_deg = 180",
      "angle_deg = 0", ["0deg is in no quote serving windows-11"]),
@@ -1578,6 +1625,14 @@ SELF_TEST_CASES = [
      ["the evidence has no leaf 'layers.0.spread_px'"]),
     ("macOS: 26 measures another size", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml",
      "13.0", "14.0", ["the evidence holds 14, the fact 13pt"]),
+    # S2.8's weight from an `NSFontWeight` (S17's `ns_font_weight`, ADD-A123): 0.3 is 600
+    ("macOS: a weight without its conversion", "docs/facts/macos/weight.toml",
+     [('tolerance = 0\nconversion = ["ns_font_weight"]\n', "tolerance = 0\n")] * 2,
+     None, ["the evidence holds 0.3, the fact 600", "the evidence holds 0.3, the fact 600"]),
+    ("macOS: a weight past the next threshold", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml",
+     "button = 0.3", "button = 0.35", ["the evidence holds 700, the fact 600"]),
+    ("macOS: a weight just below the next threshold",
+     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml", "button = 0.3", "button = 0.3499", []),
     ("macOS: a path the evidence lacks", "docs/facts/macos/buttons.toml", "macos-26/probe.toml#macos.fonts.sizes."
      "systemFontSize", "macos-26/probe.toml#macos.fonts.sizes.labelFontSize", ["no 'labelFontSize'"]),
     ("macOS: run.toml without the build", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", 'os = "25G83"\n', "",
@@ -1590,7 +1645,7 @@ SELF_TEST_CASES = [
      None, "a = 1\n", ["evidence file cited by no fact", "image folder 'os-probe-macos-14' has no [images"]),
     ("macOS: a run without run.toml", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", None, None,
      ["missing: a run's run.toml", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'",
-      "maps no image 'os-probe-macos-26'"]),
+      "maps no image 'os-probe-macos-26'", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'"]),
     ("evidence: an uncited file", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/extra.txt", None, "x\n",
      ["evidence file cited by no fact"]),
     ("evidence: a file outside an image folder", "docs/evidence/os-probe/2026-11-02-run-1/notes.txt", None, "x\n",
@@ -1838,7 +1893,15 @@ def self_test() -> int:
     for quote, text, want in SELF_TEST_TEXTS:
         if (text in quote_texts(quote)) != want:
             failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
-    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "percent_to_fraction", "seconds_to_ms"]:
+    # S2.8's weight from an `NSFontWeight` (ADD-A123): each threshold's edge, the ends, and the probe's three weights
+    edges = [(t, 100 * (i + 2)) for i, t in enumerate(NS_WEIGHT_THRESHOLDS)]
+    edges += [(math.nextafter(t, -math.inf), 100 * (i + 1)) for i, t in enumerate(NS_WEIGHT_THRESHOLDS)]
+    for x, want in edges + [(-1, 100), (1, 900), (0, 400), (0.3, 600), (0.4, 700)]:
+        got = convert([Lit("num", None, x)], ["ns_font_weight"])[1].value
+        if got != want:
+            failures.append(f"ns_font_weight {x!r}: got {got}, want {want}")
+    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "ns_font_weight", "percent_to_fraction",
+                               "seconds_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
                        ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),
@@ -1929,7 +1992,7 @@ def self_test() -> int:
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
             if label == "good":
-                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 6:
+                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 8:
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
         # the quote check does not depend on the presets that exist: none exist, a wrong literal still fails
         root = base / "case0"
@@ -1950,7 +2013,7 @@ def self_test() -> int:
         # an uncommitted evidence file, and the vacuous run
         run = Run(check_facts.fixture_context(root), root / "cache", set(), check_heads=False)
         run.check()
-        if sum("is not committed" in w for _, _, w in run.findings) != 6:
+        if sum("is not committed" in w for _, _, w in run.findings) != 8:
             failures.append(f"uncommitted: got {run.findings}")
         root = base / "empty"
         check_facts.write_fixture(root, {})
