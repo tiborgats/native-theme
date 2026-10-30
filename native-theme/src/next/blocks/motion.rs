@@ -58,8 +58,8 @@ pub enum Timing {
         time_scale: Value<f32>,
     },
     /// A platform's own curve, implemented once in native-theme to its cited
-    /// source.
-    Platform(PlatformCurve),
+    /// source ([`evaluate`]).
+    Platform(#[parts(block = "set")] PlatformCurve),
 }
 
 /// CSS's step positions (`steps()`'s second argument).
@@ -76,12 +76,176 @@ pub enum StepJump {
     JumpBoth,
 }
 
-/// A platform's own timing curve; closed.
+/// A platform's own timing curve; closed. A curve a toolkit computes by a
+/// function of its own is one, named as the toolkit names it and implemented
+/// to that function ([`evaluate`]), even where it equals a cubic Bézier in
+/// exact arithmetic: it keeps the toolkit's rounding and constants (S2.7,
+/// provisional: CONTRA-7). A curve whose control points the source writes is
+/// a [`Timing::CubicBezier`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
-#[parts(toml)]
+#[parts(block)]
 pub enum PlatformCurve {
     /// Kirigami's velocity-based animations.
     KirigamiVelocity,
+    /// A `QEasingCurve::Type` Qt computes in code.
+    Qt(QtEasing),
+    /// An `AdwEasing` libadwaita computes in code.
+    Adw(AdwEasing),
+}
+
+/// Qt's easing types the presets use, each to `qtbase@6.12.0
+/// src/3rdparty/easing/easing.cpp` through `curveToFunc`
+/// (`src/corelib/tools/qeasingcurve.cpp:1000-1048`); QML's `Easing.<type>`
+/// is the same `QEasingCurve`. A member is added, implemented to its source,
+/// with the fact that needs it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
+pub enum QtEasing {
+    /// `easeInQuad`: `t²`.
+    InQuad,
+    /// `easeOutQuad`: `−t(t − 2)`.
+    OutQuad,
+    /// `easeInOutQuad`: two quadratic pieces.
+    InOutQuad,
+    /// `easeInCubic`: `t³`.
+    InCubic,
+    /// `easeOutCubic`: `(t − 1)³ + 1`.
+    OutCubic,
+    /// `easeInOutCubic`: two cubic pieces.
+    InOutCubic,
+    /// `easeInOutSine`: `−(cos(πt) − 1) / 2`.
+    InOutSine,
+    /// `easeOutExpo`: `1.001 · (1 − 2^(−10t))`, 1 at `t = 1`.
+    OutExpo,
+}
+
+/// libadwaita's easings the presets use, each to `libadwaita@1.10.0
+/// src/adw-easing.c` through `adw_easing_ease`. A member is added,
+/// implemented to its source, with the fact that needs it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
+pub enum AdwEasing {
+    /// `ease_in_cubic`: `t³`.
+    EaseInCubic,
+    /// `ease_out_cubic`: `(t − 1)³ + 1`.
+    EaseOutCubic,
+    /// `ease_in_out_sine`: `−(cos(πt) − 1) / 2`.
+    EaseInOutSine,
+    /// `ease_in_expo`: `2^(10(t − 1))`, 0 at `t = 0`.
+    EaseInExpo,
+    /// `ease_out_expo`: `1 − 2^(−10t)`, 1 at `t = 1`.
+    EaseOutExpo,
+}
+
+/// The fraction of the way from the old value to the new a platform curve
+/// gives at the elapsed fraction `t` (S2.7's forward reading), computed as
+/// the toolkit's own function computes it, in doubles. `t` is clamped to
+/// `0..=1`, the elapsed fraction's range, as `QEasingCurve::valueForProgress`
+/// clamps it (`qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1469-1478`),
+/// and a non-finite `t` is 0. `None` for [`PlatformCurve::KirigamiVelocity`],
+/// whose motion follows the velocity, not the elapsed fraction alone.
+///
+/// The result may leave `0..=1` where the toolkit's does: Qt's out-expo
+/// scales by 1.001, so it passes 1 just before its end.
+#[must_use]
+pub fn evaluate(curve: PlatformCurve, t: f32) -> Option<f32> {
+    let t = if t.is_finite() {
+        f64::from(t.clamp(0.0, 1.0))
+    } else {
+        0.0
+    };
+    let value = match curve {
+        PlatformCurve::KirigamiVelocity => return None,
+        PlatformCurve::Qt(easing) => qt_easing(easing, t),
+        PlatformCurve::Adw(easing) => adw_easing(easing, t),
+    };
+    Some(value as f32)
+}
+
+/// Qt's easing functions, `qtbase@6.12.0 src/3rdparty/easing/easing.cpp`
+/// (`qreal` a double).
+fn qt_easing(easing: QtEasing, t: f64) -> f64 {
+    match easing {
+        // easing.cpp:48-51.
+        QtEasing::InQuad => t * t,
+        // :59-62.
+        QtEasing::OutQuad => -t * (t - 2.0),
+        // :70-79.
+        QtEasing::InOutQuad => {
+            let t = t * 2.0;
+            if t < 1.0 {
+                t * t / 2.0
+            } else {
+                let t = t - 1.0;
+                -0.5 * (t * (t - 2.0) - 1.0)
+            }
+        }
+        // :99-102.
+        QtEasing::InCubic => t * t * t,
+        // :110-114.
+        QtEasing::OutCubic => {
+            let t = t - 1.0;
+            t * t * t + 1.0
+        }
+        // :122-131.
+        QtEasing::InOutCubic => {
+            let t = t * 2.0;
+            if t < 1.0 {
+                0.5 * t * t * t
+            } else {
+                let t = t - 2.0;
+                0.5 * (t * t * t + 2.0)
+            }
+        }
+        // :275-278.
+        QtEasing::InOutSine => -0.5 * ((std::f64::consts::PI * t).cos() - 1.0),
+        // :309-312: `qPow(2.0f, -10 * t)`, the float base promoted to double.
+        QtEasing::OutExpo => {
+            if t == 1.0 {
+                1.0
+            } else {
+                1.001 * (-(2.0_f64.powf(-10.0 * t)) + 1.0)
+            }
+        }
+    }
+}
+
+/// `G_APPROX_VALUE(a, b, DBL_EPSILON)` as libadwaita tests its ends with it:
+/// `|a − b|` below the double epsilon.
+fn approx(a: f64, b: f64) -> bool {
+    (if a > b { a - b } else { b - a }) < f64::EPSILON
+}
+
+/// libadwaita's easing functions, `libadwaita@1.10.0 src/adw-easing.c`,
+/// called with the duration 1 as `adw_easing_ease` calls them (`:553`).
+fn adw_easing(easing: AdwEasing, t: f64) -> f64 {
+    match easing {
+        // :166-172.
+        AdwEasing::EaseInCubic => t * t * t,
+        // :175-181.
+        AdwEasing::EaseOutCubic => {
+            let p = t - 1.0;
+            p * p * p + 1.0
+        }
+        // :276-281.
+        AdwEasing::EaseInOutSine => -0.5 * ((std::f64::consts::PI * t).cos() - 1.0),
+        // :283-288.
+        AdwEasing::EaseInExpo => {
+            if approx(t, 0.0) {
+                0.0
+            } else {
+                2.0_f64.powf(10.0 * (t - 1.0))
+            }
+        }
+        // :290-295.
+        AdwEasing::EaseOutExpo => {
+            if approx(t, 1.0) {
+                1.0
+            } else {
+                -(2.0_f64.powf(-10.0 * t)) + 1.0
+            }
+        }
+    }
 }
 
 /// The damping coefficient a spring stated by its damping ratio uses:

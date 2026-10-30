@@ -4,9 +4,9 @@
 use super::focus::{FocusIndicator, FocusIndicatorPatch, FocusKind, FocusVisibleWhen};
 use super::icon::{Glyph, GlyphStroke, IconStyle};
 use super::motion::{
-    Keyframe, Loop, PresentationEvent, PresentationKind, PresentationStep, PresentationTransition,
-    PropertyGroup, ResolvedKeyframe, ResolvedTiming, Timing, Transition, TransitionKind,
-    damping_coefficient,
+    AdwEasing, Keyframe, Loop, PlatformCurve, PresentationEvent, PresentationKind,
+    PresentationStep, PresentationTransition, PropertyGroup, QtEasing, ResolvedKeyframe,
+    ResolvedTiming, Timing, Transition, TransitionKind, damping_coefficient, evaluate,
 };
 use super::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Radius, concentric, follow_part, full,
@@ -108,7 +108,8 @@ fn shadow(prefix: &str) -> Vec<String> {
     )
 }
 
-/// S2.7's timing: `linear` its unit variant.
+/// S2.7's timing: `linear` its unit variant, `platform` an enum block whose
+/// unit variant is `kirigami_velocity` (ADD-A123).
 fn timing(prefix: &str) -> Vec<String> {
     let mut out = vec![prefix.to_owned()];
     out.extend(under(
@@ -125,6 +126,8 @@ fn timing(prefix: &str) -> Vec<String> {
             "spring.clamp",
             "spring.time_scale",
             "platform",
+            "platform.qt",
+            "platform.adw",
         ],
     ));
     out
@@ -1017,6 +1020,121 @@ fn spring_damping_coefficient_from_its_ratio() {
         panic!("a spring");
     };
     assert_eq!(damping_ratio, 0.7);
+}
+
+/// The platform curves at the elapsed fractions 0, ¼, ½, ¾, 0.9 and 1, each
+/// the toolkit's formula computed in doubles and rounded to `f32` (Qt's
+/// `easing.cpp`, libadwaita's `adw-easing.c`; S2.7, ADD-A123).
+#[test]
+fn platform_curves_evaluate_to_their_sources() {
+    use PlatformCurve::{Adw, Qt};
+    let ts = [0.0, 0.25, 0.5, 0.75, 0.9, 1.0];
+    let rows: [(PlatformCurve, [f32; 6]); 13] = [
+        (
+            Qt(QtEasing::InQuad),
+            [0.0, 0.0625, 0.25, 0.5625, 0.809_999_94, 1.0],
+        ),
+        (
+            Qt(QtEasing::OutQuad),
+            [0.0, 0.4375, 0.75, 0.9375, 0.99, 1.0],
+        ),
+        (Qt(QtEasing::InOutQuad), [0.0, 0.125, 0.5, 0.875, 0.98, 1.0]),
+        (
+            Qt(QtEasing::InCubic),
+            [0.0, 0.015625, 0.125, 0.421875, 0.728_999_9, 1.0],
+        ),
+        (
+            Qt(QtEasing::OutCubic),
+            [0.0, 0.578125, 0.875, 0.984375, 0.999, 1.0],
+        ),
+        (
+            Qt(QtEasing::InOutCubic),
+            [0.0, 0.0625, 0.5, 0.9375, 0.996, 1.0],
+        ),
+        (
+            Qt(QtEasing::InOutSine),
+            [0.0, 0.146_446_62, 0.5, 0.853_553_4, 0.975_528_24, 1.0],
+        ),
+        (
+            Qt(QtEasing::OutExpo),
+            [
+                0.0,
+                0.824_046_55,
+                0.969_718_75,
+                0.995_470_2,
+                0.999_044_9,
+                1.0,
+            ],
+        ),
+        (
+            Adw(AdwEasing::EaseInCubic),
+            [0.0, 0.015625, 0.125, 0.421875, 0.728_999_9, 1.0],
+        ),
+        (
+            Adw(AdwEasing::EaseOutCubic),
+            [0.0, 0.578125, 0.875, 0.984375, 0.999, 1.0],
+        ),
+        (
+            Adw(AdwEasing::EaseInOutSine),
+            [0.0, 0.146_446_62, 0.5, 0.853_553_4, 0.975_528_24, 1.0],
+        ),
+        (
+            Adw(AdwEasing::EaseInExpo),
+            [
+                0.0,
+                0.005_524_271_6,
+                0.03125,
+                0.176_776_69,
+                0.499_999_9,
+                1.0,
+            ],
+        ),
+        (
+            Adw(AdwEasing::EaseOutExpo),
+            [0.0, 0.823_223_3, 0.96875, 0.994_475_7, 0.998_046_9, 1.0],
+        ),
+    ];
+    for (curve, expected) in rows {
+        for (t, value) in ts.into_iter().zip(expected) {
+            assert_eq!(evaluate(curve, t), Some(value), "{curve:?} at {t}");
+        }
+    }
+    // Qt's out-expo scales by 1.001: it passes 1 just before its end.
+    assert_eq!(evaluate(Qt(QtEasing::OutExpo), 0.999), Some(1.000_015_6));
+    // The elapsed fraction is clamped; a non-finite one is 0.
+    assert_eq!(evaluate(Qt(QtEasing::InQuad), 1.5), Some(1.0));
+    assert_eq!(evaluate(Qt(QtEasing::InQuad), f32::NAN), Some(0.0));
+    // Kirigami's curve follows the velocity, not the elapsed fraction.
+    assert_eq!(evaluate(PlatformCurve::KirigamiVelocity, 0.5), None);
+}
+
+#[test]
+fn platform_curve_spelling() {
+    // S11: `{ platform = { qt = "in_out_sine" } }`.
+    let layer = crate::next::Layer::from_toml(
+        "[tokens.motion.timings]\nfocus = { platform = { qt = \"in_out_sine\" } }\n\
+         spinner = { platform = { adw = \"ease_in_out_sine\" } }\n\
+         page = { platform = \"kirigami_velocity\" }",
+    )
+    .unwrap_or_else(|error| panic!("{error}"));
+    let timings = layer.bases.tokens.motion.and_then(|motion| motion.timings);
+    assert_eq!(
+        timings,
+        Some(vec![
+            (
+                key!("focus"),
+                Timing::Platform(PlatformCurve::Qt(QtEasing::InOutSine))
+            ),
+            (
+                key!("spinner"),
+                Timing::Platform(PlatformCurve::Adw(AdwEasing::EaseInOutSine))
+            ),
+            (
+                key!("page"),
+                Timing::Platform(PlatformCurve::KirigamiVelocity)
+            ),
+        ])
+    );
 }
 
 #[test]

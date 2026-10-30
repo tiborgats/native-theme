@@ -55,9 +55,10 @@ pub mod shapes {
 }
 
 pub mod timing {
-    //! Springs stated by their damping ratio (S2.7).
+    //! Springs stated by their damping ratio, and the platforms' own curves
+    //! (S2.7).
 
-    pub use super::blocks::motion::damping_coefficient;
+    pub use super::blocks::motion::{damping_coefficient, evaluate};
 }
 
 pub use blocks::focus::{
@@ -70,12 +71,12 @@ pub use blocks::icon::{
     ResolvedIconStyle, SystemControl,
 };
 pub use blocks::motion::{
-    EdgeSide, Keyframe, KeyframePatch, Loop, LoopPatch, PlatformCurve, PresentationEvent,
-    PresentationKind, PresentationStep, PresentationStepPatch, PresentationTransition,
-    PresentationTransitionPatch, PropertyGroup, ResolvedKeyframe, ResolvedLoop,
-    ResolvedPresentationKind, ResolvedPresentationStep, ResolvedPresentationTransition,
-    ResolvedTiming, ResolvedTransition, ResolvedTransitionKind, RevealOrigin, StepJump, Timing,
-    Transition, TransitionKind, TransitionPatch,
+    AdwEasing, EdgeSide, Keyframe, KeyframePatch, Loop, LoopPatch, PlatformCurve,
+    PresentationEvent, PresentationKind, PresentationStep, PresentationStepPatch,
+    PresentationTransition, PresentationTransitionPatch, PropertyGroup, QtEasing, ResolvedKeyframe,
+    ResolvedLoop, ResolvedPlatformCurve, ResolvedPresentationKind, ResolvedPresentationStep,
+    ResolvedPresentationTransition, ResolvedTiming, ResolvedTransition, ResolvedTransitionKind,
+    RevealOrigin, StepJump, Timing, Transition, TransitionKind, TransitionPatch,
 };
 pub use blocks::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Edge, EdgePatch, FillClip, LineCap, LineJoin,
