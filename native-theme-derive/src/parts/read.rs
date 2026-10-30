@@ -406,7 +406,7 @@ fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStrea
 
 /// A one-field tuple variant `Keyed(Key)`: spelled `"@<key>"`, as a keyed
 /// name is (S2.2, S10).
-fn is_keyed(ident: &Ident, fields: &[BlockField]) -> bool {
+pub(super) fn is_keyed(ident: &Ident, fields: &[BlockField]) -> bool {
     ident == "Keyed"
         && matches!(fields, [only] if only.ident.is_none()
             && matches!(&only.ty, Type::Path(path) if path.path.is_ident("Key")))

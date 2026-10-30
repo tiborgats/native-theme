@@ -1177,6 +1177,12 @@ fn problem_paths_spell_the_layer() {
         found(&drawn, &unavailable),
         ["widgets.button.icon.drawn_as.target: `button` is not available on the preset"]
     );
+    // A keyed variant is `"@<key>"` in TOML, no key of its own; in the
+    // model a step.
+    assert_eq!(
+        bare(&toml("[widgets.button.body]\nfocus.kind = \"@reveal\"")),
+        ["widgets.button.body.focus.kind: `@reveal` is not declared in `focus_kinds`"]
+    );
     // A theme change's duration below its variant.
     assert_eq!(
         bare(&toml(
@@ -1353,4 +1359,480 @@ fn refusal_ill_typed() {
          suspended_by_theme_change = false }]",
     );
     assert_eq!(found(&referenced, &decl), NONE);
+}
+
+/// A layer whose bases style `button.icon`'s icon by `icon`.
+fn icon(icon: IconStylePatch) -> Layer {
+    let mut layer = Layer::default();
+    layer.bases.widgets.button = Some(ButtonPatch {
+        icon: Some(PartPatch::Style(PartStylePatch {
+            icon: Some(BlockPatch::Fields(icon)),
+            ..PartStylePatch::default()
+        })),
+        ..ButtonPatch::default()
+    });
+    layer
+}
+
+/// A layer whose bases give `button` one presentation of `event` and
+/// `kind`.
+fn presenting(
+    event: crate::next::blocks::motion::PresentationEvent,
+    kind: crate::next::blocks::motion::PresentationKind,
+) -> Layer {
+    use crate::next::blocks::motion::{PresentationStep, PresentationTransition};
+    let mut layer = Layer::default();
+    layer.bases.widgets.button = Some(ButtonPatch {
+        values: Some(crate::next::widgets::ButtonValuesPatch {
+            presentations: Some(vec![PresentationTransition {
+                event,
+                steps: vec![PresentationStep {
+                    part: None,
+                    kind,
+                    duration: Value::Stated(Ms(100.0)),
+                    delay: Value::Stated(Ms(0.0)),
+                    timing: Value::Stated(Timing::Linear),
+                    stagger: Value::Stated(Ms(0.0)),
+                }],
+            }]),
+            ..crate::next::widgets::ButtonValuesPatch::default()
+        }),
+        ..ButtonPatch::default()
+    });
+    layer
+}
+
+/// Every kind of name S10 declares, each refused undeclared and passed
+/// declared (S10, S12).
+#[test]
+fn refusal_undeclared_every_kind() {
+    use crate::next::blocks::focus::{FocusIndicatorPatch, FocusKind};
+    use crate::next::blocks::motion::{PresentationEvent, PresentationKind};
+    use crate::next::blocks::paint::Material;
+    let rule = |when: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {when}\ntarget = \"button.body\"\nset = {{ opacity = 0.5 }}"
+        ))
+    };
+    let material = Material {
+        identity: key!("mica"),
+        blur_radius: Value::Absent,
+        tint: Value::Absent,
+        saturation: Value::Absent,
+        luminosity: Value::Absent,
+        noise_opacity: Value::Absent,
+        fallback: Value::Stated(color()),
+        params: Vec::new(),
+    };
+    let keyed_transition = Transition {
+        kind: TransitionKind::Keyed {
+            key: key!("bounce"),
+            params: Vec::new(),
+        },
+        ..transition(vec![PropertyGroup::Icon], Timing::Linear)
+    };
+    let rows: Vec<(Layer, &str, &str)> = vec![
+        (
+            rule("{ states = [\"@spin\"] }"),
+            "rules[0].when.states[0]: `@spin` is not declared in `widget.button.flags`",
+            "[declare.widget.button]\nflags = [\"@spin\"]",
+        ),
+        (
+            rule("{ sizes = [\"large\"] }"),
+            "rules[0].when.sizes[0]: `large` is not declared in `widget.button.sizes`",
+            "[declare.widget.button]\nsizes = [\"large\"]",
+        ),
+        (
+            rule("{ not_densities = [\"compact\"] }"),
+            "rules[0].when.not_densities[0]: `compact` is not declared in `widget.button.densities`",
+            "[declare.widget.button]\ndensities = [\"compact\"]",
+        ),
+        (
+            rule("{ conditions = [\"flavor:kirigami\"] }"),
+            "rules[0].when.conditions[0]: `@kirigami` is not declared in `flavors`",
+            "flavors = [\"widgets\", \"kirigami\"]",
+        ),
+        (
+            rule("{ conditions = [\"container_size:button:large\"] }"),
+            "rules[0].when.conditions[0]: `@large` is not declared in `container_sizes`",
+            "container_sizes = { button = [\"regular\", \"large\"] }",
+        ),
+        (
+            rule("{ conditions = [\"system_setting:glow\"] }"),
+            "rules[0].when.conditions[0]: `@glow` is not declared in `conditions`",
+            "conditions = [\"@glow\"]",
+        ),
+        (
+            toml("[colors.light.surfaces.window]\nbackground = \"#000000\""),
+            "colors.light.surfaces.window: `window` is not declared in `surface_sets`",
+            "surface_sets = [\"window\"]",
+        ),
+        (
+            toml("[inputs.accent]\nlight = \"#000000\""),
+            "inputs.accent: `accent` is not declared in `inputs`",
+            "inputs = [\"accent\"]",
+        ),
+        (
+            toml("[tokens.params.layout]\ngap = 4"),
+            "tokens.params.layout: `layout` is not declared in `params`",
+            "params = { layout = { unit = \"px\", keys = [\"gap\"] } }",
+        ),
+        (
+            toml("[tokens.text.keyed.body]\nline_height = \"auto\""),
+            "tokens.text.keyed.body: `body` is not declared in `text_styles`",
+            "text_styles = [\"body\"]",
+        ),
+        (
+            toml("[tokens.motion.timings]\nfast = \"linear\""),
+            "tokens.motion.timings.fast: `fast` is not declared in `timings`",
+            "timings = [\"fast\"]",
+        ),
+        (
+            toml("[tokens.motion.durations]\nfast_ms = 100"),
+            "tokens.motion.durations.fast_ms: `fast` is not declared in `durations`",
+            "durations = [\"fast\"]",
+        ),
+        (
+            toml("[tokens.elevation]\nraised = []"),
+            "tokens.elevation.raised: `raised` is not declared in `elevation`",
+            "elevation = [\"raised\"]",
+        ),
+        (
+            toml("[widgets.button.body]\nshadow = { elevation = \"raised\" }"),
+            "widgets.button.body.shadow.elevation: `raised` is not declared in `elevation`",
+            "elevation = [\"raised\"]",
+        ),
+        (
+            body(fill(vec![PaintLayer {
+                kind: PaintKind::Material(material),
+                blend: BlendMode::Normal,
+            }])),
+            "widgets.button.body.fill.layers[0].kind.material.identity: `mica` is not declared \
+             in `materials`",
+            "materials = [\"mica\"]",
+        ),
+        (
+            body(fill(vec![layer_of(BlendMode::Keyed(key!("glow")))])),
+            "widgets.button.body.fill.layers[0].blend.keyed: `@glow` is not declared in \
+             `blend_modes`",
+            "blend_modes = [\"glow\"]",
+        ),
+        (
+            body(PartStylePatch {
+                focus: Some(BlockPatch::Fields(FocusIndicatorPatch {
+                    kind: Some(FocusKind::Keyed(key!("reveal"))),
+                    ..FocusIndicatorPatch::default()
+                })),
+                ..PartStylePatch::default()
+            }),
+            "widgets.button.body.focus.kind.keyed: `@reveal` is not declared in `focus_kinds`",
+            "focus_kinds = [\"reveal\"]",
+        ),
+        (
+            transitions(vec![keyed_transition]),
+            "widgets.button.body.transitions[0].kind.keyed.key: `@bounce` is not declared in \
+             `transition_kinds`",
+            "transition_kinds = { bounce = {} }",
+        ),
+        (
+            presenting(
+                PresentationEvent::Keyed(key!("expand")),
+                PresentationKind::Fade,
+            ),
+            "widgets.button.values.presentations[0].event.keyed: `@expand` is not declared in \
+             `presentation_events`",
+            "presentation_events = [\"expand\"]",
+        ),
+        (
+            presenting(
+                PresentationEvent::Appear,
+                PresentationKind::Keyed {
+                    key: key!("wipe"),
+                    params: Vec::new(),
+                },
+            ),
+            "widgets.button.values.presentations[0].steps[0].kind.keyed.key: `@wipe` is not \
+             declared in `presentation_kinds`",
+            "presentation_kinds = { wipe = {} }",
+        ),
+        (
+            icon(IconStylePatch {
+                scale: Some(Value::Stated(key!("large"))),
+                ..IconStylePatch::default()
+            }),
+            "widgets.button.icon.icon.scale: `large` is not declared in `symbol_scales`",
+            "symbol_scales = [\"large\"]",
+        ),
+        (
+            icon(IconStylePatch {
+                symbol_variants: Some(vec![key!("fill")]),
+                ..IconStylePatch::default()
+            }),
+            "widgets.button.icon.icon.symbol_variants[0]: `fill` is not declared in \
+             `symbol_variants`",
+            "symbol_variants = [\"fill\"]",
+        ),
+        (
+            toml("[tokens.text.rendering]\nengine = \"qt\""),
+            "tokens.text.rendering.engine: `qt` is not declared in `rendering_engines`",
+            "rendering_engines = [\"qt\"]",
+        ),
+        (
+            toml("[tokens.text.rendering]\nlcd_filter = \"light\""),
+            "tokens.text.rendering.lcd_filter: `light` is not declared in `lcd_filters`",
+            "lcd_filters = [\"light\"]",
+        ),
+        (
+            toml("[tokens.material]\nspec_version = \"spec2025\""),
+            "tokens.material.spec_version: `spec2025` is not declared in `spec_versions`",
+            "spec_versions = [\"spec2025\"]",
+        ),
+    ];
+    for (layer, problem, declaration) in rows {
+        assert_eq!(bare(&layer), [problem], "{problem}");
+        assert_eq!(found(&layer, &declare(declaration)), NONE, "{declaration}");
+    }
+    // A component: none is declared until components exist (M3), and
+    // TOML names none yet.
+    let mut component = Layer::default();
+    component.rules.push(crate::next::selector::Rule::new(
+        crate::next::selector::Selector::default(),
+        crate::next::selector::RuleBody::Part(
+            crate::next::selector::PartRef::Component {
+                key: key!("sidebar"),
+                part: key!("body"),
+            },
+            PartPatch::Style(PartStylePatch::default()),
+        ),
+    ));
+    assert_eq!(
+        bare(&component),
+        ["rules[0].target: `component.sidebar.body` is not declared in `component`"]
+    );
+}
+
+/// The other structural items, each refused, with its near miss (S2.7,
+/// S2.8, S9.1, S9.4, S10, S12).
+#[test]
+fn refusal_other_items() {
+    // Routes: small caps is `TextCase::SmallCaps`, an icon's weight its
+    // field.
+    let features = |tag: &str| {
+        let mut layer = Layer::default();
+        layer.bases.widgets.button = Some(ButtonPatch {
+            label: Some(PartPatch::Style(PartStylePatch {
+                text: Some(BlockPatch::Fields(TextStylePatch {
+                    font: Some(FontPatch {
+                        features: Some(vec![(
+                            crate::next::blocks::text::FeatureTag::new(tag).unwrap(),
+                            1,
+                        )]),
+                        ..FontPatch::default()
+                    }),
+                    ..TextStylePatch::default()
+                })),
+                ..PartStylePatch::default()
+            })),
+            ..ButtonPatch::default()
+        });
+        layer
+    };
+    assert_eq!(
+        bare(&features("smcp")),
+        ["widgets.button.label.text.font.features: `smcp` duplicates a field's route"]
+    );
+    assert_eq!(bare(&features("liga")), NONE);
+    let axis = |tag: &str| {
+        icon(IconStylePatch {
+            axes: Some(vec![(AxisTag::new(tag).unwrap(), AxisValue::Fixed(1.0))]),
+            ..IconStylePatch::default()
+        })
+    };
+    assert_eq!(
+        bare(&axis("wght")),
+        ["widgets.button.icon.icon.axes: `wght` duplicates a field's route"]
+    );
+    assert_eq!(bare(&axis("wdth")), NONE);
+    // The font DPI is above zero.
+    let dpi = |n: &str| toml(&format!("[tokens.text]\nfont_dpi = {n}"));
+    assert_eq!(
+        bare(&dpi("0")),
+        ["tokens.text.font_dpi: out of range: above zero"]
+    );
+    assert_eq!(bare(&dpi("96")), NONE);
+    // A saturation multiplier is at least zero.
+    let saturation = |n: f32| {
+        let material = crate::next::blocks::paint::Material {
+            identity: key!("mica"),
+            blur_radius: Value::Absent,
+            tint: Value::Absent,
+            saturation: Value::Stated(n),
+            luminosity: Value::Absent,
+            noise_opacity: Value::Absent,
+            fallback: Value::Stated(color()),
+            params: Vec::new(),
+        };
+        body(fill(vec![PaintLayer {
+            kind: PaintKind::Material(material),
+            blend: BlendMode::Normal,
+        }]))
+    };
+    let mica = declare("materials = [\"mica\"]");
+    assert_eq!(
+        found(&saturation(-1.0), &mica),
+        [
+            "widgets.button.body.fill.layers[0].kind.material.saturation: out of range: at least zero"
+        ]
+    );
+    assert_eq!(found(&saturation(1.5), &mica), NONE);
+    // A spring's stiffness, damping ratio and rest epsilon.
+    let spring = |stiffness: f32, damping_ratio: f32, rest_epsilon: f32| Timing::Spring {
+        mass: 1.0,
+        stiffness,
+        damping_ratio,
+        initial_velocity: 0.0,
+        rest_epsilon,
+        clamp: false,
+        time_scale: Value::Stated(1.0),
+    };
+    assert_eq!(
+        bare(&transitions(vec![transition(
+            vec![PropertyGroup::Fill],
+            spring(0.0, -0.5, 0.0)
+        )])),
+        [
+            "widgets.button.body.transitions[0].timing.spring.stiffness: out of range: above zero",
+            "widgets.button.body.transitions[0].timing.spring.damping_ratio: out of range: at \
+             least zero",
+            "widgets.button.body.transitions[0].timing.spring.rest_epsilon: out of range: above \
+             zero",
+        ]
+    );
+    assert_eq!(
+        bare(&transitions(vec![transition(
+            vec![PropertyGroup::Fill],
+            spring(100.0, 0.0, 0.001)
+        )])),
+        NONE
+    );
+    // A crossfade's zero duration is `instant`.
+    let crossfade = |ms: &str| {
+        toml(&format!(
+            "[tokens]\ntheme_change = {{ crossfade = {{ duration_ms = {ms}, timing = \"linear\" }} }}"
+        ))
+    };
+    assert_eq!(
+        bare(&crossfade("0")),
+        ["tokens.theme_change.crossfade.duration_ms: a zero duration is `instant`"]
+    );
+    assert_eq!(bare(&crossfade("250")), NONE);
+    // KDE's lists: a set or a key listed twice, a name that is no scheme
+    // key.
+    let decl = declare(
+        "surface_sets = [\"window\"]\ninputs = [\"kde_scheme.window.background_normal\", \
+         \"accent\"]",
+    );
+    let lists = |text: &str| toml(&format!("[inputs.kde_scheme.{text}"));
+    assert_eq!(
+        found(
+            &lists("inactive_groups]\nlight = [\"window\", \"window\"]"),
+            &decl
+        ),
+        ["inputs.kde_scheme.inactive_groups.light[1]: `window` listed twice"]
+    );
+    assert_eq!(
+        found(
+            &lists(
+                "unset_keys]\nlight = [\"kde_scheme.window.background_normal\", \
+                 \"kde_scheme.window.background_normal\", \"accent\"]"
+            ),
+            &decl
+        ),
+        [
+            "inputs.kde_scheme.unset_keys.light[1]: `kde_scheme.window.background_normal` listed \
+             twice",
+            "inputs.kde_scheme.unset_keys.light[2]: `accent` is not declared in `inputs`",
+        ]
+    );
+    assert_eq!(
+        found(
+            &lists("unset_keys]\ndark = [\"kde_scheme.window.background_normal\"]"),
+            &decl
+        ),
+        NONE
+    );
+    // A `DrawnAs`'s variant, declared.
+    let drawn =
+        toml("[widgets.button.icon]\ndrawn_as = { widget = \"button\", variants = [\"@pill\"] }");
+    assert_eq!(
+        bare(&drawn),
+        [
+            "widgets.button.icon.drawn_as.variants[0]: `@pill` is not declared in `widget.button.variants`"
+        ]
+    );
+    assert_eq!(
+        found(
+            &drawn,
+            &declare("[declare.widget.button]\nvariants = [\"@pill\"]")
+        ),
+        NONE
+    );
+}
+
+/// The declarations' own items (S10, S12): an exclusive variant group
+/// naming a variant twice; a `default_size_by_variant` entry naming an
+/// undeclared variant, or a variant an earlier entry names.
+#[test]
+fn refusal_declarations() {
+    assert_eq!(
+        preset(
+            "[declare.widget.button]\nvariants = [\"primary\", \"flat\"]\n\
+             exclusive_variants = [[\"primary\", \"flat\", \"primary\"]]\n\
+             [[rules]]\nwhen = { variants = [\"primary\", \"flat\"] }\ntarget = \"button.body\"\n\
+             set = { opacity = 0.5 }"
+        ),
+        ["declare.widget.button.exclusive_variants[0][2]: `primary` listed twice"]
+    );
+    let entries = |entries: &str| {
+        preset(&format!(
+            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
+             default_size_by_variant = {entries}"
+        ))
+    };
+    assert_eq!(
+        entries(
+            "[{ variant = \"primary\", size = \"regular\" }, { variant = \"primary\", size = \
+             \"regular\" }, { variant = \"flat\", size = \"regular\" }]"
+        ),
+        [
+            "declare.widget.button.default_size_by_variant[1]: `primary` listed twice",
+            "declare.widget.button.default_size_by_variant[2].variant: `flat` is not declared in \
+             `declare.widget.button.variants`",
+        ]
+    );
+    assert_eq!(
+        entries("[{ variant = \"primary\", size = \"regular\" }]"),
+        NONE
+    );
+}
+
+/// Each declared keyed name nothing uses, by kind (S12): a system setting
+/// (not one for applications), a container size (not the default), an
+/// event, a flag, a keyed role no base states.
+#[test]
+fn refusal_unused_every_kind() {
+    let head = "[declare]\nconditions = [\"@glow\", { key = \"@sounds\", for_applications = \
+                true }]\ncontainer_sizes = { button = [\"regular\", \"large\"] }\n\
+                presentation_events = [\"expand\"]\ncolor_roles = [\"shade\"]\n\
+                [declare.widget.button]\nflags = [\"@spin\"]";
+    assert_eq!(
+        preset(head),
+        [
+            "declare.widget.button.flags: `@spin` is declared but unused",
+            "declare.conditions: `@glow` is declared but unused",
+            "declare.container_sizes: `large` is declared but unused",
+            "declare.presentation_events: `expand` is declared but unused",
+            "declare.color_roles: `shade` is declared but unused",
+        ]
+    );
 }

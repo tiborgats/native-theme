@@ -643,10 +643,12 @@ mod tests {
                 Full { #[parts(may_be_absent)] maximum: Value<Px> },
                 Pair(f32, f32),
                 Round,
+                Keyed(Key),
             }
         });
         for expected in [
             "w . check (crate :: next :: validate :: walk :: Node :: Probe (self)) ;",
+            "Probe :: Keyed (member0) => { w . variant (\"Probe\" , \"keyed\" , true ,",
             "Probe :: Px (member0) => { w . variant (\"Probe\" , \"px\" , true ,",
             "Probe :: Full { maximum } => { w . variant (\"Probe\" , \"full\" , false , | w | { \
              w . field (\"Probe\" , \"maximum\" ,",
@@ -654,7 +656,8 @@ mod tests {
             "w . variant (\"Probe\" , \"pair\" , false , | w | { w . index (0usize ,",
             "fn suffix (& self) -> & 'static str { match self { Probe :: Px (member0) => \
              crate :: next :: validate :: walk :: Walk :: suffix (member0) , Probe :: Full { .. } \
-             => \"\" , Probe :: Pair (..) => \"\" , Probe :: Round => \"\" ,",
+             => \"\" , Probe :: Pair (..) => \"\" , Probe :: Round => \"\" , Probe :: Keyed \
+             (member0) => crate :: next :: validate :: walk :: Walk :: suffix (member0) ,",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }

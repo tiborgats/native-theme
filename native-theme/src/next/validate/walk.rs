@@ -147,8 +147,8 @@ enum Step {
         suffix: &'static str,
     },
     /// An enum's variant holding data, with the enum's name; `folded`: TOML
-    /// spells it by its holder's key suffix (`top_left_px`, S11), not as a
-    /// key of its own.
+    /// spells it by its holder's key suffix (`top_left_px`) or as a keyed
+    /// name (`"@<key>"`), not as a key of its own (S11).
     Variant {
         owner: &'static str,
         name: &'static str,

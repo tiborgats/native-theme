@@ -244,6 +244,9 @@ pub(super) fn enum_walk(
                 let members: Vec<Ident> = (0..fields.len())
                     .map(|i| format_ident!("member{i}"))
                     .collect();
+                // A keyed variant, `"@<key>"` in TOML, has no key of its own
+                // there either (S11).
+                let folded = folded || super::read::is_keyed(ident, &fields);
                 let steps = match (fields.as_slice(), members.as_slice()) {
                     ([only], [member]) => {
                         if folded {
