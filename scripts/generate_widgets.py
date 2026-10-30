@@ -56,7 +56,8 @@ What it reads from an entry
   index; a type of the model is one of MODEL_TYPES; any other type is refused.
 - **may_be_absent** (absence_sections): the first sentence of each section, its names outside parentheses: `parts:`
   whole parts, `fields:` `<part>.<field>`, `values:` values (as the catalogue writes them). A name that is none of
-  the entry's is refused.
+  the entry's is refused, and so is a record value (`Placement`, `Value<Placement>`), whose `Value` members, at any
+  depth, the mark allows `Absent` too (S6.3): those members' marks are not generated yet.
 - **Variants**: the sub-bullets starting `typed`, their first sentence's names outside parentheses; the keyed ones
   are the presets' (S10).
 """
@@ -427,9 +428,10 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
                     wrapper = split_type(value.ty)[0]
                     if wrapper == "Vec":
                         raise InputError(f"{where}: may_be_absent names `{name}`, a list, never absent (S6.3)")
-                    if wrapper is None:
+                    model = MODEL_TYPES.get(split_type(value.ty)[1])
+                    if wrapper is None or (model is not None and model[1] == "fields"):
                         raise InputError(f"{where}: may_be_absent names `{name}: {value.ty}`, a record: its "
-                                         "members' marks are not generated yet")
+                                         "members' marks (S6.3, at any depth) are not generated yet")
                     value.may_be_absent = True
 
     # typed variants
@@ -740,6 +742,7 @@ SELF_TEST_CATALOGUE = """\
   - `side: Value<Side>` — which side.
   - `turn: Value<Turn>`, `Turn { Left, RightOrUp }` — the turn. More.
   - `spot: Placement` — where it goes.
+  - `place: Value<Placement>` — where it is placed.
   - `presentations: Vec<PresentationTransition>` — events `Appear` (a note), `@spin`.
 - **Variants:**
   - typed (shared): `flat` (a note, `not_this`), `round`. Then `prose`.
@@ -793,6 +796,7 @@ def self_test() -> int:
         ("reach_px", "reach", "Value<Px>", False, True, "How far it reaches."),
         ("side", "side", "Value<Side>", False, False, "Which side."),
         ("turn", "turn", "Value<Turn>", True, False, "The turn."),
+        ("place", "place", "Value<Placement>", False, False, "Where it is placed."),
         ("presentations", "presentations", "Vec<PresentationTransition>", False, False, "Events `Appear`, `@spin`."),
         ("focus_visible_when", "focus_visible_when", "Value<FocusVisibleWhen>", False, False,
          "When focus becomes visible (S2.11)."),
@@ -842,6 +846,9 @@ def self_test() -> int:
     refused("deferral of no value", 'slice = ["knob"]\n[deferred.knob]\nnope = "placement"\n'
                                     '[hand_written]\nplacement = false\n', SELF_TEST_CATALOGUE, "no value of `knob`")
     refused("undeferred record absent", 'slice = ["knob"]\n', SELF_TEST_CATALOGUE, "a record: its members")
+    refused("record value absent", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
+                                   '[hand_written]\nplacement = false\n',
+            SELF_TEST_CATALOGUE.replace("`spot` (all)", "`place` (all)"), "a record: its members")
     refused("unknown type", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("Value<Side>", "Value<Nope>"),
             "`Nope` is no type")
     refused("record as shared enum", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("Value<Side>", "Value<Record>"),
