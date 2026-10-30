@@ -928,7 +928,7 @@ rows = []
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Icon.kt:138-184"
 quote = "public fun Icon("
-absent = ["fontWeight", "FontWeight"]
+absent = []
 
 [[fact]]
 key = "button.icon.icon.state_effect"
@@ -939,7 +939,7 @@ rows = []
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Icon.kt:138-184"
 quote = "public fun Icon("
-absent = ["fontWeight", "FontWeight"]
+absent = []
 
 [[fact]]
 key = "button.icon.icon.animation"
@@ -950,7 +950,7 @@ rows = []
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Icon.kt:138-184"
 quote = "public fun Icon("
-absent = ["fontWeight", "FontWeight"]
+absent = []
 
 [[fact]]
 key = "button.icon.icon.axes"
@@ -1690,8 +1690,9 @@ source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/
 quote = "val borderStroke = Stroke(strokeWidth)"
 
 # the states, in the tokens' order (hovered, focused, pressed, disabled). A state layer is a paint layer
-# over the container (MAT-X8). Compose shows the most recent of hover and focus (material3-ripple Ripple.kt), which
-# the model cannot express: the focus facts come after the hover facts, so {hover, focus_visible} takes focus's.
+# over the container (MAT-X8). Compose shows the most recent of hover and focus (material3-ripple Ripple.kt): the
+# state model's exclusive group [focus_visible, hover] (its precedence a stand-in for ADD-A121's recency rule), and
+# the focus facts come after the hover facts to match it.
 
 [[fact]]
 key = "button.body.fill"
@@ -6352,7 +6353,7 @@ quote = "$container-height: 40px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(8px, 24px), 8px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N4"]
 
 [[fact.cite]]
@@ -8648,7 +8649,7 @@ quote = "$icon-size: 20px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(6px, 20px), 6px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -8712,7 +8713,7 @@ quote = "$default-trailing-space: 6px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@narrow"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(4px, 20px), 4px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -8776,7 +8777,7 @@ quote = "$narrow-trailing-space: 4px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@wide"], sizes = ["extra_small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(10px, 20px), 10px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -8906,7 +8907,7 @@ quote = "$icon-size: 24px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(8px, 24px), 8px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -8970,7 +8971,7 @@ quote = "$default-trailing-space: 8px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@narrow"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(4px, 24px), 4px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9034,7 +9035,7 @@ quote = "$narrow-trailing-space: 4px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@wide"], sizes = ["small"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(14px, 24px), 14px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9164,7 +9165,7 @@ quote = "$icon-size: 24px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(16px, 24px), 16px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9228,7 +9229,7 @@ quote = "$default-trailing-space: 16px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@narrow"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(12px, 24px), 12px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9292,7 +9293,7 @@ quote = "$narrow-trailing-space: 12px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@wide"], sizes = ["regular"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(24px, 24px), 24px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9422,7 +9423,7 @@ quote = "$icon-size: 32px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(32px, 32px), 32px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9486,7 +9487,7 @@ quote = "$default-trailing-space: 32px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@narrow"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(16px, 32px), 16px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9550,7 +9551,7 @@ quote = "$narrow-trailing-space: 16px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@wide"], sizes = ["large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(48px, 32px), 48px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9680,7 +9681,7 @@ quote = "$icon-size: 40px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(48px, 40px), 48px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9744,7 +9745,7 @@ quote = "$default-trailing-space: 48px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@narrow"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(32px, 40px), 32px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]
@@ -9808,7 +9809,7 @@ quote = "$narrow-trailing-space: 32px;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only", "@wide"], sizes = ["extra_large"], conditions = ["flavor:expressive"], not_variants = ["@fab", "@extended_fab"] }
-value = "= add(add(72px, 40px), 72px)"
+value = "= add(widget.icon.icon.size, add(part.padding.left, part.padding.right))"
 rows = ["MAT-N5"]
 
 [[fact.cite]]

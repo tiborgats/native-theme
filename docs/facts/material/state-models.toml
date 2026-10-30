@@ -1,10 +1,12 @@
 # material-3 state models
 
 # material-3's state models (S17), written by the Material facts lane: what Compose Material 3 1.5.0-beta02
-# and material-web 2.5.0's token sets draw. exclusive = []: Compose draws the press ripple and the hover/focus state
-# layer together (material3-ripple Ripple.kt draws both), and between hover and focus it shows the most recent
-# interaction, which no fixed precedence expresses (the lane report's spec finding); the button facts order hover
-# before focus. A disabled button takes no hover, focus or press (Clickable.kt); FABs have no disabled state.
+# and material-web 2.5.0's token sets draw. Exclusive group [focus_visible, hover]: Compose's state layer shows one
+# of hover and focus, the most recent interaction (material3-ripple Ripple.kt:279-280); the stated precedence is a
+# stand-in until the specification's recency rule (ADD-A121) can state "most recent", and the button facts order
+# hover before focus to match it. The press ripple is drawn with the state layer (Ripple.kt:375-376: drawRipples(),
+# then drawStateLayers()), so `pressed` is in no group. A disabled button takes no hover, focus or press
+# (Clickable.kt); FABs have no disabled state.
 # Flavour baseline: no Expressive sizes (the FAB's three baseline sizes only), icon toggles only (IconToggleButton);
 # flavour expressive: the five button sizes (default small: Compose's ToggleButton and Button use the small design),
 # the text toggles, `@square`, `@narrow`, `@wide`, the container and branded FAB styles.
@@ -17,7 +19,7 @@ sizes = ["small", "regular", "extra_large"]
 default_size = "regular"
 densities = []
 axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark", "contrast_increased", "contrast_high"], contexts = [{ scope = "any", widget = "toolbar", variants = ["floating"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@vibrant"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@collapsed"] }] }
-exclusive = []
+exclusive = [["focus_visible", "hover"]]
 not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["toggle"], not_variants = ["icon_only"] }]
 sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "extra_large"] }, { variant = "@extended_fab", sizes = ["regular"] }]
 rows = ["MAT-B1", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N4", "MAT-N8", "MAT-X22"]
@@ -159,7 +161,7 @@ sizes = ["extra_small", "small", "regular", "large", "extra_large"]
 default_size = "small"
 densities = []
 axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark", "contrast_increased", "contrast_high"], contexts = [{ scope = "any", widget = "toolbar", variants = ["floating"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@vibrant"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@collapsed"] }] }
-exclusive = []
+exclusive = [["focus_visible", "hover"]]
 not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@primary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@branded"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@narrow"], not_variants = ["icon_only"] }, { variants = ["@wide"], not_variants = ["icon_only"] }]
 sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"] }, { variant = "@extended_fab", sizes = ["small", "regular", "large"] }]
 rows = ["MAT-B9", "MAT-B10", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N5", "MAT-X22"]

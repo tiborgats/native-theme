@@ -403,18 +403,13 @@ quote = "/// md.sys.motion.easing.standard.decelerate (Easing) $easing-standard-
 # so it states the curve the source points at (S4.1: `timings: Vec<(Key, Timing)>`)
 [[fact]]
 key = "token.motion.timings.emphasized"
-value = { cubic_bezier = [0.2, 0, 0, 1] }
+value = "= token.motion.timings.standard"
 rows = ["MAT-B13", "MAT-X13"]
 
 [[fact.cite]]
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:106-107"
 quote = "/// md.sys.motion.easing.emphasized (Easing) $easing-emphasized: $easing-standard;"
-
-[[fact.cite]]
-kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-motion.scss:62-63"
-quote = "/// md.sys.motion.easing.standard (Easing) $easing-standard: cubic-bezier(0.2, 0, 0, 1);"
 
 # ----------------------------------------------------------------------------------------------------
 # S4.1 speed factor: Android's animator duration scale (Settings.Global.ANIMATOR_DURATION_SCALE)
@@ -6306,17 +6301,25 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "maxLines: Int = Int.MAX_VALUE,"
 
 # ----------------------------------------------------------------------------------------------------
-# S4.4 the nineteen slots (S4.4: owner slots reference the keyed style, the others the owner slot)
+# S4.4 the nineteen slots (S4.4: owner slots reference the keyed style, the others the owner slot). `body` is
+# Compose's default text style, bodyLarge (MaterialTheme's ProvideTextStyle), so `callout` and `numeric`, which the
+# catalogue's draft gives body-large and body's style, share it through `body`; the other slots follow the catalogue's
+# draft table, which no Material source assigns (the tie-break report)
 
 [[fact]]
 key = "token.text.roles.body"
-value = "= token.text.keyed.body_medium"
+value = "= token.text.keyed.body_large"
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:460-467"
-quote = "/// md.sys.typescale.body-medium (Body styles / Body Medium) @mixin body-medium { font-family: $body-medium-font; font-size: $body-medium-size; font-weight: $body-medium-weight; letter-spacing: $body-medium-tracking; line-height: $body-medium-line-height; }"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
+quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:452-459"
+quote = "/// md.sys.typescale.body-large (Body styles / Body Large) @mixin body-large { font-family: $body-large-font; font-size: $body-large-size; font-weight: $body-large-weight; letter-spacing: $body-large-tracking; line-height: $body-large-line-height; }"
 
 [[fact]]
 key = "token.text.roles.caption"
@@ -6410,7 +6413,7 @@ quote = "/// md.sys.typescale.display-small (Display styles / Display Small) @mi
 
 [[fact]]
 key = "token.text.roles.callout"
-value = "= token.text.keyed.body_large"
+value = "= token.text.roles.body"
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -6468,8 +6471,8 @@ rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
 kind = "published"
-source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-typescale.scss:460-467"
-quote = "/// md.sys.typescale.body-medium (Body styles / Body Medium) @mixin body-medium { font-family: $body-medium-font; font-size: $body-medium-size; font-weight: $body-medium-weight; letter-spacing: $body-medium-tracking; line-height: $body-medium-line-height; }"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:113"
+quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
 
 [[fact]]
 key = "token.text.roles.monospace"
