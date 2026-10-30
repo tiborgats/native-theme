@@ -48,7 +48,9 @@ What it reads from an entry
 - **Widget values** (Entry.values): each name and type; a value with no type but `focus_visible_when` is refused,
   `focus_visible_when` being `Value<FocusVisibleWhen>` on every widget (Entry format), added where the entry does not
   list it. A scalar's unit suffix (`_px`, `_ms`, `_deg`) is dropped from the Rust name (S1) and must match its type.
-  Its doc is the text after ` — ` in its bullet, parenthetical groups dropped, to the first `;` or `. `. An enum the
+  Its doc is the text after ` — ` in its bullet, parenthetical groups dropped, to the first `;` or `. `. A value whose
+  declaration is followed by a group starting `` (`Auto` `` is marked `auto` (Entry format), which only a `Value<Px>`
+  may be. An enum the
   item defines (`IconPlacement { Leading, Trailing, Top, Bottom }`) is generated in the widget's file; a type of the
   catalogue's *Shared value types* table (spec_catalogue.shared_types) that lists only variants is generated in the
   index; a type of the model is one of MODEL_TYPES; any other type is refused.
@@ -77,6 +79,7 @@ IDENT = re.compile(r"[a-z_][a-z0-9_]*")
 CAMEL = re.compile(r"[A-Z][A-Za-z0-9]*")
 ENUM_DEF = re.compile(r"([A-Z][A-Za-z0-9]*) \{ ([A-Z][A-Za-z0-9]*(?:, [A-Z][A-Za-z0-9]*)*) \}")
 SUFFIXES = {"Px": "_px", "Ms": "_ms", "Deg": "_deg"}
+AUTO_MARK = "(`Auto`"
 PLAIN = {"bool", "u32", "u16", "f32", "String"}
 FOCUS_VISIBLE_WHEN = ("focus_visible_when", "Value<FocusVisibleWhen>")
 # The model's own types a widget value may hold: the module that defines each, and for a block how a patch sets it
@@ -274,6 +277,7 @@ class ValueDecl:
     ty: str
     doc: str
     may_be_absent: bool = False
+    auto: bool = False
 
 
 @dataclass
@@ -351,12 +355,19 @@ def read_widget(entry, units: Units, shared: dict, out_shared: dict) -> Widget:
             raise InputError(f"{where}: value `{v.name}: {ty}` carries a unit suffix its type has not (S1)")
         if v.name in deferred or rust in deferred:
             continue
+        auto = False
         if v is added:
             doc = "When focus becomes visible (S2.11)."
         else:
             bullet = next((t for n, t in reversed(bullets) if n <= v.line), "")
             doc = sentence_doc(described(bullet, ";.")) or f"`{rust}`."
-        values.append(ValueDecl(v.name, rust, ty, doc))
+            span = f"`{v.name}: {ty}`"
+            at = bullet.find(span)
+            auto = at >= 0 and bullet[at + len(span):].lstrip().startswith(AUTO_MARK)
+            if auto and ty != "Value<Px>":
+                raise InputError(f"{where}: value `{v.name}: {ty}` is marked `Auto`, which only a length may be "
+                                 "(S6.3)")
+        values.append(ValueDecl(v.name, rust, ty, doc, auto=auto))
     for name in deferred:
         if not any(name in (v.name, unsuffixed(v.name)) for v in declared):
             raise InputError(f"{UNITS}: `deferred.{w}.{name}` is no value of `{w}`")
@@ -482,6 +493,8 @@ def value_type(v: ValueDecl) -> tuple:
             imports.add(("crate::next::value", "Value"))
     if v.may_be_absent:
         marks.append("may_be_absent")
+    if v.auto:
+        marks.append("auto")
     return v.ty, marks, imports
 
 
@@ -723,6 +736,7 @@ SELF_TEST_CATALOGUE = """\
   - `mark`, in `label` — a mark: `glyph`.
 - **Widget values** (`KnobValues`):
   - `gap_px: Value<Px>` — between mark and label (a note); more.
+  - `reach_px: Value<Px>` (`Auto` where the platform sizes it by its content) — how far it reaches.
   - `side: Value<Side>` — which side.
   - `turn: Value<Turn>`, `Turn { Left, RightOrUp }` — the turn. More.
   - `spot: Placement` — where it goes.
@@ -774,12 +788,13 @@ def self_test() -> int:
            [("body", True, False, None, ["fill", "stroke"], False, ["stroke"], "The root."),
             ("label", False, True, None, ["text"], False, [], "The text."),
             ("mark", False, False, "label", ["glyph"], True, [], "A mark.")])
-    expect("values", [(v.written, v.rust, v.ty, v.may_be_absent, v.doc) for v in w.values], [
-        ("gap_px", "gap", "Value<Px>", False, "Between mark and label."),
-        ("side", "side", "Value<Side>", False, "Which side."),
-        ("turn", "turn", "Value<Turn>", True, "The turn."),
-        ("presentations", "presentations", "Vec<PresentationTransition>", False, "Events `Appear`, `@spin`."),
-        ("focus_visible_when", "focus_visible_when", "Value<FocusVisibleWhen>", False,
+    expect("values", [(v.written, v.rust, v.ty, v.may_be_absent, v.auto, v.doc) for v in w.values], [
+        ("gap_px", "gap", "Value<Px>", False, False, "Between mark and label."),
+        ("reach_px", "reach", "Value<Px>", False, True, "How far it reaches."),
+        ("side", "side", "Value<Side>", False, False, "Which side."),
+        ("turn", "turn", "Value<Turn>", True, False, "The turn."),
+        ("presentations", "presentations", "Vec<PresentationTransition>", False, False, "Events `Appear`, `@spin`."),
+        ("focus_visible_when", "focus_visible_when", "Value<FocusVisibleWhen>", False, False,
          "When focus becomes visible (S2.11)."),
     ])
     expect("enums", [(e.name, e.variants, e.doc) for e in w.enums],
@@ -792,7 +807,8 @@ def self_test() -> int:
     code = widget_file(w, set(shared))
     for needle in ['#[part(root, fields(fill, stroke), absent(stroke))]', '#[part(element, fields(text))]',
                    '#[part(may_be_absent, parent = "label", fields(glyph))]', "pub gap: Value<Px>,",
-                   '#[parts(block = "fields", keyed)]', "#[parts(may_be_absent)]\n    pub turn: Value<Turn>,",
+                   '#[parts(block = "fields", keyed)]', "#[parts(auto)]\n    pub reach: Value<Px>,",
+                   "#[parts(may_be_absent)]\n    pub turn: Value<Turn>,",
                    '#[parts(block = "set")]\n    pub focus_visible_when: Value<FocusVisibleWhen>,',
                    "use super::gen_index::Side;", "Deferred (scripts/widget_units.toml): `spot` to `placement`.",
                    "pub enum Turn {", "    /// Right or up.\n    RightOrUp,"]:
@@ -844,6 +860,9 @@ def self_test() -> int:
     refused("auto part", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("— the text: `text`.",
                                                                       "— the text: `text` (`Auto` here)."),
             "per-part `Auto` marks")
+    refused("auto not a length", SELF_TEST_UNITS,
+            SELF_TEST_CATALOGUE.replace("`turn: Value<Turn>`,", "`turn: Value<Turn>` (`Auto` here),"),
+            "only a length may be")
     refused("untyped value", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("`side: Value<Side>`", "`side` (a note)"),
             "states no type")
 
