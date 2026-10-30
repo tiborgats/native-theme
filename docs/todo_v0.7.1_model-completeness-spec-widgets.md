@@ -1322,7 +1322,9 @@ spaces:
     spare width goes to the content: the indicator keeps the row's end and the content is laid out in the rest as it
     would be alone, centred where the button centres it (Breeze's push button, the arrow at the contents rect's end
     and the text centred in the rest, `breeze@6.8.2 kstyle/breezestyle.cpp:5364-5370`; GTK's label menu button, the
-    label expanding before the arrow, `gtk@4.24.1 gtk/gtkmenubutton.c:1174-1186`; ADD-A123).
+    label expanding before the arrow, `gtk@4.24.1 gtk/gtkmenubutton.c:1174-1186`; ADD-A123), except where the
+    platform packs the content and indicator into one centred box, the spare width then going around both (GTK's icon
+    menu button, its icon and arrow in a box centred in the button, `gtk/gtkmenubutton.c:1050-1051`, `:1061-1063`).
     `TopEnd`, `BottomEnd` over that corner of `body`, taking no layout space, its box its laid-out size (its content,
     at least `min_width` by `min_height` where it states them) and its `margin`'s top or bottom and its end (mirrored
     with the layout, S1) the distances from `body`'s edges at that corner; its two other sides place nothing, as CSS
@@ -1419,7 +1421,7 @@ spaces:
     `:644-647`, `:658-666`: on text-only content (neither `icon_only`, `with_icon` nor `@custom_child`), which GTK's
     label makes a text button, unless the element holds `@arrow_none`; on other content (an icon, `with_icon`, `@custom_child`; never `icon_only`
     with `@arrow_only`, which GTK leaves without the class, `!has_only_arrow`, `:644`) only where the application
-    asks for the arrow by the connector's widget option, GTK's `always-show-arrow`, and holds no `@arrow_none`;
+    asks for the arrow (an option of the connector's button the application sets, GTK's `always-show-arrow`) and holds no `@arrow_none`;
     ADD-A123), `@arrow_only` (with
     `icon_only`: a menu button whose only content is its arrow, `has_only_arrow`, `gtkmenubutton.c:631`, `:661-665`,
     which draws the arrow as its `menu_indicator`, where `menu` with `icon_only` alone is an icon menu button whose
