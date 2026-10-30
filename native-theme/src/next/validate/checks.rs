@@ -715,10 +715,12 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// A surface set, declared (S10); a palette's is skipped where the
-    /// current preset does not declare it, not refused (S12, S14).
+    /// A surface set, declared (S10). A palette's statement of a set the
+    /// current preset does not declare is skipped before the walk
+    /// ([`Checker::palette_roles`]); any other name of a set, a palette's
+    /// too, is checked (S12, S14).
     fn surface_set(&mut self, set: SurfaceSet, at: &str) {
-        if !self.decl().surface_sets.contains(&set) && self.cx.kind != LayerKind::Palette {
+        if !self.decl().surface_sets.contains(&set) {
             self.undeclared(at, set.name(), "surface_sets");
         }
     }

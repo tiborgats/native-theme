@@ -515,6 +515,15 @@ fn palette_skips_undeclared_surface_sets() {
     let layer =
         toml("[colors.light.surfaces.header]\nbackground = \"#000000\"\nforeground = \"= base\"");
     assert_eq!(found_as(&layer, &decl, LayerKind::Palette), NONE);
+    // Only the statement is skipped: a palette naming an undeclared set
+    // elsewhere is refused there.
+    let naming = toml("[colors.light.surfaces.window]\nforeground = \"= role.header.foreground\"");
+    assert!(
+        found_as(&naming, &decl, LayerKind::Palette).contains(
+            &"colors.light.surfaces.window.foreground: `header` is not declared in `surface_sets`"
+                .to_owned()
+        )
+    );
     assert_eq!(
         found(&layer, &decl),
         [
