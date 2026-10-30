@@ -3353,7 +3353,8 @@ spaces:
   focus_within (AdwTabBar's focus on the tab box child, GN-1.134), disabled, dragged, drop_target (on the widget's
   element, a drag over the strip).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (TabViewItem CommonStates; `selected` combines with
-  them); others none (states combine); precedence: state models (S17).
+  them); `material-3`: `[focus_visible, hover]` (Compose's ripple state layer, `Tab.kt:166-179`; provisional pending
+  CONTRA-6, as on `button`); others none (states combine); precedence: state models (S17).
 - **may_be_absent:** parts: `attention_indicator` (all but `adwaita`: GN-1.128; `adwaita` by a rule outside
   `{@needs_attention}`), `drop_indicator` (all but `adwaita`: GN-1.127; `adwaita` by a rule `!{drop_target}`),
   `tab_box` (all but `adwaita`: AdwTabBar's, GN-1.125; `adwaita` by a rule outside `document`, GtkNotebook having

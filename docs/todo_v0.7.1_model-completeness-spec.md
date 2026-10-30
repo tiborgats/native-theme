@@ -340,7 +340,7 @@ The checks follow the reference: a `Fields` patch over a reference that can reso
 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | colour | `QColor::lighter`, `QColor::darker` in HSV, to qtbase `qcolor.cpp` (ADD-A50) |
 | `kcu_overlay(under, over)` | colour | `KColorUtils::overlayColors`, to `kcolorutils.cpp` (ADD-A51) |
 | `kirigami_tint(c, tint, alpha)` | colour | Kirigami's `ColorUtils.tintWithAlpha` (ADD-A52) |
-| `kirigami_lerp(a, b, balance)` | colour | Kirigami's `ColorUtils.linearInterpolation`, to `kirigami@6.31.0 src/platform/colorutils.cpp:61-80`: hue, saturation, value and alpha each interpolated linearly in HSV (the hue of a colour without one, QColor's −1, taken from the other colour, else 0; the hue wrapped by `fmod` into `0..1`, the other three clamped to `0..=1`), `balance` not clamped (beyond `0..=1` it extrapolates, `colorutils.h:113-115`); Kirigami's and qqc2-desktop-style's frame colours (Q3.15) and RoundButton's (`RoundButton.qml:77`) (ADD-A121) |
+| `kirigami_lerp(a, b, balance)` | colour | Kirigami's `ColorUtils.linearInterpolation`, to `kirigami@6.31.0 src/platform/colorutils.cpp:61-80`: hue, saturation, value and alpha each interpolated linearly in HSV (a hue ≤ 0 — QColor's −1 for a colour without one, and pure red's 0 — taken from the other colour, else 0; the hue's `fmod` by 1 not wrapped further, so a negative result is an invalid hue to QColor's `fromHsvF`, which the function then returns as QColor does, the other three clamped to `0..=1`), `balance` not clamped (beyond `0..=1` it extrapolates, `colorutils.h:113-115`); Kirigami's and qqc2-desktop-style's frame colours (Q3.15) and RoundButton's (`RoundButton.qml:77`) (ADD-A121) |
 | `kirigami_label_icon_size(font_height)`, `kirigami_badge_text(text_color, background)` | length, colour | Kirigami's `units.cpp` and `Badge.qml` (ADD-A53); `text_color` and `background` are colours (the theme's text colour and the badge's background, `Badge.qml:67-81`) |
 | `ka_card_border(background, text)`, `ka_banner_line(type_text, frame)`, `ka_contrast_text(c)` | colour | kirigami-addons' FormCard background, banner and avatar code (ADD-A66) |
 | `kqc_series_color(seed, count, index)`, `kte_minimap_mark(mark, background)`, `kte_mark_underlay(hue_from, background, foreground)` | colour | KQuickCharts' `ColorGradientSource.cpp`, KTextEditor's `kateviewhelpers.cpp`: the marks' HSV recolouring, and their underlay in HSL (one colour's hue and saturation at the background's lightness moved toward the foreground, K-P3-12†) (ADD-A57, ADD-A90) |
@@ -1250,7 +1250,7 @@ pub struct MaterialScheme { pub variant: MaterialVariant, pub spec_version: Key,
 pub enum MaterialVariant { TonalSpot, Neutral, Vibrant, Expressive, Fidelity, Content, Monochrome, Rainbow,
                            FruitSalad, Cmf }   // material-color-utilities' `Variant`, its `CMF` included
                                                // (`material-color-utilities@bd811e4c java/dynamiccolor/
-                                               // Variant.java:19-30`, `java/scheme/SchemeCmf.java`; ADD-A121)
+                                               // Variant.java:18-29`, `java/scheme/SchemeCmf.java`; ADD-A121)
 ```
 
 Every value of `KdeTokens` and `KdeEffects` is stated, and "the scheme does not tint" is `tint_factor`'s `None`, so
@@ -2824,7 +2824,8 @@ quote = "<the @interface line>"
 absent = ["<the platform's name for it>"]
 ```
 
-An available widget's entry also states `variants`, `sizes`, `densities` (S10), `axes = { states, conditions,
+An available widget's entry also states `variants`, `sizes`, `densities` (S10; `exclusive_variants`, `variant_sets` and
+`default_size_by_variant` are optional, absent meaning none), `axes = { states, conditions,
 contexts }` (what the platform's drawing distinguishes: states by S1's `StateFlag` names, conditions by S7.1's,
 contexts as S11's context selectors), `exclusive` (the exclusive groups, each in its order of precedence, S10),
 `exclusive_variants` (S10), `variant_sets` (the sets of two or more variants the platform draws together on one
@@ -3107,7 +3108,7 @@ lines that cite it.
 | ADD-A118 | a connector contract's `pending` entries while 0.8.0 is built (the 0.8.0 plan) | S21.3 |
 | ADD-A119 | what only macOS or iOS 27 draws leaves the catalogue for `docs/todo.md`'s macOS 27 entry (`pull_to_refresh` on `macos-tahoe`, the menu bar's `@expanded_interface`, the sheet's `@placement_*`, iOS 27.2's toolbar `titleAlignment`), the maintainer's D12 | S20, the catalogue |
 | ADD-A120 | a unit may defer named values to a named later unit, and hand-written token fields are staged with the unit that needs them; a text value's spelling and quote check; an absence the platform has no name for (`absent = []`); a measured derivation's `inputs` and its evidence passes (M1a's design and its first lanes) | S4.2, S6.1, S11, S12, S17 |
-| ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp`, `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17 |
+| ADD-A121 | the facts lanes' first model changes (queue #34, #35, #39, #41–#44, #46, M1a task 2's review): `Timing::Spring.damping_ratio` in place of the damping coefficient; `exclusive_variants`, and a state model's `variant_sets`, the sets of variants a combination may hold; `default_size_by_variant`; a whole part's fact keyed `<widget>.<part>` (`"absent"` or `drawn_as`); `kirigami_lerp`, `kde_shade` with `KdeShadeRole`; `Stroke.fill_clip` (`FillClip`); `MaterialVariant::Cmf`; the expression rules M1a's implementation read: `surface.` takes a `SurfaceRole` path, the depth limit counts calls and `active(…)`, `<n>px` and bare numbers beside a font size, `uikit_prominence`'s `UiProminence`, `shadow_extent`'s physical `BoxSide`, `kirigami_badge_text`'s `text_color`, `uifm_scaled` over a length or a font size | S2.2, S2.4, S2.7, S4.8, S8, S10, S12, S17, S4.6 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
@@ -3131,4 +3132,4 @@ lines that cite it.
 | CONTRA-3 | R2.3 position among the same widget kind against GTK's `.linked` | R2.3, R25.9 |
 | CONTRA-4 | R11 symbol effects as transitions against an icon "effect" | R25.12 |
 | CONTRA-5 | R5.4 a width in characters as a multiple of the font size | R5.4, R25.3 |
-| CONTRA-6 | R3's exclusive groups (a fixed precedence; the query keeps the highest present) against Compose's state layer, which shows the more recent of hover and focus (and of drag; `androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:279-280`); a recency rule would also need element data no part declares (R25.3). Pending the maintainer; until then Material's groups state a provisional fixed order, `focus_visible` over `hover` (the catalogue's Material state-layer groups) | pending the maintainer (R3, R25.3) |
+| CONTRA-6 | R3's exclusive groups (a fixed precedence; the query keeps the highest present) against Compose's state layer, which shows the more recent of hover and focus (and of drag; `androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:279-280`); a recency rule would also need element data no part declares (R25.3). Pending the maintainer; until then Material's groups state a provisional fixed order, `focus_visible` over `hover` (the catalogue's Material state-layer groups); Compose's InsetRing focus indicator draws no state layer at all | pending the maintainer (R3, R25.3) |

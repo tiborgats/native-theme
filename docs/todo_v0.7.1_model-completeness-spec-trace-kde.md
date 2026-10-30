@@ -410,7 +410,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.8 | `button.icon.icon.fill (= the label's text colour) @ cond flavor:kirigami` | rule |
 | Q1.8 | `button.body.fill, button.body.stroke @ variant flat cond flavor:kirigami / {checked} cond flavor:kirigami / {default} cond flavor:kirigami` | rule |
 | Q1.8 | `button.menu_indicator.glyph @ variant menu cond flavor:kirigami` | rule |
-| Q1.9 | `button.body.bindings (surface Button) @ variant tool cond flavor:kirigami / (none: the parent's set) @ variants {tool,flat} cond flavor:kirigami` (a flat ToolButton inherits its parent's theme, `ToolButton.qml:18-19`, `platformtheme.cpp:1060-1090`) | rule |
+| Q1.9 | `button.body.bindings (surface Button) @ variant tool !variant flat cond flavor:kirigami` (a raised ToolButton binds the Button set; a flat one binds nothing and inherits its parent's theme, `ToolButton.qml:18-19`, `platformtheme.cpp:1060-1090`) | rule |
 | Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami / variants {tool,@highlighted} cond flavor:kirigami` | rule |
 | Q1.9 | `button.values.label_position @ variant tool cond flavor:kirigami (the tool button style: IconOnly, TextBesideIcon, TextUnderIcon)` | rule |
 | Q1.10 | `button.label.text.mnemonic_decoration @ cond mnemonics_visible` | rule |
