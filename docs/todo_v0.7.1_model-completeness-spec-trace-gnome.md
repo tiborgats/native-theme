@@ -147,6 +147,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.42 | `button.body.corners @ context any layout variant @linked pos first among any dir rtl / context any layout variant @linked pos last among any dir rtl` | rule |
 | GN-1.42 | `button.body.corners @ context any layout variants {@linked,vertical} pos first among any / context any layout variants {@linked,vertical} pos last among any` | rule |
 | GN-1.42 | `button.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (the overlap is each child's own negative start or top margin, none on the first, `_linked.scss:16-21`, `:34-37`) | rule |
+| GN-1.42 | `input.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (an entry in a linked box overlaps as a button does, `_linked.scss:9-10`, `:16-21`, `:34-37`) | rule |
+| GN-1.42 | `combo_box.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (a drop-down's button in a linked box overlaps likewise, `_linked.scss:5`, `:16-21`, `:34-37`) | rule |
 | GN-1.43 | `input.values.icon_text_gap` | field |
 | GN-1.43 | `input.icon.padding @ variant leading / variant trailing (the icon's margin toward the text)` | rule |
 | GN-1.44 | `input.icon.opacity` | field |

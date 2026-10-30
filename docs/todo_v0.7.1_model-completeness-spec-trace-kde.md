@@ -410,7 +410,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.8 | `button.icon.icon.fill (= the label's text colour) @ cond flavor:kirigami` | rule |
 | Q1.8 | `button.body.fill, button.body.stroke @ variant flat cond flavor:kirigami / {checked} cond flavor:kirigami / {default} cond flavor:kirigami` | rule |
 | Q1.8 | `button.menu_indicator.glyph @ variant menu cond flavor:kirigami` | rule |
-| Q1.9 | `button.body.bindings (surface Button) @ variant tool cond flavor:kirigami / (none: the parent's set) @ variants {tool,flat} cond flavor:kirigami` (a flat ToolButton inherits its parent's theme, `ToolButton.qml:17-18`, `platformtheme.cpp:1060-1090`) | rule |
+| Q1.9 | `button.body.bindings (surface Button) @ variant tool cond flavor:kirigami / (none: the parent's set) @ variants {tool,flat} cond flavor:kirigami` (a flat ToolButton inherits its parent's theme, `ToolButton.qml:18-19`, `platformtheme.cpp:1060-1090`) | rule |
 | Q1.9 | `button.body.stroke (the highlighted pen) @ {focus_visible} variant tool cond flavor:kirigami / {pressed} variant tool !variant flat cond flavor:kirigami / variants {tool,@highlighted} cond flavor:kirigami` | rule |
 | Q1.9 | `button.values.label_position @ variant tool cond flavor:kirigami (the tool button style: IconOnly, TextBesideIcon, TextUnderIcon)` | rule |
 | Q1.10 | `button.label.text.mnemonic_decoration @ cond mnemonics_visible` | rule |
@@ -828,7 +828,7 @@ rationale, each decided in the core's additions register (S22).
 | Q2.6 | `button.body.fill.append (a linear gloss layer) @ variant circular !variant flat cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow @ variant circular cond flavor:kirigami` | rule |
 | Q2.7 | `button.body.shadow (Absent) @ variant circular {pressed} / variant circular {checked} / variants {circular,flat}` | rule |
-| Q2.7 | `button.body.transform (a translation right and down) @ variant circular {pressed} cond flavor:kirigami / variant circular {checked} cond flavor:kirigami` (a `Translate` on the whole control, `RoundButton.qml:26-29`, not its content) | rule |
+| Q2.7 | `button.body.transform (a translation right and down) @ variant circular {pressed} cond flavor:kirigami / variant circular {checked} cond flavor:kirigami` (a `Translate` on the whole control, `RoundButton.qml:27-30`, not its content) | rule |
 | Q2.8 | `button.body.bindings (Surface(Selection)) @ variant circular !variant flat {focused} / variants {circular,@highlighted} !variant flat` | rule |
 | Q2.9 | `menu_bar.bar.bindings (Surface(Header)), menu_bar.item.padding, menu_bar.item.min_height, menu_bar.item.min_width @ cond flavor:kirigami` | rule |
 | Q2.10 | `menu_bar.item.fill @ {pressed} cond flavor:kirigami / {hover} cond flavor:kirigami` | rule |
