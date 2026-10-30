@@ -856,3 +856,39 @@ fn shadow_and_transform_are_blocks() {
     };
     assert!(matches!(corners.bottom_left, Radius::FollowPart));
 }
+
+/// A probe of a block with a compound field, held in a place whose marks
+/// let its `Value`s be `Absent` (`inner_may_be_absent`).
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block)]
+struct SidesProbe {
+    pad: crate::next::units::Sides<Value<Px>>,
+    width: Value<Px>,
+}
+
+/// The probe in such a place.
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block)]
+struct PlaceProbe {
+    #[parts(block = "fields", inner_may_be_absent)]
+    open: SidesProbe,
+}
+
+#[test]
+fn a_compound_member_takes_its_places_marks() {
+    use super::Create;
+    // Created from an empty patch, the place's compound members are
+    // `Absent` like its other values; outside the place they may not be.
+    assert_eq!(
+        PlaceProbe::create(PlaceProbePatch::default())
+            .map(|probe| (probe.open.pad.top, probe.open.width)),
+        Ok((Value::Absent, Value::Absent))
+    );
+    assert_eq!(
+        SidesProbe::create(SidesProbePatch::default()).map(|_| ()),
+        Err(MergeConflict {
+            path: "pad.top".to_owned(),
+            below: Below::Missing,
+        })
+    );
+}

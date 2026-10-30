@@ -314,7 +314,12 @@ impl BlockField {
                             #(#members: #o::None),*
                         });
                         #name {
-                            #(#members: #b::created_value(held.#members, #marked, #o::None, #paths)?),*
+                            #(#members: #b::created_value(
+                                held.#members,
+                                #marked,
+                                inner,
+                                #paths,
+                            )?),*
                         }
                     }}
                 } else {
