@@ -2,12 +2,13 @@
 """Convert today's inheritance rules into S19.2's staged bases (specification S19.2; the 0.8.0 plan's *What carries
 over*).
 
-Today's `[uniform]` and `[per_platform]` rules of docs/inheritance-rules.toml become, per preset, each field the
-preset inherits stated as an S2.2 reference over the new model's paths, in a staged input file
-(docs/facts/staged/inheritance-bases.toml, STAGED) that each unit's preset step uses and the gate checks. The
-`[wrong_safety_nets]` are not converted (the facts replace them, S19.2); `[defaults_internal]`,
-`[border_inheritance]`, `[font_inheritance]` and `[text_scale_inheritance]` are not S19.2's either. The file is
-removed at the plan's M4 (`scripts/check_ledger.py --final --staged-file`), and this script with it.
+Today's inheritance rules of docs/inheritance-rules.toml (`[defaults_internal]`, `[border_inheritance]`,
+`[font_inheritance]`, `[uniform]`, `[per_platform]`, `[text_scale_inheritance]`: S19.2 names `[uniform]` and
+`[per_platform]` as its examples; the ledger's queue #31) become, per preset, each field the preset inherits stated as
+an S2.2 reference over the new model's paths, in a staged input file (docs/facts/staged/inheritance-bases.toml,
+STAGED) that each unit's preset step uses and the gate checks. The `[wrong_safety_nets]` are not converted (the facts
+replace them, S19.2), nor `[no_inheritance]` and `[runtime_detection]`, which name no source. The file is removed at
+the plan's M4 (`scripts/check_ledger.py --final --staged-file`), and this script with it.
 
 Run from the repository root:
 
@@ -21,9 +22,17 @@ a difference, 2 on an input it cannot read or a wrong command line.
 Rules
 -----
 The rules are read at commit fc6109d1 (SOURCE_PIN, the file in the tree; it is not edited before its removal). A
-`[uniform]` rule `"<field>" = "<source>"` holds on every preset; a `[per_platform]` rule's `fallback` is what today's
-resolve() fills on every preset, its platform keys (`macos`, `windows`, `kde`, `gnome`) documenting each platform's
-own source: the entry takes the `fallback` and names in its `note` the preset's platform key where that differs.
+`[defaults_internal]` or `[uniform]` rule `"<field>" = "<source>"` holds on every preset; a `[per_platform]` rule's
+`fallback` is what today's resolve() fills on every preset, its platform keys (`macos`, `windows`, `kde`, `gnome`)
+documenting each platform's own source: the entry takes the `fallback` and names in its `note` the preset's platform
+key where that differs. The generated sections expand into one rule per field: `[border_inheritance]` gives each
+`widgets_with_border` widget's `border.<sub>` the source of its `"<sub>.inherits_from"` key, `corner_radius` taking
+`defaults.border.corner_radius_lg` on the `corner_radius_lg_widgets`; `[font_inheritance]` gives each
+`widgets_with_font` font's sub-fields (FONT_FIELDS: today's FontSpec, native-theme/src/model/font.rs:156-168, as the
+section's comment lists them) the same sub-field of its `inherits_from`; `[text_scale_inheritance]` gives each
+`entries` level's `text_scale.<level>.<sub>` its `"<sub>.inherits_from"` source. A field an explicit rule (`[uniform]`,
+`[per_platform]`) names takes that rule only (`link.font.color` is `[uniform]`'s, as today's resolve() overrides the
+font rule). A source that is no path (`defaults.line_height * size`) gives no value.
 
 Presets
 -------
@@ -49,6 +58,9 @@ widget's field, the `#### today's fields` table for a `defaults.` field. Nothing
 - A `defaults.` row maps its one field to its home's one span, or its fields pairwise to as many spans; a home with
   prose besides its spans (`no global: …`), a span that is no path (`<set>.border`) or a pattern (`{toolbar,…}`, `*`)
   maps nothing.
+- A font's `family`, `size`, `weight` and `style`, where the font's clause maps it to one `<part>.text.font` or
+  `<part>.text` path, map to `<part>.text.font.<sub>` (the table's `defaults.font` row: `font.family`, `font.size`,
+  `font.weight`, `font.style`), as its `color` maps to `<part>.text.fill`.
 - A widget path is checked against the catalogue: `<part>.<field>…` with the field one of the part's fields,
   `<widget>.<part>.<field>…` with the widget a catalogue entry, or `values.<name>` a widget value; a path that reads
   neither way, or both, maps nothing. A selector (` @ …`) is kept as the catalogue writes it. A `role.`, `token.` or
@@ -62,7 +74,8 @@ no path, is another widget's (S2.2 reaches no other widget), is a rule (a select
 
 Output
 ------
-`[[base]]` entries, preset by preset (PRESETS' order), each preset's rules in the file's order: `preset`, `field`,
+`[[base]]` entries, preset by preset (PRESETS' order), each preset's rules in the file's order (a generated section's
+fields in its lists' order, each field's sub-fields in its keys' order): `preset`, `field`,
 `schemes`, `rule`, `source` (`inheritance-rules.toml@fc6109d1:<line>`), `target`, `value`, `mapping`, and `note`
 where a field is empty or the rule needs a word.
 """
@@ -92,10 +105,15 @@ PRESETS = {
     "material-3": None,
 }
 SCHEMES = ("light", "dark")
+# the converted sections, in the file's order
+SECTIONS = ("defaults_internal", "border_inheritance", "font_inheritance", "uniform", "per_platform",
+            "text_scale_inheritance")
 SUFFIXES = ("", "_px", "_ms", "_pt", "_deg")
 SUFFIX_RX = re.compile(r"_(px|ms|pt|deg)$")
 MODEL_REF = re.compile(r"^(role|token|input)\.[a-z0-9_@.]+$")
 PATH_RX = re.compile(r"^[a-z_][a-z0-9_]*(\.[a-z0-9_]+)*$")
+FONT_FIELDS = ("family", "size", "weight", "style", "color")
+FONT_SUBS = ("family", "size", "weight", "style")
 COLOUR_RXS = (re.compile(r"\(its (?:`color`|colour) → `([^`]+)`\)"), re.compile(r"\(colour `([^`]+)`\)"),
               re.compile(r", its colour `([^`]+)`"))
 
@@ -275,12 +293,13 @@ class Catalogue:
         if clauses is None:
             return None, None, f"`{field}`: the catalogue has no Today's fields for `{widget}`"
         hit = clauses.get(rest)
-        if hit is None and rest.endswith(".color"):
-            font = clauses.get(rest[:-len(".color")])
+        head, _, sub = rest.rpartition(".")
+        if hit is None and (sub == "color" or sub in FONT_SUBS):
+            font = clauses.get(head)
             if font is not None and font[0] is not None:
                 m = re.fullmatch(r"([a-z_]+)\.text(?:\.font)?", font[0])
                 if m:
-                    hit = (f"{m.group(1)}.text.fill", font[1])
+                    hit = (f"{m.group(1)}.text.fill" if sub == "color" else f"{m.group(1)}.text.font.{sub}", font[1])
         if hit is None:
             star = next((q for k, (_, q) in clauses.items() if k.endswith("*") and rest.startswith(k[:-1])), None)
             if star:
@@ -332,18 +351,58 @@ def reference(source: str, target: str | None, widget: str) -> tuple[str, str]:
 
 
 def rule_lines(text: str) -> dict:
-    """{(section, field): line} for [uniform]'s keys and [per_platform]'s tables (their `fallback` line)."""
+    """{(section, key): line} for every section's keys (quoted or bare) and [per_platform]'s tables (their
+    `fallback` line)."""
     out, section, table = {}, None, None
     for n, line in enumerate(text.splitlines(), 1):
         m = re.match(r'^\[(\w+)(?:\."([^"]+)")?\]', line)
         if m:
             section, table = m.group(1), m.group(2)
             continue
-        m = re.match(r'^"([^"]+)"\s*=', line)
-        if section == "uniform" and m:
-            out[("uniform", m.group(1))] = n
+        m = re.match(r'^(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))\s*=', line)
+        if section and not table and m:
+            out[(section, m.group(1) or m.group(2))] = n
         if section == "per_platform" and table and re.match(r"^fallback\s*=", line):
             out[("per_platform", table)] = n
+    return out
+
+
+def generated_rules(rules: dict, lines: dict) -> dict:
+    """{section: [(field, source, line, rule)]} of the generated sections, expanded per field."""
+    def line(sec, key):
+        if (sec, key) not in lines:
+            raise InputError(f"{RULES}: no line for [{sec}] {key}")
+        return lines[(sec, key)]
+
+    def subs(table):
+        return [(k[:-len(".inherits_from")], v) for k, v in table.items() if k.endswith(".inherits_from")]
+
+    out = {"border_inheritance": [], "font_inheritance": [], "text_scale_inheritance": []}
+    border = rules.get("border_inheritance", {})
+    lg = border.get("corner_radius_lg_widgets", [])
+    for w in border.get("widgets_with_border", []):
+        for sub, source in subs(border):
+            key = f"{sub}.inherits_from"
+            if sub == "corner_radius" and w in lg:
+                source, key = f"{source}_lg", "corner_radius_lg_widgets"
+            out["border_inheritance"].append((f"{w}.border.{sub}", source, line("border_inheritance", key),
+                                              f"[border_inheritance] {w}.border.{sub}: {key} -> {source}"))
+    font = rules.get("font_inheritance", {})
+    if font.get("widgets_with_font"):
+        if not isinstance(font.get("inherits_from"), str):
+            raise InputError(f"{RULES}: [font_inheritance] has no inherits_from")
+        n = line("font_inheritance", "inherits_from")
+        for f in font["widgets_with_font"]:
+            for sub in FONT_FIELDS:
+                source = f"{font['inherits_from']}.{sub}"
+                out["font_inheritance"].append((f"{f}.{sub}", source, n,
+                                                f"[font_inheritance] {f}.{sub}: inherits_from -> {source}"))
+    scale = rules.get("text_scale_inheritance", {})
+    for level in scale.get("entries", []):
+        for sub, source in subs(scale):
+            out["text_scale_inheritance"].append(
+                (f"text_scale.{level}.{sub}", source, line("text_scale_inheritance", f"{sub}.inherits_from"),
+                 f"[text_scale_inheritance] text_scale.{level}.{sub}: {sub}.inherits_from -> {source}"))
     return out
 
 
@@ -368,26 +427,35 @@ def build(root: Path) -> tuple[str, dict]:
         raise InputError(str(err)) from err
     lines = rule_lines(rules_text)
     wrong = rules.get("wrong_safety_nets", {})
-    todo = []
-    for field, source in rules.get("uniform", {}).items():
-        todo.append(("uniform", field, source, {}))
-    for field, table in rules.get("per_platform", {}).items():
-        if "fallback" not in table:
-            raise InputError(f"{RULES}: [per_platform.\"{field}\"] has no fallback")
-        todo.append(("per_platform", field, table["fallback"], table))
-    for sec, field, _, _ in todo:
-        if (sec, field) not in lines:
-            raise InputError(f"{RULES}: no line for [{sec}] {field}")
+    explicit = set(rules.get("uniform", {})) | set(rules.get("per_platform", {}))
+    generated = generated_rules(rules, lines)
+    todo = []   # (section, field, source, per_platform table, source line, rule)
+    for sec in SECTIONS:
+        if sec in generated:
+            todo += [(sec, f, src, {}, n, rule) for f, src, n, rule in generated[sec] if f not in explicit]
+            continue
+        for field, value in rules.get(sec, {}).items():
+            if sec == "per_platform":
+                if "fallback" not in value:
+                    raise InputError(f"{RULES}: [per_platform.\"{field}\"] has no fallback")
+                source, rule = value["fallback"], f"[per_platform] {field}: fallback = {value['fallback']}"
+            else:
+                source, rule = value, f"[{sec}] {field} = {value}"
+            if (sec, field) not in lines:
+                raise InputError(f"{RULES}: no line for [{sec}] {field}")
+            todo.append((sec, field, source, value if sec == "per_platform" else {}, lines[(sec, field)], rule))
     blocks, counts = [], {}
     for preset, platform in PRESETS.items():
         n = n_target = n_value = 0
-        for sec, field, source, table in todo:
+        for sec, field, source, table, src_line, rule in todo:
             schemes = [s for s in SCHEMES if not stated(presets[preset], s, field)]
             if not schemes:
                 continue
             target, t_quote, t_why = cat.path(field)
-            spath, s_quote, s_why = cat.path(source)
-            if spath is None:
+            spath, s_quote, s_why = cat.path(source) if PATH_RX.match(source) else (None, None, "")
+            if not PATH_RX.match(source):
+                value, v_why = "", f"the source `{source}` is no path (today's expression)"
+            elif spath is None:
                 value, v_why = "", f"the source has no path ({s_why})"
             else:
                 value, v_why = reference(spath, target, field.split(".")[0])
@@ -403,10 +471,9 @@ def build(root: Path) -> tuple[str, dict]:
                     notes.append(f"[per_platform] names `{own}` for {platform}; today's resolve() fills the fallback")
             if field in wrong:
                 notes.append(f"also a [wrong_safety_nets] entry (not converted): {wrong[field].get('why_wrong', '')}")
-            rule = f"[{sec}] {field} = {source}" if sec == "uniform" else f"[per_platform] {field}: fallback = {source}"
             mapping = list(dict.fromkeys(q for q in (t_quote, s_quote) if q))
             fields = [("preset", preset), ("field", field), ("schemes", schemes), ("rule", rule),
-                      ("source", f"{CITE}:{lines[(sec, field)]}"), ("target", target or ""), ("value", value),
+                      ("source", f"{CITE}:{src_line}"), ("target", target or ""), ("value", value),
                       ("mapping", mapping)]
             if notes:
                 fields.append(("note", "; ".join(notes)))
@@ -419,9 +486,9 @@ def build(root: Path) -> tuple[str, dict]:
 
 
 HEADER = f"""\
-# S19.2's staged inheritance bases, from {CITE} ([uniform], [per_platform]): per preset, each field today's
-# preset leaves to a rule, as the S2.2 reference that rule implies over the new model's paths (the widget
-# catalogue's *Today's fields*). Input to each unit's preset step, which the gate checks; not facts. Written by
+# S19.2's staged inheritance bases, from {CITE} (its inheritance rules; not [wrong_safety_nets]): per
+# preset, each field today's preset leaves to a rule, as the S2.2 reference that rule implies over the new model's
+# paths (the widget catalogue's *Today's fields*). Input to each unit's preset step, which the gate checks; not facts. Written by
 # scripts/convert_inheritance_rules.py, whose docstring states the rules; removed at the 0.8.0 plan's M4.
 """
 
@@ -469,6 +536,7 @@ SELF_TEST_RULES = """\
 "text_area.border.color" = "input.border.color"
 "list.hover_background" = "list.background_color"
 "sidebar.hover_background" = "sidebar.background_color"
+"link.font.color" = "defaults.link_color"
 
 [per_platform]
 
@@ -483,6 +551,22 @@ gnome    = "defaults.text_color"
 [wrong_safety_nets."button.background_color"]
 inherits_from = "defaults.background_color"
 why_wrong     = "distinct"
+
+[border_inheritance]
+widgets_with_border = ["button", "list"]
+"color.inherits_from"         = "defaults.border.color"
+"corner_radius.inherits_from" = "defaults.border.corner_radius"
+corner_radius_lg_widgets = ["list"]
+
+[font_inheritance]
+widgets_with_font = ["button.font", "link.font"]
+inherits_from = "defaults.font"
+sub_field_inheritance = true
+
+[text_scale_inheritance]
+entries = ["caption"]
+"size.inherits_from"        = "defaults.font.size"
+"line_height.inherits_from" = "defaults.line_height * size"
 """
 
 SELF_TEST_CATALOGUE = """\
@@ -602,7 +686,30 @@ SELF_TEST_WANT = [
     ("material-3", "input.caret_color", "note",
      "`input.caret_color`: the catalogue's clause names no one path; "
      "no [per_platform] key names this preset's platform: today's fallback"),
-    ("material-3", "input.caret_color", "source", f"{CITE}:19"),
+    ("material-3", "input.caret_color", "source", f"{CITE}:20"),
+    ("ios-13", "defaults.selection_background", "rule",
+     "[defaults_internal] defaults.selection_background = defaults.accent_color"),
+    ("ios-13", "defaults.selection_background", "value", "= role.global.accent"),
+    ("ios-13", "defaults.selection_background", "source", f"{CITE}:2"),
+    ("ios-13", "button.border.color", "rule", "[uniform] button.border.color = defaults.border.color"),
+    ("ios-13", "button.border.corner_radius", "rule",
+     "[border_inheritance] button.border.corner_radius: corner_radius.inherits_from -> defaults.border.corner_radius"),
+    ("ios-13", "button.border.corner_radius", "source", f"{CITE}:34"),
+    ("ios-13", "list.border.corner_radius", "rule",
+     "[border_inheritance] list.border.corner_radius: corner_radius_lg_widgets -> defaults.border.corner_radius_lg"),
+    ("ios-13", "list.border.corner_radius", "source", f"{CITE}:35"),
+    ("ios-13", "list.border.color", "target", ""),
+    ("ios-13", "button.font.family", "rule",
+     "[font_inheritance] button.font.family: inherits_from -> defaults.font.family"),
+    ("ios-13", "button.font.family", "source", f"{CITE}:39"),
+    ("ios-13", "button.font.size", "target", "button.label.text.font.size"),
+    ("ios-13", "button.font.color", "target", "button.label.text.fill"),
+    ("ios-13", "link.font.color", "rule", "[uniform] link.font.color = defaults.link_color"),
+    ("ios-13", "link.font.size", "rule", "[font_inheritance] link.font.size: inherits_from -> defaults.font.size"),
+    ("ios-13", "text_scale.caption.size", "rule",
+     "[text_scale_inheritance] text_scale.caption.size: size.inherits_from -> defaults.font.size"),
+    ("ios-13", "text_scale.caption.line_height", "value", ""),
+    ("ios-13", "text_scale.caption.line_height", "source", f"{CITE}:45"),
 ]
 
 
@@ -625,14 +732,20 @@ def self_test() -> int:
                     failures.append(f"{preset} {field}: an entry, want none")
             elif (got or {}).get(key) != want:
                 failures.append(f"{preset} {field} `{key}`: got {(got or {}).get(key)!r}, want {want!r}")
-        if counts["adwaita"] != (7, 4, 4) or counts["ios-13"] != (11, 6, 6):
+        if counts["adwaita"] != (23, 9, 5) or counts["ios-13"] != (27, 11, 7):
             failures.append(f"counts: got {counts}")
         quoted = entries[("kde-breeze", "button.background_color")]["mapping"]
         if quoted != ["spec-widgets.md:10 `background_color` → `body.fill`",
                       "spec-widgets.md:57 `defaults.background_color` -> `role.window.background`"]:
             failures.append(f"mapping: got {quoted}")
-        if {k for k in entries if k[1] == "defaults.selection_background"}:
-            failures.append("[defaults_internal] converted")
+        if not {k for k in entries if k[1] == "defaults.selection_background"}:
+            failures.append("[defaults_internal] not converted")
+        if {k for k in entries if k[0] == "ios-13" and k[1] == "link.font.color"} != {("ios-13", "link.font.color")}:
+            failures.append("link.font.color: not one entry")
+        order = [b["field"] for b in tomllib.loads(text)["base"] if b["preset"] == "ios-13"]
+        if order[:2] != ["defaults.selection_background", "button.border.corner_radius"] or order[-1] != \
+                "text_scale.caption.line_height":
+            failures.append(f"order: got {order}")
         if write(root, text, check=False) != [f"{STAGED.as_posix()}: missing"] or write(root, text, check=True):
             failures.append("write, then check: not clean")
         (root / STAGED).write_text(text.replace("role.window.background", "role.view.background"), encoding="utf-8")

@@ -23,7 +23,8 @@ Checks, per `published` and `read` citation (of a fact, a palette fact or a stat
   sources.toml names it (`file = "<name>"`, the file's name in `<cache>/<id>/`), and an entry naming none is a finding;
 - `absent`: no listed name occurs in the cited lines, a name matched at identifier boundaries (it is not part of a
   longer identifier: letters, digits and `_`, and in `css` `-` too), so `NSRefreshControl` does not hold
-  `RefreshControl`;
+  `RefreshControl`; `absent = []` (S17 *Absence*: the platform has no name for it) leaves the quote check of the
+  cited definition only;
 - a citation of an `sdk` entry (`xcode@…`) is not checked here: it is listed (`# sdk:`), as `os-probe.yml`'s macOS job
   checks it at that Xcode; a `distribution` entry is never cited (S17).
 
@@ -32,14 +33,23 @@ with `published` or `read` citations, and for a palette fact once over all its c
 equals a literal of the union of those citations' quotes, as written or after the citation's `conversion`. A value's
 literals are S2.2's (a TOML number; the colour, length, duration, angle and font-size literals of a string or an
 expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's.
+A text value (check_facts.text_leaves: where the key's type is text) is no literal source: it equals, whitespace-
+normalised and case-sensitive, a whole string one of those quotes holds by the text notations (quote_texts, below).
 
 Per `measured` citation: the evidence file is committed (`git ls-files`) and exists, the run folder's `run.toml` has an
-entry for the image, and the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
-scalar as one literal, a value with leaves leaf by leaf. The evidence path names a table shaped like the value, and
-the shape is compared exactly first (shape_problems: a table's keys the same, a list's length the same, a leaf where
-the value has a leaf), so a one-layer shadow or `[]` does not pass against two layers; then each numeric or colour
-leaf within its tolerance (one number for all, or a table from each leaf's path, every such leaf needing one), a bool
-or a name exactly. The evidence's literals are read as a quote's are (its file type's notation), then converted. A
+entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
+derivation*), the evidence path names a list of pass tables in a TOML file (pass_problems): each holds the `inputs` as
+quoted keys, `result`, and `conditions` (a list of S7.1's condition strings naming the pass's scheme) unless the fact's
+`when` fixes the scheme, nothing else, every value spelled as a fact's `value` for its key's type
+(check_facts.value_problems; `conversion` does not apply to a result); for each input and each scheme the fact covers,
+two passes with the same conditions and other inputs that differ in that input beyond the quote check's precision and
+whose results differ by more than `tolerance` (a per-leaf table: in some leaf). Its value is not compared with the
+evidence directly. Otherwise the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
+scalar as one literal, a value with leaves leaf by leaf. The evidence path names a table shaped like the value, and the
+shape is compared exactly first (shape_problems: a table's keys the same, a list's length the same, a leaf where the
+value has a leaf), so a one-layer shadow or `[]` does not pass against two layers; then each numeric or colour leaf
+within its tolerance (one number for all, or a table from each leaf's path, every such leaf needing one), a bool or a
+name exactly. The evidence's literals are read as a quote's are (its file type's notation), then converted. A
 state-model entry's measured citation needs its path to exist.
 
 `run.toml` (RUN_FIELDS), in every run folder that holds evidence or is cited, legacy runs excepted:
@@ -53,7 +63,8 @@ scripts/check_function_vectors.py's format fills at M1a; until then it counts no
 analysis's output names. An analysis output (a TOML or JSON evidence file of a committed analysis script, S17
 *`evidence`*) names its input image by a top-level `input_image = "<repository path>"` (a list of them where it reads
 several), each under `docs/evidence/`; a name that is no file is a finding (input_images()). Not evidence: any
-README.md, a run's `run.toml`, and the files of the runs LEGACY_EVIDENCE lists (the plan's *What carries over*: cited
+README.md, a run's `run.toml`, its `analysis/` folder (ANALYSIS: the committed analysis scripts, which run.toml maps to
+no image), and the files of the runs LEGACY_EVIDENCE lists (the plan's *What carries over*: cited
 until M4, which empties the list; scripts/check_ledger.py --final reads it by name). Any other file under
 `docs/evidence/` outside a run's image folder is a finding.
 
@@ -88,6 +99,15 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   - the number form, everywhere: `[-]digits[.digits]` or `.digits` with an optional exponent (`1e-3` is one number),
     bounded by non-identifier characters (`Qt6` holds no number), with an optional unit attached; a unit outside
     UNITS makes it no literal.
+- Text notations (quote_texts; S17 *The quote check*): they only add candidate strings for a text value and take no
+  span, so the number form still reads the `11` of `'Adwaita Sans 11'`. A quoted string (`"…"`, `'…'`); a list's entry
+  (each `;`-separated piece of the quote after its first `:` or `=`, the whole piece without one, split at commas; an
+  entry trimmed of whitespace, enclosing brackets and quotes: CSS's `font-family` lists, an INI key's `A;B;`, an
+  unquoted INI value `Theme=breeze`, Qt's `QFont::toString`, whose first field is the family); a font description's
+  families (each quoted string or entry read as Pango's `pango_font_description_from_string` reads it, gsettings' font
+  keys: the families before an optional size, `<n>` or `<n>px`, and the style words PANGO_WORDS, pango@1.58.2
+  pango/fonts.c:1294-1361; `'Adwaita Sans 11'` gives `Adwaita Sans`, `Cantarell Bold` `Cantarell`). A text value matches
+  a whole candidate only: `Noto Sans` is not in `Noto Sans Mono`, nor `go-next` in `go-next-symbolic`.
 - Units (UNITS) by dimension: px, dp, sp (Android's text size before its scaling) are px; pt; ms and s (×1000) are
   ms; deg; rem and em have none (a literal in them is no literal). A literal without a unit takes the value
   literal's dimension; with one it must be of it, px and pt being distinct. Apple's `pt` is a logical point, px (the
@@ -109,6 +129,7 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
 """
 import csv
 import io
+import itertools
 import json
 import re
 import subprocess
@@ -158,6 +179,7 @@ XAML_NAMES = {"Transparent": (255, 255, 255, 0), "Black": (0, 0, 0, 255), "White
 APPLE_PRESETS = ("macos-", "ios-")
 APPLE_SITES = ("developer.apple.com", "support.apple.com")
 RUN_RX = re.compile(r"^\d{4}-\d\d-\d\d-run-.+$")
+ANALYSIS = "analysis"   # a run's committed analysis scripts: not evidence, as its README.md and run.toml
 
 NOTATIONS = {
     "css": (".css", ".scss", ".sass", ".less", ".html", ".svg"),
@@ -451,6 +473,84 @@ def normalise(s: str) -> str:
     return " ".join(s.split())
 
 
+# ------------------------------------------------------------------------------------------------- text
+
+DQUOTED_RX = re.compile(r'"([^"]*)"')
+SQUOTED_RX = re.compile(r"'([^']*)'")
+# Pango's words of a font description's style options (pango@1.58.2 pango/fonts.c:1294-1361, :1452): matched as
+# field_matches() does, case-insensitively and with the map's hyphens optional, or as `<field>=<word or integer>`
+PANGO_WORDS = ("Normal", "Roman", "Oblique", "Italic", "Small-Caps", "All-Small-Caps", "Petite-Caps",
+               "All-Petite-Caps", "Unicase", "Title-Caps", "Thin", "Ultra-Light", "Extra-Light", "Light", "Semi-Light",
+               "Demi-Light", "Book", "Regular", "Medium", "Semi-Bold", "Demi-Bold", "Bold", "Ultra-Bold",
+               "Extra-Bold", "Heavy", "Black", "Ultra-Heavy", "Extra-Heavy", "Ultra-Black", "Extra-Black",
+               "Ultra-Condensed", "Extra-Condensed", "Condensed", "Semi-Condensed", "Semi-Expanded", "Expanded",
+               "Extra-Expanded", "Ultra-Expanded", "Not-Rotated", "South", "Upside-Down", "North", "Rotated-Left",
+               "East", "Rotated-Right", "West", "With-Color", "Without-Color")
+PANGO_FIELDS = ("weight", "style", "width", "variant", "gravity", "color")
+_PANGO_KEYS = {w.lower() for w in PANGO_WORDS} | {w.lower().replace("-", "") for w in PANGO_WORDS}
+
+
+def pango_word(w: str) -> bool:
+    m = re.fullmatch(rf"({'|'.join(PANGO_FIELDS)})=(\S+)", w)
+    if m:
+        return m.group(2).lower() in _PANGO_KEYS or m.group(2).isdigit()
+    return w.lower() in _PANGO_KEYS
+
+
+def font_description_families(s: str) -> list:
+    """The family list of a string read as a font description, as Pango's `pango_font_description_from_string` reads
+    it (pango@1.58.2 pango/fonts.c:1617-1720; gsettings' font keys, `'Adwaita Sans 11'`): trailing `#features` and
+    `@variations` words, then a size (a number, `px` allowed) and the style words before it are dropped, and the rest
+    is split at commas."""
+    words = s.split()
+    for _ in range(2):
+        if words and words[-1][:1] in ("#", "@"):
+            words.pop()
+    if words and re.fullmatch(r"\d+(?:\.\d+)?(?:px)?", words[-1]):
+        words.pop()
+    while words and pango_word(words[-1]):
+        words.pop()
+    rest = " ".join(words).strip().rstrip(",").strip()
+    return [f.strip() for f in rest.split(",") if f.strip()]
+
+
+def quote_texts(text: str) -> set:
+    """The whole strings a quote holds by the closed text notations (S17 *The quote check*), whitespace-normalised:
+    every quoted string (`"…"`, `'…'`); every entry of a list, a list being each `;`-separated piece of the quote
+    after its first `:` or `=` (the whole piece without one) split at commas, an entry trimmed of whitespace,
+    enclosing brackets and quotes (CSS's `font-family: "Adwaita Sans", sans-serif;`, an INI key's `A;B;`, Qt's
+    `QFont::toString`, whose first field is the family: `font=Noto Sans,10,-1,5,400,…`, an unquoted INI value,
+    `Theme=breeze`); and the families of each of those read as a font description (font_description_families)."""
+    t = normalise(text)
+    cands = [m.group(1) for rx in (DQUOTED_RX, SQUOTED_RX) for m in rx.finditer(t)]
+    for piece in t.split(";"):
+        m = re.search(r"[:=]", piece)
+        for e in (piece[m.end():] if m else piece).split(","):
+            e = e.strip().strip("[](){}").strip()
+            if len(e) >= 2 and e[0] == e[-1] and e[0] in "\"'":
+                e = e[1:-1]
+            cands.append(e)
+    out = set()
+    for c in cands:
+        c = normalise(c)
+        if c:
+            out.add(c)
+            out.update(normalise(f) for f in font_description_families(c))
+    return out
+
+
+def without_paths(value, paths, prefix=""):
+    """The value with the leaves at `paths` (S11's spelling) left out (None), so its literals are not read."""
+    if prefix in paths:
+        return None
+    sub = (lambda k: f"{prefix}.{k}" if prefix else str(k))
+    if isinstance(value, dict):
+        return {k: without_paths(v, paths, sub(k)) for k, v in value.items()}
+    if isinstance(value, list):
+        return [without_paths(v, paths, sub(i)) for i, v in enumerate(value)]
+    return value
+
+
 # ------------------------------------------------------------------------------------------------- evidence
 
 class EvidenceError(Exception):
@@ -633,6 +733,46 @@ def compare(fact_value, ev_value, tolerance, conversion, notation, apple=False) 
     return out
 
 
+def same_value(x, y) -> bool:
+    """Two values spelled as a fact's are the same: the same leaves, literals equal at the quote check's precision,
+    other leaves exactly."""
+    lx, ly = list(leaves(x)), list(leaves(y))
+    if [p for p, _, _ in lx] != [p for p, _, _ in ly]:
+        return False
+    for (_, a, da), (_, b, db) in zip(lx, ly):
+        fa, fb = fact_leaf_literal(a, da), fact_leaf_literal(b, db)
+        if fa is not None and fb is not None:
+            if not equal(fa, fb):
+                return False
+        elif a != b:
+            return False
+    return True
+
+
+def results_differ(x, y, tolerance) -> bool:
+    """The results differ by more than `tolerance` (one number, or per leaf: in some leaf, by more than its)."""
+    lx, ly = list(leaves(x)), list(leaves(y))
+    if [p for p, _, _ in lx] != [p for p, _, _ in ly]:
+        return True
+    for (p, a, da), (_, b, db) in zip(lx, ly):
+        fa, fb = fact_leaf_literal(a, da), fact_leaf_literal(b, db)
+        if fa is not None and fb is not None:
+            t = tolerance.get(p, 0) if isinstance(tolerance, dict) else tolerance
+            if isinstance(t, bool) or not isinstance(t, (int, float)) or not within(fa, fb, t):
+                return True
+        elif a != b:
+            return True
+    return False
+
+
+def pass_pair(a, b, r, inputs, tolerance) -> bool:
+    """Passes a and b differ in the input r alone (the other inputs and the conditions the same) and their results by
+    more than the tolerance."""
+    return (sorted(a.get("conditions", [])) == sorted(b.get("conditions", []))
+            and all(same_value(a[o], b[o]) for o in inputs if o != r)
+            and not same_value(a[r], b[r]) and results_differ(a["result"], b["result"], tolerance))
+
+
 def vector_table_evidence(root: Path) -> set:
     """The evidence files the vector tables under native-theme/tests/vectors/ cite (S2.2 *Checked against their
     references*). The tables' format is scripts/check_function_vectors.py's (M1a), and its measured rows' evidence
@@ -767,8 +907,11 @@ class Run:
     def check_quote_literals(self, item):
         if item.table == "model" or "value" not in item.data:
             return
-        vlits = value_literals(item.data["value"])
-        if not vlits:
+        value = item.data["value"]
+        texts = [] if item.palette else check_facts.text_leaves(
+            self.ctx, value, check_facts.key_info(self.ctx, item.data.get("key"))[4])
+        vlits = value_literals(without_paths(value, {p for p, _ in texts}))
+        if not vlits and not texts:
             return
         textual = [c for c in item.cites if c.data.get("kind") in ("published", "read")]
         if item.palette:
@@ -782,17 +925,23 @@ class Run:
                     groups.append((g, cs))
         for g, cs in groups:
             self.counts["generations"] += 1
-            union = []
+            union, text_union = [], set()
             for c in cs:
                 src = check_facts.parse_source(c.data.get("source"))
                 notation = "text" if not src or src[4] is not None else notation_of(src[1])
                 conv = conversions_of(c.data)
                 quote = c.data.get("quote") if isinstance(c.data.get("quote"), str) else ""
                 union += convert(quote_literals(quote, notation, self.apple_only(c.data)), conv)
+                text_union |= quote_texts(quote)
             for v in vlits:
                 if not any(equal(v, q) for q in union):
                     self.add(item.file, item.ln("value"), f"the value's literal {v} is in no quote serving {g} (as "
                                                           f"written or converted)")
+            for path, t in texts:
+                if normalise(t) not in text_union:
+                    self.add(item.file, item.ln("value"), f"the value's text {t!r}{f' ({path})' if path else ''} is "
+                                                          f"no whole string of a quote serving {g} (a quoted string, "
+                                                          f"a list's entry, a font description's family)")
 
     def check_measured(self, item, cite, runs):
         c = cite.data
@@ -819,10 +968,79 @@ class Run:
             return
         if item.table == "model" or "value" not in item.data:
             return
+        v = item.data["value"]
+        if "inputs" in c and isinstance(v, str) and v.startswith("="):
+            for problem in self.pass_problems(item, cite, value, p):
+                self.add(item.file, cite.ln("evidence"), f"{file}#{form}: {problem}")
+            return
         conv = conversions_of(c)
         notation = "ini" if notation_of(p.name) == "ini" else "data"
         for problem in compare(item.data["value"], value, c.get("tolerance", 0), conv, notation, self.apple_only(c)):
             self.add(item.file, cite.ln("evidence"), f"{file}#{form}: {problem}")
+
+    def pass_problems(self, item, cite, passes, path) -> list:
+        """A measured derivation's evidence (S17 *A measured derivation*): a list of pass tables in a TOML file,
+        each the varied references (`inputs`) as quoted keys, `result`, and `conditions` unless the fact's `when`
+        fixes the scheme, every value spelled as a fact's `value`; for each input and each scheme the fact covers,
+        two passes that differ in that input alone (beyond its quote-check precision) and whose results differ by
+        more than `tolerance`. The result is a fact's value as written: no `conversion` applies to it."""
+        c = cite.data
+        inputs = c.get("inputs")
+        if not check_facts.str_list(inputs) or not inputs:
+            return []
+        if path.suffix != ".toml":
+            return ["a measured derivation's evidence is a TOML file"]
+        if not isinstance(passes, list) or not passes or not all(isinstance(x, dict) for x in passes):
+            return ["names no list of pass tables (a measured derivation, S17)"]
+        ctx = self.ctx
+        _, dim, _, _, typ = check_facts.key_info(ctx, item.data.get("key"))
+        when = item.data.get("when") if isinstance(item.data.get("when"), dict) else {}
+        conds = when.get("conditions") if check_facts.str_list(when.get("conditions")) else []
+        nots = when.get("not_conditions") if check_facts.str_list(when.get("not_conditions")) else []
+        fixed = [x[7:] for x in conds if x.startswith("scheme:")]
+        schemes = set(fixed[:1]) if fixed else {"light", "dark"} - {x[7:] for x in nots if x.startswith("scheme:")}
+        types = {r: check_facts.key_info(ctx, r) for r in inputs}
+        out, scheme_of = [], []
+        for i, ps in enumerate(passes):
+            w = f"pass {i}"
+            out += [f"{w}: {k!r} is neither one of `inputs` nor `result` or `conditions`" for k in ps
+                    if k not in inputs and k not in ("result", "conditions")]
+            for r in inputs:
+                if r not in ps:
+                    out.append(f"{w}: no {r!r}")
+                else:
+                    out += check_facts.value_problems(ctx, ps[r], types[r][1], f"{w}: {r!r}", types[r][4])
+            if "result" not in ps:
+                out.append(f"{w}: no `result`")
+            else:
+                out += check_facts.value_problems(ctx, ps["result"], dim, f"{w}: result", typ)
+            sc = next(iter(schemes)) if len(schemes) == 1 else None
+            if "conditions" in ps:
+                cs = ps["conditions"]
+                if not check_facts.str_list(cs):
+                    out.append(f"{w}: conditions is not a list of condition strings")
+                else:
+                    out += [f"{w}: {x!r} is not a condition (S7.1)" for x in cs if not ctx.ck.cond_ok(x)]
+                    named = [x[7:] for x in cs if x.startswith("scheme:")]
+                    if len(named) > 1:
+                        out.append(f"{w}: its conditions name two schemes")
+                    elif named:
+                        sc = named[0]
+                    elif len(schemes) != 1:
+                        out.append(f"{w}: its conditions name no scheme (the fact's `when` does not fix it)")
+            elif len(schemes) != 1:
+                out.append(f"{w}: no `conditions` (the fact's `when` does not fix the scheme)")
+            scheme_of.append(sc)
+        if out:
+            return out
+        tol = c.get("tolerance", 0)
+        for r in inputs:
+            for s in sorted(schemes):
+                group = [ps for ps, sc in zip(passes, scheme_of) if sc == s]
+                if not any(pass_pair(a, b, r, inputs, tol) for a, b in itertools.combinations(group, 2)):
+                    out.append(f"no two passes under scheme:{s} that differ in {r!r} alone and whose results differ "
+                               f"by more than the tolerance")
+        return out
 
     def check_run_toml(self, harness, run):
         rel = f"docs/evidence/{harness}/{run}/run.toml"
@@ -844,7 +1062,7 @@ class Run:
                 self.add(rel, ln(k), f"unknown table `{k}` (run.toml holds [images.<image>] only)")
         images = data.get("images", {}) if isinstance(data.get("images"), dict) else {}
         folder = self.ctx.root / "docs/evidence" / harness / run
-        on_disk = {d.name for d in folder.iterdir() if d.is_dir()} if folder.is_dir() else set()
+        on_disk = {d.name for d in folder.iterdir() if d.is_dir() and d.name != ANALYSIS} if folder.is_dir() else set()
         required, optional = RUN_FIELDS
         for image, e in images.items():
             where = ln(f"[images.{image}]")
@@ -907,6 +1125,9 @@ class Run:
                 self.counts["legacy"] += 1
                 continue
             if len(parts) == 5 and parts[4] == "run.toml" and RUN_RX.match(parts[3]):
+                runs.add((parts[2], parts[3]))
+                continue
+            if len(parts) >= 6 and parts[4] == ANALYSIS and RUN_RX.match(parts[3]):
                 runs.add((parts[2], parts[3]))
                 continue
             if len(parts) < 6 or not RUN_RX.match(parts[3]):
@@ -1022,6 +1243,30 @@ tolerance = 0
                                                                     "    background-color: $hover_color; }\n"
                                                                     "  opacity: 50%;\n",
     "cache/libadwaita@1.10.0/src/stylesheet/_colors.scss": "// colours\n\n$hover_color: alpha(currentColor, .07);\n",
+    "cache/libadwaita@1.10.0/src/stylesheet/_fonts.scss": 'font-family: "Adwaita Sans", sans-serif;\n'
+                                                          '/* "go-next-symbolic", "go-next" */\n'
+                                                          "  /* 'Noto Sans Mono' */\n",
+    "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml": '''
+[[button.primary.fill]]
+"input.accent" = "#ff0000"
+result = "#ff000080"
+conditions = ["scheme:light"]
+
+[[button.primary.fill]]
+"input.accent" = "#0000ff"
+result = "#0000ff80"
+conditions = ["scheme:light"]
+
+[[button.primary.fill]]
+"input.accent" = "#ff0000"
+result = "#ff000080"
+conditions = ["scheme:dark"]
+
+[[button.primary.fill]]
+"input.accent" = "#0000ff"
+result = "#0000ff80"
+conditions = ["scheme:dark"]
+''',
     "cache/breeze@6.8.2/colors/BreezeLight.colors": "[ColorEffects:Disabled]\nColor=56,56,56\n\n[Colors:Window]\n"
                                                     "BackgroundNormal=239,240,241\n",
     "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Common_themeresources_any.xaml":
@@ -1057,6 +1302,8 @@ _SHADOW = re.search(r"value = \{ layers.*?\] \}", check_facts.SELF_TEST_FILES["d
                     re.S).group(0)
 _SHADOW_TOL = re.search(r"tolerance = \{ \"layers.*\}", check_facts.SELF_TEST_FILES["docs/facts/windows/buttons.toml"]
                         ).group(0)
+
+_PASSES = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml"
 
 # (label, file, old, new, wanted findings as substrings, one per finding); old None: the file is replaced by new (None:
 # removed); old a list of (old, new) pairs: each replaced
@@ -1113,7 +1360,8 @@ SELF_TEST_CASES = [
     ("macOS: an image folder without an entry", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-14/x.toml",
      None, "a = 1\n", ["evidence file cited by no fact", "image folder 'os-probe-macos-14' has no [images"]),
     ("macOS: a run without run.toml", "docs/evidence/os-probe/2026-11-02-run-1/run.toml", None, None,
-     ["missing: a run's run.toml", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'"]),
+     ["missing: a run's run.toml", "maps no image 'os-probe-macos-15'", "maps no image 'os-probe-macos-26'",
+      "maps no image 'os-probe-macos-26'"]),
     ("evidence: an uncited file", "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/extra.txt", None, "x\n",
      ["evidence file cited by no fact"]),
     ("evidence: a file outside an image folder", "docs/evidence/os-probe/2026-11-02-run-1/notes.txt", None, "x\n",
@@ -1173,6 +1421,53 @@ SELF_TEST_CASES = [
     ("analysis: an image its output does not name", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
      "shadows.toml", "/button.png", "/bezel.png", ["bezel.png, which does not exist",
                                                    "button.png:1: evidence file cited by no fact"]),
+    # text values (S17 *The quote check*)
+    ("text: a family the quote lacks", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"', 'value = "Cantarell"',
+     ["the value's text 'Cantarell' is no whole string of a quote serving adwaita"]),
+    ("text: Noto Sans is not Noto Sans Mono", "docs/facts/gnome/text.toml",
+     [('value = "Adwaita Sans"', 'value = "Noto Sans"'), ("_fonts.scss:1\"\nquote = 'font-family: \"Adwaita Sans\", "
+                                                          "sans-serif;'", "_fonts.scss:3\"\nquote = 'Noto Sans Mono'")],
+     None, ["the value's text 'Noto Sans' is no whole string"]),
+    ("text: go-next is not go-next-symbolic", "docs/facts/gnome/text.toml", 'fallbacks = ["go-next"]',
+     'fallbacks = ["go-nex"]', ["'go-nex' (theme_icon.fallbacks.0) is no whole string"]),
+    ("text: case-sensitive", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"', 'value = "adwaita sans"',
+     ["'adwaita sans' is no whole string"]),
+    ("text: a list entry", "docs/facts/gnome/text.toml", '["Adwaita Sans", "sans-serif"]',
+     '["Adwaita Sans", "serif"]', ["'serif' (1) is no whole string"]),
+    ("text: a number in a family is not a literal", "docs/facts/gnome/text.toml", 'value = "Adwaita Sans"',
+     'value = "Adwaita Sans 2"', ["'Adwaita Sans 2' is no whole string"]),
+    # absent = [] (S17 *Absence*): the quote check of the cited definition only
+    ("absence: no name for it", "docs/facts/gnome/more.toml", 'absent = ["box-shadow"]', "absent = []", []),
+    # measured derivations (S17)
+    ("derivation: results that do not differ under dark", _PASSES, 'result = "#0000ff80"\nconditions = ["scheme:dark"]',
+     'result = "#ff000080"\nconditions = ["scheme:dark"]', ["no two passes under scheme:dark that differ in "
+                                                          "'input.accent' alone"]),
+    ("derivation: results within the tolerance", _PASSES, 'result = "#0000ff80"\nconditions = ["scheme:light"]',
+     'result = "#ff010080"\nconditions = ["scheme:light"]', ["no two passes under scheme:light"]),
+    ("derivation: inputs within their precision", _PASSES, '"input.accent" = "#0000ff"\nresult = "#0000ff80"\n'
+     'conditions = ["scheme:light"]', '"input.accent" = "#ff0000"\nresult = "#0000ff80"\nconditions = ["scheme:light"]',
+     ["no two passes under scheme:light"]),
+    ("derivation: passes differing in their conditions too", _PASSES, 'result = "#0000ff80"\nconditions = '
+     '["scheme:light"]', 'result = "#0000ff80"\nconditions = ["scheme:light", "contrast_high"]',
+     ["no two passes under scheme:light"]),
+    ("derivation: a pass without conditions", _PASSES, 'result = "#0000ff80"\nconditions = ["scheme:light"]\n',
+     'result = "#0000ff80"\n', ["pass 1: no `conditions`"]),
+    ("derivation: a pass naming no scheme", _PASSES, 'conditions = ["scheme:light"]', 'conditions = []',
+     ["pass 0: its conditions name no scheme"]),
+    ("derivation: the scheme fixed by when", "docs/facts/macos/buttons.toml", '"preset:macos-tahoe"], variants',
+     '"preset:macos-tahoe", "scheme:dark"], variants', []),
+    ("derivation: a key that is no input", _PASSES, 'result = "#ff000080"\nconditions = ["scheme:light"]',
+     'result = "#ff000080"\n"input.focus" = "#ffffff"\nconditions = ["scheme:light"]',
+     ["pass 0: 'input.focus' is neither one of `inputs`"]),
+    ("derivation: a result without its spelling", _PASSES, 'result = "#ff000080"\nconditions = ["scheme:light"]',
+     'result = 5\nconditions = ["scheme:light"]', ["pass 0: result: a number where the key is a paint"]),
+    ("derivation: an unknown condition", _PASSES, 'conditions = ["scheme:light"]',
+     'conditions = ["scheme:light", "window_hidden"]', ["'window_hidden' is not a condition"]),
+    ("derivation: a path to no list", "docs/facts/macos/buttons.toml", "passes.toml#button.primary.fill",
+     "passes.toml#button.primary.fill.0", ["names no list of pass tables"]),
+    # a run's analysis scripts are not evidence (the ledger's queue #30)
+    ("analysis: a run's analysis script", "docs/evidence/os-probe/2026-11-02-run-1/analysis/measure.py", None,
+     "print(1)\n", []),
     ("a distribution cited", "docs/facts/gnome/more.toml", 'source = "libadwaita@1.10.0 src/stylesheet/widgets/'
      '_buttons.scss:12"', 'source = "archlinux@2026-10-29 x:1"', ["is a distribution snapshot"]),
 ]
@@ -1209,6 +1504,35 @@ SELF_TEST_NOTATIONS = [
      ["srgb(255, 255, 255, 0)", "srgb(255, 255, 255, 255)", "srgb(0, 0, 0, 255)", "srgb(211, 211, 211, 255)"]),
     ("text", "1e-3 and 2.5E+2", ["0.001", "250"]),
     ("data", "display_p3(1, 0.5, 0) srgb(0, 0, 1, 0.5)", ["p3(255, 127.5, 0, 255)", "srgb(0, 0, 255, 127.5)"]),
+    ("text", "<default>'Adwaita Sans 11'</default>", ["11"]),
+    ("xaml", '<CornerRadius x:Key="ControlCornerRadius">4</CornerRadius> CornerRadius="4"', ["4", "4"]),
+]
+
+# (quote, text value, whether a text notation reads it as a whole string; S17 *The quote check*)
+SELF_TEST_TEXTS = [
+    ('font-family: "Adwaita Sans", sans-serif;', "Adwaita Sans", True),
+    ('font-family: "Adwaita Sans", sans-serif;', "sans-serif", True),
+    ('font-family: "Adwaita Sans", sans-serif;', "Adwaita", False),
+    ("font-family: Cantarell;", "Cantarell", True),
+    ("<default>'Adwaita Sans 11'</default>", "Adwaita Sans", True),
+    ("<default>'Adwaita Sans 11'</default>", "Adwaita Sans 11", True),
+    ("<default>'Adwaita Sans 11'</default>", "Adwaita Sans 1", False),
+    ("gtk-font-name = Cantarell Bold 11", "Cantarell", True),
+    ("gtk-font-name = Cantarell SemiBold 11px", "Cantarell", True),
+    ("'Noto Sans Mono 10'", "Noto Sans", False),
+    ("font=Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1", "Noto Sans", True),
+    ("font=Noto Sans Mono,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1", "Noto Sans", False),
+    ("Fonts=Cantarell;DejaVu Sans;", "DejaVu Sans", True),
+    ('gtk_image_new_from_icon_name ("go-next-symbolic");', "go-next-symbolic", True),
+    ('gtk_image_new_from_icon_name ("go-next-symbolic");', "go-next", False),
+    ('@".AppleSystemUIFont"', ".AppleSystemUIFont", True),
+    ('"adwaita sans"', "Adwaita Sans", False),
+    ('"Adwaita   Sans"', "Adwaita Sans", True),
+    ("'Cantarell Bold'", "Cantarell", True),
+    ("'Noto Sans Mono'", "Noto Sans", False),
+    ("'Cantarell Italic Light 15 @wght=200 #tnum=1'", "Cantarell", True),
+    ("[Icons]\nTheme=breeze", "breeze", True),
+    ("[Icons]\nTheme=breeze-dark", "breeze", False),
 ]
 
 # (notation, text, the literals read) on a source that serves only Apple's presets: a point is a logical point (px)
@@ -1233,6 +1557,9 @@ def self_test() -> int:
         got = [str(v) for v in convert([Lit("num", None, x)], names)]
         if got != [f"{x:g}", want]:
             failures.append(f"conversion {names}: got {got}")
+    for quote, text, want in SELF_TEST_TEXTS:
+        if (text in quote_texts(quote)) != want:
+            failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
     if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "percent_to_fraction", "seconds_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
@@ -1309,13 +1636,13 @@ def self_test() -> int:
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
             if label == "good":
-                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 5:
+                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 6:
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
         # an uncommitted evidence file, and the vacuous run
         root = base / "case0"
         run = Run(check_facts.fixture_context(root), root / "cache", set(), check_heads=False)
         run.check()
-        if sum("is not committed" in w for _, _, w in run.findings) != 5:
+        if sum("is not committed" in w for _, _, w in run.findings) != 6:
             failures.append(f"uncommitted: got {run.findings}")
         root = base / "empty"
         check_facts.write_fixture(root, {})
@@ -1342,7 +1669,8 @@ def self_test() -> int:
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
-        print(f"self-test ok ({len(SELF_TEST_NOTATIONS)} notation cases, {len(SELF_TEST_CASES) + 1} fixture cases)")
+        print(f"self-test ok ({len(SELF_TEST_NOTATIONS)} notation cases, {len(SELF_TEST_TEXTS)} text cases, "
+              f"{len(SELF_TEST_CASES) + 1} fixture cases)")
     return 1 if failures else 0
 
 
