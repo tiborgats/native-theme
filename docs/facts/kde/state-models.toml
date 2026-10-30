@@ -5,7 +5,8 @@
 # Qt Widgets (the default flavour): QPushButton and QToolButton through Breeze's QStyle. The variants are the
 # catalogue's that Breeze and the KDE frameworks draw (the identities and keyed variants in their hosts' contexts:
 # the trace's K1.46†, K1.124, K1.155, K1.157, K2.7, K2.10, K2.11, K-RL02†); a disabled button is never down
-# (QAbstractButton releases it when it is disabled)
+# (QAbstractButton releases it when it is disabled) nor focused (QWidget passes the focus on); a tool button is never
+# round (only the push button panel reads _kde_round_button)
 [[model]]
 widget = "button"
 available = true
@@ -15,7 +16,7 @@ densities = []
 flags = ["@recording"]
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { variants = ["circular", "tool"] }]
 rows = ["K1.20", "K1.21", "K1.22", "K1.24", "K1.25", "K1.26", "K1.29", "K1.152", "K-RL02†"]
 
 [[model.cite]]
@@ -63,8 +64,20 @@ kind = "published"
 source = "qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:1145-1150"
 quote = "case QEvent::EnabledChange: if (!isEnabled() && d->down) { d->down = false; d->emitReleased(); }"
 
+[[model.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qwidget.cpp:3400-3403"
+quote = "if (!enable && q->window()->focusWidget() == q) { bool parentIsEnabled = (!q->parentWidget() || q->parentWidget()->isEnabled()); if (!parentIsEnabled || !q->focusNextChild()) q->clearFocus();"
+
+[[model.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4572-4618"
+quote = "bool Style::drawPanelButtonToolPrimitive(const QStyleOption *option, QPainter *painter, const QWidget *widget) const"
+absent = ["roundButton"]
+
 # Kirigami (qqc2-desktop-style's Button, ToolButton and RoundButton, Kirigami's and kirigami-addons' buttons): the
-# style item paints with no widget, so its window is always active for the default look (breezestyle.cpp:4563)
+# style item paints with no widget, so its window is always active for the default look (breezestyle.cpp:4563); a
+# disabled item loses the active focus (qquickitem.cpp:6835-6838)
 [[model]]
 widget = "button"
 when = { conditions = ["flavor:kirigami"] }
@@ -75,7 +88,7 @@ densities = []
 flags = ["@recording"]
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "default"], conditions = ["scheme:light", "scheme:dark", "window_inactive"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }]
+not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["default"], variants = ["tool"] }, { states = ["disabled", "pressed"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }]
 rows = ["Q1.8", "Q1.9", "Q2.4", "Q2.48", "K-KA-26†", "K-KA-43†"]
 
 [[model.cite]]
@@ -112,4 +125,9 @@ quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRo
 kind = "published"
 source = "kirigami@6.31.0 src/controls/ContextualHelpButton.qml:101"
 quote = "cursorShape: Qt.WhatsThisCursor"
+
+[[model.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:6835-6838"
+quote = "if (scope && !effectiveEnable && activeFocus) { da->clearFocusInScope(scope, q, Qt::OtherFocusReason,"
 

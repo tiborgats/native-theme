@@ -637,6 +637,7 @@ source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:17-18"
 quote = "Kirigami.Theme.colorSet: Kirigami.Theme.Button Kirigami.Theme.inherit: false"
 
 # a flat ToolButton inherits its parent's colour set (Kirigami.Theme.inherit: flat)
+
 [[fact]]
 key = "button.body.bindings"
 when = { conditions = ["flavor:kirigami"], variants = ["tool", "flat"] }
@@ -824,6 +825,7 @@ quote = "const char PropertyNames::highlightNeutral[] = \"_kde_highlight_neutral
 
 [[fact]]
 key = "button.body.fill"
+when = { not_conditions = ["window_inactive"], states = ["default"] }
 value = "= kcu_mix(role.button.background, active(role.selection.background), 0.2)"
 rows = ["K1.22"]
 
@@ -898,7 +900,8 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.fill"
-value = "= kcu_mix(role.button.background, active(role.selection.background), 0.2)"
+when = { conditions = ["flavor:kirigami"], states = ["default"] }
+value = "= kcu_mix(role.button.background, role.selection.background, 0.2)"
 rows = ["K1.22"]
 
 [[fact.cite]]
@@ -911,10 +914,25 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
 
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
 [[fact]]
 key = "button.body.stroke.top.paint"
 when = { conditions = ["flavor:kirigami"], states = ["default"] }
-value = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
+value = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
 rows = ["K1.20", "K1.22"]
 
 [[fact.cite]]
@@ -931,11 +949,26 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.right.paint"
 when = { conditions = ["flavor:kirigami"], states = ["default"] }
-value = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
+value = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
 rows = ["K1.20", "K1.22"]
 
 [[fact.cite]]
@@ -952,11 +985,26 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
 when = { conditions = ["flavor:kirigami"], states = ["default"] }
-value = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
+value = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
 rows = ["K1.20", "K1.22"]
 
 [[fact.cite]]
@@ -973,11 +1021,26 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.left.paint"
 when = { conditions = ["flavor:kirigami"], states = ["default"] }
-value = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
+value = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
 rows = ["K1.20", "K1.22"]
 
 [[fact.cite]]
@@ -994,6 +1057,21 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.fill"
@@ -1177,6 +1255,42 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["disabled"] }
+value = "= kcu_mix(role.button.background, role.selection.background, 0.3)"
+rows = ["K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:693-694"
+quote = "if (down && enabled) { bgBrush = KColorUtils::mix(palette.button().color(), highlightColor, Metrics::Blend_Value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:174-176"
+quote = "static constexpr qreal Blend_Value = 0.3;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.top.paint"
 when = { states = ["hover"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1191,6 +1305,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.right.paint"
@@ -1209,6 +1354,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.bottom.paint"
 when = { states = ["hover"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1225,6 +1401,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.left.paint"
 when = { states = ["hover"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1239,6 +1446,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.top.paint"
@@ -1257,6 +1495,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.right.paint"
 when = { states = ["focus_visible"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1271,6 +1540,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
@@ -1289,6 +1589,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.left.paint"
 when = { states = ["focus_visible"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1303,6 +1634,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.top.paint"
@@ -1321,6 +1683,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.right.paint"
 when = { states = ["pressed"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1335,6 +1728,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
@@ -1353,6 +1777,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.left.paint"
 when = { states = ["pressed"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1367,6 +1822,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.20", "K1.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.fill"
@@ -1484,6 +1970,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= alpha(role.selection.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.top.paint"
 when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1498,6 +2015,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.top.dash"
@@ -1532,6 +2080,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.right.dash"
 when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 value = "solid"
@@ -1564,6 +2143,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 value = "solid"
@@ -1594,6 +2204,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -1630,7 +2271,7 @@ quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disab
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "hover"], not_states = ["disabled"] }
-value = "= alpha(active(role.selection.background), 0.125)"
+value = "= alpha(role.selection.background, 0.125)"
 rows = ["K1.24"]
 
 [[fact.cite]]
@@ -1647,6 +2288,21 @@ quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disab
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.fill"
@@ -1665,6 +2321,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= alpha(role.selection.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.top.paint"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -1679,6 +2366,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.top.dash"
@@ -1713,6 +2431,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.right.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
 value = "solid"
@@ -1745,6 +2494,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
 value = "solid"
@@ -1775,6 +2555,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -1811,7 +2622,7 @@ quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disab
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "focus_visible"], not_states = ["disabled"] }
-value = "= alpha(active(role.selection.background), 0.125)"
+value = "= alpha(role.selection.background, 0.125)"
 rows = ["K1.24"]
 
 [[fact.cite]]
@@ -1829,6 +2640,21 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
 quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
 
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["flat"], states = ["checked"] }
@@ -1839,6 +2665,32 @@ rows = ["K1.24"]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
 quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["checked"] }
+value = "= alpha(surface.foreground, 0.125)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
 
 [[fact]]
 key = "button.body.stroke.top.paint"
@@ -1855,6 +2707,37 @@ quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highli
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["checked"] }
+value = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
 
 [[fact]]
 key = "button.body.stroke.top.dash"
@@ -1889,6 +2772,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["checked"] }
+value = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact]]
 key = "button.body.stroke.right.dash"
 when = { variants = ["flat"], states = ["checked"] }
 value = "solid"
@@ -1921,6 +2835,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["checked"] }
+value = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["checked"] }
 value = "solid"
@@ -1951,6 +2896,37 @@ quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highli
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["checked"] }
+value = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -2149,6 +3125,47 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
+value = "= alpha(role.selection.background, 0.3)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:679-680"
+quote = "if (down && enabled) { bgBrush = alphaColor(highlightColor, highlightBackgroundAlpha);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:40"
+quote = "static const qreal highlightBackgroundAlpha = Metrics::Blend_Value;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:174-176"
+quote = "static constexpr qreal Blend_Value = 0.3;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.top.paint"
 when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 value = "= active(role.selection.background)"
@@ -2163,6 +3180,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.top.dash"
@@ -2197,6 +3245,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.right.dash"
 when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 value = "solid"
@@ -2229,6 +3308,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 value = "solid"
@@ -2259,6 +3369,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -2293,6 +3434,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.top.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
 value = "solid"
@@ -2323,6 +3495,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.right.dash"
@@ -2357,6 +3560,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
 value = "solid"
@@ -2387,6 +3621,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus_visible"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -2421,6 +3686,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.top.dash"
 when = { variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
 value = "solid"
@@ -2451,6 +3747,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.right.dash"
@@ -2485,6 +3812,37 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
 value = "solid"
@@ -2515,6 +3873,37 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
 quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
+value = "= role.selection.background"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:710-712"
+quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlightColor; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:118-120"
+quote = "pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Highlight, ret.selectionScheme.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:279-280"
+quote = "} else if (m_window && !m_window->isActive() && m_window->isExposed()) { group = QPalette::Inactive;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -3150,6 +4539,588 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
 quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
+# a disabled flat button under the mouse is drawn: Qt marks a disabled widget hovered (Enter reaches it) and
+# renderButtonFrame returns early only when the flat button is neither hovered, down, checked nor focused
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:3260-3262"
+quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (!QApplication::activePopupWidget() || QApplication::activePopupWidget() == widget->window())) widget->setAttribute(Qt::WA_UnderMouse, true);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4519"
+quote = "bool hovered = option->state & QStyle::State_MouseOver;"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:3260-3262"
+quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (!QApplication::activePopupWidget() || QApplication::activePopupWidget() == widget->window())) widget->setAttribute(Qt::WA_UnderMouse, true);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4519"
+quote = "bool hovered = option->state & QStyle::State_MouseOver;"
+
+[[fact]]
+key = "button.body.stroke.top.dash"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "solid"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:3260-3262"
+quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (!QApplication::activePopupWidget() || QApplication::activePopupWidget() == widget->window())) widget->setAttribute(Qt::WA_UnderMouse, true);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4519"
+quote = "bool hovered = option->state & QStyle::State_MouseOver;"
+
+[[fact]]
+key = "button.body.stroke.right.dash"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "solid"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:3260-3262"
+quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (!QApplication::activePopupWidget() || QApplication::activePopupWidget() == widget->window())) widget->setAttribute(Qt::WA_UnderMouse, true);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4519"
+quote = "bool hovered = option->state & QStyle::State_MouseOver;"
+
+[[fact]]
+key = "button.body.stroke.bottom.dash"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "solid"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:3260-3262"
+quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (!QApplication::activePopupWidget() || QApplication::activePopupWidget() == widget->window())) widget->setAttribute(Qt::WA_UnderMouse, true);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4519"
+quote = "bool hovered = option->state & QStyle::State_MouseOver;"
+
+[[fact]]
+key = "button.body.stroke.left.dash"
+when = { variants = ["flat"], states = ["disabled", "hover"] }
+value = "solid"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+value = "= role.view.disabled.neutral"
+rows = ["K1.24", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+value = "= role.view.disabled.neutral"
+rows = ["K1.24", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+value = "= role.view.disabled.neutral"
+rows = ["K1.24", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+value = "= role.view.disabled.neutral"
+rows = ["K1.24", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:688-691"
+quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutralHighlight ? neutralText(palette) : bgBrush; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact]]
+key = "button.body.fill"
+when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0.125)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= alpha(role.selection.disabled.background, 0.125)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["default", "disabled", "hover"] }
+value = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
+quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:685-687"
+quote = "} else if (isActiveWindow && defaultButton) { bgBrush = alphaColor(highlightColor, 0.125); penBrush = KColorUtils::mix(highlightColor, KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()), 0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:672-673"
+quote = "const QColor &highlightColor = palette.color(!enabled ? QPalette::Disabled : QPalette::Active, QPalette::Highlight);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4563"
+quote = "stateProperties[\"isActiveWindow\"] = widget ? widget->isActiveWindow() : true;"
+
+
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["flat"], states = ["checked", "disabled"] }
@@ -3160,6 +5131,37 @@ rows = ["K1.24"]
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
 quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states = ["checked", "disabled"] }
+value = "= alpha(role.window.disabled.foreground, 0.125)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
 
 [[fact]]
 key = "button.body.stroke.top.paint"
@@ -3176,6 +5178,42 @@ quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highli
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states = ["checked", "disabled"] }
+value = "= kcu_mix(role.window.disabled.background, role.window.disabled.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
 
 [[fact]]
 key = "button.body.stroke.top.dash"
@@ -3210,6 +5248,42 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states = ["checked", "disabled"] }
+value = "= kcu_mix(role.window.disabled.background, role.window.disabled.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
+
+[[fact]]
 key = "button.body.stroke.right.dash"
 when = { variants = ["flat"], states = ["checked", "disabled"] }
 value = "solid"
@@ -3242,6 +5316,42 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states = ["checked", "disabled"] }
+value = "= kcu_mix(role.window.disabled.background, role.window.disabled.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
+
+[[fact]]
 key = "button.body.stroke.bottom.dash"
 when = { variants = ["flat"], states = ["checked", "disabled"] }
 value = "solid"
@@ -3272,6 +5382,42 @@ quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highli
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states = ["checked", "disabled"] }
+value = "= kcu_mix(role.window.disabled.background, role.window.disabled.foreground, token.params.color.frame_contrast)"
+rows = ["K1.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:681-684"
+quote = "bgBrush = hasNeutralHighlight ? alphaColor(neutralText(palette), highlightBackgroundAlpha) : alphaColor(palette.buttonText().color(), 0.125); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
+quote = "_contrastBias = KColorScheme::frameContrast();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/platformtheme.cpp:253-261"
+quote = "case TextColor: palette.setColor(QPalette::Text, color); palette.setColor(QPalette::WindowText, color); palette.setColor(QPalette::ButtonText, color); break; case BackgroundColor: palette.setColor(QPalette::Window, color); palette.setColor(QPalette::Base, color); palette.setColor(QPalette::Button, color);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
 
 [[fact]]
 key = "button.body.stroke.left.dash"
@@ -4023,6 +6169,57 @@ quote = "const auto metric = m_flat ? QStyle::PM_ToolBarIconSize : QStyle::PM_Bu
 
 [[fact]]
 key = "button.icon.icon.fill"
+value = "= role.window.foreground"
+rows = ["K1.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5437"
+quote = "const auto pixmap = _helper->coloredIcon(buttonOption->icon, buttonOption->palette, iconSize, dpr, iconMode, iconState);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1886"
+quote = "KIconLoader::global()->setCustomPalette(palette);"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86"
+quote = "d->text = palette.windowText().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { states = ["disabled"] }
+value = "= role.window.disabled.foreground"
+rows = ["K1.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5437"
+quote = "const auto pixmap = _helper->coloredIcon(buttonOption->icon, buttonOption->palette, iconSize, dpr, iconMode, iconState);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1886"
+quote = "KIconLoader::global()->setCustomPalette(palette);"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86"
+quote = "d->text = palette.windowText().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "button.icon.icon.fill"
 when = { conditions = ["flavor:kirigami"] }
 value = "= surface.foreground"
 rows = ["Q1.8"]
@@ -4042,6 +6239,58 @@ rows = ["Q1.8"]
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:87"
 quote = "\"iconColor\": Qt.colorEqual(controlRoot.icon.color, \"transparent\") ? Kirigami.Theme.textColor : controlRoot.icon.color,"
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["flavor:kirigami"], states = ["disabled"] }
+value = "= role.button.disabled.foreground"
+rows = ["Q1.8"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:60"
+quote = "\"iconColor\": Qt.colorEqual(controlRoot.icon.color, \"transparent\") ? Kirigami.Theme.textColor : controlRoot.icon.color,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:17-18"
+quote = "Kirigami.Theme.colorSet: Kirigami.Theme.Button Kirigami.Theme.inherit: false"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:289"
+quote = "setTextColor(colors.scheme.foreground(KColorScheme::NormalText).color());"
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "flat"], states = ["disabled"] }
+value = "= role.window.disabled.foreground"
+rows = ["Q1.8"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:60"
+quote = "\"iconColor\": Qt.colorEqual(controlRoot.icon.color, \"transparent\") ? Kirigami.Theme.textColor : controlRoot.icon.color,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:289"
+quote = "setTextColor(colors.scheme.foreground(KColorScheme::NormalText).color());"
 
 [[fact]]
 key = "button.menu_indicator.min_width"
@@ -4069,6 +6318,210 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezemetrics.h:84"
 quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
+
+# the push button's menu arrow (drawPushButtonLabelControl): Helper::renderArrow, a stroked chevron in the
+# label role mixed toward its background by arrowShade; a tool button's menu arrow takes other colours
+# (breezestyle.cpp:4423-4462), unmeasured here
+
+[[fact]]
+key = "button.menu_indicator.glyph.size"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "10px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1513"
+quote = "int size = std::min({rect.toRect().width(), rect.toRect().height(), Metrics::ArrowSize});"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:37"
+quote = "static constexpr int ArrowSize = 10;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:84"
+quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { variants = ["menu"] }
+value = "absent"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1511-1578"
+quote = "void Helper::renderArrow(QPainter *painter, const QRectF &rect, const QColor &color, ArrowOrientation orientation) const"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1571-1574"
+quote = "painter->setBrush(Qt::NoBrush); QPen pen(color, PenWidth::Symbol); pen.setCapStyle(Qt::SquareCap); pen.setJoinStyle(Qt::MiterJoin);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.width"
+when = { variants = ["menu"] }
+value = "1.001px"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1571-1574"
+quote = "painter->setBrush(Qt::NoBrush); QPen pen(color, PenWidth::Symbol); pen.setCapStyle(Qt::SquareCap); pen.setJoinStyle(Qt::MiterJoin);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:22"
+quote = "static constexpr qreal Symbol = 1.001;"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.cap"
+when = { variants = ["menu"] }
+value = "square"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1571-1574"
+quote = "painter->setBrush(Qt::NoBrush); QPen pen(color, PenWidth::Symbol); pen.setCapStyle(Qt::SquareCap); pen.setJoinStyle(Qt::MiterJoin);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.join"
+when = { variants = ["menu"] }
+value = "miter"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:1571-1574"
+quote = "painter->setBrush(Qt::NoBrush); QPen pen(color, PenWidth::Symbol); pen.setCapStyle(Qt::SquareCap); pen.setJoinStyle(Qt::MiterJoin);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "= kcu_mix(role.button.foreground, role.button.background, 0.15)"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5377-5378"
+quote = "const auto arrowColor(_helper->arrowColor(palette, textRole)); _helper->renderArrow(painter, arrowRect, arrowColor, ArrowDown);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5349-5362"
+quote = "if (flat) { if (hasFocus && sunken) { textRole = QPalette::WindowText; } else { textRole = QPalette::WindowText; } } else if (hasFocus) { textRole = QPalette::ButtonText; } else { textRole = QPalette::ButtonText; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:139-142"
+quote = "QColor arrowColor(const QPalette &palette, QPalette::ColorRole role) const { return arrowColor(palette, palette.currentColorGroup(), role); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:213-214"
+quote = "case QPalette::ButtonText: return KColorUtils::mix(palette.color(group, QPalette::ButtonText), palette.color(group, QPalette::Button), arrowShade);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
+quote = "static const qreal arrowShade = 0.15;"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { variants = ["menu", "flat"], not_variants = ["tool"] }
+value = "= kcu_mix(role.window.foreground, role.window.background, 0.15)"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5377-5378"
+quote = "const auto arrowColor(_helper->arrowColor(palette, textRole)); _helper->renderArrow(painter, arrowRect, arrowColor, ArrowDown);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5349-5362"
+quote = "if (flat) { if (hasFocus && sunken) { textRole = QPalette::WindowText; } else { textRole = QPalette::WindowText; } } else if (hasFocus) { textRole = QPalette::ButtonText; } else { textRole = QPalette::ButtonText; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:139-142"
+quote = "QColor arrowColor(const QPalette &palette, QPalette::ColorRole role) const { return arrowColor(palette, palette.currentColorGroup(), role); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:211-212"
+quote = "case QPalette::WindowText: return KColorUtils::mix(palette.color(group, QPalette::WindowText), palette.color(group, QPalette::Window), arrowShade);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
+quote = "static const qreal arrowShade = 0.15;"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { variants = ["menu"], not_variants = ["tool"], states = ["disabled"] }
+value = "= kcu_mix(role.button.disabled.foreground, role.button.disabled.background, 0.15)"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5377-5378"
+quote = "const auto arrowColor(_helper->arrowColor(palette, textRole)); _helper->renderArrow(painter, arrowRect, arrowColor, ArrowDown);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5349-5362"
+quote = "if (flat) { if (hasFocus && sunken) { textRole = QPalette::WindowText; } else { textRole = QPalette::WindowText; } } else if (hasFocus) { textRole = QPalette::ButtonText; } else { textRole = QPalette::ButtonText; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:139-142"
+quote = "QColor arrowColor(const QPalette &palette, QPalette::ColorRole role) const { return arrowColor(palette, palette.currentColorGroup(), role); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:213-214"
+quote = "case QPalette::ButtonText: return KColorUtils::mix(palette.color(group, QPalette::ButtonText), palette.color(group, QPalette::Button), arrowShade);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
+quote = "static const qreal arrowShade = 0.15;"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { variants = ["menu", "flat"], not_variants = ["tool"], states = ["disabled"] }
+value = "= kcu_mix(role.window.disabled.foreground, role.window.disabled.background, 0.15)"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5377-5378"
+quote = "const auto arrowColor(_helper->arrowColor(palette, textRole)); _helper->renderArrow(painter, arrowRect, arrowColor, ArrowDown);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5349-5362"
+quote = "if (flat) { if (hasFocus && sunken) { textRole = QPalette::WindowText; } else { textRole = QPalette::WindowText; } } else if (hasFocus) { textRole = QPalette::ButtonText; } else { textRole = QPalette::ButtonText; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:139-142"
+quote = "QColor arrowColor(const QPalette &palette, QPalette::ColorRole role) const { return arrowColor(palette, palette.currentColorGroup(), role); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:211-212"
+quote = "case QPalette::WindowText: return KColorUtils::mix(palette.color(group, QPalette::WindowText), palette.color(group, QPalette::Window), arrowShade);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
+quote = "static const qreal arrowShade = 0.15;"
 
 [[fact]]
 key = "button.values.icon_text_gap"
@@ -4362,6 +6815,51 @@ rows = ["Q2.8"]
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
 quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button"
+
+# RoundButton paints its own background (no Breeze frame, no default look); its checked and pressed fill,
+# Qt.tint over an HSV interpolation (ColorUtils.linearInterpolation), has no function in S2.2: unmeasured
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_states = ["checked", "pressed", "disabled"] }
+value = "= surface.background"
+rows = ["Q1.9"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:84-91"
+quote = "color: { if (controlRoot.checked || controlRoot.down) { return Qt.tint(Kirigami.Theme.textColor, Qt.alpha(borderColor, 0.8)) } else if (controlRoot.flat) { return Qt.alpha(Kirigami.Theme.backgroundColor, 0) } else { return Kirigami.Theme.backgroundColor"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
+quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button Kirigami.Theme.inherit: flat && !down && !checked"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["disabled"], not_states = ["checked", "pressed"] }
+value = "= role.button.disabled.background"
+rows = ["Q1.9"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:84-91"
+quote = "color: { if (controlRoot.checked || controlRoot.down) { return Qt.tint(Kirigami.Theme.textColor, Qt.alpha(borderColor, 0.8)) } else if (controlRoot.flat) { return Qt.alpha(Kirigami.Theme.backgroundColor, 0) } else { return Kirigami.Theme.backgroundColor"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
+quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button Kirigami.Theme.inherit: flat && !down && !checked"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:273-274"
+quote = "if (!parentItem->isEnabled()) { group = QPalette::Disabled;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:300"
+quote = "setBackgroundColor(colors.scheme.background(KColorScheme::NormalBackground).color());"
 
 [[fact]]
 key = "button.body.fill"
@@ -4659,6 +7157,7 @@ source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:94-95"
 quote = "border.width: controlRoot.flat && !(controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted) ? 0 : 1"
 
 # a rectangle behind the button, 1 px lower, black at 0.15
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
