@@ -1,0 +1,20 @@
+# The units of the 0.8.0 model (specification S6.1, ADD-A114; the M1a design,
+# decision 1): scripts/generate_widgets.py generates the typed widgets of the
+# enabled units, and scripts/check_facts_trace.py checks their trace rows.
+
+# An enabled unit: the catalogue entries it holds. `slice` also holds the
+# colour roles and the slice's tokens, written by hand (check_facts_trace.py's
+# SLICE_EXTRA).
+slice = ["button"]
+
+# Values an enabled unit defers, per widget, each to the named later unit,
+# whose commit ends the deferral: the button's `Placement` values to S13's
+# placement unit (M3).
+[deferred.button]
+menu_placement = "placement"
+scaffold_placement = "placement"
+
+# The units written by hand, never generated, each enabled or not: S13's
+# placement (its data types are in; its strategies and `place()` come at M3).
+[hand_written]
+placement = false

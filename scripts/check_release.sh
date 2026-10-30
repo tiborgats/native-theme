@@ -1129,6 +1129,13 @@ else
 fi
 run_check "data documents: fact citations self-test" \
     python3 scripts/check_fact_citations.py --self-test
+# The 0.8.0 model's typed widgets (specification S6.1): the declarations
+# generated under native-theme/src/next/widgets/ are what the catalogue and
+# scripts/widget_units.toml state, until the catalogue is archived.
+run_check "data documents: the generated widgets match the catalogue" \
+    python3 scripts/generate_widgets.py --check
+run_check "data documents: widget generator self-test" \
+    python3 scripts/generate_widgets.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

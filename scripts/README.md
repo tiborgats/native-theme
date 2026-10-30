@@ -749,9 +749,10 @@ line in many components), its parts (names, the parent a part nests in, the
 *(element)* mark and note, the field list) and its widget values (name and
 the type the catalogue states), with the source line of each. Variants, sizes
 and flags are prose in the catalogue, so their items' text and backticked
-names are given as they stand. A module, imported by `check_spec_names.py` and
-`check_spec_entries.py` and meant for the widget-declaration generator and the
-facts checker; its docstring states the API and the reading rules. Run alone
+names are given as they stand; `shared_types` reads the *Shared value types*
+table. A module, imported by `check_spec_names.py`, `check_spec_entries.py`,
+`generate_widgets.py` and the facts checker; its docstring states the API and
+the reading rules. Run alone
 it prints one line per entry (line, kind, name, parts, values); `--self-test`
 runs the rules on a synthetic catalogue.
 
@@ -1071,15 +1072,45 @@ python3 scripts/check_function_vectors.py
 python3 scripts/check_function_vectors.py --self-test
 ```
 
+## generate_widgets.py
+
+Generates the 0.8.0 model's typed widgets from the widget catalogue
+(specification S5, S6.1): for each widget of the units
+`scripts/widget_units.toml` enables, `native-theme/src/next/widgets/gen_<widget>.rs`
+(the `ThemeParts` derive's input, a `#[part(...)]` per part with its fields
+and marks; the widget's values struct; the entry's own enums), and
+`gen_index.rs` (`WidgetKind`, `Variant`, `TypedPart`, `WidgetsPatch`,
+`WidgetValuesPatch`, the shared value types the units use, the widgets' slots
+and the registry's list), each through `rustfmt`. It reads the catalogue
+through `spec_catalogue.py` only, never touches the module's hand-written
+`mod.rs` and `tests.rs`, and leaves out the values a unit defers to a later
+unit (the button's `Placement` values, until M3's placement unit). The units
+file lists the enabled units, the deferrals with their units, and the
+hand-written units, enabled or not; a deferral to an enabled unit is an
+input error. `--check` writes nothing and exits 1 when a generated file
+differs or is stale (in `check_release.sh`); a construct the generator does
+not handle exits 2 naming it. `--self-test` runs the reading rules and the
+refusals on a synthetic catalogue. Deleted once the catalogue is archived,
+after which the generated code is the source.
+
+Requires Python 3.11 and rustfmt.
+
+```sh
+python3 scripts/generate_widgets.py
+python3 scripts/generate_widgets.py --check
+python3 scripts/generate_widgets.py --self-test
+```
+
 ## check_facts_trace.py
 
 Checks that every live trace row of the checked units (the specification's
 traceability, S20) is in a fact's or a state-model entry's `rows` of its
 platform's `docs/facts/` directory, or carries a verdict, on the platforms
 whose presets exist (the new model's `native-theme/src/next/presets/`).
-`--enabled` checks the units of `scripts/widget_units.toml` (until it
-exists, the slice: `button`, the colour roles and the slice's tokens, with
-button's `Placement` values deferred and `token.behavior.scroll` staged),
+`--enabled` checks the units of `scripts/widget_units.toml` (the slice:
+`button`, the colour roles and the slice's tokens, with button's `Placement`
+values deferred and `token.behavior.scroll` staged; the same slice while the
+file does not exist),
 `--unit <unit>` one unit, and no option every trace line. A target lies in
 a unit by its leading paths (braces expanded), and a rule naming a context
 widget waits until that widget is enabled. Prints one line per finding

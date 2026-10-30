@@ -4,6 +4,7 @@
 use super::blocks::Table;
 use super::roles::ColorRoles;
 use super::tokens::Tokens;
+use super::widgets::{Variant, WidgetKind};
 
 /// One field of a block or a part: its path, its type and its marks.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -84,6 +85,46 @@ pub(crate) enum BlockForm {
     },
 }
 
+/// One part of a typed widget, as its catalogue entry states it (S5, S6.3).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct PartInfo {
+    /// The part's name, as TOML and paths spell it.
+    pub(crate) name: &'static str,
+    /// The widget's root part: never absent as a whole, never an element.
+    pub(crate) root: bool,
+    /// Queried as an element of its own (the catalogue's *(element)*).
+    pub(crate) element: bool,
+    /// The part it nests in, where its bullet names one; else the root.
+    pub(crate) parent: Option<&'static str>,
+    /// The whole part may be `Absent` (S6.3).
+    pub(crate) may_be_absent: bool,
+    /// The part's `PartStyle` fields, exactly the catalogue's list, with
+    /// their marks there.
+    pub(crate) fields: &'static [FieldInfo],
+}
+
+/// A typed widget's tables: its parts, its values, its typed variants.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct WidgetInfo {
+    /// The widget.
+    pub(crate) kind: WidgetKind,
+    /// The widget's name, as TOML and paths spell it.
+    pub(crate) name: &'static str,
+    /// The parts, in the catalogue's order, the root first.
+    pub(crate) parts: &'static [PartInfo],
+    /// The widget values' table: `<widget>.values.…`.
+    pub(crate) values: &'static [FieldInfo],
+    /// The typed variants the widget declares (S10).
+    pub(crate) variants: &'static [Variant],
+}
+
+impl WidgetInfo {
+    /// The part named `name`.
+    pub(crate) fn part(&self, name: &str) -> Option<&'static PartInfo> {
+        self.parts.iter().find(|part| part.name == name)
+    }
+}
+
 /// A field's info before a place's mark; the placeholder [`absent_but`]
 /// overwrites, slot by slot.
 const UNSET: FieldInfo = FieldInfo {
@@ -151,6 +192,62 @@ pub(crate) const fn names_values(fields: &[FieldInfo], required: &[&str]) -> boo
     true
 }
 
+/// The fields of `fields` named in `names`, in that order, each named in
+/// `absent` marked may be `Absent` (a part's field list and its catalogue
+/// marks, S6.3), `N` being `names.len()`; the derive asserts beside it, by
+/// [`names_fields`], that every name is a field.
+pub(crate) const fn select<const N: usize>(
+    fields: &[FieldInfo],
+    names: &[&str],
+    absent: &[&str],
+) -> [FieldInfo; N] {
+    let mut out = [UNSET; N];
+    let mut rest = names;
+    let mut slots: &mut [FieldInfo] = &mut out;
+    while let (Some((name, tail)), Some((slot, slots_tail))) =
+        (rest.split_first(), slots.split_first_mut())
+    {
+        let mut held = fields;
+        while let Some((field, others)) = held.split_first() {
+            if same(field.path, name) {
+                *slot = *field;
+                if self::names(absent, name) {
+                    slot.may_be_absent = true;
+                }
+            }
+            held = others;
+        }
+        rest = tail;
+        slots = slots_tail;
+    }
+    out
+}
+
+/// Whether every name in `names` is a field of `fields`.
+pub(crate) const fn names_fields(fields: &[FieldInfo], names: &[&str]) -> bool {
+    let mut rest = names;
+    while let Some((name, tail)) = rest.split_first() {
+        let mut found = false;
+        let mut held = fields;
+        while let Some((field, others)) = held.split_first() {
+            if same(field.path, name) {
+                found = true;
+            }
+            held = others;
+        }
+        if !found {
+            return false;
+        }
+        rest = tail;
+    }
+    true
+}
+
+/// Whether `a` and `b` are the same text, at compile time.
+const fn same(a: &str, b: &str) -> bool {
+    a.len() == b.len() && starts_with(a, b)
+}
+
 /// Whether `text` starts with `prefix`, byte by byte so it runs at compile
 /// time.
 const fn starts_with(text: &str, prefix: &str) -> bool {
@@ -179,6 +276,17 @@ const fn names(list: &[&str], name: &str) -> bool {
         rest = tail;
     }
     false
+}
+
+/// The typed widgets' tables (S5, S6.1): `widgets.<widget>.<part>.…` and
+/// `widgets.<widget>.values.…` in TOML.
+pub(crate) fn widgets() -> &'static [WidgetInfo] {
+    super::widgets::WIDGETS
+}
+
+/// The typed widget named `name`.
+pub(crate) fn widget(name: &str) -> Option<&'static WidgetInfo> {
+    widgets().iter().find(|widget| widget.name == name)
 }
 
 /// The colour roles' table (S3): `colors.<scheme>.…` in TOML.

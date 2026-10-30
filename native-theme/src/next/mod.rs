@@ -104,7 +104,7 @@ pub use roles::{
     StatusColorsPatch, StatusRoles, StatusRolesPatch, SurfaceRole, SurfaceRoles, SurfaceRolesPatch,
     SurfaceSet,
 };
-pub use selector::{Direction, PartRef, Scheme, SizeClass, VariantRef, WidgetRef};
+pub use selector::{Direction, PartRef, Scheme, SizeClass, VariantRef, WidgetOrPart, WidgetRef};
 pub use tokens::{
     Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
     FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens, IconTokensPatch,
@@ -124,4 +124,4 @@ pub use units::{
     Axes, Deg, FontSize, Fraction, Length, Ms, Point, Px, Rect, Scalar, Sides, Size, ViewBox,
 };
 pub use value::{SchemeMap, SurfaceMap, Value};
-pub use widgets::{TypedPart, Variant, WidgetKind};
+pub use widgets::*;

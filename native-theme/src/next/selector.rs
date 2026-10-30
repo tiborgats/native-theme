@@ -27,6 +27,17 @@ pub enum PartRef {
     },
 }
 
+/// A widget, or one of its parts: the one field where a selector or a
+/// substitution names either (S1); a part names its widget, so the two
+/// cannot disagree.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum WidgetOrPart {
+    /// A whole widget.
+    Widget(WidgetRef),
+    /// A part of a widget.
+    Part(PartRef),
+}
+
 /// A variant: the catalogue's typed one, or a keyed one a preset declares.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum VariantRef {

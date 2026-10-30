@@ -7,7 +7,7 @@ Reads the traceability (`docs/todo_v0.7.1_model-completeness-spec-trace-<platfor
 Appendix A rows less the withdrawn ones), the facts and state-model entries (`docs/facts/<platform>/*.toml`, as
 scripts/check_facts.py loads them; `imported/` and `staged/` are no facts), which presets exist
 (check_facts.existing_presets: the new model's `native-theme/src/next/presets/<id>.toml`) and the units
-(`scripts/widget_units.toml`, written by M1a's task 6; until it exists, the built-in slice below).
+(`scripts/widget_units.toml`, scripts/generate_widgets.py's list; until it exists, the built-in slice below).
 
 Run from the repository root:
 
@@ -46,9 +46,10 @@ widgets: the model cannot state a rule under a context it does not hold (`Widget
 every enabled unit; `--unit <unit>` that unit, the file's other units counting as enabled.
 
 The units: `scripts/widget_units.toml` maps each enabled unit to its entries (`slice = ["button"]`), a widget name, a
-`component.<key>` or a target prefix, and may hold `deferred = { <widget> = ["<value>", …] }`, values a unit
-defers (`button.values.menu_placement`, until M3's placement unit; the M1a design's decision 1). Any other shape is
-an input error. The slice unit holds, besides its widgets, the colour roles and the slice's tokens (SLICE_EXTRA: the
+`component.<key>` or a target prefix, and may hold `[deferred.<widget>]`, `<value> = "<unit>"`, values a unit
+defers to a later unit (`button.values.menu_placement`, until M3's placement unit; the M1a design's decision 1),
+and `[hand_written]`, `<unit> = <enabled>`, the units written by hand, which hold no entries here.
+scripts/generate_widgets.py checks the deferrals' units; any other shape is an input error. The slice unit holds, besides its widgets, the colour roles and the slice's tokens (SLICE_EXTRA: the
 plan's M1a scope, S4.1 motion, S4.2 caret and behaviour, S4.4 text, S4.5 icons, the focus indicator, and S4.6's
 groups the plan names, `pointer_repeat`, `color`, `opacity`), and keeps `token.behavior.scroll` staged to the
 `scroll_view` unit (SLICE_STAGED; spec ADD-A120). Until the file exists the units are SLICE alone, with button's two
@@ -133,13 +134,16 @@ def read_units(root: Path) -> dict:
         raise InputError(f"{UNITS}: {err}") from err
     deferred = data.get("deferred", {})
     if not isinstance(deferred, dict) or not all(
-            isinstance(w, str) and isinstance(vs, list) and all(isinstance(v, str) for v in vs)
+            isinstance(w, str) and isinstance(vs, dict) and all(isinstance(u, str) for u in vs.values())
             for w, vs in deferred.items()):
-        raise InputError(f"{UNITS}: `deferred` is not a table of widgets to lists of value names")
+        raise InputError(f"{UNITS}: `deferred` is not a table of widgets to tables of value names to units")
+    hand = data.get("hand_written", {})
+    if not isinstance(hand, dict) or not all(isinstance(v, bool) for v in hand.values()):
+        raise InputError(f"{UNITS}: `hand_written` is not a table of unit names to booleans")
     dpaths = tuple(f"{w}.values.{v}" for w, vs in deferred.items() for v in vs)
     out = {}
     for name, entries in data.items():
-        if name == "deferred":
+        if name in ("deferred", "hand_written"):
             continue
         if not isinstance(entries, list) or not all(isinstance(e, str) and e for e in entries):
             raise InputError(f"{UNITS}: unit `{name}` is not a list of widget names or target prefixes")
@@ -464,7 +468,8 @@ def self_test() -> int:
         if rows_of(found) != sorted(want) or tallies["gnome"].verdicts != 1 or tallies["macos"].carried != 1:
             failures.append(f"every line: got {found}, {tallies['gnome']}, {tallies['macos']}")
         # the units file: another unit, its deferral; the slice from the file keeps the roles and tokens
-        units = 'slice = ["button"]\nbadges = ["badge", "window"]\ndeferred = { button = ["menu_placement"] }\n'
+        units = ('slice = ["button"]\nbadges = ["badge", "window"]\n[deferred.button]\n'
+                 'menu_placement = "placement"\n[hand_written]\nplacement = false\n')
         found, _, _ = run(presets=("adwaita",), units=units, unit="badges")
         if rows_of(found) != [("gnome", "GN-1.6"), ("gnome", "GN-1.7")]:
             failures.append(f"unit badges: got {found}")
@@ -484,7 +489,9 @@ def self_test() -> int:
         found, _, _ = run(presets=("adwaita",), units=units_open, unit="slice")
         if ("gnome", "GN-1.4") not in rows_of(found) or ("gnome", "GN-1.10") in rows_of(found):
             failures.append(f"no deferral in the file: GN-1.4's menu_placement not checked: {found}")
-        for bad in ('slice = "button"\n', 'slice = ["button"]\ndeferred = ["x"]\n', "slice = [\n"):
+        for bad in ('slice = "button"\n', 'slice = ["button"]\ndeferred = ["x"]\n',
+                    'slice = ["button"]\ndeferred = { button = ["menu_placement"] }\n',
+                    'slice = ["button"]\nhand_written = ["placement"]\n', "slice = [\n"):
             try:
                 write_fixture(base / "bad", units=bad)
                 read_units(base / "bad")
