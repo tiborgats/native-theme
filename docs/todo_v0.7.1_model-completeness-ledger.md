@@ -127,6 +127,7 @@ rationale changes (the maintainer). Each with its reporter, status and the commi
 | 28 | 2 | spec S11's Spelling, S17; `check_facts.py` | a free string value (`font.family = ".AppleSystemUIFont"`) has no spelling, so a font family cannot be stated: spell a `Value<String>` as a quoted string, compared exactly | the macOS lane | open: with #27's batch |
 | 29 | 2 | spec S17 | a measured value that follows an input (the default button's fill and the accent) cannot be stated as a derivation without a published source: a measured derivation cites evidence under at least two values of its operands (the accent passes), and the gate evaluates the expression over each | the macOS lane | open: with #27's batch, after the probe's accent pass |
 | 30 | 1 | `check_fact_citations.py` | a run's `analysis/` folder (the committed analysis scripts) is flagged as uncited evidence: exempt it as README.md and `run.toml` are | the macOS lane | open |
+| 31 | 1 | `convert_inheritance_rules.py`; `check_ledger.py`; `check_facts.py` | S19.2 converts today's inheritance rules: `[defaults_internal]`, `[border_inheritance]`, `[font_inheritance]` and `[text_scale_inheritance]` are inheritance rules as `[uniform]` and `[per_platform]` are (S19.2 names those two as its examples; only `[wrong_safety_nets]` is excluded), so the converter covers them too; `check_ledger.py` lists `staged` among the folders that are not platforms; `check_facts.py` reads a quoted string value where the key's type is text (#28) | P1's report (decided by the orchestrator) | open: the next checker-fix batch |
 
 ## Unmeasured register
 
@@ -156,7 +157,8 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 | A — Android host | **yes** (2026-10-30): the emulator image is API 37.1 rev 9 (Android 17's stable release, 16 KB pages; `android-system-image@37.1-r9` in `sources.toml`), booting under KVM on `ubuntu-24.04` in 25–35 s; `tools/android-host` (Gradle 9.8.2, AGP 9.5.0, Kotlin 2.4.21, Compose Material 3 1.5.0-beta02 with the Compose BOM's 1.13.0-beta02) renders five button styles × five states × light and dark with `captureToImage()`, byte-identical across runs and CPUs. For the lanes: the pressed state is Android's own ripple, measured, not computed from the 0.10 token; one activity per capture (a reused ripple drawer draws nothing); PNGs carry a 16 dp margin, the index gives the bounds; 1 dp = 2 px on the 320-dpi screen; the Compose foundation and UI the app runs (1.13.0-beta02) are one step past the source cache's tree (1.13.0-beta01): cite them at the runtime's release | [40983911425](https://github.com/tiborgats/native-theme/actions/runs/40983911425) | merged into `v0.8.0-tools` |
 
 `scripts/check_ledger.py --final` (M4) needs two things the plan leaves open, to be settled before M4: the path of
-S19.2's staged inheritance file (named when M1a writes `convert_inheritance_rules.py`; passed as `--staged-file`),
+S19.2's staged inheritance file (`docs/facts/staged/inheritance-bases.toml`, written by
+`scripts/convert_inheritance_rules.py` at M1a; passed as `--staged-file`),
 and a per-fact table of drift comparisons in this ledger, which the script then reads (until then `--final` reports
 the drift rule as a finding).
 
