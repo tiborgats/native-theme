@@ -27,7 +27,7 @@ and each cell's configuration, title, view tree and frame), `solved/run1.toml` (
 captures: its pixel counts, the channels' alpha spread, the five commonest solved colours), `press1/index.toml` and
 `focus1/index.toml` (the press and focus passes' indexes), `differ-levels.txt` and `press-differ-levels.txt` (the files
 that differ between each pass's two runs, by how much), the press pass's medium crops of the non-glass styles and the
-render pass's `isHighlighted` crops they are compared with (`press1/screen/…`, `run1/screen/…`), and `analysis.toml`,
+render pass's `isHighlighted` crops they are compared with (`press1/screen/…`, `run1/screen/…`), the activity indicator specimens' crops over black and white from both render runs (`run1/screen/…`, `run2/screen/…`: the bezel is read only where the runs agree outside the indicator), and `analysis.toml`,
 the output of `analysis/read_buttons.py` over them (its docstring is the method; it names each file it reads as
 `input_image`). The rest of the run (the captures over black and white, the `drawHierarchy` drawings, the full
 screenshots, the solved layer PNGs, the second runs, the SDK headers, the logs, about 1.2 GB) stays in the run's

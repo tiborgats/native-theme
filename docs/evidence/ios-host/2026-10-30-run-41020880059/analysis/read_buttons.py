@@ -44,6 +44,11 @@ a fact's value for its key (lengths unitless, in points, which are logical px; f
   `subtitle_gap_frames` (the subtitle specimen) the gap between the two labels' frames.
 - `subtitle_fill`, `subtitle_font_family`, `subtitle_font_size` (the subtitle specimen): the second label's colour and
   font.
+- `icon_fill` (an image specimen): the image view's tint where its composite over `fill` occurs in the solve.
+- `menu_indicator_gap`, `menu_indicator_margin_left`, `menu_indicator_margin_right`, `menu_indicator_anchor`,
+  `menu_indicator_size` (a drawn indicator): the gap from the title's frame to the indicator's, the space between the
+  indicator and the trailing content inset (none is set before it: 0), "inline" where the indicator is centred (to a device pixel) on the
+  button's height, "auto" (its box is its image's).
 - `label` (an image with no title): "absent" where the view tree holds no UILabel.
 - `menu_indicator`: "drawn" where the view tree holds an image view the specimen sets no image for (a menu's
   indicator), else "absent".
@@ -56,6 +61,20 @@ true where borderless, bordered, borderedTinted and borderedProminent read as pl
 the render pass's `isHighlighted` cell (no touch): `max_level_difference` and `pixels_over_2_levels` over the button's
 frame and 2 pt around it, both crops from the system column at medium; `title_color_same` and `held` (the touch was
 down and `isHighlighted` true at the capture).
+
+`[forms.<appearance>.<specimen>.<state>]`: the specimens that are no configuration (the system types, the bar
+items, the back button, the paste control, the route picker), system column: `fill` by the cells' rule (a bar
+item's or back button's from its own subtree of the view tree, `fill_views`, the bar's material being the bar's),
+or "unread" with `unread` saying why; `label_fill`, `font_family`, `font_size`, `font_weight` (UIFont's weight
+trait) of the item's title label; `icon_fill`, the glyph's colour: the solve's commonest colour where no bezel is
+drawn (`glyph_solved`), else the glyph view's tint where its composite over the bezel occurs in the solve
+(`icon_check`), or a bar item's glyph view's tint; `padding_*` of a UIButton type (its glyph views inside the
+bounds); `min_width`, `min_height` "auto" where the frame is the intrinsic size; `stroke`, `shadow`, `opacity` from
+the item's subtree. The title fonts' `font_weight` in `[cells]` likewise.
+
+`[text_styles.<style>.<legibility>]`: each text style's font at the default category (L): `line_height` its
+ascender less its descender plus its leading (the line spacing TextKit lays it out with), `weight` its weight trait,
+`name`.
 
 `[focus]`: the iPad's focus pass: `focus_system`, `interface_idiom`, and `can_become_focused_any` (whether any button
 could become focused).
@@ -104,6 +123,33 @@ def toml_value(v):
     return '"' + str(v).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def stable_outside_indicator(folder, x, crops):
+    """Whether run1's and run2's crops over black and white agree outside the activity indicator's frame (2 pt
+    around it): run2/screen/... is committed beside run1/screen/... for these specimens."""
+    ind = [w for w in x["view"] if w["class"] == "UIActivityIndicatorView"]
+    if not ind:
+        return False
+    fx, fy = x["frame_pt"][0], x["frame_pt"][1]
+    ix, iy, iw, ih = ind[0]["frame_pt"]
+    box = ((fx + ix - 2) * SCALE, (fy + iy - 2) * SCALE, (fx + ix + iw + 2) * SCALE, (fy + iy + ih + 2) * SCALE)
+    for crop in crops:
+        a_path, b_path = folder / "run1" / crop, folder / "run2" / crop
+        with Image.open(a_path) as ia, Image.open(b_path) as ib:
+            a, b = ia.convert("RGB"), ib.convert("RGB")
+            if a.size != b.size:
+                return False
+            w, h = a.size
+            da, db = a.tobytes(), b.tobytes()
+            for yy in range(h):
+                for xx in range(w):
+                    if box[0] <= xx < box[2] and box[1] <= yy < box[3]:
+                        continue
+                    i = (yy * w + xx) * 3
+                    if da[i:i + 3] != db[i:i + 3]:
+                        return False
+    return True
+
+
 def safe(name):
     return name.replace("+", "__")
 
@@ -146,14 +192,21 @@ def main(folder):
         crops = [x["screen"].replace("/system/", f"/{b}/") for b in ("black", "white")]
         if style in GLASS:
             reasons.append("a Liquid Glass style: the solve's single-layer model does not describe it")
-        if "activity_indicator" in spec:
-            reasons.append("the activity indicator never stops: its crops are no stable reading")
+        if "activity_indicator" in spec and style not in ("plain", "gray", "tinted", "filled"):
+            reasons.append("the indicator's crops of the aliases and glass styles are not compared between the runs")
+        elif "activity_indicator" in spec:
+            stable = stable_outside_indicator(folder, x, crops)
+            cell["stable_outside_indicator"] = stable
+            if not stable:
+                reasons.append("the two runs' crops differ outside the activity indicator")
         if layer is None:
             reasons.append("no solved layer")
         elif layer["alpha_spread_levels"] > 2:
             reasons.append(f"the solve's alpha spread is {layer['alpha_spread_levels']} levels")
+        elif layer["inconsistent"] > 0:
+            reasons.append(f"{layer['inconsistent']} pixels are no layer (white below black)")
         for crop in crops:
-            if crop in differ:
+            if crop in differ and "activity_indicator" not in spec:
                 reasons.append(f"{crop} differs between the runs")
         frame = x["frame_pt"]
         frame_px = frame[2] * frame[3] * SCALE * SCALE
@@ -182,6 +235,7 @@ def main(folder):
             cell["label_check"] = any(close(hexrgba(q["rgba"]), want, 3) for q in layer["common"])
         cell["font_family"] = x["title_font"]["family"]
         cell["font_size"] = x["title_font"]["size_pt"]
+        cell["font_weight"] = x["title_font"]["weight"]
         top_, lead, bottom, trail = c["content_insets_pt"]
         cell["padding_top"], cell["padding_left"], cell["padding_bottom"], cell["padding_right"] = top_, lead, bottom, trail
         v = bezel_view(x)
@@ -205,6 +259,19 @@ def main(folder):
             cell["shadow"] = "absent"
         cell["opacity"] = x["view"][0]["alpha"] * x["view"][0]["layer_opacity"]
         cell["icon_placement"] = c["image_placement"]
+        leaves = [w for w in x["view"] if w["class"] in ("UILabel", "UIImageView", "UIActivityIndicatorView")]
+        if leaves and abs(frame[2] - x["intrinsic_size_pt"][0]) <= 0.01 and abs(frame[3] - x["intrinsic_size_pt"][1]) <= 0.01:
+            ox = [w["frame_pt"][0] for w in leaves]
+            oy = [w["frame_pt"][1] for w in leaves]
+            ex = [w["frame_pt"][0] + w["frame_pt"][2] for w in leaves]
+            ey = [w["frame_pt"][1] + w["frame_pt"][3] for w in leaves]
+            width = max(ex) - min(ox) + lead + trail
+            height = max(ey) - min(oy) + top_ + bottom
+            cell["content_width"], cell["content_height"] = round(width, 3), round(height, 3)
+            if abs(width - frame[2]) <= 0.01:
+                cell["min_width"] = "auto"
+            if abs(height - frame[3]) <= 0.01:
+                cell["min_height"] = "auto"
         cell["icon_text_gap"] = c["image_padding_pt"]
         cell["subtitle_gap"] = c["title_padding_pt"]
         labels = [w for w in x["view"] if w["class"] == "UILabel"]
@@ -217,11 +284,27 @@ def main(folder):
             cell["label"] = "absent" if not labels else "drawn"
         indicators = [w for w in images_ if "image_star" not in spec and "activity_indicator" not in spec]
         cell["menu_indicator"] = "drawn" if indicators else "absent"
+        if indicators and labels:
+            ind, lb = indicators[0]["frame_pt"], labels[0]["frame_pt"]
+            cell["menu_indicator_gap"] = round(ind[0] - (lb[0] + lb[2]), 3)
+            cell["menu_indicator_margin_right"] = round(frame[2] - trail - (ind[0] + ind[2]), 3)
+            cell["menu_indicator_margin_left"] = 0.0
+            mid = ind[1] + ind[3] / 2
+            cell["menu_indicator_anchor"] = "inline" if abs(mid - frame[3] / 2) <= 1 / SCALE else "unread"
+            cell["menu_indicator_size"] = "auto"
+        if "image_star" in spec and images_ and cell.get("fill") not in (None, "unread"):
+            g = images_[0]
+            base = hexrgba(cell["fill"]) if cell["fill"] != "absent" else [0, 0, 0, 0]
+            want = over(hexrgba(g["tint"]["hex"]), base)
+            if layer is not None and any(close(hexrgba(q["rgba"]), want, 3) for q in layer["common"]) \
+                    and g["tint"]["hex"] != cell["fill"]:
+                cell["icon_fill"] = g["tint"]["hex"]
         if "subtitle" in spec and len(labels) >= 2:
             sub = labels[1]
             cell["subtitle_fill"] = sub["text_color"]["hex"]
             cell["subtitle_font_family"] = sub["font"]["family"]
             cell["subtitle_font_size"] = sub["font"]["size_pt"]
+            cell["subtitle_font_weight"] = sub["font"]["weight"]
             t0 = labels[0]["frame_pt"]
             cell["subtitle_gap_frames"] = round(sub["frame_pt"][1] - (t0[1] + t0[3]), 3)
         out.setdefault(app, {}).setdefault(safe(spec), {}).setdefault(size, {})[state] = cell
@@ -253,8 +336,116 @@ def main(folder):
                 ok = la["common"] == lb["common"]
             same["pairs"].setdefault(app, {}).setdefault(safe(spec), {}).setdefault(size, {})[state] = ok
 
+    forms_out = {}
+    for x in renders:
+        if x["backdrop"] != "system" or x["kind"] == "configuration" or x["state"] == "focused":
+            continue
+        app, spec, state = x["appearance"], x["specimen"], x["state"]
+        cell = {}
+        layer = layers.get((app, spec, x["size"], state))
+        crops = [x["screen"].replace("/system/", f"/{b}/") for b in ("black", "white")]
+        reasons = []
+        if layer is None:
+            reasons.append("no solved layer")
+        else:
+            if layer["alpha_spread_levels"] > 2:
+                reasons.append(f"the solve's alpha spread is {layer['alpha_spread_levels']} levels")
+            if layer["inconsistent"] > 0:
+                reasons.append(f"{layer['inconsistent']} pixels are no layer (white below black)")
+        for crop in crops:
+            if crop in differ:
+                reasons.append(f"{crop} differs between the runs")
+        frame = x["frame_pt"]
+        views = x.get("view", [])
+        # the button's own subtree: a bar item's _UIButtonBarButton, the route picker's UIButton, else the root
+        sub = views
+        for anchor in ("_UIButtonBarButton", "UIButton"):
+            roots = [w for w in views if w["class"] == anchor and w["path"] != "0"]
+            if roots and x["kind"] in ("bar_button_item", "navigation_bar", "route_picker"):
+                rp = roots[0]["path"]
+                sub = [w for w in views if w["path"] == rp or w["path"].startswith(rp + ".")]
+                break
+        masks = [w["path"] for w in sub if w["class"] == "_UIBackButtonMaskView"]
+        sub = [w for w in sub if not any(w["path"] == m or w["path"].startswith(m + ".") for m in masks)]
+        hosted = x["kind"] in ("bar_button_item", "navigation_bar") and len(sub) == len(views)
+        if hosted:
+            cell["hosted"] = True
+            reasons.append("hosted by SwiftUI: the view tree holds none of the item's parts, and the bar's Liquid Glass "
+                           "platter is no single layer")
+        if x["kind"] == "paste_control":
+            reasons.append("UIPasteControl draws in a remote slot view: the view tree holds none of its parts, and the "
+                           "solve finds no single layer (its normal state) or splits the fill over several colours")
+        if x["kind"] == "bar_button_item" and state in ("selected", "selected_highlighted"):
+            reasons.append("a selected bar item draws its highlight as an image over the bar's material")
+        if reasons:
+            cell["fill"] = "unread"
+            cell["unread"] = "; ".join(reasons)
+        else:
+            top = layer["common"][0]
+            cell["fill_solved"], cell["fill_pixels"] = top["rgba"], top["pixels"]
+            cell["fill"] = top["rgba"] if top["pixels"] >= 0.5 * frame[2] * frame[3] * SCALE * SCALE else "absent"
+            if cell["fill"] == "absent":
+                cell["glyph_solved"] = top["rgba"]
+        if x["kind"] in ("bar_button_item", "navigation_bar") and not hosted and not any("selected highlight" in r or "highlight as an image" in r for r in reasons):
+            backs = [w for w in sub if w["background"] != "absent" and w["background"]["hex"][-2:] != "00"]
+            cell["fill_views"] = "absent" if not backs else backs[0]["background"]["hex"]
+            cell["fill"] = cell["fill_views"]
+            cell.pop("unread", None)
+        labels = [w for w in sub if w["class"] in ("UILabel", "UIButtonLabel") and w.get("text") not in (None, "absent", "Title")
+                  and w["frame_pt"][2] > 0]
+        if labels:
+            cell["label_fill"] = labels[0]["text_color"]["hex"]
+            cell["font_family"] = labels[0]["font"]["family"]
+            cell["font_size"] = labels[0]["font"]["size_pt"]
+            cell["font_weight"] = labels[0]["font"]["weight"]
+        glyphs = [w for w in sub if w["class"] == "UIImageView" and w["frame_pt"][2] > 0 and w["tint"]["hex"] != "#ffffffff"]
+        if glyphs and not hosted:
+            g = glyphs[-1]
+            cell["icon_tint"] = g["tint"]["hex"]
+            if layer is not None and not reasons:
+                base = hexrgba(cell["fill"]) if cell["fill"] not in ("absent",) else [0, 0, 0, 0]
+                want = over(hexrgba(g["tint"]["hex"]), base)
+                cell["icon_check"] = any(close(hexrgba(q["rgba"]), want, 3) for q in layer["common"])
+            if cell.get("fill") == "absent" and "glyph_solved" in cell:
+                cell["icon_fill"] = cell["glyph_solved"]
+            elif cell.get("icon_check") and cell.get("fill") != cell["icon_tint"]:
+                cell["icon_fill"] = cell["icon_tint"]
+            elif x["kind"] in ("bar_button_item", "navigation_bar") and cell.get("fill") == "absent":
+                cell["icon_fill"] = cell["icon_tint"]
+        if not hosted and views:
+            cell["stroke"] = "absent" if all(w["border_width_pt"] == 0 for w in sub) else "drawn"
+            cell["shadow"] = "absent" if all(w["shadow_opacity"] == 0 for w in sub) else "drawn"
+            cell["opacity"] = sub[0]["alpha"] * sub[0]["layer_opacity"]
+        if x["kind"] == "button_type" and views:
+            leaves = [w for w in views[1:] if w["frame_pt"][2] > 0 and w["frame_pt"][3] > 0 and w["frame_pt"][0] >= 0
+                      and w["frame_pt"][1] >= 0 and w["frame_pt"][0] + w["frame_pt"][2] <= frame[2] + 0.01
+                      and w["frame_pt"][1] + w["frame_pt"][3] <= frame[3] + 0.01]
+            if leaves:
+                cell["padding_top"] = round(min(w["frame_pt"][1] for w in leaves), 3)
+                cell["padding_left"] = round(min(w["frame_pt"][0] for w in leaves), 3)
+                cell["padding_bottom"] = round(frame[3] - max(w["frame_pt"][1] + w["frame_pt"][3] for w in leaves), 3)
+                cell["padding_right"] = round(frame[2] - max(w["frame_pt"][0] + w["frame_pt"][2] for w in leaves), 3)
+                if abs(frame[2] - x["intrinsic_size_pt"][0]) <= 0.01 and abs(frame[3] - x["intrinsic_size_pt"][1]) <= 0.01:
+                    cell["min_width"] = "auto"
+                    cell["min_height"] = "auto"
+        forms_out.setdefault(app, {}).setdefault(safe(spec), {})[state] = cell
+
+    text_out = {}
+    for t in index["text_style"]:
+        if t["category"] != "large":
+            continue
+        f = t["font"]
+        text_out.setdefault(t["style"], {})[t["legibility_weight"]] = {
+            "line_height": round(f["ascender_pt"] - f["descender_pt"] + f["leading_pt"], 3),
+            "weight": f["weight"], "name": f["name"]}
+
     images = sorted({f"{rel}/run1/index.toml", f"{rel}/solved/run1.toml", f"{rel}/differ-levels.txt",
                      f"{rel}/press-differ-levels.txt", f"{rel}/press1/index.toml", f"{rel}/focus1/index.toml"})
+    for (app, spec, size, state), x in system.items():
+        if "activity_indicator" in spec and x["style"] in ("plain", "gray", "tinted", "filled"):
+            for b in ("black", "white"):
+                crop = x["screen"].replace("/system/", f"/{b}/")
+                images.extend([f"{rel}/run1/{crop}", f"{rel}/run2/{crop}"])
     pressed = {}
     by_key = {(x["appearance"], x["specimen"], x["size"], x["state"], x["backdrop"]): x for x in renders}
     for p in press["render"]:
@@ -306,6 +497,8 @@ def main(folder):
     emit("same", same)
     emit("press", pressed)
     emit("focus", focus_out)
+    emit("forms", forms_out)
+    emit("text_styles", text_out)
     (folder / "analysis.toml").write_text("\n".join(lines) + "\n")
     tomllib.loads((folder / "analysis.toml").read_text())
     return 0
