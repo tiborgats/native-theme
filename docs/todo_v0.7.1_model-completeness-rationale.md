@@ -242,7 +242,7 @@ and one mechanism. R2.1–R2.8 define it.
 | stroke | a width and paint per side; inside, centred or outside | C12 | R7 |
 | shadow | layers (offset, blur, spread, colour, inset), or a reference to an elevation ramp entry | C01, C02 | R8 |
 | transform | scale, rotation and translation about an origin | C13, C14 | R9 |
-| transition | what changes, duration, delay, timing, and kind-specific values (a ripple's radius and opacities) | C14 | R9 |
+| transition | what changes, duration, delay, timing, and kind-specific values (a keyed kind's measured values) | C14 | R9 |
 | text style | font (family, size, weight, style, width, axes, features, fallbacks), letter spacing, line height, decoration, elision and wrapping, and its fill, a paint | C18 | R10 |
 | icon style, glyph | an icon's size, rendering mode, weight, effect; a glyph's source and geometry; the fill of either, a paint | C13, C19 | R11 |
 | focus indicator | kind, stroke, offset, corners, shadow, transition | C15 | R12 |
@@ -483,8 +483,8 @@ button's).
 - *The state layer as a part of its own.* Against: a part more on every widget that draws one, the ripple still
   sharing its fill.
 - *A block of the part, `interaction`, holding a state layer (colour, alpha) and a ripple (colour, alpha, its
-  geometry), drawn over the part's fill and content and beneath its stroke, set by field patches, with property
-  groups of its own; the state layer's colour changes at once and its alpha alone is timed; the ripple is the
+  geometry), drawn over the part's fill and content and beneath its stroke, set by field patches, with
+  a property group of its own, `StateLayer`; the state layer's colour changes at once and its alpha alone is timed; the ripple is the
   platform's effect, keeping the colour it was pressed in.* Its cost: a field on a dozen Material parts that every
   other preset states absent.
 
@@ -1339,7 +1339,7 @@ the semantic variants, sizes and densities; the condition, context, position, di
 exclusive groups with their precedence, the recency sets; the selector and patch types and the TOML spelling of rules, derivations,
 references, inputs and value kinds; the derive macro's changes; the resolution and query API and the element tree a
 connector builds; the placement strategies; the derivation functions with their sources; the theme-change token's
-fields; the transition kinds and their kind-specific values (the ripple's); which controls AppKit renders whole and the
+fields; the transition kinds and their kind-specific values; the press ripple's effects; which controls AppKit renders whole and the
 rendering's API; the facts' data format and the gate's test; the conversion of today's inheritance rules into the
 presets; and the mapping of every row (R24). Its first steps, the kirigami-addons survey (R1.2), the survey of the
 community projects' platform ports (R19) and reading Plasma's accent derivation (R2.6), are done; what they and

@@ -245,7 +245,7 @@ Each `### <widget>` section states, in this order:
   that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
   press starts (S2.12); the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
   it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour it was pressed in,
-  as Android's `RippleDrawable` does (`Ripple.android.kt:79-82`). It draws over the part's content and beneath its
+  as Android's patterned `RippleDrawable` fixes it when the ripple starts (`RippleDrawable.java:986-1018`). It draws over the part's content and beneath its
   stroke, as the ripple node and `Modifier.surface`'s border do (`Ripple.kt:373-377`, `Surface.kt:562-564`,
   `Border.kt:212-214`). Only the state layer (the `interaction` block's,
   on the part or on a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`: a
@@ -262,8 +262,7 @@ Each `### <widget>` section states, in this order:
   `_md-comp-outlined-button.scss:84`, `:100`, which Compose's border and material-web's CSS do not rank) in the row's
   order, hover, focus_visible, pressed, dragged, disabled, the later winning, the facts stating such a combination
   (`{hover, focus_visible}` on the outlined button) with that reason and the gate checking it (S17). That order is the
-  plain-flag rules'; a state-layer row's `{pressed}` alternative is its ripple rule, written before its state-layer
-  rules wherever the row lists it. A control with an elevation shows the elevation of the
+  plain-flag rules'. A control with an elevation shows the elevation of the
   latest of hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`,
   `FloatingActionButton.kt:1300-1347`, `ToggleButton.kt:1589-1633`; the split button's halves through the button's
   `ButtonElevation`, `SplitButton.kt:687-1294`, `:709`, `:791`, `:917`), and of drag too on cards and chips
@@ -2155,7 +2154,7 @@ spaces:
     host: Kirigami's search dialog field, Q1.118; a GTK linked box's overlap, each entry's negative start or top
     margin, GN-1.42), `min_width`, `min_height`, `max_width`, `opacity` (today's
     `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes rebind the accent
-    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11).
+    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
   - `text` — the entered text: `text`, `transitions` (RL-2†).
   - `placeholder` — the placeholder text: `text`, `transitions` (macOS's centred search placeholder moving to the
     leading edge on focus, MAC-N02).
@@ -2504,7 +2503,7 @@ spaces:
   - `body` — the trigger box (the root): `fill`, `stroke` (per state), `corners`, `shadow` (Breeze's button shadow on
     the non-flat, non-editable combo), `padding`, `margin` (a GTK linked box's overlap, the drop-down's button's
     negative start or top margin, GN-1.42), `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
-    Button set, View set when editable), `transitions`, `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11).
+    Button set, View set when editable), `transitions`, `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
   - `label` — the current value's text: `text`.
   - `placeholder` — WinUI's placeholder text: `text`.
   - `icon` — the leading icon (Material's), or the current item's icon (Qt's `CE_ComboBoxLabel`, Q1.122; AppKit's
