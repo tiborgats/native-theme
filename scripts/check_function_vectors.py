@@ -1027,6 +1027,18 @@ letter_spacing_px = "= sf_tracking(font_size, sf_pro)"
 ''',
 }
 
+KDE_ROLES = '''
+[[fact]]
+key = "role.window.background"
+value = "= kirigami_lerp(role.window.background, kde_shade(role.window.foreground, light, 4), 0.2)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 x.cpp:1"
+quote = "x"
+'''
+
 
 def write_fixture(root: Path, files: dict, presets=("adwaita", "macos-tahoe")):
     for rel, text in files.items():
@@ -1198,6 +1210,13 @@ def self_test() -> int:
         if summary(counts, 0) != ("0 vector tables, 0 platform functions implemented, 0 placement strategies, 0 "
                                   "tests, 2 platform-function calls in facts and presets: 0 findings"):
             failures.append(f"vacuous summary: {summary(counts, 0)}")
+        # ADD-A121's KDE functions, called by facts and not implemented: listed, not findings
+        kde = dict(files)
+        kde["docs/facts/kde/roles.toml"] = KDE_ROLES
+        got, info, _ = run(kde, presets=())
+        if got or not any(i.startswith("called by facts, not yet implemented") and "kde_shade (1 call" in i
+                          and "kirigami_lerp (1 call" in i for i in info):
+            failures.append(f"kde_shade and kirigami_lerp called by facts: got {got}, {info}")
         # a table waiting for its implementation is reported, not a finding
         files = dict(files)
         files[ADW] = ADW_TABLE
@@ -1221,7 +1240,8 @@ def self_test() -> int:
         if sorted(test_functions(root)) != ["vectors_adw_standalone", "vectors_place_below", "vectors_sf_tracking"]:
             failures.append(f"test_functions: got {sorted(test_functions(root))}")
         ctx = fixture_context(root)
-        if ctx.platform_functions != {"kcu_mix", "kcu_tint", "adw_standalone", "sf_tracking", "m3_role"}:
+        if ctx.platform_functions != {"kcu_mix", "kcu_tint", "kde_shade", "kirigami_lerp", "adw_standalone",
+                                      "sf_tracking", "m3_role"}:
             failures.append(f"platform functions: got {sorted(ctx.platform_functions)}")
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
