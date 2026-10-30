@@ -14,7 +14,7 @@ use crate::next::blocks::text::{AxisTag, AxisValue, FeatureTag};
 use crate::next::declare::{DataName, DataOwner, Declarations, FontMetric, ScalarUnit, WidgetDecl};
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref};
-use crate::next::inputs::{InputBases, InputName};
+use crate::next::inputs::{InputBases, InputName, InputValue};
 use crate::next::key::Key;
 use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::registry::{self, PartInfo};
@@ -595,7 +595,7 @@ impl<'a> Checker<'a> {
     /// once and only declared ones.
     fn inputs(&mut self, inputs: &InputBases, at: &str) {
         let decl = self.decl();
-        for (name, _) in &inputs.entries {
+        for (name, value) in &inputs.entries {
             let path = join(at, &name.to_string());
             if !decl.inputs.contains(name) {
                 self.undeclared(&path, &name.to_string(), "inputs");
@@ -603,6 +603,7 @@ impl<'a> Checker<'a> {
             if self.cx.kind == LayerKind::Application && decl.accent_inputs.contains(name) {
                 self.problem(&path, ProblemKind::AccentInput);
             }
+            self.input_values(value, &path);
         }
         for (list, map) in [
             ("groups", &inputs.kde_groups),
@@ -632,6 +633,24 @@ impl<'a> Checker<'a> {
                     self.undeclared(&item, &name.to_string(), "inputs");
                 }
             }
+        }
+    }
+
+    /// An input's values, read by the colour roles (S9): per scheme and per
+    /// contrast condition, `[inputs.<name>.contrast.<condition>]` in TOML.
+    fn input_values(&mut self, value: &InputValue, at: &str) {
+        let (per_scheme, per_contrast) = if self.toml {
+            (at.to_owned(), join(at, "contrast"))
+        } else {
+            (join(at, "per_scheme"), join(at, "per_contrast"))
+        };
+        self.walk(&per_scheme, Region::Roles, &value.per_scheme);
+        for (contrast, schemes) in &value.per_contrast {
+            self.walk(
+                &join(&per_contrast, contrast.name()),
+                Region::Roles,
+                schemes,
+            );
         }
     }
 

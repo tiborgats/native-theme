@@ -669,6 +669,41 @@ fn refusal_accent_input() {
     assert_eq!(found_as(&layer, &decl, LayerKind::Palette), NONE);
 }
 
+/// The inputs' values take every value check, as colour roles' (S9, S12).
+#[test]
+fn input_values_are_checked() {
+    let decl = declare("inputs = [\"accent\"]\nsurface_sets = [\"window\"]");
+    let layer = toml(
+        "[inputs.accent]\nlight = \"= mix(role.header.foreground, #000000, element.progress)\"\n\
+         [inputs.accent.contrast.high]\ndark = \"absent\"",
+    );
+    assert_eq!(
+        found_as(&layer, &decl, LayerKind::Reader),
+        [
+            "inputs.accent.light: `header` is not declared in `surface_sets`",
+            "inputs.accent.light: `element.progress` is an element's, not a token's or role's",
+            "inputs.accent.contrast.high.dark: may not be absent",
+        ]
+    );
+    let mut built = Layer::default();
+    built.bases.inputs.entries.push((
+        crate::next::InputName::new("accent").unwrap(),
+        crate::next::InputValue::new(crate::next::SchemeMap::one(
+            crate::next::Scheme::Light,
+            Value::Stated(Color {
+                r: f32::NAN,
+                ..color()
+            }),
+        )),
+    ));
+    assert_eq!(
+        found_as(&built, &decl, LayerKind::Reader),
+        ["inputs.accent.per_scheme.light: not a finite number"]
+    );
+    let fine = toml("[inputs.accent]\nlight = \"= role.window.foreground\"");
+    assert_eq!(found_as(&fine, &decl, LayerKind::Reader), NONE);
+}
+
 #[test]
 fn refusal_listed_twice() {
     let decl = declare("surface_sets = [\"window\", \"view\"]");
