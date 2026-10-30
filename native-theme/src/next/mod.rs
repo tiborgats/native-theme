@@ -10,6 +10,7 @@ mod error;
 pub mod expr;
 mod inputs;
 mod key;
+pub mod placement;
 #[cfg_attr(
     not(test),
     expect(
@@ -103,7 +104,7 @@ pub use roles::{
     StatusColorsPatch, StatusRoles, StatusRolesPatch, SurfaceRole, SurfaceRoles, SurfaceRolesPatch,
     SurfaceSet,
 };
-pub use selector::{PartRef, Scheme, SizeClass, VariantRef, WidgetRef};
+pub use selector::{Direction, PartRef, Scheme, SizeClass, VariantRef, WidgetRef};
 pub use tokens::{
     Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
     FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens, IconTokensPatch,

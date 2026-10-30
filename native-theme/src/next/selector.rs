@@ -54,6 +54,15 @@ pub enum SizeClass {
     Regular,
 }
 
+/// A layout direction (S7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Direction {
+    /// Left to right.
+    Ltr,
+    /// Right to left.
+    Rtl,
+}
+
 /// A colour scheme.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Scheme {
