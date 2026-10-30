@@ -462,7 +462,10 @@ pub struct FontFallbacks {
     pub emoji_family: Value<String>,
     /// The families tried per language.
     pub per_language: Vec<(LanguageTag, Vec<String>)>,
-    /// Core Text's cascade list per font family.
+    /// The families tried, in order, where a family is missing or lacks a
+    /// character, per family (Core Text's cascade list): a text font's and a
+    /// glyph's family alike (`GlyphSource::FontCodePoint`), each followed by
+    /// `families`.
     pub per_family: Vec<(String, Vec<String>)>,
 }
 

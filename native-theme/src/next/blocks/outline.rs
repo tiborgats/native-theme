@@ -51,9 +51,9 @@ pub enum Radius {
         #[parts(may_be_absent)]
         minimum: Value<Px>,
     },
-    /// A focus indicator's: the part's radius plus the offset, concentric.
-    /// Only in a focus indicator's corners, and refused where the corner's
-    /// two sides' offsets differ (S12).
+    /// A focus indicator's inner corner: the part's radius plus the offset,
+    /// concentric ([`follow_part`]). Only in a focus indicator's corners, and
+    /// refused where the corner's two sides' offsets can differ (S12).
     FollowPart,
 }
 
@@ -278,11 +278,19 @@ pub fn full(width: Px, height: Px, maximum: Option<Px>) -> Px {
 /// container's matching corner; 0 for a square container, or the display
 /// with no radius.
 ///
+/// `inset` is, per axis, the part's stated distance from the container's
+/// edge on that corner's side, resolved, not its laid-out position: the
+/// container's `padding` on that side, the `margin` and `padding` on that
+/// side of every part between them, and the part's own `margin` there (a
+/// floating part's distance from the window is its `margin`). The connector
+/// sums it from the resolved styles it queried on its way down.
+///
 /// Where the two insets are equal, the result is the larger of
 /// `container_radius` less the inset and `minimum`. Where they differ, the
 /// rule is UIKit's (`UICornerConfiguration`, `UIView.effectiveRadius(corner:)`,
 /// X-CR-2), read in the value phase; until then such a corner is `None`, no
-/// rule being invented for it.
+/// rule being invented for it, and adding a layer refuses a `Concentric`
+/// corner whose insets can differ (S12), so a connector never meets it.
 #[must_use]
 pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) -> Option<Px> {
     if inset.horizontal != inset.vertical {
@@ -294,8 +302,10 @@ pub fn concentric(container_radius: Px, inset: Axes<Px>, minimum: Option<Px>) ->
         .max(0.0)))
 }
 
-/// A `FollowPart` corner: the part's radius plus the indicator's offset, at
-/// least 0.
+/// A `FollowPart` corner, a focus ring's inner corner: the part's radius
+/// plus the ring's offset, at least 0 (S2.10). Its outer corner is
+/// `follow_part(part_radius, offset + width)`, so an inner corner clamped to
+/// 0 still has a rounded outer one.
 #[must_use]
 pub fn follow_part(part_radius: Px, offset: Px) -> Px {
     Px((part_radius.0 + offset.0).max(0.0))

@@ -102,7 +102,8 @@ pub struct Glyph {
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(toml)]
 pub enum GlyphSource {
-    /// A code point of a font.
+    /// A code point of a font. The family's fallbacks are the text tokens'
+    /// `fallbacks.per_family` chain, followed by `fallbacks.families` (S4.4).
     FontCodePoint {
         /// The font's family.
         family: String,

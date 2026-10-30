@@ -25,13 +25,23 @@ pub struct FocusIndicator {
     pub paint: Value<Paint>,
     /// The line's pattern, `solid` included (WinUI's dotted line).
     pub dash: Value<DashPattern>,
-    /// The indicator's distance from the part's box, per side.
+    /// From the part's box to the ring's inner edge, per side, outward
+    /// positive, as CSS's `outline-offset`; the ring is `width` wide outward
+    /// from there, so a ring drawn inside the box flush with its edge has
+    /// `offset` equal to minus `width`.
     pub offset: Sides<Value<Px>>,
-    /// The indicator's corners: `FollowPart`, concentric with the part, or
-    /// stated where the platform draws otherwise.
+    /// The ring's inner corners: `FollowPart`, concentric with the part
+    /// (its outer corner `follow_part(part radius, offset + width)`), or
+    /// stated where the platform draws otherwise (its outer corner the
+    /// stated one plus `width`, square where it is square). A `Full` corner
+    /// is half the smaller side of the ring's inner box, the part's box grown
+    /// by `offset`.
     #[parts(block = "fields")]
     pub corners: Corners,
-    /// The indicator's shadow; an inner ring is a shadow layer.
+    /// The shadow the ring's inner outline (the part's box grown by `offset`,
+    /// with the inner corners) casts, under the ring: an `inset` layer draws
+    /// inside it, one without outside it, so an inner ring is an `inset`
+    /// layer.
     #[parts(block = "set", may_be_absent)]
     pub shadow: Value<Shadow>,
     /// The indicator's own motion.
