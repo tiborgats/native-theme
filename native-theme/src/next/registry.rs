@@ -114,7 +114,8 @@ pub(crate) struct WidgetInfo {
     pub(crate) parts: &'static [PartInfo],
     /// The widget values' table: `<widget>.values.…`.
     pub(crate) values: &'static [FieldInfo],
-    /// The typed variants the widget declares (S10).
+    /// The catalogue's typed variants of the widget; a preset declares the
+    /// ones it draws (S10).
     pub(crate) variants: &'static [Variant],
 }
 
