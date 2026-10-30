@@ -1,0 +1,9 @@
+# The image folder of run 40969040283 the facts cite (spec S17 *`evidence`*). The builds are the run's own records:
+# os-probe-macos-26/probe.toml `[os]` and the job's button-pass/environment.txt (sw_vers, xcodebuild -version,
+# xcrun's SDK, the probe binary's LC_BUILD_VERSION).
+
+[images.os-probe-macos-26]
+preset = "macos-tahoe"
+source = "xcode@26.6"
+os = "macOS 26.6.2 (25G83), runner image macos26 20261013.0424.1"
+toolkit = "AppKit of macOS 26.6.2; the probe built with Xcode 26.6 (17F113) against the macOS 26.5 SDK (25F70)"
