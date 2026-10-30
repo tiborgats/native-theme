@@ -162,6 +162,7 @@ Per lane and unit: the verifier's agreement rate and the audit sample's rate of 
 | Unit | Platform | Facts | Agreed | Tie-broken | Audit sample | Agreed but wrong |
 |---|---|---|---|---|---|---|
 | slice | gnome | lane 640, verifier 926 | 827 of 1,035 compared combinations after normalising spellings (79.9 %; 68 % before) | 208: 124 equivalent spellings, 75 lane right, 9 verifier right, 0 both wrong; 338 verifier-only keys added (absences), 123 lane-only confirmed | 42 | 0 |
+| slice | windows | lane 1,074, verifier 886 | 732 of 1,321 compared combinations (55.4 %): systematic — the high-contrast resources (`SystemColor*` against `SystemControl*`), the resting stroke, the accent label | at the tie-breaker | 37 (+ every agreed type-ramp fact: the verifier saw the project's type-ramp values through a stray `../` path, so those agreements are not independent) | — |
 
 ## Spikes and drift runs
 
