@@ -13,6 +13,12 @@
 //!   `#[theme]`, `#[theme_layer]` and `#[theme_inherit]` attributes.
 //! - [`ThemeFields`](derive@ThemeFields) registers a plain struct's
 //!   serialized field names for TOML linting.
+//! - [`ThemeParts`](derive@ThemeParts) generates the 0.8.0 model's blocks'
+//!   patches, resolved types, merges and field tables; its expansions name
+//!   `crate::next::*` paths (the blocks' traits and merge helpers, the
+//!   field-path registry) that exist only inside `native-theme`, so it too
+//!   compiles nowhere else, and `native-theme` re-exports none of these
+//!   derives.
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -23,6 +29,7 @@ mod gen_ranges;
 mod gen_structs;
 mod gen_validate;
 mod parse;
+mod parts;
 mod util;
 
 /// Derive macro that generates a companion Resolved struct and impl blocks
@@ -137,6 +144,80 @@ fn gen_inventory_submit(
             widget_name: #widget_name,
             field_names: #opt_name::FIELD_NAMES,
         });
+    }
+}
+
+/// Derive macro for the 0.8.0 model's blocks (S2, S6.1).
+///
+/// On a block marked `#[parts(block)]` it generates, beside the block:
+///
+/// - for a struct block, `<T>Patch`, every field an `Option` (`None`: the
+///   patch does not set it), a field holding a struct block patched by
+///   `BlockPatch` (`Set | Fields`) and one holding an append block by that
+///   block's patch; with `#[parts(append)]`, a block whose one field is a list
+///   (a paint), `<T>Patch` is instead `Set(Value<T>) | Append(list)`;
+/// - `Resolved<T>`, each `Value<U>` as `Option<U>`, a `Value<FontSize>` as
+///   `Option<Px>` (converted and scaled, S9.4), a `Value<Px>` or
+///   `Value<FontSize>` marked `auto` as `Option<Length>`, and each block as
+///   its resolved type;
+/// - the merge of a later patch over an earlier one and the application of a
+///   patch over a value (S6.1: a set field replaces, a `Vec` of pairs merges
+///   by key, a list marked `keyed` by its items' own keys, any other list is
+///   replaced whole, and a `Sides` or `Axes` field, patched as
+///   `Option<Sides<Option<T>>>`, member by member; a `Vec` of pairs whose
+///   values are `Vec`s of pairs merges by key twice, and a `SurfaceMap` of
+///   a struct block, patched as `Option<SurfaceMap<<B>Patch>>`, set by set,
+///   each set's patch over that set's record);
+/// - the `Block` impl (the resolved type, sealed) and the `Table` impl: the
+///   static `FIELDS` table of `FieldInfo { path, ty, may_be_absent, auto }`
+///   and the `FORM`, a struct or an enum with its unit variants.
+///
+/// A nested block's patch and resolved types are named beside the block's
+/// type, its path kept (`paint::Paint` -> `paint::PaintPatch`), so a block
+/// written by its bare name needs them in scope.
+///
+/// An enum block is set whole only: it gets `Resolved<T>` and its table, the
+/// paths of a variant's fields `variant.field` (a tuple variant's fields:
+/// `variant`, several only of plain values).
+///
+/// # Type attributes
+///
+/// - `#[parts(block)]`: block mode (required).
+/// - `#[parts(append)]`: a struct block patched by `Set` or `Append`.
+/// - `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
+/// - `#[parts(resolved_patch)]`: a struct block's patch resolved,
+///   `Resolved<T>Patch`, each field `Option<resolved field>` (`None`: the
+///   patch leaves it), for a field holding the block's patch.
+///
+/// # Field attributes
+///
+/// - `#[parts(may_be_absent)]`: the `Value` may be `Absent` (S6.3).
+/// - `#[parts(auto)]`: the `Value<Px>` or `Value<FontSize>` may be `Auto`
+///   (S6.3).
+/// - `#[parts(block = "fields" | "append" | "set")]`: the field holds a
+///   block (`B`, `Value<B>`, `Vec<B>`, `Option<B>`, a `SurfaceMap<B>`, or a
+///   map `Vec<(K, B)>`, `Vec<(K, Value<B>)>` or `Vec<(K, Vec<B>)>`) of that
+///   kind: a struct block, an append block or an enum block. An append block is held as `Value<B>` or a map's
+///   `Value<B>`, and an `Option<B>` is `set` whole: an `append` elsewhere,
+///   or `fields` on an `Option`, would act as `set`, so both are refused.
+/// - `#[parts(keyed)]`: a list whose items merge by their own key, through
+///   the item type's `KeyedItem` impl.
+/// - `#[parts(inner_may_be_absent)]`, with `#[parts(required = "<field>")]`
+///   for each field it leaves out: on a struct block's field, every `Value`
+///   field of the block may be `Absent` in this place only (S6.3: an
+///   icon-size context's `IconStyle` but its `size`), its table entry
+///   holding the block's table so marked.
+/// - `#[parts(patch)]`: the field holds a struct block's patch, `<B>Patch`
+///   (a keyframe's `PartStylePatch`): it resolves to `Resolved<B>Patch`
+///   (`B` marked `resolved_patch`), and its table entry reaches `B`'s table
+///   through a function, as `B` can hold the field itself.
+#[proc_macro_derive(ThemeParts, attributes(parts))]
+pub fn derive_theme_parts(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    match parts::derive(&input) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
     }
 }
 
