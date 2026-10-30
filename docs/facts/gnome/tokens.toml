@@ -42,6 +42,57 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_common.scss:6-7"
 quote = "$button_transition: background 200ms $ease-out-quad, box-shadow 200ms $ease-out-quad;"
 
+# the needs-attention dot's keyframes, named by the keyframes (S4.1 step 1)
+[[fact]]
+key = "token.motion.durations.needs_attention"
+value = "150ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:114"
+quote = "animation: needs_attention 150ms ease-in;"
+
+[[fact]]
+key = "token.motion.durations.row"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_lists.scss:1-3"
+quote = "$row_transition: background-color 200ms $ease-out-quad, background-image 200ms $ease-out-quad, border-radius 200ms $ease-out-quad;"
+
+[[fact]]
+key = "token.motion.durations.scrollbar"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_scrolling.scss:4"
+quote = "$_scrollbar_transition: all 200ms linear;"
+
+[[fact]]
+key = "token.motion.durations.toggle"
+value = "200ms"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toggle-group.scss:5-7"
+quote = "$toggle_transition: color 200ms $ease-out-quad, background 200ms $ease-out-quad, box-shadow 200ms $ease-out-quad;"
+
+[[fact]]
+key = "token.motion.timings.linear"
+value = { cubic_bezier = [0.0, 0.0, 1.0, 1.0] }
+rows = ["GN-3.18", "GN-3.19"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsseasevalue.c:196"
+quote = "{ \"linear\",       TRUE,  FALSE, { 0.0,  0.0, 1.0,  1.0 } },"
+
 [[fact]]
 key = "token.motion.timings.ease_in_out"
 value = { cubic_bezier = [0.42, 0.0, 0.58, 1.0] }
@@ -103,7 +154,7 @@ source = "gtk@4.24.1 gtk/gtkstack.c:1021-1023"
 quote = "g_param_spec_uint (\"transition-duration\", NULL, NULL, 0, G_MAXUINT, 200,"
 
 [[fact]]
-key = "token.motion.durations.scroll_animation"
+key = "token.motion.durations.scrolled_window"
 value = "200ms"
 rows = ["GN-3.24"]
 
@@ -116,6 +167,256 @@ quote = "#define ANIMATION_DURATION 200"
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:2318-2319"
 quote = "gtk_adjustment_enable_animation (hadjustment, gtk_widget_get_frame_clock (GTK_WIDGET (scrolled_window)), ANIMATION_DURATION);"
+
+# libadwaita's timed animations defined in code (AdwTimedAnimation), each keyed by its class and, where the class
+# states different values for its transitions, the transition in the source's words (S4.1 step 2)
+[[fact]]
+key = "token.motion.durations.entry_row"
+value = "150ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-entry-row.c:18"
+quote = "#define EMPTY_ANIMATION_DURATION 150"
+
+# the deprecated AdwFlap's fold, its `fold-duration` property's default (applications built on AdwFlap still draw it)
+[[fact]]
+key = "token.motion.durations.flap_fold"
+value = "250ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-flap.c:1551"
+quote = "self->fold_duration = 250;"
+
+# the deprecated AdwLeaflet's mode transition, its `mode-transition-duration` property's default
+[[fact]]
+key = "token.motion.durations.leaflet_mode"
+value = "250ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-leaflet.c:2445"
+quote = "self->mode_transition.duration = 250;"
+
+# AdwTab's close button and attention indicator
+[[fact]]
+key = "token.motion.durations.tab_close_btn"
+value = "150ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab.c:19"
+quote = "#define CLOSE_BTN_ANIMATION_DURATION 150"
+
+[[fact]]
+key = "token.motion.durations.tab_attention_indicator"
+value = "250ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab.c:28"
+quote = "#define ATTENTION_INDICATOR_ANIMATION_DURATION 250"
+
+# AdwTabBox (the tab bar's tabs), each transition its own constant
+[[fact]]
+key = "token.motion.durations.tab_box_open"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:30"
+quote = "#define OPEN_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_box_close"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:31"
+quote = "#define CLOSE_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_box_focus"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:32"
+quote = "#define FOCUS_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_box_scroll"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:33"
+quote = "#define SCROLL_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_box_resize"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:34"
+quote = "#define RESIZE_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_box_reorder"
+value = "250ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:35"
+quote = "#define REORDER_ANIMATION_DURATION 250"
+
+[[fact]]
+key = "token.motion.durations.tab_box_icon_resize"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-box.c:36"
+quote = "#define ICON_RESIZE_ANIMATION_DURATION 200"
+
+# AdwTabGrid (the tab overview's thumbnails), each transition its own constant
+[[fact]]
+key = "token.motion.durations.tab_grid_open"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:29"
+quote = "#define OPEN_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_grid_close"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:30"
+quote = "#define CLOSE_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_grid_focus"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:31"
+quote = "#define FOCUS_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_grid_resize"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:32"
+quote = "#define RESIZE_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_grid_reorder"
+value = "250ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:33"
+quote = "#define REORDER_ANIMATION_DURATION 250"
+
+[[fact]]
+key = "token.motion.durations.tab_grid_icon_resize"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-grid.c:34"
+quote = "#define ICON_RESIZE_ANIMATION_DURATION 200"
+
+# AdwTabOverview's scroll and its open and close transition
+[[fact]]
+key = "token.motion.durations.tab_overview_scroll"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-overview.c:29"
+quote = "#define SCROLL_ANIMATION_DURATION 200"
+
+[[fact]]
+key = "token.motion.durations.tab_overview"
+value = "400ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-overview.c:30"
+quote = "#define TRANSITION_DURATION 400"
+
+# AdwToastOverlay's show, hide and replace
+[[fact]]
+key = "token.motion.durations.toast_overlay_show"
+value = "300ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-toast-overlay.c:20"
+quote = "#define SHOW_DURATION 300"
+
+[[fact]]
+key = "token.motion.durations.toast_overlay_hide"
+value = "300ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-toast-overlay.c:21"
+quote = "#define HIDE_DURATION 300"
+
+[[fact]]
+key = "token.motion.durations.toast_overlay_replace"
+value = "500ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-toast-overlay.c:22"
+quote = "#define REPLACE_DURATION 500"
+
+# AdwViewStack's crossfade, its `transition-duration` default
+[[fact]]
+key = "token.motion.durations.view_stack"
+value = "200ms"
+rows = ["GN-3.21"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-view-stack.c:1653"
+quote = "self->transition_duration = 200;"
 
 # the speed factor: CSS transitions run at GTK's slowdown factor (1) while animations are enabled (the default);
 # with animations off a widget has no frame clock, its timestamp is 0 and no transition runs
@@ -333,10 +634,11 @@ kind = "published"
 source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
-# the bottom sheet (AdwBottomSheet): unclamped when it opens or closes to its bottom bar, clamped when it closes
-# without one (`bottom_sheet_clamped`); the sheet's facts choose by its bottom bar, which no token condition names
+# the bottom sheet (AdwBottomSheet), keyed by its transitions (S4.1 step 2): `bottom_sheet_open` unclamped,
+# `bottom_sheet_close` clamped as it closes without a bottom bar; closing to its bottom bar it runs unclamped, the
+# open spring's values, which the sheet's facts choose by its bottom bar (no token condition names it)
 [[fact]]
-key = "token.motion.timings.bottom_sheet"
+key = "token.motion.timings.bottom_sheet_open"
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
 
@@ -376,7 +678,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.bottom_sheet"
+key = "token.motion.timings.bottom_sheet_open"
 when = { conditions = ["reduced_motion"] }
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = false, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
@@ -417,7 +719,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.bottom_sheet_clamped"
+key = "token.motion.timings.bottom_sheet_close"
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 0.8, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
 
@@ -457,7 +759,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.bottom_sheet_clamped"
+key = "token.motion.timings.bottom_sheet_close"
 when = { conditions = ["reduced_motion"] }
 value = { spring = { mass = 1, stiffness = 400, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.0001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
@@ -500,7 +802,7 @@ quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animatio
 # the navigation view (AdwNavigationView): critically damped, clamped on pop; reduced motion crossfades with
 # the same spring
 [[fact]]
-key = "token.motion.timings.navigation_push"
+key = "token.motion.timings.navigation_view_push"
 value = { spring = { mass = 1, stiffness = 1000, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
 
@@ -540,7 +842,7 @@ source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
 quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
 
 [[fact]]
-key = "token.motion.timings.navigation_pop"
+key = "token.motion.timings.navigation_view_pop"
 value = { spring = { mass = 1, stiffness = 1000, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
 rows = ["GN-3.20"]
 
@@ -660,6 +962,68 @@ rows = ["GN-3.20"]
 kind = "published"
 source = "libadwaita@1.10.0 src/adw-carousel.c:1222-1226"
 quote = "self->animation = adw_spring_animation_new (GTK_WIDGET (self), 0, 0, adw_spring_params_new (1, 0.5, 500), target); adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->animation), TRUE);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+# the deprecated AdwFlap's reveal and AdwLeaflet's child transition (applications built on them still draw them):
+# always clamped, no reduced-motion branch
+[[fact]]
+key = "token.motion.timings.flap_reveal"
+value = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-flap.c:1597-1601"
+quote = "self->reveal_animation = adw_spring_animation_new (GTK_WIDGET (self), 0, 0, adw_spring_params_new (1, 0.5, 500), target); adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->reveal_animation), TRUE);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:450-454"
+quote = "g_param_spec_double (\"initial-velocity\", NULL, NULL, -G_MAXDOUBLE, G_MAXDOUBLE, 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-animation.c:474-477"
+quote = "g_param_spec_double (\"epsilon\", NULL, NULL, 0, G_MAXDOUBLE, 0.001,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-spring-params.c:85-96"
+quote = "adw_spring_params_new (double damping_ratio, double mass, double stiffness)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-animation.c:229-232"
+quote = "if ((priv->follow_enable_animations_setting && !adw_get_enable_animations (priv->widget)) || !gtk_widget_get_mapped (priv->widget)) { adw_animation_skip (g_object_ref (self));"
+
+[[fact]]
+key = "token.motion.timings.leaflet_child"
+value = { spring = { mass = 0.5, stiffness = 500, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = true, time_scale = "= token.motion.speed_factor" } }
+rows = ["GN-3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-leaflet.c:2474-2478"
+quote = "self->child_transition.animation = adw_spring_animation_new (GTK_WIDGET (self), 0, 1, adw_spring_params_new (1, 0.5, 500), target); adw_spring_animation_set_clamp (ADW_SPRING_ANIMATION (self->child_transition.animation), TRUE);"
 
 [[fact.cite]]
 kind = "published"
