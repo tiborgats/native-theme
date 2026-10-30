@@ -1,9 +1,12 @@
-// The WinUI host (D4, spike W): opens a 1280x720 window holding one Button,
-// then, in turn, a MenuFlyout shown at the Button (once windowed, the default,
-// and once constrained to the window), and a ToolTip attached to the Button
-// (once opened by IsOpen, once by moving the pointer onto the Button). Writes
-// into the folder given by `--out`:
-//   frames.toml        the runtime's versions, the window's bounds, the
+// The WinUI host (D4, spike W): opens an 800x600 window (the runner's display
+// is 1024x768) holding one Button, always on top (the runner's desktop shows
+// the out-of-box experience's privacy page above other windows), then, in
+// turn, a MenuFlyout shown at the Button (once windowed, the default, and once
+// constrained to the window), and a ToolTip attached to the Button (once
+// opened by IsOpen, once by moving the pointer onto the Button with
+// SendInput). Writes into the folder given by `--out`:
+//   frames.toml        the runtime's versions, the desktop's visible top-level
+//                      windows at the start, the window's bounds, the
 //                      Button's bounds and, per pass, each open popup's frame
 //                      (VisualTreeHelper.GetOpenPopupsForXamlRoot, the child's
 //                      TransformToVisual) and each visible top-level window of
@@ -15,6 +18,7 @@
 // HWND rectangles and the screen captures are in physical pixels.
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
@@ -97,7 +101,11 @@ public partial class App : Application
         };
 
         window = new Window { Title = "native-theme WinUI host", Content = root };
-        window.AppWindow.MoveAndResize(new RectInt32(100, 100, 1280, 720));
+        window.AppWindow.MoveAndResize(new RectInt32(100, 60, 800, 600));
+        if (window.AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.IsAlwaysOnTop = true;
+        }
 
         watchdog = DispatcherQueue.GetForCurrentThread().CreateTimer();
         watchdog.Interval = TimeSpan.FromSeconds(150);
@@ -109,8 +117,9 @@ public partial class App : Application
         };
         watchdog.Start();
 
-        Native.SetCursorPos(0, 0);
+        MovePointer(0, 0);
         window.Activate();
+        window.AppWindow.MoveInZOrderAtTop();
     }
 
     private async Task RunAsync()
@@ -119,12 +128,17 @@ public partial class App : Application
         {
             await Task.Delay(SettleMilliseconds);
             RecordHost();
+            RecordDesktop();
             RecordWindow();
             Toml.Section anchorSection = toml.Add("[anchor]");
             anchorSection.Str("type", anchor!.GetType().FullName ?? "");
             anchorSection.Size("actual_size", anchor.ActualWidth, anchor.ActualHeight);
             RecordBounds(anchorSection, "bounds", anchor, root);
             anchorSection.Str("png", await RenderPng(root!, "window.png", anchorSection));
+            if (anchorSection.Lines.Any(line => line.StartsWith("png_error", StringComparison.Ordinal)))
+            {
+                errors.Add("window.png: RenderTargetBitmap failed");
+            }
             CaptureScreen("screen-idle.png");
             await FlyoutPass("menu_flyout", false);
             await FlyoutPass("menu_flyout_constrained", true);
@@ -141,6 +155,8 @@ public partial class App : Application
     private void RecordHost()
     {
         Toml.Section host = toml.Add("[host]");
+        host.Str("windows_app_sdk_package", typeof(App).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "WindowsAppSDKPackageVersion")?.Value ?? "");
         host.Str("windows_app_sdk_release", Try(() => Microsoft.Windows.ApplicationModel.WindowsAppRuntime.ReleaseInfo.AsString));
         host.Str("windows_app_sdk_runtime", Try(() => Microsoft.Windows.ApplicationModel.WindowsAppRuntime.RuntimeInfo.AsString));
         foreach (string dll in new[] { "Microsoft.UI.Xaml.dll", "Microsoft.UI.Xaml.Controls.dll", "Microsoft.WindowsAppRuntime.dll" })
@@ -241,9 +257,9 @@ public partial class App : Application
             double scale = root!.XamlRoot.RasterizationScale;
             int x = origin.X + (int)Math.Round((bounds.X + bounds.Width / 2) * scale);
             int y = origin.Y + (int)Math.Round((bounds.Y + bounds.Height / 2) * scale);
-            section.Str("shown_by", "SetCursorPos to the anchor's centre");
+            section.Str("shown_by", "SendInput moving the pointer onto the anchor's centre");
             section.Point("cursor", x, y);
-            section.Bool("set_cursor_pos", Native.SetCursorPos(x, y));
+            section.Bool("send_input", MovePointer(x - 20, y - 10) && MovePointer(x, y));
         }
         else
         {
@@ -262,7 +278,7 @@ public partial class App : Application
         RecordBounds(section, "tooltip_bounds", tip, root);
         await RecordOpen(section, pass);
         tip.IsOpen = false;
-        Native.SetCursorPos(0, 0);
+        MovePointer(0, 0);
         section.Bool("closed_event", await WithTimeout(closed.Task, EventTimeoutMilliseconds));
         ToolTipService.SetToolTip(anchor, null);
         await Task.Delay(SettleMilliseconds);
@@ -334,6 +350,55 @@ public partial class App : Application
         }
     }
 
+    private void RecordDesktop()
+    {
+        List<IntPtr> windows = new();
+        Native.EnumWindows((hwnd, _) =>
+        {
+            if (Native.IsWindowVisible(hwnd))
+            {
+                windows.Add(hwnd);
+            }
+            return true;
+        }, IntPtr.Zero);
+        foreach (IntPtr hwnd in windows)
+        {
+            Toml.Section section = toml.Add("[[desktop_window]]");
+            StringBuilder name = new(256);
+            Native.GetClassName(hwnd, name, name.Capacity);
+            section.Str("class", name.ToString());
+            StringBuilder title = new(256);
+            Native.GetWindowText(hwnd, title, title.Capacity);
+            section.Str("title", title.ToString());
+            Native.GetWindowThreadProcessId(hwnd, out uint pid);
+            section.Str("process", Try(() => Process.GetProcessById((int)pid).ProcessName));
+            section.Bool("topmost", (Native.GetWindowLongPtr(hwnd, Native.GWL_EXSTYLE).ToInt64() & Native.WS_EX_TOPMOST) != 0);
+            if (Native.GetWindowRect(hwnd, out Native.RECT rect))
+            {
+                section.Rect("window_rect", rect);
+            }
+        }
+    }
+
+    private static bool MovePointer(int x, int y)
+    {
+        RectInt32 screen = DisplayArea.Primary.OuterBounds;
+        Native.INPUT[] input =
+        {
+            new()
+            {
+                type = Native.INPUT_MOUSE,
+                mi = new Native.MOUSEINPUT
+                {
+                    dx = (int)Math.Round((x - screen.X) * 65535.0 / Math.Max(1, screen.Width - 1)),
+                    dy = (int)Math.Round((y - screen.Y) * 65535.0 / Math.Max(1, screen.Height - 1)),
+                    dwFlags = Native.MOUSEEVENTF_MOVE | Native.MOUSEEVENTF_ABSOLUTE,
+                },
+            },
+        };
+        return Native.SendInput((uint)input.Length, input, Marshal.SizeOf<Native.INPUT>()) == input.Length;
+    }
+
     private static FrameworkElement? FindPresenter(DependencyObject element)
     {
         if (element is FrameworkElement framework && (framework.GetType().Name.EndsWith("Presenter", StringComparison.Ordinal) || framework is ToolTip))
@@ -398,7 +463,7 @@ public partial class App : Application
         }
         catch (Exception e)
         {
-            errors.Add($"{name}: {e.Message}");
+            section.Str("png_error", e.Message);
             return "";
         }
     }
@@ -585,6 +650,11 @@ internal sealed class Toml
 internal static class Native
 {
     public const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+    public const int GWL_EXSTYLE = -20;
+    public const long WS_EX_TOPMOST = 0x8;
+    public const uint INPUT_MOUSE = 0;
+    public const uint MOUSEEVENTF_MOVE = 0x1;
+    public const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT
@@ -600,6 +670,24 @@ internal static class Native
     {
         public int X;
         public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct INPUT
+    {
+        public uint type;
+        public MOUSEINPUT mi;
     }
 
     public delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
@@ -623,7 +711,13 @@ internal static class Native
     public static extern bool ClientToScreen(IntPtr hwnd, ref POINT point);
 
     [DllImport("user32.dll")]
-    public static extern bool SetCursorPos(int x, int y);
+    public static extern uint SendInput(uint count, INPUT[] inputs, int size);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int capacity);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    public static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
 
     [DllImport("user32.dll")]
     public static extern uint GetDpiForWindow(IntPtr hwnd);
