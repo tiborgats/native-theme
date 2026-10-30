@@ -1019,7 +1019,7 @@ pub struct Behavior { pub double_click_time: Value<Ms>, pub double_click_distanc
                        pub scroll_lines_per_step: Value<f32>, pub scroll_px_per_step: Value<Px>,  // MAT-X32†
                        pub hide_pointer_while_typing: Value<bool>, pub hide_pointer_delay: Value<Ms>,  // K3.65†
                        pub hide_pointer_fade: Value<Ms>,                                     // MAT-P3-15†
-                       pub scroll: ScrollPhysics,
+                       pub scroll: ScrollPhysics,      // staged: enters with the unit holding `scroll_view` (S6.1)
                        pub long_press: Value<Ms>, pub spring_loading: Value<Ms>,       // ADD-A45
                        pub drag_time: Value<Ms>, pub single_click_activates: Value<bool>,
                        pub double_click_height: Value<Px>,      // with double_click_distance as the width
@@ -1288,8 +1288,8 @@ the list names, less the values it defers, each to a named later unit — the bu
 placement unit, ADD-A120 — a deferral ending in that unit's commit, and `--check` refusing a deferral to a unit
 already enabled), so a unit enters the model in the commit whose presets state it; a hand-written token field a
 later unit's type needs is staged with that unit (`Behavior.scroll` with the unit that holds the `scroll_view`
-widget, its `ScrollDecay` variants written then), and the generator lists it for the connectors' tables then
-(S21.3); its `--check`
+widget, its `ScrollDecay` variants written then), and that unit's commit adds it to the connectors' tables by hand, as S21.3 requires of
+any new resolved field; its `--check`
 fails when the checked-in code differs from what the catalogue states, until the catalogue is archived, after which
 the generated code is the source. Rejected: a proc macro reading the catalogue (it lies outside the crate and is
 archived); hand-written entries with no drift check.
@@ -2125,7 +2125,7 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `accent_inputs`, in its bases or a `for_preset` part): the accent is `Theme::set_accent`'s (S9.2), the one route
   that checks the derived inputs and restates `kde-breeze`'s roles;
 - a map or table has a duplicate key (two TOML keys for one field included, S11); `Auto` is stated on a field
-  marked `auto` neither by the catalogue for that part nor by the core (S6.3); a call is stated on a `Value<bool>`, `Value<Key>` or enum field (a
+  marked `auto` neither by the catalogue for that part nor by the core (S6.3); a call is stated on a `Value<bool>`, `Value<Key>`, `Value<String>` or enum field (a
   reference is allowed); a paint has no layer, or its bottom layer is a `Mask`, or a `Shadow::Layers` no layer (S2.3,
   S2.5; an elevation entry may be empty); `pick` has no colours;
 - a stated number lies outside its type's range: a negative length where the field cannot be negative (S1), a
@@ -2654,9 +2654,9 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   first of them is written.
 - **The quote check.** `quote`, whitespace-normalised, occurs in the cited lines at the pin. For each generation the
   fact covers that has a `published` or `read` citation (a palette fact: over all its citations), every literal of
-  `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value, which occurs in
-  a quote whitespace-normalised, case-sensitive, at identifier boundaries; references and names are left to the
-  verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
+  `value` (S2.2's numeric, length, duration, angle, font size and colour literals, and a text value, which equals a
+  whole quoted string or a whole entry of a list in the quote, whitespace-normalised and case-sensitive; references
+  and names are left to the verifier) equals a literal of the union of those citations' quotes, as written or after a citation's
   `conversion`, which the checker applies to its quote's literals; a generation with only `measured` citations is
   held by the evidence check alone. A quote's literals are read by its source file's notation, from closed lists
   that `scripts/check_fact_citations.py` holds, documents in its docstring and tests in its self-test: the number
@@ -2685,12 +2685,13 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   whose evidence records that nothing is drawn (an image analysis's output).
 - **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) has a
   `measured` citation with `inputs`, the references of its expression the harness varied as written there
-  (`inputs = ["input.accent"]`); every other operand is resolved from the preset under the fact's `when`. Its
-  `evidence` path names a list of tables in a TOML evidence file, each keyed by those references (their values in that
-  pass), `result` (the value measured) and, where the passes differ in more than the inputs, `conditions` (the
-  scheme of the pass), every value in S11's spelling so the gate reads them as it reads a preset's; `conversion`
-  applies to `result`. The checker checks the form: for each input, two pass tables that differ in that input alone,
-  by more than its own type's quote-check precision, and whose results differ by more than `tolerance`; `inputs` only
+  (`inputs = ["input.accent"]`). Its `evidence` path names a list of tables in a TOML evidence file, each a pass:
+  the varied references as quoted keys (`"input.accent" = "#ff0000"`), `result` (the value measured) and
+  `conditions` (the pass's conditions, required unless the fact's `when` fixes the scheme), every value spelled as a
+  fact's `value` is (units written: `"4px"`, `"17pt"`); every other operand resolves from the preset under the fact's
+  `when` plus the pass's `conditions`; `conversion` applies to `result`. The checker checks the form: for each input,
+  two passes that differ in that input alone, by more than its own type's quote-check precision, and whose results
+  differ by more than `tolerance` (a per-leaf table: in some leaf, by more than that leaf's); `inputs` only
   on an expression value, and an expression value's `measured` citation always with `inputs`. The gate evaluates the
   expression over each pass within `tolerance`. It is the one case where the evidence value is not compared with the
   fact's value directly (ADD-A120).
