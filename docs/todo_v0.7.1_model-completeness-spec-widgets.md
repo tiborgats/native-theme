@@ -245,7 +245,7 @@ Each `### <widget>` section states, in this order:
   that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
   press starts (S2.12); the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
   it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour it was pressed in,
-  as Android's patterned `RippleDrawable` fixes it when the ripple starts (`RippleDrawable.java:986-1018`). It draws over the part's content and beneath its
+  as Android's patterned `RippleDrawable` fixes it when the ripple first draws (`RippleDrawable.java:986-1018`). It draws over the part's content and beneath its
   stroke, as the ripple node and `Modifier.surface`'s border do (`Ripple.kt:373-377`, `Surface.kt:562-564`,
   `Border.kt:212-214`). Only the state layer (the `interaction` block's,
   on the part or on a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`: a
@@ -4030,7 +4030,7 @@ spaces:
   `kde-breeze`: Kirigami's banner, Q1.131; `kde-breeze` by a rule outside `@banner`), `banner_band` (all but
   `kde-breeze`: Q1.131; `kde-breeze` by a rule outside `@banner`), `banner_title` (all but `kde-breeze`: Q1.131;
   `kde-breeze` by a rule outside `@banner`); fields: `body.shadow` (`adwaita` by a rule under `@osd`, GN-1.256;
-  `material-3` by a rule under `@outlined`, the outlined card's shadow rules being none, MAT-CA2); values:
+  `material-3` by a rule under `@outlined`, at rest, its hovered and dragged shadows the tokens', MAT-CA2); values:
   `section_gap_px` (all but `kde-breeze`: Q1.130), `banner_band_height_factor` (all but `kde-breeze`: Q1.131).
 - **State-model source:** `adwaita` `_misc.scss` card selectors; `kde-breeze` Kirigami's `DefaultCardBackground.qml`;
   `material-3` card tokens (filled, elevated,

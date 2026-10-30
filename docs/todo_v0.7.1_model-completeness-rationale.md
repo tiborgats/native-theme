@@ -746,8 +746,8 @@ MAT-X13–MAT-X15, X-MO-1).
   and the rest. `dialog.entrance` becomes one of them.
 - **Ripple:** no transition but a field of the part's `interaction` block, a platform's own effect from a closed set
   implemented once in native-theme to its source, as platform curves are, which the press starts and whose whole
-  lifecycle, the release's exit included, is the effect's own (R3); its origin is the point pressed, which the
-  toolkit has from the press itself. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
+  lifecycle, the release's exit included, is the effect's own (R3); its origin is the point pressed where it is bounded,
+  which the toolkit has from the press itself, and the box's centre where it is not. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
   whose shader draws a wave with sparkles, so the ripple is that effect, implemented to its source, not a circle with
   stated durations. One transition governs a property group per change, as in CSS; the state layer has a group of its own,
   so it does not time the container (R3). A stroke's widths may be timed by a group of their own,
