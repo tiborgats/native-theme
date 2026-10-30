@@ -41,16 +41,16 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-B1 | `button.body.fill, button.label.text.fill @ variant @elevated / variant primary / variant tinted / variant @outlined / variant flat (elevated, filled, tonal, outlined, text)` | rule |
 | MAT-B1 | `button.body.stroke @ variant @outlined` | rule |
 | MAT-B1 | `button.body.shadow @ variant @elevated (Shadow::Elevation)` | rule |
-| MAT-B2 | `button.body.fill.append (state layer), button.label.text.fill @ latest state_layer:hover variant primary / latest state_layer:focus_visible variant primary / {pressed} variant primary` | rule |
+| MAT-B2 | `button.body.fill.append (state layer) @ latest state_layer:hover variant primary / latest state_layer:focus_visible variant primary / {pressed} variant primary; button.label.text.fill @ {hover} variant primary / {focus_visible} variant primary / {pressed} variant primary` | rule |
 | MAT-B2 | `button.body.fill, button.label.text.fill @ {disabled} variant primary` | rule |
-| MAT-B3 | `button.body.stroke @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant @outlined` | rule |
+| MAT-B3 | `button.body.stroke @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant @outlined` | rule |
 | MAT-B3 | `button.body.fill (Absent) @ variant @outlined` (no container; the line MAT-B1 states) | rule |
 | MAT-B4 | `button.body.padding, button.body.fill @ variant flat` | rule |
-| MAT-B4 | `button.label.text.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant flat` | rule |
-| MAT-B5 | `button.body.fill.append (the focus state layer), button.label.text.fill @ latest state_layer:focus_visible; button.body.shadow @ latest elevation:focus_visible` | rule |
+| MAT-B4 | `button.label.text.fill @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant flat` | rule |
+| MAT-B5 | `button.body.fill.append (the focus state layer) @ latest state_layer:focus_visible; button.label.text.fill @ {focus_visible}; button.body.shadow @ latest elevation:focus_visible` | rule |
 | MAT-B6 | `button.body.shadow = Shadow::Elevation(<key>) @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed / {disabled}, each variant @elevated / variant primary / variant tinted` | rule |
 | MAT-B7 | `button.icon.icon.{size,fill}` | field |
-| MAT-B7 | `button.icon.icon.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled} (the disabled opacity as the paint's alpha: the part lists no opacity)` | rule |
+| MAT-B7 | `button.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled} (the disabled opacity as the paint's alpha: the part lists no opacity)` | rule |
 | MAT-B8 | `button.body.padding @ variant with_icon / variant with_icon size small cond flavor:expressive / variant with_icon size regular cond flavor:expressive / variant with_icon size large cond flavor:expressive` (baseline: `ButtonWithIconContentPadding`; Expressive: `contentPaddingFor(height, hasStartIcon = true)`, the icon padding of its small, medium and large buttons, its extra small and extra large ones having none of their own, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:932`, `:950-1003`, `:1578-1594`; ADD-A123) | rule |
 | MAT-B9 | `button.body.{min_height,padding}, button.icon.icon.size, button.values.icon_text_gap, button.label.text @ size extra_small / size small / size regular / size large / size extra_large, each cond flavor:expressive (ADD-A62)` | rule |
 | MAT-B9 | `button.body.stroke @ size extra_small / size small / size regular / size large / size extra_large, each variant @outlined cond flavor:expressive` | rule |
@@ -58,7 +58,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-B10 | `button.body.corners @ {checked} variant toggle / {checked} variants {toggle,@square} / {pressed}, each size extra_small / size small / size regular / size large / size extra_large cond flavor:expressive` | rule |
 | MAT-B11 | `button.body.transitions (Corners, Timing::Spring) @ size extra_small / size small / size regular / size large / size extra_large, each cond flavor:expressive (the spring of the pressed corners)` | rule |
 | MAT-B12 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ !{checked} / {checked}, each variants {toggle,primary} / variants {toggle,tinted} / variants {toggle,@outlined} / variants {toggle,@elevated}` | rule |
-| MAT-B12 | `button.body.fill.append (state layer), button.label.text.fill, button.icon.icon.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}, each variant toggle` | rule |
+| MAT-B12 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}, each variant toggle; button.label.text.fill, button.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}, each variant toggle` | rule |
 | MAT-B13 | `button.body.transitions (Shadow: Compose's outgoing specs, from {pressed, focus_visible} and then from {hover}, internal/Elevation.kt:46-113)` | field |
 | MAT-B13 | `button.body.transitions (Shadow: Compose's incoming spec, no from) @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed; button.body.transitions (Shadow: a zero duration, Compose snapping into disabled, Button.kt:1750-1770) @ {disabled}` | rule |
 | MAT-B13 | `token.motion.durations.<key>, token.motion.timings.emphasized` | token |
@@ -103,12 +103,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-I19† | `input.values.mask_character; input.values.mask_reveal` | field |
 | MAT-I19† | - | readers (R18) |
 | MAT-C1 | `radio.ring.stroke @ !{checked} / {checked}; radio.dot.fill @ {checked}` | rule |
-| MAT-C1 | `radio.ring.stroke, radio.dot.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed} / {checked,disabled} (the disabled opacity as the paint's alpha: ring and dot list no opacity)` | rule |
+| MAT-C1 | `radio.ring.stroke, radio.dot.fill @ {hover} / {focus_visible} / {pressed} / {disabled} / {checked,hover} / {checked,focus_visible} / {checked,pressed} / {checked,disabled} (the disabled opacity as the paint's alpha: ring and dot list no opacity)` | rule |
 | MAT-C2 | `checkbox.state_layer.{min_width,min_height,corners}; radio.state_layer.{min_width,min_height,corners} (corners Radius::Full { maximum: Absent }, Material's full shape has no maximum)` | field |
 | MAT-C2 | `checkbox.state_layer.{fill,opacity}, radio.state_layer.{fill,opacity} @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}` | rule |
-| MAT-C3 | `checkbox.box.fill, checkbox.mark.glyph.fill, checkbox.box.stroke @ {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}` | rule |
-| MAT-C4 | `checkbox.box.stroke @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each !{checked,indeterminate}` | rule |
-| MAT-C5 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {invalid,checked} / {invalid,checked} latest state_layer:hover / {invalid,checked} latest state_layer:focus_visible / {invalid,checked,pressed} / {invalid,indeterminate} / {invalid,indeterminate} latest state_layer:hover / {invalid,indeterminate} latest state_layer:focus_visible / {invalid,indeterminate,pressed}` | rule |
+| MAT-C3 | `checkbox.box.fill, checkbox.mark.glyph.fill, checkbox.box.stroke @ {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
+| MAT-C4 | `checkbox.box.stroke @ {hover} / {focus_visible} / {pressed}, each !{checked,indeterminate}` | rule |
+| MAT-C5 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {invalid,checked} / {invalid,checked,hover} / {invalid,checked,focus_visible} / {invalid,checked,pressed} / {invalid,indeterminate} / {invalid,indeterminate,hover} / {invalid,indeterminate,focus_visible} / {invalid,indeterminate,pressed}` | rule |
 | MAT-C5 | `checkbox.box.stroke @ {invalid} !{checked,indeterminate}; checkbox.state_layer.fill @ {invalid} latest state_layer:hover / {invalid} latest state_layer:focus_visible / {invalid,pressed}` | rule |
 | MAT-C6 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path)` | rule |
 | MAT-C6 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {indeterminate}` | rule |
@@ -120,8 +120,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-C9 | `checkbox.body.touch_target; radio.body.touch_target (ADD-A72)` | field |
 | MAT-M1 | `menu.{item.fill,item_label.text.fill,item_icon.icon.fill,item_trailing_icon.icon.fill} @ {selected} context combo_box / {checked}` (the chosen option of a select menu, `selected` in `context combo_box`; an item chosen in a selectable menu outside one, toggled on, `checked`: S7.2; the keyboard highlight is the focus state layer) | rule |
 | MAT-M2 | `menu.item.fill.append (state layer) @ latest state_layer:focus_visible / {pressed}` | rule |
-| MAT-M2 | `menu.item_label.text.fill @ latest state_layer:focus_visible / {pressed}` | rule |
-| MAT-M3 | `menu.{item_icon,item_trailing_icon}.icon.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}` | rule |
+| MAT-M2 | `menu.item_label.text.fill @ {focus_visible} / {pressed}` | rule |
+| MAT-M3 | `menu.{item_icon,item_trailing_icon}.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled}` | rule |
 | MAT-M3 | `menu.item_trailing_icon.icon.size` | field |
 | MAT-M3 | `menu.item_icon.opacity @ {disabled}` | rule |
 | MAT-M4 | `menu.item_subtitle.text` | field |
@@ -144,7 +144,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-T1 | `tooltip.label.text @ variant rich (the supporting text)` | rule |
 | MAT-T1 | `tooltip.title.text` | field |
 | MAT-T1 | `tooltip.body.{fill,shadow,corners,padding} @ variant rich` | rule |
-| MAT-T1 | `button.label.text.fill, button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context tooltip.body variant rich (the actions)` | rule |
+| MAT-T1 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context tooltip.body variant rich (the actions); button.label.text.fill @ {hover} / {focus_visible} / {pressed}, each context tooltip.body variant rich (the actions)` | rule |
 | MAT-T2 | `tooltip.values.display_time` | field |
 | MAT-T3 | `tooltip.values.presentations (events Appear, Disappear: steps Fade and Scale, ADD-B10)` | field |
 | MAT-T4 | `tooltip.values.placement (MaterialTooltip with its params.gap)` | placement |
@@ -197,13 +197,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-P6 | `progress_bar.values.loop (colour keyframes) @ variant @four_color` | rule |
 | MAT-P7 | `progress_bar.buffer.{fill,corners}; progress_bar.buffer_dots.{fill,corners,min_width,min_height}` (the dots' colour, shape and size) | field |
 | MAT-TB1 | `tab.indicator.{fill,min_height}, tab.values.indicator_length @ variant @secondary` | rule |
-| MAT-TB1 | `tab.label.text.fill, tab.icon.icon.fill @ {selected} / latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}, each variant @secondary` | rule |
+| MAT-TB1 | `tab.label.text.fill, tab.icon.icon.fill @ {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}, each variant @secondary` | rule |
 | MAT-TB2 | `tab.indicator.corners` | field |
 | MAT-TB2 | `tab.values.indicator_length` | field |
 | MAT-TB3 | `tab.tab.fill.append @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}` | rule |
-| MAT-TB3 | `tab.label.text.fill @ latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:focus_visible / {selected,pressed}` | rule |
+| MAT-TB3 | `tab.label.text.fill @ {focus_visible} / {pressed} / {selected,focus_visible} / {selected,pressed}` | rule |
 | MAT-TB4 | `tab.icon.icon.size` | field |
-| MAT-TB4 | `tab.icon.icon.fill @ {selected} / latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}` | rule |
+| MAT-TB4 | `tab.icon.icon.fill @ {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}` | rule |
 | MAT-TB4 | `tab.tab.min_height @ variant with_icon` | rule |
 | MAT-TB4 | `tab.values.icon_text_gap` | field |
 | MAT-TB5 | `tab.bar.stroke (the bottom edge: colour and width)` | field |
@@ -214,7 +214,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-SB1 | `list.row_background.corners @ {selected} variant sidebar (Radius::Full { maximum: Absent })` | rule |
 | MAT-SB1 | `list.row.min_height, list.values.row_background_inset @ variant sidebar (the indicator's height; its width, the row less the insets)` | rule |
 | MAT-SB2 | `list.row_background.fill.append @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}, each variant sidebar` | rule |
-| MAT-SB2 | `list.leading_icon.icon.fill, list.row.text.fill @ {selected} / latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}, each variant sidebar` | rule |
+| MAT-SB2 | `list.leading_icon.icon.fill, list.row.text.fill @ {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}, each variant sidebar` | rule |
 | MAT-SB3 | `list.leading_icon.icon.fill @ {selected} variant sidebar / !{selected} variant sidebar` | rule |
 | MAT-SB4 | `list.section_header.text @ variant sidebar` | rule |
 | MAT-SB5 | `list.trailing_text.text @ variant sidebar` | rule |
@@ -249,26 +249,26 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-L3 | `list.trailing_icon.icon.fill @ !{selected} / {selected}` | rule |
 | MAT-L4 | `list.row_background.fill.append @ latest state_layer:focus_visible / {pressed} / latest state_layer:dragged; list.row_background.fill @ {disabled}` | rule |
 | MAT-L4 | `list.row_background.shadow @ {dragged}` | rule |
-| MAT-L4 | `list.row.text.fill, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / latest state_layer:dragged / {disabled}` | rule |
+| MAT-L4 | `list.row.text.fill, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {dragged} / {disabled}` | rule |
 | MAT-L4 | `list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {disabled} (the disabled opacities as the paint's alpha: the icon parts list no opacity); list.row.opacity @ {disabled}` | rule |
 | MAT-L5 | `list.row_background.fill @ {selected}` | rule |
 | MAT-L5 | `list.row_background.fill.append @ {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed} / {selected} latest state_layer:dragged / {selected,disabled}` | rule |
-| MAT-L5 | `list.row.text.fill, list.overline_text.text.fill, list.secondary_text.text.fill, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {selected} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed} / {selected} latest state_layer:dragged` | rule |
+| MAT-L5 | `list.row.text.fill, list.overline_text.text.fill, list.secondary_text.text.fill, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {selected} / {selected,hover} / {selected,focus_visible} / {selected,pressed} / {selected,dragged}` | rule |
 | MAT-L5 | `list.row_background.fill, list.row.opacity, list.leading_icon.icon.fill, list.trailing_icon.icon.fill @ {selected,disabled} (the selected-disabled opacities per part; the background and icons as the paint's alpha)` | rule |
 | MAT-L6 | `list.row_separator.{stroke,margin}, list.values.row_gap` | field |
 | MAT-L7 | `list.values.leading_gap` | field |
 | MAT-L8 | `list.row_background.fill, list.values.row_gap @ variant separated cond flavor:expressive` | rule |
 | MAT-L8 | `list.row_background.corners @ cond flavor:expressive (the rest shape)` | rule |
-| MAT-L8 | `list.row_background.corners @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / latest state_layer:dragged / {disabled} / {selected} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed} / {selected} latest state_layer:dragged / {selected,disabled}, each cond flavor:expressive` | rule |
+| MAT-L8 | `list.row_background.corners @ {hover} / {focus_visible} / {pressed} / {dragged} / {disabled} / {selected} / {selected,hover} / {selected,focus_visible} / {selected,pressed} / {selected,dragged} / {selected,disabled}, each cond flavor:expressive` (Compose's fixed precedence, pressed over dragged over selected over focused over hovered, `ListItemDefaults.kt:1144-1152`: the rules written hover, focus_visible, selected, dragged, pressed, the later winning; no recency set) | rule |
 | MAT-L8 | `list.row_background.transitions (Corners) @ cond flavor:expressive` | rule |
 | MAT-L8 | `list.leading_icon.icon.size, list.trailing_icon.icon.size, list.leading_icon.corners @ cond flavor:expressive` | rule |
 | MAT-L9 | `list.row_background.{fill,corners} @ {open}` (the expanded item's container colour and shape) | rule |
 | MAT-L9 | `list.disclosure.{fill,corners,glyph} @ {open} / !{open}` | rule |
-| MAT-L10 | `list.row_background.fill, list.row.text.fill, list.leading_icon.icon.fill, list.row_background.corners @ latest state_layer:dragged; list.row_background.shadow @ {dragged}` | rule |
+| MAT-L10 | `list.row_background.fill, list.row.text.fill, list.leading_icon.icon.fill, list.row_background.corners, list.row_background.shadow @ {dragged}` (the dragged colours and shadow by the `dragged` state alone, `ListItemDefaults.kt:751-772`, `:1170`; the shape as MAT-L8's) | rule |
 | MAT-L10 | `list.drop_indicator.fill (drop zone)` | field |
 | MAT-L11 | `list.swipe_action.{fill,icon,corners}` | field |
 | MAT-L11 | `list.swipe_action.fill.append @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}` | rule |
-| MAT-L12 | `list.header_section.text.fill @ latest state_layer:hover variant table` | rule |
+| MAT-L12 | `list.header_section.text.fill @ {hover} variant table` | rule |
 | MAT-L12 | `list.sort_indicator.glyph.fill @ variant table` | rule |
 | MAT-L12 | `list.footer.{fill,min_height,text}` | field |
 | MAT-L13 | `list.row_background.fill @ {selected} variant table / !{selected} variant table; list.row_background.fill.append @ latest state_layer:hover variant table` | rule |
@@ -380,14 +380,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-LA1 | `layout.values.window_margin, layout.values.pane_gap @ h_size_class compact / h_size_class medium / h_size_class expanded / h_size_class large / h_size_class extra_large` | rule |
 | MAT-LA1 | `token.size_classes` | token |
 | MAT-SW1 | `switch.thumb.min_width, switch.thumb.min_height @ {pressed}` | rule |
-| MAT-SW2 | `switch.thumb.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}` | rule |
+| MAT-SW2 | `switch.thumb.fill @ {hover} / {focus_visible} / {pressed} / {checked,hover} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW3 | `switch.thumb_icon.icon.{size,fill}` | field |
 | MAT-SW3 | `switch.thumb_icon.glyph @ !{checked} / {checked}` (the close and the check symbol) | rule |
-| MAT-SW3 | `switch.thumb_icon.icon.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed} / {checked,disabled}; switch.thumb_icon.opacity @ {disabled}` | rule |
+| MAT-SW3 | `switch.thumb_icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled} / {checked,hover} / {checked,focus_visible} / {checked,pressed} / {checked,disabled}; switch.thumb_icon.opacity @ {disabled}` | rule |
 | MAT-SW3 | `switch.thumb.{min_width,min_height} @ variant @icons` | rule |
 | MAT-SW4 | `switch.state_layer.{min_width,min_height,corners} (corners Radius::Full { maximum: Absent }, Material's full shape has no maximum)` | field |
 | MAT-SW4 | `switch.state_layer.{fill,opacity} @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}` | rule |
-| MAT-SW5 | `switch.track.fill, switch.track.stroke @ latest state_layer:focus_visible / {pressed} / {checked} latest state_layer:focus_visible / {checked,pressed}` | rule |
+| MAT-SW5 | `switch.track.fill, switch.track.stroke @ {focus_visible} / {pressed} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW6 | `switch.thumb.fill @ {disabled,checked} / {disabled} !{checked} (colour and opacity, the opacity as the paint's alpha: the thumb lists no opacity)` | rule |
 | MAT-SW7 | `switch.thumb.shadow = Shadow::Elevation(<key>) (its layers' colour the shadow colour)` | field |
 | MAT-SW8 | `switch.thumb.transitions (Geometry: the handle's travel; timing = token.motion.timings.<key>, a cubic Bézier that overshoots)` | field |
@@ -398,7 +398,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-DG2 | `dialog.icon.icon.fill` | field |
 | MAT-DG2 | `dialog.values.title_alignment @ variant with_icon (ADD-A61)` | rule |
 | MAT-DG3 | `button.label.text @ context dialog.action_area (the font)` | rule |
-| MAT-DG3 | `button.label.text.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each context dialog.action_area` | rule |
+| MAT-DG3 | `button.label.text.fill @ {hover} / {focus_visible} / {pressed} / {disabled}, each context dialog.action_area` | rule |
 | MAT-DG3 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context dialog.action_area` | rule |
 | MAT-DG4 | `dialog.header.stroke @ {scrolled}` | rule |
 | MAT-DG4 | `dialog.action_area.stroke @ {overflowing} (ADD-A13)` | rule |
@@ -425,15 +425,16 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-CB3 | `combo_box.arrow.transitions` | field |
 | MAT-CB3 | `menu.item.fill @ {selected} context combo_box; menu.item.min_height @ context combo_box` | rule |
 | MAT-SG1 | `segmented_control.check.glyph (its dimensions and fill)` | field |
-| MAT-SG1 | `segmented_control.check.glyph.fill @ {selected} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}; segmented_control.check.transitions (Geometry, Opacity: its show and width animation)` | rule |
-| MAT-SG2 | `segmented_control.segment.fill.append (state layers), segmented_control.label.text.fill, segmented_control.icon.icon.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}` | rule |
+| MAT-SG1 | `segmented_control.check.glyph.fill @ {selected} / {selected,hover} / {selected,focus_visible} / {selected,pressed}; segmented_control.check.transitions (Geometry, Opacity: its show and width animation)` | rule |
+| MAT-SG2 | `segmented_control.segment.fill.append (state layers) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}; segmented_control.label.text.fill, segmented_control.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}` | rule |
 | MAT-SG3 | `segmented_control.segment.corners @ pos first / pos last / pos only` | rule |
 | MAT-SG4 | `segmented_control.segment.stroke, segmented_control.icon.icon.fill, segmented_control.icon.opacity @ {disabled}` | rule |
 | MAT-CA1 | `card.body.fill, card.body.stroke, card.body.shadow (elevation; the filled card, the base)` | field |
 | MAT-CA1 | `card.body.fill, card.body.stroke, card.body.shadow @ variant @elevated / variant @outlined` | rule |
 | MAT-CA2 | `card.body.fill.append @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / latest state_layer:dragged` | rule |
 | MAT-CA2 | `card.body.shadow @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed / latest elevation:dragged, each variant @elevated / !variants {@elevated,@outlined}` (the filled card is the base) | rule |
-| MAT-CA2 | `card.body.stroke @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant @outlined` | rule |
+| MAT-CA2 | `card.body.stroke @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant @outlined` | rule |
+| MAT-CA2 | `card.body.shadow @ latest elevation:hover / latest elevation:dragged, each variant @outlined` (the outlined card's tokens raise it when hovered and when dragged, `material-web@2.5.0 tokens/versions/latest/sass/_md-comp-outlined-card.scss:46-47`, `:68-69`, `OutlinedCardTokens.kt:40-41`, `:52-53`; Compose's `CardDefaults.outlinedCardElevation` keeps the hovered one at rest, `Card.kt:452-466`, and the tokens decide, R1.6) | rule |
 | MAT-CA2 | `card.body.fill, card.body.opacity @ {disabled}` | rule |
 | MAT-CA2 | `card.body.transitions (Shadow: Compose's outgoing specs, from {pressed, dragged, focus_visible} and then from {hover}; its incoming spec @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed / latest elevation:dragged; a zero duration @ {disabled}; internal/Elevation.kt:46-113, Card.kt:726-748)` | rule |
 | MAT-CA3 | `card.icon.icon.{size,fill}` | field |
@@ -452,8 +453,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N3 | `button.body.{min_width,min_height,corners,shadow}, button.icon.icon @ variant close context component.fab_menu (the close button)` | rule |
 | MAT-N3 | `button.body.fill, button.icon.icon.fill @ variant close context component.fab_menu variant @primary / variant close context component.fab_menu variant @secondary / variant close context component.fab_menu variant @tertiary` (the close button's colours per style, the primary, secondary and tertiary `_md-comp-fab-menu-*-close-button.scss`) | rule |
 | MAT-N4 | `button.body.{fill,stroke,focus}, button.icon.icon.{size,fill} @ variants {icon_only,primary} / variants {icon_only,tinted} / variants {icon_only,@outlined} / variant icon_only` | rule |
-| MAT-N4 | `button.body.fill.append (state layer), button.icon.icon.fill, button.body.stroke @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant icon_only (the disabled opacities as the paints' alpha)` | rule |
-| MAT-N4 | `button.body.fill, button.icon.icon.fill, button.body.stroke @ !{checked} / {checked} / {checked} latest state_layer:hover / {checked} latest state_layer:focus_visible / {checked,pressed}, each variants {icon_only,toggle}` | rule |
+| MAT-N4 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant icon_only (the disabled opacities as the paints' alpha); button.icon.icon.fill, button.body.stroke @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant icon_only (the disabled opacities as the paints' alpha)` | rule |
+| MAT-N4 | `button.body.fill, button.icon.icon.fill, button.body.stroke @ !{checked} / {checked} / {checked,hover} / {checked,focus_visible} / {checked,pressed}, each variants {icon_only,toggle}` | rule |
 | MAT-N5 | `button.body.{min_width,min_height,padding}, button.icon.icon.size @ size extra_small / size small / size regular / size large / size extra_large, each variant icon_only cond flavor:expressive` | rule |
 | MAT-N5 | `button.body.padding @ variants {icon_only,@narrow} / variants {icon_only,@wide}, each cond flavor:expressive` | rule |
 | MAT-N5 | `button.body.corners @ variants {icon_only,@square} / {checked} variant icon_only / {pressed} variant icon_only, each cond flavor:expressive; button.body.transitions (Corners, Timing::Spring) @ variant icon_only cond flavor:expressive` | rule |
@@ -461,10 +462,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N6 | `segmented_control.values.pressed_width_factor @ variant @standard_group` (the pressed width multiplier, which the connector applies at layout); `segmented_control.segment.transitions (Geometry, Timing::Spring) @ variant @standard_group` | rule |
 | MAT-N6 | `segmented_control.values.item_gap, segmented_control.segment.min_height @ size extra_small / size small / size regular / size large / size extra_large, each variant @standard_group / variant @connected` | rule |
 | MAT-N7 | `split_button.values.part_gap, split_button.{primary,secondary}.{padding,corners}, split_button.arrow.glyph (its size) @ size extra_small / size small / size regular / size large / size extra_large` | rule |
-| MAT-N7 | `split_button.{primary,secondary}.corners @ latest state_layer:hover / {pressed}, split_button.secondary.corners @ {open} (the trailing half's one state, its menu open, MAT-N7), each size extra_small / size small / size regular / size large / size extra_large (the inner and outer corners)` | rule |
+| MAT-N7 | `split_button.{primary,secondary}.corners @ {hover} / {pressed}, split_button.secondary.corners @ {open} (the trailing half's one state, its menu open, MAT-N7), each size extra_small / size small / size regular / size large / size extra_large (the inner and outer corners)` (plain flags: Compose's shape follows the pressed state alone, `SplitButton.kt:698`, `:705`, the hovered inner corner the tokens', `material-web@2.5.0 tokens/versions/latest/sass/_md-comp-split-button-small.scss:40-41`) | rule |
+| MAT-N7 | `split_button.{primary,secondary}.shadow = Shadow::Elevation(<key>) @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed / {disabled}` (each half a `Surface` with the button's elevation, `ButtonDefaults.buttonElevation()` by default, `SplitButton.kt:687`, `:709`, `:767`, `:791`, `:879`, `:917`, its recency and motion `Button.kt:1703-1770`'s) | rule |
+| MAT-N7 | `split_button.{primary,secondary}.transitions (Shadow: as MAT-B13's)` | field |
 | MAT-N7 | `split_button.arrow.{transform,transitions} @ {open} (the trailing button's rotation)` | rule |
 | MAT-N8 | `button.body.{fill,stroke,corners}, button.label.text, button.icon.icon, button.menu_indicator.glyph @ variants {menu,primary} / variants {menu,@outlined} / variant menu` | rule |
-| MAT-N8 | `button.body.fill.append (state layer), button.label.text.fill, button.icon.icon.fill, button.menu_indicator.glyph.fill @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant menu` | rule |
+| MAT-N8 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each variant menu; button.label.text.fill, button.icon.icon.fill, button.menu_indicator.glyph.fill @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant menu` | rule |
 | MAT-N9 | `chip.body.{fill,stroke,shadow,corners,min_height,padding}, chip.label.text, chip.leading_icon.icon, chip.trailing_icon.icon @ variant @assist / variant @filter / variant @input / variant @suggestion / variants {@assist,@elevated} / variants {@suggestion,@elevated} / variants {@filter,@elevated}` | rule |
 | MAT-N9 | `chip.body.{fill,stroke}, chip.label.text.fill, chip.leading_icon.icon.fill, chip.trailing_icon.icon.fill @ {checked} variant @filter / {selected} variant @input` | rule |
 | MAT-N9 | `chip.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / latest state_layer:dragged; chip.body.shadow @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed / latest elevation:dragged; chip.body.opacity, chip.body.stroke @ {disabled}; chip.body.focus @ {focus_visible}` | rule |
@@ -474,13 +477,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N10 | `badge.values.{anchor_offset_x,anchor_offset_y}` | field |
 | MAT-N11 | `toolbar.bar.{fill,min_height,corners,shadow} @ variant bottom (shadow Shadow::Elevation); toolbar.bar.fill.append = alpha(role.@surface_tint, <fraction>) @ variant bottom` | rule |
 | MAT-N12 | `bottom_tab_bar.bar.{fill,min_height,corners,shadow}; bottom_tab_bar.indicator.{fill,min_width,min_height,corners}; bottom_tab_bar.item_label.text; bottom_tab_bar.values.item_gap` | field |
-| MAT-N12 | `bottom_tab_bar.item.fill.append (state layer), bottom_tab_bar.item_icon.icon.fill, bottom_tab_bar.item_label.text.fill @ !{selected} / {selected} / latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}` | rule |
+| MAT-N12 | `bottom_tab_bar.item.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}; bottom_tab_bar.item_icon.icon.fill, bottom_tab_bar.item_label.text.fill @ !{selected} / {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}` | rule |
 | MAT-N12 | `bottom_tab_bar.item.padding, bottom_tab_bar.indicator.{min_width,min_height} @ variant stacked / variant inline, each cond flavor:expressive` | rule |
 | MAT-N12 | `badge.* @ context bottom_tab_bar.item` | rule |
 | MAT-N12 | `bottom_tab_bar.values.presentations (event @indicator_move, part indicator)` | field |
 | MAT-N13 | `sidebar.pane.{fill,corners,shadow,min_width} @ variant compact` | rule |
 | MAT-N13 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ {selected} variant sidebar context sidebar.pane variant compact / {selected} variants {sidebar,icon_only} context sidebar.pane variant compact` (the no-label form, the content variant `icon_only` on the row) | rule |
-| MAT-N13 | `list.leading_icon.icon.fill, list.row.text.fill @ {selected} / latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible / {selected,pressed}, each variant sidebar context sidebar.pane variant compact` | rule |
+| MAT-N13 | `list.leading_icon.icon.fill, list.row.text.fill @ {selected} / {hover} / {focus_visible} / {pressed} / {selected,hover} / {selected,focus_visible} / {selected,pressed}, each variant sidebar context sidebar.pane variant compact` | rule |
 | MAT-N13 | `button.icon.icon @ variant pane_toggle context sidebar.header (the menu icon)` | rule |
 | MAT-N13 | `badge.* @ context list.row context sidebar.pane variant compact` | rule |
 | MAT-N13 | `sidebar.header.padding @ variant compact` | rule |
@@ -500,13 +503,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N16 | `date_picker.{popup_header,headline,supporting_text,divider} (absent = true) @ !{open}; date_picker.{popup_header,headline,supporting_text} (absent = true) @ !variants {@modal,@input}` (nested in the popup, they are absent with it) | rule |
 | MAT-N16 | `calendar.weekday_label.text; calendar.day.{min_width,min_height,corners}; calendar.year.{min_width,min_height,corners,text}` | field |
 | MAT-N16 | `calendar.day.fill, calendar.day_label.text.fill @ {selected} / {today}; calendar.today_marker.stroke @ {today}; calendar.day.opacity @ {other_month}` | rule |
-| MAT-N16 | `calendar.day.fill.append (state layer) @ latest state_layer:hover / {pressed} / latest state_layer:focus_visible; calendar.year.fill @ {selected} / latest state_layer:hover / {pressed} / latest state_layer:focus_visible` | rule |
+| MAT-N16 | `calendar.day.fill.append (state layer) @ latest state_layer:hover / {pressed} / latest state_layer:focus_visible; calendar.year.fill @ {selected} / {hover} / {pressed} / {focus_visible}` | rule |
 | MAT-N16 | `calendar.range_band.fill, calendar.day.fill @ {@range_start} / {@range_end} / {@in_range} (the band behind each day, by the day's own flags); calendar.title.text (the range picker's month headers)` | rule |
 | MAT-N16 | `button @ variant menu context calendar.header (the month and year menu button)` | rule |
 | MAT-N16 | `input.* @ context any date_picker variant @input` | rule |
 | MAT-N17 | `time_picker.{dial,dial_selector,dial_center}.{fill,corners,min_width,min_height}, time_picker.dial_track.{fill,min_width}, time_picker.dial_label.text @ variant @dial` | rule |
 | MAT-N17 | `time_picker.dial_label.text.fill @ {selected}` (the label under the selector, an element) | rule |
-| MAT-N17 | `time_picker.{selector_cell,period_selector}.{fill,stroke,corners,min_width,min_height,text} @ {selected} / latest state_layer:hover / {pressed} / latest state_layer:focus_visible / {selected} latest state_layer:hover / {selected,pressed} / {selected} latest state_layer:focus_visible, each variant @dial` (the period selector also under `variant @input`; the input's hour and minute fields are `input` elements, below) | rule |
+| MAT-N17 | `time_picker.{selector_cell,period_selector}.{fill,stroke,corners,min_width,min_height,text} @ {selected} / {hover} / {pressed} / {focus_visible} / {selected,hover} / {selected,pressed} / {selected,focus_visible}, each variant @dial` (the period selector also under `variant @input`; the input's hour and minute fields are `input` elements, below) | rule |
 | MAT-N17 | `time_picker.headline.text, time_picker.time_separator.text` | field |
 | MAT-N17 | `time_picker.popup.{fill,corners,shadow}` (the time picker's container: its colour, shape and elevation tokens, `_md-comp-time-picker.scss:84-89`) | field |
 | MAT-N17 | `input.{body.stroke,floating_label.text,supporting_text.text} @ context time_picker.body[@input]` (the time input fields, their outline, label and supporting text: `input` elements, Nested controls) | rule |
@@ -520,12 +523,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N20 | `sheet.values.anchor @ variant @side` (`Side`: the docked side sheet at a window side, spanning the window's full height, the docked container height) | rule |
 | MAT-N20 | `sheet.body.margin @ variants {@side,@detached}` (the detached side sheet's insets from the window's edges, which set its height) | rule |
 | MAT-N20 | `sheet.handle (absent = true) @ variant @side` (the side sheet draws no drag handle) | rule |
-| MAT-N20 | `button.label.text.fill, button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context sheet.body variant @side (the actions)` | rule |
+| MAT-N20 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context sheet.body variant @side (the actions); button.label.text.fill @ {hover} / {focus_visible} / {pressed}, each context sheet.body variant @side (the actions)` | rule |
 | MAT-N20 | `button @ variant close context sheet.header (the close button)` | rule |
 | MAT-N21 | `sheet.body.{fill,shadow,corners}, sheet.body.fill.append (surface tint) @ variant floating` | rule |
 | MAT-N22 | `toast.body.{fill,corners,shadow,min_height}; toast.title.text` | field |
 | MAT-N22 | `toast.body.min_height @ {multiline}` | rule |
-| MAT-N22 | `button.label.text.fill, button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context toast.body (the action)` | rule |
+| MAT-N22 | `button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context toast.body (the action); button.label.text.fill @ {hover} / {focus_visible} / {pressed}, each context toast.body (the action)` | rule |
 | MAT-N22 | `button.icon.icon.{size,fill} @ variant close context toast.body; button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each variant close context toast.body` | rule |
 | MAT-N22 | `toast.values.durations; toast.values.presentations (events Appear, Disappear)` | field |
 | MAT-N23 | `banner.body.{fill,corners,shadow}, banner.title.text, banner.message.text, banner.icon.icon, banner.image.{corners,min_width,min_height}, banner.divider.stroke @ variant @basic / variant @rich / variant @vibrant` | rule |
@@ -536,12 +539,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N24 | `spinner.indicator.shape (a ShapeKind::Material shape, S2.4, ADD-B03, ADD-A99); spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape, with their timing, R25.5)` | rule |
 | MAT-N25 | `toolbar.bar.{fill,min_height,corners,shadow,padding}, toolbar.values.item_gap @ variant @docked / variant floating / variants {floating,@vibrant}` | rule |
 | MAT-N25 | `toolbar.bar.{min_width,min_height} @ variants {floating,vertical} (the floating toolbar's height and width per orientation, R25.14); toolbar.bar.margin @ variant floating` (the floating bar's distance from the window's edges) | rule |
-| MAT-N25 | `button.{body.fill,icon.icon.fill,label.text.fill} @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / {disabled}, each context toolbar.bar variant floating / context toolbar.bar variants {floating,@vibrant} / context toolbar.bar variant @docked` | rule |
+| MAT-N25 | `button.{body.fill,icon.icon.fill,label.text.fill} @ {hover} / {focus_visible} / {pressed} / {disabled}, each context toolbar.bar variant floating / context toolbar.bar variants {floating,@vibrant} / context toolbar.bar variant @docked` | rule |
 | MAT-N25 | `button.{body.min_width,body.min_height,icon.icon.size} @ variant @fab context any toolbar variant floating (the FAB in the toolbar, its sizes)` | rule |
 | MAT-N25 | `toolbar.values.presentations (events Appear, Disappear)` | field |
 | MAT-N26 | `dialog.body.{fill,corners,shadow}, dialog.header.{fill,padding,min_height}, dialog.title.text, dialog.action_area.{fill,padding,min_height}, dialog.action_area.stroke (the divider) @ variant full_size` | rule |
 | MAT-N26 | `dialog.header.{fill,stroke,shadow} @ {scrolled} variant full_size` (the on-scroll colour and elevation) | rule |
-| MAT-N26 | `button.icon.icon @ variant close context dialog.header; button.label.text, button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context dialog.header (the header's action)` | rule |
+| MAT-N26 | `button.icon.icon @ variant close context dialog.header; button.body.fill.append (state layer) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed}, each context dialog.header; button.label.text @ {hover} / {focus_visible} / {pressed}, each context dialog.header (the header's action)` | rule |
 | MAT-N27 | `menu.{body,item,item_label,item_icon}.* @ context autocomplete` | rule |
 | MAT-N27 | `input.* @ context autocomplete / variant @filled context autocomplete (the field: outlined the base)` | rule |
 | MAT-N27 | `autocomplete.values.placement (MaterialMenu)` | placement |
@@ -573,9 +576,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X7 | `PartStyle.transitions group Shadow (Compose's outgoing specs on the rest style, each with its from set; its incoming spec on each state's rule; S2.7's Transition.from)` | field |
 | MAT-X8 | `PartStyle.fill.append = alpha(<state-layer role>, token.params.opacity.<state>) @ latest state_layer:hover / latest state_layer:focus_visible / {pressed} / latest state_layer:dragged / {disabled} (per component its state-layer colour, over any container)` | rule |
 | MAT-X8 | `token.params.opacity.<key> (the md.sys.state opacities: hover, focus, pressed, dragged, disabled; R1.6 picks the latest set, ADD-A44)` | token |
-| MAT-X9 | `PartStyle.transitions (Fill, TransitionKind::Ripple with its max_radius, initial_scale, padding, soft_edge, opacity, fade, min_press, touch_delay) @ {pressed} (on the state layer, S2.7)` | rule |
+| MAT-X9 | `PartStyle.transitions (Fill, TransitionKind::Ripple with its max_radius, initial_scale, padding, soft_edge, opacity, fade, min_press, touch_delay) @ {pressed} (on the state layer, S2.7; a rule stating only it, written after the state-layer rules, so it governs the press while hovered or focused)` | rule |
 | MAT-X9 | `Transition.{duration,delay,timing} of the ripple (grow time, easing)` | field |
-| MAT-X9 | `PartStyle.transitions (Fill, Interpolate) @ latest state_layer:hover (the hover fade)` | rule |
+| MAT-X9 | `PartStyle.transitions (Fill, Interpolate, Timing::Linear: the state layer's fades, Compose's specs, material3-ripple Ripple.kt:313-322, :463-483): the rest style's outgoing fade with no from, then the drag's outgoing `from {dragged}` where the widget's state_layer set holds dragged; the incoming fade @ latest state_layer:hover / latest state_layer:focus_visible / latest state_layer:dragged; then, on the rest style and each of those rules, the press ripple's release fade `from {pressed}` (kind Ripple, its fade)` | rule |
 | MAT-X10 | `token.focus: FocusIndicator.width, FocusIndicator.offset (per side, to the ring's inner edge, S2.10: the outward offset for the outward ring, `material-web@2.5.0 focus/internal/_focus-ring.scss:58-65`; for the inward ring, drawn inside the box by md-focus-ring's `inward-offset` (the distance to the ring's outer edge, `material-web@2.5.0 tokens/_md-comp-focus-ring.scss:49`), `= sub(0, add(<inward-offset>, <width>))`, `focus/internal/_focus-ring.scss:68-75`; the system token `md.sys.state.focus-indicator.inner-offset` (`tokens/versions/latest/sass/_md-sys-state-focus-indicator.scss:18-19`) already is that inner-edge offset, the ring flush inside at its `thickness` (`:22-23`), so a preset built on the system tokens states it as `offset` unchanged, never as an `inward-offset`; ADD-A18), FocusIndicator.corners (Radius::FollowPart, the ring's inner corner: the shape plus the outward offset, or the shape less the inward offset less the width, `:60-63`, `:70-73`)` (the system tokens: thickness, inner and outer offset) | token |
 | MAT-X10 | - (material-web's growing focus ring and its reduced-motion form, `md-focus-ring`'s own component tokens, `_md-comp-focus-ring.scss:20-52`; Compose, the reference, has its own focus indication, MAT-X34†) | reference (R1.6) |
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |

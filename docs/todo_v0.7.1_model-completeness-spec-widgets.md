@@ -241,11 +241,16 @@ Each `### <widget>` section states, in this order:
   starts in. `pressed` is no member: Compose draws the press ripple apart from the state layer (`Ripple.kt:241-248`,
   `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
   focused shows both, two states drawn together (R3); the preset writes its `{pressed}` rule before the state-layer
-  rules, so the press layer is appended first and lies beneath (ADD-A121). The widget's other hover-, focus- and
-  drag-dependent fields (a label's colour, a stroke) follow the state layer's set, as they followed its exclusive group
-  before, the gate checking each order (S17). A control with an elevation shows the elevation of the
+  rules, so the press layer is appended first and lies beneath (ADD-A121). Only the state layer (an appended
+  `fill` layer, or a widget's `state_layer` part) follows `state_layer`, and only the shadow follows `elevation`:
+  every other field a state changes (a label's colour, a stroke, a shape) follows its own code or tokens, which have
+  no notion of order, so it is a plain `{hover}`, `{focus_visible}`, `{dragged}` or `{pressed}` rule, those rules
+  combining in the source's precedence, the later winning (the Expressive list item's shape, pressed over dragged over
+  selected over focused over hovered, `ListItemDefaults.kt:1144-1152`; its colours by `dragged` alone, `:751-772`; the
+  split button's shape by its pressed state alone, `SplitButton.kt:698`, `:705`). A control with an elevation shows the elevation of the
   latest of hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`,
-  `FloatingActionButton.kt:1300-1347`, `ToggleButton.kt:1589-1633`), and of drag too on cards and chips
+  `FloatingActionButton.kt:1300-1347`, `ToggleButton.kt:1589-1633`; the split button's halves through the button's
+  `ButtonElevation`, `SplitButton.kt:687-1294`, `:709`, `:791`, `:917`), and of drag too on cards and chips
   (`Card.kt:668-723`, `Chip.kt:3612-3666`, `:3751-3805`): the set `elevation`, `[pressed, focus_visible, hover]`, or
   `[dragged, pressed, focus_visible, hover]`, `pressed` before the others as a press begins on an element the
   pointer already hovers or the key's focus already holds, `dragged` before it as a drag begins from a press, and
@@ -257,7 +262,17 @@ Each `### <widget>` section states, in this order:
   The `from {hover}` transition is stated after the other, so it wins where hover and another flag end in one update,
   where Compose takes the spec of the elevation it showed: exact on buttons, FABs and toggle buttons, where at the pin's
   tokens only the hovered elevation differs from the rest one, and on cards and chips but where a drag and a hover
-  end in one update (S2.7).
+  end in one update (S2.7). The state layer's own fades are chosen the same way (`material3-ripple/…/Ripple.kt:313-322`,
+  `:463-483`): by the interaction entered, or, going to none, by the one left, all linear. So the rest style states the
+  outgoing fade with no `from`, then the drag's outgoing one `from {dragged}` where the set holds `dragged`; each
+  state-layer rule states its incoming fade; and the rest style and each state-layer rule state last the press
+  ripple's release fade, `from {pressed}`, kind `Ripple` (R9). The `{pressed}` rule's `Ripple` transition is stated by
+  a rule of its own after the state-layer rules, so it governs the press while hovered or focused (MAT-X9). One limit
+  remains, recorded for the spec-change queue: one transition governs a part's whole `Fill` group per change, so where
+  one update changes two of its layers that Compose times apart, both take the governing one's timing: the hover or
+  focus layer changing while the press ripple holds, and a container colour that Compose snaps while the state layer
+  fades (a selected chip's, `Chip.kt:4070-4076`; a checked toggle button's, `ToggleButton.kt:1446-1452`; a checked
+  icon button's, `IconButton.kt:1428-1436`).
   Compose's buttons, toggle buttons and cards name the state left by the elevation they were heading for, the first of
   pressed, hovered, focused (and dragged) with that value (`Button.kt:1758-1764`, `ToggleButton.kt:1644-1650`,
   `Card.kt:733-740`; the FAB and the chips keep the interaction itself, `FloatingActionButton.kt:1417-1430`,
@@ -1646,7 +1661,8 @@ spaces:
     button translated under `{pressed}` / `{checked}` as `body.transform`, the Selection binding under `{focused}`);
     Breeze's QWidget round button (K1.26, `_kde_round_button`) is drawn with a radius of half its larger side, which
     Qt clamps per axis to half each side (`breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738-739`; `qtbase@6.12.0
-    src/gui/painting/qpainterpath.cpp:3457-3470`), so a square box is a circle and a box that is not square an
+    src/gui/painting/qpainter.cpp:4015-4018`, `qpaintengineex.cpp:745-746`, the path fallback
+    `qpainterpath.cpp:3457-3470`), so a square box is a circle and a box that is not square an
     ellipse: `body.corners` is `Ellipse` on `kde-breeze` (S2.4, ADD-A124), its shadow following the ellipse of its own
     box (S2.5), while Kirigami's RoundButton (`cond flavor:kirigami`) is a capsule, `Full`, its background's radius
     the control's, half its smaller side (`qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:83`,
@@ -6914,8 +6930,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `primary` *(element)*, `secondary` *(element: the arrow part; KDE's menu sub-control, K1.155; kirigami-addons'
     second action, K-KA-27†)* — the two halves:
     `fill`, `stroke` (W2-17), `corners` (the inner corners per state, Material, MAT-N7; GNOME's joined inner corners,
-    GN-2.29), `padding` (GN-2.29; Material's leading and trailing spaces, MAT-N7), `min_width`, `min_height` (W2-17's
-    part sizes), `transitions` (kirigami-addons' state-colour change, K-KA-27†). `arrow` belongs to `secondary` and is
+    GN-2.29), `shadow` (Material's halves, each with the button's elevation, MAT-N7), `padding` (GN-2.29; Material's leading and trailing spaces, MAT-N7), `min_width`, `min_height` (W2-17's
+    part sizes), `transitions` (kirigami-addons' state-colour change, K-KA-27†; Material's elevation motion, MAT-N7). `arrow` belongs to `secondary` and is
     queried with it. `primary_label`, `primary_icon` belong to `primary` and are queried with it.
   - `primary_label` — `text`, `transform` (Material's optical centring: the content moved off the geometric centre
     by a coefficient of its half's outer and inner corner difference, `translate_x` an expression over
@@ -6950,13 +6966,15 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   CommonStates), `checked` combining (`toggle`); others none (states combine; `material-3`'s state layers are a
   recency set, below); precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible,
   hover]` on `primary` and `secondary` (Material's recency sets, above: a `Surface`'s ripple, `SplitButton.kt:702-703`;
-  `pressed` combines).
+  `pressed` combines) and `elevation = [pressed, focus_visible, hover]` on both (each half's `ButtonElevation`,
+  `SplitButton.kt:709`, `:791`, `:917`, the button's `Button.kt:1703-1747`).
 - **may_be_absent:** parts: `arrow` (`kde-breeze` by a rule under `variant @ka_double_floating`: DoubleFloatingButton's
   two halves are two actions, neither opening a menu, K-KA-27†), `divider` (`material-3`: the gap between its
   halves stands for it, MAT-N7; `kde-breeze` by a rule under `variant @ka_double_floating`, the pill drawing no
   line between its halves, K-KA-27†). values: `menu_placement` (`kde-breeze` by a rule under
   `variant @ka_double_floating`, as for `arrow`, K-KA-27†); fields: `body.shadow` (all but `kde-breeze`; `kde-breeze` by its base, outside
-  `variant @ka_double_floating`, whose shared shadow is the one drawn, K-KA-27†).
+  `variant @ka_double_floating`, whose shared shadow is the one drawn, K-KA-27†), `primary.shadow` (all but `material-3`),
+  `secondary.shadow` (all but `material-3`).
 - **State-model source:** GNOME `_buttons.scss` (`splitbutton`); macOS `NSComboButton.Style.split`; Material
   split-button tokens; Windows SplitButton visual states; KDE Breeze's tool-button branches for `MenuButtonPopup`
   (`st:4426-4465`, `st:4987-5051`, K1.155); kirigami-addons `DoubleFloatingButton.qml`.

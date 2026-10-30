@@ -444,7 +444,8 @@ keeps a control's interactions in the order they began and shows the last: its s
 drag, the press ripple drawn beside it (`androidx@e4d933c9
 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-280`), and a
 button's elevation over hover, focus and press (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1703-1747`;
-`FloatingActionButton.kt` and `ToggleButton.kt` likewise, `Card.kt` and `Chip.kt` with drag too). An elevated
+`FloatingActionButton.kt`, `ToggleButton.kt` and the split button's halves through the button's `ButtonElevation`,
+`SplitButton.kt:687-1294`, likewise, `Card.kt` and `Chip.kt` with drag too). An elevated
 button hovered after it was focused is at level 2, and focused after it was hovered at level 1
 (`tokens/ElevatedButtonTokens.kt:43-74`), so any fixed precedence is wrong for one of the two sequences. An
 exclusive group cannot state them either: it drops flags for every property, while the press, a member of the
@@ -464,7 +465,10 @@ elevation's set, is drawn beside the state layer.
 **Decision:** named recency sets. The stated order is the tie-break, so a connector that reports nothing gets a
 fixed precedence (Material's: focus over hover, as its View library ranks them), and the gate checks each order of
 the flags present (R4). Material's state layers are rules on the latest of the set `state_layer`, not an exclusive
-group: a layer rule matching only its latest flag already draws one layer.
+group: a layer rule matching only its latest flag already draws one layer. Only the fields the platform's recency
+code drives follow a set (Compose's state layer and elevation); its other state-dependent fields are drawn by fixed
+precedences of their own (the list item's shape, `ListItemDefaults.kt:1144-1152`), so they stay rules on plain
+flags, in that order.
 
 **State layers** (Material's hover, focus, pressed and dragged overlays, C08; libadwaita's `currentColor`
 shares) are a paint layer a rule appends over the fill beneath (R6), with a colour derivation (R5.4).
@@ -624,13 +628,15 @@ toolkit that cannot draw the material draws instead.
 capsules); elliptical (each corner a quarter of the ellipse inscribed in the box, half its width across and half its
 height down, equal to the capsule on a square box: Breeze's QWidget round button, drawn with a radius of half its
 larger side, which Qt clamps per axis to half each side, `breeze@6.8.2 kstyle/breezehelper.cpp:727-739`,
-`qtbase@6.12.0 src/gui/painting/qpainterpath.cpp:3457-3470`; an application reaches it by giving such a button a
+`qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018`, `qpaintengineex.cpp:745-746`; an application reaches it by giving such a button a
 label or a stretched box); concentric (the container's radius less the inset, with a minimum where the platform states one,
 X-CR-1–X-CR-3), which the toolkit computes at layout from its container; and the corner curve (circular, or
 Apple's continuous). A boxed list's rounded first and last rows are rules by position (R2.3). A shape that
 changes between states is a rule with its transition. For the ellipse, recording it as not expressible would leave a
-visible deviation on a reachable case, and two radii per corner (CSS's `a / b`) would add a field to every corner of
-every preset and connector for one shape, so it is one corner kind, the smallest exact form: on all four corners or
+visible deviation on a reachable case; two radii per corner (CSS's `a / b`) would add a field to every corner of
+every preset and connector for one shape; and a shape (R25.5) is Material's closed library, implemented to
+`androidx.graphics.shapes`, so it would state Breeze's drawing by another platform's code, and it replaces the
+corners, whose stroke, inset, ring and shadow rules a shape does not carry. So it is one corner kind, the smallest exact form: on all four corners or
 none, with circular curves, its shadow and a focus ring that follows the part following the ellipse of their own
 boxes.
 
@@ -689,17 +695,21 @@ MAT-X13–MAT-X15, X-MO-1).
   none applies from any state, and one with a set only where the element held one of its flags before the change,
   after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
   later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
-  entered, or, moving to rest, by the one left (120 ms from hover, 150 ms from press, drag or focus), and snaps from
-  none and into disabled (`androidx@e4d933c9
+  entered, or, moving to rest, by the one left (150 ms from press or focus, and drag on cards and chips; 120 ms from
+  hover), and snaps from none and into disabled (`androidx@e4d933c9
   compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-113`,
-  `Button.kt:1750-1770`). Breeze fades a button's pen only on leaving hover, visible focus or press and its fill only
+  `Button.kt:1750-1770`), and its state layer's fade the same way (15 ms from hover or focus, 150 ms from drag;
+  `compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:313-322`,
+  `:463-483`). Breeze fades a button's pen only on leaving hover, visible focus or press and its fill only
   on leaving press, into whatever state follows, checked included, while checked, default and window-activation
   changes are instant (`breeze@6.8.2 kstyle/breezehelper.cpp:655-725`, `kstyle/breezestyle.cpp:4546-4549`). Both are
   the style entered governing with each of its transitions limited to the states it names: Material's rest
-  elevation states 120 ms `from {hover}` and 150 ms `from {pressed, dragged, focus_visible}`, and Breeze's base its
-  fill transition `from {pressed}` and its stroke transition `from {hover, focus_visible, pressed}`, which a checked
-  rule stating no transitions keeps (its disabled rule states zero ones, as Breeze runs neither fade on a disabled
-  button). Rejected: a transition per (from, to) pair of states, XAML's form (the style
+  elevation states 150 ms `from {pressed, focus_visible}` (with `dragged` on cards and chips) and then 120 ms
+  `from {hover}`, the later winning where both apply, and its rest state layer a 15 ms fade and then 150 ms
+  `from {dragged}`; Breeze's base states its fill transition `from {pressed}` and its stroke transition
+  `from {hover, focus_visible, pressed}`, which a checked rule stating no transitions keeps, and after them zero ones
+  `from {disabled}`, as Breeze changes a button at once on being enabled again, and its disabled rule zero ones, as
+  Breeze runs neither fade on a disabled button. Rejected: a transition per (from, to) pair of states, XAML's form (the style
   entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
   transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
   that appears interpolates from its colour at zero alpha, and one that disappears to it; layers are matched by
@@ -714,7 +724,8 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Ripple:** a property transition of the pressed state layer whose origin is the point pressed, which the
   toolkit has from the press itself: the layer grows from it, with the radius, durations and opacities Material
   states (MAT-X9) as the transition's kind-specific values; its fade on release is the transition of the
-  style entered, {hover} if the pointer is still on the control, as the style entered governs.
+  style entered, {hover} if the pointer is still on the control, as the style entered governs: that style's
+  transition `from {pressed}`, of the ripple's kind.
 - **Loops:** a period, a timing and the keyframes the platform states, extending `AnimatedIcon` (spinners,
   indeterminate progress).
 - **Scroll physics:** deceleration, overscroll and its spring, snapping, distance per wheel step (GN-3.24,
@@ -1132,8 +1143,9 @@ and the display's corner radius, a root input rather than per-element data (R25.
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
 declares it reads, so the query still cannot fail (R2.8); the connector supplies them and queries again when they
 change, as for a state; a part's own other fields are a reference, under the cycle check (R5.4). The order in which
-the connector set the element's state flags (R3's recency) is element data too, which every connector has from setting
-the flags. It is carried beside the flags it orders, not among the expression operands: selectors read it, as they
+the connector set the element's state flags (R3's recency) is element data too: the connector records when each flag
+became set, beside the previous query results it already keeps per element to compare them (R9), as an
+immediate-mode toolkit recomputes the flags every frame. It is carried beside the flags it orders, not among the expression operands: selectors read it, as they
 read the flags, and no expression does; and it needs no declaration, as flags it leaves out count by the recency
 set's stated order, so a connector that reports none gets a defined answer.
 
