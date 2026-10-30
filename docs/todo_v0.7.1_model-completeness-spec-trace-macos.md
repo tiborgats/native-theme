@@ -94,7 +94,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W14† | `window.title @ variant @title_hidden` (`absent = true`: the title goes, the bar and its traffic lights stay) | rule |
 | MAC-W14† | `window.title_bar.{fill,stroke,min_height}, window.values.title_alignment @ variant @no_toolbar / @toolbar_unified / @toolbar_unified_compact / @toolbar_expanded / @toolbar_preference` | rule |
 | MAC-W15† | `window.title.text.fill @ cond window_inactive` | rule |
-| MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @recessed / @round_rect / @inline / @textured_rounded / @shadowless_square / flat (borderless)` | rule |
+| MAC-B01 | `button.body.*, button.label.* @ variant @flexible_push / @small_square / tool / @accessory_bar / @accessory_bar_action / @badge / circular / help / glass / @shadowless_square / flat (borderless)` | rule |
 | MAC-B01 | `expander.header, expander.arrow @ variant @push_disclosure; expander.arrow (the disclosure bezel, MAC-EX01)` | rule |
 | MAC-B01 | `button.body.*, button.label.* @ {pressed} / {disabled} / {checked} per bezel variant` | rule |
 | MAC-B02 | `button.body.fill, button.label.text.fill @ {default} !cond window_inactive !cond app_inactive` | rule |
@@ -245,7 +245,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SB05 | `list.row_background.fill, list.row.text.fill @ variant sidebar {selected} cond window_inactive` | rule |
 | MAC-SB05 | `reader:macos:unemphasizedSelectedContentBackgroundColor` | reader |
 | MAC-SB06 | `sidebar.pane.{fill,corners,shadow} @ variant floating (material fill, Concentric corners)` | rule |
-| MAC-SB06 | `sidebar.values.floating_inset` | field |
+| MAC-SB06 | `sidebar.pane.margin @ variant floating` (the pane's distance from the window's edges, its `Concentric` corners' inset, S2.4) | rule |
 | MAC-SB06 | `background_extension.extension.fill @ context sidebar.pane variant floating (the content extending under it)` | rule |
 | MAC-SB06 | `reader:macos:effectiveCornerRadii` | reader |
 | MAC-SB07 | `sidebar.pane.fill @ cond window_inactive` | rule |
@@ -286,6 +286,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-L01 | `reader:macos:headerRect(ofColumn:), rect(ofRow:) per style` | reader |
 | MAC-L02 | `list.row_background.corners, list.values.row_background_inset @ {selected}` | rule |
 | MAC-L02 | `list.row_background.corners @ {selected} prev list.row{selected} / {selected} next list.row{selected} (ADD-B07)` | rule |
+| MAC-L02 | `list.row_background.fill @ {selected} context list.view {focus_within}` (the emphasized selection, the accent input `selected_content_background`'s value: `selectedContentBackgroundColor`, "the background color of selected and emphasized (focused) content: table views rows", `NSColor.h:221` in the Xcode 26.6 SDK; ADD-A123) | rule |
+| MAC-L02 | `input.selected_content_background` (an accent input, S9.1: `NSColor.selectedContentBackgroundColor`, ADD-A123) | input |
+| MAC-L02 | `reader:macos:NSColor.selectedContentBackgroundColor` | reader |
 | MAC-L03 | `list.row_background.fill, list.row.text.fill @ {selected} context list.view !{focus_within} / {selected} cond window_inactive` | rule |
 | MAC-L03 | `reader:macos:unemphasizedSelectedContentBackgroundColor` | reader |
 | MAC-L04 | `list.secondary_text.text.fill, list.leading_icon.icon.fill @ {selected} context list.view {focus_within}` | rule |
@@ -440,7 +443,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF03 | `reader:macos:NSColor.systemYellow, systemPurple, systemPink, systemTeal, systemIndigo, systemCyan, systemMint, systemBrown, systemGray` | reader |
 | MAC-DF04 | `role.@under_page_background` | role |
 | MAC-DF04 | `role.global.find_highlight` | role |
-| MAC-DF04 | `role.@selected_control` | role |
+| MAC-DF04 | `role.@selected_control` (the accent input `selected_control`'s value, S9.1, ADD-A123) | role |
+| MAC-DF04 | `input.selected_control` (an accent input, S9.1: `NSColor.selectedControlColor`, ADD-A123) | input |
 | MAC-DF04 | `role.@selected_control_secondary` | role |
 | MAC-DF04 | `role.view.background` | role |
 | MAC-DF04 | `role.@text_background` | role |
@@ -495,8 +499,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `input.highlight` (an accent input, S9.1) | input |
-| MAC-DF05† | `role.@highlight` | role |
+| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, as it follows neither the accent nor the highlight setting, the probe's accent pass; no input, ADD-A123) | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
 | MAC-TS03† | `token.text.keyed.large_title_tight` | token |
@@ -754,6 +757,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X12 | `slider.values.repeat_delay / repeat_interval_ms` (= token.params.pointer_repeat.delay / .interval) | field |
 | MAC-X12 | `reader:macos:NSEvent.doubleClickInterval, keyRepeatDelay, keyRepeatInterval; getPeriodicDelay; NSTextInsertionPointBlinkPeriodOn/Off; NSInitialToolTipDelay` | reader |
 | MAC-X13 | `PartStyle.focus FocusIndicator (shape, offset, opacity, transition) per control` | field |
+| MAC-X13 | `token.focus.paint` (the accent input `keyboard_focus_indicator`'s value, its alpha the ring's opacity, S9.1, ADD-A123) | token |
+| MAC-X13 | `input.keyboard_focus_indicator` (an accent input, S9.1: `NSColor.keyboardFocusIndicatorColor`, ADD-A123) | input |
+| MAC-X13 | `reader:macos:NSColor.keyboardFocusIndicatorColor` | reader |
 | MAC-X13 | `list.row_background.focus (the ring on table rows)` | field |
 | MAC-X13 | `<widget>.values.focus_visible_when (Never for buttons, checkboxes, segments, links; AnyFocus for text fields and lists; ADD-A16)` | field |
 | MAC-X13 | `<widget>.values.focus_visible_when @ cond full_keyboard_access (Keyboard { … } for buttons, checkboxes, segments, links)` | rule |
@@ -843,7 +849,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X27 | `cond system_setting:wallpaper_tinting (ADD-A04)` | condition |
 | MAC-X27 | `input.accent multicolour (no accent chosen)` | input |
 | MAC-X27 | `role.* @ cond system_setting:wallpaper_tinting` | rule |
-| MAC-X27 | `input.highlight` (an accent input, S9.1) | input |
+| MAC-X27 | `input.highlight` (an accent input, S9.1: `NSColor.selectedTextBackgroundColor`, the highlight setting's colour, ADD-A123) | input |
+| MAC-X27 | `reader:macos:NSColor.selectedTextBackgroundColor` | reader |
 | MAC-X28 | `input.misspelling.text.decoration (Dotted / Wavy); text_area.misspelling.text.decoration` | field |
 | MAC-X28 | `input.grammar_mark.text, text_area.grammar_mark.text` | field |
 | MAC-X28 | `input.preedit.text, text_area.preedit.text (marked text underline)` | field |

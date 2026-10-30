@@ -2054,10 +2054,11 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_sidebars.scss:48-49"
 quote = "&:backdrop { background-color: var(--secondary-sidebar-backdrop-color);"
 
+# the `View` set's disabled pair, `.view:disabled` (one of the catalogue's two adwaita disabled sets, GN-1.176)
 [[fact]]
 key = "role.view.disabled.foreground"
 value = "= alpha(role.view.foreground, token.params.opacity.disabled)"
-rows = []
+rows = ["GN-1.176"]
 
 [[fact.cite]]
 kind = "published"
@@ -2066,20 +2067,21 @@ quote = "&:disabled { color: color-mix(in srgb, var(--view-fg-color) var(--disab
 
 [[fact]]
 key = "role.view.disabled.background"
-value = "= mix(role.view.background, role.window.background, 0.6)"
-rows = []
+value = "= mix(role.window.background, role.view.background, 0.4)"
+rows = ["GN-1.176"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_views.scss:8"
 quote = "background-color: color-mix(in srgb, var(--window-bg-color) 60%, var(--view-bg-color));"
-conversion = ["percent_to_fraction"]
+conversion = ["percent_to_fraction", "complement"]
 
-# the window's disabled colours: the public compat colours libadwaita defines for applications (`_compat-colors.scss`)
+# the `Window` set's disabled pair: the GTK 3 compatibility colours libadwaita defines for applications' own drawing
+# (`_compat-colors.scss`), which its stylesheet does not use itself (GN-1.176)
 [[fact]]
 key = "role.window.disabled.background"
 value = "= mix(role.window.background, role.view.background, 0.4)"
-rows = []
+rows = ["GN-1.176"]
 
 [[fact.cite]]
 kind = "published"
@@ -2090,7 +2092,7 @@ conversion = ["percent_to_fraction", "complement"]
 [[fact]]
 key = "role.window.disabled.foreground"
 value = "= alpha(role.window.foreground, 0.5)"
-rows = []
+rows = ["GN-1.176"]
 
 [[fact.cite]]
 kind = "published"

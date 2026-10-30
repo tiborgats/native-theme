@@ -1158,13 +1158,17 @@ for crate in $WORKSPACE_CRATES; do
     fi
 done
 # The 0.8.0 model is built in native-theme's `next` module, hidden from the
-# documentation until it replaces today's, and `missing_docs` does not fire in
-# a `#[doc(hidden)]` module. The `nt_next_docs` cfg drops that attribute, so
-# this build holds `next` to the crate's own `missing_docs`. `-D warnings`, not
+# documentation until it replaces today's; neither `missing_docs` nor rustdoc's
+# link checks reach a `#[doc(hidden)]` module. The `nt_next_docs` cfg drops
+# that attribute, so this run holds `next` to the crate's own `missing_docs`
+# and fails on a broken intra-doc link in it. `-D warnings`, not
 # `-D missing-docs`: the crate root's `#![warn(missing_docs)]` overrides a lint
 # level given on the command line, so `-D missing-docs` alone only warns.
-run_check "missing docs (native-theme's next module)" \
-    cargo rustc -p native-theme --lib -- --cfg nt_next_docs -D warnings
+# RUSTDOCFLAGS reach rustdoc alone, so the ordinary build is not rebuilt: only
+# native-theme is documented once more (a few seconds), as the two runs above
+# re-document each other.
+run_check "docs and missing docs (native-theme's next module)" \
+    env RUSTDOCFLAGS="--cfg nt_next_docs -D warnings" cargo doc -p native-theme --no-deps
 # docs.rs builds native-theme-iced with every feature, and a doc item behind a
 # feature gate can only break there. No other gate documents that configuration.
 run_check "docs (native-theme-iced, all features)" \

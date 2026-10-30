@@ -37,6 +37,12 @@ literals are S2.2's (a TOML number; the colour, length, duration, angle and font
 expression; a table's leaves, a suffixed key giving its number its unit); references and names are the verifier's.
 A text value (check_facts.text_leaves: where the key's type is text) is no literal source: it equals, whitespace-
 normalised and case-sensitive, a whole string one of those quotes holds by the text notations (quote_texts, below).
+A zero stated by omission (S17 *Absence*, ADD-A122): where one of those citations is an absence citation (it has
+`absent`, whose names the check above refuses in its range), the value's zero literals (`"0ms"`, `"0px"`, `0`) are
+held by it; every other literal still needs a quote. A LinearGradientBrush (the ledger's queue #57): where one of
+those quotes holds a `<LinearGradientBrush …>` (xaml), an angle literal of the value equals only an angle literal of
+the quotes (the brush's computed angle, a `deg` literal), never a unitless number, so a point's `0` holds no
+`angle_deg = 0`.
 
 Per `measured` citation: the evidence file is committed (`git ls-files`) and exists, the run folder's `run.toml` has an
 entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
@@ -46,7 +52,8 @@ quoted keys, `result`, and `conditions` (a list of S7.1's condition strings nami
 (check_facts.value_problems; `conversion` does not apply to a result); for each input and each scheme the fact covers,
 two passes with the same conditions and other inputs that differ in that input beyond the quote check's precision and
 whose results differ by more than `tolerance` (a per-leaf table: in some leaf). Its value is not compared with the
-evidence directly. Otherwise the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
+evidence directly. Each evidence file is read and parsed once per run (evidence_doc's cache, the ledger's queue #62),
+as each cited source file is read once. Otherwise the value at the evidence path equals the fact's within `tolerance` (S17 *Fields*): a
 scalar as one literal, a value with leaves leaf by leaf. The evidence path names a table shaped like the value, and the
 shape is compared exactly first (shape_problems: a table's keys the same, a list's length the same, a leaf where the
 value has a leaf), so a one-layer shadow or `[]` does not pass against two layers; then each numeric or colour leaf
@@ -74,26 +81,50 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
 
 - Notations, by the cited file's type (notation_of): `css` (.css, .scss, .sass, .less, .html, .svg), `xaml` (.xaml),
   `ini` (.colors, .ini, .conf, `kdeglobals`, a name ending in `rc` without a suffix), `cpp` (.c, .cc, .cpp, .cxx, .h,
-  .hh, .hpp, .m, .mm), `qml` (.qml, .js), `kotlin` (.kt, .kts), `android` (an .xml file in a `res/` folder: Android's
-  resources), `data` (.toml, .json, .csv: an evidence file's), `text` (any other file, a JSON page's string). Each
-  reads, in this order, and no span is read twice:
+  .hh, .hpp, .m, .mm), `qml` (.qml, .js), `kotlin` (.kt, .kts), `kcfg` (.kcfg: KConfigXT), `android` (an .xml file
+  in a `res/` folder: Android's resources), `data` (.toml, .json, .csv: an evidence file's), `text` (any other file, a
+  JSON page's string). Each reads, in this order, and no span is read twice:
   - hex colours (every notation masks a `#<hex digits>` run): `#rgb`, `#rrggbb` everywhere; `#rgba`, `#rrggbbaa`
-    (RGBA) in `css` and `data`; `#argb`, `#aarrggbb` (ARGB) in `xaml` and `android`; other lengths read nothing;
+    (RGBA) in `css` and `data`; `#argb`, `#aarrggbb` (ARGB) in `xaml` and `android`, and `#aarrggbb` in `kcfg`
+    (QColor's string form); other lengths read nothing;
   - `data`: the model's own literal forms `srgb(r, g, b[, a])` and `display_p3(r, g, b[, a])` (fractions, S2.1), which
     a harness may write;
   - `css` and `data`: `rgb(r, g, b)`, `rgba(r, g, b, a)`, `rgb(r g b / a)`, the function names in any case
     (libadwaita writes `RGB(`; channels 0-255 or `%`, alpha 0-1 or `%`), SCSS's `rgba(<hex>, a)`; `css`: the names
     `black`, `white`, `transparent`;
   - `qml`: `Qt.rgba(r, g, b, a)` (fractions), and a quoted colour name of QML_NAMES in any case (`"transparent"`:
-    the names the cited QML uses, valued as qtbase's `qcolor.cpp` table); `cpp`: `QColor(r, g, b[, a])` and the C++
-    initialiser `{r, g, b[, a]}` (bytes); `ini`: a key's `r,g,b[,a]` (bytes);
+    the names the cited QML uses, valued as qtbase's `qcolor.cpp` table); `cpp`: `QColor::fromRgbF(r, g, b[, a])`
+    (fractions, an `f` suffix allowed; an argument may be a name the quote declares a default for, a defaulted
+    parameter `<name> = <number>` before the parameter list's next `,` or `)`, read as that number, the ledger's
+    queue #58: Breeze's `shadowColor(…, qreal opacity = 0.125) const { return QColor::fromRgbF(0, 0, 0, opacity); }`,
+    breeze@6.8.2 kstyle/breezehelper.h:88-91, is `srgb(0, 0, 0, 0.125)`, its quote holding the declaration; a name
+    with no default in the quote reads no colour), `QColor(r, g, b[, a])` (bytes), and the C++ initialiser `{r, g, b[, a]}`
+    (bytes) only in a colour context: after, in the quote, a colour type of CPP_COLOUR_TYPES_RX (`QColor`, and
+    KColorScheme's default tables `SerializedColors` and `DecorationColors`, kcolorscheme@6.31.0
+    src/kcolorscheme.cpp:101-122, :213), as `{ 2, 2, 2, 2 }` is WinUI's `XTHICKNESS` and `{ 0, 0, 0, 0 }` an
+    `XRECTF`, numbers (the ledger's queue #54): a quote of one row of KColorScheme's table holds its declaration
+    line too; `ini`: a key's `r,g,b[,a]` (bytes); `kcfg`: in a quote declaring a `Color` entry (`type="Color"`, any
+    case, as kconfig_compiler lower-cases it), a `<default>` element's `r,g,b[,a]` (bytes) or a colour name of
+    QML_NAMES in any case, which kconfig_compiler passes to `QColor( r,g,b[,a] )` and `QColor( "<name>" )`
+    (kconfig@6.31.0 src/kconfig_compiler/KConfigXmlParser.cpp:70-77; a `code="true"` default is code, read as any
+    text); a `.kcfg`'s numbers are the number form's (a XAML `Thickness`, `Margin` or `Padding` likewise: XAML has
+    no byte colour list);
   - `xaml`: a `TimeSpan` `[d.]h:m:s[.f]` (a duration), and a colour name of XAML_NAMES as an attribute's value or an
     element's content (`Color="Transparent"`: the names the cited theme resources use, valued as WinUI's
-    `KnownColors.h`, so `Transparent` is white with alpha 0);
+    `KnownColors.h`, so `Transparent` is white with alpha 0); a `<LinearGradientBrush …>` with `StartPoint` and
+    `EndPoint` adds S2.3's angle (xaml_linear_angle; the ledger's queue #38): the points' direction (dx, dy) in the
+    brush's coordinate space (y down), each axis scaled by a `ScaleTransform` that the quote gives the brush as its
+    `RelativeTransform` or `Transform` before its next brush, is `atan2(dx, -dy)` in degrees taken into `0..360`, 0
+    pointing to the top and growing clockwise, as CSS's `linear-gradient()` (WinUI's elevation border,
+    `StartPoint="0,0" EndPoint="0,3"`, is 180; under the light theme's `ScaleY="-1"`, 0); no angle where a point is
+    missing, the two coincide, or a brush transform is another one. The angle is the points' own: under
+    `MappingMode="RelativeToBoundingBox"` a diagonal is the drawn angle only on a square box (an axis-aligned
+    gradient, or `Absolute` mapping, is exact). The points' numbers stay numbers (an `extent` reads them);
   - `kotlin` (Compose): `Color(r, g, b[, a])` and `Color(red = r, green = g, blue = b[, alpha = a])` (Int arguments,
     decimal or `0x`, are bytes; Float ones, with an `f`, fractions), an eight-digit `0xAARRGGBB` integer (ARGB, as in
-    `Color(0xFF5C77FF)`; other `0x` integers read nothing), and `<n>.dp`, `<n>.sp` (px) and `<n>.em` (no literal);
-    a number's `f`, `F` or `L` suffix is Kotlin's type, not a unit;
+    `Color(0xFF5C77FF)`; other `0x` integers read nothing), and `[-]<n>.dp`, `[-]<n>.sp` (px) and `<n>.em` (no
+    literal); a number's `f`, `F` or `L` suffix is Kotlin's type, not a unit, and in `cpp` its `f` or `F` suffix
+    C++'s (`0.7f`);
   - on a source that serves only Apple's presets (Run.apple_only: an `sdk` or `snapshot` entry whose generations are
     all `macos-*` and `ios-*`, a snapshot of an Apple documentation site serving none, or measured evidence of an
     image mapped to such a preset): `<n> pt`, `<n>pt`, `<w>x<h> pt` and `<w> × <h> pt` are logical points, px (two
@@ -116,7 +147,8 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   previous item); everywhere else `pt` is a typographic point.
 - Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
   `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, the
-  result a duration).
+  result a duration), `negate` (− x: WinUI's `FocusVisualMargin="-3"`, an inward margin, is the model's outward
+  focus offset of 3px, the ledger's queue #38).
 - Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17); `srgb(…)` and
   `display_p3(…)` literals in their own space. A `display_p3(…)` value is the colour as Apple publishes it (S2.1: the
   preset cites the published value exactly and converts when the file is read), so it is compared in Display P3, not
@@ -133,6 +165,7 @@ import csv
 import io
 import itertools
 import json
+import math
 import re
 import subprocess
 import sys
@@ -157,6 +190,7 @@ CONVERSIONS = {
     "byte_to_fraction": lambda x: x / 255,
     "complement": lambda x: 1 - x,
     "seconds_to_ms": lambda x: x * 1000,
+    "negate": lambda x: -x,
 }
 # unit -> (dimension, factor to the dimension's canonical unit); None: no dimension (no literal)
 UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("pt", 1), "ms": ("duration", 1),
@@ -190,6 +224,7 @@ NOTATIONS = {
     "cpp": (".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".m", ".mm"),
     "qml": (".qml", ".js"),
     "kotlin": (".kt", ".kts"),
+    "kcfg": (".kcfg",),
     "data": (".toml", ".json", ".csv"),
 }
 
@@ -253,12 +288,27 @@ QML_NAME_RX = re.compile(r"""(["'])(""" + "|".join(QML_NAMES) + r")\1", re.I)
 XAML_NAME_RX = re.compile(r"""(?<=["'>])(""" + "|".join(XAML_NAMES) + r""")(?=["'<])""")
 QCOLOR_RX = re.compile(r"\bQColor\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d{1,3})\s*)?\)")
 BRACE_RX = re.compile(r"\{\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*(\d{1,3})\s*)?\}")
+# the C++ types whose initialiser lists hold byte colours: Qt's colour, KColorScheme's default tables
+# (kcolorscheme@6.31.0 src/kcolorscheme.cpp:101-122, :213)
+CPP_COLOUR_TYPES_RX = re.compile(r"\b(?:QColor|SerializedColors|DecorationColors)\b")
+CPP_NUM = r"-?(?:\d+(?:\.\d*)?|\.\d+)[fF]?"
+CPP_ARG = rf"(?:{CPP_NUM}|[A-Za-z_]\w*)"
+QCOLOR_F_RX = re.compile(rf"\bQColor::fromRgbF\(\s*({CPP_ARG})\s*,\s*({CPP_ARG})\s*,\s*({CPP_ARG})\s*"
+                         rf"(?:,\s*({CPP_ARG})\s*)?\)")
+# a defaulted parameter in a declaration, `qreal opacity = 0.125` before the parameter list's next `,` or `)`
+CPP_DEFAULT_RX = re.compile(rf"\b([A-Za-z_]\w*)\s*=\s*({CPP_NUM})\s*(?=[,)])")
+XAML_LINEAR_RX = re.compile(r"<LinearGradientBrush(?=[\s/>])[^>]*>")
+XAML_POINT_RX = re.compile(rf"\b(Start|End)Point\s*=\s*\"\s*({NUM})\s*,\s*({NUM})\s*\"")
+XAML_SCALE_RX = re.compile(r"<LinearGradientBrush\.(?:Relative)?Transform>\s*(?:<ScaleTransform\b([^>]*)/>)?")
+XAML_SCALE_ATTR_RX = re.compile(rf"\bScale([XY])\s*=\s*\"\s*({NUM})\s*\"")
+KCFG_COLOUR_RX = re.compile(r"\btype\s*=\s*\"color\"", re.I)
+KCFG_DEFAULT_RX = re.compile(r"<default>\s*([^<]*?)\s*</default>")
 BYTES_RX = re.compile(r"(?<![\w.,])(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d{1,3}))?(?![\w.,])")
 TIMESPAN_RX = re.compile(r"(?<![\w:.])(?:(\d+)\.)?(\d+):(\d+):(\d+(?:\.\d+)?)(?![\w:])")
 KT_COLOR_RX = re.compile(rf"\bColor\(\s*(?:red\s*=\s*)?({KT_NUM})\s*,\s*(?:green\s*=\s*)?({KT_NUM})\s*,\s*"
                          rf"(?:blue\s*=\s*)?({KT_NUM})\s*(?:,\s*(?:alpha\s*=\s*)?({KT_NUM})\s*)?\)")
 KT_HEX_RX = re.compile(r"\b0x([0-9A-Fa-f]+)(?:[uU]?L)?\b")
-KT_UNIT_RX = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\.(dp|sp|em)\b")
+KT_UNIT_RX = re.compile(r"(?<![\w.])(-?\d+(?:\.\d+)?)\.(dp|sp|em)\b")
 APPLE_PT_RX = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?:\s*[x×]\s*(\d+(?:\.\d+)?))?\s*pt\b")
 NUMBER_RX = re.compile(rf"(?<![\w.])(-(?=[\d.]))?(\d+(?:\.\d+)?{EXP}|\.\d+{EXP})([A-Za-z]*)(?!\w)")
 NAMES_RX = re.compile(r"(?<![\w-])(black|white|transparent)(?![\w-])")
@@ -272,6 +322,28 @@ def _kt_channels(groups):
     else:
         ch = [float(int(v, 16) if v.lower().startswith("0x") else int(v)) for v in vals]
     return tuple(ch[:3]) + ((ch[3],) if len(ch) == 4 else (255,))
+
+
+def xaml_linear_angle(text: str, tag):
+    """S2.3's angle of the `<LinearGradientBrush …>` tag `tag` matched in `text`, or None: the direction from its
+    `StartPoint` to its `EndPoint`, (dx, dy) in the brush's coordinate space (y down), each scaled by a
+    `ScaleTransform` that is the brush's `RelativeTransform` or `Transform` in the text before its next brush,
+    is `atan2(dx, -dy)` in degrees, in `0..360`: 0 points to the top, angles grow clockwise, as CSS's
+    `linear-gradient()` (`StartPoint="0,0" EndPoint="0,3"` is 180, flipped by `ScaleY="-1"` 0). None where a point is
+    missing, the two coincide, or a brush transform is anything but a `ScaleTransform`."""
+    points = {m.group(1): (float(m.group(2)), float(m.group(3))) for m in XAML_POINT_RX.finditer(tag.group(0))}
+    if set(points) != {"Start", "End"}:
+        return None
+    dx, dy = points["End"][0] - points["Start"][0], points["End"][1] - points["Start"][1]
+    nxt = XAML_LINEAR_RX.search(text, tag.end())
+    for m in XAML_SCALE_RX.finditer(text, tag.end(), nxt.start() if nxt else len(text)):
+        if m.group(1) is None:
+            return None
+        scale = {a: float(v) for a, v in XAML_SCALE_ATTR_RX.findall(m.group(1))}
+        dx, dy = dx * scale.get("X", 1.0), dy * scale.get("Y", 1.0)
+    if dx == 0 and dy == 0:
+        return None
+    return math.degrees(math.atan2(dx, -dy)) % 360
 
 
 def quote_literals(text: str, notation: str, apple: bool = False) -> list:
@@ -295,7 +367,7 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             lit = Lit("colour", "srgb", _hex(d, "rgba"))
         elif len(d) in (4, 8) and notation in ("css", "data"):
             lit = Lit("colour", "srgb", _hex(d, "rgba"))
-        elif len(d) in (4, 8) and notation in ("xaml", "android"):
+        elif (len(d) in (4, 8) and notation in ("xaml", "android")) or (len(d) == 8 and notation == "kcfg"):
             lit = Lit("colour", "srgb", _hex(d, "argb"))
         add(m.start(), m.end(), lit)
     if notation == "data":
@@ -328,12 +400,36 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
         for m in QML_NAME_RX.finditer(text):
             add(m.start(), m.end(), Lit("colour", "srgb", QML_NAMES[m.group(2).lower()]))
     if notation == "cpp":
+        defaults = {}
+        for m in CPP_DEFAULT_RX.finditer(text):
+            defaults.setdefault(m.group(1), m.group(2))
+        for m in QCOLOR_F_RX.finditer(text):
+            args = [defaults.get(g, g) for g in m.groups() if g is not None]
+            if not all(re.fullmatch(CPP_NUM, a) for a in args):
+                continue
+            vals = [float(a.rstrip("fF")) * 255 for a in args]
+            if all(0 <= v <= 255 for v in vals):
+                add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
+                                                                                 else (255,))))
+        context = CPP_COLOUR_TYPES_RX.search(text)
         for rx in (QCOLOR_RX, BRACE_RX):
             for m in rx.finditer(text):
+                if rx is BRACE_RX and not (context and context.start() < m.start()):
+                    continue
                 vals = [float(g) for g in m.groups() if g is not None]
                 if all(v <= 255 for v in vals):
                     add(m.start(), m.end(), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
                                                                                      else (255,))))
+    if notation == "kcfg" and KCFG_COLOUR_RX.search(text):
+        for m in KCFG_DEFAULT_RX.finditer(text):
+            v = m.group(1)
+            if re.fullmatch(r"\d+,\s*\d+,\s*\d+(?:,\s*\d+)?", v):
+                vals = [float(x) for x in v.split(",")]
+                if all(x <= 255 for x in vals):
+                    add(m.start(1), m.end(1), Lit("colour", "srgb", tuple(vals[:3]) + ((vals[3],) if len(vals) == 4
+                                                                                       else (255,))))
+            elif v.lower() in QML_NAMES:
+                add(m.start(1), m.end(1), Lit("colour", "srgb", QML_NAMES[v.lower()]))
     if notation == "ini":
         for m in BYTES_RX.finditer(text):
             vals = [float(g) for g in m.groups() if g is not None]
@@ -347,6 +443,10 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             add(m.start(), m.end(), Lit("num", "duration", ms))
         for m in XAML_NAME_RX.finditer(text):
             add(m.start(), m.end(), Lit("colour", "srgb", XAML_NAMES[m.group(1)]))
+        for m in XAML_LINEAR_RX.finditer(text):
+            angle = xaml_linear_angle(text, m)
+            if angle is not None:
+                found.append((m.start(), Lit("num", "angle", angle)))
     if notation == "kotlin":
         for m in KT_COLOR_RX.finditer(text):
             ch = _kt_channels(m.groups())
@@ -367,7 +467,8 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             continue
         x = float((m.group(1) or "") + m.group(2))
         unit = m.group(3)
-        if not unit or (notation == "kotlin" and unit in ("f", "F", "L")):
+        if not unit or (notation == "kotlin" and unit in ("f", "F", "L")) or (notation == "cpp"
+                                                                             and unit in ("f", "F")):
             found.append((m.start(), Lit("num", None, x)))
         elif unit in UNITS and UNITS[unit] is not None:
             dim, factor = UNITS[unit]
@@ -578,19 +679,63 @@ def json_pointer(doc, pointer: str):
     return cur
 
 
-def evidence_value(path: Path, form: str):
-    """The value at `form` in the evidence file (by its type), or raise EvidenceError."""
+def evidence_doc(path: Path, cache=None):
+    """The evidence file parsed by its type (TOML and JSON as their data, an INI file as {group: {key: value}}, the
+    first of each key; a CSV file as its rows), or raise EvidenceError; with `cache` (a dict), each file is parsed
+    once per run, its error kept too."""
+    if cache is not None and path in cache:
+        doc = cache[path]
+        if isinstance(doc, EvidenceError):
+            raise doc
+        return doc
+    try:
+        doc = read_evidence_file(path)
+    except EvidenceError as err:
+        if cache is not None:
+            cache[path] = err
+        raise
+    if cache is not None:
+        cache[path] = doc
+    return doc
+
+
+def read_evidence_file(path: Path):
     name = path.name
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as err:
         raise EvidenceError(str(err)) from err
-    kind = notation_of(name)
     if name.endswith(".toml"):
         try:
-            cur = tomllib.loads(text)
+            return tomllib.loads(text)
         except tomllib.TOMLDecodeError as err:
             raise EvidenceError(f"not valid TOML: {err}") from err
+    if name.endswith(".json"):
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as err:
+            raise EvidenceError(f"not valid JSON: {err}") from err
+    if name.endswith(".csv"):
+        return list(csv.reader(io.StringIO(text)))
+    if notation_of(name) == "ini":
+        groups, cur = {}, None
+        for line in text.splitlines():
+            s = line.strip()
+            if s.startswith("[") and s.endswith("]"):
+                cur = s[1:-1]
+            elif cur is not None and "=" in s and not s.startswith(("#", ";")):
+                k, v = s.split("=", 1)
+                groups.setdefault(cur, {}).setdefault(k.strip(), v.strip())
+        return groups
+    raise EvidenceError(f"{name}: not an evidence file type (TOML, JSON, INI, CSV)")
+
+
+def evidence_value(path: Path, form: str, cache=None):
+    """The value at `form` in the evidence file (by its type), or raise EvidenceError; `cache` as evidence_doc's."""
+    name = path.name
+    doc = evidence_doc(path, cache)
+    if name.endswith(".toml"):
+        cur = doc
         for seg in form.split("."):
             if isinstance(cur, list) and seg.isdigit() and int(seg) < len(cur):
                 cur = cur[int(seg)]
@@ -600,13 +745,10 @@ def evidence_value(path: Path, form: str):
                 raise EvidenceError(f"no {seg!r} at {form!r}")
         return cur
     if name.endswith(".json"):
-        try:
-            return json_pointer(json.loads(text), form)
-        except json.JSONDecodeError as err:
-            raise EvidenceError(f"not valid JSON: {err}") from err
+        return json_pointer(doc, form)
     if name.endswith(".csv"):
         first, sep, header = form.rpartition("/")
-        rows = list(csv.reader(io.StringIO(text)))
+        rows = doc
         if not sep or not rows or header not in rows[0]:
             raise EvidenceError(f"no column {header!r}")
         col = rows[0].index(header)
@@ -616,21 +758,12 @@ def evidence_value(path: Path, form: str):
                     raise EvidenceError(f"row {first!r} has no {header!r} cell")
                 return row[col]
         raise EvidenceError(f"no row {first!r}")
-    if kind == "ini":
-        group, sep, key = form.rpartition("/")
-        if not sep:
-            raise EvidenceError(f"{form!r} is not `<group>/<key>`")
-        cur = None
-        for line in text.splitlines():
-            s = line.strip()
-            if s.startswith("[") and s.endswith("]"):
-                cur = s[1:-1]
-            elif cur == group and "=" in s and not s.startswith(("#", ";")):
-                k, v = s.split("=", 1)
-                if k.strip() == key:
-                    return v.strip()
+    group, sep, key = form.rpartition("/")
+    if not sep:
+        raise EvidenceError(f"{form!r} is not `<group>/<key>`")
+    if key not in doc.get(group, {}):
         raise EvidenceError(f"no key {key!r} in group [{group}]")
-    raise EvidenceError(f"{name}: not an evidence file type (TOML, JSON, INI, CSV)")
+    return doc[group][key]
 
 
 def leaves(value, prefix="", dim=None):
@@ -802,6 +935,8 @@ class Run:
         self.check_heads = check_heads
         self.committed = committed if committed is not None else self.git_files()
         self._heads = {}
+        self._evidence = {}   # path -> its parsed document or EvidenceError (evidence_doc)
+        self._lines = {}      # cited file -> its lines, or None where it cannot be read
         self.findings = []
         self.sdk = []
         self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0}
@@ -891,9 +1026,13 @@ class Run:
                 return None
             return v, "text"
         f = base / path
-        try:
-            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
-        except OSError:
+        if f not in self._lines:
+            try:
+                self._lines[f] = f.read_text(encoding="utf-8", errors="replace").splitlines()
+            except OSError:
+                self._lines[f] = None
+        lines = self._lines[f]
+        if lines is None:
             self.add(item.file, cite.ln("source"), f"{sid}: no file {path} at the pin")
             return None
         if l2 > len(lines):
@@ -938,6 +1077,7 @@ class Run:
         for g, cs in groups:
             self.counts["generations"] += 1
             union, text_union = [], set()
+            zero = brush = False
             for c in cs:
                 src = check_facts.parse_source(c.data.get("source"))
                 notation = "text" if not src or src[4] is not None else notation_of(src[1])
@@ -945,8 +1085,13 @@ class Run:
                 quote = c.data.get("quote") if isinstance(c.data.get("quote"), str) else ""
                 union += convert(quote_literals(quote, notation, self.apple_only(c.data)), conv)
                 text_union |= quote_texts(quote)
+                zero = zero or isinstance(c.data.get("absent"), list)
+                brush = brush or (notation == "xaml" and XAML_LINEAR_RX.search(quote) is not None)
             for v in vlits:
-                if not any(equal(v, q) for q in union):
+                if zero and v.kind == "num" and v.value == 0:
+                    continue
+                cands = [q for q in union if q.dim == "angle"] if brush and v.dim == "angle" else union
+                if not any(equal(v, q) for q in cands):
                     self.add(item.file, item.ln("value"), f"the value's literal {v} is in no quote serving {g} (as "
                                                           f"written or converted)")
             for path, t in texts:
@@ -974,7 +1119,7 @@ class Run:
         if not isinstance(images, dict) or image not in images:
             self.add(item.file, cite.ln("evidence"), f"the run's run.toml maps no image {image!r}")
         try:
-            value = evidence_value(p, form)
+            value = evidence_value(p, form, self._evidence)
         except EvidenceError as err:
             self.add(item.file, cite.ln("evidence"), f"{file}#{form}: {err}")
             return
@@ -1106,9 +1251,8 @@ class Run:
             if p.suffix not in (".toml", ".json") or not p.is_file():
                 continue
             try:
-                text = p.read_text(encoding="utf-8")
-                data = tomllib.loads(text) if p.suffix == ".toml" else json.loads(text)
-            except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError, json.JSONDecodeError):
+                data = evidence_doc(p, self._evidence)
+            except EvidenceError:
                 continue
             names = data.get("input_image") if isinstance(data, dict) else None
             if names is None:
@@ -1248,6 +1392,17 @@ kind = "measured"
 evidence = "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/shadows.toml#button.disabled.opacity_percent"
 conversion = ["percent_to_fraction"]
 tolerance = 0
+
+[[fact]]
+key = "button.body.padding.top"
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Button_themeresources.xaml:10"
+quote = '<Setter Property="FocusVisualMargin" Value="-3" />'
+conversion = ["negate"]
 ''',
     "cache/hig-typography@2026-10-29/page.json": '{"sections": [{"text": "Large Title 26 pt"}, '
                                                  '{"text": "The   Body 17 pt style."}, {"text": "weight 590"}]}',
@@ -1283,11 +1438,52 @@ conditions = ["scheme:dark"]
                                                     "BackgroundNormal=239,240,241\n",
     "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Common_themeresources_any.xaml":
         '<ResourceDictionary>\n  <ResourceDictionary.ThemeDictionaries>\n    <ResourceDictionary x:Key="Dark">\n'
-        '      <Color x:Key="SubtleFillColorSecondary">#0FFFFFFF</Color>\n',
+        '      <Color x:Key="SubtleFillColorSecondary">#0FFFFFFF</Color>\n'
+        '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" '
+        'EndPoint="0,3">\n',
     "cache/microsoft-ui-xaml@2.5.1/controls/dev/CommonStyles/Button_themeresources.xaml":
         '<ResourceDictionary>\n\n\n\n\n<VisualState x:Name="PointerOver">\n'
         '  <DoubleAnimation Storyboard.TargetProperty="Opacity" Duration="0:0:0.083" />\n</VisualState>\n'
-        '<x:Double x:Key="Button_MinWidth">80</x:Double>\n',
+        '<x:Double x:Key="Button_MinWidth">80</x:Double>\n<Setter Property="FocusVisualMargin" Value="-3" />\n',
+    "docs/facts/gnome/zero.toml": '''
+[[fact]]
+key = "button.values.repeat_delay"
+value = "0ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-button.c:1-3"
+quote = "static void adw_button_clicked (AdwButton *self) {"
+absent = ["delay", "timeout"]
+''',
+    "docs/facts/windows/brush.toml": '''
+[[fact]]
+key = "button.body.stroke"
+value = { linear = { angle_deg = 180 } }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Common_themeresources_any.xaml:5"
+quote = '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,3">'
+''',
+    "docs/facts/kde/shadow.toml": '''
+[[fact]]
+key = "button.body.fill"
+value = "srgb(0, 0, 0, 0.125)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:2-5"
+quote = "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opacity = 0.125) const { return QColor::fromRgbF(0, 0, 0, opacity); }"
+''',
+    "cache/libadwaita@1.10.0/src/adw-button.c": "static void\nadw_button_clicked (AdwButton *self) {\n"
+                                               "  g_signal_emit (self, signals[SIGNAL_CLICKED], 0); }\n",
+    "cache/breeze@6.8.2/kstyle/breezehelper.h": "    //* shadow\n    QColor shadowColor([[maybe_unused]] const QPalette "
+                                               "&palette, qreal opacity = 0.125) const\n    {\n        return "
+                                               "QColor::fromRgbF(0, 0, 0, opacity);\n    }\n",
     "cache/catppuccin@1.7.1/palette.json": "\n" * 119 + '        "hex": "#313244",\n',
     "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-15/probe.toml":
         "[macos.fonts.sizes]\nsystemFontSize = 13.0\n",
@@ -1320,6 +1516,27 @@ _PASSES = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml
 # (label, file, old, new, wanted findings as substrings, one per finding); old None: the file is replaced by new (None:
 # removed); old a list of (old, new) pairs: each replaced
 SELF_TEST_CASES = [
+    # a zero stated by omission (S17 *Absence*, ADD-A122): an absence citation holds the value's zero literals
+    ("zero by omission: a non-zero value", "docs/facts/gnome/zero.toml", 'value = "0ms"', 'value = "10ms"',
+     ["10ms is in no quote serving adwaita"]),
+    ("zero by omission: no absence citation", "docs/facts/gnome/zero.toml", 'absent = ["delay", "timeout"]\n', "",
+     ["0ms is in no quote serving adwaita"]),
+    ("zero by omission: a name the path does set", "docs/facts/gnome/zero.toml", '["delay", "timeout"]',
+     '["delay", "g_signal_emit"]', ["absent name 'g_signal_emit' occurs"]),
+    ("zero by omission: no name for it", "docs/facts/gnome/zero.toml", '["delay", "timeout"]', "[]", []),
+    # a LinearGradientBrush's angle is the one its points give, never a point's number (the ledger's queue #57)
+    ("brush: a wrong angle a point's number holds", "docs/facts/windows/brush.toml", "angle_deg = 180",
+     "angle_deg = 0", ["0deg is in no quote serving windows-11"]),
+    ("brush: a wrong angle", "docs/facts/windows/brush.toml", "angle_deg = 180", "angle_deg = 90",
+     ["90deg is in no quote serving windows-11"]),
+    ("brush: a point's number as a length", "docs/facts/windows/brush.toml", "angle_deg = 180",
+     "angle_deg = 180, extent_px = 3", []),
+    # a defaulted parameter read from the quote's declaration (the ledger's queue #58)
+    ("C++: another default", "docs/facts/kde/shadow.toml", "0.125)\"", "0.25)\"",
+     ["srgb(0, 0, 0, 63.75) is in no quote serving kde-breeze"]),
+    ("C++: the declaration left out of the quote", "docs/facts/kde/shadow.toml",
+     "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opacity = 0.125) const { ", "",
+     ["srgb(0, 0, 0, 31.875) is in no quote serving kde-breeze"]),
     ("libadwaita: a literal no quote holds", "docs/facts/gnome/buttons.toml", "0.07)", "0.08)",
      ["0.08 is in no quote serving adwaita"]),
     ("libadwaita: the quote at other lines", "docs/facts/gnome/buttons.toml", "_colors.scss:3", "_colors.scss:2",
@@ -1423,6 +1640,8 @@ SELF_TEST_CASES = [
     ("shadow: a key the fact lacks", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
      "shadows.toml", "inset = false },\n", "inset = false, offset_px = 1 },\n",
      ["the evidence has 'layers.0.offset_px', the fact does not"]),
+    ("WinUI: a margin's sign without negate", "docs/facts/windows/more.toml", 'conversion = ["negate"]\n', "",
+     ["3px is in no quote serving windows-11"]),
     ("evidence: a conversion left out", "docs/facts/windows/more.toml", 'conversion = ["percent_to_fraction"]\n', "",
      ["the evidence holds 50, the fact 0.5"]),
     ("evidence: another converted value", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
@@ -1518,6 +1737,52 @@ SELF_TEST_NOTATIONS = [
     ("data", "display_p3(1, 0.5, 0) srgb(0, 0, 1, 0.5)", ["p3(255, 127.5, 0, 255)", "srgb(0, 0, 255, 127.5)"]),
     ("text", "<default>'Adwaita Sans 11'</default>", ["11"]),
     ("xaml", '<CornerRadius x:Key="ControlCornerRadius">4</CornerRadius> CornerRadius="4"', ["4", "4"]),
+    # a LinearGradientBrush's points as S2.3's angle (the ledger's queue #38, #54): WinUI's elevation border,
+    # Common_themeresources_any.xaml:186 (dark) and :382-385 (light, flipped)
+    ("xaml", '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" '
+             'EndPoint="0,3">', ["180deg", "0", "0", "0", "3"]),
+    ("xaml", '<LinearGradientBrush x:Key="ControlElevationBorderBrush" MappingMode="Absolute" StartPoint="0,0" '
+             'EndPoint="0,3"> <LinearGradientBrush.RelativeTransform> <ScaleTransform ScaleY="-1" CenterY="0.5" />',
+     ["0deg", "0", "0", "0", "3", "-1", "0.5"]),
+    ("xaml", '<LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5"> <LinearGradientBrush EndPoint="1,0" '
+             'StartPoint="1,1"> <LinearGradientBrush StartPoint="1,0" EndPoint="0,0"> <LinearGradientBrush '
+             'StartPoint="0,0" EndPoint="1,1">',
+     ["90deg", "0", "0.5", "1", "0.5", "0deg", "1", "0", "1", "1", "270deg", "1", "0", "0", "0", "135deg", "0", "0",
+      "1", "1"]),
+    ("xaml", '<LinearGradientBrush StartPoint="0,0" EndPoint="0,1"> <LinearGradientBrush.RelativeTransform> '
+             '<RotateTransform Angle="90" />', ["0", "0", "0", "1", "90"]),
+    ("xaml", '<LinearGradientBrush StartPoint="0,0"> <LinearGradientBrush StartPoint="0,1" EndPoint="0,1">',
+     ["0", "0", "0", "1", "0", "1"]),
+    # a XAML Thickness, Margin or Padding is numbers (the ledger's queue #54)
+    ("xaml", '<Thickness x:Key="FocusThickness">2,2,2,2</Thickness> Margin="2,2,2,2" Padding="11,5,11,6"',
+     ["2", "2", "2", "2", "2", "2", "2", "2", "11", "5", "11", "6"]),
+    # C++'s brace list is a byte colour only after a colour type (the ledger's queue #54), fromRgbF, the f suffix
+    # (#47)
+    ("cpp", "const XTHICKNESS DefaultFocusVisualPrimaryThickness = { 2, 2, 2, 2 };", ["2", "2", "2", "2"]),
+    ("cpp", "static constexpr XRECTF DefaultValueRect = { 0, 0, 0, 0 };", ["0", "0", "0", "0"]),
+    ("cpp", "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background",
+     ["srgb(239, 240, 241, 255)"]),
+    ("cpp", "{ 239, 240, 241 }, // Background", ["239", "240", "241"]),
+    ("cpp", "{ 1, 2, 3 } QColor c{ 4, 5, 6 };", ["1", "2", "3", "srgb(4, 5, 6, 255)"]),
+    ("cpp", "QColor::fromRgbF(0.5f, 0, 1.0f, 0.25f); QColor::fromRgbF(1, 1, 1); qreal x = 0.7f; 2.F",
+     ["srgb(127.5, 0, 255, 63.75)", "srgb(255, 255, 255, 255)", "0.7", "2"]),
+    # .kcfg defaults (#47): a Color entry's <default> as kconfig_compiler reads it
+    # (kconfig@6.31.0 src/kconfig_compiler/KConfigXmlParser.cpp:70-77)
+    ("kcfg", '<entry name="accentColor" key="AccentColor" type="Color"> <label>Accent color</label> '
+             '<default>transparent</default>', ["srgb(0, 0, 0, 0)"]),
+    ("kcfg", '<entry name="Color" type="Color"> <default>255, 0, 0</default> <default>#a0ff0000</default> '
+             '<default code="true">QColor(Qt::red)</default>', ["srgb(255, 0, 0, 255)", "srgb(255, 0, 0, 160)"]),
+    ("kcfg", '<entry name="AnimationSteps" type = "Int"> <default>10</default> </entry> <default>255,0,0</default>',
+     ["10", "255", "0", "0"]),
+    # Kotlin's negative units (#47)
+    ("kotlin", "letterSpacing = -0.2.sp, 0.5.sp -1.dp", ["-0.2px", "0.5px", "-1px"]),
+    # a defaulted parameter's default read from the quote's declaration (the ledger's queue #58): Breeze's shadow
+    # colour, breeze@6.8.2 kstyle/breezehelper.h:88-91; a name the quote declares no default for reads nothing
+    ("cpp", "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opacity = 0.125) const { return "
+            "QColor::fromRgbF(0, 0, 0, opacity); }", ["0.125", "srgb(0, 0, 0, 31.875)"]),
+    ("cpp", "return QColor::fromRgbF(0, 0, 0, opacity);", ["0", "0", "0"]),
+    ("cpp", "void f(qreal a = 0.5); x = 2; QColor::fromRgbF(a, a, a)", ["0.5", "2",
+                                                                       "srgb(127.5, 127.5, 127.5, 255)"]),
 ]
 
 # (quote, text value, whether a text notation reads it as a whole string; S17 *The quote check*)
@@ -1565,20 +1830,22 @@ def self_test() -> int:
             if got != want:
                 failures.append(f"{notation}{' (Apple)' if apple else ''} {text!r}: got {got}, want {want}")
     for names, x, want in ((["percent_to_fraction"], 50, "0.5"), (["byte_to_fraction"], 255, "1"),
-                           (["byte_to_fraction", "complement"], 51, "0.8"), (["seconds_to_ms"], 0.25, "250ms")):
+                           (["byte_to_fraction", "complement"], 51, "0.8"), (["seconds_to_ms"], 0.25, "250ms"),
+                           (["negate"], -3, "3")):
         got = [str(v) for v in convert([Lit("num", None, x)], names)]
         if got != [f"{x:g}", want]:
             failures.append(f"conversion {names}: got {got}")
     for quote, text, want in SELF_TEST_TEXTS:
         if (text in quote_texts(quote)) != want:
             failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
-    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "percent_to_fraction", "seconds_to_ms"]:
+    if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "percent_to_fraction", "seconds_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
                        ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),
                        ("probe.toml", "data"), ("README.md", "text"), ("material3/Menu.kt", "kotlin"),
                        ("lib/java/com/google/android/material/color/res/values/colors.xml", "android"),
-                       ("res/values/dimens.xml", "android"), ("data/fonts/fonts.xml", "text")):
+                       ("res/values/dimens.xml", "android"), ("data/fonts/fonts.xml", "text"),
+                       ("kcms/colors/colorssettings.kcfg", "kcfg")):
         if notation_of(path) != want:
             failures.append(f"notation of {path}: got {notation_of(path)}")
     if not equal(Lit("num", "number", 1.0), Lit("num", None, 1.00009)) or equal(Lit("num", "number", 1.0),
@@ -1609,6 +1876,20 @@ def self_test() -> int:
                 got = err
             if got != want:
                 failures.append(f"evidence path {name}#{form}: got {got!r}")
+        # each evidence file parsed once per run (the ledger's queue #62): a cached document outlives its file
+        cache = {}
+        first = evidence_doc(base / "t.toml", cache)
+        (base / "t.toml").unlink()
+        if evidence_doc(base / "t.toml", cache) is not first or evidence_value(base / "t.toml", "a.b.c.0", cache) != 1:
+            failures.append("evidence cache: the file was parsed again")
+        for _ in range(2):
+            try:
+                evidence_doc(base / "gone.toml", cache)
+                failures.append("evidence cache: a missing file read")
+            except EvidenceError:
+                pass
+        if not isinstance(cache.get(base / "gone.toml"), EvidenceError):
+            failures.append("evidence cache: an unreadable file's error not kept")
         n = 0
         for case in [("good", None, None, None, [])] + SELF_TEST_CASES:
             label, path, old, new, want = case

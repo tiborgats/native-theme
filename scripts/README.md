@@ -840,11 +840,14 @@ requires exactly one row per item, matched by source, heading and opening
 words, and exactly one item per row, so a closed or moved item's row is a
 finding; each destination must be one the plan names, and a row going
 `after 0.8.0`, `not this plan's work` or `settled by the model` needs a
-reason. The script's docstring states the whole rule. `--final` adds the
+reason. On every run it also checks the *Unmeasured register*'s Ids (`U` and
+a number, none shared by two rows) and that every pending fact
+(`pending = "U<n>"` in `docs/facts/<platform>/`) names one of its rows.
+The script's docstring states the whole rule. `--final` adds the
 plan's M4 gate: `docs/facts/imported/` empty, S19.2's staged file (named by
 `--staged-file PATH`, which `--final` requires) gone, the `LEGACY_EVIDENCE`
-list of `check_fact_citations.py` empty, and no unmeasured-register row
-without a decision; the drift comparison of every measured fact has no ledger
+list of `check_fact_citations.py` empty, no unmeasured-register row
+without a decision and no S17 pending fact; the drift comparison of every measured fact has no ledger
 table to read yet, so `--final` reports it as a finding until it has one.
 Prints one line per finding (file:line: what) and a summary with the counts,
 and exits 0 when there is none, 1 when there are some, 2 on an input it
@@ -939,7 +942,15 @@ not count, and with none the rule asks nothing). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
-colours it states. Offline. The docstring states every rule and list. Prints
+colours it states. ADD-A122's forms: a pending fact (`pending = "U<n>"` in
+place of `value`, no citation; one a later fact of its key shadows is a
+finding), a state model's `variant_products` (expanded and trimmed by the
+exclusive groups and `requires_variants`; a set also listed in
+`variant_sets` is a finding; the number of sets per entry is printed on
+stderr), S4.1's motion keys (no dropped word or toolkit prefix, and on a
+platform whose catalogue row lists every duration key, one of them), the
+accent ramp's `role.global.accent_ramp.<key>`, and no key inside an enum
+block. Offline. The docstring states every rule and list. Prints
 one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
@@ -962,7 +973,10 @@ file its `sources.toml` entry names with `file`); no `absent` name occurs
 there as an identifier; per generation, every literal of the value equals a
 literal of its citations' quotes, read by the cited file's notation (on
 Apple's sources a point is a logical point, px) and converted as the
-citation says; a measured value has the committed evidence's shape and
+citation says (an absence citation holds a zero stated by omission; on a
+LinearGradientBrush an angle matches only the angle its points give; C++'s
+defaulted parameter is read from the quote's declaration); a measured value
+has the committed evidence's shape and
 equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an
 image by the analysis output that names it in `input_image`), except
@@ -973,6 +987,7 @@ docstring holds the closed lists (notations, units, conversions, evidence
 path forms, `run.toml`'s fields). Prints one line per finding and a summary,
 and exits 0, 1, or 2 when the cache is missing or an input cannot be read;
 `check_release.sh --commit` skips it only when the cache folder is absent.
+Each evidence file and cited source file is read once per run.
 `--self-test` runs every notation and the example facts on a fixture cache.
 
 Requires Python 3.11 and git.
@@ -1035,6 +1050,92 @@ Requires Python 3.11.
 python3 scripts/convert_inheritance_rules.py
 python3 scripts/convert_inheritance_rules.py --check
 python3 scripts/convert_inheritance_rules.py --self-test
+```
+
+## check_function_vectors.py
+
+Holds, documents and checks the vector-table format of the 0.8.0 model's
+platform functions and placement strategies (specification S2.2, S13):
+`native-theme/tests/vectors/<function>.tsv` and `place.<strategy>.tsv`,
+tab-separated, with `# <name>: <value>` header lines (the route, which is
+`public_api`, `observable_behaviour`, `compiled_source`, `measured` or
+`published`; the `sources.toml` entries, the generations, the generator,
+`# inputs:` and `# outputs:` with each column's type, a `# tolerance:`
+per measured output), a column header row, and rows whose cells are
+spelled by their column's type, with `cite` and `quote` (published) or
+`evidence` (measured) where the route needs them. Checks that every `pub`
+or `pub(crate)` function of the `platform` module
+(`native-theme/src/next/platform/`, `src/platform/` after the switch), every
+platform function of S2.2's table that is implemented and, once the
+`placement` module exists, every strategy has a table and a
+`#[test] fn vectors_<fn>` in `native-theme/tests/platform_vectors.rs`; that
+every platform function a preset calls is implemented (one only facts call
+is reported as not yet implemented); and the generations rule: the rows'
+generator pins, citations or evidence serve every generation that calls the
+function with the rows' enum operands. The model's own arithmetic has unit
+tests, not tables. Offline; the docstring states the format and every rule.
+Prints one line per finding, `# ` lines for what is informational, and a
+summary; exits 0, 1, or 2 on an input it cannot read. `--self-test` runs
+each rule on fixture tables, Rust snippets, facts and presets. Enters
+`check_release.sh` at M1a's code tasks (the plan's table of scripts).
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_function_vectors.py
+python3 scripts/check_function_vectors.py --self-test
+```
+
+## check_facts_trace.py
+
+Checks that every live trace line of the checked units (the specification's
+traceability, S20) is carried by a fact or a state-model entry of its
+platform's `docs/facts/` directory that lists its row in `rows` and whose key
+lies on the line's target (each line of a row separately), or carries a
+verdict, on the platforms
+whose presets exist (the new model's `native-theme/src/next/presets/`).
+`--enabled` checks the units of `scripts/widget_units.toml` (until it
+exists, the slice: `button`, the colour roles and the slice's tokens, with
+button's `Placement` values deferred and `token.behavior.scroll` staged),
+`--unit <unit>` one unit, and no option every trace line. A target lies in
+a unit by its leading paths (braces expanded), and a rule naming a context
+widget waits until that widget is enabled. Prints one line per finding
+(platform, row, target, what), per platform how many of the checked lines
+and rows the facts already carry, and a summary; exits 0, 1, or 2 on an
+input it cannot read or an unknown unit. `--self-test` runs each rule on
+fixture gap maps, traces, facts and units files. `--enabled` enters
+`check_release.sh` at M1a; the script is deleted at M6.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_facts_trace.py --enabled
+python3 scripts/check_facts_trace.py --unit slice
+python3 scripts/check_facts_trace.py
+python3 scripts/check_facts_trace.py --self-test
+```
+
+## generate_platform_facts.py
+
+Generates the platform-facts document from the verified facts
+(`docs/facts/<platform>/*.toml` and `docs/facts/palettes/`; `imported/`
+and `staged/` are no facts): one section per unit (the colour roles, the
+tokens, the inputs, then the widget catalogue's sections), one table per
+widget, colour-role set or token group, a row per key and combination, and
+per preset the value of the fact that applies there (the last in file
+order) with its citations. Writes `--out PATH`, by default
+`docs/platform-facts.generated.md`, and never today's hand-written
+`docs/platform-facts.md`, which its output replaces at the switch;
+`--check` exits 1 when PATH differs from a fresh run (in `check_release.sh`
+from the switch). Offline. `--self-test` compares a fixture's document with
+the expected one and runs `--check`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/generate_platform_facts.py --out docs/platform-facts.generated.md
+python3 scripts/generate_platform_facts.py --check
+python3 scripts/generate_platform_facts.py --self-test
 ```
 
 ## update_sources.sh

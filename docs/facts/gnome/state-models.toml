@@ -4,12 +4,48 @@
 [[model]]
 widget = "button"
 available = true
-variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@raised", "@osd", "@opaque", "@card", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button"]
+variants = ["primary", "destructive", "flat", "pill", "circular", "toggle", "menu", "icon_only", "with_icon", "close", "back", "previous", "next", "add", "clear_field", "reveal", "play", "volume", "pane_toggle", "@raised", "@osd", "@opaque", "@card", "@with_arrow", "@arrow_only", "@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none", "@tab_button", "@custom_child", "@image_text_box"]
 sizes = []
 densities = []
 axes = { states = ["hover", "pressed", "focused", "focus_visible", "disabled", "checked", "open", "drop_target"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }, { scope = { nearest = ["toolbar", "window", "popover"] }, widget = "popover" }, { scope = "any", widget = "layout", variants = ["@linked"] }, { scope = "any", widget = "layout", variants = ["@linked", "vertical"] }] }
 exclusive = []
-not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["open"], not_variants = ["menu", "back"] }]
+exclusive_variants = [["icon_only", "with_icon", "@custom_child"], ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"], ["@with_arrow", "@arrow_only"]]
+variant_sets = [["back", "icon_only"]]
+variant_products = [
+  # a plain button: its content (an icon, AdwButtonContent, a custom child; the label the base), its shape, its colour
+  # style, toggle or not
+  [{ any = ["icon_only", "with_icon", "@custom_child"] },
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] },
+   { any = ["toggle"] }],
+  # an application's own icon-and-label box (`.image-text-button`)
+  [{ one = ["with_icon"] }, { one = ["@image_text_box"] },
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] },
+   { any = ["toggle"] }],
+  # a menu button showing its arrow beside its content (`.arrow-button`): a label in any direction but `none`, an
+  # icon, AdwButtonContent or a custom child with `always-show-arrow`
+  [{ one = ["menu"] },
+   { any = ["icon_only", "with_icon", "@custom_child"] },
+   { one = ["@with_arrow"] },
+   { any = ["@arrow_up", "@arrow_start", "@arrow_end"] },
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] }],
+  # a menu button whose only child is its arrow (`.image-button`), in any direction
+  [{ one = ["menu"] }, { one = ["icon_only"] }, { one = ["@arrow_only"] },
+   { any = ["@arrow_up", "@arrow_start", "@arrow_end", "@arrow_none"] },
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] }],
+  # a menu button whose arrow GTK hides: an icon, AdwButtonContent or a custom child without `always-show-arrow`
+  [{ one = ["menu"] }, { one = ["icon_only", "with_icon", "@custom_child"] },
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] }],
+  # and a label with direction `none`
+  [{ one = ["menu"] }, { one = ["@arrow_none"] },
+   { any = ["pill", "circular"] },
+   { any = ["primary", "destructive", "flat", "@raised", "@opaque", "@osd", "@card"] }],
+]
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focused"] }, { states = ["disabled", "focus_visible"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["open"], not_variants = ["menu", "back"] }, { variants = ["@with_arrow"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["menu"] }, { variants = ["@arrow_only"], not_variants = ["icon_only"] }, { variants = ["menu"], not_variants = ["icon_only", "with_icon", "@custom_child", "@with_arrow", "@arrow_none"] }, { variants = ["@arrow_up"], not_variants = ["menu"] }, { variants = ["@arrow_start"], not_variants = ["menu"] }, { variants = ["@arrow_end"], not_variants = ["menu"] }, { variants = ["@arrow_none"], not_variants = ["menu"] }, { variants = ["@image_text_box"], not_variants = ["with_icon"] }, { variants = ["back"], not_variants = ["icon_only"] }]
 rows = ["GN-1.26", "GN-3.11"]
 
 [[model.cite]]
@@ -47,10 +83,129 @@ kind = "published"
 source = "libadwaita@1.10.0 src/adw-button-content.c:115"
 quote = "gtk_widget_add_css_class (self->button, \"image-text-button\");"
 
+# the content variants: a GtkButton has one child, a label, an icon or another widget (`with_icon` is AdwButtonContent,
+# which classes its button `.image-text-button`; `@custom_child` a widget with no class); `@image_text_box` is an
+# application's own icon-and-label box in a button it classes `.image-text-button` or `.text-button.image-button`
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:129-133"
+quote = "enum { LABEL_CHILD, ICON_CHILD, WIDGET_CHILD };"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:436-451"
+quote = "priv->child_type = child_type;"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:460-466"
+quote = "priv->child_type = WIDGET_CHILD;"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:77-91"
+quote = "&.text-button.image-button, &.image-text-button {"
+
+# a menu button's content (an icon, a label or a custom child, each in a box with the arrow) and its classes:
+# `.image-button` for an icon or the arrow alone, `.text-button` for a label, `.arrow-button` (`@with_arrow`) where the
+# arrow shows beside the content; one arrow direction at a time; only GtkMenuButton has an arrow
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:626-648"
+quote = "if (has_only_arrow || has_icon) gtk_widget_add_css_class (menu_button->button, \"image-button\");"
+
 [[model.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkmenubutton.c:644-647"
 quote = "gtk_widget_add_css_class (menu_button->button, \"arrow-button\");"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1062-1064"
+quote = "gtk_box_append (GTK_BOX (box), image_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1185-1187"
+quote = "gtk_box_append (GTK_BOX (box), label_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:1530-1532"
+quote = "gtk_box_append (GTK_BOX (box), inner_widget); gtk_box_append (GTK_BOX (box), arrow);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:602-621"
+quote = "switch (arrow_type) { case GTK_ARROW_NONE: gtk_widget_add_css_class (arrow, \"none\"); break;"
+
+# the menu button's style classes reach its inner button (`menubutton.<class> > button`)
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:404-407"
+quote = "&.circular > button { @extend %circular_button; } &.flat > button { @extend %button_basic_flat; } &.pill > button { @extend %pill_button; } &.destructive-action > button { @extend %destructive_button; }"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:413-421"
+quote = "&.suggested-action { background-color: var(--accent-bg-color); color: var(--accent-fg-color); } &.opaque {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:388-393"
+quote = "menubutton { &.osd { background: none; color: inherit; > button { @extend %osd_button; }"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:447-449"
+quote = "&.card > button { border-radius: $card_radius; }"
+
+# the variant sets: a plain button's content (an icon, AdwButtonContent, a custom child, an application's
+# icon-and-label box, or the label, the base), at most one shape (`.pill`, `.circular`), at most one colour style
+# (the stylesheet's alternatives: `:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque)`,
+# `_toolbars.scss:2`) and toggle or not; a menu button's content forms with their arrow (a label always shows it
+# unless its direction is `none`; an icon, AdwButtonContent or a custom child only with `always-show-arrow` and a
+# direction other than `none`; the arrow alone in any direction, `.image-button`), with the shape and style classes
+# its `menubutton` node passes to the inner button; AdwBackButton's inner button is a private icon button, which no
+# style class reaches. The arrow alone (`@arrow_only`: GtkMenuButton's `has_only_arrow`, the arrow the button's child,
+# as `gtk_menu_button_init` makes it until a label, an icon or a child is set) shows in every direction; a label with
+# direction `none` hides it, so a label menu button without `@with_arrow` is drawn only with `@arrow_none` (the
+# `menu` alone, a label, its arrow down and hidden, is not drawn)
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:631"
+quote = "gboolean has_only_arrow = menu_button->arrow_widget == gtk_button_get_child (GTK_BUTTON (menu_button->button));"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:690"
+quote = "add_arrow (self);"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:670-679"
+quote = "arrow = gtk_builtin_icon_new (\"arrow\"); gtk_widget_set_halign (arrow, GTK_ALIGN_CENTER); set_arrow_type (arrow, self->arrow_type, TRUE); gtk_button_set_child (GTK_BUTTON (self->button), arrow); self->arrow_widget = arrow;"
+
+[[model.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkmenubutton.c:658-666"
+quote = "set_arrow_type (menu_button->arrow_widget, menu_button->arrow_type, has_only_arrow || ((is_text_button || menu_button->always_show_arrow) && (menu_button->arrow_type != GTK_ARROW_NONE)));"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_toolbars.scss:2"
+quote = "button:not(.raised):not(.suggested-action):not(.destructive-action):not(.opaque) {"
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:527-536"
+quote = "adw_bin_set_child (ADW_BIN (self), button);"
+
+# AdwBackButton's button is an icon button (`.image-button`), never a label or an arrow
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:527-529"
+quote = "button = gtk_button_new_from_icon_name (\"go-previous-symbolic\");"
 
 [[model.cite]]
 kind = "published"

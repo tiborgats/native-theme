@@ -51,7 +51,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-B6 | `button.body.shadow = Shadow::Elevation(<key>) @ {hover} / {focus_visible} / {pressed} / {disabled}, each variant @elevated / variant primary / variant tinted` | rule |
 | MAT-B7 | `button.icon.icon.{size,fill}` | field |
 | MAT-B7 | `button.icon.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled} (the disabled opacity as the paint's alpha: the part lists no opacity)` | rule |
-| MAT-B8 | `button.body.padding @ variant with_icon` | rule |
+| MAT-B8 | `button.body.padding @ variant with_icon / variant with_icon size small cond flavor:expressive / variant with_icon size regular cond flavor:expressive / variant with_icon size large cond flavor:expressive` (baseline: `ButtonWithIconContentPadding`; Expressive: `contentPaddingFor(height, hasStartIcon = true)`, the icon padding of its small, medium and large buttons, its extra small and extra large ones having none of their own, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:932`, `:950-1003`, `:1578-1594`; ADD-A123) | rule |
 | MAT-B9 | `button.body.{min_height,padding}, button.icon.icon.size, button.values.icon_text_gap, button.label.text @ size extra_small / size small / size regular / size large / size extra_large, each cond flavor:expressive (ADD-A62)` | rule |
 | MAT-B9 | `button.body.stroke @ size extra_small / size small / size regular / size large / size extra_large, each variant @outlined cond flavor:expressive` | rule |
 | MAT-B10 | `button.body.corners @ variant @square cond flavor:expressive (round the base)` | rule |
@@ -306,13 +306,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS1 | `token.text.roles.headline (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.subheadline (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.body (= token.text.keyed.<key>)` | token |
-| MAT-TS1 | `token.text.roles.callout (= token.text.keyed.<key>)` | token |
+| MAT-TS1 | `token.text.roles.callout (= token.text.roles.body, the slot owning body_large, Compose's default text style, MaterialTheme.kt:113, S4.4; ADD-A122)` | token |
 | MAT-TS1 | `token.text.roles.caption (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.caption2 (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.label (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.title3 (= token.text.roles.title2, the slot owning title_large, S4.4)` | token |
 | MAT-TS1 | `token.text.roles.footnote (= token.text.roles.caption, the slot owning body_small, S4.4)` | token |
-| MAT-TS1 | `token.text.roles.numeric (= token.text.roles.body, the slot owning body_medium, S4.4)` | token |
+| MAT-TS1 | `token.text.roles.numeric (= token.text.roles.body, the slot owning body_large, S4.4; ADD-A122)` | token |
 | MAT-TS2 | `token.text.keyed.display_large.letter_spacing` | token |
 | MAT-TS2 | `token.text.keyed.display_medium.letter_spacing` | token |
 | MAT-TS2 | `token.text.keyed.display_small.letter_spacing` | token |
@@ -359,7 +359,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS4 | `token.text.keyed.label_large_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_medium_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_small_emphasized` | token |
-| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_medium_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.roles.subheadline, the slot owning title_small, S4.4)` | token |
+| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_large_emphasized, the emphasised form of body's body_large, unsourced, under cond flavor:expressive; under cond flavor:baseline = token.text.roles.subheadline, the slot owning title_small, S4.4)` | token |
 | MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.body_small_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.keyed.label_medium, which no other slot takes)` | token |
 | MAT-TS5 | `token.text.keyed.display_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-TS5 | `token.text.keyed.display_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
@@ -439,10 +439,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-EX1 | `list.disclosure.fill, list.disclosure.corners, list.disclosure.glyph @ {open}` | rule |
 | MAT-N1 | `button.body.{fill,min_width,min_height,corners,shadow}, button.icon.icon.{size,fill} @ variant @fab size small / variant @fab size regular / variant @fab size large cond flavor:expressive / variant @fab size extra_large (shadow Shadow::Elevation; small, standard, Expressive's medium and large FAB, declared by sizes_by_variant, S10)` | rule |
 | MAT-N1 | `button.body.fill.append (state layer), button.body.shadow @ {hover} / {focus_visible} / {pressed}, each variant @fab / variants {@fab,@lowered}; button.body.shadow @ variants {@fab,@lowered}` | rule |
-| MAT-N1 | `button.body.fill, button.icon.icon.fill @ variants {@fab,primary} / variants {@fab,@secondary} / variants {@fab,@tertiary} / variants {@fab,@surface} / variants {@fab,@primary_container} / variants {@fab,@secondary_container} / variants {@fab,@tertiary_container} / variants {@fab,@branded}` (the colour styles, the Expressive container styles, the branded FAB) | rule |
+| MAT-N1 | `button.body.fill, button.icon.icon.fill @ variants {@fab,primary} / variants {@fab,@secondary} / variants {@fab,@tertiary} / variants {@fab,@surface} / variants {@fab,@primary_container} / variants {@fab,@secondary_container} / variants {@fab,@tertiary_container} / variants {@fab,@branded}` (the colour styles; the container styles, `@primary_container` Compose's default FAB in both flavours, `@secondary_container` and `@tertiary_container` Expressive's; the branded FAB) | rule |
+| MAT-N1 | `[declare.widget.button] default_size_by_variant: @fab regular, @extended_fab regular` (the unsized FAB composables, where the Expressive buttons default to `small`; S10, ADD-A121, ADD-A123) | field |
 | MAT-N1 | `button.body.fill.append = alpha(role.@surface_tint, <fraction>) @ variant @fab (the surface tint); the shadow colour as the elevation layers' colour` | rule |
 | MAT-N1 | `button.body.focus @ {focus_visible} variant @fab; button.body.transitions (Shadow) @ variant @fab` | rule |
-| MAT-N2 | `button.label.text, button.values.icon_text_gap, button.body.{padding,min_height,corners} @ variant @extended_fab size small cond flavor:expressive / variant @extended_fab size regular / variant @extended_fab size large cond flavor:expressive` (small and large Expressive's only, declared under flavour expressive by sizes_by_variant) | rule |
+| MAT-N2 | `button.label.text, button.values.icon_text_gap, button.body.{padding,min_width,min_height,corners} @ variant @extended_fab size regular / variant @extended_fab size small cond flavor:expressive / variant @extended_fab size large cond flavor:expressive / variant @extended_fab size extra_large cond flavor:expressive` (`regular` the unsized `ExtendedFloatingActionButton` in both flavours; `small`, `large`, `extra_large` Expressive's small, medium and large extended FABs, declared under flavour expressive by sizes_by_variant; ADD-A123) | rule |
+| MAT-N2 | `button.body.padding @ variants {@extended_fab,with_icon} size regular` (the unsized extended FAB with an icon: `ExtendedFabStartIconPadding` before it and `ExtendedFabTextPadding` after the text, where the text-only one has `ExtendedFabTextPadding` on both sides, `FloatingActionButton.kt:620-623`, `:898-911`, `:1472-1479`; ADD-A123) | rule |
 | MAT-N2 | `button.body.shadow @ variants {@extended_fab,@lowered}; button.body.fill, button.label.text.fill, button.icon.icon.fill @ variants {@extended_fab,primary} / variants {@extended_fab,@secondary} / variants {@extended_fab,@tertiary} / variants {@extended_fab,@surface}` | rule |
 | MAT-N3 | `component.fab_menu.item.{fill,corners,padding,shadow,min_height}, component.fab_menu.item_label.text, component.fab_menu.item_icon.icon, component.fab_menu.values.item_gap, component.fab_menu.values.presentations (events Appear, Disappear: Morph); component.fab_menu.{item.fill,item_label.text,item_icon.icon} @ variant @primary / variant @secondary / variant @tertiary` (the colour styles) | component |
 | MAT-N3 | `button.body.{min_width,min_height,corners,shadow}, button.icon.icon @ variant close context component.fab_menu (the close button)` | rule |
@@ -530,7 +532,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N24 | `spinner.body.{fill,corners,padding} @ variants {@loading_indicator,@contained} (the container's colour, shape and space round the indicator)` | rule |
 | MAT-N24 | `spinner.indicator.shape (a ShapeKind::Material shape, S2.4, ADD-B03, ADD-A99); spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape, with their timing, R25.5)` | rule |
 | MAT-N25 | `toolbar.bar.{fill,min_height,corners,shadow,padding}, toolbar.values.item_gap @ variant @docked / variant floating / variants {floating,@vibrant}` | rule |
-| MAT-N25 | `toolbar.bar.{min_width,min_height} @ variants {floating,vertical} (the floating toolbar's height and width per orientation, R25.14); toolbar.values.floating_inset @ variant floating` | rule |
+| MAT-N25 | `toolbar.bar.{min_width,min_height} @ variants {floating,vertical} (the floating toolbar's height and width per orientation, R25.14); toolbar.bar.margin @ variant floating` (the floating bar's distance from the window's edges) | rule |
 | MAT-N25 | `button.{body.fill,icon.icon.fill,label.text.fill} @ {hover} / {focus_visible} / {pressed} / {disabled}, each context toolbar.bar variant floating / context toolbar.bar variants {floating,@vibrant} / context toolbar.bar variant @docked` | rule |
 | MAT-N25 | `button.{body.min_width,body.min_height,icon.icon.size} @ variant @fab context any toolbar variant floating (the FAB in the toolbar, its sizes)` | rule |
 | MAT-N25 | `toolbar.values.presentations (events Appear, Disappear)` | field |
@@ -555,7 +557,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X1 | `role.@primary_fixed, role.@primary_fixed_dim, role.@on_primary_fixed, role.@on_primary_fixed_variant (and the same for secondary and tertiary)` | role |
 | MAT-X1 | `role.@surface_dim, role.@surface_bright, role.@surface_container_lowest, role.@surface_container_low, role.@surface_container, role.@surface_container_high, role.@surface_container_highest` | role |
 | MAT-X1 | `role.@inverse_surface, role.@inverse_on_surface, role.@inverse_primary, role.@outline_variant, role.@surface_variant, role.@surface_tint, role.@background, role.@on_background` | role |
-| MAT-X1 | `role.global.scrim (= role.@scrim)` | role |
+| MAT-X1 | `role.global.scrim (= alpha(role.@scrim, <fraction>): Compose applies ScrimTokens.ContainerOpacity to the scrim role wherever it draws one)` (`ScrimTokens.kt`, `Scrim.kt:87`, `SheetDefaults.kt:530`, `NavigationDrawer.kt:1068`, `SearchBar.kt:2055`; Compose sets the alpha, equal to `alpha()` while `role.@scrim` is opaque; only the internal, unpublished `StyleableExpandedDockedSearchBarWithGap` takes the role unscaled, `SearchBar.kt:1014-1030`, `ComponentStyles.kt:688`, ADD-A122) | role |
 | MAT-X2 | `token.elevation.<level0 … level5> (the six levels)` | token |
 | MAT-X2 | `PartStyle.shadow = Shadow::Elevation(<key>) per part and state (each component's level)` | field |
 | MAT-X3 | `token.elevation.<key> layers (material-web's key and ambient ShadowLayers per level)` | token |
@@ -571,13 +573,13 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X9 | `PartStyle.transitions (Fill, TransitionKind::Ripple with its max_radius, initial_scale, padding, soft_edge, opacity, fade, min_press, touch_delay) @ {pressed} (on the state layer, S2.7)` | rule |
 | MAT-X9 | `Transition.{duration,delay,timing} of the ripple (grow time, easing)` | field |
 | MAT-X9 | `PartStyle.transitions (Fill, Interpolate) @ {hover} (the hover fade)` | rule |
-| MAT-X10 | `token.focus: FocusIndicator.width, FocusIndicator.offset (per side, negative for the inward offset, ADD-A18), FocusIndicator.corners (Radius::FollowPart: the ring following the part's per-corner shape, concentric)` (the system tokens: thickness, inner and outer offset) | token |
+| MAT-X10 | `token.focus: FocusIndicator.width, FocusIndicator.offset (per side, to the ring's inner edge, S2.10: the outward offset for the outward ring, `material-web@2.5.0 focus/internal/_focus-ring.scss:58-65`; for the inward ring, drawn inside the box by md-focus-ring's `inward-offset` (the distance to the ring's outer edge, `material-web@2.5.0 tokens/_md-comp-focus-ring.scss:49`), `= sub(0, add(<inward-offset>, <width>))`, `focus/internal/_focus-ring.scss:68-75`; the system token `md.sys.state.focus-indicator.inner-offset` (`tokens/versions/latest/sass/_md-sys-state-focus-indicator.scss:18-19`) already is that inner-edge offset, the ring flush inside at its `thickness` (`:22-23`), so a preset built on the system tokens states it as `offset` unchanged, never as an `inward-offset`; ADD-A18), FocusIndicator.corners (Radius::FollowPart, the ring's inner corner: the shape plus the outward offset, or the shape less the inward offset less the width, `:60-63`, `:70-73`)` (the system tokens: thickness, inner and outer offset) | token |
 | MAT-X10 | - (material-web's growing focus ring and its reduced-motion form, `md-focus-ring`'s own component tokens, `_md-comp-focus-ring.scss:20-52`; Compose, the reference, has its own focus indication, MAT-X34†) | reference (R1.6) |
 | MAT-X10 | `button.body.focus, switch.track.focus, checkbox.box.focus (per-component colour, width and offset over = token.focus)` | field |
 | MAT-X11 | `token.params.shape.<scale step> (none … extra_extra_large, ADD-A44)` | token |
 | MAT-X11 | `PartStyle.corners per-corner Radius (the -top, -start, -end families) and Radius::Full { maximum: Absent } (half the smaller side)` | field |
-| MAT-X12 | `button.body.shape @ {pressed} / {selected} / {checked} cond flavor:expressive` (a `ShapeKind::Material` shape in place of the corners' outline; buttons and icon buttons; R25.5, ADD-B03, ADD-A99) | rule |
-| MAT-X12 | `button.body.transitions (Shape, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the morph between the outlines, `native_theme::shapes::morph` over two `Outline`s, so a change between the rest corners and a pressed shape morphs too, S2.4, ADD-A103) | rule |
+| MAT-X12 | `button.body.corners @ {pressed} / {selected} / {checked} cond flavor:expressive` (Compose's buttons, toggle buttons and icon buttons morph only their corners, a `RoundedCornerShape` or `CornerBasedShape` animated, `Button.kt:1921-1938`, `ToggleButton.kt:1714-1717`, `IconButton.kt:1632`; no `shape` on `button`) | rule |
+| MAT-X12 | `button.body.transitions (Corners, Interpolate, Timing::Spring) @ {pressed} / {selected} / {checked} cond flavor:expressive` (the corners' spring, as MAT-B11's) | rule |
 | MAT-X12 | `ShapeKind::Material(MaterialShape)` (Material's shapes implemented once in code to `androidx.graphics.shapes` and `MaterialShapes.kt` at a pinned commit, `MaterialShape` listing exactly that file's shapes in its order, named in UpperCamelCase, the list written by the value phase, with `native_theme::shapes::outline` and `morph` returning a `Path`; S2.4, R25.5, ADD-A99, ADD-A101, ADD-A103) | field |
 | MAT-X12 | `spinner.values.loop @ variant @loading_indicator (keyframes setting the indicator's shape)` | rule |
 | MAT-X13 | `token.motion.durations.<duration key>` | token |
@@ -644,7 +646,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X34† | `token.behavior.focus_visible_when` (Compose's rule, the preset's reference where the tokens are silent, R1.6: when Compose shows its focus indication, read from its focus handling, a `FocusInteraction` under Android's touch mode, to verify in the value phase; material-web's `:focus-visible` only a cross-check; each widget's focus_visible_when refers to it, ADD-A16) | token |
 | MAT-X34† | `PartStyle.fill.append @ {focus_visible} (Compose's default focus style: a state-layer opacity)` | rule |
 | MAT-X34† | `FocusIndicator.{width,paint,offset,shadow} (Compose's inset ring: the outer stroke the indicator's width and offset, the inner stroke a shadow layer, R7, ADD-A17)` | field |
-| MAT-X34† | `FocusIndicator.corners` (stated per component: the shape each component supplies, as expressions over `part.corners` and the offsets, cited) | field |
+| MAT-X34† | `FocusIndicator.corners` (stated per component as the ring's inner corner, S2.10: the shape each component supplies, as expressions over `part.corners` and the offsets, cited) | field |
 | MAT-X35† | - (colour inversion and correction, which the system applies to the whole display; high-contrast text and force dark, which Android applies to the app's own drawing (who draws the high-contrast outline or plate: to verify), have no catalogue name yet) | out (R1.1) |
 | MAT-X36† | `token.text.roles.{body,monospace}.font.family` | token |
 | MAT-X36† | `reader:android:Typeface.DEFAULT, Typeface.MONOSPACE` | readers (R18) |

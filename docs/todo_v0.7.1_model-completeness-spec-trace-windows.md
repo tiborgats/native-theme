@@ -88,14 +88,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-149† | `window.values.attention_flash (period_ms, count)` | field |
 | W1-149† | `reader:windows:SPI_GETFOREGROUNDFLASHCOUNT, GetCaretBlinkTime` | reader |
 | W1-149† | - (the taskbar button's flash: the shell's) | out (R1.1) |
-| W1-018 | `button.body.stroke (paint: Linear gradient over an absolute extent)` | field |
+| W1-018 | `button.body.stroke (paint: Linear gradient over an absolute extent; fill_clip inner_edge, the default style's BackgroundSizing InnerBorderEdge)` (`Button_themeresources.xaml:156`, ADD-A121) | field |
 | W1-018 | `button.body.stroke @ cond scheme:dark (gradient at the other edge)` | rule |
 | W1-019 | `button.body.stroke @ {hover} / {pressed} / {disabled}` | rule |
 | W1-020 | `button.{body.fill,label.text.fill} @ {hover} / {pressed} / {disabled} variant primary` | rule |
-| W1-020 | `button.body.stroke (gradient paint) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` | rule |
+| W1-020 | `button.body.stroke (gradient paint; fill_clip box, AccentButtonStyle's BackgroundSizing OuterBorderEdge) @ variant primary / {hover} variant primary / {pressed} variant primary / {disabled} variant primary` (`Button_themeresources.xaml:238`) | rule |
 | W1-020 | `button.{body.fill,label.text.fill,body.stroke} @ {default} / {default,hover} / {default,pressed} / {default,disabled} context dialog.action_area` (the dialog's default button in AccentButtonStyle, in every state) | rule |
 | W1-021 | `button.body.fill, button.label.text.fill, button.body.stroke @ variant flat / {hover} variant flat / {pressed} variant flat / {disabled} variant flat` | rule |
-| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` | rule |
+| W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, set in the Checked, CheckedPointerOver and CheckedPressed states, `:255-256`, `:271-272`, `:287-288`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
 | W1-023 | `button.body.transitions (Fill)` | field |
 | W1-023 | `token.motion.durations.control_faster` | token |
@@ -286,6 +286,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-099 | `button.values.label_position @ variant tool context toolbar.bar (TextUnderIcon, TextBesideIcon, IconOnly)` | rule |
 | W1-099 | `button.{label.text,values.icon_text_gap} @ variant tool context toolbar.bar (the label font, the icon and label margins)` | rule |
 | W1-100 | `button.{body.fill,label.text.fill} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variants {tool,toggle} context toolbar.bar` | rule |
+| W1-100 | `button.body.stroke (fill_clip box) @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variants {tool,toggle} context toolbar.bar` (AppBarToggleButton's inner border `OuterBorderEdge` in all four checked states, `AppBarToggleButton_themeresources.xaml:343`, `:354`, `:367`, `:380`; ADD-A122) | rule |
 | W1-100 | `menu.check_indicator.glyph @ {checked} context button.body variant overflow` | rule |
 | W1-101 | `toolbar.separator.{stroke,corners,margin} (width and colour as the stroke's, the margin on both sides of the line, the radius)` | field |
 | W1-102 | `button.{icon.glyph,body.fill,body.min_width,body.min_height} @ variant overflow context toolbar.bar` | rule |
@@ -293,6 +294,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-102 | `menu.body.{fill,stroke,padding,min_width,max_width,max_height,shadow} @ context button.body variant overflow` | rule |
 | W1-102 | `WinUiFlyout (button.values.menu_placement @ variant overflow context toolbar.bar)` | placement |
 | W1-102 | `menu.{accelerator.text.fill,submenu_arrow.glyph.fill} @ context button.body variant overflow` | rule |
+| W1-102 | `button.values.menu_indicator_anchor (TopEnd), button.menu_indicator.{glyph,margin,min_width,min_height} @ variants {tool,menu} context toolbar.bar not_context any component.tabbed_command_bar` (AppBarButton's flyout chevron: a font glyph whose family's fallbacks are `token.text.fallbacks.per_family`'s, S4.4, ADD-A122, its top and end margins under the default label position, the label below the icon, and the icon-only one, whose `LabelCollapsed` state leaves the chevron's margin as it is, `AppBarButton_themeresources.xaml:31`, `:33`, `:35`, `:182-191`, `:373`; ADD-A122. The margins are measured from ContentRoot, the whole control (`:356`; the chevron's panel in row 0 and the last column of its grid, `:372`), not from the drawn fill, AppBarButtonInnerBorder, inset by AppBarButtonInnerBorderMargin `2,6,2,6` from it (`:117`, `:351`), so the value phase states `margin` from `body`'s box by that inset (S2.11). The source gives the chevron no box: the FontIcon sets no Width, Height, MinWidth or MinHeight, only its glyph's font size, `:33`, `:373`, but the chevron's panel is a zero-width `Auto` column, `:357-361`, `:372`, which the arrange stretches to the column less the FontIcon's margins, at least its desired size, `src/dxaml/xcp/core/core/elements/framework.cpp:1833-1842`, the glyph centred in that box, `icon.cpp:809-814`: so `menu_indicator.min_width = 11` (`= sub(0, add(-23, 12))` from `:35`'s start and end margins) and `min_height` `auto`. The label-beside-icon position, which a command bar sets by `DefaultLabelPosition` and the catalogue selects under `context any component.tabbed_command_bar` (W-RV-3†, which states `label_position` there), is excluded from this rule: its `LabelOnRight` state gives the chevron the margin at `:36` (`:157`, `:177-179`), where it sits in the layout after the label with a glyph-sized box, top-aligned by its top margin: the next row, `InlineTop`, ADD-A123) | rule |
+| W1-102 | `button.values.menu_indicator_anchor (InlineTop), button.values.menu_indicator_gap, button.menu_indicator.{glyph,margin,min_width,min_height} @ variants {tool,menu} context toolbar.bar context any component.tabbed_command_bar` (the label-beside-icon position the tabbed command bar sets, W-RV-3†: `LabelOnRight` gives the chevron the margin at `AppBarButton_themeresources.xaml:36`, `:157`, `:177-179`, so it sits in the content's row after the label, in its `Auto` column sized to the glyph and its start and end margins, `:357-361`, `:372`, top-aligned, `VerticalAlignment="Top"`, `:373`, its top margin from the content's top; its `min_width` and `min_height` `auto`, the glyph's box, in place of the default position's widened box; the gap and the start margin from the label's end margin, `AppBarButtonTextLabelOnRightMargin`, `:116`, and the chevron's, the value phase stating them as S2.11's row margins; its `glyph` AppBarButton's flyout glyph, `AppBarButtonFlyoutGlyph`, `:31`, restated here as the default position's row does, so W2-18's `@ variant menu` glyph, DropDownButton's, does not reach it; ADD-A123) | rule |
 | W1-103 | `toolbar.bar.{fill,stroke,corners} @ {open}` | rule |
 | W1-103 | `toolbar.bar.min_height @ variant @compact / variant @minimal / variant @hidden` | rule |
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
@@ -655,18 +658,19 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-16 | `role.@fill_* tiers` | role |
 | W3-16 | `role.@fill_subtle` | role |
 | W3-16 | `role.@background_solid_*` | role |
-| W3-17 | `role.global.status.{info,success,warning,error,neutral}.{background,background_solid} (attention, success, caution, critical, neutral backgrounds and their solid variants)` | role |
+| W3-17 | `role.global.status.{info,success,warning,error,neutral}.background (the attention, success, caution, critical and neutral backgrounds, Common_themeresources_any.xaml:171-175; attention is info, as InfoBar's informational severity takes it, InfoBar_themeresources.xaml:8)` | role |
+| W3-17 | `role.global.status.{info,neutral}.background_solid (the two solid backgrounds WinUI states, SystemFillColorSolidAttentionBackground and SystemFillColorSolidNeutralBackground, Common_themeresources_any.xaml:176-177; success, warning and error have none, absent)` | role |
 | W3-18 | `role.global.status.neutral.fill` | role |
 | W3-18 | `role.@system_fill_solid_neutral` (`SystemFillColorSolidNeutral`, the solid neutral fill, a fill tier) | role |
 | W3-45† | `PartStyle.fill (an alpha Color layer appended over base, fill.append, S2.3, R6: the translucent fill drawn over what lies behind)` | field |
 | W3-45† | `button.body.fill, combo_box.body.fill, switch.track.fill @ {hover} / {pressed} (appended translucent layers, not flattened colours)` | rule |
 | W3-46† | `role.@text_inverse` | role |
 | W3-46† | `banner.icon.glyph.fill @ variant info / variant success / variant warning / variant error (= role.@text_inverse on the backplates)` | rule |
-| W3-19 | `FocusIndicator.shadow (the inner ring, a shadow layer: its colour and width, R7, ADD-A17)` | field |
-| W3-20 | `FocusIndicator.offset` (per part: each control's FocusVisualMargin, ADD-A18; SelectorBar's on `view_switcher.item.focus`) | field |
-| W3-20 | `FocusIndicator.corners` (stated per control as WinUI draws it: an expression over `part.corners` and the offsets, the part's radius plus FocusVisualMargin, cited) | field |
+| W3-19 | `FocusIndicator.shadow (the inner ring: one inset layer cast by the ring's inner outline, spread FocusVisualSecondaryThickness's default, colour FocusStrokeColorInner; microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:24-25, Common_themeresources.xaml:16, FocusRectManager.cpp:445-455; S2.10, R7, ADD-A17, ADD-A122)` | field |
+| W3-20 | `FocusIndicator.offset` (per part: each control's FocusVisualMargin, ADD-A18, which sets the ring's outer edge, `FocusRectNudging.h:389`, so the offset to its inner edge is `= sub(<the margin negated>, part.focus.width)`, the part's own ring width, S2.10, ADD-A122; SelectorBar's on `view_switcher.item.focus`) | field |
+| W3-20 | `FocusIndicator.corners` (the ring's inner corner, S2.10, per control as WinUI draws it: the outer ring's corner is the part's radius less the mean of FocusVisualMargin's two sides at that corner, and the inner border's, the outer ring's inner edge, that less the mean of the primary thickness's two sides, each at least 0, a square corner staying square, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-92`, `:206-215`, `:487-491`; so `FollowPart` where the part's corner is rounded and its two sides' offsets are equal, `= sub(0, add(<margin>, <width>))` being the offset, and `Radius::Px(0)` where the part's corner is square, and on every corner under the Reveal and DottedLine kinds, which WinUI draws square, `:192-194`) | field |
 | W3-20 | `FocusIndicator.kind` (Ring, its inner ring a shadow layer: the HighVisibility default; Reveal: `FocusKind::Keyed(@reveal)`; DottedLine: `FocusIndicator.dash` `Dotted`; ADD-A82) | field |
-| W3-21 | `token.behavior.focus_visible_when (Keyboard { … }; ADD-A16)` | token |
+| W3-21 | `token.behavior.focus_visible_when (Keyboard { timeout: None }: the system focus visual only on an element whose focus state is Keyboard, focusmgr.cpp:2729-2746; ADD-A16, ADD-A122)` | token |
 | W3-21 | `reader:windows:SPI_GETKEYBOARDCUES` | reader |
 | W3-22 | `token.text.rendering (ADD-B04)` | token |
 | W3-22 | `reader:windows:SPI_GETCLEARTYPE, SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGTYPE, SPI_GETFONTSMOOTHINGCONTRAST` | reader |
@@ -718,7 +722,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-32 | `button.body.transitions (Transform: the tilt's motion)` | field |
 | W3-32 | `navigation_view.values.presentations events @push, @pop` (Frame's Entrance, Content, DrillIn, Slide and Suppress navigation transitions, keyed kinds, ADD-A26) | field |
 | W3-33 | `PresentationKind::Keyed { key: connected_animation } with its parameters (ADD-A26)` | field |
-| W3-33 | `token.motion.durations.connected, token.motion.timings.connected` | token |
+| W3-33 | `token.motion.durations.connected_service, token.motion.timings.connected_service (S4.1's step 2: ConnectedAnimationService's default duration and cubic Bézier, microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26-28)` | token |
 | W3-33 | `PartStyle.transform (translate as an expression on element.scroll_offset: ParallaxView, R25.3, ADD-B13)` | field |
 | W3-34 | `PartStyle.transitions and widget presentation transitions per control` | field |
 | W3-34 | `token.motion.durations.*` | token |
@@ -795,6 +799,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-RL03† | - | preset (R1.3) |
 | W-FM01† | `token.text.fallbacks.emoji_family (ADD-A41)` | token |
 | W-FM01† | `token.text.fallbacks.families` (Segoe UI Symbol, the fallback font for symbols, ADD-A41) | token |
+| W-FM01† | `token.text.fallbacks.per_family` (the symbol font's chain, `Segoe Fluent Icons` then `Segoe MDL2 Assets`, `SymbolThemeFontFamily`, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20`, which every `FontCodePoint` glyph's family takes, S4.4, ADD-A122; in TOML a table keyed by the family name, `"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`, S11, ADD-A123) | token |
 | W-FM01† | `reader:windows:IDWriteFontFallback::MapCharacters on an emoji string` | reader |
 | W-FM02† | `token.text.fallbacks.per_language (ADD-A41)` | token |
 | W-FM02† | `reader:windows:IDWriteFontFallback::MapCharacters per locale, LanguageFontGroup` | reader |
