@@ -43,15 +43,19 @@ impl Key {
         }
     }
 
-    /// The key a static text names, or `None` where it is not one; usable in
-    /// a constant, as [`key!`](crate::key) uses it.
+    /// Whether `name` is a key: [`key!`](crate::key)'s compile-time check.
+    #[doc(hidden)]
     #[must_use]
-    pub const fn from_static(name: &'static str) -> Option<Key> {
-        if is_key(name) {
-            Some(Key(Cow::Borrowed(name)))
-        } else {
-            None
-        }
+    pub const fn __is_key(name: &str) -> bool {
+        is_key(name)
+    }
+
+    /// The key a literal names, for [`key!`](crate::key) alone, which has
+    /// checked the literal with [`Key::__is_key`] at compile time.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __from_checked_literal(name: &'static str) -> Key {
+        Key(Cow::Borrowed(name))
     }
 
     /// The name.
@@ -112,13 +116,15 @@ const fn is_key(name: &str) -> bool {
 #[macro_export]
 macro_rules! key {
     ($name:literal) => {{
-        const KEY: $crate::next::Key =
-            $crate::next::Key::from_static($name).expect(::core::concat!(
+        const _: () = ::core::assert!(
+            $crate::next::Key::__is_key($name),
+            ::core::concat!(
                 "key!(",
                 ::core::stringify!($name),
                 "): not a key, `[a-z0-9][a-z0-9_]*`"
-            ));
-        KEY
+            )
+        );
+        $crate::next::Key::__from_checked_literal($name)
     }};
 }
 
@@ -131,10 +137,6 @@ mod tests {
         for name in ["a", "0", "128", "body", "shade_light", "a_", "x9_y"] {
             assert!(is_key(name), "{name}");
             assert_eq!(Key::new(name).map(|k| k.to_string()), Ok(name.to_owned()));
-            assert_eq!(
-                Key::from_static(name).map(|k| k.to_string()),
-                Some(name.to_owned())
-            );
         }
         for (name, character) in [
             ("", None),
@@ -154,8 +156,8 @@ mod tests {
                     character,
                 })
             );
-            assert_eq!(Key::from_static(name), None);
         }
         assert_eq!(Ok(crate::key!("shade_light")), Key::new("shade_light"));
+        assert_eq!(Ok(crate::key!("128")), Key::new("128"));
     }
 }
