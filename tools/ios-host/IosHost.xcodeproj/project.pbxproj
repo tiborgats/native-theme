@@ -245,7 +245,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.tiborgats.native-theme.ios-host";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -260,7 +260,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "io.github.tiborgats.native-theme.ios-host";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

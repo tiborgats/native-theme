@@ -38,6 +38,10 @@
 // keeps the capture only if the touch was still down when the screenshot
 // arrived. UIKit's animations stay enabled: the press is one.
 //
+// `focus<N>` (run.sh, `simctl launch` on an iPad): the styles at medium and the
+// system type, normal and focused, as the `run` mode draws them: whether
+// UIKit has a focus system there and focuses a button is recorded.
+//
 // Each cell is drawn by the app (`drawHierarchy(in:afterScreenUpdates:)` into a
 // UIGraphicsImageRenderer of the screen's scale and the standard range) to
 // draw/, and cropped from the simulator's own screenshot of the page to
@@ -702,6 +706,7 @@ let symbolNames = ["star", "circle", "square.and.arrow.up", "chevron.backward"]
 
 final class HostViewController: UIViewController {
     private let pressMode: Bool
+    private let focusMode: Bool
     private let quick: Bool
     private let colorNames: [String]
     private let pages: [Page]
@@ -746,9 +751,11 @@ final class HostViewController: UIViewController {
         let argument = arguments.first ?? "run"
         let runName = argument.allSatisfy { $0.isLetter || $0.isNumber } ? argument : "run"
         let press = runName.hasPrefix("press")
+        let focus = runName.hasPrefix("focus")
         let quickRun = arguments.contains("quick")
         run = runName
         pressMode = press
+        focusMode = focus
         quick = quickRun
         colorNames = arguments.first { $0.hasPrefix("colors=") }.map {
             $0.dropFirst("colors=".count).split(separator: ",").map(String.init)
@@ -765,7 +772,15 @@ final class HostViewController: UIViewController {
                 // of a third or a half of the screen's height.
                 let glass = specimen.kind == "configuration" && specimen.variant.isEmpty
                     && glassStyles.contains(specimen.name)
-                if press {
+                if focus {
+                    guard specimen.kind == "configuration" && specimen.variant.isEmpty || specimen.name == "system",
+                        let size = specimen.sizes.first(where: { $0.name == "medium" || $0.name == "default" })
+                    else { continue }
+                    pages.append(
+                        Page(
+                            appearance: appearance, specimen: specimen, size: size,
+                            slots: grid([.normal, .focused], [solveBackdrops[0]]), columns: 1, rows: 0, part: "focus"))
+                } else if press {
                     guard specimen.kind == "configuration" && specimen.variant.isEmpty || specimen.name == "system"
                     else { continue }
                     if glass {
@@ -828,7 +843,9 @@ final class HostViewController: UIViewController {
                 failures.append("create \(directory): \(error)")
             }
         }
-        if !pressMode {
+        if focusMode {
+            UIView.setAnimationsEnabled(false)
+        } else if !pressMode {
             readMotion()
             UIView.setAnimationsEnabled(false)
             UIPasteboard.general.string = "Text"
@@ -1803,7 +1820,7 @@ final class HostViewController: UIViewController {
         let names = specimens(quick: quick).map { quoted($0.name) }.joined(separator: ", ")
         return """
             [environment]
-            mode = \(quoted(pressMode ? "press" : "render"))
+            mode = \(quoted(pressMode ? "press" : focusMode ? "focus" : "render"))
             quick = \(quick)
             simulator_runtime_version = \(value("SIMULATOR_RUNTIME_VERSION"))
             simulator_runtime_build = \(value("SIMULATOR_RUNTIME_BUILD_VERSION"))

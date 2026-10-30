@@ -1,7 +1,7 @@
 // Compares the files of two runs of the iOS host that are not byte-identical,
 // pixel by pixel (both decoded into 8-bit sRGB RGBA), for tools/ios-host/run.sh:
 //
-//     xcrun swift tools/ios-host/compare.swift [--list-only] <run1> <run2> <list>
+//     xcrun swift tools/ios-host/compare.swift [--list-only] [--adaptive-glass] <run1> <run2> <list>
 //
 // <list> holds one path per line, relative to both runs. Prints each PNG's
 // count of differing pixels and their largest difference in levels, and each
@@ -13,7 +13,13 @@
 // dozen pixels (iOS 26.5, `glassTolerance`, a path holding `glass`);
 // drawHierarchy's copies (draw/) are listed and fail nothing, as is every
 // file under --list-only and every capture of the activity indicator, which
-// turns without end (a path holding `+activity_indicator_`).
+// turns without end (a path holding `+activity_indicator_`). Under
+// --adaptive-glass (an iOS 26 SDK), so is every capture of a Liquid Glass
+// specimen (a glass style, a bar item, a back button) over black, white or the
+// pattern, and every page of one: the glass adapts to a backdrop unlike its
+// appearance, and two runs can settle on different looks of it (dark glass over
+// white light or dark, up to 222 levels apart, each run's screenshots agreeing;
+// the lane's second round, iOS 26.5), so both runs' captures are the record.
 
 import CoreGraphics
 import Foundation
@@ -21,6 +27,19 @@ import ImageIO
 
 let tolerance = 1
 let glassTolerance = 2
+
+/// Whether a path is a capture of Liquid Glass that adapts to its backdrop:
+/// ./screen/<appearance>/<specimen>/<size>/<backdrop>/<state>.png over black,
+/// white or the pattern, or ./pages/<appearance>/<specimen>/<size>/<part>.png.
+func adapts(_ path: String) -> Bool {
+    var parts = path.split(separator: "/").map(String.init)
+    if parts.first == "." { parts.removeFirst() }
+    guard parts.count >= 5 else { return false }
+    let specimen = parts[2]
+    guard specimen.contains("glass") || specimen.hasPrefix("bar_") || specimen.hasPrefix("back_") else { return false }
+    if parts[0] == "pages" { return true }
+    return parts[0] == "screen" && parts.count == 6 && ["black", "white", "pattern"].contains(parts[4])
+}
 
 func samples(_ url: URL) -> (width: Int, height: Int, bytes: [UInt8])? {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -38,9 +57,10 @@ func samples(_ url: URL) -> (width: Int, height: Int, bytes: [UInt8])? {
 
 var arguments = CommandLine.arguments
 let listOnly = arguments.contains("--list-only")
-arguments.removeAll { $0 == "--list-only" }
+let adaptiveGlass = arguments.contains("--adaptive-glass")
+arguments.removeAll { $0 == "--list-only" || $0 == "--adaptive-glass" }
 guard arguments.count == 4 else {
-    print("usage: compare.swift [--list-only] <run1> <run2> <list>")
+    print("usage: compare.swift [--list-only] [--adaptive-glass] <run1> <run2> <list>")
     exit(2)
 }
 let first = URL(fileURLWithPath: arguments[1])
@@ -49,6 +69,7 @@ let list = (try? String(contentsOfFile: arguments[3], encoding: .utf8)) ?? ""
 var failed = false
 for path in list.split(separator: "\n").map(String.init) {
     let measured = !listOnly && !path.hasPrefix("./draw/") && !path.contains("+activity_indicator_")
+        && !(adaptiveGlass && adapts(path))
     if !path.hasSuffix(".png") {
         let a = (try? String(contentsOf: first.appendingPathComponent(path), encoding: .utf8)) ?? ""
         let b = (try? String(contentsOf: second.appendingPathComponent(path), encoding: .utf8)) ?? ""

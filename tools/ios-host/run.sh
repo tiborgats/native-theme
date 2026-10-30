@@ -14,7 +14,8 @@
 # writes sync/ready-<n>-<attempt> and hands it over as
 # sync/screen-<n>-<attempt>.png (tools/ios-host/IosHost/IosHost.swift).
 # IOS_HOST_QUICK=1 runs a few specimens at medium only. Writes into $1:
-#   run<N>/, press<N>/  the app's draw/, screen/ and pages/ PNGs, index.toml;
+#   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once)  the app's
+#                 draw/, screen/ and pages/ PNGs, index.toml;
 #                 sync/ (the handshake, outside the comparison): done (ok or
 #                 the app's failures), retakes (screenshots retaken)
 #   solved/run1/, solved/press1/  the solved layers; solved/run1.toml,
@@ -264,16 +265,60 @@ done
 xcrun simctl shutdown "$udid" >/dev/null 2>&1
 xcrun simctl delete "$udid"
 
+# The focused state, on the newest "iPad Pro" of the same runtime (an iPhone
+# has no focus system: the render pass's index records it): the app's focus
+# mode, once.
+ipad=$(python3 -I - "$out/runtimes.json" "$runtime" <<'EOF'
+import json, sys
+runtime = next(r for r in json.load(open(sys.argv[1]))["runtimes"] if r["identifier"] == sys.argv[2])
+pads = [t for t in runtime.get("supportedDeviceTypes", []) if t["name"].startswith("iPad Pro")]
+print("\t".join([pads[-1]["identifier"], pads[-1]["name"]]))
+EOF
+)
+status=$?
+note "choose the iPad: exit $status"
+if [ $status -ne 0 ] || [ -z "$ipad" ]; then
+  failed=1
+else
+  IFS=$'\t' read -r ipad_type ipad_name <<<"$ipad"
+  note "iPad: $ipad_name ($ipad_type)"
+  udid=$(xcrun simctl create ios-host-ipad "$ipad_type" "$runtime")
+  note "simctl create iPad: exit $?, $udid"
+  xcrun simctl bootstatus "$udid" -b >"$out/boot-ipad.log" 2>&1
+  note "simctl bootstatus -b iPad: exit $?"
+  xcrun simctl install "$udid" "$app"
+  note "simctl install iPad: exit $?"
+  shot=$(date +%s)
+  xcrun simctl io "$udid" screenshot --type=png "$out/warm-up-ipad.png" >/dev/null 2>&1
+  note "iPad warm-up screenshot: exit $?, $(($(date +%s) - shot)) s"
+  xcrun simctl launch --terminate-running-process --stdout="$out/focus1-stdout.log" \
+    --stderr="$out/focus1-stderr.log" "$udid" "$bundle" focus1 ${quick_argument[@]+"${quick_argument[@]}"}
+  status=$?
+  note "simctl launch focus 1: exit $status"
+  if [ $status -ne 0 ]; then
+    failed=1
+  else
+    serve "focus 1" focus1 || failed=1
+    xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+    [ -n "$sync" ] && { keep "focus 1" focus1 || failed=1; }
+  fi
+  xcrun simctl shutdown "$udid" >/dev/null 2>&1
+  xcrun simctl delete "$udid"
+fi
+
 # The measurement is the screenshot (screen/, pages/, index.toml). Files that
 # differ between the runs are compared pixel by pixel (compare.swift): a
 # measurement file of the render pass differing by more than a level fails the
 # job; iOS 26's Liquid Glass edges vary by one level in a few pixels, and
 # drawHierarchy's copies (draw/) of the glass styles by up to three, which are
-# listed in differ-levels.txt and fail nothing (spike I). The press pass's
+# listed in differ-levels.txt and fail nothing (spike I); on an iOS 26 SDK,
+# Liquid Glass over black, white or the pattern can settle on a different look
+# in each run (compare.swift, --adaptive-glass), listed and failing nothing,
+# both runs' captures kept. The press pass's
 # differences are listed in press-differ-levels.txt and fail nothing: its
 # touches and animations are not frame-exact; its full screenshots (pages/)
 # are left out, a retaken press adding one.
-# compare <first> <second> <differ> <levels> [--list-only <excluded path pattern>]
+# compare <first> <second> <differ> <levels> [<option> [<excluded path pattern>]]
 compare() {
   local first=$1 second=$2 differ=$3 levels=$4 option=${5:-} excluded=${6:-}
   manifest "$out/$first" "$excluded" >"$out/$first.sha256"
@@ -294,8 +339,10 @@ compare() {
   note "compare.swift $first $second: exit $status"
   return $status
 }
+adaptive=
+[ "${sdk_version%%.*}" -ge 26 ] && adaptive=--adaptive-glass
 if [ -d "$out/run1" ] && [ -d "$out/run2" ]; then
-  compare run1 run2 differ.txt differ-levels.txt || failed=1
+  compare run1 run2 differ.txt differ-levels.txt $adaptive || failed=1
 else
   failed=1
 fi
