@@ -93,8 +93,8 @@ Spelling (S11's table; spell()): a unit literal under a one-unit key is its numb
 (`min_height_px = 24`, `_ms`, `_deg`), and any other value of it, an expression, `"auto"`, `"absent"`, `"none"`,
 under the suffixed key too; a `FontSize` key takes `_pt` or `_px` by the literal's unit and the bare name otherwise; a
 `Radius` corner `<corner>_px` for a length or an expression and the bare name for a variant (`"follow_part"`, a
-variant table); a map (`Vec<(K, V)>`) a fact writes as a list of pairs becomes a table, one key per entry (S11: "never
-a list of pairs"), its entries spelled by `V` (`{}` for none); every other value as written (colours, expressions,
+variant table); a map (`Vec<(K, V)>`), a table in the fact as in the preset (S11: "a TOML table, one key per entry,
+never a list of pairs"), has its entries spelled by `V` (`{ button = "200ms" }` as `button_ms = 200`); every other value as written (colours, expressions,
 references, `"absent"`, `"auto"`, numbers, bools, lists, blocks as tables, which keep their own suffixed keys).
 
 Layout: `[preset] id`; `[declare]`; the bases, `inputs`, `colors.light`, `colors.dark`, `tokens`, `widgets`,
@@ -117,7 +117,7 @@ The round trip (the exactness proof)
 ------------------------------------
 The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in
 its rule's `set` below that rule's `when` and `target` as read back) and turned back into the fact's spelling
-(unspell(): the suffix into the value's unit, a map's table into pairs, `absent = true` into `"absent"`); a value
+(unspell(): the suffix into the value's unit, a map's entries likewise, `absent = true` into `"absent"`); a value
 at no transcribed fact's path is a mismatch. Then (1) for every key the read-back sequence (bases, then the rules in
 order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value; and (2) for
 every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs) and
@@ -328,12 +328,11 @@ def spell(name, typ, dim, value):
     if t == "Scalar" and unit:
         raise Untranscribable(SCALAR_UNIT)
     m = MAP_TYPE.fullmatch(t) if t else None
-    if m and isinstance(value, list) and all(isinstance(e, list) and len(e) == 2 and isinstance(e[0], str)
-                                             for e in value):
+    if m and isinstance(value, dict):
         vtype = m.group(2).strip()
         vdim = check_facts.KEY_DIMS.get(check_facts.strip_type(vtype))
         table = {}
-        for k, x in value:
+        for k, x in map_entries(value, vtype):
             ek, ev = spell(k, vtype, vdim, x)
             table[ek] = ev
         return name, table
@@ -353,9 +352,26 @@ def unspell(name, value, typ):
     t = check_facts.strip_type(typ) if typ else None
     m = MAP_TYPE.fullmatch(t) if t else None
     if m and isinstance(value, dict):
-        vtype = m.group(2).strip()
-        return name, [list(unspell(k, x, vtype)) for k, x in value.items()]
+        return name, dict(map_entries(value, m.group(2).strip()))
     return name, value
+
+
+def map_entries(table, vtype):
+    """A map's TOML table as (entry key, value) pairs in the fact's spelling: an entry's unit suffix into its value
+    (S11's map row: `button_ms = 200` is the entry `button`, `"200ms"`)."""
+    return [unspell(k, x, vtype) for k, x in table.items()]
+
+
+def canonical(value, typ):
+    """A fact's value as unspell() reads it back: a map written as a table with its entries' unit suffixes
+    (`{ button_ms = 200 }`) as `{ button = "200ms" }`, check_facts.py taking a map's entries either way."""
+    t = check_facts.strip_type(typ) if typ else None
+    m = MAP_TYPE.fullmatch(t) if t else None
+    return dict(map_entries(value, m.group(2).strip())) if m and isinstance(value, dict) else value
+
+
+def fact_value(f: Fact):
+    return canonical(f.item.data["value"], f.typ)
 
 
 def normal(v):
@@ -941,14 +957,14 @@ def round_trip(draft: Draft, text: str) -> Trip:
     whens = {g: list(ws.values()) for g, ws in whens.items()}
     for ckey, fs in by_key.items():
         got = back.get(ckey, {"base": {}, "rules": []})
-        want_rules = [(f.rule_when, f.item.data["value"]) for f in fs if f.status == "rule"]
+        want_rules = [(f.rule_when, fact_value(f)) for f in fs if f.status == "rule"]
         if [(check_facts.canonical_when(w), normal(v)) for w, v in got["rules"]] != [
                 (check_facts.canonical_when(w), normal(v)) for w, v in want_rules]:
             trip.mismatches.append(f"{fs[0].key}: the rules read back state other values or another order")
         for f in fs:
             if f.status == "base" and f.kind != "input":
                 for s in f.base_slots:
-                    if normal(got["base"].get(s if f.kind == "role" else None)) != normal(f.item.data["value"]):
+                    if normal(got["base"].get(s if f.kind == "role" else None)) != normal(fact_value(f)):
                         trip.mismatches.append(f"{f.where}: {f.key}: the base reads back otherwise")
         model = draft.models.get(fs[0].widget) if fs[0].widget else None
         groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
@@ -979,7 +995,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
                                            f"{applies.where} applies")
                     continue
                 value = preset_value(got, fs[0].kind, c, s, groups, recency)
-                if normal(value) != normal(applies.item.data["value"]):
+                if normal(value) != normal(fact_value(applies)):
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft gives {value!r}, "
                                            f"the fact that applies ({applies.where}) {applies.item.data['value']!r}")
     return trip
@@ -1175,7 +1191,7 @@ quote = "x"
         _fact("role.window.background", '"#222226"', '{ conditions = ["scheme:dark"] }'),
         _fact("role.window.foreground", '"= alpha(#000006, 0.8)"'),
         _fact("role.global.accent", '"= input.accent"', cite=_READ),
-        _fact("role.global.accent_ramp", "[]"),
+        _fact("role.global.accent_ramp", "{}"),
         _fact("role.@overview_background", '"#fafafb"', '{ conditions = ["scheme:light"] }'),
         _fact("role.view.background", '"#eeeeee"', '{ conditions = ["window_inactive"] }'),
         _fact("input.accent", '"#3584e4"'),
@@ -1188,7 +1204,7 @@ quote = "x"
         _fact("token.motion.speed_factor", "1"),
         _fact("token.motion.durations.button", '"0ms"', '{ conditions = ["system_setting:reduced_chrome"] }'),
         _fact('token.text.fallbacks.per_family.\\"Segoe Fluent Icons\\"', '["Segoe MDL2 Assets"]'),
-        _fact("token.text.fallbacks.per_language", '[["zh-Hans", ["Noto Sans CJK SC"]]]'),
+        _fact("token.text.fallbacks.per_language", '{ "zh-Hans" = ["Noto Sans CJK SC"] }'),
         _fact("token.kde.frame_width", '"2px"'),
         _fact("token.focus.width", '"2px"'),
         _fact("token.icons.theme", '"Adwaita"'),
@@ -1474,10 +1490,11 @@ SPELL_CASES = [
     ("family", "Value<String>", "text", "Adwaita Sans", ("family", "Adwaita Sans")),
     ("shown", "Value<bool>", "bool", True, ("shown", True)),
     ("weight", "Value<u16>", "number", 700, ("weight", 700)),
-    ("status_colors", "Vec<(Key, Value<Paint>)>", None, [["success", "= role.global.status.success.standalone"]],
+    ("status_colors", "Vec<(Key, Value<Paint>)>", None, {"success": "= role.global.status.success.standalone"},
      ("status_colors", {"success": "= role.global.status.success.standalone"})),
-    ("durations", "Vec<(Key, Value<Ms>)>", None, [["button", "200ms"]], ("durations", {"button_ms": 200})),
-    ("axes", "Vec<(AxisTag, AxisValue)>", None, [], ("axes", {})),
+    ("durations", "Vec<(Key, Value<Ms>)>", None, {"button": "200ms"}, ("durations", {"button_ms": 200})),
+    ("durations", "Vec<(Key, Value<Ms>)>", None, {"button_ms": 200}, ("durations", {"button_ms": 200})),
+    ("axes", "Vec<(AxisTag, AxisValue)>", None, {}, ("axes", {})),
     ("symbol_variants", "Vec<Key>", None, [], ("symbol_variants", [])),
     ("padding", "Sides<Value<Px>>", None, {"top_px": 5, "right_px": 17, "bottom_px": 5, "left_px": 17},
      ("padding", {"top_px": 5, "right_px": 17, "bottom_px": 5, "left_px": 17})),
@@ -1550,7 +1567,7 @@ def self_test() -> int:
             got = str(err)
         if got != want:
             failures.append(f"spell({name!r}, {typ!r}, {value!r}): {got!r}, expected {want!r}")
-        elif isinstance(want, tuple) and normal(unspell(want[0], want[1], typ)[1]) != normal(value):
+        elif isinstance(want, tuple) and normal(unspell(want[0], want[1], typ)[1]) != normal(canonical(value, typ)):
             failures.append(f"unspell({want[0]!r}, {want[1]!r}): not {value!r}")
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
