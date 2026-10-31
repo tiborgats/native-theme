@@ -29,6 +29,7 @@ use crate::next::blocks::shadow::{ResolvedShadow, Shadow, ShadowLayer};
 use crate::next::blocks::text::{Font, ResolvedFont, ResolvedTextStyle, TextStyle};
 use crate::next::blocks::{Block, BlockPatch, FieldsBlock, KeyedItem};
 use crate::next::color::Color;
+use crate::next::declare::ScalarUnit;
 use crate::next::expr::{
     Bound, ElementDatum, Env, Expr, FieldType, Literal, MAX_CHAIN, MAX_DEPTH, Name, Ref, Ty, Val,
 };
@@ -508,6 +509,30 @@ impl From<Target> for TypeTarget {
             Target::Part(part) => TypeTarget::Part(part),
             Target::Values(widget) => TypeTarget::Values(widget),
         }
+    }
+}
+
+/// The type a call stated on a keyed scalar of `unit` takes (S2.2, S4.6):
+/// a fraction's clamped, no other bound, a keyed scalar's sign no field's.
+fn scalar_field(unit: ScalarUnit) -> FieldType {
+    match unit {
+        ScalarUnit::Px => FieldType::new(Ty::Length, Bound::Unbounded),
+        ScalarUnit::Ms => FieldType::new(Ty::Duration, Bound::Unbounded),
+        ScalarUnit::Deg => FieldType::new(Ty::Angle, Bound::Unbounded),
+        ScalarUnit::Fraction => FieldType::new(Ty::Number, Bound::Fraction),
+        ScalarUnit::Number => FieldType::new(Ty::Number, Bound::Unbounded),
+    }
+}
+
+/// A keyed scalar of `unit` an evaluated call gives.
+fn scalar_of(unit: ScalarUnit, val: &Val) -> Option<Scalar> {
+    match (unit, val) {
+        (ScalarUnit::Px, Val::Length(px)) => Some(Scalar::Px(*px)),
+        (ScalarUnit::Ms, Val::Duration(ms)) => Some(Scalar::Ms(*ms)),
+        (ScalarUnit::Deg, Val::Angle(deg)) => Some(Scalar::Deg(*deg)),
+        (ScalarUnit::Fraction, Val::Number(x)) => Some(Scalar::Fraction(Fraction(*x))),
+        (ScalarUnit::Number, Val::Number(x)) => Some(Scalar::Number(*x)),
+        _ => None,
     }
 }
 
@@ -1365,13 +1390,45 @@ impl<'t> Cx<'t> {
                 X::from_val(&val)
             }
             Expr::Call(..) => {
-                let field = X::field(signed)?;
+                let unit = self.scalar_unit::<X>(origin);
+                let field = match unit {
+                    Some(unit) => scalar_field(unit),
+                    None => X::field(signed)?,
+                };
                 let val = self.call(expr, &field, origin, |cx| {
                     cx.value::<X>(below, signed).map(|x| x.to_val())
                 })?;
-                X::from_val(&val)
+                match unit {
+                    Some(unit) => {
+                        let scalar: Box<dyn Any> = Box::new(scalar_of(unit, &val)?);
+                        scalar.downcast::<X>().ok().map(|x| *x)
+                    }
+                    None => X::from_val(&val),
+                }
             }
         }
+    }
+
+    /// Where `X` is a keyed scalar stated in the tokens' `params`, its
+    /// group's declared unit (S4.6), which types a call stated on it.
+    fn scalar_unit<X: Any>(&self, origin: Target) -> Option<ScalarUnit> {
+        if std::any::TypeId::of::<X>() != std::any::TypeId::of::<Scalar>()
+            || origin != Target::Tokens
+        {
+            return None;
+        }
+        let [params, group, _] = self.path.as_slice() else {
+            return None;
+        };
+        if params != "params" {
+            return None;
+        }
+        self.theme
+            .declarations
+            .params
+            .iter()
+            .find(|(held, _)| held.as_str() == group)
+            .map(|(_, group)| group.unit)
     }
 
     /// An `Option<Value<X>>` field's value: `Some(None)` where the step states

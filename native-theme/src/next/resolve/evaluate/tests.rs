@@ -937,3 +937,18 @@ fn nested_font_sizes_scale_once() {
     // 10px, doubled, times 1.5, scaled once by 1.5.
     assert_eq!(size, Some(Px(10.0 * 2.0 * 1.5 * 1.5)));
 }
+
+/// Task 11a's review: a call stated on a keyed scalar is typed by its
+/// group's declared unit (S2.2, S4.6) and evaluates, as an operand too.
+#[test]
+fn keyed_scalar_calls_typed_by_their_unit() {
+    let params = "[tokens.params.layout]\nk0 = \"= add(2px, 2px)\"";
+    let mut theme = resolved(&[BASE, params], 1.0);
+    theme.declarations = crate::next::toml::layer::read_preset(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\n\
+         params = { layout = { unit = \"px\", keys = [\"k0\"] } }\n",
+    )
+    .unwrap()
+    .declarations;
+    assert_eq!(operand(&theme, "token.params.layout.k0"), length(4.0));
+}
