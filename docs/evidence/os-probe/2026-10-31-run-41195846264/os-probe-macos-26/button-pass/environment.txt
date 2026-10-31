@@ -1,0 +1,25 @@
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83
+sw_vers: exit 0
+/Applications/Xcode_26.6.app/Contents/Developer
+xcode-select -p: exit 0
+Xcode 26.6
+Build version 17F113
+xcodebuild -version: exit 0
+xcrun SDK: 26.5 build 25F70
+/Users/runner/work/native-theme/native-theme/target/release/native-theme-os-probe:
+Load command 10
+      cmd LC_BUILD_VERSION
+  cmdsize 32
+ platform MACOS
+    minos 11.0
+      sdk 26.5
+   ntools 1
+     tool LD
+  version 1267.0
+vtool -show-build: exit 0
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+system_profiler SPDisplaysDataType: exit 0
+grant kTCCServiceAccessibility to /Users/runner/work/native-theme/native-theme/target/release/native-theme-os-probe: exit 0
+grant kTCCServicePostEvent to /Users/runner/work/native-theme/native-theme/target/release/native-theme-os-probe: exit 0

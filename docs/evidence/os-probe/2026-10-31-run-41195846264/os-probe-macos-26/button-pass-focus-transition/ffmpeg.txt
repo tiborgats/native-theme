@@ -1,0 +1,98 @@
+==> Downloading bottle manifests
+✔︎ Bottle Manifest ffmpeg (9.0.2_1)
+==> Would install 1 formula:
+ffmpeg 9.0.2_1
+==> Would install 11 dependencies for ffmpeg:
+dav1d        1.5.4
+mpg123       1.33.7
+lame         4.0
+libvmaf      3.2.1
+libvpx       1.17.0
+opus         1.6.1
+sdl3         3.4.18
+sdl2-compat  2.32.74
+svt-av1      4.2.0
+x264         r3222
+x265         4.3
+==> Fetching downloads for: ffmpeg
+✔︎ Bottle Manifest dav1d (1.5.4)
+✔︎ Bottle Manifest mpg123 (1.33.7)
+✔︎ Bottle Manifest lame (4.0)
+✔︎ Bottle Manifest libvpx (1.17.0)
+✔︎ Bottle Manifest libvmaf (3.2.1)
+✔︎ Bottle Manifest opus (1.6.1)
+✔︎ Bottle mpg123 (1.33.7)
+✔︎ Bottle dav1d (1.5.4)
+✔︎ Bottle libvpx (1.17.0)
+✔︎ Bottle libvmaf (3.2.1)
+✔︎ Bottle Manifest sdl3 (3.4.18)
+✔︎ Bottle Manifest svt-av1 (4.2.0)
+✔︎ Bottle lame (4.0)
+✔︎ Bottle Manifest sdl2-compat (2.32.74)
+✔︎ Bottle Manifest x264 (r3222)
+✔︎ Bottle ffmpeg (9.0.2_1)
+✔︎ Bottle Manifest x265 (4.3)
+✔︎ Bottle opus (1.6.1)
+✔︎ Bottle sdl2-compat (2.32.74)
+✔︎ Bottle sdl3 (3.4.18)
+✔︎ Bottle svt-av1 (4.2.0)
+✔︎ Bottle x264 (r3222)
+✔︎ Bottle x265 (4.3)
+==> Installing dependencies for ffmpeg: dav1d, mpg123, lame, libvmaf, libvpx, opus, sdl3, sdl2-compat, svt-av1, x264 and x265
+==> Installing ffmpeg dependency: dav1d (1.5.4)
+==> Pouring dav1d--1.5.4.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/dav1d/1.5.4: 16 files, 959.6KB
+==> Installing ffmpeg dependency: mpg123 (1.33.7)
+==> Pouring mpg123--1.33.7.arm64_tahoe.bottle.1.tar.gz
+/opt/homebrew/Cellar/mpg123/1.33.7: 34 files, 1.9MB
+==> Installing ffmpeg dependency: lame (4.0)
+==> Pouring lame--4.0.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/lame/4.0: 29 files, 1.9MB
+==> Installing ffmpeg dependency: libvmaf (3.2.1)
+==> Pouring libvmaf--3.2.1.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/libvmaf/3.2.1: 243 files, 8.2MB
+==> Installing ffmpeg dependency: libvpx (1.17.0)
+==> Pouring libvpx--1.17.0.arm64_tahoe.bottle.1.tar.gz
+/opt/homebrew/Cellar/libvpx/1.17.0: 22 files, 4.4MB
+==> Installing ffmpeg dependency: opus (1.6.1)
+==> Pouring opus--1.6.1.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/opus/1.6.1: 16 files, 1.1MB
+==> Installing ffmpeg dependency: sdl3 (3.4.18)
+==> Pouring sdl3--3.4.18.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/sdl3/3.4.18: 103 files, 6.3MB
+==> Installing ffmpeg dependency: sdl2-compat (2.32.74)
+==> Pouring sdl2-compat--2.32.74.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/sdl2-compat/2.32.74: 117 files, 3.3MB
+==> Installing ffmpeg dependency: svt-av1 (4.2.0)
+==> Pouring svt-av1--4.2.0.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/svt-av1/4.2.0: 23 files, 3.3MB
+==> Installing ffmpeg dependency: x264 (r3222)
+==> Pouring x264--r3222.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/x264/r3222: 12 files, 4.4MB
+==> Installing ffmpeg dependency: x265 (4.3)
+==> Pouring x265--4.3.arm64_tahoe.bottle.1.tar.gz
+/opt/homebrew/Cellar/x265/4.3: 12 files, 17.3MB
+==> Installing ffmpeg
+==> Pouring ffmpeg--9.0.2_1.arm64_tahoe.bottle.tar.gz
+/opt/homebrew/Cellar/ffmpeg/9.0.2_1: 290 files, 53.9MB
+==> Caveats
+==> ffmpeg
+ffmpeg-full includes additional tools and libraries that are not included in the regular ffmpeg formula.
+brew install ffmpeg: exit 0
+ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-default.mov crop=89:48:348:384: exit 0,      338 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-default.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-plain.mov crop=89:48:208:384: exit 0,      334 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/aqua/transition-regular-plain.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-default.mov crop=89:48:348:384: exit 0,      316 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-default.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-plain.mov crop=89:48:208:384: exit 0,      308 frames
+ffprobe os-probe-out/button-pass-focus-transition-reduce-motion-off/darkAqua/transition-regular-plain.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/aqua/transition-regular-default.mov crop=89:48:348:384: exit 0,      336 frames
+ffprobe os-probe-out/button-pass-focus-transition/aqua/transition-regular-default.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/aqua/transition-regular-plain.mov crop=89:48:208:384: exit 0,      336 frames
+ffprobe os-probe-out/button-pass-focus-transition/aqua/transition-regular-plain.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-default.mov crop=89:48:348:384: exit 0,      338 frames
+ffprobe os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-default.mov: exit 0
+ffmpeg os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-plain.mov crop=89:48:208:384: exit 0,      313 frames
+ffprobe os-probe-out/button-pass-focus-transition/darkAqua/transition-regular-plain.mov: exit 0

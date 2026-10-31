@@ -1,0 +1,1883 @@
+# Output of analysis/measure_focus_ring.py (its docstring is the method), file focus-ring.toml.
+# input_image: every file this part reads, relative to the image folder.
+input_image = ["button-pass-focus/probe.toml", "button-pass-focus/aqua/unfocused-layer.png", "button-pass-focus/aqua/focused-mini-plain-layer.png", "button-pass-focus/aqua/focused-mini-default-layer.png", "button-pass-focus/aqua/focused-mini-toggle_off-layer.png", "button-pass-focus/aqua/focused-mini-toggle_on-layer.png", "button-pass-focus/aqua/focused-small-plain-layer.png", "button-pass-focus/aqua/focused-small-default-layer.png", "button-pass-focus/aqua/focused-small-toggle_off-layer.png", "button-pass-focus/aqua/focused-small-toggle_on-layer.png", "button-pass-focus/aqua/focused-regular-plain-layer.png", "button-pass-focus/aqua/focused-regular-default-layer.png", "button-pass-focus/aqua/focused-regular-toggle_off-layer.png", "button-pass-focus/aqua/focused-regular-toggle_on-layer.png", "button-pass-focus/aqua/focused-large-plain-layer.png", "button-pass-focus/aqua/focused-large-default-layer.png", "button-pass-focus/aqua/focused-large-toggle_off-layer.png", "button-pass-focus/aqua/focused-large-toggle_on-layer.png", "button-pass-focus/aqua/focused-extraLarge-plain-layer.png", "button-pass-focus/aqua/focused-extraLarge-default-layer.png", "button-pass-focus/aqua/focused-extraLarge-toggle_off-layer.png", "button-pass-focus/aqua/focused-extraLarge-toggle_on-layer.png", "button-pass-focus/darkAqua/unfocused-layer.png", "button-pass-focus/darkAqua/focused-mini-plain-layer.png", "button-pass-focus/darkAqua/focused-mini-default-layer.png", "button-pass-focus/darkAqua/focused-mini-toggle_off-layer.png", "button-pass-focus/darkAqua/focused-mini-toggle_on-layer.png", "button-pass-focus/darkAqua/focused-small-plain-layer.png", "button-pass-focus/darkAqua/focused-small-default-layer.png", "button-pass-focus/darkAqua/focused-small-toggle_off-layer.png", "button-pass-focus/darkAqua/focused-small-toggle_on-layer.png", "button-pass-focus/darkAqua/focused-regular-plain-layer.png", "button-pass-focus/darkAqua/focused-regular-default-layer.png", "button-pass-focus/darkAqua/focused-regular-toggle_off-layer.png", "button-pass-focus/darkAqua/focused-regular-toggle_on-layer.png", "button-pass-focus/darkAqua/focused-large-plain-layer.png", "button-pass-focus/darkAqua/focused-large-default-layer.png", "button-pass-focus/darkAqua/focused-large-toggle_off-layer.png", "button-pass-focus/darkAqua/focused-large-toggle_on-layer.png", "button-pass-focus/darkAqua/focused-extraLarge-plain-layer.png", "button-pass-focus/darkAqua/focused-extraLarge-default-layer.png", "button-pass-focus/darkAqua/focused-extraLarge-toggle_off-layer.png", "button-pass-focus/darkAqua/focused-extraLarge-toggle_on-layer.png"]
+
+[focus_ring.aqua.mini-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.mini-plain.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-plain.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-plain.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-plain.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.mini-default.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-default.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-default.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-default.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.mini-toggle_off.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_off.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_off.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_off.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.mini-toggle_on.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_on.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_on.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.mini-toggle_on.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.aqua.small-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.small-plain.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-plain.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-plain.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-plain.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.small-default.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-default.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-default.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-default.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.small-toggle_off.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_off.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_off.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_off.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.small-toggle_on.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_on.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_on.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.small-toggle_on.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.aqua.regular-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.regular-plain.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.aqua.regular-plain.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-plain.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-plain.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.regular-default.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.aqua.regular-default.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-default.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-default.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.regular-toggle_off.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.aqua.regular-toggle_off.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-toggle_off.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-toggle_off.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.regular-toggle_on.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.aqua.regular-toggle_on.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-toggle_on.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.regular-toggle_on.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.aqua.large-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.large-plain.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-plain.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-plain.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-plain.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.333, 0.992, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.333, 0.992, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.large-default.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-default.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-default.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-default.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.large-toggle_off.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_off.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_off.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_off.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.667, 0.996, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.large-toggle_on.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_on.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_on.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.large-toggle_on.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.aqua.extraLarge-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.extraLarge-plain.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-plain.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-plain.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-plain.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.667, 0.996, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.extraLarge-default.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-default.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-default.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-default.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.extraLarge-toggle_off.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_off.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_off.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_off.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.aqua.extraLarge-toggle_on.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_on.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_on.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.aqua.extraLarge-toggle_on.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.mini-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.mini-plain.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-plain.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-plain.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-plain.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.mini-default.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-default.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-default.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-default.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.mini-toggle_off.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_off.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_off.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_off.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 60
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.mini-toggle_on.corner_top_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_on.corner_top_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_on.corner_bottom_right]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.mini-toggle_on.corner_bottom_left]
+rows = [4.897, 3.031, 1.779, 1.228, 0.59, 0.268, 0.118]
+circle_radius_px = 7.5
+circle_rms_px = 0.069
+superellipse_a_px = 7.75
+superellipse_n = 2.1
+superellipse_rms_px = 0.067
+
+[focus_ring.darkAqua.small-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.small-plain.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-plain.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-plain.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-plain.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.small-default.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-default.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-default.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-default.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.small-toggle_off.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_off.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_off.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_off.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 78
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.small-toggle_on.corner_top_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_on.corner_top_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_on.corner_bottom_right]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.small-toggle_on.corner_bottom_left]
+rows = [5.748, 3.803, 2.472, 1.638, 1.047, 0.465, 0.276, 0.126]
+circle_radius_px = 8.5
+circle_rms_px = 0.058
+superellipse_a_px = 8.5
+superellipse_n = 2.0
+superellipse_rms_px = 0.058
+
+[focus_ring.darkAqua.regular-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.regular-plain.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.darkAqua.regular-plain.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-plain.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-plain.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.regular-default.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.darkAqua.regular-default.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-default.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-default.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.regular-toggle_off.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.darkAqua.regular-toggle_off.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-toggle_off.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-toggle_off.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 98
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.regular-toggle_on.corner_top_left]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.066
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.045
+
+[focus_ring.darkAqua.regular-toggle_on.corner_top_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-toggle_on.corner_bottom_right]
+rows = [6.701, 4.37, 3.031, 2.031, 1.354, 0.937, 0.449, 0.283, 0.134, 0.063]
+circle_radius_px = 9.5
+circle_rms_px = 0.067
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.regular-toggle_on.corner_bottom_left]
+rows = [6.693, 4.37, 3.031, 2.031, 1.354, 0.929, 0.449, 0.283, 0.134, 0.055]
+circle_radius_px = 9.5
+circle_rms_px = 0.065
+superellipse_a_px = 10.5
+superellipse_n = 2.3
+superellipse_rms_px = 0.046
+
+[focus_ring.darkAqua.large-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.large-plain.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-plain.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-plain.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-plain.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.333, 0.992, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.333, 0.992, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.large-default.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-default.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-default.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-default.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.047, 0.118, 0.075, 1], [0, 0.498, 0.533, 0.071, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.large-toggle_off.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_off.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_off.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_off.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 1], [0, 0.667, 0.996, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 1], [0, 0.667, 0.996, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.486
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.large-toggle_on.corner_top_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_on.corner_top_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_on.corner_bottom_right]
+rows = [14.622, 10.338, 8.401, 6.905, 5.677, 4.677, 3.701, 3.071, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.large-toggle_on.corner_bottom_left]
+rows = [14.622, 10.338, 8.401, 6.898, 5.677, 4.677, 3.701, 3.063, 2.37, 1.976, 1.362, 1.165, 0.677, 0.441, 0.26, 0.118]
+circle_radius_px = 17.5
+circle_rms_px = 0.276
+superellipse_a_px = 20.75
+superellipse_n = 2.5
+superellipse_rms_px = 0.125
+
+[focus_ring.darkAqua.extraLarge-plain]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.extraLarge-plain.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-plain.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-plain.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-plain.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-default]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 1], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 1], [0, 0.667, 0.996, 0.988, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.extraLarge-default.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-default.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-default.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-default.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_off]
+profile_left = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.034, 0.106, 0.075, 1], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 0.075, 0.075, 0], [-3, 0.0, 0.075, 0.075, 0], [-2, 0.0, 0.075, 0.075, 0], [-1, 0.0, 0.075, 0.075, 0], [0, 0.5, 0.537, 0.075, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.extraLarge-toggle_off.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_off.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_off.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_off.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_on]
+profile_left = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 1], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_right = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 1], [0, 0.5, 0.996, 0.992, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.494, 0.494, 0.0, 1], [3, 0.482, 0.482, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_top = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+profile_bottom = [[-4, 0.0, 1.0, 1.0, 0], [-3, 0.0, 1.0, 1.0, 0], [-2, 0.0, 1.0, 1.0, 0], [-1, 0.0, 1.0, 1.0, 0], [0, 0.0, 1.0, 1.0, 1], [1, 0.498, 0.498, 0.0, 1], [2, 0.498, 0.498, 0.0, 1], [3, 0.486, 0.486, 0.0, 1], [4, 0.0, 0.0, 0.0, 0], [5, 0.0, 0.0, 0.0, 0], [6, 0.0, 0.0, 0.0, 0]]
+outer_d = 3
+beyond_ring_pixels = 0
+beyond_ring_alpha_max = 0.0
+band_d = 3
+band_pixels = 66
+band_gaps = 0
+band_alpha_min = 0.478
+band_alpha_max = 0.486
+ring_alpha_max = 0.498
+
+[focus_ring.darkAqua.extraLarge-toggle_on.corner_top_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.968, 5.913, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.22, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.37
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_on.corner_top_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_on.corner_bottom_right]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
+
+[focus_ring.darkAqua.extraLarge-toggle_on.corner_bottom_left]
+rows = [18.779, 13.669, 11.354, 9.724, 8.189, 6.976, 5.921, 5.024, 4.346, 3.559, 3.008, 2.346, 2.055, 1.472, 1.189, 0.811, 0.559, 0.37, 0.228, 0.094]
+circle_radius_px = 21.75
+circle_rms_px = 0.369
+superellipse_a_px = 25.5
+superellipse_n = 2.5
+superellipse_rms_px = 0.168
