@@ -40,7 +40,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-005 | `window.content.fill (PaintKind::Material @mica: tint, luminosity, saturation, blur_radius, noise_opacity, fallback)` | field |
 | W1-005 | `window.content.fill @ variant @mica_alt` | rule |
 | W1-005 | `window.content.fill @ cond window_inactive / cond window_inactive variant @mica_alt (Material.fallback: the base and base-alt solid fills)` | rule |
-| W1-005 | `window.content.transitions (the material to colour crossfade)` | field |
+| W1-005 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating `[]` with its pending id, as W3-10's, S2.7, S17, ADD-A126)` | field |
 | W1-006 | `window.title_bar.min_height` | field |
 | W1-006 | `window.title_bar.min_height @ variant @tall / variant @collapsed / variant @titlebar_control_expanded` | rule |
 | W1-006 | `reader:windows:AppWindowTitleBar.Height` | reader |
@@ -100,7 +100,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-023 | `button.body.transitions (Fill: engine WinUi, the template's BrushTransition, which hands an interrupted fade off from the colour drawn and fades a brush in from none from its own colour at zero alpha, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:42-66`, `src/dxaml/xcp/components/brushes/WUCBrushManager.cpp:525-579`; S2.7, ADD-A126)` | field |
 | W1-023 | `token.motion (color_space: the composition animations' CompositionColorSpace_Rgb, the brush transitions', microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111, its arithmetic measured, the catalogue's Open items, ADD-A125)` | token |
 | W1-023 | `token.motion.durations.control_faster` | token |
-| W1-024 | `button.icon.transitions` (its AnimatedIcon states: a `TransitionKind::Keyed` transition of group `Icon` per state, ADD-A27) | field |
+| W1-024 | `button.icon.transitions` (its AnimatedIcon states: a `TransitionKind::Keyed` transition of group `Icon` per state, ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126) | field |
 | W1-025 | `button.body.focus.offset` | field |
 | W1-025 | `FocusIndicator.offset (per side, ADD-A18; stated on each widget's focus field, the per-control FocusVisualMargin)` | field |
 | W1-026 | `input.body.stroke (gradient paint per edge)` | field |
@@ -139,7 +139,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-038 | `checkbox.mark.glyph (FontCodePoint and size) @ {indeterminate}` | rule |
 | W1-038 | `checkbox.box.{fill,stroke} @ {indeterminate}` | rule |
 | W1-039 | `checkbox.mark.glyph (FontCodePoint and size)` | field |
-| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
+| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | field |
 | W1-040 | `checkbox.body.min_height, checkbox.body.min_width` | field |
 | W1-041 | `radio.dot.{min_width,min_height} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
 | W1-041 | `radio.dot.transitions (Geometry: the scale animation)` | field |
@@ -360,7 +360,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-131 | `combo_box.body.stroke (gradient paint) @ {hover} / {pressed}` | rule |
 | W1-132 | `combo_box.arrow.glyph.fill` | field |
 | W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
-| W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27)` | field |
+| W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
 | W1-133 | `combo_box.values.popup_placement (its max_visible_items)` | placement |
 | W1-134 | `menu.{item.fill,item.stroke,item_label.text.fill} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {selected,disabled} / {disabled} context combo_box` | rule |
@@ -386,7 +386,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-141 | `expander.content.{fill,stroke,corners}` | field |
 | W1-141 | `expander.content.{stroke,corners} @ variant @expand_up (the content above the header)` | rule |
 | W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` | field |
-| W1-142 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, the chevron's rotation; ADD-A27)` | field |
+| W1-142 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, the chevron's rotation; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | field |
 | W1-143 | `link.text.text.decoration @ variant inline / {hover} variant inline / {pressed} variant inline` | rule |
 | W1-144 | `link.body.fill @ {pressed} / {disabled}` | rule |
 | W1-144 | `link.body.stroke @ {hover} / {pressed} / {disabled}` | rule |
@@ -520,7 +520,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-17 | `split_button.divider.stroke @ {checked} variant toggle` | rule |
 | W2-18 | `button.{menu_indicator.glyph,values.menu_indicator_gap} @ variant menu` | rule |
 | W2-18 | `button.menu_indicator.glyph.fill @ {hover} / {pressed} / {disabled} variant menu` | rule |
-| W2-18 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state, the press animation; ADD-A27)` | rule |
+| W2-18 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state, the press animation; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | rule |
 | W2-19 | `button.{body.fill,body.stroke,label.text.fill} @ variant @repeat / {hover} variant @repeat / {pressed} variant @repeat / {disabled} variant @repeat` | rule |
 | W2-19 | `button.values.{repeat_delay,repeat_interval} @ variant @repeat` | rule |
 | W2-19 | `reader:windows:SPI_GETKEYBOARDDELAY/SPI_GETKEYBOARDSPEED relation to RepeatButton.Delay/Interval` | reader |
@@ -691,12 +691,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-26 | `tooltip.accelerator.text` | field |
 | W3-27 | `checkbox.mark.glyph.size; expander.arrow.glyph.size; combo_box.arrow.glyph.size; scrollbar.arrow_button.glyph.size; window.caption_button_glyph.glyph.size; banner.icon.glyph.size; menu.submenu_arrow.glyph.size` | field |
 | W3-27 | `button.icon.glyph.size @ variant close context tab.tab` | rule |
-| W3-28 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
-| W3-28 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
-| W3-28 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | rule |
-| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
-| W3-28 | `button.icon.transitions @ variant back context window.title_bar / variant back context sidebar.header / variant pane_toggle context sidebar.header / variant pane_toggle context window.title_bar` (the back arrow and the hamburger, `TransitionKind::Keyed`, ADD-A27) | rule |
-| W3-28 | `list.leading_icon.transitions @ variant sidebar` (the settings gear, `TransitionKind::Keyed`, ADD-A27) | rule |
+| W3-28 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | field |
+| W3-28 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | field |
+| W3-28 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | rule |
+| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126)` | field |
+| W3-28 | `button.icon.transitions @ variant back context window.title_bar / variant back context sidebar.header / variant pane_toggle context sidebar.header / variant pane_toggle context window.title_bar` (the back arrow and the hamburger, `TransitionKind::Keyed`, ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126) | rule |
+| W3-28 | `list.leading_icon.transitions @ variant sidebar` (the settings gear, `TransitionKind::Keyed`, ADD-A27; engine WinUiAnimatedIcon, its `QueueOne` queue, S2.7, ADD-A126) | rule |
 | W3-29 | `link.body.cursor; input.body.cursor; text_area.body.cursor; splitter.divider.cursor; window.resize_zone.cursor (the hand, the I-beam, the resize cursors)` | field |
 | W3-29 | `token.pointer.size (ADD-A46)` | token |
 | W3-29 | `reader:windows:UISettings.CursorSize, SM_CXCURSOR` | reader |

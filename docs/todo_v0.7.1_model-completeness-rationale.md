@@ -804,7 +804,8 @@ MAT-X13–MAT-X15, X-MO-1).
   - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
     but native fidelity and cover-everything-visible admit none where the source states the rule.
   - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
-    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `WinUi`, `GtkSwitch`), each implemented once in
+    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `ComposeHeld`, `WinUi`,
+    `WinUiAnimatedIcon`, `GtkSwitch`), each implemented once in
     native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
     an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
     transition: Breeze's test, quoted from its `updateState` call, and whether AdwEntryRow's title replays. The value
@@ -813,7 +814,9 @@ MAT-X13–MAT-X15, X-MO-1).
     attempt) and the one case that needs two ways out of a style told apart, Breeze's tab focus line, is stated by
     where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
     GTK delays one and Compose's `updateTransition` replaces an interrupted one; where one group's transitions name
-    two engines, the governing one's draws it. Breeze's group draws its flags reduced by its tests, at rest, under a
+    two engines, the governing transition's engine draws it, one hand-off rule deciding the update where it changes
+    (the leaving engine ending at the value drawn, a value engine taking over from there, Breeze taking over at its
+    rest value; a Breeze zero is Breeze governing). Breeze's group draws its flags reduced by its tests, at rest, under a
     zero and at a run's two ends alike (each failing test's `any` flags dropped, the run's own test excepted, but those a passing test names), so a
     fade a flag's style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and
     fill, its header) are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
