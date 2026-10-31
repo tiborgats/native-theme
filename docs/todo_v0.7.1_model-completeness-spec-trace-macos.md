@@ -369,6 +369,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-CB01 | `combo_box.arrow.glyph @ variant @pull_down` | rule |
 | MAC-CB01 | `combo_box.arrow_area.{fill,stroke,corners} @ variant editable` | rule |
 | MAC-CB01 | `input.body @ context combo_box variant editable` | rule |
+| MAC-CB01 | `combo_box.body.padding; combo_box.label.padding; combo_box.icon.margin; combo_box.arrow_area.min_width; combo_box.values.{icon_text_gap,label_arrow_gap,content_width,content_slack,input_placement}` (the content row, the catalogue: the rendering replaces the arrow, its arrow area `ControlImage.arrow` the end part, S15; the label's start, its gap to the arrow area, the image's margins and gap, the arrow area's width and its inset from the image's end, the width's basis and the cut of a long title no pinned source states, register rows per control size; ADD-A127) | field |
+| MAC-CB01 | `combo_box.arrow_area.{min_width,max_height,margin}, combo_box.values.{label_arrow_gap,input_placement} @ variant editable` (NSComboBox's field and arrow button, drawn by the model; their boxes register rows per control size; ADD-A127) | rule |
 | MAC-CB02 | `combo_box.arrow_area.fill` | field |
 | MAC-CB02 | `combo_box.arrow_area.fill @ cond window_inactive` | rule |
 | MAC-CB03 | `combo_box.arrow.glyph.fill @ {pressed} / {disabled}` | rule |

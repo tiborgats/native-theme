@@ -1356,6 +1356,62 @@ applied to the stand-in's factor or content-size category; a reader that reads e
 reports a factor of one, so nothing is scaled twice. The alternative, the application stating every size, moves a
 platform rule into every application.
 
+**R25.16 — The combo box's content layout (extends R16; ADD-A127).** Every platform lays its combo trigger out as
+one row, [icon] [the content's space] gap [the arrow], the content start-aligned and taking any spare width, the arrow
+keeping the end; they differ in four ways the model must state, each surveyed at the pins form by form (Breeze's and
+Kirigami's editable and non-editable combos with and without an icon, GtkDropDown and GtkComboBox with and without an
+entry, WinUI's at both densities and editable, Compose's and material-web's select with and without a leading icon,
+the iOS pop-up button, AppKit's pop-up and combo box). The catalogue's `combo_box` entry states the result once.
+
+*The row.* Options: a rule of the combo box's own; `button`'s content form with the arrow as `button`'s
+`menu_indicator` under `Inline`; that form with the arrow area as the end part where one is drawn (ADD-A125's).
+The second is chosen: it places the icon, takes written values one to one (WinUI's `ComboBoxPadding` end 0 and its
+chevron's `0,0,14,0`; Breeze's glyph centred in its 20 px square as a margin of 5; Compose's 24 dp icon in its 48 dp
+box as a margin of 12, with the text's own end padding 4 the gap), and needs only `margin` on the arrow and icon and
+`padding` on the label (GTK's cell renderer's 2 px, which in the body's padding would break S2.11's GTK minimum, an
+expression over that padding; Breeze's text pixel). The third fails WinUI, whose chevron sits in its 38 px column by
+its own margin, not centred in the 30 px overlay that is its editable arrow area, and Breeze, whose edit field runs
+2 px into the arrow's square rather than ending before it. So the arrow area, where drawn, is a box at the body's end
+by its own `margin`, `min_width` and `max_height`, taking no layout space (each platform's arrow column is already
+the gap, the arrow's margin box and the padding), and the arrow is placed by the row whether or not an area is drawn;
+on `macos-*`, where the rendering replaces the arrow, its `ControlImage.arrow` is the end part.
+
+*The cross axis.* WinUI centres its chevron on the whole row under an uneven padding (`12,5,0,7`), Compose its
+trailing box on the field's height; `Inline` centres on the content box. Options: `Inline`'s with WinUI's chevron
+given margins 1 and −1; the body's box. The body's box keeps written values and agrees with `Inline` under every even
+padding; Breeze's 20 px minimum content height, which under it no longer reaches the padding, is `body.min_height`,
+stated from its own terms.
+
+*The natural width.* A size hint is visible. Breeze sizes the content plus 38 but its drawn row holds 28: 10 px
+(the end `ComboBox_FrameWidth` and `Button_ItemSpacing`) are sized and never placed, 11 with an icon, 8 editable, 14
+frameless editable; Kirigami's style item 10, 7 with an icon, and editable a larger-of between its style item and its
+text field's own width. Options: (a) the gap widened by the slack (natural width and positions right, a long text cut
+10 px early); (b) the gap as drawn and the slack dropped (the width 10 px short at every size); (c) the slack in the
+label's padding (cut early); (d) the slack as the arrow's margin moved under `Inline` (start d, end −d), which keeps
+the row's size and moves the box: exact for one measure, but Kirigami's editable width is the larger of the style
+item's (with the slack) and the text field's (without), which a margin on the arrow, counted in both, cannot give,
+and Breeze's arrow would carry size terms where its source writes a centring; (e) a `min_width` over the content's
+width, which S8 forbids; (f) a value, `content_slack_px`, added to the content's space at its natural width only. (f)
+is the smallest form exact for every surveyed form: the positions and the cut stay the drawn row's, the size the
+platform's. What the content's space is measured at differs too, visibly: the shown text (GtkDropDown, WinUI), the
+shown text with the placeholder and the floating label (Compose), the widest item, each in its own form, with the
+placeholder (QComboBox, GtkComboBox; Kirigami at least 75 and, editable, beside its text field), and a fixed width
+(GtkComboBox's entry, 150 px of text); one basis for all would misstate four platforms, and leaving it to the
+connector would lose a platform rule (R25.3's argument), so `content_width` names it, with QComboBox's empty list
+(seven advances of `x`) as data. When a toolkit measures again (Qt's default takes the width at the first show) is the
+application's policy, not the theme's.
+
+*The editable input.* Breeze, Kirigami, Compose and GTK place the input in the content's space beside the arrow
+(Kirigami's `rightPadding: 24` is the 2 px gap, the 20 px square and the 2 px frame, so the row counts the column
+once); WinUI's text box spans the whole body with `11,5,38,6`, its padding holding the arrow's column, and appears
+only while the combo is focused. Options: WinUI's input in the row with its padding restated (its written 38 becoming
+an unwritten 1); `input_placement`, `Row` or `Body`. The second keeps every written value and counts each column
+once.
+
+*Left to measurement:* the macOS pop-up's and combo box's content row per control size and the iOS pop-up's width
+basis, spare width and cut, which no pinned source states (register rows); a measured result outside these forms
+(a packed iOS title and indicator) is a model change its row records.
+
 ## 4. What the specification decides
 
 The names and types of every field; the colour roles' surface sets, role record and keyed roles; the text ramp's slots;
