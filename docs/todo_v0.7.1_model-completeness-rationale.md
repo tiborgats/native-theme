@@ -715,8 +715,9 @@ MAT-X13–MAT-X15, X-MO-1).
   input), except during a theme change, which the theme-change token governs; the transition of the style
   after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`). A transition may name the states it applies from (`from`, a set of flags): one with
-  none applies from any state, and one with a set only where the element held one of its flags before the change,
-  after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
+  none applies from any state, and one with a set only to a change that clears one of its flags, held before and
+  not after, after the exclusive groups' drop (R3; ADD-A125: "held before" alone would fade Breeze's pen on a window
+  deactivation while hovered, which Breeze, whose fades start only when a flag turns off, draws at once); where several transitions that apply state one for the same property, the
   later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
   entered, or, moving to rest, by the one left (150 ms from press or focus, and drag on cards and chips; 120 ms from
   hover), and snaps from none and into disabled (`androidx@e4d933c9
