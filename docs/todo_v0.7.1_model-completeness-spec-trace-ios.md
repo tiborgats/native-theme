@@ -255,7 +255,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TA-4 | `text_area.writing_tools_glow.{fill,shadow,transitions}` | field |
 | TA-5 | `link.text.text @ variant inline context text_area` | rule |
 | TA-5 | - | readers (R18) |
-| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage), checkbox.mark.shown (true) @ variant selection; checkbox.mark (absent = true) @ !{checked} variant selection` (the check `Absent` unchecked, `checked` the selection's flag, written last, until CK-2†'s measurement says whether UIKit animates it in, which would make it a `shown` part, S2.7, ADD-A126) | rule |
+| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage) @ variant selection; checkbox.mark (absent = true) @ !{checked} variant selection` (the check `Absent` unchecked, `checked` the selection's flag, written last, until CK-2†'s measurement says whether UIKit animates it in, which would make it a `shown` part, S2.7, ADD-A126) | rule |
 | CK-1 | `list.accessory.glyph @ variant @checkmark` (the list checkmark accessory) | rule |
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
 | CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
@@ -620,6 +620,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-5 | `time_picker.field.{fill,corners,padding}, time_picker.field_label.text, time_picker.popup.{fill,corners,shadow} @ variant with_popup` (the `.time` mode's pill, its text in the accent, and its popover: a time picker, gap map "time picker") | rule |
 | C-5 | `time_picker.field.fill, time_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `time_picker.values.placement (UiKitPopover)` | placement |
+| C-5 | `date_picker.popup (absent = true) @ !{open}; time_picker.popup (absent = true) @ !{open} variant with_popup` (the popup drawn only open, written last; its open and close ADD-A129, queue #118, ADD-A126) | rule |
 | C-5 | - | readers (R18) |
 | C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.time_row.{text,padding}, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
 | C-6 | `button.icon.glyph @ variant previous context calendar.header / variant next context calendar.header` (the navigation chevrons) | rule |

@@ -1121,7 +1121,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-6† | `menu.values.submenu_presentation (Cascade), menu.arrow (absent = true) @ context any menu_bar` (nested popover menus: the submenu opens beside its item, arrowless; GN-1.76's Slide stays the base) | rule |
 | GN-P4-7† | `checkbox.mark.glyph (GlyphSource::Path from check.svg)` | field |
 | GN-P4-7† | `radio.dot.glyph (GlyphSource::Path from bullet.svg)` | field |
-| GN-P4-7† | `checkbox.mark.shown, radio.dot.shown (true); checkbox.mark (absent = true) @ !{checked,indeterminate}; radio.dot (absent = true) @ !{checked,indeterminate}` (no mark unchecked: GTK swaps the icon source at once, setting none but `:checked`'s and `:indeterminate`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:79-81`, the check's CSS transitions naming neither, `_common.scss:6-7`, so neither is a `shown` part, S2.7; written last, S6.3; ADD-A126) | rule |
+| GN-P4-7† | `checkbox.mark (absent = true) @ !{checked,indeterminate}; radio.dot (absent = true) @ !{checked}` (no mark unchecked: GTK swaps the icon source at once, setting none but `:checked`'s and `:indeterminate`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, the check's CSS transitions naming neither, `_common.scss:6-7`, so neither is a `shown` part, S2.7; written last, S6.3; ADD-A126) | rule |
 | GN-P4-8† | `menu.values.placement @ context input / context text_area` (GtkPopover, point anchor) | placement |
 | GN-P4-8† | `menu.arrow (absent = true) @ context input / context text_area` (the arrowless text context menu) | rule |
 | GN-P4-8† | `input.values.context_menu_items, text_area.values.context_menu_items` | field |

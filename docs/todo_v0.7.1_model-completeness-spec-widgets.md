@@ -75,9 +75,9 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   - every lane: which `Presence` a minimised window's elements have (an occluded window's are `Unpainted`, S2.7);
   - `windows-11`: whether a storyboard begun after the running one's `Stop()` hands off from the value drawn, the
     list pill's opacity and scale after it (a reselection mid-fade, a deselection mid-scale, W1-107);
-  - `macos-*` and `ios-*`: whether AppKit draws its check mark and radio dot on, trims or grows them (MAC-X11's
-    recording) and whether UIKit's multiselect check enters (CK-2†), stated as S2.7's *A part not shown at rest* has
-    them; `windows-11`: a checked radio's dot while pressed, which two state groups set (W1-041);
+  - `macos-*` and `ios-*`: whether AppKit grows its radio dot in and out (MAC-X11's recording; its check mark is
+    unmodelled, MAC-C06) and whether UIKit's multiselect check enters (CK-2†), the presets stating each `Absent`
+    where hidden meanwhile and the measurement deciding `shown` against it (S2.7); `windows-11`: a checked radio's dot while pressed, which two state groups set (W1-041);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
     element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
   - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2).
@@ -202,18 +202,18 @@ Each `### <widget>` section states, in this order:
   one `values()` is queried with (S8): queried with an item *(element)* (a row, a tab, a thumbnail), the events and
   their element data (`move_distance`) are that item's; queried with the widget's own element, they are the widget's
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
-  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event. A part or block a platform
-  draws only in some states is spelt one way on every preset, so an application layer's patch has the same effect
-  wherever the same thing is drawn: the base states it drawn, the preset's state rules patch its fields, and the rule
-  that makes it absent (`absent = true`, `"absent"`) is written last; a `shown` part is styled in every state, so a
-  patch reaches it however its `shown` rules are ordered (ADD-A126). One the platform hides
+  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event. One the platform hides
   at once is `Absent` by a rule in the states it is hidden in (WinUI's combo-box selection pill, W1-135, a title bar
   in full screen): it appears and leaves at once (S2.7), and no later field patch brings it back (S6.3). One the platform draws on, grows, trims,
   fades or slides out (a check mark, a radio's dot, a slider's value bubble, WinUI's list selection pill) lists
   `shown` and states `shown = false`
   there, its hidden style holding the values it enters from and leaves to, by the `transitions` of the style it
   goes to (S2.7's *A part not shown at rest*): its fade is its `transitions` (group `Opacity`) to its hidden
-  opacity, and a scale or slide its `transform` per state. A motion the
+  opacity, and a scale or slide its `transform` per state. Either is spelt one way on every preset: the base states it
+  drawn, the preset's state rules patch its fields, and the rule that makes it absent (`absent = true`, `"absent"`)
+  is written last, so an application layer's base patch reaches the drawn part or block on every preset, beneath
+  each preset's state rules as every base patch is; a `shown` part is styled in every state, so a patch reaches it
+  however its `shown` rules are ordered (ADD-A126). A popup's open and close are ADD-A129's (queue #118). A motion the
   enter rule cannot state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
@@ -1209,8 +1209,9 @@ spaces:
   - `accelerator` — the shortcut text: `text`, `opacity`, `padding` (W3-26).
   - `check_indicator` — the check, radio or mixed mark and its column, on every preset (Nested controls: it takes
     the item's states): `glyph` (the mark, `Absent` by rule `@ !{checked,indeterminate} not_context any combo_box`
-    and `@ !{selected} context any combo_box` on every preset whose trace states the glyph by state (MAC-MN05,
-    W1-050, MN-6, GN-1.73, K1.69), the base stating the drawn mark, the lane's state rules patching its fields and the
+    on every preset whose trace states the glyph by state (MAC-MN05, W1-050, MN-6, GN-1.73, K1.69), and in `context
+    any combo_box` `@ !{selected}` where the platform marks a combo list's chosen value (GN-1.234, CB-3) and in every
+    state elsewhere (WinUI's pill marks it, W1-135; `macos-*`'s and `kde-breeze`'s glyph an Open item), the base stating the drawn mark, the lane's state rules patching its fields and the
     absent rule written last (Entry format's one spelling), so an unchecked item draws the column
     and any box or ring but no mark, and a later patch of the glyph's fields leaves it absent, only a whole `Set`
     drawing it, S2.2, S6.3, ADD-A126), `fill`, `stroke`, `corners`, `shadow` (the box or ring behind the mark:
@@ -3360,7 +3361,7 @@ spaces:
     Material's navigation rail and drawer active indicator (MAT-N13, rename row 18): `fill`, `corners`, `min_width`,
     `min_height`, `opacity` (the rail's, zero with the width outside `{selected}`, as Compose grows and fades it in,
     MAT-N13; WinUI's, its fade), `shown` (`windows-11`: false outside `{selected}`, as a list item's chrome fades it
-    out before it removes it, W1-107, the sidebar's set at once, W1-089; `true` where another preset draws it, `material-3`, MAT-N13), `transform`
+    out before it removes it, W1-107, the sidebar's set at once, W1-089), `transform`
     (WinUI's scale as it is selected, W1-107), `transitions`; the part `Absent` where a platform removes it at once
     (S2.7, S6.3); its slide between rows is the event `@indicator_move`, `Instant` on `material-3`'s rail, whose items grow and fade
     their own, MAT-N13.
@@ -5447,8 +5448,8 @@ spaces:
     its box's edge, S2.4; one structure with `time_picker.segment_separator`).
   - `popup` — the picker's own flyout, popover or docked container, holding the calendar or the looping selectors
     (one name with `time_picker.popup`): `fill`, `stroke`, `corners` (MAT-N16), `shadow`, `padding`, `min_width`,
-    `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}`;
-    presentations: ADD-A129). `popup_header` and
+    `min_height` (MAT-N16), `transitions` (none times its open or close: where a field opens it, it is `Absent`
+    outside `{open}` and appears and leaves at once, S2.7, until ADD-A129, queue #118). `popup_header` and
     `divider` nest in it. `kde-breeze` draws it with another widget under `with_popup`, each flavour its own: under
     `cond flavor:widgets` `popup` is `drawn_as = { widget = "menu", variants = [] }` (KDateComboBox opens a menu,
     K2.23†), under `cond flavor:kirigami` `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`
@@ -5460,7 +5461,7 @@ spaces:
   - `divider`, in `popup` — Material's: `stroke`.
 - **Widget values:** `placement: Placement` (the popup against the field, its gap the placement's `gap`: W2-03's
   flyout, K2.23†'s menu, C-5's popover, MAC-N04's calendar overlay; strategies: value phase). The popup's showing and
-  hiding: presentations, ADD-A129.
+  hiding: ADD-A129 (queue #118).
 - **Variants:** typed `text_field` (a segmented text-field date: macOS textField and KDE QDateEdit, which open no
   popup; Windows DatePicker, whose field opens its looping-selector flyout, W2-04),
   `with_popup` (Windows CalendarDatePicker, KDE KDateComboBox and kirigami-addons' date row, iOS compact, Material
@@ -7445,7 +7446,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     time_picker.popup`, whose band and item height are `picker_wheel`'s; one name with `date_picker.popup`), and
     Material's time-picker container, whose colour, shape and elevation are time-picker tokens (MAT-N17, as
     `date_picker.popup` holds the date picker's, MAT-N16): `fill`, `stroke`, `corners`, `shadow`, `transitions`
-    (Windows' flyout drawn only `{open}`; presentations: ADD-A129).
+    (none times its open or close: `Absent` outside `{open}`, appearing and leaving at once, S2.7, until ADD-A129,
+    queue #118).
     `kde-breeze` draws kirigami-addons' popup with another widget: under `variant with_popup cond flavor:kirigami`
     `popup` is `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }` (K-KA-23†, whose fade is the
     dialog's), so one box is drawn, as on `date_picker`.
@@ -7468,7 +7470,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `false` where the platform answers none, never `Absent`);
   `placement: Value<Placement>` (the popup against the field, one name with `date_picker.values.placement`: C-5's
   popover, `UiKitPopover`; W2-04's flyout, its strategy the value phase's).
-  The popup's showing and hiding: presentations, ADD-A129.
+  The popup's showing and hiding: ADD-A129 (queue #118).
 - **Variants:** typed `vertical` (Material's vertical layout; horizontal is the base, R25.14, MAT-N17), `with_popup`
   (a field that opens a popup: KTimeComboBox's popup list, K2.24†; kirigami-addons' time row and its time popup,
   K-KA-22†, K-KA-23†; iOS's compact pill, C-5), `text_field` (QTimeEdit, macOS's text field: a segmented text field

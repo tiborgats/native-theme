@@ -727,7 +727,7 @@ MAT-X13–MAT-X15, X-MO-1).
   which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
   as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`); a part is a `shown` part exactly when its source animates its entrance or exit, styled
+  (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or exit, styled
   in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
   the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
   under the style it enters, the ninth check's form: a part's entry is stated by its hidden style (`shown`), so it
@@ -846,12 +846,12 @@ MAT-X13–MAT-X15, X-MO-1).
     measurement, their transitions pending facts the presets state none of meanwhile, with no placeholder member (a
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
-    appears) is a presentation event's matter, not settled here: presentations: ADD-A129.
+    appears) is a presentation event's matter, not settled here: ADD-A129 (queue #118).
 - **A part not shown at rest, drawn on, grown or trimmed off** (ADD-A126; ledger queue #85): Breeze draws its check
   on by a dash and grows its radio dot both ways, WinUI's accept visual trims its check on and off and its pressed
   radio dot grows, Compose draws its check by a fraction and grows its dot by its radius, GTK swaps the icon at once,
   and macOS's dot is measured.
-  - *`Absent` at rest* (ADD-A125's form): the rest look by the part decision, which S6.3 now keeps under a later
+  - *`Absent` at rest*, for a part the platform animates in or out (ADD-A125's form): the rest look by the part decision, which S6.3 now keeps under a later
     layer's field patch (#110, below), but an absent part answers `NotDrawn` and vanishes at once, so the motion has
     no values to move from or to; letting every absent part enter from and leave to the fields beneath it would
     change every part the platforms remove at once.
@@ -867,7 +867,7 @@ MAT-X13–MAT-X15, X-MO-1).
   - **Decision**: *`PartStyle.shown`*, a field listed only on the parts a platform hides by state and animates in
     or out (the check mark, the radio dot, a value bubble, WinUI's list selection pill): the part is styled in every state,
     `shown = false` where nothing is drawn at rest, laid out as styled, so a later layer's patch of another field
-    leaves it hidden and a measured look (macOS's dot) is kept for a connector that draws the parts itself; it is
+    leaves it hidden and its look is kept in every state; it is
     drawn while `shown` holds or while it leaves (the runs running as `shown` became false), a run started while it
     is hidden drawing nothing, so its hidden style, its style where `shown` is false, is what it enters from and
     leaves to under the transition that governs, one rule for every engine; a part removed at once stays `Absent`. `GlyphDraw` times a glyph's path and drawn span apart from its colour, as `StrokeWidth` does a
@@ -897,10 +897,14 @@ MAT-X13–MAT-X15, X-MO-1).
     cannot restate the preset's selectors, so it says so. One rule for every part and block, base or conditional, in
     every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
     part, which is the layer's statement, not an accident. Rejected: refusing a *dead patch*, one meeting `Absent`
-    wherever its rule applies (ADD-A126's tenth check): S6.3 keeps a patch's fields beneath an `Absent`, so a patch
-    latent under one combination is not dead (a later `Present` draws it), and whether one is dead hangs on how each
-    preset spells its bases (a drawn base glyph, or an `"absent"` one with checked `Set`s), so one application layer
-    would load on `adwaita` and be refused on four presets, breaking the layers' portability for no gain.
+    wherever its rule applies (ADD-A126's tenth check): S6.3 keeps a patch's fields beneath an `Absent` part for a
+    later `Present` to draw, so a patch latent under one combination is not dead.
+  - *Spelling a block drawn by state* (ADD-A126's twelfth check): (a) one spelling on every preset, the base stating
+    it drawn, its state rules patching it, the rule hiding it last; (b) each preset its own spelling, the catalogue
+    documenting that a layer's base patch reaches the block only where the base draws it; (c) an S12 check of the
+    spelling. (b) makes one application layer act on one preset and not on another; (c) checks what (a) states once.
+    **Decision**: (a), stated in the catalogue's Entry format, so an application layer's base patch reaches the drawn
+    block on every preset, beneath each preset's state rules as every base patch is.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
@@ -1030,9 +1034,10 @@ fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields 
 becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
 indicator of the style without the flag, its paint and shadow transparent, so libadwaita's ring grows in from and
 shrinks out to its rest outline, zero wide and transparent at a larger offset (`libadwaita@1.10.0
-src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` in that style enters from its own geometry, transparent, under the
-transition of the style it enters (Breeze's tab line fading in on a newly selected tab), and is gone at once
-(ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
+src/stylesheet/_drawing.scss:12-27`), its other end the indicator of the style without the flag under the element's other flags after the
+change, and an indicator `Absent` there appears and leaves at once: Breeze's tab line, drawn in the tab's base and
+`Absent` off `{selected}`, fades in on a newly selected tab from `{selected}`'s transparent line and is gone at once
+from the tab left (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
 no platform draws at rest); every preset stating its rest ring transparent, with no rule (every focusable part's rest
 style restating the ring, one left at the focused paint jumping in); an entering geometry on the block (a repeat of
 the rest style). The focus flags are the toolkit's in an inactive window, which GTK and Qt clear (S7.2).
