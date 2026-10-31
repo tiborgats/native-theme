@@ -253,7 +253,7 @@ Each `### <widget>` section states, in this order:
   entry's `adwaita` variants give the rule); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
   `icon_only`, `with_icon`; `menu.item`: `icon_only`; `list.row`: `icon_only`, `with_icon`, `with_subtitle`,
   `three_line`, `with_avatar`, `with_image`, `with_video`; `breadcrumb.crumb`: `with_icon`; `chip`: `with_icon`;
-  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `combo_box`: `with_icon`; `splitter`: Material's keyed `@clickable` (the `splitter`
+  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `splitter`: Material's keyed `@clickable` (the `splitter`
   entry gives the rule); `badge`:
   `custom_color`; `toolbar`: `with_search`, `with_prompt`; `form`: `collapsed` (KDE's form layout when its wide layout
   does not fit); `form.row`: `bitmap_icon`, `activatable`; `rich_text.code_block`: `fenced`; `window`:
@@ -2705,8 +2705,7 @@ spaces:
   - `arrow_area` *(element)* — the arrow's sub-control, hovered and pressed on its own: macOS's accent-filled arrow
     area of the pop-up, NSComboBox's separate arrow button, Breeze's editable combo's arrow sub-control, which draws
     no box of its own (its drawing fields `Absent`, S6.3) but whose own hover recolours the arrow (`SC_ComboBoxArrow`,
-    `breezestyle.cpp:7884`, K1.240): `fill`, `stroke`, `corners`, `min_width`, `margin` (a margin in the row, as
-    `button`'s `menu_indicator`'s).
+    `breezestyle.cpp:7884`, K1.240): `fill`, `stroke`, `corners`, `min_width`.
   - `arrow`, in `arrow_area` — the indicator glyph (single or double chevron; on macOS the AppKit rendering, the
     system control `AppKitPopUp`: `GlyphSource::SystemControl { control: AppKitPopUp, replaces: [body, arrow_area,
     arrow] }`, as S15's image is the whole button, so the connector draws none of those parts' own fills, strokes or
@@ -2714,23 +2713,14 @@ spaces:
     the image's `ControlImage.arrow`), a mark that takes the combo box's states (Nested controls: it is queried with the
     combo box's element, so `{hover}` is the combo's; nested in `arrow_area`, `context combo_box.arrow_area {hover}`
     selects the arrow area's own hover, and where no arrow area is drawn it is queried in the root's scope, Nesting):
-    `glyph` (its fill per state), `margin` (a margin in the row, as `button`'s `menu_indicator`'s: WinUI's chevron's
-    end inset, W1-132; Breeze's glyph centred in its rect, K1.240), `transform` (its rotation while `open`),
-    `transitions` (WinUI's animated chevron, W1-132).
+    `glyph` (its fill per state), `transform` (its rotation while `open`), `transitions` (WinUI's animated chevron,
+    W1-132).
   - `header` — WinUI's header text: `text`, `padding`.
   - `floating_label` — Material's select field label (as on input, MAT-CB1): `text`, `padding`, `opacity`,
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `icon_text_gap_px`, `label_arrow_gap_px: Value<Px>` (the content row, ADD-A125: `button`'s,
-  from `body`'s content box's start the `icon` where one is drawn, `icon_text_gap_px`, then the label, and the arrow
-  area, or the `arrow` where no arrow area is drawn, as the end part placed as `button`'s `menu_indicator` is under
-  `Inline`, `label_arrow_gap_px` its gap and its `margin` a margin in the row; on the cross axis it is centred on
-  `body`'s box, not the content box (WinUI centres its chevron in the template's whole row under an asymmetric
-  padding, `ComboBox_themeresources.xaml:582`; under a padding even on that axis the two agree); on `macos-*` the
-  rendering places the arrow area, the `arrow` part's entry; rejected: a rule of the combo box's own, which left the
-  icon unplaced and moved written values into the padding; GN-1.233, GN-1.238, K1.240,
-  W1-132, MAT-CB1, CB-1; macOS's two gaps measurements); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the combo box's content layout: ADD-A127); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
@@ -2746,8 +2736,7 @@ spaces:
   iOS's pull-down button is `button` `menu`, B-18†); `kde-breeze` `@dialog_mode`, `@page_mode`
   (the form combo row's display modes, K-KA-12†); `material-3` `@filled`; `ios-*` `@gray`
   (the trigger's `UIButton.Configuration` styles of B-1, as `button` declares them, with its `exclusive_variants`
-  groups, CB-2). The content variant `with_icon` (the current item's or the leading icon drawn, as on `button`; the
-  connector sets it from the content, ADD-A61; ADD-A125).
+  groups, CB-2).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3`: density (keyed). `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
   Others: none.
 - **Flags:** shared `empty` (Material's select with no value chosen: its label rests inside the field, MAT-CB1); state
@@ -2760,11 +2749,11 @@ spaces:
   precedence: state models (S17).
 - **may_be_absent:** parts: `placeholder` (all but `windows-11`), `header` (all but `windows-11`), `icon` (all but
   `material-3`, `kde-breeze`, `macos-*`: Qt's and AppKit's triggers draw the current item's icon, Q1.122; no row of
-  GNOME, Windows or iOS draws an icon in the trigger; on those three by a rule outside `with_icon`), `floating_label` (all but `material-3`), `supporting_text`
+  GNOME, Windows or iOS draws an icon in the trigger), `floating_label` (all but `material-3`), `supporting_text`
   (all but `material-3`, `windows-11`), `arrow_area` (all but `macos-*`, `kde-breeze`; `kde-breeze` by a rule outside
   `editable`, K1.240); fields: `body.shadow` (`adwaita` by the toolbar rule, GN-1.151; `kde-breeze`, `macos-*` by a
   rule under `flat`, K1.241, MAC-CB05; the value phase names the others from the facts), `arrow_area.corners`
-  (`kde-breeze`, whose arrow area draws no box, K1.240); values: `icon_text_gap_px` (all but `material-3`, `kde-breeze`, `macos-*`, as `icon`), `header_gap_px` (all but `windows-11`),
+  (`kde-breeze`, whose arrow area draws no box, K1.240); values: `header_gap_px` (all but `windows-11`),
   `supporting_text_gap_px` (all but `windows-11`, `material-3`), `notch_padding_px` (all but `material-3`),
   `floating_label_gap_px` (all but `material-3`).
 - **State-model source:** `windows-11` the ComboBox and ComboBoxItem visual state groups

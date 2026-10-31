@@ -115,7 +115,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar (the flat look; libadwaita flattens image, image-text and arrow buttons only)` | rule |
 | GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar` | rule |
 | GN-1.30 | `button.body.fill, button.label.text.fill @ variant primary` | rule |
-| GN-1.30 | `button.body.fill @ {hover} / {pressed} / {checked} / {checked,hover} / {checked,pressed} variant primary (appended layers)` | rule |
+| GN-1.30 | `button.body.fill @ {hover} !{pressed,checked} / {pressed} !{checked} / {checked} !{hover,pressed} / {checked,hover} !{pressed} / {checked,pressed} variant primary (appended layers)` (each state's layer drawn alone, as `%opaque_button` writes one `background-image` per state, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:160-179`, ADD-A125) | rule |
 | GN-1.30 | `button.body.focus @ variant primary (outer, offset)` | rule |
 | GN-1.31 | `button.label.text.fill @ variant destructive (= role.global.status.destructive.standalone)` | rule |
 | GN-1.31 | `button.body.fill @ variant destructive / {hover} variant destructive / {pressed} variant destructive / {checked} variant destructive / {checked,hover} variant destructive / {checked,pressed} variant destructive` | rule |
@@ -127,8 +127,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.34 | `button.body.fill @ {hover} / {pressed} / {checked} variant @osd` | rule |
 | GN-1.34 | `button.body.focus @ variant @osd (outer, offset)` | rule |
 | GN-1.34 | `button.body.shadow @ variant @osd cond contrast_high (ring layer)` | rule |
-| GN-1.35 | `button.body.fill @ variant @card / {hover} variant @card / {pressed} variant @card` | rule |
-| GN-1.35 | `button.body.fill @ {checked} / {checked,hover} / {checked,pressed} variant @card` | rule |
+| GN-1.35 | `button.body.fill @ variant @card / {hover} !{pressed,checked} variant @card / {pressed} !{checked} variant @card` (each state's layer alone, one `background-image` per state, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:336-354`, ADD-A125) | rule |
+| GN-1.35 | `button.body.fill @ {checked} !{hover,pressed} / {checked,hover} !{pressed} / {checked,pressed} variant @card` (as the row above, ADD-A125) | rule |
 | GN-1.35 | `button.body.focus.offset @ variant @card` | rule |
 | GN-1.36 | `button.body.transitions (Fill, Shadow)` | field |
 | GN-1.36 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
@@ -179,12 +179,12 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.55 | `radio.ring.fill, radio.ring.stroke @ {pressed} !{checked,indeterminate}` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`, ADD-A125) | rule |
 | GN-1.56 | `checkbox.box.stroke @ {hover} !{checked,indeterminate,pressed}` (excluding `pressed`, GN-1.55's note, ADD-A125) | rule |
 | GN-1.56 | `radio.ring.stroke @ {hover} !{checked,indeterminate,pressed}` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; excluding `pressed`, GN-1.55's note, ADD-A125) | rule |
-| GN-1.57 | `checkbox.box.fill @ {checked,hover} !{pressed} / {checked,pressed} (appended layers; also {indeterminate,hover} !{pressed} / {indeterminate,pressed})` (the hovered 10 % layer drawn alone, the pressed 20 % one replacing it, one `background-image`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.fill @ {checked,hover} !{pressed} / {checked,pressed} (appended layers; also {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked})` (a box both checked and inconsistent taking the checked layer once, GTK setting the two flags apart, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-879`, `:946-952`, and libadwaita one `background-image` for both; the hovered 10 % layer drawn alone, the pressed 20 % one replacing it, one `background-image`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
 | GN-1.57 | `radio.ring.fill @ {checked,hover} !{pressed} / {checked,pressed}` (as the check's, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
 | GN-1.57 | `checkbox.box.stroke @ {checked}; radio.ring.stroke @ {checked}` (no ring on a checked box or radio, the checked and inconsistent `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`; GN-1.55's note, ADD-A125) | rule |
 | GN-1.58 | `checkbox.box.{fill,stroke} @ {indeterminate}` (the inconsistent box's `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`, as the checked one's, GN-1.57, ADD-A125) | rule |
 | GN-1.58 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` | rule |
-| GN-1.58 | `radio.ring.{fill,stroke} @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} !{pressed} / {indeterminate,pressed}; radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-60`, `:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`; the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | rule |
+| GN-1.58 | `radio.ring.{fill,stroke} @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked}; radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-60`, `:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`; the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | rule |
 | GN-1.60 | `checkbox.box.corners` | field |
 | GN-1.60 | `radio.ring.corners (Full)` | field |
 | GN-1.61 | `checkbox.body.padding, checkbox.body.corners, checkbox.body.focus` | field |
@@ -535,7 +535,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.230 | `spinner.values.loop @ variant @gtk_spinner (the animated SVG's own animation, GN-P3-19†)` | rule |
 | GN-1.231 | `spinner.body.opacity @ {disabled}` | rule |
 | GN-1.232 | `spinner.{body.min_width,body.min_height,values.stroke_weight} @ context any status_page` | rule |
-| GN-1.233 | `combo_box.values.label_arrow_gap` (the content row `button`'s, the catalogue: the label's stack and the `arrow` spaced by the box's `border-spacing`, `libadwaita@1.10.0 src/stylesheet/widgets/_dropdowns.scss:2-3`, `:14-18`, the arrow with no margin, ADD-A125) | field |
+| GN-1.233 | `combo_box.values.label_arrow_gap` (the combo box's content layout: ADD-A127) | field |
 | GN-1.234 | `menu.body.padding @ context combo_box; menu.item.min_width @ context combo_box` | rule |
 | GN-1.234 | `menu.check_indicator.glyph @ context combo_box; menu.values.check_indicator_side @ context combo_box` | rule |
 | GN-1.235 | `search_field.body.padding @ context menu.body context any combo_box` | rule |
@@ -546,7 +546,6 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.236 | `combo_box.body.shadow @ {hover} variant flat cond contrast_high / {pressed} variant flat cond contrast_high / {open} variant flat cond contrast_high` (the inset border ring) | rule |
 | GN-1.237 | `combo_box.body.fill @ {open} / {open,hover}` | rule |
 | GN-1.238 | `combo_box.body.{padding,min_height} @ variant @gtk_combo_box` | rule |
-| GN-1.238 | `combo_box.values.label_arrow_gap @ variant @gtk_combo_box` (libadwaita's drop-down spacing does not reach it: `combobox { @extend dropdown; }` gives `combobox > button > box`, `libadwaita@1.10.0 src/stylesheet/widgets/_deprecated.scss:100-101`, while GtkComboBox's tree is `combobox > box > button > box`, `gtk@4.24.1 gtk/ui/gtkcombobox.ui:5-18`, so its inner box keeps GtkBox's default spacing 0, `gtk/gtkbox.c:267-269`; the cell renderer's padding the value phase reads, ADD-A125) | rule |
 | GN-1.239 | `segmented_control.track.padding, segmented_control.track.corners` | field |
 | GN-1.239 | `segmented_control.segment.corners (Concentric)` | field |
 | GN-1.240 | `segmented_control.segment.shadow @ {selected}` | rule |

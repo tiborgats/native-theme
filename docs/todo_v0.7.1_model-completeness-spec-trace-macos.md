@@ -366,7 +366,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-SN04 | `spinner.indicator.glyph, spinner.track.fill @ !{indeterminate}` (the determinate ring or pie: a stroked circle path, its draw_extent = element.progress; a pie the same path stroked as wide as its radius) | rule |
 | MAC-SN05† | `spinner.values.presentations` | field |
 | MAC-CB01 | `combo_box.arrow.glyph (GlyphSource::SystemControl { control: AppKitPopUp, replaces: [body, arrow_area, arrow] }: the whole button at the body's laid-out width, S15)` | system-control |
-| MAC-CB01 | `combo_box.values.{label_arrow_gap,icon_text_gap}` (the rendering places the arrow area, the catalogue's `arrow` entry; the label's gap to it and the image's gap to the label measurements, register rows, ADD-A125) | field |
 | MAC-CB01 | `combo_box.arrow.glyph @ variant @pull_down` | rule |
 | MAC-CB01 | `combo_box.arrow_area.{fill,stroke,corners} @ variant editable` | rule |
 | MAC-CB01 | `input.body @ context combo_box variant editable` | rule |

@@ -256,7 +256,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-088 | `tab.bar.fill (PaintKind::Material @mica_alt)` | field |
 | W1-088 | `tab.pane.fill (a layer over Mica Alt: = role.@layer_on_mica_base_alt_*)` | field |
 | W1-088 | `tab.tab.fill @ {selected} (joined to the pane's fill)` | rule |
-| W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` (the pill's representation, where it is drawn and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | rule |
+| W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` (the pill's representation, where it is drawn, its `opacity` and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | rule |
 | W1-089 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled} variant sidebar` | rule |
 | W1-089 | `list.values.selection_indicator_edge @ variant sidebar` (the pill at the row's leading edge) | rule |
 | W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` | rule |
@@ -359,7 +359,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-131 | `combo_box.{label,placeholder}.text.fill @ {pressed} / {focused}` | rule |
 | W1-131 | `combo_box.body.stroke (gradient paint) @ {hover} / {pressed}` | rule |
 | W1-132 | `combo_box.arrow.glyph.fill` | field |
-| W1-132 | `combo_box.arrow.margin; combo_box.values.label_arrow_gap` (the content row `button`'s, the catalogue: the label in the star column, the padding's end 0 as `ComboBoxPadding` writes it, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:341`, `:566`, `:577`; the chevron right-aligned in the 38-wide column, 12 wide, its end margin 14, `:567`, `:582`, so the gap 12 before its box; centred on the body's box vertically, `VerticalAlignment="Center"` in the template's whole row, `:582`; the body's padding gaining no border, its presenter the bordered `Border`'s sibling, `:571`, `:577`, not inside it, ADD-A125) | field |
 | W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
 | W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
@@ -491,7 +490,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-12 | `list.values.indent_per_level` | field |
 | W2-12 | `list.disclosure.glyph; list.disclosure.transitions` | field |
 | W2-12 | `list.disclosure.transform @ {open}` | rule |
-| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
+| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn, its `opacity` and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
 | W2-12 | `checkbox.* @ context list.row (the multi-select check box)` | rule |
 | W2-12 | `list.row.min_height` | field |
 | W2-12 | `list.row.min_height @ density compact` | rule |
@@ -760,7 +759,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-38 | `Material.fallback @ cond reduced_transparency per material` | rule |
 | W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled, registry EnableTransparency` | reader |
 | W3-39 | `declare.widget.{input,text_area,combo_box,list,date_picker,time_picker,picker_wheel}.densities (compact)` (each entry's *Sizes and densities*) | field |
-| W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` (the combo box's compact padding's end 0 as written, `microsoft-ui-xaml@2.5.1 src/controls/dev/dll/DensityStyles/Compact.xaml:22`, the chevron's end inset its margin, W1-132, unchanged, ADD-A125) | rule |
+| W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` | rule |
 | W3-39 | `list.row.min_height @ variant sidebar density compact (the nav item height)` | rule |
 | W3-39 | `picker_wheel.item.padding @ density compact context date_picker.popup / density compact context time_picker.popup (the picker flyouts)` | rule |
 | W3-40 | `menu.item.padding @ context menu.body {opened_by_touch}` | rule |
