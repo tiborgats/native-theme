@@ -121,7 +121,12 @@ A `[[fact]]` (S17 *Fields*):
   flag `not_states` refuses is the `when` rule's finding above.
 - A map (`Vec<(K, V)>`) written as a list of pairs, `[["k", v], …]` or `[{ key = …, value = … }, …]`, where S11's
   map row (spec line 2609) spells a TOML table, one key per entry, is a finding (map_problems: the key's core type
-  followed into the value, as text_leaves follows it). An empty `[]` is not a list of pairs and is not refused here.
+  followed into the value, as text_leaves follows it); so is an empty map written `[]`, where S11's table is `{}`
+  (an empty list is a list's spelling, S11's list row, not a map's). A whole map's table (value_problems) has the
+  map's keys and its value type: a map keyed by text (TEXT_MAP: `per_family`, `per_language`) takes any non-empty
+  text as a key (`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`; S11, ADD-A123), any other map a snake_case key
+  (S1's key grammar), a unit-valued entry with its unit's suffix (`button_ms = <n>`), and each entry's value is
+  checked as the map's value type.
 - A transition (transition_problems: every `Transition` table the key's type reaches in the value; S2.7, S11, S12;
   ADD-A124): its `from` is stated in a single transition (`"none"` for any state) and may be left out of a list's
   entry only (`None`); as a list it is not empty, names no flag twice and no keyed flag the key's widget does not
@@ -325,6 +330,7 @@ PART_PATCH = "PartPatch"   # the type key_info gives a whole part's key, `<widge
 # segment key_info walks the core's types with in its place
 TEXT_KEY_TYPES = ("String", "LanguageTag")
 TEXT_MAP = re.compile(rf"Vec<\(\s*(?:{'|'.join(TEXT_KEY_TYPES)})\s*,\s*(.+)\)>")
+MAP_TYPE = re.compile(r"Vec<\(\s*([^,]+?)\s*,\s*(.+)\)>")   # a map, `Vec<(K, V)>` (S11's map row)
 TOML_BARE = re.compile(r"^[A-Za-z0-9_-]+$")
 TEXT_ENTRY = "text_entry"
 DRAWN_AS_KEYS = {"widget", "part", "variants"}
@@ -1239,6 +1245,8 @@ def value_problems(ctx, value, dim, where="value", typ=None) -> list:
     if isinstance(value, list):
         if dim == "text":
             return [f"{where}: a list where the key is a text value"]
+        if typ and MAP_TYPE.fullmatch(strip_type(typ)):
+            return []   # a map is a table: a list for one is map_problems' finding
         it = item_type(typ)
         out = []
         for i, v in enumerate(value):
@@ -1257,6 +1265,15 @@ def value_problems(ctx, value, dim, where="value", typ=None) -> list:
             fields = ctx.structs[e]
             out += [f"{where}.{k}: `{k}` is not a field of {e}" for k in value
                     if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
+        entry = MAP_TYPE.fullmatch(e) if e else None
+        if entry and TEXT_MAP.fullmatch(e):
+            # a map keyed by text: its keys the text as written, its values the map's value type (S11, ADD-A123)
+            for k, v in value.items():
+                if not k:
+                    out.append(f"{where}: an empty key, where a map keyed by text takes the text as written (S11)")
+                    continue
+                out += value_problems(ctx, v, None, f"{where}.{k!r}", entry.group(2))
+            return out
         for k, v in value.items():
             w = f"{where}.{k}"
             if not NAME.match(k):
@@ -1274,7 +1291,8 @@ def value_problems(ctx, value, dim, where="value", typ=None) -> list:
                 elif isinstance(v, float) and not math.isfinite(v):
                     out.append(f"{w}: a non-finite number")
                 continue
-            out += value_problems(ctx, v, None, w, child_type(ctx, typ, k) if typ else None)
+            sub_t = entry.group(2) if entry else child_type(ctx, typ, k) if typ else None
+            out += value_problems(ctx, v, None, w, sub_t)
         return out
     return [f"{where}: {type(value).__name__} is not a value"]
 
@@ -2436,19 +2454,21 @@ def never_holds_problems(ctx, items) -> list:
 
 
 def map_problems(ctx, value, t, path="value") -> list:
-    """A map (`Vec<(K, V)>`) written as a list of pairs, `[["k", v], …]` or `[{ key = …, value = … }, …]`, where S11
-    spells a TOML table, one key per entry (S11's map row, spec line 2609; S17), in `value` under the core's type
-    `t`."""
+    """A map (`Vec<(K, V)>`) written as a list of pairs, `[["k", v], …]` or `[{ key = …, value = … }, …]`, or an
+    empty one written `[]`, where S11 spells a TOML table, one key per entry, `{}` when it has none (S11's map row,
+    spec line 2609; S17), in `value` under the core's type `t`."""
     s = strip_type(t) if t else None
-    m = re.fullmatch(r"Vec<\(\s*[^,]+?\s*,\s*(.+)\)>", s) if s else None
+    m = MAP_TYPE.fullmatch(s) if s else None
     if m:
         pair = (lambda x: isinstance(x, list) and len(x) == 2 and isinstance(x[0], str)
                 or isinstance(x, dict) and set(x) == {"key", "value"})
-        if isinstance(value, list) and value and all(pair(x) for x in value):
+        if isinstance(value, list) and not value:
+            return [f"{path}: an empty map written `[]`, where S11 spells a TOML table (`{{}}`)"]
+        if isinstance(value, list) and all(pair(x) for x in value):
             return [f"{path}: a map written as a list of pairs, where S11 spells a TOML table, one key per entry "
                     f"(`{{ <key> = <value> }}`)"]
         if isinstance(value, dict):
-            return [p for k, v in value.items() for p in map_problems(ctx, v, m.group(1), f"{path}.{k}")]
+            return [p for k, v in value.items() for p in map_problems(ctx, v, m.group(2), f"{path}.{k}")]
         return []
     if isinstance(value, list):
         it = item_type(t) if t else None
@@ -3063,6 +3083,8 @@ _MOTION = '[[fact]]\nkey = "token.motion.durations.button"\nvalue = "200ms"\nrow
 _RAMP = '[[fact]]\nkey = "role.global.accent_ramp.light1"\nvalue = "#ff0000"\nrows = []\n' + _CITE
 _FALLBACK = ('[[fact]]\nkey = \'token.text.fallbacks.per_family."Segoe Fluent Icons"\'\nvalue = ["Segoe MDL2 Assets"]\n'
              'rows = []\n' + _CITE)
+_WHOLE_FAMILIES = ('[[fact]]\nkey = "token.text.fallbacks.per_family"\nvalue = { "Segoe Fluent Icons" = '
+                   '["Segoe MDL2 Assets"] }\nrows = []\n' + _CITE)
 _UNTYPED = "'Segoe MDL2 Assets' is not a value as S11 spells it"   # a key that does not read types no value
 _TIMING = ('[[fact]]\nkey = "token.motion.timings.in_out_sine"\nvalue = { platform = { qt = "in_out_sine" } }\n'
            'rows = []\n' + _CITE)
@@ -3474,7 +3496,10 @@ SELF_TEST_CASES = [
      _RAMP.replace("libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11",
                    "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Common_themeresources_any.xaml:4"), []),
     ("accent ramp: none (an empty ramp)", "docs/facts/gnome/ramp.toml", None,
-     _RAMP.replace("accent_ramp.light1", "accent_ramp").replace('"#ff0000"', "[]"), []),
+     _RAMP.replace("accent_ramp.light1", "accent_ramp").replace('"#ff0000"', "{}"), []),
+    ("accent ramp: none, written []", "docs/facts/gnome/ramp.toml", None,
+     _RAMP.replace("accent_ramp.light1", "accent_ramp").replace('"#ff0000"', "[]"),
+     ["value: an empty map written `[]`"]),
     ("accent ramp: below an entry", "docs/facts/gnome/ramp.toml", None,
      _RAMP.replace("accent_ramp.light1", "accent_ramp.light1.red"), ["an accent ramp role is"]),
     ("enum: a key inside an enum block", "docs/facts/gnome/text.toml", '"button.mark.glyph.source"',
@@ -3600,6 +3625,31 @@ SELF_TEST_CASES = [
          '{ button = "200ms" }', '{ durations = [["button", "200ms"]] }'),
      ["value.durations: a map written as a list of pairs"]),
     ("map: a list of blocks is no map", "docs/facts/gnome/map.toml", None, _SPRING, []),
+    ("map: an empty table", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }', "{}"), []),
+    ("map: an empty map written []", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }', "[]"),
+     ["value: an empty map written `[]`, where S11 spells a TOML table (`{}`)"]),
+    ("map: an empty map written [] inside a block", "docs/facts/gnome/map.toml", None,
+     _MAP.replace('"token.motion.durations"', '"token.motion"').replace('{ button = "200ms" }', "{ durations = [] }"),
+     ["value.durations: an empty map written `[]`"]),
+    ("map: an empty list is a list", "docs/facts/gnome/map.toml", None,
+     _FALLBACK.replace('["Segoe MDL2 Assets"]', "[]"), []),
+    # a whole map keyed by text: its keys the text as written, its values the map's value type (S11; ADD-A123)
+    ("map: a whole per_family table", "docs/facts/gnome/map.toml", None, _WHOLE_FAMILIES, []),
+    ("map: a whole per_family table, a family TOML writes bare", "docs/facts/gnome/map.toml", None,
+     _WHOLE_FAMILIES.replace('"Segoe Fluent Icons"', "Cantarell"), []),
+    ("map: a whole per_language table", "docs/facts/gnome/map.toml", None,
+     _WHOLE_FAMILIES.replace("per_family", "per_language").replace('"Segoe Fluent Icons"', '"zh-Hans"'), []),
+    ("map: a whole per_family table, a number for a family", "docs/facts/gnome/map.toml", None,
+     _WHOLE_FAMILIES.replace('["Segoe MDL2 Assets"]', "[1]"),
+     ["value.'Segoe Fluent Icons'[0]: a number where the key is a text value"]),
+    ("map: a whole per_family table, an empty family", "docs/facts/gnome/map.toml", None,
+     _WHOLE_FAMILIES.replace('"Segoe Fluent Icons"', '""'), ["value: an empty key, where a map keyed by text"]),
+    ("map: a whole per_family table as a list of pairs", "docs/facts/gnome/map.toml", None,
+     _WHOLE_FAMILIES.replace('{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }',
+                             '[["Segoe Fluent Icons", ["Segoe MDL2 Assets"]]]'),
+     ["value: a map written as a list of pairs"]),
+    ("map: a key-keyed map keeps snake_case keys", "docs/facts/gnome/map.toml", None,
+     _MAP.replace('{ button = "200ms" }', '{ "Button Press" = "200ms" }'), ["the key 'Button Press' is not snake_case"]),
     # a transition's `from` (S2.7, S11, S12; ADD-A124)
     ("from: a list entry's from, and one left out", "docs/facts/gnome/from.toml", None, _FROM, []),
     ("from: an empty list", "docs/facts/gnome/from.toml", None, _FROM.replace('["pressed", "focused"]', "[]"),

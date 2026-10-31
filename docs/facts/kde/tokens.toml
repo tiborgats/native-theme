@@ -1235,7 +1235,7 @@ quote = "constexpr QFixed() : val(0) {}"
 
 [[fact]]
 key = "token.text.keyed.default.font.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1245,7 +1245,7 @@ quote = "QMap<QFont::Tag, float> variableAxisValues;"
 
 [[fact]]
 key = "token.text.keyed.default.font.features"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1370,7 +1370,7 @@ quote = "constexpr QFixed() : val(0) {}"
 
 [[fact]]
 key = "token.text.keyed.fixed.font.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1380,7 +1380,7 @@ quote = "QMap<QFont::Tag, float> variableAxisValues;"
 
 [[fact]]
 key = "token.text.keyed.fixed.font.features"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1510,7 +1510,7 @@ quote = "constexpr QFixed() : val(0) {}"
 
 [[fact]]
 key = "token.text.keyed.toolbar.font.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1520,7 +1520,7 @@ quote = "QMap<QFont::Tag, float> variableAxisValues;"
 
 [[fact]]
 key = "token.text.keyed.toolbar.font.features"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1650,7 +1650,7 @@ quote = "constexpr QFixed() : val(0) {}"
 
 [[fact]]
 key = "token.text.keyed.menu.font.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1660,7 +1660,7 @@ quote = "QMap<QFont::Tag, float> variableAxisValues;"
 
 [[fact]]
 key = "token.text.keyed.menu.font.features"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1790,7 +1790,7 @@ quote = "constexpr QFixed() : val(0) {}"
 
 [[fact]]
 key = "token.text.keyed.smallest_readable.font.axes"
-value = []
+value = {}
 rows = ["K1.271", "Q1.2"]
 
 [[fact.cite]]
@@ -1800,7 +1800,7 @@ quote = "QMap<QFont::Tag, float> variableAxisValues;"
 
 [[fact]]
 key = "token.text.keyed.smallest_readable.font.features"
-value = []
+value = {}
 rows = ["K1.271", "Q1.2"]
 
 [[fact.cite]]
@@ -4462,7 +4462,7 @@ quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d
 
 [[fact]]
 key = "token.icons.sizes.toolbar.axes"
-value = []
+value = {}
 rows = ["K3.63", "K1.158"]
 
 [[fact.cite]]
@@ -4484,7 +4484,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.toolbar.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4514,7 +4514,7 @@ quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d
 
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.axes"
-value = []
+value = {}
 rows = ["K3.63", "K1.158"]
 
 [[fact.cite]]
@@ -4536,7 +4536,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4566,7 +4566,7 @@ quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d
 
 [[fact]]
 key = "token.icons.sizes.small.axes"
-value = []
+value = {}
 rows = ["K3.63"]
 
 [[fact.cite]]
@@ -4588,7 +4588,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.small.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4618,7 +4618,7 @@ quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d
 
 [[fact]]
 key = "token.icons.sizes.large.axes"
-value = []
+value = {}
 rows = ["K3.63"]
 
 [[fact.cite]]
@@ -4640,7 +4640,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.large.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4670,7 +4670,7 @@ quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d
 
 [[fact]]
 key = "token.icons.sizes.panel.axes"
-value = []
+value = {}
 rows = ["K3.63"]
 
 [[fact.cite]]
@@ -4692,7 +4692,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.panel.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4722,7 +4722,7 @@ quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d
 
 [[fact]]
 key = "token.icons.sizes.dialog.axes"
-value = []
+value = {}
 rows = ["K3.63"]
 
 [[fact.cite]]
@@ -4744,7 +4744,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.dialog.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4769,7 +4769,7 @@ quote = "int IconSizes::small() const { return 16;"
 
 [[fact]]
 key = "token.icons.sizes.keyed.small.axes"
-value = []
+value = {}
 rows = ["Q1.1"]
 
 [[fact.cite]]
@@ -4791,7 +4791,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.small.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4821,7 +4821,7 @@ quote = "int IconSizes::smallMedium() const { return 22;"
 
 [[fact]]
 key = "token.icons.sizes.keyed.small_medium.axes"
-value = []
+value = {}
 rows = ["Q1.1"]
 
 [[fact.cite]]
@@ -4843,7 +4843,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.small_medium.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4873,7 +4873,7 @@ quote = "int IconSizes::medium() const { return 32;"
 
 [[fact]]
 key = "token.icons.sizes.keyed.medium.axes"
-value = []
+value = {}
 rows = ["Q1.1"]
 
 [[fact.cite]]
@@ -4895,7 +4895,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.medium.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4925,7 +4925,7 @@ quote = "int IconSizes::large() const { return 48;"
 
 [[fact]]
 key = "token.icons.sizes.keyed.large.axes"
-value = []
+value = {}
 rows = ["Q1.1"]
 
 [[fact.cite]]
@@ -4947,7 +4947,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.large.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -4977,7 +4977,7 @@ quote = "int IconSizes::huge() const { return 64;"
 
 [[fact]]
 key = "token.icons.sizes.keyed.huge.axes"
-value = []
+value = {}
 rows = ["Q1.1"]
 
 [[fact.cite]]
@@ -4999,7 +4999,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.huge.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]
@@ -5029,7 +5029,7 @@ quote = "int IconSizes::enormous() const { return 128;"
 
 [[fact]]
 key = "token.icons.sizes.keyed.enormous.axes"
-value = []
+value = {}
 rows = ["Q1.1"]
 
 [[fact.cite]]
@@ -5051,7 +5051,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.enormous.status_colors"
-value = [["success", "= active(role.window.positive)"], ["warning", "= active(role.window.neutral)"], ["error", "= active(role.window.negative)"], ["accent", "= role.global.accent"]]
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
 rows = []
 
 [[fact.cite]]

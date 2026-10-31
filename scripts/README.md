@@ -991,9 +991,12 @@ one-valued condition (two schemes, two presets, both contrast conditions),
 two flags of one `exclusive` group or two variants of one
 `exclusive_variants` group in every state model it can hold under, or
 `latest` flags no one order allows. So is a map (`Vec<(K, V)>`) written as a
-list of pairs, `[["k", v]]` or `[{ key = …, value = … }]`, where S11 spells a
-TOML table. Offline. The docstring states every rule and list. Prints
-one line per finding (file:line: what) and a summary with the counts, and
+list of pairs, `[["k", v]]` or `[{ key = …, value = … }]`, or an empty one
+written `[]`, where S11 spells a TOML table (`{}` when it has no entry); a
+whole map's table is read with the map's keys and value type, so a map keyed
+by text (`per_family`, `per_language`) takes its text as keys
+(`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`). Offline. The
+docstring states every rule and list. Prints one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
 example facts, each with a broken variant.

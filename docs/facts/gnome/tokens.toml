@@ -3222,7 +3222,7 @@ quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_
 
 [[fact]]
 key = "token.text.keyed.numeric.font.features"
-value = [["tnum", 1]]
+value = { tnum = 1 }
 rows = ["GN-1.192"]
 
 [[fact.cite]]
@@ -3707,7 +3707,7 @@ quote = "-gtk-icon-size: 14px;"
 # variation axes and no symbol variants
 [[fact]]
 key = "token.icons.sizes.toolbar.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3717,7 +3717,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.toolbar.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3737,7 +3737,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.small.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3747,7 +3747,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.small.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3767,7 +3767,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.large.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3777,7 +3777,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.large.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3797,7 +3797,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3807,7 +3807,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3827,7 +3827,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page_compact.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3837,7 +3837,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page_compact.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3857,7 +3857,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page_spinner.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3867,7 +3867,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page_spinner.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3887,7 +3887,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.keyed.about.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3897,7 +3897,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.keyed.about.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -3917,7 +3917,7 @@ quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
 key = "token.icons.sizes.keyed.check.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
 [[fact.cite]]
@@ -3927,7 +3927,7 @@ quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: succ
 
 [[fact]]
 key = "token.icons.sizes.keyed.check.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]

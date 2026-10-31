@@ -1030,7 +1030,7 @@ absent = []
 
 [[fact]]
 key = "button.icon.icon.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -1052,7 +1052,7 @@ absent = ["fontVariationSettings"]
 
 [[fact]]
 key = "button.icon.icon.status_colors"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]

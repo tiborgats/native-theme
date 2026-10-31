@@ -667,7 +667,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.caption.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -812,7 +812,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.body.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -962,7 +962,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.body_strong.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -1107,7 +1107,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.body_large.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -1257,7 +1257,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.body_large_strong.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -1407,7 +1407,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.subtitle.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -1557,7 +1557,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.title.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -1707,7 +1707,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.title_large.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
@@ -1857,7 +1857,7 @@ quote = "The maximum number of lines of text shown in the [TextBlock](textblock.
 
 [[fact]]
 key = "token.text.keyed.display.font.axes"
-value = [["opsz", "follows_size"]]
+value = { opsz = "follows_size" }
 rows = ["W3-23"]
 
 [[fact.cite]]
