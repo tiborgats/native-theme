@@ -1400,7 +1400,7 @@ Each is decided from the pinned sources; the specification cites them.
   offset (wrong for a descender); an origin field on every decoration, the baseline or the run's ink (a field every
   lane's decorations would state, and an ink origin an overline could take, which no platform draws); Pango's own
   line kind, a low underline whose offset is measured from the run's ink, the connector taking the ink from its
-  glyphs (exact for every lane: the others' mnemonics are plain underlines from the font, or none). For the disabled case: a `{disabled}` rule on every part whose text takes a
+  glyphs (exact for GTK's mnemonic, the one lane that draws it; Qt's drawn underline is a register row). For the disabled case: a `{disabled}` rule on every part whose text takes a
   mnemonic (one fact restated per widget, and a label beside a disabled target is not disabled itself); a behaviour
   flag the connector applies with the mnemonics setting. **Decision:** the low underline, and the flag.
 - *Rendering by icon.* GTK recolours an icon whose file is symbolic, and in any SVG the paths given symbolic paints,

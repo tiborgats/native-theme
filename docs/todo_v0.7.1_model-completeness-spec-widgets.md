@@ -2421,13 +2421,15 @@ spaces:
     `misspelling`'s, the part declaring the same data, `data = { correction = [ … ] }`), `fill`, `corners`.
   - `prediction` — inline prediction ghost text (iOS, macOS): `text`.
 
-  `selection`, `preedit`, `misspelling`, `grammar_mark`, `correction` and `block_caret` mark or recolour text the
-  `text` part lays out, so its elision, wrapping and line limit are theirs: each states its `text`'s `elision`,
-  `wrap` and `max_lines` absent (below), its `fill` where it recolours the text (`selection`, `preedit`,
-  `block_caret`) and absent where it only adds a line, and its font leaves as the text's: a part by reference to
-  `widget.text`'s leaves (`font.family = "= widget.text.font.family"`, …, declared as its data, S8), an *(element)*
-  part (`selection`, `preedit`), which reads none of its host's parts (S2.2), by reference to the style the `text`
-  part references, leaf by leaf (ADD-A130).
+  Every part that only marks or recolours text another part lays out (here `selection`, `preedit`, `misspelling`,
+  `grammar_mark`, `correction`, `prediction` and `block_caret`; on `text_area` and `code_editor` also `find_match`,
+  `replace_match`, `bracket_match`, `bracket_mismatch`, `syntax_span`, `highlight` and `extra_caret`, where they
+  list `text`) takes that part's elision, wrapping and line limit: it states its `text`'s `elision`, `wrap` and
+  `max_lines` absent (the may_be_absent fields below, and in those entries), its `fill` where it recolours the text
+  and absent where it only adds a line, and its font leaves as the text's, by reference (S2.2): a part to
+  `widget.text`'s leaves (`font.family = "= widget.text.font.family"`, …; a field reference, not element data), an
+  *(element)* part (`selection`, `preedit`, `find_match`), which reads none of its host's parts (S2.2), to the style
+  the `text` part references, leaf by leaf (ADD-A130).
   - `selection_handle` *(element)* — a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
     WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42): `fill`, `glyph`, `corners` (GNOME's circle with
     one square corner, GN-2.42), `padding` (GN-2.42), `min_width`, `min_height`, `transform` (the insertion handle
@@ -2522,7 +2524,7 @@ spaces:
     (every preset: a mark on the `text` part's text, ADD-A130), `block_caret.text.wrap` (every preset: a mark on the
     `text` part's text, ADD-A130), `block_caret.text.max_lines` (every preset: a mark on the `text` part's text,
     ADD-A130), `misspelling.text.fill` (every preset: a mark on the `text` part's text, ADD-A130),
-    `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, ADD-A130), `correction.text.fill` (every
+    `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, ADD-A130), `prediction.text.elision` (every preset: a mark on the `text` part's text, ADD-A130), `prediction.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130), `prediction.text.max_lines` (every preset: a mark on the `text` part's text, ADD-A130), `correction.text.fill` (every
     preset: a mark on the `text` part's text, ADD-A130); `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
     `kde-breeze` under `flat`, K1.41; the value phase names the others from the facts), `body.focus` (the value
     phase names the presets from the facts where the field marks focus by its stroke alone, as `focus_border_color`
@@ -2715,7 +2717,7 @@ spaces:
   `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
-  `correction.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `body.shadow` (the
+  `correction.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `body.shadow` (the
   value phase names the presets from the facts), `body.fill` (every preset by a rule under
   `flat`), `body.focus` (the value phase names the presets from the facts; Breeze rings the frame, K3.20); values:
   `document_margin` (every member where the platform states no inset inside the document: the value phase names the
@@ -5258,10 +5260,10 @@ spaces:
     `{text_selected}` (its text lies in the selection: KDE's per-style selected-text colours, K-SF10†) (GN-SF10†,
     K-SF10†): `text`, `fill` (the optional background).
   - `misspelling` — the spell-check mark, as on `input` and `text_area` (GN-P3-27†, K-SF11†): `text` (the
-    underline: Pango's error underline, GN-P3-27†, and KTextEditor's spell-check underline, K-SF11†, drawn from the
-    font, so its decoration's `thickness` and `offset` are references to `element.font_underline_thickness` and
-    `element.font_underline_offset`, S2.8; `data = { misspelling = ["font_underline_offset",
-    "font_underline_thickness"] }`).
+    underline: Pango's error underline, GN-P3-27†, drawn from the font, so its decoration's `thickness` and `offset`
+    are references to `element.font_underline_thickness` and `element.font_underline_offset`, S2.8; `data = {
+    misspelling = ["font_underline_offset", "font_underline_thickness"] }`; KTextEditor's spell-check underline,
+    K-SF11†, Qt's wavy line held within the descent, the unmeasured register's, S2.8, ADD-A130).
   - `template_field` (K-SF11†) — `fill`.
   - `template_placeholder` *(element)* (K-SF11†) — `fill`.
   - `inline_annotation` *(element)* — one annotation, its severity its own variant (GN-SF12†): `text`.
@@ -5325,7 +5327,7 @@ spaces:
   `block_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `block_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
-  `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130); values:
+  `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `replace_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `replace_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `replace_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_mismatch.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_mismatch.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_mismatch.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `syntax_span.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `syntax_span.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `syntax_span.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `extra_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `extra_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `extra_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130); values:
   `minimap_width_px` (`adwaita`: K-P3-12†'s minimap width is KTextEditor's),
   `gutter_padding` (`kde-breeze`: GN-SF05†'s gutter padding is GtkSourceView's).
 - **State-model source:** GtkSourceView's style-scheme reference (`style-reference.md`), the Adwaita schemes,
@@ -9098,7 +9100,7 @@ size reports the default category) [D-5, TS-2, X-DT-1, R10]. So every keyed styl
 `extra_large_title_2`, `monospaced`), the role UIKit scales them by is the value phase's, from
 `preferredFont(forTextStyle:)` [D-5]. Every other preset's `token.text.scaling` is `linear`, but `material-3`'s
 (`android_non_linear`, MAT-X19); under those two the curve does not depend on the role, so their keyed styles state
-`scaling_role = "none"` (an `Option` leaf is stated, S11). `macos-*`'s is `linear` because AppKit's text styles take
+`scaling_role = "none"` (a `Value<Option<TextRole>>`, stated, S11). `macos-*`'s is `linear` because AppKit's text styles take
 no content-size category, `preferredFontForTextStyle:options:` taking an options dictionary whose key type the pinned
 headers declare with no key (`NSFont.h:184-187`, `NSFontDescriptor.h:59`), so only the text-scaling factor scales them
 (ADD-A130). A keyed style of any platform states each of `fill`, `elision`, `wrap` and `max_lines` only where its style
