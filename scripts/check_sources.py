@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The source cache's list, docs/facts/sources.toml (plan D1, specification S17): well formed, and complete.
 
-Form: every field is a string, none blank, `generations`, `sparse` and `sources` lists of strings (a field of another
+Form: every field is a string, none blank, `generations`, `sparse`, `sources` and `describes` lists of strings (a field of another
 type is reported and left out of the other checks); every [[source]] has the fields of its kind and no others; ids are
 unique and `<name>@<version>` (for a commit pin, `tag = "commit"`, the version is the commit's first eight hex
 digits); SHAs are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin per name and generation.
@@ -43,6 +43,9 @@ KINDS = {
     "sdk": (set(), {"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit",
                     "ios_simulator", "package", "revision", "archive", "sha256", "fingerprint", "note"}),
     "distribution": ({"url", "lastupdate", "extra_db_sha256", "core_db_sha256"}, {"note"}),
+    # A snapshot entry is one page of a snapshot [[site]], saved as `file` in its cache folder (S17's `<id> #<JSON
+    # pointer>` citations read it), with the release it `describes` (an unversioned page serves only that release).
+    "snapshot": ({"site", "url", "file", "sha256", "describes"}, {"note"}),
 }
 SDK_SHAPES = {
     "xcode": {"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit"},
@@ -50,7 +53,7 @@ SDK_SHAPES = {
 }
 SITE_FIELDS = ({"project", "url", "method"}, {"sources", "note"})
 NOT_PINNED_FIELDS = ({"name", "reason"}, {"project"})
-LIST_FIELDS = {"generations", "sparse", "sources"}   # lists of strings; every other field is a string
+LIST_FIELDS = {"generations", "sparse", "sources", "describes"}   # lists of strings; every other field is a string
 
 
 class Entry(dict):
@@ -160,6 +163,16 @@ def source_problems(e):
                 out.append(f"{where}: sha256 is not a 64-hex SHA-256")
             if m and "revision" in e and not m.group(2).endswith(f"-r{e['revision']}"):
                 out.append(f"{where}: a system image's id does not end in -r<revision>")
+    if kind == "snapshot":
+        if not SHA256_RX.fullmatch(str(e.get("sha256", ""))):
+            out.append(f"{where}: sha256 is not a 64-hex SHA-256")
+        if not str(e.get("url", "")).startswith("https://"):
+            out.append(f"{where}: url is not an https URL")
+        f = str(e.get("file", ""))
+        if not f or "/" in f or f.startswith("."):
+            out.append(f"{where}: file {f!r} is not a file name")
+        if e.get("describes") == []:
+            out.append(f"{where}: describes is an empty list")
     if kind == "distribution":
         for f in ("extra_db_sha256", "core_db_sha256"):
             if f in e and not SHA256_RX.fullmatch(str(e[f])):
@@ -225,10 +238,14 @@ def check_form(data):
             out.append(f"{where}: a snapshot site names sources")
         if "project" in s:
             cover(s["project"], "a site")
+    methods = {s.get("project"): s.get("method") for s in sites}
     for e in sources:
         if "site" in e:
             if e["site"] not in seen_sites:
                 out.append(f"source {e.get('id', '?')}: site {e['site']!r} is not a [[site]]")
+            elif e.get("kind") == "snapshot":
+                if methods.get(e["site"]) != "snapshot":
+                    out.append(f"source {e.get('id', '?')}: site {e['site']!r} is not a snapshot site")
             elif e["site"] not in listed.get(e.get("id"), []):
                 out.append(f"source {e.get('id', '?')}: site {e['site']!r} does not list it among its sources")
     names = set()
@@ -307,6 +324,19 @@ release = "macos-26"
 generations = ["macos-tahoe", "ios-26"]
 researched = "2026-10-29"
 proof = "the README"
+
+[[source]]
+id = "hig-typography@2026-02-09"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20260209114706id_/https://developer.apple.com/tutorials/data/design/x.json"
+file = "typography.json"
+sha256 = "522df0c4e97731464c3bbc386a572b4b4e6ca7e4745cf0343a3e1fde295d397d"
+describes = ["macOS 26"]
+release = "macOS 26"
+generations = ["macos-tahoe"]
+researched = "2026-10-31"
+proof = "the archive's capture"
 
 [[site]]
 project = "learn.microsoft.com"
@@ -394,7 +424,14 @@ proof = "spike A"
     expect("sdk version", edit(good, 'id = "xcode@26.6"', 'id = "xcode@26.5"'),
            ["source xcode@26.5: the id's version is not the Xcode version"])
     expect("bad method", edit(good, 'method = "snapshot"', 'method = "archive"'),
-           ["site developer.apple.com HIG: method 'archive' is not repository or snapshot"])
+           ["site developer.apple.com HIG: method 'archive' is not repository or snapshot",
+            "source hig-typography@2026-02-09: site 'developer.apple.com HIG' is not a snapshot site"])
+    expect("snapshot sha256", edit(good, 'sha256 = "522df0c4', 'sha256 = "522df0c'),
+           ["source hig-typography@2026-02-09: sha256 is not a 64-hex SHA-256"])
+    expect("snapshot file", edit(good, 'file = "typography.json"', 'file = "a/typography.json"'),
+           ["source hig-typography@2026-02-09: file 'a/typography.json' is not a file name"])
+    expect("snapshot fields", edit(good, 'describes = ["macOS 26"]\n', ''),
+           ["source hig-typography@2026-02-09: missing field `describes`"])
     expect("no reason", edit(good, 'reason = "own files"', 'reason = " "'), ["not_pinned native-theme: empty reason"])
     expect("pinned and not pinned", edit(good, 'project = "native-theme (own)"', 'project = "KDE/breeze"'),
            ["project 'KDE/breeze' named by source breeze@6.8.2 and by not_pinned",
@@ -407,7 +444,8 @@ proof = "spike A"
             "source docs@f54166ed: generations is not a non-empty list"])
     expect("a site not a table", 'site = 3\n' + good.split("[[site]]")[0],
            ["`site` is not an array of [[site]] tables", "source docs@f54166ed: site 'learn.microsoft.com' is not a "
-            "[[site]]", "cited project 'learn.microsoft.com' (1 citations, first "
+            "[[site]]", "source hig-typography@2026-02-09: site 'developer.apple.com HIG' is not a [[site]]",
+            "cited project 'learn.microsoft.com' (1 citations, first "
             "gap-map-windows.md:35) is neither pinned, a listed site nor not_pinned", "cited project 'native-theme "
             "(own)' (2 citations, first spec.md:4) is neither pinned, a listed site nor not_pinned"])
     expect("trailing newline in a SHA", edit(good, 'c97883a8fe41bce774835c25d7f7e321c71fa618"',
