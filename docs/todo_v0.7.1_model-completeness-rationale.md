@@ -607,17 +607,19 @@ added only when a platform's rule needs it. Composition over the value beneath i
 *libadwaita's standalone colours* (the specification's ADD-A128, ledger queue #105). The stylesheet writes them as
 GTK's CSS relative colour, the background colour in OKLab with its lightness limited (at most 0.5 light, at least
 0.85 dark), and GTK computes an sRGB colour from it at once, unclamped, which every later CSS function and
-`gtk_widget_get_color` read; the renderer draws text, backgrounds, borders and shadows from the OKLab coordinates by
-a single-precision conversion of its own, and the 8-bit store clamps. Which form the function is:
+`gtk_widget_get_color` read (and `GtkTextView`'s text); the renderer draws a label's and an entry's text,
+backgrounds, borders and shadows from the OKLab coordinates by a single-precision conversion of its own, premultiplies,
+and the 8-bit store clamps. Which form the function is:
 
 - *libadwaita's C function `adw_rgba_to_standalone`* (the first reading, spike G's table). For: a public API, a table
   already generated. Against: the stylesheet does not call it, and it clamps each channel, where GTK keeps them;
   most of libadwaita's documented standalone colours leave the gamut, which its documentation notes are clipped
-  only before display (`libadwaita@1.10.0 doc/css-variables.md:88-99`), so an
-  `alpha` or `mix` over it (the focus ring, the visited link) differs from what GTK draws.
+  only before display (`libadwaita@1.10.0 doc/css-variables.md:89-92`, `:96-99`), so an
+  `alpha` over it differs from what GTK draws, visibly on the focus ring (a `mix` such as the visited link's by at
+  most one step of 255).
 - *GTK's computed sRGB colour, unclamped, one function.* For: the value the style holds and the icon palette, the
   links, every later CSS function and GTK's public colour API read; the model's extended sRGB holds it (R5.5).
-  Against: text, backgrounds, borders and shadows are drawn by the renderer's own conversion, within 7.9·10⁻⁴ (0–255)
+  Against: a label's and an entry's text, backgrounds, borders and shadows are drawn by the renderer's own conversion, within 7.9·10⁻⁴ (0–255)
   in gamut on spike G's grid, which no check can see (a vector compares this form, a published fact the same
   function, a capture rounds to 8 bits).
 - *Two functions, a form per drawing path.* For: each path's arithmetic. Against: the renderer's conversion is a
@@ -628,8 +630,12 @@ a single-precision conversion of its own, and the 8-bit store clamps. Which form
   channels where the computed form keeps the linear piece.
 
 **Decision:** GTK's computed sRGB colour, one function, unclamped; a channel outside the gamut is clamped where the
-colour is drawn, as GTK clamps it, not by the function (which changes every `alpha` and `mix` over it) nor at the end
-of resolution (which clamps a translucent colour before GTK's renderer premultiplies it). Its vectors come from GTK
+colour is drawn, as GTK clamps it, not by the function (which changes an `alpha` or `mix` over it) nor at the end
+of resolution (which clamps a translucent colour before GTK's renderer premultiplies it). The connector's hand-over
+follows GTK: premultiplied, then clamped, where the toolkit takes premultiplied colours (egui's `Color32`); the
+unclamped value where it takes float colours and premultiplies them itself; a straight clamp, a recorded limit,
+where it takes only straight 8-bit colours, as that clamp brings back the end-of-resolution error (13 to 34 steps of
+255 on the dark accents' focus ring). Its vectors come from GTK
 itself, through `gtk_widget_get_color` with libadwaita's stylesheet loaded, so the reference is the stylesheet's own path; the
 conversion follows CSS Color 4, and GTK's constants and per-step precision, which the vectors' 1e-3 needs, come from
 the clean room (D10).
@@ -1379,7 +1385,8 @@ Amended in place by the specification's batch ADD-A128 (2026-10-31), decided fro
 #105:
 
 - R5.4: libadwaita's standalone colours are the colour GTK computes for its stylesheet, unclamped, one function for
-  every role; a colour outside the gamut is clamped where it is drawn.
+  every role; a colour outside the gamut is clamped where it is drawn, premultiplied first, the connector's hand-over
+  following GTK's.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
