@@ -689,3 +689,8 @@ Where:
        hidden until the measurement decides (MAC-X11, CK-2†), and a part a presentation reveals (a popup's open and
        close, an expander's content by `@expand`/`@collapse`) is `Absent` where closed until ADD-A129 (queue #118)."
      - Add the expander's content to #118, or state its absence collapsed.
+
+## Added from check 17 (ADD-A126 at 8a2e9766)
+
+- **`stepper.popup` has no closed state.** W2-01 states `stepper.popup.{fill,stroke,shadow} @ variant @compact`, and the popup's only absent rule is "outside `variant @compact`", so the `windows-11` stepper draws its spin popup at rest. NumberBox opens the popup on focus and closes it on focus loss: `popup.IsOpen(true)` under `Compact` in `OnNumberBoxGotFocus`, `popup.IsOpen(false)` in `OnNumberBoxLostFocus` (`microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`). Its closed state is ADD-A129's (check 17 finding 4); ADD-A126 leaves W2-01 as it is.
+- **MAT-M1's selected icon.** With a selected icon and no leading icon, Compose brings it in and out with `AnimatedVisibility`, `expandHorizontally` + `fadeIn` and `shrinkHorizontally` + `fadeOut` (`material3/…/Menu.kt:2071-2081`), on `FastSpatial` and `FastEffects` (`:2013-2014`); the same pattern as the chip icons (`Chip.kt:3453-3500`). Deferred with them (queue #118).
