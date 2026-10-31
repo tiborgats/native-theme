@@ -106,6 +106,22 @@ A `[[fact]]` (S17 *Fields*):
   entries and those the `when` does not refuse), the set is one of the entry's `recency` sets and the flag a member
   of it, and some such entry exists). A colour-role, token or input key's `when` has conditions only (S7: a `Colors`
   or `Tokens` rule may only have conditions). A `preset:` condition names a preset of the fact's directory.
+- A `when` that can never hold (never_holds_problems; S7's `Selector` and `SetMatch`, `all_of` and `none_of`; S11's
+  `when`; S12's exclusions, spec lines 2767-2776; S17) is a finding, one per reason. By the selector alone
+  (selector_never): a name in both `states` and `not_states` (`variants`, `conditions`, `sizes`, `densities`, a size
+  class axis, a context's lists alike); two or more `sizes`, `densities` or size classes on one axis, or `sizes` of
+  one context's ancestor (an element has one, and `SetMatch` takes all of them); two values of a one-valued
+  condition (ONE_VALUED: `scheme:`, `preset:`, `flavor:`, `idiom:`, `input:`, `posture:`, `device_model:`; one
+  container's `container_size:`; CONTRAST, `contrast_increased` with `contrast_high`); `tiled:e` or `maximized` with a
+  refused `tiled:` whose edges it includes; `only` against `first` and `last`, `first` with `parity = "even"`; a
+  context in both `context` and `not_context`. By the state models (model_never), where every entry of the key's
+  widget the fact can hold under (applicable_entries) refuses it: two flags of one `exclusive` group (a `latest` flag
+  counts, as it implies the flag), two variants of one `exclusive_variants` group, or `latest` flags no one order
+  allows (orders_possible). A single `latest` table names each set once (TOML refuses a duplicate key); a `latest`
+  flag `not_states` refuses is the `when` rule's finding above.
+- A map (`Vec<(K, V)>`) written as a list of pairs, `[["k", v], …]` or `[{ key = …, value = … }, …]`, where S11's
+  map row (spec line 2609) spells a TOML table, one key per entry, is a finding (map_problems: the key's core type
+  followed into the value, as text_leaves follows it). An empty `[]` is not a list of pairs and is not refused here.
 - A transition (transition_problems: every `Transition` table the key's type reaches in the value; S2.7, S11, S12;
   ADD-A124): its `from` is stated in a single transition (`"none"` for any state) and may be left out of a list's
   entry only (`None`); as a list it is not empty, names no flag twice and no keyed flag the key's widget does not
@@ -313,6 +329,8 @@ TOML_BARE = re.compile(r"^[A-Za-z0-9_-]+$")
 TEXT_ENTRY = "text_entry"
 DRAWN_AS_KEYS = {"widget", "part", "variants"}
 KEY_RX = re.compile(r"^[a-z0-9][a-z0-9_]*$")   # S1's key grammar: a recency set's name (S10; ADD-A124)
+ONE_VALUED = ("scheme", "preset", "flavor", "idiom", "input", "posture", "device_model")   # S7.1, S12
+CONTRAST = ("contrast_increased", "contrast_high")   # `ReaderState.contrast` is one value (S9, S12)
 
 
 class InputError(Exception):
@@ -1581,6 +1599,7 @@ def fact_problems(ctx, item: Item) -> list:
         elif "value" in d:
             out += [(item.ln("value"), p) for p in value_problems(ctx, d["value"], dim, typ=typ)]
             out += [(item.ln("value"), p) for p in transition_problems(ctx, d["key"], d["value"], typ, widget)]
+            out += [(item.ln("value"), p) for p in map_problems(ctx, d["value"], typ)]
             if isinstance(d["value"], str) and text_leaves(ctx, d["value"], typ):
                 out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
                                             "(S11)") for c in item.cites if c.data.get("kind") == "measured"
@@ -2308,6 +2327,137 @@ def latest_problems(ctx, items) -> list:
     return out
 
 
+def tiled_edges(c):
+    """The edges a `tiled:<edges>` condition names, or None."""
+    return set(c[6:].split(",")) if c.startswith("tiled:") else None
+
+
+def selector_never(when) -> list:
+    """Why a `when` can never hold by S7's matching and S12's exclusions alone (spec lines 1857, 2767-2776): a name in
+    both a `SetMatch`'s `all_of` and its `none_of` (`states` and `not_states`, …); two or more sizes, densities or
+    size classes on one axis, of the element or of one context's ancestor (it has one, and `all_of` takes all of
+    them); two values of a one-valued condition (ONE_VALUED, one container's `container_size:`) or the two contrast
+    conditions; `tiled:e` or `maximized` with a `tiled:` that `e` includes refused; `only` against `first` and `last`,
+    `first` with even parity; a context both required and refused."""
+    out = []
+    for k in ("states", "variants", "conditions", "sizes", "densities"):
+        both = when_lists(when, k) & when_lists(when, f"not_{k}")
+        if both:
+            out.append(f"{sorted(both)} in both `{k}` and `not_{k}` (SetMatch's all_of and none_of)")
+    for k in ("sizes", "densities"):
+        if len(when_lists(when, k)) > 1:
+            out.append(f"`{k}` names {sorted(when_lists(when, k))}: an element has one, and SetMatch takes all of them")
+    sc = when.get("size_class") if isinstance(when.get("size_class"), dict) else {}
+    for axis in ("horizontal", "vertical"):
+        on = when_lists(sc, axis)
+        if len(on) > 1:
+            out.append(f"`size_class.{axis}` names {sorted(on)}: an element has one size class on each axis")
+        if on & when_lists(sc, f"not_{axis}"):
+            out.append(f"{sorted(on & when_lists(sc, f'not_{axis}'))} in both `size_class.{axis}` and "
+                       f"`size_class.not_{axis}`")
+    conds, nots = when_lists(when, "conditions"), when_lists(when, "not_conditions")
+    kinds = {}
+    for c in conds:
+        head, _, arg = c.partition(":")
+        if head in ONE_VALUED:
+            kinds.setdefault(head, set()).add(c)
+        elif head == "container_size":
+            kinds.setdefault(f"container_size:{arg.partition(':')[0]}", set()).add(c)
+        elif c in CONTRAST:
+            kinds.setdefault("contrast", set()).add(c)
+    out += [f"`conditions` names {sorted(v)}: one value of {k} holds at a time (S7.1, S12)"
+            for k, v in kinds.items() if len(v) > 1]
+    for c in sorted(conds):
+        held = {"top", "right", "bottom", "left"} if c == "maximized" else tiled_edges(c)
+        refused = sorted(n for n in nots if held is not None and tiled_edges(n) is not None and tiled_edges(n) <= held)
+        if refused:
+            out.append(f"{c!r} implies {refused} (S7.1), which `not_conditions` refuses")
+    pos = when.get("position") if isinstance(when.get("position"), dict) else {}
+    only, first, last = pos.get("only"), pos.get("first"), pos.get("last")
+    if only is True and False in (first, last) or only is False and first is True and last is True:
+        out.append("`position`: `only` holds exactly when `first` and `last` do (S12)")
+    if first is True and pos.get("parity") == "even":
+        out.append("`position`: `first` implies odd parity (S12)")
+    ctxs = when.get("context") if isinstance(when.get("context"), list) else []
+    not_ctxs = when.get("not_context") if isinstance(when.get("not_context"), list) else []
+    for i, c in enumerate(ctxs):
+        if not isinstance(c, dict):
+            continue
+        if c in not_ctxs:
+            out.append(f"`context[{i}]` is in `not_context` too")
+        if len(when_lists(c, "sizes")) > 1:
+            out.append(f"`context[{i}].sizes` names {sorted(when_lists(c, 'sizes'))}: each ancestor has one control "
+                       f"size")
+        for k in ("sizes", "variants", "states"):
+            both = when_lists(c, k) & when_lists(c, f"not_{k}")
+            if both:
+                out.append(f"{sorted(both)} in both `context[{i}].{k}` and `not_{k}`")
+    return out
+
+
+def model_never(when, entry) -> list:
+    """Why a `when` can never hold under one state-model entry (S10, S12 spec lines 2769-2771): two flags of one
+    `exclusive` group (the reduction keeps one; a `latest` flag counts, as it implies the flag), two variants of one
+    `exclusive_variants` group, or no order making every `latest` flag its set's latest (orders_possible)."""
+    d = entry.data
+    latest = {k: v for k, v in when["latest"].items() if isinstance(v, str)} \
+        if isinstance(when.get("latest"), dict) else {}
+    states = when_lists(when, "states") | set(latest.values())
+    variants = when_lists(when, "variants")
+    out = []
+    for key, sets in (("exclusive", states), ("exclusive_variants", variants)):
+        groups = d.get(key) if isinstance(d.get(key), list) else []
+        out += [f"{sorted(sets & set(g))} are of one `{key}` group {g}" for g in groups
+                if str_list(g) and len(sets & set(g)) > 1]
+    if latest and not orders_possible(latest, states, recency_of(d)):
+        out.append(f"no order of the flags makes every `latest` flag its set's latest ({latest})")
+    return out
+
+
+def never_holds_problems(ctx, items) -> list:
+    """A fact's `when` that can never hold (S7's `Selector` and `SetMatch`, spec line 1857; S11's `when`; S12's
+    exclusions; S17): by the selector alone (selector_never), or under every state-model entry of the key's widget the
+    fact can hold under (applicable_entries; model_never). A `latest` flag that `not_states` refuses is
+    latest_form_problems' finding."""
+    models = model_entries(items)
+    out = []
+    for it in items:
+        when = it.data.get("when")
+        if it.table != "fact" or it.palette or not isinstance(when, dict):
+            continue
+        why = selector_never(when)
+        widget = key_info(ctx, it.data.get("key"))[2]
+        entries = applicable_entries(models.get((it.platform, widget), []), when) if widget else []
+        per_entry = [(e, model_never(when, e)) for e in entries]
+        if per_entry and all(r for _, r in per_entry):
+            why += [f"{r} ({e.file}:{e.line})" for e, rs in per_entry for r in rs]
+        out += [(it.file, it.ln("when"), f"a `when` that can never hold: {r}") for r in why]
+    return out
+
+
+def map_problems(ctx, value, t, path="value") -> list:
+    """A map (`Vec<(K, V)>`) written as a list of pairs, `[["k", v], …]` or `[{ key = …, value = … }, …]`, where S11
+    spells a TOML table, one key per entry (S11's map row, spec line 2609; S17), in `value` under the core's type
+    `t`."""
+    s = strip_type(t) if t else None
+    m = re.fullmatch(r"Vec<\(\s*[^,]+?\s*,\s*(.+)\)>", s) if s else None
+    if m:
+        pair = (lambda x: isinstance(x, list) and len(x) == 2 and isinstance(x[0], str)
+                or isinstance(x, dict) and set(x) == {"key", "value"})
+        if isinstance(value, list) and value and all(pair(x) for x in value):
+            return [f"{path}: a map written as a list of pairs, where S11 spells a TOML table, one key per entry "
+                    f"(`{{ <key> = <value> }}`)"]
+        if isinstance(value, dict):
+            return [p for k, v in value.items() for p in map_problems(ctx, v, m.group(1), f"{path}.{k}")]
+        return []
+    if isinstance(value, list):
+        it = item_type(t) if t else None
+        return [p for i, v in enumerate(value) for p in map_problems(ctx, v, it, f"{path}[{i}]")] if it else []
+    if isinstance(value, dict) and t:
+        return [p for k, v in value.items() for p in map_problems(ctx, v, child_type(ctx, t, k), f"{path}.{k}")]
+    return []
+
+
 def canonical_when(when):
     """A `when` as a comparable value: its lists of names as sets (two `when`s equal as S11 reads them)."""
     if isinstance(when, dict):
@@ -2420,6 +2570,7 @@ def check(ctx: Context):
         findings += [(it.file, ln, what) for ln, what in problems]
     findings += pending_problems(ctx, items)
     findings += latest_problems(ctx, items)
+    findings += never_holds_problems(ctx, items)
     findings += ellipse_problems(ctx, items)
     fact_keys = {it.data.get("key") for it in items if it.palette and isinstance(it.data.get("key"), str)}
     palettes = bundled_palettes(ctx.root)
@@ -2459,7 +2610,8 @@ SELF_TEST_CORE = '''
 ```rust
 pub enum StateFlag { Hover, Pressed, Focused, FocusVisible, Disabled, Checked, Shared(SharedFlag), Widget(Key) }
 pub enum SharedFlag { Pulling, Refreshing }
-pub enum Condition { WindowInactive, ContrastHigh, Scheme(Scheme), Flavor(Key), Preset(PresetId) }
+pub enum Condition { WindowInactive, ContrastIncreased, ContrastHigh, Maximized, Tiled(TiledEdges), Scheme(Scheme),
+                  Flavor(Key), Preset(PresetId) }
 pub enum Scheme { Light, Dark }
 pub enum InputKind { Touch, Mouse }
 pub enum Idiom { Phone, Pad }
@@ -2940,6 +3092,10 @@ _INTERACTION = ('[[fact]]\nkey = "button.body.interaction.state_layer.alpha"\nwh
                 'rows = []\n' + _CITE + '\n[[fact]]\nkey = "button.body.interaction.ripple.effect"\nvalue = '
                 '"android_patterned"\nrows = []\n' + _CITE)
 
+_MAC_FACT = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:macos-monterey"], states = ["hover"] }'
+             '\nvalue = "#ffffff"\nrows = []\n' + _MAC_CITE)
+_MAP = '[[fact]]\nkey = "token.motion.durations"\nvalue = { button = "200ms" }\nrows = []\n' + _CITE
+
 # (label, file, old, new, the findings wanted: substrings, one per finding)
 SELF_TEST_CASES = [
     # libadwaita derivation over two files
@@ -3382,6 +3538,68 @@ SELF_TEST_CASES = [
      _LATEST_PENDING.replace(', latest = { glow = "focused" }', ""), ["is shadowed by the later fact"]),
     ("latest: a pending fact shadowed on the same latest flag", "docs/facts/macos/pending.toml", None,
      _LATEST_PENDING.replace('glow = "focused"', 'glow = "hover"'), ["is shadowed by the later fact"]),
+    # a `when` that can never hold (S7's Selector and SetMatch, S11's `when`, S12's exclusions, S17)
+    ("never: one size, one condition of each kind, a refused other", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'conditions = ["scheme:dark", "contrast_high", "window_inactive"], '
+                   'sizes = ["small"], not_sizes = ["regular"], position = { first = true, parity = "odd" }'), []),
+    ("never: two sizes", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'sizes = ["small", "regular"]'),
+     ["a `when` that can never hold: `sizes` names ['regular', 'small']"]),
+    ("never: two densities", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'densities = ["compact", "@cozy"]'),
+     ["`densities` names ['@cozy', 'compact']"]),
+    ("never: two size classes on one axis", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'size_class = { horizontal = ["compact", "regular"] }'),
+     ["`size_class.horizontal` names ['compact', 'regular']"]),
+    ("never: a flag in states and not_states", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'states = ["hover"], not_states = ["hover"]'),
+     ["['hover'] in both `states` and `not_states`"]),
+    ("never: both schemes", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'conditions = ["scheme:light", "scheme:dark"]'),
+     ["`conditions` names ['scheme:dark', 'scheme:light']: one value of scheme"]),
+    ("never: two presets", "docs/facts/macos/never.toml", None,
+     _MAC_FACT.replace('"preset:macos-monterey"]', '"preset:macos-monterey", "preset:macos-tahoe"]'),
+     ["one value of preset holds at a time"]),
+    ("never: both contrast conditions", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'conditions = ["contrast_increased", "contrast_high"]'),
+     ["one value of contrast holds at a time"]),
+    ("never: a tiled edge the when refuses", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'conditions = ["maximized"], not_conditions = ["tiled:left"]'),
+     ["'maximized' implies ['tiled:left']"]),
+    ("never: only but not last", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'position = { only = true, last = false }'),
+     ["`only` holds exactly when `first` and `last` do"]),
+    ("never: an ancestor of two sizes", "docs/facts/gnome/never.toml", None,
+     _FILL.replace('states = ["hover"]', 'context = [{ widget = "toolbar", sizes = ["small", "large"] }]'),
+     ["`context[0].sizes` names ['large', 'small']"]),
+    ("never: two flags of one exclusive group (macos-monterey's model)", "docs/facts/macos/never.toml", None,
+     _MAC_FACT.replace('states = ["hover"]', 'states = ["disabled", "hover"]'),
+     ["['disabled', 'hover'] are of one `exclusive` group"]),
+    ("never: a latest flag the exclusive group drops", "docs/facts/macos/never.toml", None,
+     _LATEST.replace('latest = {', 'states = ["pressed"], latest = {'),
+     ["['hover', 'pressed'] are of one `exclusive` group"]),
+    ("never: two flags of one group the model of another generation lacks", "docs/facts/macos/never.toml", None,
+     _MAC_PENDING.split("\n\n[[fact]]")[0].replace('"preset:macos-monterey"', '"preset:macos-tahoe"').replace(
+         '["pressed"]', '["disabled", "hover"]'), []),
+    # a map written as a list of pairs (S11's map row, S17)
+    ("map: a TOML table", "docs/facts/gnome/map.toml", None, _MAP, []),
+    ("map: a list of pairs", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }',
+                                                                             '[["button", "200ms"]]'),
+     ["value: a map written as a list of pairs"]),
+    ("map: a list of key-value tables", "docs/facts/gnome/map.toml", None,
+     _MAP.replace('{ button = "200ms" }', '[{ key = "button", value = "200ms" }]'),
+     ["value: a map written as a list of pairs"]),
+    ("map: an accent ramp, a table", "docs/facts/gnome/map.toml", None,
+     _MAP.replace('"token.motion.durations"', '"role.global.accent_ramp"').replace(
+         '{ button = "200ms" }', '{ light1 = "#ff0000" }'), []),
+    ("map: an accent ramp, a list of pairs", "docs/facts/gnome/map.toml", None,
+     _MAP.replace('"token.motion.durations"', '"role.global.accent_ramp"').replace(
+         '{ button = "200ms" }', '[["light1", "#ff0000"]]'), ["value: a map written as a list of pairs"]),
+    ("map: inside a block", "docs/facts/gnome/map.toml", None,
+     _MAP.replace('"token.motion.durations"', '"token.motion"').replace(
+         '{ button = "200ms" }', '{ durations = [["button", "200ms"]] }'),
+     ["value.durations: a map written as a list of pairs"]),
+    ("map: a list of blocks is no map", "docs/facts/gnome/map.toml", None, _SPRING, []),
     # a transition's `from` (S2.7, S11, S12; ADD-A124)
     ("from: a list entry's from, and one left out", "docs/facts/gnome/from.toml", None, _FROM, []),
     ("from: an empty list", "docs/facts/gnome/from.toml", None, _FROM.replace('["pressed", "focused"]', "[]"),
@@ -3536,6 +3754,17 @@ def self_test() -> int:
         got = text_leaves(ctx, {"theme_icon": {"name": "a", "fallbacks": ["b", "c"]}}, "GlyphSource")
         if got != [("theme_icon.name", "a"), ("theme_icon.fallbacks.0", "b"), ("theme_icon.fallbacks.1", "c")]:
             failures.append(f"text leaves: got {got}")
+        # a `when` that can never hold under one state-model entry: an `exclusive_variants` group, `latest` orders
+        entry = Item("m.toml", 1, "model", "macos", {"exclusive_variants": [["flat", "@pill"]],
+                                                    "recency": {"glow": ["focused", "hover"],
+                                                                "lift": ["focused", "hover", "pressed"]}}, [])
+        for when, want in (({"variants": ["flat"]}, []),
+                           ({"variants": ["flat", "@pill"]}, ["['@pill', 'flat'] are of one `exclusive_variants`"]),
+                           ({"latest": {"glow": "hover", "lift": "hover"}}, []),
+                           ({"latest": {"glow": "hover", "lift": "focused"}}, ["no order of the flags makes"])):
+            got = model_never(when, entry)
+            if len(got) != len(want) or not all(w in g for w, g in zip(want, got)):
+                failures.append(f"model_never {when}: got {got}, want {want}")
         if expression_refs(" alpha(input.accent, mix(role.view.background, input.accent, 0.5))") != [
                 "input.accent", "role.view.background"]:
             failures.append(f"expression refs: got {expression_refs('alpha(input.accent, 0.5)')}")
