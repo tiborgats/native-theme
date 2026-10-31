@@ -216,6 +216,7 @@ pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
     out.drawn_as_cycles();
     out.text_roles();
     out.shapes();
+    out.ellipses();
     out.focus_corners();
     out.concentric();
     out.entries();
@@ -1703,7 +1704,7 @@ impl Checks<'_, '_> {
         };
         for found in stack.effective(world, Target::Part(named), &path) {
             let refused = match variant(&found) {
-                Some("concentric" | "follow_part") => true,
+                Some("concentric" | "follow_part" | "ellipse") => true,
                 Some("full") => {
                     if element_of(source.target) == Some(named) {
                         self.size_data(world, source, op);
@@ -2219,7 +2220,7 @@ impl Checks<'_, '_> {
             }
             let seeds = vec![
                 Seed::Field(target, "shape".to_owned(), false),
-                Seed::Field(target, "corners.curve".to_owned(), false),
+                Seed::Field(target, "corners".to_owned(), true),
             ];
             let worlds = stack.worlds(seeds);
             for world in worlds.iter() {
@@ -2227,12 +2228,75 @@ impl Checks<'_, '_> {
                     .effective(world, target, "corners.curve")
                     .iter()
                     .any(|found| variant(found) == Some("continuous"));
-                if !continuous {
+                let ellipse = CORNERS.iter().any(|corner| {
+                    stack
+                        .effective(world, target, &format!("corners.{corner}"))
+                        .iter()
+                        .any(|found| variant(found) == Some("ellipse"))
+                });
+                if !continuous && !ellipse {
                     continue;
                 }
                 for found in stack.effective(world, target, "shape") {
                     if !matches!(found.got, Got::Absent) {
-                        self.problem(found.layer, found.at, ProblemKind::ShapeOverContinuous);
+                        self.problem(found.layer, found.at, ProblemKind::ShapeOverCorners);
+                    }
+                }
+            }
+        }
+    }
+
+    /// A `Corners` value stating `Ellipse` on a corner, under one world,
+    /// where another of its corners can be no `Ellipse` or its curve
+    /// `Continuous` (S2.4, S12, ADD-A124): a part's corners, its focus
+    /// indicator's, and the focus token's.
+    fn ellipses(&mut self) {
+        let stack = self.stack;
+        let mut places: Vec<(Target, &str)> = vec![(Target::Tokens, "focus.corners")];
+        for part in all_parts() {
+            let Some(info) = part_info(part) else {
+                continue;
+            };
+            for (field, place) in [("corners", "corners"), ("focus", "focus.corners")] {
+                if info.fields.iter().any(|f| f.path == field) {
+                    places.push((Target::Part(part), place));
+                }
+            }
+        }
+        for (target, place) in places {
+            let states = stack.of(target).any(|(_, source)| {
+                source.ops.iter().any(|op| {
+                    (op.path == place || is_above(place, &op.path))
+                        && matches!(op.kind, OpKind::Set(Val::Stated(Fact::Variant("ellipse"))))
+                })
+            });
+            if !states {
+                continue;
+            }
+            let worlds = stack.worlds(vec![Seed::Field(target, place.to_owned(), true)]);
+            for world in worlds.iter() {
+                let corners: Vec<Vec<Found<'_>>> = CORNERS
+                    .iter()
+                    .map(|corner| stack.effective(world, target, &format!("{place}.{corner}")))
+                    .collect();
+                let ellipses: Vec<&Found<'_>> = corners
+                    .iter()
+                    .flatten()
+                    .filter(|found| variant(found) == Some("ellipse"))
+                    .collect();
+                if ellipses.is_empty() {
+                    continue;
+                }
+                let all = corners.iter().all(|founds| {
+                    !founds.is_empty() && founds.iter().all(|f| variant(f) == Some("ellipse"))
+                });
+                let continuous = stack
+                    .effective(world, target, &format!("{place}.curve"))
+                    .iter()
+                    .any(|found| variant(found) == Some("continuous"));
+                if !all || continuous {
+                    for found in ellipses {
+                        self.problem(found.layer, found.at, ProblemKind::EllipseCorners);
                     }
                 }
             }

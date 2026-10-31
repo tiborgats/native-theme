@@ -586,7 +586,7 @@ fn a_table_names_its_form_and_unit_variants() {
     assert_eq!(
         Radius::FORM,
         BlockForm::Enum {
-            unit_variants: &["follow_part"]
+            unit_variants: &["ellipse", "follow_part"]
         }
     );
     assert_eq!(PaintKind::FORM, BlockForm::Enum { unit_variants: &[] });

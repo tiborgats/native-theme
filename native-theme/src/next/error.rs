@@ -334,6 +334,10 @@ pub enum ProblemKind {
         /// The corner.
         corner: String,
     },
+    /// A `Corners` value stating `Ellipse` on some of its corners but not
+    /// all four, or with a `Continuous` curve, under some combination (S2.4,
+    /// S12, ADD-A124).
+    EllipseCorners,
     /// A `Concentric` corner whose two insets can differ, until the value
     /// phase states UIKit's rule for them (S2.4, S12, ADD-A122).
     UnequalInsets {
@@ -353,8 +357,8 @@ pub enum ProblemKind {
         slot: String,
     },
     /// A part's `shape` stated while its corners' curve can be
-    /// `Continuous` (S2.4, S12).
-    ShapeOverContinuous,
+    /// `Continuous`, or a corner `Ellipse` (S2.4, S12).
+    ShapeOverCorners,
     /// A map entry's patch that can create its entry with a field left
     /// unset that may not be `Absent` (S6.1, S12, ADD-A122).
     EntryCreatedUnset {
@@ -498,6 +502,9 @@ impl fmt::Display for ProblemKind {
                     "`follow_part` on `{corner}`, whose sides' offsets can differ"
                 )
             }
+            ProblemKind::EllipseCorners => f.write_str(
+                "`ellipse` on a corner, not on all four corners with a `circular` curve",
+            ),
             ProblemKind::UnequalInsets { corner } => {
                 write!(f, "`concentric` on `{corner}`, whose insets can differ")
             }
@@ -507,9 +514,9 @@ impl fmt::Display for ProblemKind {
             ProblemKind::TextRoleOrder { slot } => {
                 write!(f, "references `{slot}`, a slot later in the owner order")
             }
-            ProblemKind::ShapeOverContinuous => {
-                f.write_str("a shape where the corners' curve can be `continuous`")
-            }
+            ProblemKind::ShapeOverCorners => f.write_str(
+                "a shape where the corners' curve can be `continuous` or a corner `ellipse`",
+            ),
             ProblemKind::EntryCreatedUnset { field } => {
                 write!(f, "can create the entry with `{field}` unset")
             }

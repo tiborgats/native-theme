@@ -41,11 +41,11 @@ mod value;
 mod widgets;
 
 pub mod corners {
-    //! The pure functions a connector computes a `Full`, `Concentric` or
-    //! `FollowPart` corner with at layout, from its own layout's numbers
-    //! (S2.4).
+    //! The pure functions a connector computes a `Full`, `Ellipse`,
+    //! `Concentric` or `FollowPart` corner with at layout, from its own
+    //! layout's numbers (S2.4).
 
-    pub use super::blocks::outline::{concentric, follow_part, full};
+    pub use super::blocks::outline::{concentric, ellipse, follow_part, full};
 }
 
 pub mod shapes {

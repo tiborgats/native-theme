@@ -186,6 +186,10 @@ fn spelling_key_of_a_field_with_a_unit() {
         Some(Radius::FollowPart)
     );
     assert_eq!(
+        corners("corners.top_left = \"ellipse\"").top_left,
+        Some(Radius::Ellipse)
+    );
+    assert_eq!(
         corners("corners.top_left = { full = { maximum_px = \"absent\" } }").top_left,
         Some(Radius::Full {
             maximum: Value::Absent

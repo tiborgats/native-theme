@@ -31,8 +31,8 @@ pub struct Corners {
     pub curve: CornerCurve,
 }
 
-/// A corner's radius. `Full`, `Concentric` and `FollowPart` resolve as they
-/// are; the connector computes each such corner at layout.
+/// A corner's radius. `Full`, `Ellipse`, `Concentric` and `FollowPart`
+/// resolve as they are; the connector computes each such corner at layout.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block, own_toml, check)]
 pub enum Radius {
@@ -46,6 +46,10 @@ pub enum Radius {
         #[parts(may_be_absent)]
         maximum: Value<Px>,
     },
+    /// A quarter of the ellipse inscribed in the part's box: half its width
+    /// across, half its height down ([`ellipse`]), so a square box is a
+    /// circle. Stated on all four corners with a `Circular` curve (S12).
+    Ellipse,
     /// The container's radius less the inset, at least `minimum`.
     Concentric {
         /// The smallest radius; absent: 0.
@@ -271,6 +275,20 @@ pub fn full(width: Px, height: Px, maximum: Option<Px>) -> Px {
     let half = width.0.min(height.0) / 2.0;
     let capped = maximum.map_or(half, |maximum| half.min(maximum.0));
     Px(capped.max(0.0))
+}
+
+/// An `Ellipse` corner's two radii: half the box's width across, half its
+/// height down, each at least 0. Where the model takes a corner's radii less
+/// an inset, it takes the horizontal radius less the inset on the corner's
+/// vertical side and the vertical radius less the inset on its horizontal
+/// side, each at least 0, as CSS reduces an elliptical corner; where it grows
+/// the box, it adds each axis's outset to that axis's radius.
+#[must_use]
+pub fn ellipse(width: Px, height: Px) -> Axes<Px> {
+    Axes {
+        horizontal: Px((width.0 / 2.0).max(0.0)),
+        vertical: Px((height.0 / 2.0).max(0.0)),
+    }
 }
 
 /// A `Concentric` corner: the container's radius less the part's inset from

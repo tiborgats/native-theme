@@ -169,6 +169,7 @@ impl FromToml for Radius {
         };
         match (name, payload) {
             ("follow_part", None) => Some(Radius::FollowPart),
+            ("ellipse", None) => Some(Radius::Ellipse),
             ("full", Some(payload)) => {
                 maximum_or_minimum(name, payload, cx).map(|maximum| Radius::Full { maximum })
             }

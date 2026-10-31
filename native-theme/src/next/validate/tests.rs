@@ -2191,10 +2191,11 @@ enum V {
     PartNotDrawn,
     CornerAtLayout,
     UnequalOffsets,
+    EllipseCorners,
     UnequalInsets,
     TextRoleShared,
     TextRoleOrder,
-    ShapeOverContinuous,
+    ShapeOverCorners,
     EntryCreatedUnset,
     ElementSizeInLayout,
     LeftToPreset,
@@ -2273,7 +2274,8 @@ fn layer_error_every_variant_triggers() {
             K::UnequalInsets { .. } => V::UnequalInsets,
             K::TextRoleShared { .. } => V::TextRoleShared,
             K::TextRoleOrder { .. } => V::TextRoleOrder,
-            K::ShapeOverContinuous => V::ShapeOverContinuous,
+            K::ShapeOverCorners => V::ShapeOverCorners,
+            K::EllipseCorners => V::EllipseCorners,
             K::EntryCreatedUnset { .. } => V::EntryCreatedUnset,
             K::ElementSizeInLayout { .. } => V::ElementSizeInLayout,
             K::LeftToPreset { .. } => V::LeftToPreset,
@@ -2746,7 +2748,7 @@ fn layer_error_every_variant_triggers() {
                 &[],
             ),
         ),
-        (V::ShapeOverContinuous, shape),
+        (V::ShapeOverCorners, shape),
         (
             V::EntryCreatedUnset,
             over(
@@ -2783,6 +2785,16 @@ fn layer_error_every_variant_triggers() {
             over(
                 &toml(
                     "[widgets.button.label]\ntext.fill = \"#000000\"\n[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\nset = { transitions = [{ properties = [\"state_layer\"], kind = \"interpolate\", duration_ms = 15, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = false }] }",
+                ),
+                &Declarations::default(),
+                &[],
+            ),
+        ),
+        (
+            V::EllipseCorners,
+            over(
+                &toml(
+                    "[widgets.button.body]\ncorners.top_left = \"ellipse\"\ncorners.top_right_px = 4\ncorners.bottom_right = \"ellipse\"\ncorners.bottom_left = \"ellipse\"\ncorners.curve = \"circular\"",
                 ),
                 &Declarations::default(),
                 &[],

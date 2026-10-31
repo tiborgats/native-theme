@@ -1075,3 +1075,44 @@ fn combination_sides_read_alike() {
         NONE
     );
 }
+
+/// `Ellipse` corners (S2.4, S12, ADD-A124): on all four corners with a
+/// `Circular` curve, under every combination; no shape where a corner can be
+/// one, and no corner operand on one, whose two radii are no one length.
+#[test]
+fn combination_ellipse_corners() {
+    let all = "[widgets.button.body]\ncorners.top_left = \"ellipse\"\ncorners.top_right = \
+               \"ellipse\"\ncorners.bottom_right = \"ellipse\"\ncorners.bottom_left = \"ellipse\"\n\
+               corners.curve = \"circular\"";
+    assert_eq!(bare(all), NONE);
+    assert_eq!(
+        bare(&all.replace(
+            "corners.top_right = \"ellipse\"",
+            "corners.top_right_px = 4"
+        )),
+        [
+            "widgets.button.body.corners.top_left: `ellipse` on a corner, not on all four corners with a `circular` curve",
+            "widgets.button.body.corners.bottom_right: `ellipse` on a corner, not on all four corners with a `circular` curve",
+            "widgets.button.body.corners.bottom_left: `ellipse` on a corner, not on all four corners with a `circular` curve",
+        ]
+    );
+    assert_eq!(
+        bare(&all.replace("\"circular\"", "\"continuous\"")).len(),
+        4
+    );
+    // A rule restating one corner under a state.
+    let rule = format!(
+        "{all}\n[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\n\
+         set = {{ corners.top_left_px = 4 }}"
+    );
+    assert_eq!(bare(&rule).len(), 3);
+    // A corner operand on an ellipse.
+    assert_eq!(
+        bare(&format!(
+            "{all}\nfocus.width_px = \"= part.corners.top_left\""
+        )),
+        [
+            "widgets.button.body.focus.width_px: `part.corners.top_left` is a corner computed at layout"
+        ]
+    );
+}

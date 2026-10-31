@@ -1207,6 +1207,20 @@ fn corner_functions() {
     assert_eq!(full(Px(40.0), Px(20.0), Some(Px(6.0))), Px(6.0));
     assert_eq!(follow_part(Px(4.0), Px(2.0)), Px(6.0));
     assert_eq!(follow_part(Px(2.0), Px(-4.0)), Px(0.0));
+    assert_eq!(
+        crate::next::corners::ellipse(Px(40.0), Px(20.0)),
+        Axes {
+            horizontal: Px(20.0),
+            vertical: Px(10.0),
+        }
+    );
+    assert_eq!(
+        crate::next::corners::ellipse(Px(-2.0), Px(8.0)),
+        Axes {
+            horizontal: Px(0.0),
+            vertical: Px(4.0),
+        }
+    );
     let even = Axes {
         horizontal: Px(4.0),
         vertical: Px(4.0),
