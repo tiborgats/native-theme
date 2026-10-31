@@ -481,7 +481,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_color cond contrast_high` | rule |
 | GN-1.202 | `reader:gnome:org.gnome.desktop.a11y.interface show-status-shapes` | reader |
 | GN-1.202 | `cond differentiate_without_color (GNOME: from show-status-shapes)` | condition |
-| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide)` | field |
+| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; GtkSwitch's own code, not CSS, which slides first and sets the switch active as it ends, a second activation restarting it, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:779-809`: its engine and the switch's activation order are the GNOME lane's to add with its facts, the catalogue's Open items, ADD-A126)` | field |
 | GN-1.204 | `switch.track.transitions (Fill)` | field |
 | GN-1.204 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
 | GN-1.205 | `switch.track.fill @ {checked} context any variant @osd (any widget, R25.9)` | rule |
@@ -641,7 +641,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.03 | `form.row.bindings, form.row_title.text.fill, form.row_subtitle.opacity @ variants {entry,error} / variants {entry,warning} / variants {entry,success}` (the accent rebound to the status colour) | rule |
 | GN-2.03 | `input.text.text @ context form.row variants {entry,@monospace}` | rule |
 | GN-2.04 | `form.row_title.text @ variant entry !{empty} / variant entry {focus_within}` | rule |
-| GN-2.04 | `form.row_title.transitions (Geometry, Text: the title shrinking)` | field |
+| GN-2.04 | `form.row_title.transitions (Geometry, Text: the title shrinking; engine AdwAnimation, replays: AdwEntryRow plays it again on each change of its text and of its text's state, its end unchanged included, `libadwaita@1.10.0 src/adw-entry-row.c:141-163`, `:166-189`; S2.7, ADD-A126)` | field |
 | GN-2.05 | `stepper.body.{fill,stroke} @ variant @row (no entry frame)` | rule |
 | GN-2.05 | `stepper.increment.{corners,min_width,min_height,margin}, stepper.decrement.{corners,min_width,min_height,margin} @ variant @row (circular filled buttons, their margins outside the circle, `_lists.scss:240-259`)` | rule |
 | GN-2.06 | `form.row_arrow.{icon,padding} @ variant combo` | rule |
@@ -886,6 +886,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.18 | `token.motion.durations.<transition tokens>` | token |
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
 | GN-3.18 | `token.motion (color_space PremultipliedSrgb: GTK's CSS colour transitions, gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604, S2.7, ADD-A125)` | token |
+| GN-3.18 | `PartStyle.transitions, FocusIndicator.transition (engine GtkCss for every stylesheet transition: from the value drawn, a running one cut where the style after has none, a value's curve taken by its property id, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:822-882`; S2.7, ADD-A126)` | field |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
 | GN-3.19 | `token.motion.timings.linear (Timing::Linear: CSS's keyword, the Bézier (0, 0, 1, 1), and the code's ADW_LINEAR, t / d, are the identity, S2.7, ADD-A125)` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
@@ -895,7 +896,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
-| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration)` | token |
+| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:404-413`; S4.3, ADD-A126)` | token |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
@@ -912,7 +913,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.71† | - | out (R1.1) |
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
-| GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
+| GN-3.28 | `FocusIndicator.transition (grow-in: from the rest outline, zero wide and transparent at the larger offset, and back to it, `libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-27`; engine GtkCss; S2.10, ADD-A126)` | field |
 | GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |

@@ -50,6 +50,26 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   clickable `Row` with no clip (`Menu.kt:2152-2160`), its shaped item a `Surface` (`:2020-2050`), so the facts state
   per part which; a part that is no `Surface` is a class 2 change (a clip field) (S2.12; ADD-A125).
 - `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw (ADD-A125).
+- The transition engines S2.7 leaves to measurement (ADD-A126, nothing claimed until they are made):
+  - `macos-*` and `ios-*`: the engine of every animated control state (button highlight, the focus ring's appearance
+    and disappearance, the switch's knob and fill, the segmented selection, the scroller's fade, the sidebar
+    selection), the probe and the iOS host interrupting each at about 0.3, 0.5 and 0.7 of its run and recording where
+    the next run starts (the value drawn, the old end, an additive blend), its duration and curve, a spring's velocity,
+    two stacked changes (a hover, then a press), an appearance and an accent change and a window deactivation landing
+    in a run, and reduced motion; the member is added with the measurement, and until then those transitions are
+    pending facts;
+  - `windows-11`: whether a theme switch animates the brush transitions and the visual-state storyboards (a brush
+    swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
+    Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
+    `WinUi`;
+  - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
+    element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
+  - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2);
+  - `switch` on `adwaita`: GtkSwitch's slide (GN-1.203) is the switch's own code, not CSS: an activation slides the
+    thumb from the end it rests at and sets the switch active only as the slide ends, a second activation restarting
+    the slide, while a change made in code moves the thumb at once (`gtk/gtkswitch.c:182-216`, `:242-259`, `:779-809`),
+    so its track's CSS fade starts as the slide ends; neither an engine nor the switch's activation order states that
+    yet, which the GNOME lane adds with its facts (an engine member and a switch value).
 - The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
   `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
   thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
@@ -9161,8 +9181,13 @@ setting; the value phase states it). Rules set it
 to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3.25, W3-37, W3-52†, MAT-X20).
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
-`ThemeChange::Suspend` (GN-3.23); `kde-breeze` (K-P3-15†), `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
-(MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3` (MAT-P3-18†). A stated zero duration on
+`ThemeChange::Suspend` with `conditions = [reduced_motion]`, as libadwaita suspends on a reduced-motion change too
+(GN-3.23; `libadwaita@1.10.0 src/adw-style-manager.c:404-413`, ADD-A126); `kde-breeze` `ThemeChange::Instant`, as
+Breeze's engines and Qt Quick's behaviours stop nothing on a palette change and add no window effect (K-P3-15†;
+`breeze@6.8.2 kstyle/breezestyle.cpp:1693-1696`, `:2059-2107`, ADD-A126); `windows-11` (W-P3-16†, which also covers
+the accent change), `macos-*` (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3`
+(MAT-P3-18†), each measurement recording too what the change does to a running transition and to one a state change
+in its frame starts (S4.3). A stated zero duration on
 `Crossfade` or `Suspend` is refused, as that change is `Instant` (S12; a computed zero, under a speed factor of zero,
 is not).
 

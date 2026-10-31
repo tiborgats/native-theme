@@ -712,9 +712,13 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
-  input), except during a theme change, which the theme-change token governs; the transition of the style
+  input), except during a theme change, which the theme-change token governs, and except under Breeze's engines,
+  which start on their own test (below); the transition of the style
   after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`). A transition may name the states it applies from (`from`, a set of flags): one with
+  (`gtkcssanimatedstyle.c`), and a part that becomes absent is gone at once, as that style states nothing for it
+  (ADD-A126; rejected: timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could
+  not both fade out as the focus leaves a selected tab and vanish as another tab is selected, both ways leaving one
+  style). A transition may name the states it applies from (`from`, a set of flags): one with
   none applies from any state, and one with a set only where the element held one of its flags before the change,
   after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
   later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
@@ -759,6 +763,49 @@ MAT-X13–MAT-X15, X-MO-1).
   per-transition override. A material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
+- **Engines** (ADD-A126; ledger queue #85, #95, #103): what starts a transition, where the next one starts while a
+  value moves, a spring's velocity, how several on one value combine and what a theme change does to them are the
+  rules of the code that runs it, and they differ within one preset: GTK's CSS transitions start from the value drawn,
+  cut a running one where the style after has none, take a value's curve by its property id (`gtk@4.24.1
+  gtk/gtkcssanimatedstyle.c:822-882`), and are what libadwaita's theme switch suspends (`libadwaita@1.10.0
+  src/adw-style-manager.c:227-239`), while its `AdwAnimation`s, which widget code plays from the value shown
+  (`src/adw-tab.c:124-133`), are not; Breeze's state engines follow a test of their own, turn where they are on an undo, rank
+  by a fixed order and mix the live state's colours (`breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-30`,
+  `breezewidgetstateengine.h:45-103`, `kstyle/breezehelper.cpp:142-166`), its tab bar's restart on every change in
+  two places per bar (`breezetabbardata.cpp:54-119`), while Kirigami's `Behavior`s start from the value drawn and
+  animate a theme switch (`qtdeclarative@6.12.0 src/quick/util/qquickbehavior.cpp:361-426`); Compose's `Animatable`
+  carries a spring's velocity (`androidx@e4d933c9 …/animation/core/Animatable.kt:227-243`) and its
+  `updateTransition` replaces an interrupted tween by a spring (`Transition.kt:1615-1659`). The options weighed:
+  - *One rule for every transition* (from the value drawn, ADD-A124's implicit one): simplest, but Breeze's turns,
+    restarts and ranks, Compose's velocity and interruption spring and GTK's cut are lost, each visible within a
+    transition's run (a line edit hovered and clicked, a tab left mid-fade, a switch toggled twice).
+  - *A trigger field* (`ValueChange | StateChange { conditions }`, ADD-A125's form) with an interruption field: exact
+    for when Breeze's engines and its decoration's shadow start, but ADD-A125's eight checks on it patched each toolkit in turn
+    without converging (Breeze's rank, its tab bar's restart, a spring's velocity), and libadwaita's `AdwAnimation`s
+    and Compose's state layer start on a change of their own value too, so the trigger no longer told libadwaita's
+    suspended transitions from the rest.
+  - *Orthogonal kinds* (an interruption kind, a velocity, an interrupted timing, a rank, slots and a theme-change lane,
+    the survey's grouping): each exact only with the sub-rules of one toolkit (GTK's cut and its curve index, the tab
+    bar's two places, the decoration's live ends, AdwEntryRow's replay), five fields where each preset uses one
+    combination, and a combination no toolkit has stays expressible.
+  - *A per-preset engine*: `adwaita`, `kde-breeze` and `material-3` each run two engines whose rules differ.
+  - *A preset default with a per-transition override*: two homes for one fact.
+  - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
+    but native fidelity and cover-everything-visible admit none where the source states the rule.
+  - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
+    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `WinUi`), each implemented once in
+    native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
+    an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
+    transition: Breeze's test, quoted from its `updateState` call, and whether AdwEntryRow's title replays. The value
+    engines start from the value drawn; Breeze's turn where they are or restart, ranked in stated order with live
+    ends; `from` stays ADD-A124's, the flags held before, as no fact reads otherwise under "a flag cleared" (ADD-A125's
+    attempt) and the one case that needs two ways out of a style told apart, Breeze's tab focus line, is stated by
+    where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
+    GTK delays one and Compose's `updateTransition` replaces an interrupted one. Apple's toolkits, whose
+    code is not in the cache, are measured (interrupted at three points, a spring's velocity, stacked changes, a theme
+    change, a deactivation and reduced motion landing in a run) and get their member with the measurement; WinUI's
+    theme switch and its compositor's velocity likewise. A presentation interrupted (a popover dismissed while it
+    appears) is a presentation event's matter, not settled here.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
@@ -769,7 +816,7 @@ MAT-X13–MAT-X15, X-MO-1).
   lifecycle, the release's exit included, is the effect's own (R3); its origin is the point pressed where it is bounded,
   which the toolkit has from the press itself, and the box's centre where it is not. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
   whose shader draws a wave with sparkles, so the ripple is that effect, implemented to its source, not a circle with
-  stated durations. One transition governs a property group per change, as in CSS; the state layer has a group of its own,
+  stated durations. One transition governs a property group per change, as in CSS (Breeze's engines rank their runs instead, ADD-A126); the state layer has a group of its own,
   so it does not time the container (R3). A stroke's widths may be timed by a group of their own,
   `StrokeWidth`, which overrides `Stroke` for them where stated, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
   different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
@@ -790,13 +837,17 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Theme changes:** what the platform does when the colour scheme, the accent or another input, a contrast
   setting, a palette or the preset changes (Appendix B's kind K57; GN-3.23, W-P3-16†) is the theme-change
   token: one of a crossfade of the window with its duration; property transitions suspended for a duration
-  (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
-  `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
-  `AdwAnimation`, still runs, `adw-tab.c:857-862`, and the preset states which transitions a suspension
-  reaches; a transition already running when the suspension starts finishes); or instant (an instant switch
-  with property transitions as usual). Each preset's kind is a fact, measured where no source states it
-  (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
-  transitions run as stated (Breeze's decoration shadow, K1.17; Mica's fade, W3-10).
+  (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:236-239`,
+  `:296-299`, with no crossfade; it reaches the `GtkCss` engine's transitions only, so the tab's 150 ms close-button
+  fade, an `AdwAnimation`, still runs, `adw-tab.c:854-862`, and a CSS transition running when the suspension starts
+  ends at its new value, as GTK carries none into a style whose transitions are all zero,
+  `gtkcssanimatedstyle.c:822-826`; libadwaita also suspends on a reduced-motion change, which the token names,
+  `adw-style-manager.c:412`; ADD-A126); or instant (an instant switch with each engine's transitions as for any
+  change). Each preset's kind is a fact, measured where no source states it (`kde-breeze`'s is `Instant`, from
+  Breeze's and Qt Quick's code, which stop nothing and add no window effect, ADD-A126). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: they start the value
+  engines' transitions of the values they move and turn the Breeze tests that name them, so Breeze's decoration
+  shadow fades on activation alone and changes at once on a maximise (K1.17), and Mica's fade runs as its engine
+  does (W3-10).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes
@@ -876,7 +927,14 @@ none), stroke, offset, corners (concentric with its part unless stated), shadow 
 focus-visible state. The base states it, by reference to the platform's token where the platform has one
 indicator, or its own where a part differs (KDE's focus line under tab labels, K3.21). A focus that only changes a
 fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields become the token; when focus
-becomes visible is a widget behaviour (R17).
+becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
+indicator of the style without the flag, its paint and shadow transparent, so libadwaita's ring grows in from and
+shrinks out to its rest outline, zero wide and transparent at a larger offset (`libadwaita@1.10.0
+src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` in that style enters from its own geometry and is
+gone at once (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
+no platform draws at rest); every preset stating its rest ring transparent, with no rule (every focusable part's rest
+style restating the ring, one left at the focused paint jumping in); an entering geometry on the block (a repeat of
+the rest style). The focus flags are the toolkit's in an inactive window, which GTK and Qt clear (S7.2).
 
 **Caret:** colour, width, shape (bar, block in overwrite mode; K1.47†, KDE file), the secondary caret in
 mixed-direction text (GN-SF03†), blink on and off times and timeout, read where the platform has a setting (GNOME,

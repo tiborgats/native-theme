@@ -727,7 +727,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
 | MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted) | field |
-| MAC-X11 | `FocusIndicator.transition (the ring's appearance)` | field |
+| MAC-X11 | `FocusIndicator.transition (the ring's appearance and disappearance, their geometry and engine measured, S2.10, the catalogue's Open items, ADD-A126)` | field |
 | MAC-X11 | `menu.values.presentations events Appear, Disappear, @submenu_expand; menu.values.activation_flash` | field |
 | MAC-X11 | `popover.values.presentations events Appear, Disappear` | field |
 | MAC-X11 | `dialog.values.presentations events Appear @ variant alert / Appear, Disappear @ variant @sheet` | rule |
@@ -743,7 +743,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `drag_image.values.presentations event @cancel (the failed drop sliding back)` | field |
 | MAC-X11 | `button.values.presentations, list.values.presentations event @spring_load` | field |
 | MAC-X11 | `glass_container.surface.transitions (glass morphing)` | field |
-| MAC-X11 | `PartStyle.transitions and widget presentation transitions` | field |
+| MAC-X11 | `PartStyle.transitions and widget presentation transitions` (each transition's engine measured, interrupted at three points of its run, S2.7, the catalogue's Open items, ADD-A126) | field |
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
 | MAC-X11 | `window.values.presentations events Appear, Disappear` (the base) `@ variant dialog / variant utility` (window open and close per NSWindow.AnimationBehavior, which the application chooses) | rule |
 | MAC-X11 | - (the minimise effect, which the Dock draws; the full-screen enter and exit, which the window server animates) | out (R1.1) |
