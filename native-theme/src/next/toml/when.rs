@@ -40,10 +40,27 @@ pub(crate) fn read_selector(item: &Item, at: &str, cx: &mut Reader) -> Option<Se
             "direction" => selector.direction = read::named::<Direction>(item, &at, cx),
             "states" => selector.states.all_of = names(item, &at, cx, state),
             "not_states" => selector.states.none_of = names(item, &at, cx, state),
+            "latest" => selector.latest = latest(item, &at, cx),
             _ => cx.problem(&at, ProblemKind::UnknownKey),
         }
     }
     Some(selector)
+}
+
+/// `latest`: a table, one key per recency set and its flag as the value
+/// (S7.2, S11).
+fn latest(item: &Item, at: &str, cx: &mut Reader) -> Vec<(crate::next::key::Key, StateFlag)> {
+    let Some(sets) = table(item, at, cx) else {
+        return Vec::new();
+    };
+    sets.iter()
+        .filter_map(|(name, item)| {
+            let at = join(at, name);
+            let set = read::key_named(name, &at, cx);
+            let flag = text(item, &at, cx).and_then(|flag| state(flag, &at, cx));
+            Some((set?, flag?))
+        })
+        .collect()
 }
 
 /// An array of names, each read by `name`; an item that names nothing is

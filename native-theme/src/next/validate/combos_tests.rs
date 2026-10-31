@@ -1116,3 +1116,28 @@ fn combination_ellipse_corners() {
         ]
     );
 }
+
+/// The latest flag of a recency set (S7.2, S12's exclusions): at most one
+/// per set, a flag held, so two rules on two latest flags of one set never
+/// apply together, and a rule on a latest flag never applies without it.
+#[test]
+fn combination_latest_of_a_recency_set() {
+    let decl = declare("[declare.widget.button]\nrecency = { glow = [\"hover\", \"focus_visible\"] }");
+    let rules = |second: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ latest = {{ glow = \"hover\" }} }}\ntarget = \"button.body\"\n\
+             set = {{ stroke = \"absent\" }}\n\
+             [[rules]]\nwhen = {second}\ntarget = \"button.body\"\n\
+             set = {{ stroke.top.width_px = 2 }}"
+        )
+    };
+    assert_eq!(
+        alone(&rules("{ latest = { glow = \"focus_visible\" } }"), &decl),
+        NONE
+    );
+    assert_eq!(alone(&rules("{ not_states = [\"hover\"] }"), &decl), NONE);
+    assert_eq!(
+        alone(&rules("{ states = [\"focus_visible\"] }"), &decl),
+        ["rules[1].set.stroke: patches the fields of a value that can be `absent`"]
+    );
+}

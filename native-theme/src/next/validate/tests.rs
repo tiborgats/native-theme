@@ -2158,6 +2158,9 @@ enum V {
     TooFewStops,
     NoProperties,
     FromNoState,
+    RecencyTooSmall,
+    RecencyOrder,
+    NotInRecencySet,
     StateLayerWithoutInteraction,
     ZeroDuration,
     KeyframesNotIncreasing,
@@ -2238,6 +2241,9 @@ fn layer_error_every_variant_triggers() {
             K::TooFewStops => V::TooFewStops,
             K::NoProperties => V::NoProperties,
             K::FromNoState => V::FromNoState,
+            K::RecencyTooSmall => V::RecencyTooSmall,
+            K::RecencyOrder { .. } => V::RecencyOrder,
+            K::NotInRecencySet { .. } => V::NotInRecencySet,
             K::StateLayerWithoutInteraction => V::StateLayerWithoutInteraction,
             K::ZeroDuration => V::ZeroDuration,
             K::KeyframesNotIncreasing => V::KeyframesNotIncreasing,
@@ -2800,6 +2806,28 @@ fn layer_error_every_variant_triggers() {
                 &[],
             ),
         ),
+        (
+            V::RecencyTooSmall,
+            preset_problems("[declare.widget.button]\nrecency = { glow = [\"hover\"] }"),
+        ),
+        (
+            V::RecencyOrder,
+            preset_problems(
+                "[declare.widget.button]\nrecency = { glow = [\"hover\", \"pressed\"], ring = [\"pressed\", \"hover\"] }",
+            ),
+        ),
+        (
+            V::NotInRecencySet,
+            over(
+                &toml(
+                    "[[rules]]\nwhen = { latest = { glow = \"pressed\" } }\ntarget = \"button.body\"\nset = { opacity = 0.5 }",
+                ),
+                &declare(
+                    "[declare.widget.button]\nrecency = { glow = [\"hover\", \"focus_visible\"] }",
+                ),
+                &[],
+            ),
+        ),
     ];
     // Each variant is one `V`: two kinds the fixtures meet never share one.
     let mut met: Vec<(std::mem::Discriminant<K>, V)> = Vec::new();
@@ -2877,4 +2905,52 @@ fn bare_layer_with_a_problem() -> Layer {
         opacity: Some(Value::Stated(Fraction(2.0))),
         ..PartStylePatch::default()
     })
+}
+
+/// Recency (S7.2, S10, S12, ADD-A124): a set of two flags or more, none
+/// twice, a keyed one declared, no two sets ordering two flags oppositely; a
+/// `latest` term naming a declared set and one of its members; a declared
+/// set no rule selects on is unused.
+#[test]
+fn refusal_recency() {
+    let selecting = "[[rules]]\nwhen = { latest = { glow = \"hover\" } }\ntarget = \
+                     \"button.body\"\nset = { opacity = 0.5 }";
+    assert_eq!(
+        preset(&format!(
+            "[declare.widget.button]\nrecency = {{ glow = [\"hover\", \"focus_visible\"] }}\n\
+             {selecting}"
+        )),
+        NONE
+    );
+    assert_eq!(
+        preset("[declare.widget.button]\nrecency = { glow = [\"hover\", \"focus_visible\"] }"),
+        ["declare.widget.button.recency: `glow` is declared but unused"]
+    );
+    assert_eq!(
+        preset(&format!(
+            "[declare.widget.button]\nrecency = {{ glow = [\"hover\", \"@spin\", \"hover\"] }}\n\
+             {selecting}"
+        )),
+        [
+            "declare.widget.button.recency.glow[1]: `@spin` is not declared in `declare.widget.button.flags`",
+            "declare.widget.button.recency.glow[2]: `hover` listed twice",
+        ]
+    );
+    let decl =
+        declare("[declare.widget.button]\nrecency = { glow = [\"hover\", \"focus_visible\"] }");
+    let rule = |latest: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {{ latest = {latest} }}\ntarget = \"button.body\"\n\
+             set = {{ opacity = 0.5 }}"
+        ))
+    };
+    assert_eq!(found(&rule("{ glow = \"focus_visible\" }"), &decl), NONE);
+    assert_eq!(
+        found(&rule("{ ring = \"hover\" }"), &decl),
+        ["rules[0].when.latest.ring: `ring` is not declared in `widget.button.recency`"]
+    );
+    assert_eq!(
+        found(&rule("{ glow = \"pressed\" }"), &decl),
+        ["rules[0].when.latest.glow: `pressed` is not a member of the recency set `glow`"]
+    );
 }

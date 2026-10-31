@@ -811,6 +811,7 @@ impl<'a> Checker<'a> {
         }
         if let Some(widget) = widget {
             self.element(widget, &selector.variants, &selector.states, at);
+            self.latest(widget, &selector.latest, at);
             for (size, item) in items(
                 &selector.size.sizes,
                 at,
@@ -838,6 +839,40 @@ impl<'a> Checker<'a> {
         }
         if let Some(position) = &selector.position {
             self.position(position, &join(at, "position"));
+        }
+    }
+
+    /// A selector's `latest` terms (S7.2, S12): each set one the widget
+    /// declares, its flag a member of it, at `latest.<set>` (S11) or at the
+    /// term's index in a layer built in Rust.
+    fn latest(&mut self, widget: WidgetKind, latest: &[(Key, StateFlag)], at: &str) {
+        for (index, (set, flag)) in latest.iter().enumerate() {
+            let item = if self.toml {
+                format!("{at}.latest.{set}")
+            } else {
+                format!("{at}.latest[{index}]")
+            };
+            let decls = self.widget_decls(widget);
+            let members: Vec<&Vec<StateFlag>> = decls
+                .iter()
+                .filter_map(|decl| {
+                    decl.recency
+                        .iter()
+                        .flatten()
+                        .find(|(held, _)| held == set)
+                        .map(|(_, flags)| flags)
+                })
+                .collect();
+            if members.len() < decls.len() {
+                let declaration = self.declaration(widget, "recency");
+                self.undeclared(&item, &set.to_string(), &declaration);
+            } else if members.iter().any(|flags| !flags.contains(flag)) {
+                let kind = ProblemKind::NotInRecencySet {
+                    flag: flag.name(),
+                    set: set.to_string(),
+                };
+                self.problem(&item, kind);
+            }
         }
     }
 
@@ -1975,6 +2010,7 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
                 }
             }
         }
+        problems.extend(recency(&at, section, &in_force));
         let entries: Vec<_> = section.default_size_by_variant.iter().flatten().collect();
         for (index, entry) in entries.iter().enumerate() {
             let item = format!("{at}.default_size_by_variant[{index}]");
@@ -2015,12 +2051,66 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
     problems
 }
 
+/// A section's recency sets (S10, S12): each of two flags or more, no flag
+/// twice, a keyed flag declared in the flags in force, and no two of the
+/// sets in force ordering two flags oppositely.
+fn recency(at: &str, section: &WidgetDecl, in_force: &WidgetDecl) -> Vec<Problem> {
+    let mut problems = Vec::new();
+    let sets: &[(Key, Vec<StateFlag>)] = section.recency.as_deref().unwrap_or_default();
+    for (set, flags) in sets {
+        let set_at = format!("{at}.recency.{set}");
+        if flags.len() < 2 {
+            problems.push(Problem::new(&set_at, ProblemKind::RecencyTooSmall));
+        }
+        for (index, flag) in flags.iter().enumerate() {
+            let item = format!("{set_at}[{index}]");
+            if flags.iter().take(index).any(|earlier| earlier == flag) {
+                let name = flag.name();
+                problems.push(Problem::new(&item, ProblemKind::ListedTwice { name }));
+            }
+            let declared = !matches!(flag, StateFlag::Widget(_))
+                || in_force.flags.iter().flatten().any(|held| held == flag);
+            if !declared {
+                let name = flag.name();
+                let declaration = format!("{at}.flags");
+                problems.push(Problem::new(
+                    &item,
+                    ProblemKind::Undeclared { name, declaration },
+                ));
+            }
+        }
+        let place = |flags: &[StateFlag], flag: &StateFlag| flags.iter().position(|f| f == flag);
+        let opposite = in_force
+            .recency
+            .iter()
+            .flatten()
+            .filter(|(other, _)| other != set)
+            .find(|(_, other)| {
+                flags.iter().enumerate().any(|(i, a)| {
+                    flags.iter().skip(i.saturating_add(1)).any(|b| {
+                        matches!(
+                            (place(other, a), place(other, b)),
+                            (Some(x), Some(y)) if x > y
+                        )
+                    })
+                })
+            });
+        if let Some((other, _)) = opposite {
+            let set = other.to_string();
+            problems.push(Problem::new(&set_at, ProblemKind::RecencyOrder { set }));
+        }
+    }
+    problems
+}
+
 /// What a preset's layer uses of its declared keyed names (S12): the
 /// selector names its rules select on, the keyed names its bases state,
 /// the events its `presentations` lists name.
 #[derive(Default)]
 struct Uses {
     flags: Vec<StateFlag>,
+    /// The recency sets `latest` terms name, by the widget they are of.
+    recency: Vec<(Option<WidgetKind>, Key)>,
     /// The variants rules select on or draw a part as, by the widget they
     /// are of; `None`: a context or sibling matched by variant alone, of
     /// any widget.
@@ -2087,6 +2177,8 @@ impl Uses {
                 self.variants_of(widget, &sibling.variants);
             }
         }
+        self.recency
+            .extend(selector.latest.iter().map(|(set, _)| (widget, set.clone())));
         let mut states = vec![&selector.states];
         states.extend(
             selector
@@ -2223,6 +2315,11 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId
                 && !uses.flags.contains(flag)
             {
                 unused.push((format!("{at}.flags"), format!("@{key}")));
+            }
+        }
+        for (set, _) in section.recency.iter().flatten() {
+            if !uses.recency.contains(&(Some(*widget), set.clone())) {
+                unused.push((format!("{at}.recency"), set.to_string()));
             }
         }
         for variant in section.variants.iter().flatten() {

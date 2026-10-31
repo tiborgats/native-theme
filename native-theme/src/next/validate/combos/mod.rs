@@ -70,6 +70,8 @@ pub(super) enum Atom {
     Sibling(bool, SiblingScope, SiblingMatch),
     /// An ancestor matches.
     Context(ContextMatch),
+    /// The flag is the latest of the element's recency set (S7.2).
+    Latest(Key, StateFlag),
 }
 
 /// The atoms' assignment and what it gives: each reached rule's
@@ -865,7 +867,7 @@ impl<'a> Stack<'a> {
             }
         }
         let decl = self.decl();
-        complete(&mut atoms, decl);
+        complete(&mut atoms, decl, widgets);
         let compiled = self.compile(&atoms, rules);
         let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
         items.extend(outcomes(&atoms));
@@ -1130,6 +1132,12 @@ fn selector_literals(
     }
     out.extend(
         selector
+            .latest
+            .iter()
+            .map(|(set, flag)| (Atom::Latest(set.clone(), flag.clone()), Some(true))),
+    );
+    out.extend(
+        selector
             .context
             .iter()
             .map(|context| (Atom::Context(context.clone()), Some(true))),
@@ -1185,9 +1193,32 @@ fn atoms_of(selector: &Selector, preset: Option<PresetId>, atoms: &mut Vec<Atom>
 /// Adds the atoms a one-of choice needs whole: both schemes, both
 /// directions, both parities, every declared flavour and every declared
 /// size of a container named.
-fn complete(atoms: &mut Vec<Atom>, decl: &Declarations) {
+fn complete(atoms: &mut Vec<Atom>, decl: &Declarations, widgets: &[WidgetKind]) {
     for scheme in Scheme::ALL {
         push_atom(atoms, Atom::Cond(Condition::Scheme(scheme)));
+    }
+    // A recency set named: each member's flag and its being the latest,
+    // under every flavour's declarations (S7.2, S12).
+    let sets: Vec<Key> = atoms
+        .iter()
+        .filter_map(|atom| match atom {
+            Atom::Latest(set, _) => Some(set.clone()),
+            _ => None,
+        })
+        .collect();
+    for set in sets {
+        for widget in widgets {
+            for section in decl.in_each_flavor(*widget) {
+                for (held, flags) in section.recency.iter().flatten() {
+                    if *held == set {
+                        for flag in flags {
+                            push_atom(atoms, Atom::State(flag.clone()));
+                            push_atom(atoms, Atom::Latest(set.clone(), flag.clone()));
+                        }
+                    }
+                }
+            }
+        }
     }
     if atoms.iter().any(|atom| matches!(atom, Atom::Dir(_))) {
         push_atom(atoms, Atom::Dir(Direction::Ltr));
@@ -1212,7 +1243,7 @@ fn complete(atoms: &mut Vec<Atom>, decl: &Declarations) {
     if atoms.iter().any(|atom| {
         matches!(
             atom,
-            Atom::Cond(Condition::Flavor(_)) | Atom::State(_) | Atom::Variant(_)
+            Atom::Cond(Condition::Flavor(_)) | Atom::State(_) | Atom::Variant(_) | Atom::Latest(..)
         )
     }) {
         for flavor in &decl.flavors {

@@ -142,6 +142,9 @@ pub(crate) struct WidgetDecl {
     pub(crate) exclusive: Option<Vec<Vec<StateFlag>>>,
     /// Groups of variants an element holds at most one of.
     pub(crate) exclusive_variants: Option<Vec<Vec<VariantRef>>>,
+    /// The recency sets, each by its name, its flags in the stated order,
+    /// the first the latest where the connector reports no order (S7.2).
+    pub(crate) recency: Option<Vec<(Key, Vec<StateFlag>)>>,
     /// The sizes in the nearest ancestor of a widget.
     pub(crate) sizes_by_context: Option<Vec<SizesByContext>>,
     /// The sizes of an element holding a variant.
@@ -175,6 +178,7 @@ impl WidgetDecl {
             flags,
             exclusive,
             exclusive_variants,
+            recency,
             sizes_by_context,
             sizes_by_variant,
             default_size,
@@ -195,6 +199,7 @@ impl WidgetDecl {
             flags: pick(flags, &self.flags),
             exclusive: pick(exclusive, &self.exclusive),
             exclusive_variants: pick(exclusive_variants, &self.exclusive_variants),
+            recency: pick(recency, &self.recency),
             sizes_by_context: pick(sizes_by_context, &self.sizes_by_context),
             sizes_by_variant: pick(sizes_by_variant, &self.sizes_by_variant),
             default_size: pick(default_size, &self.default_size),

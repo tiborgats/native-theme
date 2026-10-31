@@ -76,6 +76,8 @@ pub struct Selector {
     pub direction: Option<Direction>,
     /// The element's states.
     pub states: SetMatch<StateFlag>,
+    /// Per recency set (S10), the flag that must be its latest (S7.2).
+    pub latest: Vec<(Key, StateFlag)>,
 }
 
 /// A set test: every one of `all_of` holds, and none of `none_of`.

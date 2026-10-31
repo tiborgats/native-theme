@@ -87,6 +87,11 @@ pub(super) fn one_of(atoms: &[Atom], decl: &Declarations) -> Vec<(Vec<usize>, bo
         .collect()
 }
 
+/// The recency sets in force under one flavour (S7.2): each set's members'
+/// `(latest, state)` atoms (the state `None` where no atom holds it, so
+/// false), and the `latest` atoms that never hold.
+type Recency = (Vec<Vec<(usize, Option<usize>)>>, Vec<usize>);
+
 /// The exclusions over the atoms of one check (S12), each by the atoms'
 /// indices.
 pub(super) struct Space {
@@ -117,6 +122,12 @@ pub(super) struct Space {
     implies: Vec<(usize, usize)>,
     /// The context matches no one ancestor can hold.
     never: Vec<usize>,
+    /// Under the default flavour, then under each declared one in order:
+    /// the element's recency sets, each its members' `(latest, state)`
+    /// atoms where the atoms hold them, and the `latest` atoms naming a set
+    /// the flavour does not declare or a flag not a member of it, which never
+    /// hold (S7.2).
+    recency: Vec<Recency>,
     /// Under the default flavour, then under each declared one in order:
     /// the context and sibling matches needing two members of one exclusive
     /// group of their widget, which the S10 reduction never leaves (S8).
@@ -191,6 +202,61 @@ impl Space {
                 .map(|(at, _)| at)
                 .collect::<Vec<usize>>()
         };
+        let recency_under = |flavor: Option<&crate::next::key::Key>| {
+            let mut sets: Vec<(&crate::next::key::Key, Vec<StateFlag>)> = Vec::new();
+            for widget in widgets {
+                let decls: WidgetDecl = match flavor {
+                    Some(flavor) => decl.in_flavor(*widget, flavor),
+                    None => decl.in_default_flavor(*widget),
+                };
+                for (set, flags) in decls.recency.iter().flatten() {
+                    if let Some((_, held)) = sets.iter_mut().find(|(held, _)| *held == set) {
+                        held.extend(
+                            flags
+                                .iter()
+                                .filter(|f| !held.contains(f))
+                                .cloned()
+                                .collect::<Vec<_>>(),
+                        );
+                    } else if let Some(name) = atoms.iter().find_map(|atom| match atom {
+                        Atom::Latest(name, _) if name == set => Some(name),
+                        _ => None,
+                    }) {
+                        sets.push((name, flags.clone()));
+                    }
+                }
+            }
+            let groups: Vec<Vec<(usize, Option<usize>)>> = sets
+                .iter()
+                .map(|(set, flags)| {
+                    flags
+                        .iter()
+                        .filter_map(|flag| {
+                            let latest = index(&Atom::Latest((*set).clone(), flag.clone()))?;
+                            Some((latest, index(&Atom::State(flag.clone()))))
+                        })
+                        .collect()
+                })
+                .collect();
+            let never: Vec<usize> = atoms
+                .iter()
+                .enumerate()
+                .filter(|(_, atom)| match atom {
+                    Atom::Latest(set, flag) => !sets
+                        .iter()
+                        .any(|(held, flags)| *held == set && flags.contains(flag)),
+                    _ => false,
+                })
+                .map(|(at, _)| at)
+                .collect();
+            (groups, never)
+        };
+        let mut recency = vec![recency_under(decl.flavors.first())];
+        recency.extend(
+            decl.flavors
+                .iter()
+                .map(|flavor| recency_under(Some(flavor))),
+        );
         let mut reduced = vec![reduced_under(decl.flavors.first())];
         reduced.extend(
             decl.flavors
@@ -278,6 +344,7 @@ impl Space {
             first_even,
             implies,
             never,
+            recency,
             reduced,
             exclusive_contexts,
         }
@@ -320,6 +387,30 @@ impl Space {
             && reduced.iter().any(|at| value(*at) == Some(true))
         {
             return false;
+        }
+        // Each recency set's latest flag (S7.2, S12): at most one, a kept
+        // flag, and one exactly where any member is kept (the exclusive
+        // groups above keep at most one of each, so a flag held is kept).
+        if let Some((sets, never)) = flavor.and_then(|flavor| self.recency.get(flavor)) {
+            if never.iter().any(|at| value(*at) == Some(true)) {
+                return false;
+            }
+            for members in sets {
+                let latest = members
+                    .iter()
+                    .filter(|(at, _)| value(*at) == Some(true))
+                    .count();
+                let unkept = members.iter().any(|(at, state)| {
+                    value(*at) == Some(true) && state.map_or(Some(false), value) == Some(false)
+                });
+                let none_left = members.iter().all(|(at, _)| value(*at) == Some(false));
+                let kept = members
+                    .iter()
+                    .any(|(_, state)| state.and_then(value) == Some(true));
+                if latest > 1 || unkept || (none_left && kept) {
+                    return false;
+                }
+            }
         }
         for (only, first, last) in &self.only {
             // A `first` or `last` the atoms do not hold is false.

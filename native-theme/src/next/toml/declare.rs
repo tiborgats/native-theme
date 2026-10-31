@@ -260,6 +260,7 @@ fn widget_decl(widget: WidgetKind, fields: &Table, at: &str, cx: &mut Reader) ->
             "flags" => decl.flags = Some(names(item, &at, cx, state)),
             "exclusive" => decl.exclusive = Some(groups(item, &at, cx, state)),
             "exclusive_variants" => decl.exclusive_variants = Some(groups(item, &at, cx, variant)),
+            "recency" => decl.recency = Some(recency(item, &at, cx)),
             "sizes_by_context" => decl.sizes_by_context = Some(sizes_by_context(item, &at, cx)),
             "sizes_by_variant" => decl.sizes_by_variant = Some(sizes_by_variant(item, &at, cx)),
             "default_size" => decl.default_size = read::named::<ControlSize>(item, &at, cx),
@@ -292,6 +293,26 @@ fn groups<T>(
         .iter()
         .enumerate()
         .map(|(index, item)| names(item, &read::item(at, index), cx, name))
+        .collect()
+}
+
+/// `recency`: a table of the recency sets, each a key and its flags in the
+/// stated order (S10).
+fn recency(
+    item: &Item,
+    at: &str,
+    cx: &mut Reader,
+) -> Vec<(Key, Vec<crate::next::selector::StateFlag>)> {
+    let Some(sets) = table(item, at, cx) else {
+        return Vec::new();
+    };
+    sets.iter()
+        .filter_map(|(name, item)| {
+            let at = join(at, name);
+            let key = read::key_named(name, &at, cx);
+            let flags = names(item, &at, cx, state);
+            Some((key?, flags))
+        })
         .collect()
 }
 

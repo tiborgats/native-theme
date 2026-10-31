@@ -182,6 +182,22 @@ pub enum ProblemKind {
     /// A `Transition.from` that is an empty list: it would apply from no
     /// state (S2.7, S12).
     FromNoState,
+    /// A recency set with fewer than two flags (S10, S12).
+    RecencyTooSmall,
+    /// A recency set ordering two flags oppositely to another of the
+    /// widget's sets, which it names (S10, S12).
+    RecencyOrder {
+        /// The other set.
+        set: String,
+    },
+    /// A `latest` term naming a flag that is not a member of its set (S7.2,
+    /// S12).
+    NotInRecencySet {
+        /// The flag as written.
+        flag: String,
+        /// The set.
+        set: String,
+    },
     /// A `StateLayer` transition on a part whose fields lack `interaction`
     /// (S2.7, S2.12, S12).
     StateLayerWithoutInteraction,
@@ -418,6 +434,13 @@ impl fmt::Display for ProblemKind {
             ProblemKind::TooFewStops => f.write_str("a gradient has at least two stops"),
             ProblemKind::NoProperties => f.write_str("a transition of no property group"),
             ProblemKind::FromNoState => f.write_str("a transition applying from no state"),
+            ProblemKind::RecencyTooSmall => f.write_str("a recency set of fewer than two flags"),
+            ProblemKind::RecencyOrder { set } => {
+                write!(f, "orders two flags oppositely to the recency set `{set}`")
+            }
+            ProblemKind::NotInRecencySet { flag, set } => {
+                write!(f, "`{flag}` is not a member of the recency set `{set}`")
+            }
             ProblemKind::StateLayerWithoutInteraction => {
                 f.write_str("a `state_layer` transition on a part without `interaction`")
             }
