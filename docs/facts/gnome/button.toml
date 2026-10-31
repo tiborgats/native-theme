@@ -537,6 +537,29 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
 quote = "%button, button {"
 
+# AdwBackButton shows an icon and no title, so no title is shortened or replaced (the previous page's title is
+# its tooltip)
+[[fact]]
+key = "button.values.back_title_fallback"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:514-550"
+quote = "button = gtk_button_new_from_icon_name (\"go-previous-symbolic\");"
+
+# a press hides GTK's tooltip; no button shows one on click
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktooltip.c:965-971"
+quote = "case GDK_BUTTON_PRESS: case GDK_KEY_PRESS: case GDK_DRAG_ENTER: case GDK_GRAB_BROKEN: case GDK_SCROLL: gtk_tooltip_hide_tooltip (tooltip); break;"
+
 [[fact]]
 key = "button.values.display_mode"
 value = "absent"
@@ -617,6 +640,18 @@ quote = "gtk_css_number_value_new (0, GTK_CSS_S));"
 kind = "published"
 source = "libadwaita@1.10.0 src/adw-style-manager.c:476-477"
 quote = "\"* { transition: none; }\");"
+
+# libadwaita draws no state layer and no press ripple: its state colours are the fill's layers
+[[fact]]
+key = "button.body.interaction"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = []
 
 [[fact]]
 key = "button.body.fill"
@@ -1669,19 +1704,24 @@ quote = "&:hover { background-image: image(RGB(0 0 6 / 5%));"
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["menu", "@opaque"], states = ["open", "hover"] }
-value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
+value = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 rows = ["GN-1.32", "GN-1.26"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:5"
-quote = "$button_checked_hover_color: color-mix(in srgb, currentColor 35%, transparent);"
-conversion = ["percent_to_fraction"]
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:8"
+quote = "$opaque_button_default_bg: color-mix(in srgb, var(--window-bg-color) 85%, var(--window-fg-color));"
+conversion = ["percent_to_fraction", "complement"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:47-48"
-quote = "&:hover { background-color: $button_checked_hover_color;"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:418-421"
+quote = "&.opaque { background-color: $opaque_button_default_bg;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:431-437"
+quote = "> button { @extend %opaque_button; &, &:checked { background-color: transparent; color: inherit; }"
 
 [[fact.cite]]
 kind = "published"
@@ -1718,19 +1758,24 @@ quote = "&.keyboard-activating, &:active { background-image: image(RGB(0 0 6 / 3
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["menu", "@opaque"], states = ["open", "pressed"] }
-value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
+value = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 rows = ["GN-1.32", "GN-1.26"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:6"
-quote = "$button_checked_active_color: color-mix(in srgb, currentColor 40%, transparent);"
-conversion = ["percent_to_fraction"]
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:8"
+quote = "$opaque_button_default_bg: color-mix(in srgb, var(--window-bg-color) 85%, var(--window-fg-color));"
+conversion = ["percent_to_fraction", "complement"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:51-53"
-quote = "&.keyboard-activating, &:active { background-color: $button_checked_active_color;"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:418-421"
+quote = "&.opaque { background-color: $opaque_button_default_bg;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:431-437"
+quote = "> button { @extend %opaque_button; &, &:checked { background-color: transparent; color: inherit; }"
 
 [[fact.cite]]
 kind = "published"
@@ -2436,6 +2481,100 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:328-329"
 quote = "&.card { background-color: var(--card-bg-color);"
 
+# `.osd button.card:checked` (0,3,1) comes after the checked card's state rules and sets only the background colour:
+# under an OSD ancestor the checked card's base is the current colour at 10%, under each state's image
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:276"
+quote = "$view_selected_color: color-mix(in srgb, var(--accent-bg-color) 25%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:345-347"
+quote = "&:checked { background-color: var(--card-bg-color); background-image: image($view_selected_color);"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked", "hover"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:277"
+quote = "$view_selected_hover_color: color-mix(in srgb, var(--accent-bg-color) 32%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:349"
+quote = "&:hover { background-image: image($view_selected_hover_color); }"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked", "pressed"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:278"
+quote = "$view_selected_active_color: color-mix(in srgb, var(--accent-bg-color) 39%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:351-352"
+quote = "&.keyboard-activating, &:active { background-image: image($view_selected_active_color); }"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked", "open"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
+rows = ["GN-1.35", "GN-1.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:277"
+quote = "$view_selected_hover_color: color-mix(in srgb, var(--accent-bg-color) 32%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:354"
+quote = "&.has-open-popup { background-image: image($view_selected_hover_color); }"
+
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@card"], not_variants = ["menu"], states = ["drop_target"] }
@@ -2496,7 +2635,6 @@ quote = "if (has_arrow && !has_only_arrow) gtk_widget_add_css_class (menu_button
 
 [[fact]]
 key = "button.menu_indicator.glyph.size"
-when = { variants = ["menu"] }
 value = "16px"
 rows = ["GN-1.40"]
 
@@ -2512,7 +2650,6 @@ quote = "gtk_css_number_value_new (16, GTK_CSS_PX));"
 
 [[fact]]
 key = "button.menu_indicator.glyph.fill"
-when = { variants = ["menu"] }
 value = "= surface.foreground"
 rows = ["GN-1.40"]
 
@@ -2524,7 +2661,6 @@ quote = "GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 # a themed (symbolic) icon, filled, not stroked
 [[fact]]
 key = "button.menu_indicator.glyph.stroke"
-when = { variants = ["menu"] }
 value = "absent"
 rows = ["GN-1.40"]
 
@@ -2537,7 +2673,6 @@ quote = "arrow {"
 # fallback names and no text direction
 [[fact]]
 key = "button.menu_indicator.glyph.source"
-when = { variants = ["menu"] }
 value = { theme_icon = { name = "pan-down-symbolic", fallbacks = [] } }
 rows = ["GN-1.40"]
 
@@ -2618,7 +2753,6 @@ quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->
 # the CSS icon lookup is direction-less (`GTK_TEXT_DIR_NONE`): no `-rtl` name, no flip
 [[fact]]
 key = "button.menu_indicator.glyph.mirroring"
-when = { variants = ["menu"] }
 value = "never"
 rows = []
 
@@ -2629,7 +2763,6 @@ quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->
 
 [[fact]]
 key = "button.menu_indicator.glyph.axes"
-when = { variants = ["menu"] }
 value = {}
 rows = []
 
@@ -2641,7 +2774,6 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "button.menu_indicator.glyph.draw_extent"
-when = { variants = ["menu"] }
 value = "absent"
 rows = []
 
@@ -2652,7 +2784,6 @@ quote = "arrow {"
 
 [[fact]]
 key = "button.menu_indicator.glyph.draw_start"
-when = { variants = ["menu"] }
 value = "absent"
 rows = []
 
@@ -2663,7 +2794,6 @@ quote = "arrow {"
 
 [[fact]]
 key = "button.menu_indicator.min_width"
-when = { variants = ["menu"] }
 value = "16px"
 rows = ["GN-1.40"]
 
@@ -2674,7 +2804,6 @@ quote = "arrow { min-height: 16px; min-width: 16px;"
 
 [[fact]]
 key = "button.menu_indicator.transform"
-when = { variants = ["menu"] }
 value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []
 
@@ -2697,7 +2826,6 @@ quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); tran
 
 [[fact]]
 key = "button.menu_indicator.transitions"
-when = { variants = ["menu"] }
 value = []
 rows = []
 
