@@ -2426,8 +2426,9 @@ spaces:
   `replace_match`, `bracket_match`, `bracket_mismatch`, `syntax_span`, `highlight` and `extra_caret`, where they
   list `text`) takes that part's elision, wrapping and line limit: it states its `text`'s `elision`, `wrap` and
   `max_lines` absent (the may_be_absent fields below, and in those entries), its `fill` where it recolours the text
-  and absent where it only adds a line or a background, the text keeping its own colour, or only measures the text
-  (`extra_caret`), and its font leaves as the text's, by reference (S2.2): a part to `widget.text`'s leaves
+  and absent where it only adds a line or a background, the text keeping its own colour (libadwaita's `selection`,
+  `color: transparent`, which leaves the text's own colour showing, `libadwaita@1.10.0
+  src/stylesheet/_common.scss:64-66`, among them), or only measures the text (`extra_caret`), and its font leaves as the text's, by reference (S2.2): a part to `widget.text`'s leaves
   (`font.family = "= widget.text.font.family"`, …; a field reference, not element data), an *(element)* part
   (`selection`, `preedit`, `find_match`, `highlight`, `syntax_span`, `extra_caret`), which reads none of its host's
   parts (S2.2), to the style the `text` part references, leaf by leaf (ADD-A130).
@@ -2621,7 +2622,10 @@ spaces:
   - `preedit` *(element)* — as on `input` (its decoration following its own font, the part declaring the same data,
     `data = { preedit = [ … ] }`): `text`, `fill`.
   - `misspelling` — as on `input` (its decoration following the `text` part's font, the part declaring the same
-    data, `data = { misspelling = [ … ] }`): `text`.
+    data, `data = { misspelling = [ … ] }`): `text`, `fill` (a background behind the misspelled word: Kirigami's
+    spell checker gives the word holding the caret, its start to its end inclusive, the negative colour at 0.1 alpha,
+    `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:114-117`, `:380-381`; the model has no state for a span
+    holding the caret, so that rule waits on an unmeasured-register row, Q1.13, ADD-A130).
   - `grammar_mark` — as on `input` (NSTextView's grammar mark, MAC-X28; the same data, `data = { grammar_mark = [ …
     ] }`): `text`.
   - `correction` — as on `input` (the same data, `data = { correction = [ … ] }`): `text`, `fill`, `corners`.
@@ -2716,7 +2720,9 @@ spaces:
   `block_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `block_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
-  `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.fill` (every preset but `kde-breeze` under `cond flavor:kirigami`, whose spell checker recolours
+  the word, Q1.13: a mark on the `text` part's text, as on `input`, ADD-A130), `misspelling.fill` (every preset: no
+  background at rest; Kirigami's for the word holding the caret is the register's, above, ADD-A130),
   `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `correction.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `selection.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `preedit.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `find_match.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `highlight.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `body.shadow` (the
   value phase names the presets from the facts), `body.fill` (every preset by a rule under

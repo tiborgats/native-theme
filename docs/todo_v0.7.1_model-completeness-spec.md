@@ -1090,9 +1090,13 @@ consecutive runs underlined alike, at the lowest of their positions and the thic
 font's offset rounded up, held within the descent less the thickness where the offset lies inside it, the
 thickness rounded to whole pixels, at least one, without antialiasing (`qtbase@6.12.0
 src/gui/painting/qpainter.cpp:6120-6131`), its wavy spell-check line held within the descent (`:6105-6118`), and its
-strike line a third of the ascent above the baseline (`:6151-6153`), not at `QFontMetrics`' `underlinePos` or
-`strikeOutPos`, which the model's operands do not give (no ceiling, no descent alone), so `kde-breeze`'s decorations
-are the unmeasured register's until the value phase states Qt's form (ADD-A130).
+strike line a third of the ascent above the baseline (`:6151-6153`), in Qt Widgets' QPainter; Qt Quick's text, which
+Kirigami's controls draw, rounds the line's position to the nearest pixel and keeps the thickness unrounded, takes
+the thickest of consecutive underlined runs, and sets the strike line a third of the ascent above the baseline too
+(`qtdeclarative@6.12.0 src/quick/items/qquicktextnodeengine.cpp:208-218`, `:411-427`). Neither is `QFontMetrics`'
+`underlinePos` or `strikeOutPos`, and the model's operands do not give them (no ceiling, no ascent or descent
+alone), so `kde-breeze`'s decorations are the unmeasured register's until the value phase states each path's form,
+Qt Quick's for the parts under `cond flavor:kirigami` (ADD-A130).
 
 **Styles and drawn text** (ADD-A130). A keyed text style (`token.text.keyed.<key>`) is the platform's named style,
 and a slot (`token.text.roles.<slot>`) references one (S4.4). A style's `fill`, `elision`, `wrap` and `max_lines` are
