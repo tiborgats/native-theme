@@ -15,6 +15,7 @@ use super::value::Value;
 
 pub mod focus;
 pub mod icon;
+pub mod interaction;
 #[cfg_attr(
     not(test),
     expect(
@@ -33,9 +34,9 @@ pub mod transform;
 
 pub(crate) use merge::{
     Apply, Below, Create, Entry, KeyedItem, Merge, MergeConflict, apply_entries, apply_surfaces,
-    created_value, merge_by, merge_by_key, merge_by_key_nested, merge_slot, merge_slot_by_key,
-    merge_slot_by_key_nested, merge_slot_entries, merge_slot_keyed, merge_slot_surfaces,
-    replace_slot,
+    created_value, merge_by_key, merge_by_key_nested, merge_keyed_by, merge_slot,
+    merge_slot_by_key, merge_slot_by_key_nested, merge_slot_entries, merge_slot_keyed,
+    merge_slot_surfaces, replace_slot,
 };
 
 /// Seals [`Block`]: only the `ThemeParts` derive implements it.

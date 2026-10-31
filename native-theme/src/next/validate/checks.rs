@@ -8,7 +8,9 @@ use std::rc::Rc;
 use super::walk::{ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::Table;
-use crate::next::blocks::motion::{Keyframe, PresentationKind, StepJump, Timing, TransitionKind};
+use crate::next::blocks::motion::{
+    Keyframe, PresentationKind, PropertyGroup, StepJump, Timing, TransitionKind,
+};
 use crate::next::blocks::outline::Radius;
 use crate::next::blocks::paint::{BlendMode, PaintKind, PaintPatch};
 use crate::next::blocks::part_style::PartStylePatch;
@@ -1502,6 +1504,38 @@ impl<'a> Checker<'a> {
 
     /// A font's stated weight, the CSS and OpenType weight, 1 to 1000
     /// (S2.8).
+    /// A transition's `from` (S2.7, S12): no empty list, no flag twice; a
+    /// keyed flag's declaration is its own node's check.
+    fn from(&mut self, from: Option<&[StateFlag]>, path: &Path) {
+        let Some(from) = from else {
+            return;
+        };
+        let at = path.join("from");
+        if from.is_empty() {
+            self.problem(&at, ProblemKind::FromNoState);
+        }
+        for (index, flag) in from.iter().enumerate() {
+            if from.iter().take(index).any(|earlier| earlier == flag) {
+                let name = flag.name();
+                self.problem(&format!("{at}[{index}]"), ProblemKind::ListedTwice { name });
+            }
+        }
+    }
+
+    /// A `StateLayer` transition times the part's `interaction`: refused on
+    /// a part whose fields lack it (S2.12, S12).
+    fn state_layer(&mut self, properties: &[PropertyGroup], path: &Path) {
+        if let Region::Part(_, _, info, _) = self.region
+            && properties.contains(&PropertyGroup::StateLayer)
+            && !info.fields.iter().any(|field| field.path == "interaction")
+        {
+            self.problem(
+                &path.join("properties"),
+                ProblemKind::StateLayerWithoutInteraction,
+            );
+        }
+    }
+
     fn weight(&mut self, weight: Option<&Value<u16>>, path: &Path) {
         if let Some(Value::Stated(weight)) = weight
             && !(1..=1000).contains(weight)
@@ -1556,10 +1590,21 @@ impl Visit for Checker<'_> {
                 if transition.properties.is_empty() {
                     self.problem(&path.join("properties"), ProblemKind::NoProperties);
                 }
+                self.from(transition.from.as_deref(), path);
+                self.state_layer(&transition.properties, path);
+            }
+            Node::StateFlag(flag) => {
+                if let Region::Part(widget, ..) | Region::Values(widget) = self.region {
+                    self.flag(widget, flag, &at);
+                }
             }
             Node::TransitionPatch(transition) => {
                 if transition.properties.as_ref().is_some_and(Vec::is_empty) {
                     self.problem(&path.join("properties"), ProblemKind::NoProperties);
+                }
+                self.from(transition.from.as_ref().and_then(Option::as_deref), path);
+                if let Some(properties) = &transition.properties {
+                    self.state_layer(properties, path);
                 }
             }
             Node::TransitionKind(kind) => {
@@ -2885,6 +2930,7 @@ mod table_tests {
             delay: Value::Absent,
             timing: Value::Stated(Timing::Linear),
             suspended_by_theme_change: false,
+            from: None,
         });
         w.walk(&PresentationTransition {
             event: PresentationEvent::Keyed(k()),

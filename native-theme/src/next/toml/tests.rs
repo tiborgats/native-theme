@@ -1292,3 +1292,50 @@ fn toml_key_escapes_as_toml_does() {
         assert!(table.contains_key(key), "{key:?}");
     }
 }
+
+/// A transition's `from` is a list of flags; left out of a `transitions`
+/// item it is `None`, and in a single `Value<Transition>` `"none"` is any
+/// state (S11, ADD-A124).
+#[test]
+fn spelling_transition_from() {
+    let item = |from: &str| {
+        format!(
+            "transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
+             100, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = true{from} }}]"
+        )
+    };
+    let style = body_of(&item(", from = [\"hover\", \"focus_visible\", \"@spin\"]"));
+    let transitions = style.transitions.unwrap();
+    assert_eq!(
+        transitions[0].from,
+        Some(vec![
+            crate::next::selector::StateFlag::Hover,
+            crate::next::selector::StateFlag::FocusVisible,
+            crate::next::selector::StateFlag::Widget(key!("spin")),
+        ])
+    );
+    assert_eq!(body_of(&item("")).transitions.unwrap()[0].from, None);
+    let focus = body_of(
+        "focus.transition = { properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, \
+         delay_ms = 0, timing = \"linear\", suspended_by_theme_change = true, from = \"none\" }",
+    );
+    let Some(BlockPatch::Fields(focus)) = focus.focus else {
+        panic!("fields");
+    };
+    assert!(matches!(
+        focus.transition,
+        Some(BlockPatch::Fields(
+            crate::next::blocks::motion::TransitionPatch {
+                from: Some(None),
+                ..
+            }
+        ))
+    ));
+    assert_eq!(
+        problems(&format!(
+            "[widgets.button.body]\n{}",
+            item(", from = [\"shiny\"]")
+        )),
+        ["widgets.button.body.transitions[0].from[0]: unknown name \"shiny\""]
+    );
+}

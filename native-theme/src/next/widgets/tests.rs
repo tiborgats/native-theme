@@ -55,6 +55,7 @@ const PARTS: &[(&str, bool, &[&str], &[&str])] = &[
             "touch_target",
             "bindings",
             "transitions",
+            "interaction",
         ],
         &["shadow", "cursor"],
     ),

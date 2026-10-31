@@ -189,33 +189,22 @@ pub(crate) fn density(name: &str, at: &str, cx: &mut Reader) -> Option<Density> 
 /// A state flag (S7.2): a typed flag's or a shared flag's name, or
 /// `@<key>` for a flag the preset declares.
 pub(crate) fn state(name: &str, at: &str, cx: &mut Reader) -> Option<StateFlag> {
-    let flag = match name {
-        "hover" => StateFlag::Hover,
-        "pressed" => StateFlag::Pressed,
-        "focused" => StateFlag::Focused,
-        "focus_within" => StateFlag::FocusWithin,
-        "focus_visible" => StateFlag::FocusVisible,
-        "disabled" => StateFlag::Disabled,
-        "checked" => StateFlag::Checked,
-        "selected" => StateFlag::Selected,
-        "indeterminate" => StateFlag::Indeterminate,
-        "open" => StateFlag::Open,
-        "default" => StateFlag::Default,
-        "dragged" => StateFlag::Dragged,
-        "drop_target" => StateFlag::DropTarget,
-        "read_only" => StateFlag::ReadOnly,
-        "invalid" => StateFlag::Invalid,
-        "visited" => StateFlag::Visited,
-        "autofilled" => StateFlag::Autofilled,
-        "scrolled" => StateFlag::Scrolled,
-        "over_dark_content" => StateFlag::OverDarkContent,
-        "opened_by_touch" => StateFlag::OpenedByTouch,
-        "overflowing" => StateFlag::Overflowing,
-        "redacted" => StateFlag::Redacted,
-        _ if name.starts_with('@') => return read::keyed(name, at, cx).map(StateFlag::Widget),
-        _ => return named::<SharedFlag>(name, at, cx).map(StateFlag::Shared),
-    };
-    Some(flag)
+    if let Some(flag) = StateFlag::typed(name) {
+        return Some(flag);
+    }
+    if name.starts_with('@') {
+        return read::keyed(name, at, cx).map(StateFlag::Widget);
+    }
+    named::<SharedFlag>(name, at, cx).map(StateFlag::Shared)
+}
+
+/// A state flag as a value (a transition's `from`): its name, as a selector
+/// writes it.
+impl FromToml for StateFlag {
+    fn read(item: &Item, _: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
+        let name = text(item, at, cx)?;
+        state(name, at, cx)
+    }
 }
 
 /// `context` and `not_context`: arrays of ancestor matches.

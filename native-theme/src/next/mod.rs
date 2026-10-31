@@ -73,6 +73,11 @@ pub use blocks::icon::{
     IconStylePatch, Mirroring, RenderingMode, ResolvedGlyph, ResolvedGlyphStroke,
     ResolvedIconStyle, SystemControl,
 };
+pub use blocks::interaction::{
+    Interaction, InteractionPatch, ResolvedInteraction, ResolvedRippleStyle,
+    ResolvedStateLayerStyle, RippleEffect, RippleStyle, RippleStylePatch, StateLayerStyle,
+    StateLayerStylePatch,
+};
 pub use blocks::motion::{
     AdwEasing, EdgeSide, Keyframe, KeyframePatch, Loop, LoopPatch, PlatformCurve,
     PresentationEvent, PresentationKind, PresentationStep, PresentationStepPatch,

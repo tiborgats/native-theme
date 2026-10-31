@@ -27,7 +27,7 @@ use crate::next::expr::{EnumTy, Expr, SURFACE_SET, Ty};
 use crate::next::key::Key;
 use crate::next::registry::FieldInfo;
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
-use crate::next::selector::{PartRef, VariantRef, WidgetRef};
+use crate::next::selector::{PartRef, StateFlag, VariantRef, WidgetRef};
 use crate::next::toml::read::{MapKey, toml_key};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides, ViewBox};
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
@@ -136,6 +136,8 @@ pub(crate) enum Node<'a> {
     Key(&'a Key),
     /// A surface set: a value, or a map's key.
     SurfaceSet(SurfaceSet),
+    /// A state flag: a value.
+    StateFlag(&'a StateFlag),
 }
 
 /// One step of a path.
@@ -897,6 +899,14 @@ impl Walk for Key {
 
     fn walk(&self, w: &mut Walker<'_>) {
         w.check(Node::Key(self));
+    }
+}
+
+/// A state flag as a value (a transition's `from`): a keyed one is a name
+/// its widget declares (S10).
+impl Walk for StateFlag {
+    fn walk(&self, w: &mut Walker<'_>) {
+        w.check(Node::StateFlag(self));
     }
 }
 

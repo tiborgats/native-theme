@@ -407,6 +407,56 @@ pub enum StateFlag {
     Widget(Key),
 }
 
+impl StateFlag {
+    /// The typed flags, each with its name as S11 writes it.
+    const TYPED: [(&'static str, StateFlag); 22] = [
+        ("hover", StateFlag::Hover),
+        ("pressed", StateFlag::Pressed),
+        ("focused", StateFlag::Focused),
+        ("focus_within", StateFlag::FocusWithin),
+        ("focus_visible", StateFlag::FocusVisible),
+        ("disabled", StateFlag::Disabled),
+        ("checked", StateFlag::Checked),
+        ("selected", StateFlag::Selected),
+        ("indeterminate", StateFlag::Indeterminate),
+        ("open", StateFlag::Open),
+        ("default", StateFlag::Default),
+        ("dragged", StateFlag::Dragged),
+        ("drop_target", StateFlag::DropTarget),
+        ("read_only", StateFlag::ReadOnly),
+        ("invalid", StateFlag::Invalid),
+        ("visited", StateFlag::Visited),
+        ("autofilled", StateFlag::Autofilled),
+        ("scrolled", StateFlag::Scrolled),
+        ("over_dark_content", StateFlag::OverDarkContent),
+        ("opened_by_touch", StateFlag::OpenedByTouch),
+        ("overflowing", StateFlag::Overflowing),
+        ("redacted", StateFlag::Redacted),
+    ];
+
+    /// The typed flag `name` names.
+    pub(crate) fn typed(name: &str) -> Option<StateFlag> {
+        Self::TYPED
+            .iter()
+            .find(|(held, _)| *held == name)
+            .map(|(_, flag)| flag.clone())
+    }
+
+    /// The flag's name as S11 writes it: a typed or shared flag's own, a
+    /// declared one's `@<key>`.
+    pub(crate) fn name(&self) -> String {
+        match self {
+            StateFlag::Shared(flag) => crate::next::toml::read::Named::name(flag).to_owned(),
+            StateFlag::Widget(key) => format!("@{key}"),
+            typed => Self::TYPED
+                .iter()
+                .find(|(_, flag)| flag == typed)
+                .map(|(name, _)| (*name).to_owned())
+                .unwrap_or_default(),
+        }
+    }
+}
+
 /// A flag two or more platforms draw on a typed widget (the catalogue's
 /// *Shared flags*).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]

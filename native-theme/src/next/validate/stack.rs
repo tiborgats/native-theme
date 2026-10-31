@@ -12,7 +12,7 @@ use super::combos::World;
 use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{
-    PresentationEvent, PresentationTransition, PropertyGroup, Transition,
+    PresentationEvent, PresentationTransition, PropertyGroup, Transition, same_flags,
 };
 use crate::next::blocks::paint::PaintPatch;
 use crate::next::blocks::part_style::{Binding, RoleRef};
@@ -21,7 +21,9 @@ use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, PartInfo};
 use crate::next::roles::{ColorRolesPatch, SurfaceSet};
-use crate::next::selector::{Condition, PartRef, Rule, RuleBody, Scheme, Selector, ValuesPatch};
+use crate::next::selector::{
+    Condition, PartRef, Rule, RuleBody, Scheme, Selector, StateFlag, ValuesPatch,
+};
 use crate::next::value::Value;
 use crate::next::widgets::{PartPatch, Shown, TypedPart, WidgetKind, WidgetValuesPatch};
 
@@ -193,13 +195,29 @@ pub(super) struct Stack<'a> {
 const KEYED_LISTS: [&str; 3] = ["bindings", "transitions", "presentations"];
 
 /// What a keyed list's item is keyed by there (S6.1).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub(super) enum ItemKey {
-    /// A transition's property group: a transition listing several is split
-    /// per group first.
-    Group(PropertyGroup),
+    /// A transition's property group and `from` set: a transition listing
+    /// several groups is split per group first.
+    Group(PropertyGroup, Option<Vec<StateFlag>>),
     /// A presentation's event.
     Event(PresentationEvent),
+}
+
+/// Two keys are one where they name one group and `from` sets of the same
+/// flags, or one event.
+impl PartialEq for ItemKey {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ItemKey::Group(a, x), ItemKey::Group(b, y)) => {
+                a == b && same_flags(x.as_deref(), y.as_deref())
+            }
+            (ItemKey::Event(a), ItemKey::Event(b)) => a == b,
+            (ItemKey::Group(..), ItemKey::Event(_)) | (ItemKey::Event(_), ItemKey::Group(..)) => {
+                false
+            }
+        }
+    }
 }
 
 /// A keyed list's item a source states, and its keys: a later item holding
@@ -236,8 +254,7 @@ fn transition_items(at: &str, source: usize, held: &[Transition]) -> Vec<Item> {
         transition
             .properties
             .iter()
-            .copied()
-            .map(ItemKey::Group)
+            .map(|group| ItemKey::Group(*group, transition.from.clone()))
             .collect()
     })
 }

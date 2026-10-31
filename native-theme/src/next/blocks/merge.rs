@@ -369,6 +369,21 @@ pub(crate) fn merge_by<T>(earlier: &mut Vec<T>, later: Vec<T>, same: impl Fn(&T,
     }
 }
 
+/// A keyed list's merge (S6.1): each later item replaces the earlier item
+/// `same` pairs it with, and the merged list holds the earlier items not
+/// replaced, in their order, then the later items, in theirs, so a
+/// replacing item takes the later list's position.
+pub(crate) fn merge_keyed_by<T>(
+    earlier: &mut Vec<T>,
+    later: Vec<T>,
+    same: impl Fn(&T, &T) -> bool,
+) {
+    for item in later {
+        earlier.retain(|held| !same(held, &item));
+        earlier.push(item);
+    }
+}
+
 /// A list item that merges by a key of its own (S6.1): a binding by its role
 /// or surface, a transition by its property group, a presentation by its
 /// event.

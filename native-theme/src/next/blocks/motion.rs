@@ -11,9 +11,9 @@
 use native_theme_derive::ThemeParts;
 
 use super::part_style::{PartStyle, PartStylePatch, ResolvedPartStylePatch};
-use super::{KeyedItem, merge_by};
+use super::{KeyedItem, merge_keyed_by};
 use crate::next::key::Key;
-use crate::next::selector::PartRef;
+use crate::next::selector::{PartRef, StateFlag};
 use crate::next::units::{Fraction, Ms, Px, Scalar};
 use crate::next::value::Value;
 
@@ -282,8 +282,12 @@ fn critical_damping(mass: f32, stiffness: f32) -> Option<f32> {
 pub enum PropertyGroup {
     /// The fill.
     Fill,
-    /// The stroke.
+    /// The stroke, its edges' widths too where no `StrokeWidth` transition
+    /// applies in the style after the change.
     Stroke,
+    /// The stroke's edges' widths: where a transition of it applies, it times
+    /// them in `Stroke`'s place.
+    StrokeWidth,
     /// The corners.
     Corners,
     /// The shape: a morph from the old outline to the new.
@@ -303,6 +307,9 @@ pub enum PropertyGroup {
     /// The laid-out box: a transition also starts when the connector's own
     /// layout moves the element or part.
     Geometry,
+    /// The state layer of the part's `interaction` (S2.12): its alpha alone;
+    /// its colour changes at once.
+    StateLayer,
 }
 
 /// A transition of a part's property groups.
@@ -328,15 +335,32 @@ pub struct Transition {
     /// A theme change suspends it (libadwaita's CSS transitions are, its
     /// `AdwAnimation`s are not).
     pub suspended_by_theme_change: bool,
+    /// The states it applies from: a change where the element held at least
+    /// one of these flags before it, taken after the exclusive groups' drop
+    /// ([`ResolvedTheme::kept_states`](crate::next::ResolvedTheme)); `None`:
+    /// from any state.
+    pub from: Option<Vec<StateFlag>>,
 }
 
+/// A list of transitions merges by property group and `from` set (S6.1),
+/// two sets of the same flags one key.
 impl KeyedItem for Transition {
     fn merge_keyed(earlier: &mut Vec<Self>, later: Vec<Self>) {
         let mut held = split_by_group(std::mem::take(earlier));
-        merge_by(&mut held, split_by_group(later), |a, b| {
-            a.properties == b.properties
+        merge_keyed_by(&mut held, split_by_group(later), |a, b| {
+            a.properties == b.properties && same_flags(a.from.as_deref(), b.from.as_deref())
         });
         *earlier = held;
+    }
+}
+
+/// Whether two `from` sets hold the same flags; `None`, any state, only
+/// matches itself.
+pub(crate) fn same_flags(a: Option<&[StateFlag]>, b: Option<&[StateFlag]>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => a.iter().all(|f| b.contains(f)) && b.iter().all(|f| a.contains(f)),
+        (None, Some(_)) | (Some(_), None) => false,
     }
 }
 
@@ -361,43 +385,11 @@ fn split_by_group(transitions: Vec<Transition>) -> Vec<Transition> {
 /// How a transition draws a change.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block, check)]
-#[expect(
-    clippy::large_enum_variant,
-    reason = "S2.7's variants as stated; a transition is read once per change, not drawn per frame"
-)]
 pub enum TransitionKind {
     /// The old value interpolated to the new: layers matched by stack
     /// position, appearing layers from zero alpha, colours in premultiplied
     /// sRGB.
     Interpolate,
-    /// A ripple from the press point; each value may be absent where the
-    /// platform has no counterpart (S6.3).
-    Ripple {
-        /// The ripple's largest radius.
-        #[parts(may_be_absent)]
-        max_radius: Value<Px>,
-        /// The ripple's initial scale.
-        #[parts(may_be_absent)]
-        initial_scale: Value<f32>,
-        /// The ripple's padding.
-        #[parts(may_be_absent)]
-        padding: Value<Px>,
-        /// The ripple's soft edge.
-        #[parts(may_be_absent)]
-        soft_edge: Value<Px>,
-        /// The ripple's opacity.
-        #[parts(may_be_absent)]
-        opacity: Value<Fraction>,
-        /// The ripple's fade.
-        #[parts(may_be_absent)]
-        fade: Value<Ms>,
-        /// The ripple's minimum press.
-        #[parts(may_be_absent)]
-        min_press: Value<Ms>,
-        /// The ripple's delay after a touch.
-        #[parts(may_be_absent)]
-        touch_delay: Value<Ms>,
-    },
     /// The focus indicator travelling between elements.
     FocusMove,
     /// A platform's keyed transition (SF Symbols' content transitions and
@@ -424,7 +416,7 @@ pub struct PresentationTransition {
 
 impl KeyedItem for PresentationTransition {
     fn merge_keyed(earlier: &mut Vec<Self>, later: Vec<Self>) {
-        merge_by(earlier, later, |a, b| a.event == b.event);
+        merge_keyed_by(earlier, later, |a, b| a.event == b.event);
     }
 }
 

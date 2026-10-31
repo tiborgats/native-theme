@@ -7,13 +7,14 @@ use native_theme_derive::ThemeParts;
 
 use super::focus::{FocusIndicator, ResolvedFocusIndicator};
 use super::icon::{Glyph, IconStyle, ResolvedGlyph, ResolvedIconStyle};
+use super::interaction::{Interaction, ResolvedInteraction};
 use super::motion::{ResolvedTransition, Transition};
 use super::outline::{Corners, ResolvedCorners, ResolvedStroke, Stroke};
 use super::paint::{Paint, PaintPatch, ResolvedPaint};
 use super::shadow::{ResolvedShadow, Shadow};
 use super::text::{ResolvedTextStyle, TextStyle};
 use super::transform::{ResolvedTransform, Transform};
-use super::{KeyedItem, merge_by};
+use super::{KeyedItem, merge_keyed_by};
 use crate::next::color::Color;
 use crate::next::key::Key;
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
@@ -58,6 +59,10 @@ pub struct PartStyle {
     /// The focus indicator.
     #[parts(block = "fields", may_be_absent)]
     pub focus: Value<FocusIndicator>,
+    /// A state layer and a press ripple (S2.12); absent where the platform
+    /// draws no ripple node.
+    #[parts(block = "fields", may_be_absent)]
+    pub interaction: Value<Interaction>,
     /// The padding inside the box, per side.
     pub padding: Sides<Value<Px>>,
     /// The margin outside the box, per side; may be negative.
@@ -113,7 +118,7 @@ pub enum Binding {
 /// binding replaces the earlier binding of the same role.
 impl KeyedItem for Binding {
     fn merge_keyed(earlier: &mut Vec<Self>, later: Vec<Self>) {
-        merge_by(earlier, later, |a, b| match (a, b) {
+        merge_keyed_by(earlier, later, |a, b| match (a, b) {
             (Binding::Surface(_), Binding::Surface(_)) => true,
             (Binding::Role { role: a, .. }, Binding::Role { role: b, .. }) => a == b,
             (Binding::Surface(_), Binding::Role { .. })

@@ -46,7 +46,8 @@ pub(crate) struct ButtonTheme {
             cursor,
             touch_target,
             bindings,
-            transitions
+            transitions,
+            interaction
         ),
         absent(shadow, cursor)
     )]

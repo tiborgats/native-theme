@@ -3,6 +3,7 @@
 
 use super::focus::{FocusIndicator, FocusIndicatorPatch, FocusKind, FocusVisibleWhen};
 use super::icon::{Glyph, GlyphStroke, IconStyle};
+use super::interaction::{Interaction, RippleStyle, StateLayerStyle};
 use super::motion::{
     AdwEasing, Keyframe, Loop, PlatformCurve, PresentationEvent, PresentationKind,
     PresentationStep, PresentationTransition, PropertyGroup, QtEasing, ResolvedKeyframe,
@@ -137,24 +138,10 @@ fn timing(prefix: &str) -> Vec<String> {
 /// variants.
 fn transition_paths(prefix: &str) -> Vec<String> {
     let mut out = under(prefix, &["properties", "kind"]);
-    out.extend(under(
-        &join(prefix, "kind"),
-        &[
-            "ripple.max_radius",
-            "ripple.initial_scale",
-            "ripple.padding",
-            "ripple.soft_edge",
-            "ripple.opacity",
-            "ripple.fade",
-            "ripple.min_press",
-            "ripple.touch_delay",
-            "keyed.key",
-            "keyed.params",
-        ],
-    ));
+    out.extend(under(&join(prefix, "kind"), &["keyed.key", "keyed.params"]));
     out.extend(under(prefix, &["duration", "delay"]));
     out.extend(timing(&join(prefix, "timing")));
-    out.push(join(prefix, "suspended_by_theme_change"));
+    out.extend(under(prefix, &["suspended_by_theme_change", "from"]));
     out
 }
 
@@ -269,6 +256,19 @@ fn part_style_paths() -> Vec<String> {
     out.extend(shadow("focus.shadow"));
     out.extend(transition_paths("focus.transition"));
     out.extend(under(
+        "interaction",
+        &[
+            "state_layer.color",
+            "state_layer.alpha",
+            "ripple.effect",
+            "ripple.color",
+            "ripple.alpha",
+            "ripple.bounded",
+            "ripple.max_radius",
+            "ripple.padding",
+        ],
+    ));
+    out.extend(under(
         "",
         &[
             "padding.top",
@@ -374,6 +374,9 @@ fn tables() -> Vec<(&'static str, &'static [FieldInfo])> {
         ("FocusVisibleWhen", FocusVisibleWhen::FIELDS),
         ("PartStyle", PartStyle::FIELDS),
         ("Binding", Binding::FIELDS),
+        ("Interaction", Interaction::FIELDS),
+        ("StateLayerStyle", StateLayerStyle::FIELDS),
+        ("RippleStyle", RippleStyle::FIELDS),
     ]
 }
 
@@ -385,22 +388,15 @@ fn marked(block: &str, path: &str) -> bool {
 }
 
 #[test]
-fn ripple_values_may_be_absent() {
-    for path in [
-        "max_radius",
-        "initial_scale",
-        "padding",
-        "soft_edge",
-        "opacity",
-        "fade",
-        "min_press",
-        "touch_delay",
-    ] {
-        assert!(
-            marked("TransitionKind", &format!("ripple.{path}")),
-            "{path}"
-        );
+fn interaction_marks() {
+    assert!(marked("PartStyle", "interaction"));
+    assert!(marked("RippleStyle", "effect"));
+    assert!(marked("RippleStyle", "max_radius"));
+    for path in ["color", "alpha", "padding"] {
+        assert!(!marked("RippleStyle", path), "{path}");
     }
+    assert!(!marked("StateLayerStyle", "color"));
+    assert!(!marked("StateLayerStyle", "alpha"));
 }
 
 #[test]
@@ -546,14 +542,9 @@ fn no_other_field_may_be_absent_or_auto() {
         "TextStyle.mnemonic_decoration",
         "TextStyle.word_spacing",
         "Transition.duration",
-        "TransitionKind.ripple.fade",
-        "TransitionKind.ripple.initial_scale",
-        "TransitionKind.ripple.max_radius",
-        "TransitionKind.ripple.min_press",
-        "TransitionKind.ripple.opacity",
-        "TransitionKind.ripple.padding",
-        "TransitionKind.ripple.soft_edge",
-        "TransitionKind.ripple.touch_delay",
+        "PartStyle.interaction",
+        "RippleStyle.effect",
+        "RippleStyle.max_radius",
     ];
     expected_absent.sort_unstable();
     assert_eq!(absent, expected_absent);
@@ -644,6 +635,7 @@ fn transition(groups: Vec<PropertyGroup>, ms: f32) -> Transition {
         delay: Value::Stated(Ms(0.0)),
         timing: Value::Stated(Timing::Linear),
         suspended_by_theme_change: false,
+        from: None,
     }
 }
 
@@ -883,9 +875,11 @@ fn bindings_merge_by_role_or_surface() {
         ..PartStylePatch::default()
     };
     assert_eq!(earlier.merge(later), Ok(()));
+    // The earlier items not replaced, in their order, then the later ones
+    // (S6.1).
     assert_eq!(
         earlier.bindings,
-        Some(vec![Binding::Surface(SurfaceSet::Card), role(0.2), other])
+        Some(vec![other, role(0.2), Binding::Surface(SurfaceSet::Card)])
     );
 }
 
@@ -928,6 +922,35 @@ fn transitions_merge_by_property_group_split_first() {
     );
 }
 
+/// Transitions merge by property group and `from` set, two sets of the
+/// same flags one key, a replacing item at the later list's position (S6.1,
+/// ADD-A124).
+#[test]
+fn transitions_merge_by_group_and_from() {
+    use crate::next::selector::StateFlag;
+    let from = |flags: Option<Vec<StateFlag>>, ms: f32| Transition {
+        from: flags,
+        ..transition(vec![PropertyGroup::Fill], ms)
+    };
+    let mut list = vec![
+        from(Some(vec![StateFlag::Hover, StateFlag::Pressed]), 150.0),
+        from(None, 120.0),
+    ];
+    Transition::merge_keyed(
+        &mut list,
+        vec![from(Some(vec![StateFlag::Pressed, StateFlag::Hover]), 90.0)],
+    );
+    assert_eq!(
+        list,
+        vec![
+            from(None, 120.0),
+            from(Some(vec![StateFlag::Pressed, StateFlag::Hover]), 90.0),
+        ]
+    );
+    Transition::merge_keyed(&mut list, vec![from(Some(vec![StateFlag::Hover]), 15.0)]);
+    assert_eq!(list.len(), 3);
+}
+
 #[test]
 fn a_transition_listing_no_group_is_kept_and_a_first_patch_split() {
     let mut list = vec![transition(Vec::new(), 100.0)];
@@ -943,8 +966,13 @@ fn a_transition_listing_no_group_is_kept_and_a_first_patch_split() {
         ]
     );
     Transition::merge_keyed(&mut list, vec![transition(Vec::new(), 300.0)]);
-    assert_eq!(list.first(), Some(&transition(Vec::new(), 300.0)));
-    assert_eq!(list.len(), 2);
+    assert_eq!(
+        list,
+        vec![
+            transition(vec![PropertyGroup::Fill], 200.0),
+            transition(Vec::new(), 300.0),
+        ]
+    );
 
     let mut patch = PartStylePatch::default();
     assert_eq!(
@@ -994,8 +1022,8 @@ fn presentations_merge_by_event() {
     assert_eq!(
         list,
         vec![
-            presentation(PresentationEvent::Appear, PresentationKind::Instant),
             presentation(PresentationEvent::Disappear, PresentationKind::Fade),
+            presentation(PresentationEvent::Appear, PresentationKind::Instant),
         ]
     );
 }

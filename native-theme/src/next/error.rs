@@ -179,6 +179,12 @@ pub enum ProblemKind {
     /// A `Transition` with an empty `properties` list: it would animate
     /// nothing (S2.7, S12).
     NoProperties,
+    /// A `Transition.from` that is an empty list: it would apply from no
+    /// state (S2.7, S12).
+    FromNoState,
+    /// A `StateLayer` transition on a part whose fields lack `interaction`
+    /// (S2.7, S2.12, S12).
+    StateLayerWithoutInteraction,
     /// A `ThemeChange::Crossfade` or `Suspend` stating a zero duration,
     /// which is `Instant` (S4.3, S12).
     ZeroDuration,
@@ -407,6 +413,10 @@ impl fmt::Display for ProblemKind {
             ProblemKind::MaskAtBottom => f.write_str("its bottom layer is a mask"),
             ProblemKind::TooFewStops => f.write_str("a gradient has at least two stops"),
             ProblemKind::NoProperties => f.write_str("a transition of no property group"),
+            ProblemKind::FromNoState => f.write_str("a transition applying from no state"),
+            ProblemKind::StateLayerWithoutInteraction => {
+                f.write_str("a `state_layer` transition on a part without `interaction`")
+            }
             ProblemKind::ZeroDuration => f.write_str("a zero duration is `instant`"),
             ProblemKind::KeyframesNotIncreasing => {
                 f.write_str("the keyframes' `at` do not increase")

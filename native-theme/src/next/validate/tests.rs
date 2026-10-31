@@ -143,6 +143,7 @@ fn transition(properties: Vec<PropertyGroup>, timing: Timing) -> Transition {
         delay: Value::Stated(Ms(0.0)),
         timing: Value::Stated(timing),
         suspended_by_theme_change: false,
+        from: None,
     }
 }
 
@@ -353,6 +354,60 @@ fn refusal_no_properties() {
         )])),
         NONE
     );
+}
+
+/// A transition's `from` (S2.7, S12): an empty list applies from no
+/// state, a flag listed twice, a keyed flag the widget does not declare.
+#[test]
+fn refusal_transition_from() {
+    let from = |from: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+             \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", \
+             suspended_by_theme_change = true, from = {from} }}]"
+        ))
+    };
+    assert_eq!(
+        bare(&from("[]")),
+        ["widgets.button.body.transitions[0].from: a transition applying from no state"]
+    );
+    assert_eq!(
+        bare(&from("[\"hover\", \"pressed\", \"hover\"]")),
+        ["widgets.button.body.transitions[0].from[2]: `hover` listed twice"]
+    );
+    assert_eq!(
+        bare(&from("[\"@spin\"]")),
+        [
+            "widgets.button.body.transitions[0].from[0]: `@spin` is not declared in `widget.button.flags`"
+        ]
+    );
+    let declared = crate::next::toml::layer::read_preset(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare.widget.button]\n\
+         flags = [\"@spin\"]",
+    )
+    .unwrap()
+    .declarations;
+    assert_eq!(found(&from("[\"@spin\", \"hover\"]"), &declared), NONE);
+}
+
+/// A `StateLayer` transition times the part's `interaction`, so a part
+/// without it may not state one (S2.7, S2.12, S12).
+#[test]
+fn refusal_state_layer_without_interaction() {
+    let on = |part: &str| {
+        toml(&format!(
+            "[widgets.button.{part}]\ntransitions = [{{ properties = [\"state_layer\"], kind = \
+             \"interpolate\", duration_ms = 15, delay_ms = 0, timing = \"linear\", \
+             suspended_by_theme_change = false }}]"
+        ))
+    };
+    assert_eq!(
+        bare(&on("icon")),
+        [
+            "widgets.button.icon.transitions[0].properties: a `state_layer` transition on a part without `interaction`"
+        ]
+    );
+    assert_eq!(bare(&on("body")), NONE);
 }
 
 #[test]
@@ -2102,6 +2157,8 @@ enum V {
     MaskAtBottom,
     TooFewStops,
     NoProperties,
+    FromNoState,
+    StateLayerWithoutInteraction,
     ZeroDuration,
     KeyframesNotIncreasing,
     KeyframeWithoutPart,
@@ -2179,6 +2236,8 @@ fn layer_error_every_variant_triggers() {
             K::MaskAtBottom => V::MaskAtBottom,
             K::TooFewStops => V::TooFewStops,
             K::NoProperties => V::NoProperties,
+            K::FromNoState => V::FromNoState,
+            K::StateLayerWithoutInteraction => V::StateLayerWithoutInteraction,
             K::ZeroDuration => V::ZeroDuration,
             K::KeyframesNotIncreasing => V::KeyframesNotIncreasing,
             K::KeyframeWithoutPart => V::KeyframeWithoutPart,
@@ -2708,6 +2767,26 @@ fn layer_error_every_variant_triggers() {
         (
             V::Unused,
             preset_problems("[declare]\nflavors = [\"widgets\", \"kirigami\"]"),
+        ),
+        (
+            V::FromNoState,
+            over(
+                &toml(
+                    "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = true, from = [] }]",
+                ),
+                &Declarations::default(),
+                &[],
+            ),
+        ),
+        (
+            V::StateLayerWithoutInteraction,
+            over(
+                &toml(
+                    "[widgets.button.label]\ntext.fill = \"#000000\"\n[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\nset = { transitions = [{ properties = [\"state_layer\"], kind = \"interpolate\", duration_ms = 15, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = false }] }",
+                ),
+                &Declarations::default(),
+                &[],
+            ),
         ),
     ];
     // Each variant is one `V`: two kinds the fixtures meet never share one.
