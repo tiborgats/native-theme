@@ -1114,6 +1114,7 @@ url = "https://web.archive.org/web/20260209114706id_/https://developer.apple.com
 file = "typography.json"
 sha256 = "522df0c4e97731464c3bbc386a572b4b4e6ca7e4745cf0343a3e1fde295d397d"
 describes = ["macOS 26", "iOS 26"]
+release = "macOS 26 and iOS 26 (the HIG has no versions; a capture from their lifetime, D12)"
 generations = ["macos-tahoe", "ios-26"]
 researched = "2026-10-31"
 proof = "the Wayback Machine's capture of 2026-02-09 11:47:06 UTC (the `id_` form, the archived JSON unchanged), in macOS 26's and iOS 26's lifetime (D12); sha256sum of the saved file"
