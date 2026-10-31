@@ -798,8 +798,8 @@ MAT-X13–MAT-X15, X-MO-1).
   ADD-A126 to come); or instant (an instant switch
   with property transitions as usual). Each preset's kind is a fact, measured where no source states it
   (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
-  transitions run as stated (Breeze's decoration shadow on a change of activation, K1.17; Mica's fade, W3-10); which
-  changes start which transitions is not yet stated (the specification's S2.7, ledger queue #95, ADD-A126 to come).
+  transitions run as stated (Breeze's decoration shadow on a change of activation, K1.17; Mica's fade, W3-10); ADD-A126
+  reviews which changes start which transitions (the specification's S2.7).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes

@@ -51,9 +51,9 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   menu item, a clickable `Row` with no clip (`Menu.kt:2152-2160`; its shaped item is a `Surface`, `:2020-2050`). The
   value phase records which parts are such; one that is would be a class 2 change (a clip field) (S2.12; ADD-A125).
 - A Compose colour animation through `Color.lerp` driven by an overshooting spring, which clamps the fraction where
-  the transitions' `Oklab` clamps the components: the toggleable FAB's container colour in the FAB menu's `Morph`
-  presentation (`FloatingActionButtonMenu.kt:456-461`, `:584`, `:615`, MAT-N3); a fact that needs it takes S2.7's
-  per-transition override (ADD-A125).
+  the transitions' `Oklab` clamps the components: the toggleable FAB's container and icon colours in the FAB menu's
+  `Morph` presentation (`FloatingActionButtonMenu.kt:456-461`, `:584`, `:615`, MAT-N3); a fact that needs it would need
+  the per-transition override S2.7 leaves to a class 2 change (ADD-A125).
 - `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw, its rule stated
   without a size and pending facts at those sizes; `@system`'s title at the content size categories other than L
   (ADD-A125).
@@ -64,11 +64,14 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `button` on `ios-*` (ADD-A125, measurements, nothing claimed until they are made): the bar item padding TB-8 names
   (`isPaddingRemoved` in the gap map) has no UIKit API the iOS lane found in the pinned SDKs' `UIBarButtonItem.h`, so
   no `@padding_removed` is declared, and one is added with its API where a header check finds it; the dynamic corner
-  style is "adjusted based on dynamic type" with no text style named (`UIButtonConfiguration.h:41-44` in Xcode 16.4,
-  `:42-45` in 26.6), so its radius is stated at the default category (L) only until the host draws it at every
+  style, the non-glass styles' base and `@corner_dynamic` on the glass styles, on both presets, is "adjusted based on
+  dynamic type" with no text style named (`UIButtonConfiguration.h:41-44` in Xcode 16.4, `:42-45` in 26.6), so its
+  radius is stated at the default category (L) only until the host draws it at every
   content size category and the analysis finds the `UIFontMetrics` text style whose scaling it follows (then
   `= uifm_scaled(<radius at L>, <role>)`; a radius no text style's scaling gives is a class 2 change): the gate builds
-  the default category only (S17's no-reader state), so the L facts claim nothing about the others; the prominent
+  the default category only (S17's no-reader state), so the L facts claim nothing about the others; and
+  `@corner_dynamic` itself the host drew on `glass` at `regular` only, `clear`, the prominent glass styles and the
+  other sizes unread; the prominent
   bar item (`UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:31` in Xcode 26.6) is `primary` in `context
   toolbar.bar` (TB-4), drawn by the host but unread (hosted by SwiftUI, its Liquid Glass platter no single layer,
   `forms.<scheme>.bar_prominent`), its values pending a pass that reads them, as are the system Done item's on
@@ -1360,7 +1363,8 @@ spaces:
   Qt's QToolButton, WinUI's AppBarButton and AppBarToggleButton, AppKit's toolbar items, iOS's bar button items), and
   every button nested in another widget (Nested controls: dialog responses, close, navigation, overflow, clear and
   reveal buttons, media controls, edit-menu commands).
-- **Available:** every preset.
+- **Available:** every preset; on `ios-*` each element one configuration style or one form (`requires_variants`,
+  below, S10).
 - **Parts:**
   - `body` — the bezel or container (the root): `fill` (libadwaita's state layers are appended paint layers, R3, Material's the `interaction` block, S2.12; an expression on
     `element.color` where the application tints the button: AppKit's `bezelColor`, a toolbar item's
@@ -1588,15 +1592,19 @@ spaces:
     prominent ones; the configuration styles are two `exclusive_variants` groups, `[flat, @gray, tinted, primary]`
     and `[flat, @gray, tinted, glass, clear]` (the second on `ios-26`), so `primary` combines with `glass` and `clear`
     alone, S10, and each group also holds the forms that are no configuration (`@system`, `@info`, `@contact_add`,
-    `close`, `back`, `done`, `add`, `@share`, `@paste_control`, `route`), which with the styles are `requires_variants`,
-    an element being one style or one form (ADD-A125); the roles `@cancel`, `@role_primary` and `destructive` are one
+    `close`, `back`, `done`, `add`, `@share`, `@paste_control`, `route`, `@host_drawn`), which with the styles are
+    `requires_variants`, an element being one style or one form; `@host_drawn` is a button a UIKit host draws for
+    itself, with no configuration of the application's: an alert's or action sheet's action (`UIAlertAction`, DL-5,
+    DL-7, C-11), a search bar's cancel, clear and bookmark buttons (C-3), a text field's clear button (I-2), which the
+    connector sets with the host's identity (`clear_field`, `@cancel`, `destructive`), so those hosts' rows hold an
+    element, and its role products are `[{ one = [@host_drawn] }, { any = [@cancel, destructive] }]` (ADD-A125); the roles `@cancel`, `@role_primary` and `destructive` are one
     `exclusive_variants` group, as a button holds one `UIButton.Role`, and each configuration style with a role is a
     set the state model's `variant_products` gives (a group `{ any = [@cancel, @role_primary, destructive] }` beside
     the style's, and on `ios-26` a product `[{ one = [glass, clear] }, { one = [primary] }, { any = [@cancel,
     @role_primary, destructive] }]` for the prominent glass styles), as the host drew them
     (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`), the role's weight
-    rule stated after the styles' own weight rules, B-13, and stated at `regular` (UIKit's medium), the one size the
-    host drew it at, the others a measurement (Open items; ADD-A125); the state
+    rule stated after the styles' own weight rules, B-13, stated without a size and measured at `regular` (UIKit's
+    medium), the one size the host drew it at, the others pending (Open items; ADD-A125); the state
     model's `variant_sets` or `variant_products` give the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
@@ -1624,7 +1632,7 @@ spaces:
     `UICTFontTextStyleShortBody`, the host's `run1/index.toml`), its size at other content size categories unread; a form that is no configuration, in the configuration styles' exclusive groups and in
     `requires_variants`, as `@info` is; ADD-A125), `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
-    `@indicator_popup` (the pull-down indicator; automatic is the base, and `none`, which draws as automatic in every
+    `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every
     style, state and scheme the host captured, is the base under another name, the connector mapping it; ADD-A125);
     `@menu_on_hold`; the
     pointer effects `@pointer_highlight`, `@pointer_lift`, `@pointer_hover` (`UIPointerEffect`'s styles, X-PH-1);
@@ -1790,8 +1798,8 @@ spaces:
     no `shape` field, the `MaterialShapes` morph being the loading indicator's (MAT-N24).
   - `macos-tahoe`'s circular bezel draws a circle inside a frame wider than tall at every size (the probe's
     `frame_xywh`, run 41006842699 `os-probe-macos-26/button-pass/probe.toml`, with no alignment insets; the circle as
-    wide as the frame is high at `large` and `extra_large`, the macOS lane's reading, `mini` to `regular` pending,
-    U143), while
+    wide as the frame is high at `large` and `extra_large`, the macOS lane's reading, `mini` to `regular` unread, U143
+    for the corners; `body.margin` at every size a register row of its own, no fact yet), while
     `macos-monterey`'s frames are square, with equal alignment insets on every side
     (`os-probe-macos-15/button-pass/probe.toml`), so there the body's box, the alignment rect as for every bezel, is
     square and `Full` on it a circle. On `macos-tahoe` `body`'s box is the drawn circle, its `corners` `Full` on that box, and
@@ -2128,7 +2136,8 @@ spaces:
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
-    ripple's `indication_box` the `box` grown by Compose's `CheckboxDefaultPadding`, `Checkbox.kt:1064-1065`, ADD-A125),
+    ripple's `indication_box` the `box`, no outset, the tokens' container, as Compose's styling fix draws it with the
+    tokens' ripple colour, `Checkbox.kt:505-530`, R1.6, S2.12, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when

@@ -108,7 +108,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` (`tinted`'s fills, at rest, pressed and disabled, and a disabled `primary`'s `= alpha(input.accent, <a>)`, the pressed and checked opaque ones `mix` toward black or white, measured derivations, ADD-A125) | rule |
 | MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill` as expressions on `element.color` (bezelColor, contentTintColor; the parts declare it, `data = { body = ["color"], label = ["color"], icon = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-B08 | `button.body.corners @ variant pill / @rounded_rectangle / circular` | rule |
-| MAC-B08 | `button.body.margin @ variant circular cond preset:macos-tahoe` (the drawn circle is the body's box inside the wider frame, its corners `Full` on it, measured at `large` and `extra_large`, `mini` to `regular` pending U143; on `macos-monterey` the frames are square, ADD-A125) | rule |
+| MAC-B08 | `button.body.margin @ variant circular cond preset:macos-tahoe` (the drawn circle is the body's box inside the wider frame, its corners `Full` on it, readable at `large` and `extra_large`, where the circle is as wide as the frame is high, all of them pending a register row of their own (the margin, not U143's corners); on `macos-monterey` the frames are square, ADD-A125) | rule |
 | MAC-B08 | `button.body.corners @ size small / regular / large / extra_large (automatic shape)` | rule |
 | MAC-B09 | `button.icon.icon.size @ size mini / small / regular / large / extra_large` | rule |
 | MAC-B09 | `button.icon.icon.fill @ {pressed} / {disabled} / {default}` | rule |
@@ -500,7 +500,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, run 41006842699's accent pass leaving it unchanged, `os-probe-macos-26/probe.toml:667`, `:741` against `accent-red/probe.toml`; whether the highlight setting moves it unmeasured, provisional until then, the catalogue's Open items; no input, ADD-A123, ADD-A125) | role |
+| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, run 41006842699's accent pass leaving it unchanged, `os-probe-macos-26/probe.toml:667`, `:741` against `accent-red/probe.toml`; while that pass moved the effective highlight, `selectedTextBackgroundColor`, `probe.toml:635` against `accent-red/probe.toml:635`; provisional until a pass sets an explicit highlight colour other than the accent's, the catalogue's Open items; no input, ADD-A123, ADD-A125) | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
 | MAC-TS03† | `token.text.keyed.large_title_tight` | token |
