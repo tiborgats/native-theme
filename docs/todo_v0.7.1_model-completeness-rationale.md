@@ -1429,7 +1429,14 @@ smaller (its centring then off under the floating label's uneven padding); a val
 body's box per preset; the icon, as the end part, always on the body's box, Breeze's top and bottom margins 7 (Qt's 1
 and the frame's 6). The last is chosen: Breeze's even frame centres the edit field on the body, so its icon lands on
 the same pixels, the 7 keeps Qt's reserve on the frameless editable combo too, whose field has no frame, and no
-surveyed form needs the content box for the icon, so the value would decide nothing. The editable forms' inputs take
+surveyed form needs the content box for the icon, so the value would decide nothing. Breeze cuts the icon at its edit field
+(`breezestyle.cpp:5800`; editable QCommonStyle's, `qcommonstyle.cpp:2193`), the widget's box less its frame of 6, 0 on
+the frameless editable field, reached only under Kirigami, whose content (`fontHeight + 2`, at least 20,
+`breezestyle.cpp:3363`) can be shorter than its icon. Options: the cut at the content box (wrong under Kirigami's
+editable combo, whose padding is qqc2's 5); at `body.padding` (the same value, and 6 where the frameless editable clip
+is 0); no cut (a tall icon drawn past the field, as Breeze never draws it); a value, `icon_clip_inset_px`, the inset
+from the body's box. No stated value gives the field's inset on every form, so the value is the smallest exact form.
+The editable forms' inputs take
 the vertical padding that makes the height Qt's (`fontHeight + 2` inside Breeze's frame, `qcombobox.cpp:632`,
 `breezestyle.cpp:3366-3370`): 1 at the top and bottom on Breeze, 2 under Kirigami inside qqc2's 5, the frameless
 editable combo keeping the 6 of the framed one; their text is centred, so nothing drawn moves.

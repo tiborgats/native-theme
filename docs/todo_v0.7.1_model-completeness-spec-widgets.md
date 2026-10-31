@@ -2764,8 +2764,8 @@ spaces:
     GTK never reaches the cut, as it never allocates the label less than its text (`gtk@4.24.1
     gtk/gtklabel.c:1287-1297`), and the `ios-*` and `macos-*` cuts are measurements (CB-1, MAC-CB01); an `input`
     cuts its text as its own widget does. An `icon` taller than `body`'s box less `icon_clip_inset_px` at the top and
-    bottom is cut there, where the preset states the inset (Breeze's clip at its edit field, the style item's box less
-    its frame, whatever the body's padding, K1.240, reached only where the box is shorter than the icon's reserve:
+    bottom is cut there, where the preset states the inset (Breeze's clip at its edit field, the widget's box (the style item's under
+    Kirigami) less its frame, whatever the body's padding, K1.240, reached only where the box is shorter than the icon's reserve:
     under Kirigami, Q1.124; on `kde-breeze` alone).
   - *Cross axis:* the end part's margin box is centred on `body`'s box, not the content box, and `body` is at least
     as tall as it (WinUI centres its chevron in the template's whole row under the uneven `12,5,0,7`,
