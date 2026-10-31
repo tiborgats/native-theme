@@ -393,7 +393,7 @@ fn gate_declarations_each_compared() {
         let declare = format!("[declare.widget.button]\n{}{rules}", inline(&button));
         let preset = Preset::from_toml(&format!("{base}\n{declare}"))
             .unwrap_or_else(|error| panic!("{declaration}: {declare}: {error}"));
-        let models = model::Model::read("gnome/state-models.toml", &model_of(&stated)).unwrap();
+        let models = model::Model::read("gnome/state-models.toml", &model_of(stated)).unwrap();
         let platform = run::Platform {
             name: "gnome".to_owned(),
             facts: Vec::new(),
