@@ -36,7 +36,19 @@
 #                  checks), each printing "skipped (--commit mode)", and names
 #                  them in the final summary. The security audit runs in it
 #                  too, and offline falls back to the cached advisory
-#                  database with a warning (the section says how).
+#                  database with a warning (the section says how). Run
+#                  every third task and at a milestone's close.
+#   --quick        the per-task gate: formatting, clippy (-D warnings, all
+#                  targets and features) and the strict panic lints on
+#                  native-theme and native-theme-derive, their library tests,
+#                  CI's two MSRV checks, and the 0.8.0 plan's data checks
+#                  (the generated widgets, the function vectors, the facts and
+#                  their citations, the specification's names, entries and
+#                  traceability, the ledger). Nothing else; its summary says
+#                  it is no per-commit or release check.
+#
+# CI's MSRV job (its two `cargo +<rust-version> check` runs, -D warnings) runs
+# in every mode, so no local gate misses what it checks.
 #
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
@@ -47,7 +59,7 @@ set -u  # Exit if an undefined variable is used
 
 usage() {
     cat <<'EOF'
-Usage: scripts/check_release.sh [--commit]
+Usage: scripts/check_release.sh [--commit | --quick]
 
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
@@ -59,19 +71,36 @@ Usage: scripts/check_release.sh [--commit]
                  stem-index test, docs.rs emulation, packaging, semver
                  checks, outdated dependencies, the 0.8.0 ledger's triage
                  and source cache checks, and the visual-asset and
-                 compatibility stamp checks
+                 compatibility stamp checks; run every third task and at a
+                 milestone's close
+  --quick        the per-task gate: cargo fmt, clippy (-D warnings, all
+                 targets and features) and the strict panic lints on
+                 native-theme and native-theme-derive, their library tests,
+                 CI's two MSRV checks (cargo +1.88.0, -D warnings), and the
+                 0.8.0 plan's data checks (generate_widgets.py --check,
+                 check_function_vectors.py, check_facts.py,
+                 check_fact_citations.py, check_spec_names.py,
+                 check_spec_entries.py, check_spec_trace.py, check_ledger.py)
   -h, --help     print this help and exit
 EOF
 }
 
 COMMIT_MODE=""
+QUICK_MODE=""
 for arg in "$@"; do
     case "$arg" in
         --commit) COMMIT_MODE=1 ;;
+        --quick) QUICK_MODE=1 ;;
         -h|--help) usage; exit 0 ;;
         *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
     esac
 done
+
+if [[ $COMMIT_MODE && $QUICK_MODE ]]; then
+    printf "--commit and --quick exclude each other\n\n" >&2
+    usage >&2
+    exit 2
+fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
@@ -385,10 +414,76 @@ fi
 
 CURRENT_VERSION=$(grep -E '^version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
 
-if [[ $COMMIT_MODE ]]; then
+if [[ $QUICK_MODE ]]; then
+    printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-task checks (--quick)${NC}\n" "$CURRENT_VERSION"
+elif [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-commit checks (--commit)${NC}\n" "$CURRENT_VERSION"
 else
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+fi
+
+# native-theme's Linux feature set: every feature with code on Linux
+# (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
+# native-theme has no default features, so on Linux the tests of its
+# feature-gated modules (kde, gnome, freedesktop, rasterize, spinners, fonts,
+# the watchers) are run only by the test legs below that name this set. The
+# clippy leg below that names it is the only lint of the Linux-only ones (kde,
+# gnome, freedesktop, the KDE and GNOME watchers); the cross-target
+# `--all-features` clippy runs also lint the tests that are not Linux-only
+# (the rasterizer's and the spinners', for two). The strict panic lints name
+# the set for the library.
+NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
+
+# CI's MSRV job (.github/workflows/ci.yml, `msrv`): a lint can fire at the
+# MSRV and not on stable, so both of its rust-version checks deny warnings.
+# Every mode runs them.
+MSRV_TOOLCHAIN="+$(grep -E '^rust-version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')"
+msrv_checks() {
+    run_check "MSRV $MSRV_TOOLCHAIN, -D warnings (the workspace but the gpui and egui crates, all features)" \
+        env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check --workspace --exclude native-theme-gpui \
+        --exclude native-theme-egui --exclude native-theme-egui-widgets --all-features --locked
+    run_check "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, default features)" \
+        env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check -p native-theme --locked
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# --quick: the per-task gate (the header lists it), then its summary.
+# ─────────────────────────────────────────────────────────────────────────────
+if [[ $QUICK_MODE ]]; then
+    print_section "Per-task gate (--quick)"
+    run_check "cargo fmt (all crates)" cargo fmt --all
+    run_check "clippy (native-theme, native-theme-derive, all targets and features)" \
+        cargo clippy -p native-theme -p native-theme-derive --all-targets --all-features -- -D warnings
+    run_check "strict-panic (native-theme, Linux features)" \
+        bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
+    run_check "strict-panic (native-theme-derive)" \
+        bash scripts/check_strict_panic.sh -p native-theme-derive --lib
+    run_tests "test (native-theme-derive)" cargo test -p native-theme-derive
+    run_tests "test (native-theme, library)" cargo test -p native-theme --lib
+    msrv_checks
+    run_check "the generated widgets match the catalogue" python3 scripts/generate_widgets.py --check
+    run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
+    run_check "the facts are well formed" python3 scripts/check_facts.py
+    run_check "the facts' citations hold at their pins" python3 scripts/check_fact_citations.py
+    run_check "the specification's names" python3 scripts/check_spec_names.py
+    run_check "the specification's entries" python3 scripts/check_spec_entries.py
+    run_check "the specification's traceability" python3 scripts/check_spec_trace.py
+    run_check "the 0.8.0 ledger triages every open item" python3 scripts/check_ledger.py
+    printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
+    if [ "$WARN_COUNT" -eq 0 ]; then
+        printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s per-task gate (not a per-commit or release check)\n" "$CURRENT_VERSION"
+    else
+        printf "${BOLD}${GREEN}${ICON_PARTY} PASS WITH WARNINGS${NC} · native-theme v%s per-task gate (not a per-commit or release check)\n" "$CURRENT_VERSION"
+    fi
+    printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · %s total${NC}\n" \
+        "$((PASS_COUNT + WARN_COUNT))" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" \
+        "$(format_elapsed "$((SECONDS - SCRIPT_START))")"
+    for w in ${WARNINGS[@]+"${WARNINGS[@]}"}; do
+        printf "   ${YELLOW}${ICON_WARN}${NC} %s\n" "$w"
+    done
+    printf "${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
+    printf "\n   ${DIM}./scripts/check_release.sh --commit${NC} runs every third task and at a milestone's close.\n\n"
+    exit 0
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -491,18 +586,6 @@ else
 fi
 run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
 
-# native-theme's Linux feature set: every feature with code on Linux
-# (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
-# native-theme has no default features, so on Linux the tests of its
-# feature-gated modules (kde, gnome, freedesktop, rasterize, spinners, fonts,
-# the watchers) are run only by the test legs below that name this set. The
-# clippy leg below that names it is the only lint of the Linux-only ones (kde,
-# gnome, freedesktop, the KDE and GNOME watchers); the cross-target
-# `--all-features` clippy runs also lint the tests that are not Linux-only
-# (the rasterizer's and the spinners', for two). The strict panic lints name
-# the set for the library.
-NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: cargo check
 # ─────────────────────────────────────────────────────────────────────────────
@@ -510,6 +593,9 @@ print_section "cargo check"
 for crate in $WORKSPACE_CRATES; do
     run_check "check ($crate)" cargo check -p "$crate" --all-targets
 done
+
+print_section "MSRV (CI's msrv job)"
+msrv_checks
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: feature combinations
