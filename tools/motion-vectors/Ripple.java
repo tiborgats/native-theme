@@ -1,4 +1,8 @@
 // The harness for RippleShader's uniforms and its AGSL, and RippleAnimationSession's lifecycle (generate.py).
+// Only the uniform setters are RippleShader.java's code, pasted unchanged; the AGSL body, `progress`, `phase` and
+// `fastOutSlowIn` are a transcription in Java, a second reading of the same sources the Rust follows, not the
+// source run as written. Each line that adds to the source says so (`ADDED:`), so the transcription is checkable
+// line by line against RippleShader.java's shader string (`:42-122`) and RippleAnimationSession.java (`:42-48`).
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,7 +20,7 @@ public final class Ripple {
         return uniforms.get(name)[i];
     }
 
-    // The AGSL of RippleShader.java:42-122, statement by statement in float.
+    // The AGSL of RippleShader.java:42-122, transcribed statement by statement in float.
     static float fract(float x) { return x - (float) Math.floor(x); }
     static float step(float edge, float x) { return x < edge ? 0f : 1f; }
     static float clamp(float x, float lo, float hi) { return Math.min(Math.max(x, lo), hi); }
@@ -59,6 +63,7 @@ public final class Ripple {
         float blurHalf = blur * 0.5f;
         float d = distance(ux, uy, x, y);
         float ratio = d / radius;
+        // ADDED: a ratio that is not a number is 0, the model's totality (S2.2); AGSL leaves it undefined.
         if (Float.isNaN(ratio) || Float.isInfinite(ratio)) ratio = Float.isInfinite(ratio) ? ratio : 0f;
         return 1f - smoothstep(1f - blurHalf, 1f + blurHalf, ratio);
     }
@@ -121,6 +126,7 @@ public final class Ripple {
         float waveAlpha = softCircle(px, py, centerX, centerY, maxRadius * scaleIn, 1f) * fade * colorA;
         float[] wave = { colorR * waveAlpha, colorG * waveAlpha, colorB * waveAlpha, waveAlpha };
         float[] sparkle = { sparkleR * sparkleA, sparkleG * sparkleA, sparkleB * sparkleA, sparkleA };
+        // ADDED: a box test in place of `in_shader.eval(p).a`, the mask's alpha, for a box with no outline of its own.
         float mask = hasMask ? (px >= 0 && py >= 0 && px < boxW && py < boxH ? 1f : 0f) : 1f;
         float[] out = new float[4];
         for (int i = 0; i < 4; i++) out[i] = mix(wave[i], sparkle[i], sparkleAlpha) * mask;
