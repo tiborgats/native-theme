@@ -34,9 +34,8 @@ use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
-    Condition, ContextMatch, ControlSize, Density, Direction, Parity, PositionMatch, Scheme,
-    Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart,
-    WidgetRef,
+    Condition, ContextMatch, ControlSize, Density, Direction, Parity, Scheme, Selector, SetMatch,
+    SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart, WidgetRef,
 };
 use crate::next::widgets::{Shown, TypedPart, WidgetKind};
 
@@ -831,14 +830,6 @@ impl<'a> Stack<'a> {
         if let Some(worlds) = self.cache.borrow().get(&rules) {
             return Rc::clone(worlds);
         }
-        let mut atoms: Vec<Atom> = Vec::new();
-        for rule in &rules {
-            if let Some(info) = self.rules.get(*rule) {
-                atoms_of(info.selector, &mut atoms);
-            }
-        }
-        let decl = self.decl();
-        complete(&mut atoms, decl);
         let widgets: Vec<WidgetKind> = rules
             .iter()
             .filter_map(|rule| self.rules.get(*rule).and_then(|info| info.widget))
@@ -848,20 +839,42 @@ impl<'a> Stack<'a> {
                 }
                 held
             });
-        let compiled = self.compile(&atoms, &rules);
-        let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
-        items.extend(scheme_and_flavors(&atoms));
         // Each outcome is a distinct vector of the rules' applicability, the
         // scheme and the flavour in force (S12): one world each.
-        let space = Space::new(&atoms, decl, &widgets);
-        let worlds: Vec<World> = space
+        let (_, worlds) = self.enumerate(&rules, &widgets, scheme_and_flavors);
+        let worlds = Rc::new(worlds);
+        self.cache.borrow_mut().insert(rules, Rc::clone(&worlds));
+        worlds
+    }
+
+    /// The atoms `rules` name, completed, and one world per distinct
+    /// outcome: a vector of the rules' applicability and of the decisions
+    /// `outcomes` adds over the atoms, under S12's exclusions with the
+    /// groups `widgets` declare.
+    fn enumerate(
+        &self,
+        rules: &[usize],
+        widgets: &[WidgetKind],
+        outcomes: impl Fn(&[Atom]) -> Vec<Item>,
+    ) -> (Vec<Atom>, Vec<World>) {
+        let mut atoms: Vec<Atom> = Vec::new();
+        for rule in rules {
+            if let Some(info) = self.rules.get(*rule) {
+                atoms_of(info.selector, self.preset(), &mut atoms);
+            }
+        }
+        let decl = self.decl();
+        complete(&mut atoms, decl);
+        let compiled = self.compile(&atoms, rules);
+        let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
+        items.extend(outcomes(&atoms));
+        let space = Space::new(&atoms, decl, widgets);
+        let worlds = space
             .outcomes(&items)
             .iter()
             .map(|values| self.world(&atoms, values, &compiled))
             .collect();
-        let worlds = Rc::new(worlds);
-        self.cache.borrow_mut().insert(rules, Rc::clone(&worlds));
-        worlds
+        (atoms, worlds)
     }
 
     /// Each of `rules`' selectors as the atoms' values it needs; `None` for
@@ -1059,69 +1072,112 @@ fn refs(expr: &Expr) -> Vec<&Ref> {
         .collect()
 }
 
+/// The atoms a selector names, each with the value it needs (S7): each
+/// part of a selector is a conjunction of atoms holding or not, an atom
+/// named for an exclusion only needing none; `Preset` is the current
+/// preset's, no atom, so `None` where it excludes the current preset (the
+/// rule never applies).
+fn selector_literals(
+    selector: &Selector,
+    preset: Option<PresetId>,
+) -> Option<Vec<(Atom, Option<bool>)>> {
+    fn set<T: Clone>(
+        set: &SetMatch<T>,
+        atom: impl Fn(T) -> Atom,
+        out: &mut Vec<(Atom, Option<bool>)>,
+    ) {
+        out.extend(
+            set.all_of
+                .iter()
+                .map(|item| (atom(item.clone()), Some(true))),
+        );
+        out.extend(
+            set.none_of
+                .iter()
+                .map(|item| (atom(item.clone()), Some(false))),
+        );
+    }
+    let mut out = Vec::new();
+    let mut excluded = false;
+    for (conditions, want) in [
+        (&selector.conditions.all_of, true),
+        (&selector.conditions.none_of, false),
+    ] {
+        for condition in conditions {
+            match condition {
+                Condition::Preset(id) => excluded |= (Some(*id) == preset) != want,
+                other => out.push((Atom::Cond(other.clone()), Some(want))),
+            }
+        }
+    }
+    set(&selector.states, Atom::State, &mut out);
+    set(&selector.variants, Atom::Variant, &mut out);
+    set(&selector.size.sizes, Atom::Size, &mut out);
+    set(&selector.size.densities, Atom::Density, &mut out);
+    set(
+        &selector.size.size_classes.horizontal,
+        |c| Atom::Class(false, c),
+        &mut out,
+    );
+    set(
+        &selector.size.size_classes.vertical,
+        |c| Atom::Class(true, c),
+        &mut out,
+    );
+    if let Some(direction) = selector.direction {
+        out.push((Atom::Dir(direction), Some(true)));
+    }
+    out.extend(
+        selector
+            .context
+            .iter()
+            .map(|context| (Atom::Context(context.clone()), Some(true))),
+    );
+    out.extend(
+        selector
+            .not_context
+            .iter()
+            .map(|context| (Atom::Context(context.clone()), Some(false))),
+    );
+    if let Some(p) = &selector.position {
+        let among = &p.among;
+        // `only` holds exactly when `first` and `last` do (S12): the
+        // atoms of both are named with it.
+        if p.first.is_some() || p.only.is_some() {
+            out.push((Atom::First(among.clone()), p.first));
+        }
+        if p.last.is_some() || p.only.is_some() {
+            out.push((Atom::Last(among.clone()), p.last));
+        }
+        if let Some(want) = p.only {
+            out.push((Atom::Only(among.clone()), Some(want)));
+        }
+        if let Some(parity) = p.parity {
+            out.push((Atom::Parity(among.clone(), parity), Some(true)));
+        }
+        for (next, sibling) in [(false, &p.previous), (true, &p.next)] {
+            if let Some(sibling) = sibling {
+                out.push((
+                    Atom::Sibling(next, among.clone(), sibling.clone()),
+                    Some(true),
+                ));
+            }
+        }
+    }
+    (!excluded).then_some(out)
+}
+
 fn push_atom(atoms: &mut Vec<Atom>, atom: Atom) {
     if !atoms.contains(&atom) {
         atoms.push(atom);
     }
 }
 
-fn set_atoms<T: Clone>(set: &SetMatch<T>, atoms: &mut Vec<Atom>, atom: impl Fn(T) -> Atom) {
-    for item in set.all_of.iter().chain(&set.none_of) {
-        push_atom(atoms, atom(item.clone()));
-    }
-}
-
-/// The atoms a selector names; `Preset` is the current preset's, no atom.
-fn atoms_of(selector: &Selector, atoms: &mut Vec<Atom>) {
-    for condition in selector
-        .conditions
-        .all_of
-        .iter()
-        .chain(&selector.conditions.none_of)
-    {
-        if !matches!(condition, Condition::Preset(_)) {
-            push_atom(atoms, Atom::Cond(condition.clone()));
-        }
-    }
-    set_atoms(&selector.states, atoms, Atom::State);
-    set_atoms(&selector.variants, atoms, Atom::Variant);
-    set_atoms(&selector.size.sizes, atoms, Atom::Size);
-    set_atoms(&selector.size.densities, atoms, Atom::Density);
-    set_atoms(&selector.size.size_classes.horizontal, atoms, |c| {
-        Atom::Class(false, c)
-    });
-    set_atoms(&selector.size.size_classes.vertical, atoms, |c| {
-        Atom::Class(true, c)
-    });
-    if let Some(direction) = selector.direction {
-        push_atom(atoms, Atom::Dir(direction));
-    }
-    for context in selector.context.iter().chain(&selector.not_context) {
-        push_atom(atoms, Atom::Context(context.clone()));
-    }
-    if let Some(position) = &selector.position {
-        position_atoms(position, atoms);
-    }
-}
-
-fn position_atoms(position: &PositionMatch, atoms: &mut Vec<Atom>) {
-    let among = &position.among;
-    if position.first.is_some() || position.only.is_some() {
-        push_atom(atoms, Atom::First(among.clone()));
-    }
-    if position.last.is_some() || position.only.is_some() {
-        push_atom(atoms, Atom::Last(among.clone()));
-    }
-    if position.only.is_some() {
-        push_atom(atoms, Atom::Only(among.clone()));
-    }
-    if let Some(parity) = position.parity {
-        push_atom(atoms, Atom::Parity(among.clone(), parity));
-    }
-    for (next, sibling) in [(false, &position.previous), (true, &position.next)] {
-        if let Some(sibling) = sibling {
-            push_atom(atoms, Atom::Sibling(next, among.clone(), sibling.clone()));
-        }
+/// The atoms a selector names, under the current preset `preset` (none
+/// for a rule its `Preset` condition excludes, which never applies).
+fn atoms_of(selector: &Selector, preset: Option<PresetId>, atoms: &mut Vec<Atom>) {
+    for (atom, _) in selector_literals(selector, preset).into_iter().flatten() {
+        push_atom(atoms, atom);
     }
 }
 
@@ -1190,83 +1246,26 @@ fn complete(atoms: &mut Vec<Atom>, decl: &Declarations) {
 /// applies).
 type Compiled = (usize, Option<Vec<(usize, bool)>>);
 
-/// The atoms' values `selector` needs to match (S7): each part of a
-/// selector is a conjunction of atoms holding or not; `None` where its
-/// `Preset` condition excludes the current preset.
+/// The atoms' values `selector` needs to match, each atom by its index in
+/// `atoms`, which [`atoms_of`] filled from the same selector; `None` where
+/// its `Preset` condition excludes the current preset.
 fn literals(
     selector: &Selector,
     atoms: &[Atom],
     preset: Option<PresetId>,
 ) -> Option<Vec<(usize, bool)>> {
-    let mut out = Vec::new();
-    let mut need = |atom: Atom, want: bool| {
-        if let Some(index) = atoms.iter().position(|held| *held == atom) {
-            out.push((index, want));
-        }
-    };
-    fn set<T: Clone>(set: &SetMatch<T>, mut need: impl FnMut(T, bool)) {
-        for item in &set.all_of {
-            need(item.clone(), true);
-        }
-        for item in &set.none_of {
-            need(item.clone(), false);
-        }
-    }
-    for (conditions, want) in [
-        (&selector.conditions.all_of, true),
-        (&selector.conditions.none_of, false),
-    ] {
-        for condition in conditions {
-            match condition {
-                Condition::Preset(id) => {
-                    if (Some(*id) == preset) != want {
-                        return None;
-                    }
-                }
-                other => need(Atom::Cond(other.clone()), want),
-            }
-        }
-    }
-    set(&selector.states, |s, w| need(Atom::State(s), w));
-    set(&selector.variants, |v, w| need(Atom::Variant(v), w));
-    set(&selector.size.sizes, |s, w| need(Atom::Size(s), w));
-    set(&selector.size.densities, |d, w| need(Atom::Density(d), w));
-    set(&selector.size.size_classes.horizontal, |c, w| {
-        need(Atom::Class(false, c), w)
-    });
-    set(&selector.size.size_classes.vertical, |c, w| {
-        need(Atom::Class(true, c), w)
-    });
-    if let Some(direction) = selector.direction {
-        need(Atom::Dir(direction), true);
-    }
-    for context in &selector.context {
-        need(Atom::Context(context.clone()), true);
-    }
-    for context in &selector.not_context {
-        need(Atom::Context(context.clone()), false);
-    }
-    if let Some(p) = &selector.position {
-        let among = &p.among;
-        if let Some(want) = p.first {
-            need(Atom::First(among.clone()), want);
-        }
-        if let Some(want) = p.last {
-            need(Atom::Last(among.clone()), want);
-        }
-        if let Some(want) = p.only {
-            need(Atom::Only(among.clone()), want);
-        }
-        if let Some(parity) = p.parity {
-            need(Atom::Parity(among.clone(), parity), true);
-        }
-        for (next, sibling) in [(false, &p.previous), (true, &p.next)] {
-            if let Some(sibling) = sibling {
-                need(Atom::Sibling(next, among.clone(), sibling.clone()), true);
-            }
-        }
-    }
-    Some(out)
+    selector_literals(selector, preset).map(|literals| {
+        literals
+            .into_iter()
+            .filter_map(|(atom, want)| {
+                let want = want?;
+                atoms
+                    .iter()
+                    .position(|held| *held == atom)
+                    .map(|index| (index, want))
+            })
+            .collect()
+    })
 }
 
 /// The part's catalogue fields, a target's table.
@@ -2056,14 +2055,6 @@ impl Checks<'_, '_> {
                     .filter_map(|part| TypedPart::from_names(info.kind, part.name))
             })
             .collect();
-        let seeds = parts.iter().map(|part| Seed::Shown(*part)).collect();
-        let rules = stack.reach(seeds);
-        let mut atoms: Vec<Atom> = Vec::new();
-        for rule in &rules {
-            if let Some(info) = stack.rules.get(*rule) {
-                atoms_of(info.selector, &mut atoms);
-            }
-        }
         if !stack.sources.iter().any(|s| {
             s.ops
                 .iter()
@@ -2071,28 +2062,21 @@ impl Checks<'_, '_> {
         }) {
             return;
         }
-        let decl = stack.decl();
-        complete(&mut atoms, decl);
+        let seeds = parts.iter().map(|part| Seed::Shown(*part)).collect();
+        let rules = stack.reach(seeds);
         let widgets: Vec<WidgetKind> = registry::widgets().iter().map(|info| info.kind).collect();
-        let compiled = stack.compile(&atoms, &rules);
         // The conditions, states and variants are outcomes of their own:
         // a `DrawnAs` reads them (`reaches_again`).
-        let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
-        items.extend(
+        let (atoms, all) = stack.enumerate(&rules, &widgets, |atoms| {
             atoms
                 .iter()
                 .enumerate()
                 .filter(|(_, atom)| {
                     matches!(atom, Atom::Cond(_) | Atom::State(_) | Atom::Variant(_))
                 })
-                .map(|(index, _)| Some(vec![(index, true)])),
-        );
-        let space = Space::new(&atoms, decl, &widgets);
-        let all: Vec<World> = space
-            .outcomes(&items)
-            .iter()
-            .map(|values| stack.world(&atoms, values, &compiled))
-            .collect();
+                .map(|(index, _)| Some(vec![(index, true)]))
+                .collect()
+        });
         for first in &parts {
             for world in &all {
                 let (Shown::DrawnAs { .. }, Some((layer, at))) = stack.shown(world, *first) else {

@@ -1063,7 +1063,10 @@ fn combination_sides_read_alike() {
              {margins}"
         )
     };
-    assert_eq!(bare(&corner("margin.top_px = 2\nmargin.right_px = 2")), NONE);
+    assert_eq!(
+        bare(&corner("margin.top_px = 2\nmargin.right_px = 2")),
+        NONE
+    );
     assert_eq!(bare(&focus("offset.top_px = 2\noffset.right_px = 2")), NONE);
     assert_eq!(
         bare(&corner(

@@ -17,8 +17,8 @@ use super::combos::Atom;
 use super::stack::widget_of;
 use crate::next::declare::{Declarations, WidgetDecl};
 use crate::next::selector::{
-    Condition, ContextMatch, ContextScope, Parity, PartRef, Scheme, SetMatch, StateFlag,
-    TiledEdges, VariantRef, WidgetOrPart, WidgetRef,
+    Condition, ContextMatch, ContextScope, Parity, PartRef, Scheme, SetMatch, SiblingScope,
+    StateFlag, TiledEdges, VariantRef, WidgetOrPart, WidgetRef,
 };
 use crate::next::widgets::WidgetKind;
 
@@ -31,38 +31,47 @@ pub(super) type Item = Option<Vec<(usize, bool)>>;
 /// condition, one contrast condition, one control size, density, direction,
 /// size class per axis and parity); every other atom is free.
 pub(super) fn one_of(atoms: &[Atom], decl: &Declarations) -> Vec<(Vec<usize>, bool)> {
-    let mut keyed: Vec<(String, bool, Vec<usize>)> = Vec::new();
+    /// Which one-of group an atom is in.
+    #[derive(PartialEq)]
+    enum Group<'a> {
+        Scheme,
+        Contrast,
+        Idiom,
+        Posture,
+        Device,
+        Input,
+        Flavor,
+        Container(&'a WidgetRef),
+        Size,
+        Density,
+        Direction,
+        Class(bool),
+        Parity(&'a SiblingScope),
+    }
+    let count = |of: fn(&Atom) -> bool| atoms.iter().filter(|atom| of(atom)).count();
+    let mut keyed: Vec<(Group<'_>, bool, Vec<usize>)> = Vec::new();
     for (index, atom) in atoms.iter().enumerate() {
-        let key: Option<(String, bool)> = match atom {
-            Atom::Cond(Condition::Scheme(_)) => Some(("scheme".to_owned(), true)),
+        let key = match atom {
+            Atom::Cond(Condition::Scheme(_)) => Some((Group::Scheme, true)),
             Atom::Cond(Condition::ContrastIncreased | Condition::ContrastHigh) => {
-                Some(("contrast".to_owned(), false))
+                Some((Group::Contrast, false))
             }
-            Atom::Cond(Condition::Idiom(_)) => Some(("idiom".to_owned(), false)),
-            Atom::Cond(Condition::Posture(_)) => Some(("posture".to_owned(), false)),
-            Atom::Cond(Condition::DeviceModel(_)) => Some(("device".to_owned(), false)),
-            Atom::Cond(Condition::Input(_)) => {
-                let all = atoms
-                    .iter()
-                    .filter(|a| matches!(a, Atom::Cond(Condition::Input(_))))
-                    .count()
-                    == 4;
-                Some(("input".to_owned(), all))
-            }
-            Atom::Cond(Condition::Flavor(_)) => {
-                Some(("flavor".to_owned(), !decl.flavors.is_empty()))
-            }
+            Atom::Cond(Condition::Idiom(_)) => Some((Group::Idiom, false)),
+            Atom::Cond(Condition::Posture(_)) => Some((Group::Posture, false)),
+            Atom::Cond(Condition::DeviceModel(_)) => Some((Group::Device, false)),
+            Atom::Cond(Condition::Input(_)) => Some((
+                Group::Input,
+                count(|a| matches!(a, Atom::Cond(Condition::Input(_)))) == 4,
+            )),
+            Atom::Cond(Condition::Flavor(_)) => Some((Group::Flavor, !decl.flavors.is_empty())),
             Atom::Cond(Condition::ContainerSize { container, .. }) => {
-                Some((format!("container:{container:?}"), true))
+                Some((Group::Container(container), true))
             }
-            Atom::Size(_) => {
-                let all = atoms.iter().filter(|a| matches!(a, Atom::Size(_))).count() == 6;
-                Some(("size".to_owned(), all))
-            }
-            Atom::Density(_) => Some(("density".to_owned(), false)),
-            Atom::Dir(_) => Some(("direction".to_owned(), true)),
-            Atom::Class(vertical, _) => Some((format!("class:{vertical}"), false)),
-            Atom::Parity(among, _) => Some((format!("parity:{among:?}"), true)),
+            Atom::Size(_) => Some((Group::Size, count(|a| matches!(a, Atom::Size(_))) == 6)),
+            Atom::Density(_) => Some((Group::Density, false)),
+            Atom::Dir(_) => Some((Group::Direction, true)),
+            Atom::Class(vertical, _) => Some((Group::Class(*vertical), false)),
+            Atom::Parity(among, _) => Some((Group::Parity(among), true)),
             _ => None,
         };
         if let Some((key, exactly)) = key {
