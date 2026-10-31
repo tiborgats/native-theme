@@ -1,0 +1,33 @@
+# The accent run's pairs for the KDE facts (the specification's S17, "The accent run"), read by
+# scripts/measure_kde_accent.sh (a bare name is the installed scheme file
+# /usr/share/color-schemes/<name>.colors). Four schemes, each with no accent and the two accents
+# spike K used, #e5a50a (a yellow: low contrast on a light background, so the link colour is
+# darkened) and #5e2ca5 (a violet: low contrast on a dark one, so it is lightened):
+#   BreezeLight, BreezeDark: the preset's own scheme files (a Colors:Header group with an
+#     [Inactive] group, no tint, no accent-coloured title bar);
+#   BreezeClassic: the accent-coloured title bar option (accentActiveTitlebar=true) with no
+#     Colors:Header group, the one colour group the other three have and it lacks;
+#   SUSECafe: a scheme that tints (TintFactor=0.15) and has the title bar option
+#     (TitlebarIsAccentColored=true) and a Colors:Header group, of two keys only, so applyScheme()
+#     also tints the keys that group leaves unset. A third-party file, fetched at its pin by the
+#     workflow from tools/kde-host/accent-schemes.tsv into kde-accent-schemes/.
+# The last three pairs check that the scheme applied first leaves nothing behind: BreezeLight
+# after BreezeClassic instead of BreezeDark, BreezeClassic applied to a fresh configuration with
+# no scheme before it, and SUSECafe after BreezeClassic instead of BreezeDark.
+#
+# id	scheme-file	accent	predecessor	same-as
+light-none	BreezeLight	-	-	-
+light-e5a50a	BreezeLight	#e5a50a	-	-
+light-5e2ca5	BreezeLight	#5e2ca5	-	-
+dark-none	BreezeDark	-	-	-
+dark-e5a50a	BreezeDark	#e5a50a	-	-
+dark-5e2ca5	BreezeDark	#5e2ca5	-	-
+classic-none	BreezeClassic	-	-	-
+classic-e5a50a	BreezeClassic	#e5a50a	-	-
+classic-5e2ca5	BreezeClassic	#5e2ca5	-	-
+susecafe-none	kde-accent-schemes/SUSE-Cafe@2f66c168/SUSECafe.colors	-	-	-
+susecafe-e5a50a	kde-accent-schemes/SUSE-Cafe@2f66c168/SUSECafe.colors	#e5a50a	-	-
+susecafe-5e2ca5	kde-accent-schemes/SUSE-Cafe@2f66c168/SUSECafe.colors	#5e2ca5	-	-
+light-none-after-classic	BreezeLight	-	BreezeClassic	light-none
+classic-none-fresh	BreezeClassic	-	none	classic-none
+susecafe-none-after-classic	kde-accent-schemes/SUSE-Cafe@2f66c168/SUSECafe.colors	-	BreezeClassic	susecafe-none

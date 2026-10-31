@@ -1,0 +1,8 @@
+# The third-party colour scheme files the accent run measures (tools/kde-host/accent-pairs.tsv),
+# each pinned in docs/facts/sources.toml by commit. os-probe.yml's kde-accent job fetches each
+# repository at its commit (git fetch --depth 1 by SHA) into kde-accent-schemes/<id>/ and fails
+# unless the checkout's HEAD is the commit and the file's SHA-256 is the one below. The files are
+# fetched, never committed (their licences are their projects').
+#
+# id	repository	commit	file	sha256
+SUSE-Cafe@2f66c168	https://github.com/LyrixCaz/SUSE-Cafe.git	2f66c1681901c0498302a9c62f6b08013d08bb1e	SUSECafe.colors	5225742f994f5689cdb3f3c7015804782c1d96fa30b874b5814019252f86d7a9

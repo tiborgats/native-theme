@@ -29,6 +29,10 @@ on:
         description: "The probe, winui-host and ios-host jobs' runner images, a JSON list (winui-host does nothing on macOS, ios-host nothing on Windows); the default is the 0.8.0 release set's"
         required: false
         default: '["macos-15", "macos-26", "windows-11-arm"]'
+      kde_accent_pairs:
+        description: "The kde-accent job's pairs file (scripts/measure_kde_accent.sh's pairs.tsv); the default is the KDE facts' accent run"
+        required: false
+        default: "tools/kde-host/accent-pairs.tsv"
 
 permissions:
   contents: read
@@ -718,12 +722,17 @@ jobs:
           name: kde-container
           path: kde-container
 
-  # The accent run (D2, spike K): scripts/measure_kde_accent.sh in the KDE
-  # container on the pairs of tools/kde-host/accent-pairs-spike.tsv, each pair
-  # in a fresh configuration; the script fails the job when a step fails, does
-  # not change kdeglobals, or finds an AccentColor stored before a scheme's
-  # apply. The pull is tried without credentials first, to check that the
-  # package is public; pull.txt records the result.
+  # The accent run (D2, spike K; the specification's S17, "The accent run"):
+  # scripts/measure_kde_accent.sh in the KDE container on the pairs of the
+  # `kde_accent_pairs` input (default tools/kde-host/accent-pairs.tsv, the KDE
+  # facts' schemes; spike K's were tools/kde-host/accent-pairs-spike.tsv), each
+  # pair in a fresh configuration; the script fails the job when a step fails,
+  # does not change kdeglobals, or finds an AccentColor stored before a
+  # scheme's apply. The third-party scheme files of
+  # tools/kde-host/accent-schemes.tsv are fetched first, each at its pinned
+  # commit and checked against its SHA-256, into kde-accent-schemes/. The pull
+  # is tried without credentials first, to check that the package is public;
+  # pull.txt records the result.
   kde-accent:
     name: KDE accent run
     needs: kde-container
@@ -753,10 +762,28 @@ jobs:
             docker logout ghcr.io
           fi
           cat "$OUT/pull.txt"
+      - name: Fetch the pinned third-party schemes
+        run: |
+          mkdir -p "$OUT" kde-accent-schemes
+          : > "$OUT/schemes.txt"
+          while IFS=$'\t' read -r id repository commit file sha256; do
+            case "$id" in ''|'#'*) continue ;; esac
+            dir="kde-accent-schemes/$id"
+            git init -q "$dir"
+            git -C "$dir" fetch -q --depth 1 "$repository" "$commit"
+            git -C "$dir" -c advice.detachedHead=false checkout -q FETCH_HEAD
+            head=$(git -C "$dir" rev-parse HEAD)
+            got=$(sha256sum < "$dir/$file" | cut -d' ' -f1)
+            echo "$id $repository $head $file $got" | tee -a "$OUT/schemes.txt"
+            [ "$head" = "$commit" ] || { echo "::error::$id: HEAD $head, not $commit"; exit 1; }
+            [ "$got" = "$sha256" ] || { echo "::error::$id: $file SHA-256 $got, not $sha256"; exit 1; }
+          done < tools/kde-host/accent-schemes.tsv
       - name: Measure
+        env:
+          PAIRS: ${{ inputs.kde_accent_pairs }}
         run: |
           docker run --rm -v "$PWD:/work" -w /work "$IMAGE" \
-            dbus-run-session -- bash scripts/measure_kde_accent.sh "$OUT" tools/kde-host/accent-pairs-spike.tsv
+            dbus-run-session -- bash scripts/measure_kde_accent.sh "$OUT" "${PAIRS:-tools/kde-host/accent-pairs.tsv}"
       - name: Upload the measurements
         if: always()
         uses: actions/upload-artifact@v7
