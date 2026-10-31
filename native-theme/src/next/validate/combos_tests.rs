@@ -771,3 +771,34 @@ fn combination_part_corner_on_a_part_without_corners() {
         ]
     );
 }
+
+/// `active(…)` reads the role's bases, before any rule (S2.2): a `Colors`
+/// rule restating a role from its own active value reads no rule, so it is
+/// no cycle (R5.1's inactive-window colours are written so).
+#[test]
+fn combination_active_reads_the_bases_not_itself() {
+    let below = "[colors.light.global]\naccent = \"#3366ff\"\n\
+                 [colors.dark.global]\naccent = \"#3366ff\"";
+    let rule = |expr: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ conditions = [\"reduced_motion\"] }}\ntarget = \"colors\"\n\
+             set = {{ global.accent = \"{expr}\" }}"
+        )
+    };
+    assert_eq!(
+        over(
+            below,
+            &rule("= mix(active(role.global.accent), #000000, 0.2)"),
+            &Declarations::default()
+        ),
+        NONE
+    );
+    assert_eq!(
+        over(
+            below,
+            &rule("= mix(role.global.accent, #000000, 0.2)"),
+            &Declarations::default()
+        ),
+        ["rules[0].set.global.accent: the expression reads itself"]
+    );
+}

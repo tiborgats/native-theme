@@ -1225,14 +1225,21 @@ impl Checks<'_, '_> {
                         _ => true,
                     };
                     if in_effect && drawn && scheme {
-                        self.expression(world, source, op, expr);
+                        self.expression(world, (number, index), source, op, expr);
                     }
                 }
             }
         }
     }
 
-    fn expression(&mut self, world: &World, source: &Source, op: &Op, expr: &Expr) {
+    fn expression(
+        &mut self,
+        world: &World,
+        id: (usize, usize),
+        source: &Source,
+        op: &Op,
+        expr: &Expr,
+    ) {
         let stack = self.stack;
         let cx = cx_of(source, op);
         let plain = matches!(expr, Expr::Ref(_));
@@ -1316,7 +1323,7 @@ impl Checks<'_, '_> {
                 }
             }
         }
-        let cycle = self.cycles(world, source, op, expr);
+        let cycle = self.cycles(world, id, cx, expr);
         if cycle {
             self.problem(&op.at, ProblemKind::ExpressionCycle);
         }
@@ -1406,32 +1413,31 @@ impl Checks<'_, '_> {
         }
     }
 
-    /// Whether the expression at `op` reads itself, through references,
-    /// calls' operands and bindings, under `world`.
-    fn cycles(&self, world: &World, source: &Source, op: &Op, expr: &Expr) -> bool {
+    /// Whether the expression at `op`, the step `id`, reads itself under
+    /// `world`: whether a lookup its references, calls' operands and
+    /// bindings lead to finds that step again (a lookup bounded to the
+    /// bases, `active(…)`'s, or to the rules before it, `base`'s, never
+    /// does).
+    fn cycles(&self, world: &World, id: (usize, usize), cx: Cx<'_>, expr: &Expr) -> bool {
         let stack = self.stack;
-        let start = (source.target, op.path.clone());
         let mut seen: Vec<(Target, String)> = Vec::new();
-        let mut pending: Vec<(Cx<'_>, &Expr)> = vec![(cx_of(source, op), expr)];
+        let mut pending: Vec<(Cx<'_>, &Expr)> = vec![(cx, expr)];
         while let Some((cx, expr)) = pending.pop() {
             for reference in refs(expr) {
                 for place in stack.places(world, reference, cx) {
                     let founds = match place {
                         Place::Field(target, path, bound) => {
-                            if target == start.0 && path == start.1 && *reference != Ref::Base {
-                                return true;
-                            }
                             stack.value_at(world, target, &path, bound, 0)
                         }
                         Place::Binding(source, binding) => vec![binding_found(source, binding)],
                         Place::Stated => Vec::new(),
                     };
                     for found in founds {
+                        if found.id == Some(id) {
+                            return true;
+                        }
                         if let Got::Expr(next) = found.got {
                             let node = (found.cx.target, found.cx.path.to_owned());
-                            if node == start && found.id.is_some() && *reference != Ref::Base {
-                                return true;
-                            }
                             if !seen.contains(&node) {
                                 seen.push(node);
                                 pending.push((found.cx, next));
