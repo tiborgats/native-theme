@@ -124,6 +124,10 @@ pub struct Report {
     /// Field facts that apply where their part is not drawn, so compare
     /// nothing: the part's own key is compared there (S17, ADD-A130).
     pub fields_not_drawn: u64,
+    /// Facts whose own `when` names no combination the state model draws
+    /// (its required variants all excluded), so it applies to no element
+    /// the platform draws; a measured derivation's such pass fails.
+    pub whens_not_drawn: u64,
     /// Combinations skipped: a context or a condition the gate cannot set.
     pub combinations_skipped: u64,
     /// Every state model's combinations, by entry.
@@ -1127,11 +1131,12 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
                 flavors.iter().map(|flavor| Some(flavor.as_str())).collect()
             };
             let keys = prepare(&platform, preset.id(), &repo, &mut report);
+            let not_drawn = not_drawn_map(&platform, preset.id(), &mut report);
             for flavor in flavors {
                 declarations_run(&platform, preset, flavor, &mut report);
-                check(&platform, preset, flavor, &keys, &mut report);
+                check(&platform, preset, flavor, &keys, &not_drawn, &mut report);
                 let entries = projected(&platform, preset, flavor, &mut report);
-                derivations(preset, flavor, &keys, &entries, &mut report);
+                derivations(preset, flavor, &keys, &entries, &not_drawn, &mut report);
             }
         }
     }
@@ -1325,6 +1330,25 @@ fn complete(mut combination: Combination, when: &Value, entry: &Model) -> Option
 /// preset: an entry naming another preset left out; one naming what the
 /// model does not hold yet holds on no element the gate queries, which
 /// cannot hold the name either; one the model refuses is a failure.
+/// Each state-model entry's `not_drawn` entries read for the preset, once,
+/// by [`entry_id`].
+type NotDrawn = BTreeMap<String, Vec<When>>;
+
+/// A state-model entry's identity: its file, widget and conditions.
+fn entry_id(entry: &Model) -> String {
+    format!("{} {} {:?}", entry.file, entry.widget, entry.conditions)
+}
+
+/// Every entry's `not_drawn` entries for the preset, each refusal reported
+/// once, whatever the passes and flavours that read them.
+fn not_drawn_map(platform: &Platform, preset: &str, report: &mut Report) -> NotDrawn {
+    platform
+        .models
+        .iter()
+        .map(|entry| (entry_id(entry), not_drawn_whens(entry, preset, report)))
+        .collect()
+}
+
 fn not_drawn_whens(entry: &Model, preset: &str, report: &mut Report) -> Vec<When> {
     let mut out = Vec::new();
     for table in &entry.not_drawn {
@@ -1352,6 +1376,7 @@ fn check(
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
+    entry_not_drawn: &NotDrawn,
     report: &mut Report,
 ) {
     let schemes = preset.schemes();
@@ -1378,7 +1403,10 @@ fn check(
         }
         not_drawn.insert(
             entry.widget.clone(),
-            not_drawn_whens(entry, preset.id(), report),
+            entry_not_drawn
+                .get(&entry_id(entry))
+                .cloned()
+                .unwrap_or_default(),
         );
         let mut mentioned = Mentioned::of_model(entry);
         for key in keys
@@ -1457,6 +1485,7 @@ fn check(
                 None => Some(combination),
             };
             let Some(combination) = combination else {
+                report.whens_not_drawn += 1;
                 continue;
             };
             for vector in vectors {
@@ -1708,6 +1737,7 @@ fn derivations(
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
     entries: &[Model],
+    entry_not_drawn: &NotDrawn,
     report: &mut Report,
 ) {
     let root = root_inputs();
@@ -1746,9 +1776,9 @@ fn derivations(
                     ));
                     continue;
                 };
-                let not_drawn = entry
-                    .map(|entry| not_drawn_whens(entry, preset.id(), report))
-                    .unwrap_or_default();
+                let not_drawn: &[When] = entry
+                    .and_then(|entry| entry_not_drawn.get(&entry_id(entry)))
+                    .map_or(&[], Vec::as_slice);
                 let mut text = String::new();
                 for (input, color) in &pass.inputs {
                     text.push_str(&format!(

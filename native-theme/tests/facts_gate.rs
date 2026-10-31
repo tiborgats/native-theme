@@ -911,5 +911,32 @@ fn facts_gate() {
     for (place, (id, key, count)) in &report.pending {
         eprintln!("  pending: {place}: {id} `{key}` on {count} combinations");
     }
+    for (place, (key, pending, count)) in &report.unchecked {
+        eprintln!(
+            "  unchecked: {place}: `{key}` beside the pending {pending} on {count} combinations"
+        );
+    }
+    eprintln!(
+        "  {} field facts where their part is not drawn, {} facts whose own when draws nothing",
+        report.fields_not_drawn, report.whens_not_drawn
+    );
     assert_eq!(report.failures, Vec::<String>::new());
+    // The release's gate (S17, R21): 0.8.0 is released with nothing skipped
+    // and no pending fact, which the plan's final gate runs this test with
+    // `FACTS_GATE_RELEASE=1` to require.
+    if std::env::var_os("FACTS_GATE_RELEASE").is_some() {
+        assert_eq!(
+            (
+                report.pending.len(),
+                report.keys_not_held.len(),
+                report.whens_not_held.len(),
+                report.other_presets,
+                report.combinations_skipped,
+                report.variants_not_held.len(),
+                report.unread.len(),
+            ),
+            (0, 0, 0, 0, 0, 0, 0),
+            "the release's gate: no pending fact, nothing skipped, no value refused"
+        );
+    }
 }
