@@ -2439,9 +2439,12 @@ content or breakpoint variant the widget does not declare (as an undeclared dens
 application asked for, an unavailable widget, an element holding none of
 its widget's `requires_variants` (S10), or a part the widget does not have, and `NotDrawn` for a part whose style resolved `Absent` (the children of
 a `NotDrawn` or `NotAvailable` element take the parent's scope), and `NotAvailable(Variant)` for an element holding two
-variants of one exclusive variant group (S10), and `NotAvailable(Pending(<id>))` where its answer would hold a path the
-preset's `[pending]` table lists and no layer states (S17; ADD-A128), `tokens` and `role` answering `Styled` for it
-too (`Styled<ResolvedTokens>`, `Styled<Option<Color>>`); drops excluded flags by the exclusive groups (S10),
+variants of one exclusive variant group (S10), and, on a preset whose `[pending]` table is not empty, `NotAvailable(Pending(<id>))` only where
+its answer reaches a path the table lists and no layer states (S17; ADD-A128), `tokens` and `role` answering `Styled`
+for it too (`Styled<ResolvedTokens>`, `Styled<Option<Color>>`): the answer is per query, not per field, so `tokens()`,
+whose answer is the whole token set, is the coarse case, `Pending` for any scope while a token path is listed, and an
+element's style is `Pending` where one of its fields is (a per-field answer would give every resolved type a pending
+state for a mechanism that ends with 0.8.0's empty tables); drops excluded flags by the exclusive groups (S10),
 the element's by its widget's groups, and each ancestor's and sibling's states (which `ContextMatch.states` and
 `SiblingMatch.states` match) by its own widget's groups, and ignores a density the widget does not declare (R15);
 orders the element's kept flags of each recency set by `Element.state_order` and the set's stated order (S7.2), a flag
@@ -3404,7 +3407,7 @@ failed re-read keeps the previous reader layer and `ReaderState` (S8).
   `reload_reader_async` is added, because the portal reader is asynchronous.
 - *Icon loading* (`SystemTheme::icon`, `icon_theme_for`): `icon` is kept as `ResolvedTheme::icon` above, which takes the
   part's resolved icon style and the scope's direction and language (R25.8); `icon_theme_for(mode)` is replaced by the
-  resolved `token.icons` (`ResolvedTheme::tokens(scope)`'s `icons`: set, theme, theme fallback), which rules state per
+  resolved `token.icons` (the `Style` answer of `ResolvedTheme::tokens(scope)`, its `icons`: set, theme, theme fallback), which rules state per
   scheme (`breeze`, `breeze-dark`) and which a re-resolution after a scheme change gives anew (S8). The `icons`
   module's free loaders (a set and theme the caller names, custom icons through `IconProvider`) stay for icons outside
   the theme, with `Color` for `Rgba`; `icon_indicator` and `load_icon_indicator` go (S2.7).
@@ -3666,7 +3669,11 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   the preset validates and is bundled (S19.1); the query answers `NotAvailable(Unavailable::Pending(<id>))` where its
   answer holds such a path (S8), honestly, as no value is invented; a layer above the preset may state the path,
   which then resolves as any field. The gate checks that the table equals the preset's pending-only paths, neither
-  more nor fewer, and reports each with its id; 0.8.0 is released with every `[pending]` table empty, as R21 and
+  more nor fewer, and reports each with its id. So that a listed path costs no coverage (with U149 standing, every
+  `tokens()` answer on `adwaita` would be `Pending`), the gate adds for each listed path a layer of its own, by the
+  same route an application has, stating the path with a value marked synthetic in the gate's source, never bundled:
+  it then compares every other fact as before, never compares the synthetic value with a fact, and keeps the pending
+  fact reported; 0.8.0 is released with every `[pending]` table empty, as R21 and
   ADD-A122 require of pending facts. Rejected: the preset left out of the bundle (the gate then resolves none of its
   facts, M1a design decision 7, against the plan's queue of every preset per unit); S6.1's deferral of the field
   from its unit (it removes the field from every preset and context, and a pending leaf may be a leaf of a type
