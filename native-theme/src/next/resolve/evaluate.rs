@@ -772,6 +772,28 @@ impl<'t> Cx<'t> {
         out
     }
 
+    /// The font of the text style being resolved, as its frame resolved it
+    /// once (`text_style`).
+    pub(crate) fn framed_font(&self) -> Option<ResolvedFont> {
+        self.text.last().and_then(|frame| frame.font.clone())
+    }
+
+    /// The line height of the text style being resolved, as its frame
+    /// resolved it once.
+    pub(crate) fn framed_line_height(&self) -> Option<Length> {
+        self.text.last().and_then(|frame| frame.line_height)
+    }
+
+    /// `f` evaluated with font sizes converted from points and never
+    /// text-scaled: a `Value<FontSize>` field outside a text style, a widget
+    /// value's (S1, S9.4).
+    pub(crate) fn unscaled<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> R {
+        let saved = std::mem::replace(&mut self.unscaled, true);
+        let out = f(self);
+        self.unscaled = saved;
+        out
+    }
+
     /// Whether a part's step applies to the element: a base always, a rule
     /// where `applies` accepts its selector.
     fn kept(&self, selector: Option<&Selector>) -> bool {

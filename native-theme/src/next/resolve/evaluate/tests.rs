@@ -1128,3 +1128,17 @@ fn sizes_read_outside_active() {
     });
     assert_eq!(size, Some(Val::FontSize(Px(18.0))));
 }
+
+/// Task 11a's review: a text style's font and line height are resolved once
+/// for its frame and taken from there, so what their evaluation refuses is
+/// recorded once.
+#[test]
+fn text_style_font_resolved_once() {
+    let cycle =
+        "[tokens.text.roles.body.font]\nsize = \"= mul(token.text.roles.body.font.size, 1)\"";
+    let theme = resolved(&[BASE, cycle], 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
+    let evaluated = theme.evaluate_part(LABEL, &element, &|_| true);
+    assert_eq!(evaluated.refusals.len(), 1, "{:?}", evaluated.refusals);
+}

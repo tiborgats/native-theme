@@ -225,6 +225,15 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
             .map(|name| format_ident!("{name}"));
         return (quote!(cx.patch::<#block>(&items)), true);
     }
+    // A text style's font and line height are its frame's, resolved once
+    // when the style is entered (`Cx::text_style`).
+    if owner == "TextStyle" {
+        match name_of(field).as_str() {
+            "font" => return (quote!(cx.framed_font()), true),
+            "line_height" => return (quote!(cx.framed_line_height()), false),
+            _ => {}
+        }
+    }
     match &field.shape {
         Shape::Leaf => {
             if let Some(inner) = generic_arg(ty, "Option").and_then(value_inner) {
@@ -234,11 +243,19 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
                 return (quote!(cx.plain::<#ty>(&items)), true);
             };
             let size = owner == "Font" && name_of(field) == "size";
+            // A text style's sizes are text-scaled (S9.4); any other font
+            // size, a widget value's, only converted from points (S1).
+            let scaled = owner == "Font" || owner == "TextStyle";
             if holds_value(ty, Some(&["FontSize"])) {
-                if field.attrs.auto {
-                    (quote!(cx.font_auto(&items, #size)), false)
+                let call = if field.attrs.auto {
+                    quote!(cx.font_auto(&items, #size))
                 } else {
-                    (quote!(cx.font(&items, #size)), false)
+                    quote!(cx.font(&items, #size))
+                };
+                if scaled {
+                    (call, false)
+                } else {
+                    (quote!(cx.unscaled(|cx| #call)), false)
                 }
             } else if field.attrs.auto {
                 (quote!(cx.auto(&items, #signed)), false)

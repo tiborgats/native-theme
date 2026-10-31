@@ -112,6 +112,41 @@ mod tests {
         }
     }
 
+    /// A font size outside a text style (a widget value's) is converted, not
+    /// text-scaled (S1, S9.4); a text style's font and line height are its
+    /// frame's (`Cx::text_style`).
+    #[test]
+    fn font_sizes_scale_only_in_text_styles() {
+        let value = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub min_font_size: Value<FontSize>,
+            }
+        });
+        assert!(
+            value.contains("cx . unscaled (| cx | cx . font (& items , false))"),
+            "{value}"
+        );
+        let style = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct TextStyle {
+                #[parts(block = "fields")]
+                pub font: Font,
+                pub letter_spacing: Value<FontSize>,
+                #[parts(auto)]
+                pub line_height: Value<FontSize>,
+            }
+        });
+        for expected in [
+            "cx . framed_font ()",
+            "cx . framed_line_height ()",
+            "cx . font (& items , false)",
+        ] {
+            assert!(style.contains(expected), "{expected}\n{style}");
+        }
+        assert!(!style.contains("cx . unscaled"), "{style}");
+    }
+
     #[test]
     fn auto_value_px_resolves_to_length() {
         let out = expand(syn::parse_quote! {
