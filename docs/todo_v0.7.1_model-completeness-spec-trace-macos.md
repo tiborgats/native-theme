@@ -108,7 +108,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` (`tinted`'s fills, at rest, pressed and disabled, and a disabled `primary`'s `= alpha(input.accent, <a>)`, the pressed and checked opaque ones `mix` toward black or white, measured derivations, ADD-A125) | rule |
 | MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill` as expressions on `element.color` (bezelColor, contentTintColor; the parts declare it, `data = { body = ["color"], label = ["color"], icon = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-B08 | `button.body.corners @ variant pill / @rounded_rectangle / circular` | rule |
-| MAC-B08 | `button.body.margin @ variant circular` (the drawn circle is the body's box inside the wider frame, its corners `Full` on it, measured, ADD-A125) | rule |
+| MAC-B08 | `button.body.margin @ variant circular cond preset:macos-tahoe` (the drawn circle is the body's box inside the wider frame, its corners `Full` on it, measured at `large` and `extra_large`, `mini` to `regular` pending U143; on `macos-monterey` the frames are square, ADD-A125) | rule |
 | MAC-B08 | `button.body.corners @ size small / regular / large / extra_large (automatic shape)` | rule |
 | MAC-B09 | `button.icon.icon.size @ size mini / small / regular / large / extra_large` | rule |
 | MAC-B09 | `button.icon.icon.fill @ {pressed} / {disabled} / {default}` | rule |

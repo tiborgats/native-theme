@@ -244,7 +244,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.128 | `tab.pane.fill, tab.pane.stroke, tab.pane.corners, tab.pane.padding` | field |
 | K1.128 | `tab.pane.corners @ variant top / variant bottom / variant left / variant right` | rule |
 | K1.129 | `tab.label.focus (Underline) @ {selected,focus_visible}` | rule |
-| K1.129 | `tab.label.focus.transition` | field |
+| K1.129 | `tab.label.focus.transition` (its fade out pending ADD-A126, ledger queue #85) | field |
 | K1.130 | `tab.icon.icon.size` | field |
 | K1.130 | `tab.values.icon_text_gap` | field |
 | K1.131 | `tab.values.alignment` | field |
@@ -1014,8 +1014,8 @@ rationale, each decided in the core's additions register (S22).
 | K3.23 | `input.body.stroke @ {focused}, combo_box.body.stroke @ {focused}` (the frames' focus colour, as K1.40, K1.243 state it; buttons by `{focus_visible}`, K1.20) | rule |
 | K3.23 | `slider.thumb.stroke @ {focused}` (K1.100); `scrollbar.thumb.fill @ context any scroll_view {focus_within}` (K1.92): the thumbs' focus colour, each on its own part | rule |
 | K3.23 | `role.window.decoration_focus` | role |
-| K3.24 | `FocusIndicator.transition` | field |
-| K3.24 | `PartStyle.transitions group Focus` | field |
+| K3.24 | `FocusIndicator.transition` (its fade out pending ADD-A126, ledger queue #85) | field |
+| K3.24 | `PartStyle.transitions group Focus` (the group's name, which `PropertyGroup` lacks, pending ADD-A126, ledger queue #85) | field |
 | K3.40 | `role.selection.<role> @ cond window_inactive (= kde_effects(kde_selection_inactive(<Selection's inactive input of that role>, <Window's inactive input of that role>, active(role.selection.background), <role kind>), kde_selection_inactive(<Selection's inactive background input>, <Window's inactive background input>, active(role.selection.background), background), inactive, <role kind>): KColorScheme's start for the Selection set's Inactive group, Window's colours (the background tinted toward Selection's) while token.kde.inactive_change_selection_color holds, else Selection's own (kcolorscheme.cpp:304-316, :374-378), with the inactive effects applied over it (:380-391; S2.2, R5.1))` | rule |
 | K3.40 | `token.kde.inactive, token.kde.inactive_change_selection_color, token.kde.inactive_enabled` | token |
 | K3.40 | `reader:kde:kdeglobals [ColorEffects:Inactive] ChangeSelectionColor, Enable` | reader |
@@ -1295,7 +1295,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-13† | `autocomplete.values.placement (KTextEditorCompletion: under the completion's start, its gap = an expression on the font's height; kept inside the window) @ context code_editor` | placement |
 | K-P3-13† | `autocomplete.details_pane @ context code_editor (the argument hints and the documentation tip)` | rule |
 | K-P3-14† | `code_editor.annotation_border.stroke @ {hover}; code_editor.annotation_border.padding` | rule |
-| K-P3-15† | `token.theme_change (the toolkit's own: KWin fades the windows)` | token |
+| K-P3-15† | `token.theme_change (the toolkit's own, measured; KWin's fade is the compositor's, next row)` | token |
 | K-P3-15† | - (KWin's Blend Changes cross-fade of every window) | out (R1.1) |
 | K-P3-16† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | K-P3-16† | `token.behavior.key_repeat` (kcminputrc's `KeyRepeat` off, keys never repeating: `none`, `Behavior.key_repeat`'s `None`; ADD-A104) | token |

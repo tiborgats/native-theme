@@ -186,14 +186,15 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | W-11† | - (the shadow per state, the window controls and the open, minimize and arrange motion, which the system draws, as W-2; the close is the scene's dismissal animation, P3-5†) | out (R1.1) |
 | B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ variant flat / variant @gray / variant tinted / variant primary` (plain, gray, tinted, filled: fill and foreground; borderless, bordered, borderedTinted and borderedProminent draw pixel-identically to these four on iOS 18.6 and 26.5, run 40984711960, so the connector maps them to the same variants: the catalogue) | rule |
 | B-1 | `button.body.fill, button.label.text.fill, button.icon.icon.fill @ {pressed} variant flat / {pressed} variant @gray / {pressed} variant tinted / {pressed} variant primary` (each style's pressed look) | rule |
-| B-1 | `[declare.widget.button] exclusive_variants for ios-*: [flat, @gray, tinted, primary], [flat, @gray, tinted, glass, clear]` (one configuration style at a time, S10, ADD-A121) | field |
+| B-1 | `[declare.widget.button] exclusive_variants for ios-*: [flat, @gray, tinted, primary, @system, @info, @contact_add, close, back, done, add, @share, @paste_control, route], on ios-26 also [flat, @gray, tinted, glass, clear, the same forms], and [@cancel, @role_primary, destructive]; requires_variants the styles and forms` (one configuration style or form at a time, one role, S10, ADD-A121, ADD-A125) | field |
+| B-11 | `[declare.widget.button] variant_products for ios-*: each configuration style with { any = [@cancel, @role_primary, destructive] }; on ios-26 [{ one = [glass, clear] }, { one = [primary] }, { any = [@cancel, @role_primary, destructive] }]` (the role × style sets the host drew, ADD-A125) | field |
 | B-2 | `button.body.fill @ variant glass / variant clear / variants {glass,primary} / variants {clear,primary}` (glass, clearGlass, prominentGlass, prominentClearGlass: a `Material` layer; the prominent styles' tint is the material's `tint`) | rule |
 | B-2 | `button.body.{transform,fill} @ {pressed} variant glass` (the interactive press: scale and highlight) | rule |
 | B-2 | `button.body.transitions @ variant glass` (the press response's motion, groups `Transform`, `Fill`) | rule |
 | B-3 | `button.label.text, button.body.padding, button.body.corners, button.body.min_height @ size mini / small / regular (UIKit medium) / large` | rule |
 | B-3 | `[declare.widget.button] sizes for ios-* and its default size` (`mini` draws as `small` on iPhone: its facts under `idiom:phone` equal `small`'s, the catalogue) | field |
 | B-4 | `button.body.corners @ variant @corner_fixed / variant @corner_small / variant @corner_medium / variant @corner_large / variant pill` (capsule is `pill`) | rule |
-| B-4 | `button.body.corners @ variant @corner_dynamic size mini / variant @corner_dynamic size small / variant @corner_dynamic size regular / variant @corner_dynamic size large` (`ios-26`, on the glass styles; stated at the default category until the host measures which text style's scaling it follows, then `= uifm_scaled(<radius>, <text role>)`, ADD-A55; the catalogue's Open items, ADD-A125) | rule |
+| B-4 | `button.body.corners @ variants {glass,@corner_dynamic} size mini / variants {glass,@corner_dynamic} size small / variants {glass,@corner_dynamic} size regular / variants {glass,@corner_dynamic} size large / variants {clear,@corner_dynamic} size mini / variants {clear,@corner_dynamic} size small / variants {clear,@corner_dynamic} size regular / variants {clear,@corner_dynamic} size large` (`ios-26`, on the glass styles alone, the connector setting `@corner_dynamic` only with them; stated at the default category until the host measures which text style's scaling it follows, then `= uifm_scaled(<radius>, <text role>)`, ADD-A55; the catalogue's Open items, ADD-A125) | rule |
 | B-4 | `reader:ios:the Dynamic Type category the dynamic radius follows` | readers (R18) |
 | B-5 | `button.body.opacity @ {pressed} variant flat` (13–18's plain button lowers its label's and image's alpha; it draws no bezel, so the group opacity is theirs) | rule |
 | B-5 | `button.body.transitions @ variant flat` (the alpha's fade, group `Opacity`) | rule |
@@ -209,7 +210,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-10 | `button.icon @ {@loading}` (`absent = true`: the image swapped out for the indicator; `icon` may be absent on `ios-*`) | rule |
 | B-11 | `button.label.text.fill @ variant destructive context dialog.action_area` (the destructive action's colour in alerts and action sheets; a standalone button with the role draws as normal, ADD-A125) | rule |
 | B-11 | `button.label.text.font.weight @ variant @cancel context dialog.action_area` (its weight in alerts and action sheets) | rule |
-| B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, the rule stated after B-13's style weight rules, ADD-A125) | rule |
+| B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, the rule stated after B-13's style weight rules and without a size, measured at `regular` and pending at `mini`, `small` and `large`, ADD-A125) | rule |
 | B-12 | `button.icon.glyph, button.body.fill, button.body.min_width, button.body.min_height @ variant close / variant @info / variant @contact_add` | rule |
 | B-12 | `button.body.padding, button.label.text @ variant @system` (`UIButton(type: .system)` with no configuration, ADD-A125) | rule |
 | B-12 | `button.body.fill, button.icon.glyph.fill @ {pressed} variant close / {pressed} variant @info / {pressed} variant @contact_add` | rule |
@@ -222,7 +223,6 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-16 | `button.icon.transitions` (the symbol content transition: a `TransitionKind::Keyed` transition of group `Icon`, R25.12, ADD-A27) | field |
 | B-17 | `button.body.transform, button.body.fill, button.body.shadow @ {hover}` | rule |
 | B-17 | `button.body.transitions` (the lift's motion, groups `Transform`, `Shadow`, `Fill`) | field |
-| B-18† | `button.menu_indicator.glyph @ variant menu` (the automatic indicator) | rule |
 | B-18† | `button.menu_indicator.glyph @ variants {menu,@indicator_popup}` | rule |
 | B-18† | `button.menu_indicator @ variants {menu} !variants {@indicator_popup}` (`absent = true`: the automatic indicator, and `none`, which draws alike, the base, ADD-A125) | rule |
 | B-18† | `button.values.menu_trigger @ variants {menu,@menu_on_hold}` (the touch-and-hold variant) | rule |

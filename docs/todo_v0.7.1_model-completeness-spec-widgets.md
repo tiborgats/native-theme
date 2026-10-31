@@ -45,11 +45,18 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   effective highlight, `selectedTextBackgroundColor`, `os-probe-macos-26/probe.toml:635` against
   `accent-red/probe.toml:635`, and left `highlightColor` alike); should that move it, it becomes an input (S9.1;
   ADD-A125).
-- Every `material-3` part whose `interaction` states a bounded ripple: whether it is a Compose `Surface`, which clips
-  its content to its shape (`Surface.kt:564`), so the ripple to the part's outline; Compose's plain menu item is a
-  clickable `Row` with no clip (`Menu.kt:2152-2160`), its shaped item a `Surface` (`:2020-2050`), so the facts state
-  per part which; a part that is no `Surface` is a class 2 change (a clip field) (S2.12; ADD-A125).
-- `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw (ADD-A125).
+- A `material-3` part with rounded corners whose `interaction` states a bounded ripple and that is no Compose `Surface`
+  (which clips its content to its shape, `Surface.kt:564`): the ripple is clipped to the box alone there, where S2.12
+  clips it to the outline too; a square part clips alike either way (`RippleDrawable.java:890-891`), as Compose's plain
+  menu item, a clickable `Row` with no clip (`Menu.kt:2152-2160`; its shaped item is a `Surface`, `:2020-2050`). The
+  value phase records which parts are such; one that is would be a class 2 change (a clip field) (S2.12; ADD-A125).
+- A Compose colour animation through `Color.lerp` driven by an overshooting spring, which clamps the fraction where
+  the transitions' `Oklab` clamps the components: the toggleable FAB's container colour in the FAB menu's `Morph`
+  presentation (`FloatingActionButtonMenu.kt:456-461`, `:584`, `:615`, MAT-N3); a fact that needs it takes S2.7's
+  per-transition override (ADD-A125).
+- `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw, its rule stated
+  without a size and pending facts at those sizes; `@system`'s title at the content size categories other than L
+  (ADD-A125).
 - The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
   `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
   thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
@@ -1590,7 +1597,7 @@ spaces:
     (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`), the role's weight
     rule stated after the styles' own weight rules, B-13, and stated at `regular` (UIKit's medium), the one size the
     host drew it at, the others a measurement (Open items; ADD-A125); the state
-    model's `variant_sets` lists the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
+    model's `variant_sets` or `variant_products` give the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
     styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
@@ -1601,7 +1608,10 @@ spaces:
     `@corner_dynamic` declared on `ios-26` only (the non-glass styles' default, which they draw as the style alone,
     so on `ios-13`, which has no glass style, it is the base under another name; on `ios-26` the glass styles, whose
     default is capsule, `pill` there, draw it otherwise; the iOS host's `cells.<scheme>.<style>__corner_style_dynamic`,
-    run 41020880059; ADD-A125); the roles `@cancel` and `@role_primary` (UIKit's `UIButton.Role`, `UIButton.h:37-42`
+    run 41020880059; so the connector sets `@corner_dynamic` only with `glass` or `clear` and `pill` only with the
+    other styles, each the base under another name elsewhere, and the rules state its corners `@ variants
+    {glass,@corner_dynamic}` and `@ variants {clear,@corner_dynamic}`, the products building those sets alone;
+    ADD-A125); the roles `@cancel` and `@role_primary` (UIKit's `UIButton.Role`, `UIButton.h:37-42`
     in both pinned SDKs: `primary` makes the title heavier in every style, `cells.<scheme>.<style>__role_primary`
     weight trait 0.3 against 0.0, `ns_font_weight`'s 600, while the typed `primary` is the filled style; the cancel and destructive roles
     draw as normal on a standalone button and are variants for the hosts that draw them otherwise, an alert's or
@@ -1787,6 +1797,9 @@ spaces:
     square and `Full` on it a circle. On `macos-tahoe` `body`'s box is the drawn circle, its `corners` `Full` on that box, and
     its distance from the frame on each side is `body.margin`, measured as the probe reads the frame and the circle
     (S2.11's box: the frame is the margin box), so `Full` on the frame's box, a capsule, is never stated (ADD-A125).
+    Rejected: a drawn-box rule beside the box (a second box for one bezel, where `margin` is S2.11's own place for a
+    box inside its frame); `min_width` equal to `min_height` with the box centred in the frame (the frame's width is
+    AppKit's, wider than the circle, and the button's layout takes it).
   - `material-3`'s menu button follows R1.6's order: the menu-button tokens give its colours, opacities and
     elevations per state, the state layer's included (`material-web@2.5.0
     tokens/versions/latest/sass/_md-comp-filled-menu-button.scss:41-68`, `_md-comp-outlined-menu-button.scss`,
@@ -1795,8 +1808,11 @@ spaces:
     and draws its own menu button as a `TextButton` with a trailing arrow (`androidx@e4d933c9
     compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/DatePicker.kt:2528-2556`, "Replace
     with the official MenuButton when implemented"): the standard form takes `TextButton`'s, as that source does, and
-    the filled and outlined forms `Button`'s and `OutlinedButton`'s by the same rule, an inference the facts check where
-    the tokens and `ButtonDefaults` both state a value (the elevations, the state-layer opacities); the base's
+    the filled and outlined forms `Button`'s and `OutlinedButton`'s by the same rule, an inference their facts cite with
+    both sources, the composable's (`Button.kt`, `OutlinedButton`) and the rule's ground (`DatePicker.kt:2528-2556`),
+    checked where the tokens and `ButtonDefaults` both state a value (the elevations, the state-layer opacities), and
+    recorded in MAT-N8's trace row (rejected: a pending fact until Compose ships a menu button, which leaves the
+    motion of a drawn button unstated with a source to read); the base's
     `android_patterned` ripple, not material-web's `md-ripple` and `md-elevation`, which draw a browser's (ADD-A125).
   - Compose animates the border of every toggle form: `ElevatedToggleButton`, `FilledTonalToggleButton` and
     `OutlinedToggleButton` all pass theirs to `ToggleButton`, which animates its width by `FastSpatial` and its colour by
@@ -2026,7 +2042,7 @@ spaces:
     under `{checked}`, the close otherwise, MAT-SW3), `opacity` (the disabled icon's opacity, MAT-SW3), `transitions`
     (MAT-SW8's icon transitions).
   - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `interaction` (its state layer and press ripple, Compose's ripple indication, `Switch.kt:191-198`; S2.12; the
-    ripple's `box_part` `thumb`, no outset, ADD-A125),
+    ripple's `indication_box` the `thumb` with a zero outset, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
   - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
     Q1.103).
@@ -2112,7 +2128,7 @@ spaces:
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
-    ripple's `box_part` `box` with `box_outset` Compose's `CheckboxDefaultPadding`, `Checkbox.kt:1064-1065`, ADD-A125),
+    ripple's `indication_box` the `box` grown by Compose's `CheckboxDefaultPadding`, `Checkbox.kt:1064-1065`, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
@@ -2185,7 +2201,7 @@ spaces:
     (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
-    ripple's `box_part` `ring` with `box_outset` Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`, ADD-A125),
+    ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`.
 - **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
@@ -8770,8 +8786,9 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
 `controlBackgroundColor`), `selected_control`, `selected_control_secondary`, `selected_control_text` [MAC-DF04,
 MAC-DF05]; `highlight` (`highlightColor`, `NSColor.h:284` in the Xcode 26.6 SDK, the colour `highlightWithLevel:`
 blends toward, which the accent does not change, the probe's main and `accent-red` passes reading it alike in both
-appearances, `os-probe-macos-26/probe.toml:667`, `:741`, and `accent-red/probe.toml` at the same lines: a literal per
-scheme, S9.1; whether the highlight setting moves it no pass has measured) [MAC-DF05]. The
+appearances, run 41006842699's `os-probe-macos-26/probe.toml:667`, `:741`, and `accent-red/probe.toml` at the same lines,
+while that pass moved the effective highlight, `selectedTextBackgroundColor`: a literal per scheme, S9.1, provisional
+until a pass sets an explicit highlight colour other than the accent's, the Open items) [MAC-DF05]. The
 colours that follow the accent or the highlight setting are inputs (R2.6, S9.1: `input.highlight`,
 `selectedTextBackgroundColor`, the highlight setting's colour; `input.selected_content_background`,
 `input.keyboard_focus_indicator`, `input.selected_control`), each in the preset's `[declare] accent_inputs` (S9.1: an

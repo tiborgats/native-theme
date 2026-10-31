@@ -696,7 +696,8 @@ MAT-X13–MAT-X15, X-MO-1).
   WinUI's pressed knob stretching (W1-120) and its chevron (W1-132).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
-  Material state springs; Apple's response and damping fraction convert to it exactly; a curve the toolkit computes
+  Material state springs; Apple's response and damping fraction convert to it exactly; the identity, however a source
+  writes it, is `Linear` (ADD-A125); any other curve the toolkit computes
   by a function of its own is one of a closed set of platform curves, each implemented once in native-theme to its
   cited source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16). The set holds
   Kirigami's velocity-dependent animations (Q3.26, CONTRA-2) and Qt's and libadwaita's easing functions (CONTRA-7),
@@ -753,8 +754,8 @@ MAT-X13–MAT-X15, X-MO-1).
   (`CompositionColorSpace_Rgb`, which its brush transitions use, `microsoft-ui-xaml@2.5.1
   src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111`) and a UI-thread straight 8-bit one for
   storyboard animations it does not convert (`src/dxaml/xcp/core/animation/ColorAnimation.cpp:51-131`); its controls'
-  colour changes take the first, so one token still states them, and the second needs an override only if a fact
-  shows a control on it. **Decision:** the token, measured where the toolkit's arithmetic is not in a source (WinUI's
+  brush transitions take the first, so one token states them; whether a control's storyboard colour animation takes
+  the second is open (the specification's catalogue, Open items), and needs an override only if a fact shows one. **Decision:** the token, measured where the toolkit's arithmetic is not in a source (WinUI's
   compositor, Core Animation); a toolkit found to mix spaces within one preset and condition is a class 2 change to a
   per-transition override. A material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
@@ -793,10 +794,12 @@ MAT-X13–MAT-X15, X-MO-1).
   (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
   `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
   `AdwAnimation`, still runs, `adw-tab.c:857-862`, and the preset states which transitions a suspension
-  reaches; a transition already running when the suspension starts finishes); or instant (an instant switch
+  reaches; what a transition already running when the suspension starts does is not yet stated, ledger queue #103,
+  ADD-A126 to come); or instant (an instant switch
   with property transitions as usual). Each preset's kind is a fact, measured where no source states it
   (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
-  transitions run as stated (Breeze's decoration shadow, K1.17; Mica's fade, W3-10).
+  transitions run as stated (Breeze's decoration shadow on a change of activation, K1.17; Mica's fade, W3-10); which
+  changes start which transitions is not yet stated (the specification's S2.7, ledger queue #95, ADD-A126 to come).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes
@@ -833,7 +836,8 @@ non-linear font scaling (MAT-X19) are not a single factor: those platforms' read
 
 **Points.** A size stated in points becomes logical pixels before any of this, at the platform's font DPI, which is not
 one constant across the platforms (today's `ResolutionContext::font_dpi`): the preset states its platform's DPI as a
-token, from its facts, and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
+token, from its facts, or 72 where the platform's point is the logical pixel, the model's own value (Apple's; the
+specification's S9.4, ADD-A125), and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
 X11, then `Xft.dpi`, as the facts record them); a change of it is a theme change (R9). Folding the DPI into the
 text-scaling factor was rejected: that factor also scales sizes stated in pixels and is 1 where the platform scales by
 the font size itself, so it would scale pixel-stated fonts wrongly; a fixed DPI in the code was rejected as false on
@@ -873,7 +877,7 @@ still measured. Elsewhere a glyph's size, stroke width and fill are its values.
 
 **Focus indicator:** a block (R2.1) every focusable part's style carries: a kind (ring, filled ring, underline,
 none), stroke, offset, corners (concentric with its part unless stated), shadow and transition, shown in the
-focus-visible state. The base states it, by reference to the platform's token where the platform has one
+focus-visible state, how it enters and leaves not yet stated (ledger queue #85, ADD-A126 to come). The base states it, by reference to the platform's token where the platform has one
 indicator, or its own where a part differs (KDE's focus line under tab labels, K3.21). A focus that only changes a
 fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields become the token; when focus
 becomes visible is a widget behaviour (R17).
