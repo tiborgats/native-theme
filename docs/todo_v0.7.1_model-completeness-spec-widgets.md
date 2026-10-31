@@ -57,7 +57,8 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     the next run starts (the value drawn, the old end, an additive blend), its duration and curve, a spring's velocity,
     two stacked changes (a hover, then a press), an appearance and an accent change, a window deactivation and an
     occlusion landing in a run, and reduced motion; the member is added with the measurement, and until then those
-    transitions are pending facts, the presets stating none;
+    transitions are pending facts, the presets stating none; and the focus moving between elements (`FocusMove`,
+    X-FO-2, X-MO-1), which no member runs until that measurement adds it (S12);
   - `windows-11`: whether a theme switch animates the brush transitions and the visual-state storyboards (a brush
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on

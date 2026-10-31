@@ -728,7 +728,7 @@ MAT-X13–MAT-X15, X-MO-1).
   as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or
-  exit (an unmeasured motion `Absent` meanwhile; a popup's presence and an expander's content queue #118's), styled
+  exit (an unmeasured motion `Absent` meanwhile; a popup's and an expander's revealed content's motion queue #118's, the content's element `Presence` this batch's), styled
   in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
   the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
   under the style it enters, the ninth check's form: a part's entry is stated by its hidden style (`shown`), so it
