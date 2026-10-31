@@ -2114,7 +2114,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#b3d7ff"
-rows = ["MAC-DF05†"]
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2130,7 +2130,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#b3c6f5"
-rows = ["MAC-DF05†", "MAC-X22"]
+rows = ["MAC-X27", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2141,7 +2141,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#3f638b"
-rows = ["MAC-DF05†"]
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2157,7 +2157,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#466280"
-rows = ["MAC-DF05†", "MAC-X22"]
+rows = ["MAC-X27", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2429,6 +2429,187 @@ rows = ["MAC-I05"]
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:235"
 quote = "The foreground for unemphasized text selection (e.g. when the associated control/view/window is not key)"
+
+# The status roles (`role.global.status`): AppKit declares no status colour (U101).
+[[fact]]
+key = "role.global.status.success.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Colour roles and inputs (macos-monterey): NSColor values as macOS 15.7.9 resolves them per appearance (sRGB,
@@ -4533,7 +4714,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:light"] }
 value = "#b3d7ff"
-rows = ["MAC-DF05†"]
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4549,7 +4730,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
 value = "#b3c6f5"
-rows = ["MAC-DF05†", "MAC-X22"]
+rows = ["MAC-X27", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4560,7 +4741,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
 value = "#3f638b"
-rows = ["MAC-DF05†"]
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4576,7 +4757,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
 value = "#466280"
-rows = ["MAC-DF05†", "MAC-X22"]
+rows = ["MAC-X27", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4854,3 +5035,184 @@ rows = ["MAC-I05"]
 kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:224"
 quote = "The foreground for unemphasized text selection (e.g. when the associated control/view/window is not key)"
+
+# The status roles (`role.global.status`): AppKit declares no status colour (U101).
+[[fact]]
+key = "role.global.status.success.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []

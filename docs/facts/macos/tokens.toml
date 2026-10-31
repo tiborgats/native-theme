@@ -1749,6 +1749,147 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:200"
 quote = "NSFontTextStyle const NSFontTextStyleCaption2"
 
+# The platform's focus ring (`token.focus`): its paint is keyboardFocusIndicatorColor, the accent input
+# `input.keyboard_focus_indicator` (S9.1), its alpha the ring's opacity (MAC-X13); the probe's focus pass reads
+# the ring on buttons only (`button.body.focus`), so the token's other leaves are pending (U104).
+[[fact]]
+key = "token.focus.paint"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.keyboard_focus_indicator"
+rows = ["MAC-X13"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:243"
+quote = "NSColor *keyboardFocusIndicatorColor;"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:243"
+quote = "Keyboard focus ring around controls"
+
+[[fact]]
+key = "token.focus.kind"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.width"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.dash"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.top"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.right"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.bottom"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.left"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.transition"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+# The icon sizes (`token.icons.sizes`): no pass reads them (U102).
+[[fact]]
+key = "token.icons.sizes.toolbar.size"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.small.size"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.size"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.size"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.panel.size"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+# The font DPI (`token.text.font_dpi`, S9.4): no pinned source states it for AppKit (U105; queue #78).
+[[fact]]
+key = "token.text.font_dpi"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U105"
+rows = []
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Tokens (macos-monterey), mirroring macos-tahoe's above: the text styles' sizes (logical points, a point a px, S17)
 # and families, NSEvent's intervals, NSButton's periodic delay and NSAnimationContext's duration from the main pass of
@@ -3527,3 +3668,139 @@ inputs = ["input.accent"]
 kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTextInsertionIndicator.h:31"
 quote = "Defaults to NSColor.textInsertionPointColor."
+
+# The platform's focus ring (`token.focus`): its paint is keyboardFocusIndicatorColor, the accent input
+# `input.keyboard_focus_indicator` (S9.1), its alpha the ring's opacity (MAC-X13); the probe's focus pass reads
+# the ring on buttons only (`button.body.focus`), so the token's other leaves are pending (U104).
+[[fact]]
+key = "token.focus.paint"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.keyboard_focus_indicator"
+rows = ["MAC-X13"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:232"
+quote = "NSColor *keyboardFocusIndicatorColor;"
+
+[[fact]]
+key = "token.focus.kind"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.width"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.dash"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.top"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.right"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.bottom"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.offset.left"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.top_left"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.top_right"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.corners.curve"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.shadow"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "token.focus.transition"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U104"
+rows = ["MAC-X13"]
+
+# The icon sizes (`token.icons.sizes`): no pass reads them (U102).
+[[fact]]
+key = "token.icons.sizes.toolbar.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.small.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.panel.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+# The font DPI (`token.text.font_dpi`, S9.4): no pinned source states it for AppKit (U105; queue #78).
+[[fact]]
+key = "token.text.font_dpi"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U105"
+rows = []
