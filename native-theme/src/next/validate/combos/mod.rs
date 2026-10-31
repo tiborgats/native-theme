@@ -2479,10 +2479,18 @@ impl Checks<'_, '_> {
                 continue;
             }
             let chain = inset_chain(part);
+            let container = container_of(part);
             for corner in CORNERS {
                 let target = Target::Part(part);
                 let corner_path = format!("corners.{corner}");
                 let mut seeds = vec![Seed::Field(target, corner_path.clone(), false)];
+                if let Some(container) = container {
+                    seeds.push(Seed::Field(
+                        Target::Part(container),
+                        corner_path.clone(),
+                        false,
+                    ));
+                }
                 for (holder, field) in &chain {
                     for side in SIDES {
                         seeds.push(Seed::Field(
@@ -2501,6 +2509,19 @@ impl Checks<'_, '_> {
                         .collect();
                     if concentric.is_empty() {
                         continue;
+                    }
+                    // The container's matching corner can be `Ellipse`: no
+                    // one radius to be concentric with (S12, ADD-A124).
+                    let ellipse = container.is_some_and(|container| {
+                        stack
+                            .effective(world, Target::Part(container), &corner_path)
+                            .iter()
+                            .any(|found| variant(found) == Some("ellipse"))
+                    });
+                    if ellipse {
+                        for found in &concentric {
+                            self.problem(found.layer, found.at, ProblemKind::EllipseCorners);
+                        }
                     }
                     let inset = |side: &str| {
                         chain.iter().fold(
@@ -2652,6 +2673,29 @@ fn all_parts() -> Vec<TypedPart> {
 /// nearest part enclosing it whose catalogue entry lists `corners`, and
 /// that container's padding; within the widget, a root's container lying
 /// outside it.
+/// A `Concentric` corner's container (S2.4): the nearest enclosing part whose
+/// catalogue entry lists `corners`; `None` for a root, whose container lies
+/// outside the widget.
+fn container_of(part: TypedPart) -> Option<TypedPart> {
+    let widget = widget_of(part);
+    let info = registry::widgets().iter().find(|info| info.kind == widget)?;
+    let mut current = part_info(part)?;
+    for _ in info.parts {
+        if current.root {
+            return None;
+        }
+        let parent = current
+            .parent
+            .and_then(|name| info.part(name))
+            .or_else(|| info.parts.iter().find(|p| p.root))?;
+        if parent.fields.iter().any(|f| f.path == "corners") {
+            return TypedPart::from_names(widget, parent.name);
+        }
+        current = parent;
+    }
+    None
+}
+
 fn inset_chain(part: TypedPart) -> Vec<(TypedPart, &'static str)> {
     let widget = widget_of(part);
     let Some(info) = registry::widgets().iter().find(|info| info.kind == widget) else {
