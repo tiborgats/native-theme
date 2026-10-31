@@ -2945,7 +2945,8 @@ spaces:
     (S2.6), is (0.5, 0.5), the spinner's centre; the spoke's own shape inside that box is the spoke values', and the
     connector rotates the spoke at index i by i of `spoke_count` equal parts of a turn beyond the transform, each
     spoke behind the leading one faded by `spoke_opacity_ramp`.
-  - `icon` — the rotated or animated icon (KDE's rotated icons: KBusyIndicatorWidget's `view-refresh`, K1.230; Kirigami's `process-working-symbolic`, Q1.119; GtkSpinner's animated SVG and its
+  - `icon` — the rotated or animated icon (KDE's rotated icons, KBusyIndicatorWidget's `view-refresh`, K1.230, and, under `flavor:kirigami`, the
+    `process-working-symbolic` that qqc2-desktop-style's BusyIndicator rotates, Q1.119; GtkSpinner's animated SVG and its
     reduced-motion replacement) as a glyph: `glyph`, `transform` (its rotation, which the `loop`'s keyframes set:
     K1.230, Q1.119).
 - **Widget values:** `diameter_px: Value<Px>` (the default size; today's `diameter_px`, Q1.120);
