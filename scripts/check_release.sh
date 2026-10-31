@@ -42,7 +42,6 @@
 #                  clippy (-D warnings, all targets and features) and the
 #                  strict panic lints on
 #                  native-theme and native-theme-derive, their library tests,
-                 next's integration tests, doctests and missing-docs gate,
 #                  next's integration tests, doctests and missing-docs gate,
 #                  CI's MSRV job's checks, and the 0.8.0 plan's data checks
 #                  (the generated widgets, the function vectors, the facts and
@@ -80,9 +79,9 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  clippy (-D warnings, all targets and features) and the
                  strict panic lints on
                  native-theme and native-theme-derive, their library tests,
+                 next's integration tests, doctests and missing-docs gate,
                  CI's MSRV job's checks (each on its toolchain, -D warnings),
-                 and the
-                 0.8.0 plan's data checks (generate_widgets.py --check,
+                 and the 0.8.0 plan's data checks (generate_widgets.py --check,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py, check_spec_names.py,
                  check_spec_entries.py, check_spec_trace.py, check_ledger.py)
