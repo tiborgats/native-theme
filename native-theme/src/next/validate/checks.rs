@@ -2207,6 +2207,9 @@ impl Uses {
             self.flags
                 .extend(set.all_of.iter().chain(&set.none_of).cloned());
         }
+        // A `latest` term selects on its flag too (S7.2).
+        self.flags
+            .extend(selector.latest.iter().map(|(_, flag)| flag.clone()));
     }
 
     fn variants_of(&mut self, widget: Option<WidgetKind>, set: &SetMatch<VariantRef>) {

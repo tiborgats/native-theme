@@ -2678,7 +2678,9 @@ fn all_parts() -> Vec<TypedPart> {
 /// outside the widget.
 fn container_of(part: TypedPart) -> Option<TypedPart> {
     let widget = widget_of(part);
-    let info = registry::widgets().iter().find(|info| info.kind == widget)?;
+    let info = registry::widgets()
+        .iter()
+        .find(|info| info.kind == widget)?;
     let mut current = part_info(part)?;
     for _ in info.parts {
         if current.root {

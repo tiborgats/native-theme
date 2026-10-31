@@ -2969,3 +2969,19 @@ fn refusal_recency() {
         ["rules[0].when.latest.glow: `pressed` is not a member of the recency set `glow`"]
     );
 }
+
+/// A keyed flag a rule selects on in a `latest` term alone is used (S12).
+#[test]
+fn refusal_unused_flag_in_a_latest_term() {
+    let found = preset(
+        "[declare.widget.button]\nflags = [\"@x\"]\nrecency = { s = [\"@x\", \"hover\"] }\n\
+         [[rules]]\nwhen = { latest = { s = \"@x\" } }\ntarget = \"button.body\"\n\
+         set = { opacity = 1 }",
+    );
+    assert!(
+        !found
+            .iter()
+            .any(|problem| problem.contains("`@x` is declared but unused")),
+        "{found:?}"
+    );
+}
