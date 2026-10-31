@@ -194,6 +194,9 @@ enum Bindings {
     None,
 }
 
+/// A node of the cycle search: a place, and the step found there.
+type Node = (Target, String, Option<(usize, usize)>);
+
 /// What S3.3's step 1 finds for `surface.x`.
 enum Answer<'s> {
     /// A `Role { Surface(x) }` binding.
@@ -1861,7 +1864,7 @@ impl Checks<'_, '_> {
         let stack = self.stack;
         // A step is one node; a part's bindings, sharing one place, are told
         // apart by their steps.
-        let mut seen: Vec<(Target, String, Option<(usize, usize)>)> = Vec::new();
+        let mut seen: Vec<Node> = Vec::new();
         let mut pending: Vec<(Cx<'_>, &Expr)> = vec![(cx, expr)];
         while let Some((cx, expr)) = pending.pop() {
             for reference in refs(expr) {
