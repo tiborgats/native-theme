@@ -573,7 +573,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.85 | `list.values.indent_per_level, list.values.disclosure_gap, list.row.padding @ cond flavor:kirigami` | rule |
 | Q1.86 | `list.header_section.fill, list.header_section.text, list.sort_indicator.glyph @ cond flavor:kirigami` | rule |
 | Q1.86 | `list.values.header_fills_trailing` | field |
-| Q1.87 | `list.secondary_text.text (= token.text.keyed.smallest_readable, a whole text style as its neighbours' `text (= …)`, ADD-A125; fill = kirigami_lerp(widget.row.text.fill, surface.background, 0.25), TitleSubtitle.qml:69-71) @ cond flavor:kirigami` | rule |
+| Q1.87 | `list.secondary_text.text (font = token.text.keyed.smallest_readable; fill = kirigami_lerp(widget.row.text.fill, surface.background, 0.25), TitleSubtitle.qml:69-71) @ cond flavor:kirigami` | rule |
 | Q1.87 | `list.secondary_text.text.fill @ {selected} cond flavor:kirigami` | rule |
 | Q1.87 | `list.leading_icon.icon.size (= token.icons.sizes.keyed.medium.size) @ variant with_subtitle cond flavor:kirigami / (= token.icons.sizes.keyed.small_medium.size) @ !variant with_subtitle cond flavor:kirigami` | rule |
 | Q1.87 | `list.values.leading_gap @ cond flavor:kirigami` (mediumSpacing) | rule |
@@ -1364,7 +1364,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P4-13† | `scrollbar.thumb.min_height, scrollbar.thumb.min_width (whether it bounds the shortened thumb: to verify)` | field |
 | K-P4-14† | `rich_text.heading_1.text … rich_text.heading_6.text (heading_1 to heading_5 with the weight restated and text.font.size = mul(base, <factor>); heading_6 without either) @ variant html` | rule |
 | K-P4-14† | `rich_text.heading_1.margin … rich_text.heading_6.margin, rich_text.{paragraph,preformatted,block_quote,definition_term,definition_description}.margin, rich_text.values.list_indent_per_level (the list's) @ variant html` | rule |
-| K-P4-14† | `rich_text.inline_code.text, rich_text.preformatted.text (= token.text.keyed.fixed, a whole text style as its neighbours' `text (= …)`, ADD-A125; preserved white space) @ variant html` | rule |
+| K-P4-14† | `rich_text.inline_code.text, rich_text.preformatted.text (font = token.text.keyed.fixed; preserved white space) @ variant html` | rule |
 | K-P4-14† | `rich_text.list_marker @ variant html (nested lists indent, rich_text.values.list_indent_per_level)` | rule |
 | K-P4-14† | `link.text.text (fill = the link role, underlined) @ variant inline context rich_text` | rule |
 | K-P4-14† | `rich_text.table_header_cell.text (its weight restated, centred), rich_text.table_cell.text @ variant html` | rule |

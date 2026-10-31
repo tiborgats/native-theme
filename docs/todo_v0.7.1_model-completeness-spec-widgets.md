@@ -95,6 +95,8 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `macos-*`'s AppKit rendering (ADD-A125): whether AppKit draws its controls differently in an emphasized selected
   table row (`NSTableCellView`'s background style) is MAC-L17†'s measurement; if it does, the rendering's cache key
   needs the background style (S15).
+- `combo_box` on every preset (ADD-A125): its content layout, the label, the icon, the arrow area and the arrow,
+  editable and not, sized and drawn: ADD-A127, to come (ledger queue #113).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -9047,7 +9049,8 @@ whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subti
 `narrow_switcher_label`,
 `badge_label`, `tab_counter` [GN-1.194].
 
-**KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size (KTitleWidget's
+**KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size, their family,
+style, width, `case`, `axes` and `features` by reference to `token.text.roles.body`, the weight their own (S2.8; KTitleWidget's
 levels 1-4
 state the same factors, so one style serves both and its fact cites both sources) [Q1.3, K1.270]; the types per level:
 `heading_<n>_primary` (the primary type's weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
