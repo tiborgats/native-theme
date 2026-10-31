@@ -82,8 +82,10 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   bar item (`UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:31` in Xcode 26.6) is `primary` in `context
   toolbar.bar` (TB-4), drawn by the host but unread (hosted by SwiftUI, its Liquid Glass platter no single layer,
   `forms.<scheme>.bar_prominent`), its values pending a pass that reads them, as are the system Done item's on
-  `ios-26` and the system add item's (`forms.<scheme>.bar_system_done`, `bar_system_add`, unread); the default
-  `buttonSize` (U129, the entry's *Default sizes*).
+  `ios-26`, the system add item's and the system Action item's (`forms.<scheme>.bar_system_done`, `bar_system_add`,
+  `bar_system_action`, unread); the default `buttonSize` (U129, the entry's *Default sizes*).
+- `button` on `macos-tahoe` (ADD-A125): the circular bezel's `body.margin` at every size, and the circle's size at
+  `mini` to `regular` (MAC-B08, a register row of its own; the corners U143).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
