@@ -463,7 +463,21 @@ pub(crate) struct Cx<'t> {
     /// The DPI and the scaling factor, read once outside every chain of
     /// references (S9.4); `None` until read.
     sizes: Option<(Option<f32>, Option<f32>)>,
+    /// Inside a keyed scalar map whose units a declaration names (a
+    /// material's or a keyed kind's `params`): the depth of its place and
+    /// the declared units (S2.7, S10).
+    params: Option<(usize, &'t [(Key, ScalarUnit)])>,
     refusals: Vec<Refusal>,
+}
+
+/// Whose declared parameters a keyed scalar map holds (S2.7, S10).
+pub(crate) enum ParamsOf<'k> {
+    /// A material's: `material_params`.
+    Material,
+    /// A keyed transition kind's: its `transition_kinds` entry.
+    TransitionKind(&'k Key),
+    /// A keyed presentation kind's: its `presentation_kinds` entry.
+    PresentationKind(&'k Key),
 }
 
 /// One part's bindings in scope (S3.3): its surface set and its roles,
@@ -718,6 +732,7 @@ impl<'t> Cx<'t> {
             unscaled: false,
             bases_only: false,
             sizes: None,
+            params: None,
             refusals: Vec::new(),
         }
     }
@@ -738,6 +753,28 @@ impl<'t> Cx<'t> {
         let out = f(self);
         self.path.pop();
         self.outside = saved;
+        out
+    }
+
+    /// `f` evaluated at a `params` map of `of`, whose entries a call types
+    /// by their declared units, as validation does (S2.2, S2.7, S10).
+    pub(crate) fn params<R>(&mut self, of: ParamsOf<'_>, f: impl FnOnce(&mut Self) -> R) -> R {
+        let theme = self.theme;
+        let decl = &theme.declarations;
+        let kind = |kinds: &'t [(Key, Vec<(Key, ScalarUnit)>)], key: &Key| {
+            kinds
+                .iter()
+                .find(|(held, _)| held == key)
+                .map_or(&[][..], |(_, units)| units.as_slice())
+        };
+        let units = match of {
+            ParamsOf::Material => decl.material_params.as_slice(),
+            ParamsOf::TransitionKind(key) => kind(&decl.transition_kinds, key),
+            ParamsOf::PresentationKind(key) => kind(&decl.presentation_kinds, key),
+        };
+        let saved = self.params.replace((self.path.len(), units));
+        let out = f(self);
+        self.params = saved;
         out
     }
 
@@ -882,6 +919,7 @@ impl<'t> Cx<'t> {
         let saved_target = std::mem::replace(&mut self.target, target);
         let saved_path = std::mem::replace(&mut self.path, path);
         let saved_text = std::mem::take(&mut self.text);
+        let saved_params = self.params.take();
         let out = match target {
             // Another part of the element is evaluated in the scope it is
             // itself queried in (S2.2): the element's outer scope and the
@@ -903,6 +941,7 @@ impl<'t> Cx<'t> {
             _ => f(self, &folds),
         };
         self.bases_only = saved_bases;
+        self.params = saved_params;
         self.text = saved_text;
         self.path = saved_path;
         self.target = saved_target;
@@ -1620,10 +1659,23 @@ impl<'t> Cx<'t> {
         }
     }
 
-    /// Where `X` is a keyed scalar stated in the tokens' `params`, its
-    /// group's declared unit (S4.6), which types a call stated on it.
+    /// Where `X` is a keyed scalar, its declared unit, which types a call
+    /// stated on it: a tokens `params` group's (S4.6), a material's or a
+    /// keyed kind's parameter's (S2.7, S10), as validation types it.
     fn scalar_unit<X: Leaf>(&self, origin: Target) -> Option<ScalarUnit> {
-        if !X::KEYED_SCALAR || origin != Target::Tokens {
+        if !X::KEYED_SCALAR {
+            return None;
+        }
+        if let Some((depth, units)) = self.params {
+            let [.., key] = self.path.as_slice() else {
+                return None;
+            };
+            return (self.path.len() == depth.saturating_add(1))
+                .then(|| units.iter().find(|(held, _)| held.as_str() == key))
+                .flatten()
+                .map(|(_, unit)| *unit);
+        }
+        if origin != Target::Tokens {
             return None;
         }
         let [params, group, _] = self.path.as_slice() else {

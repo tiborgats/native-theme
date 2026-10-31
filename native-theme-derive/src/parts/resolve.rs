@@ -340,10 +340,30 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
     }
 }
 
+/// Whose declared units a `params` map of `owner` takes (S2.7, S10): a
+/// material's, or a keyed kind's by its `key` binding; `None` for any other
+/// field.
+fn params_of(owner: &Ident, field: &BlockField) -> Option<TokenStream> {
+    if name_of(field) != "params" {
+        return None;
+    }
+    let ev = evaluate();
+    match owner.to_string().as_str() {
+        "Material" => Some(quote!(#ev::ParamsOf::Material)),
+        "TransitionKind" => Some(quote!(#ev::ParamsOf::TransitionKind(key))),
+        "PresentationKind" => Some(quote!(#ev::ParamsOf::PresentationKind(key))),
+        _ => None,
+    }
+}
+
 /// One field's resolved value from `items`, its steps, within its place.
 fn field_value(owner: &Ident, field: &BlockField, items: &TokenStream) -> TokenStream {
     let key = name_of(field);
     let (call, required) = resolve_call(owner, field);
+    let call = match params_of(owner, field) {
+        Some(of) => quote!(cx.params(#of, |cx| #call)),
+        None => call,
+    };
     let value = if required {
         quote!(cx.at(#key, |cx| #call)?)
     } else {

@@ -1144,3 +1144,67 @@ fn text_style_font_resolved_once() {
     let evaluated = theme.evaluate_part(LABEL, &element, &|_| true);
     assert_eq!(evaluated.refusals.len(), 1, "{:?}", evaluated.refusals);
 }
+
+/// Task 11e's review: a call on a keyed transition's, a keyed
+/// presentation's or a material's parameter evaluates by its declared unit,
+/// as validation types it (S2.2, S2.7, S10).
+#[test]
+fn keyed_kind_and_material_params_typed_by_their_unit() {
+    use crate::next::blocks::motion::{ResolvedPresentationKind, ResolvedTransitionKind};
+    use crate::next::blocks::paint::ResolvedPaintKind;
+    use crate::next::units::Scalar;
+    use crate::next::widgets::{ButtonValues, WidgetKind};
+    let parts = r##"
+[widgets.button.body]
+fill = { layers = [{ kind = { material = { identity = "mica", blur_radius_px = "absent", tint = "absent", saturation = "absent", luminosity = "absent", noise_opacity = "absent", fallback = "#000000", params = { depth = "= add(1px, 2px)" } } }, blend = "normal" }] }
+transitions = [{ properties = ["fill"], kind = { keyed = { key = "bounce", params = { amplitude = "= add(2px, 2px)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", suspended_by_theme_change = true }]
+[widgets.button.values]
+presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = { key = "wipe", params = { lag = "= add(10ms, 20ms)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", stagger_ms = 0 }] }]
+"##;
+    let mut theme = resolved(&[BASE, parts], 1.0);
+    theme.declarations = crate::next::toml::layer::read_preset(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\nmaterials = [\"mica\"]\n\
+         material_params = { depth = \"px\" }\n\
+         transition_kinds = { bounce = { amplitude = \"px\" } }\n\
+         presentation_kinds = { wipe = { lag = \"ms\" } }\n",
+    )
+    .unwrap()
+    .declarations;
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+    let body = theme
+        .evaluate_part(BODY, &element, &|_| true)
+        .value
+        .unwrap();
+    let transition = body.transitions.first().unwrap();
+    let ResolvedTransitionKind::Keyed { params, .. } = &transition.kind else {
+        panic!("a keyed transition: {transition:?}");
+    };
+    assert_eq!(
+        params,
+        &[(Key::new("amplitude").unwrap(), Some(Scalar::Px(Px(4.0))))]
+    );
+    let layer = body.fill.unwrap().layers.into_iter().next().unwrap();
+    let ResolvedPaintKind::Material(material) = layer.kind else {
+        panic!("a material layer: {layer:?}");
+    };
+    assert_eq!(
+        material.params,
+        [(Key::new("depth").unwrap(), Some(Scalar::Px(Px(3.0))))]
+    );
+    let values = theme
+        .evaluate_values::<ButtonValues>(WidgetKind::Button, &element, &|_| true)
+        .value
+        .unwrap();
+    let step = values.presentations.first().unwrap().steps.first().unwrap();
+    let ResolvedPresentationKind::Keyed { params, .. } = &step.kind else {
+        panic!("a keyed presentation: {step:?}");
+    };
+    assert_eq!(
+        params,
+        &[(
+            Key::new("lag").unwrap(),
+            Some(Scalar::Ms(crate::next::units::Ms(30.0)))
+        )]
+    );
+}
