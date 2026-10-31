@@ -2720,10 +2720,12 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends `label_arrow_gap_px` before the `arrow_area`'s box
-  where an arrow area is drawn, and otherwise before the `arrow`'s, measured from its margin box or box as `button`'s
-  `Inline` rule decides: GTK spaces the label's stack and the `arrow` by the box's `border-spacing`,
-  `libadwaita@1.10.0 src/stylesheet/widgets/_dropdowns.scss:2-3`, `:14-18`, its arrow area absent; ADD-A125); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233, K1.240, W1-132; the arrow area, or the arrow where no arrow area is drawn, lies at the end of
+  `body`'s content box, and the label's space runs from that box's start to `label_arrow_gap_px` before the
+  `arrow_area`'s box, or before the `arrow`'s where no arrow area is drawn: GTK spaces the label's stack and the
+  `arrow` by the box's `border-spacing`, `libadwaita@1.10.0 src/stylesheet/widgets/_dropdowns.scss:2-3`, `:14-18`;
+  WinUI's gap is the chevron column's width less the chevron and its end margin, W1-132; Breeze's label ends one
+  pixel inside the arrow's rect, a negative gap, K1.240; macOS's, iOS's and Material's are measurements, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
@@ -3533,8 +3535,8 @@ spaces:
   accessory or reorder handle on their rows, L-12, Q2.43; `kde-breeze` by a rule `cond flavor:widgets`, the handle
   being Kirigami's, Q2.43), `row_inner_border` (all but `windows-11`: W2-13, W2-14), `row_state_layer` (all but `material-3`: MAT-N13;
   `material-3` by a rule outside `variant sidebar context sidebar.pane[compact]`), `row_selection_indicator` (all
-  but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` by its base, W1-107, its representation ADD-A126's, ledger queue #85, #110; `material-3` by a
-  rule outside `{selected}` in the drawer, the rail's drawn at rest at zero width and alpha, and outside `sidebar`,
+  but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` by a rule outside `{selected}`, the pill's representation ADD-A126's, ledger queue #85, #110;
+  `material-3` by a rule outside `{selected}` in the drawer, the rail's drawn at rest at zero width and alpha, and outside `sidebar`,
   MAT-N13), `nested` (all but `adwaita`: GN-1.260), `cell` (`windows-11`: no
   multi-column row among WinUI's lists, W2-12, W2-13, W2-14, W2-33), `column_separator` (`windows-11`, `material-3`:
   no line between cells; `adwaita` by a rule outside `column_separators`, GN-1.169; `macos-*` by a rule outside

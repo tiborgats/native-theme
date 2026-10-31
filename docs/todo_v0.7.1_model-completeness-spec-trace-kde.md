@@ -348,6 +348,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.240 | `combo_box.arrow.glyph.fill @ variant editable / variant editable context combo_box.arrow_area {hover}` (the hover colour only while the pointer is over the arrow sub-control, `SC_ComboBoxArrow`) | rule |
 | K1.240 | `combo_box.arrow_area.min_width @ variant editable; combo_box.arrow_area (absent = true) @ !variant editable` (the arrow sub-control as an element, its drawing fields absent) | rule |
 | K1.240 | `combo_box.arrow.transitions (Glyph: the hover fade)` | field |
+| K1.240 | `combo_box.values.label_arrow_gap` (non-editable: the label's rect ends `MenuButton_IndicatorWidth` before the combo's end, `breeze@6.8.2 kstyle/breezestyle.cpp:3002-3013`, the text drawn one pixel inside it, `:5797-5829`, and the arrow's rect starts inside `Frame_FrameWidth`, `:2990-2999`, so the label's space ends one pixel inside the arrow's rect, a gap of minus one; the editable combo's text an `input`, ADD-A125) | field |
 | K1.241 | `combo_box.body.fill, combo_box.body.stroke, combo_box.body.shadow @ variant flat` | rule |
 | K1.242 | `combo_box.body.fill @ {open} / {pressed}` | rule |
 | K1.243 | `combo_box.body.stroke @ {hover} / {focused} / {pressed}` | rule |

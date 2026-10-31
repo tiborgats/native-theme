@@ -256,7 +256,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-088 | `tab.bar.fill (PaintKind::Material @mica_alt)` | field |
 | W1-088 | `tab.pane.fill (a layer over Mica Alt: = role.@layer_on_mica_base_alt_*)` | field |
 | W1-088 | `tab.tab.fill @ {selected} (joined to the pane's fill)` | rule |
-| W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` | rule |
+| W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` (the pill's representation, where it is drawn and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | rule |
 | W1-089 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled} variant sidebar` | rule |
 | W1-089 | `list.values.selection_indicator_edge @ variant sidebar` (the pill at the row's leading edge) | rule |
 | W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` | rule |
@@ -302,9 +302,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
 | W1-105 | - | preset (R1.3) |
 | W1-106 | `list.row_background.fill, list.row.text.fill @ {pressed} / {selected,hover} / {selected,pressed} / {selected,disabled}` | rule |
-| W1-107 | `list.row_selection_indicator (absent = true)` (`windows-11`'s base: only a selected row draws the pill, the `{selected}` rules bringing it back, S6.3; its representation, absent at rest and faded in, ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
-| W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ {selected}` | rule |
-| W1-107 | `list.row_selection_indicator.fill @ {selected,hover} / {selected,pressed} / {selected,disabled}` (scoped to the selected rows that draw it, ADD-A125) | rule |
+| W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
+| W1-107 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled}` | rule |
 | W1-107 | `list.row_selection_indicator.transitions` | field |
 | W1-108 | `list.row_background.corners, list.values.row_background_inset` | field |
 | W1-109 | `checkbox.{box.fill,box.stroke,box.corners,mark.glyph} @ context list.row` | rule |
@@ -360,6 +359,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-131 | `combo_box.{label,placeholder}.text.fill @ {pressed} / {focused}` | rule |
 | W1-131 | `combo_box.body.stroke (gradient paint) @ {hover} / {pressed}` | rule |
 | W1-132 | `combo_box.arrow.glyph.fill` | field |
+| W1-132 | `combo_box.values.label_arrow_gap` (the label in the template's star column with no end padding, `ComboBoxPadding`, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:341`, `:566`, `:577`, the chevron right-aligned in the 38-wide column at 12 wide with an end margin of 14, `:567`, `:582`: the gap 38 less 12 less 14, so 12, before the chevron's box; the chevron's end margin the body's end padding, the arrow at the end of the body's content box, ADD-A125) | field |
 | W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
 | W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
@@ -370,7 +370,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-134 | `menu.item.corners @ context combo_box` | rule |
 | W1-135 | `menu.item_selection_indicator.{fill,min_width,min_height,corners} @ {selected} context combo_box` | rule |
 | W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (the scale it grows from, and its animation)` | rule |
-| W1-135 | `menu.item_selection_indicator.transform @ {selected,pressed} context combo_box` (the pill's `ScaleY` to `ComboBoxItemPillMinScale` while pressed, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:721-727`, `:326`, its timing, `ComboBoxItemScaleAnimationDuration`, `:330`, with `KeySpline="0,0,0,1"`, the pill's `transitions`, ADD-A125) | rule |
+| W1-135 | `menu.item_selection_indicator.transform @ {selected,pressed} context combo_box` (the pill's `ScaleY` to `ComboBoxItemPillMinScale` while pressed, about its centre, `RenderTransformOrigin="0.5,0.5"`, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:356`, `:721-727`, `:326`, its timing, `ComboBoxItemScaleAnimationDuration`, `:330`, with `KeySpline="0,0,0,1"`, the pill's `transitions`, ADD-A125) | rule |
 | W1-135 | `menu.item_selection_indicator (absent = true)` (`windows-11`'s base: no menu item draws the pill but a combo box's selected one, `Opacity="0"` in `ComboBoxItem`'s template, 1 only in its `Selected*` states, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:759`, `:657-739`; the `{selected} context combo_box` rules above bring it back, S6.3; how it enters and leaves is ADD-A126's, S2.7, ADD-A125) | field |
 | W1-136 | `menu.values.presentations @ context combo_box (events Appear, Disappear: ClipReveal { from: Anchor }, the selected row lying over the anchor under over_selected_item)` | rule |
 | W1-136 | `WinUiComboBox (combo_box.values.popup_placement: over_selected_item; ADD-A21, ADD-A22)` | placement |
@@ -491,7 +491,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-12 | `list.values.indent_per_level` | field |
 | W2-12 | `list.disclosure.glyph; list.disclosure.transitions` | field |
 | W2-12 | `list.disclosure.transform @ {open}` | rule |
-| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` | field |
+| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
 | W2-12 | `checkbox.* @ context list.row (the multi-select check box)` | rule |
 | W2-12 | `list.row.min_height` | field |
 | W2-12 | `list.row.min_height @ density compact` | rule |
