@@ -2410,15 +2410,18 @@ spaces:
     font where the platform draws the line from the font: `thickness` `= element.font_underline_thickness`, `offset`
     `= element.font_underline_offset`, S2.8, Notes; the part declaring `data = { preedit = ["font_underline_offset",
     "font_underline_thickness"] }`), `fill`.
-  - `misspelling` — the spell-check mark: `text` (its decoration, which lies under the entered text and follows the
-    `text` part's font where the platform draws the line from the font: `thickness` `=
-    widget.text.font_underline_thickness`, `offset` `= widget.text.font_underline_offset`, S2.2, S2.8, Notes; the part
-    declaring `data = { misspelling = ["widget.text.font_underline_offset", "widget.text.font_underline_thickness"]
+  - `misspelling` *(element)* — the spell-check mark, one element per misspelled word (an element on every text
+    widget, so it carries `text_area`'s `@holds_caret`, ADD-A130): `text` (its decoration, which lies under the
+    entered text and follows its own font, the `text` part's style referenced leaf by leaf, as an *(element)* part
+    reads none of its host's parts, S2.2, where the platform draws the line from the font: `thickness` `=
+    element.font_underline_thickness`, `offset` `= element.font_underline_offset`, S2.8, Notes; the part declaring
+    `data = { misspelling = ["font_underline_offset", "font_underline_thickness"] }`).
+  - `grammar_mark` — macOS's grammar mark (MAC-X28): `text` (its decoration, following the `text` part's font:
+    `thickness` `= widget.text.font_underline_thickness`, `offset` `= widget.text.font_underline_offset`, the part
+    declaring `data = { grammar_mark = ["widget.text.font_underline_offset", "widget.text.font_underline_thickness"]
     }`).
-  - `grammar_mark` — macOS's grammar mark (MAC-X28): `text` (its decoration, as `misspelling`'s, the part declaring
-    the same data, `data = { grammar_mark = [ … ] }`).
   - `correction` — iOS's autocorrection mark and bubble, Material's suggestion underline: `text` (its decoration, as
-    `misspelling`'s, the part declaring the same data, `data = { correction = [ … ] }`), `fill`, `corners`.
+    `grammar_mark`'s, the part declaring the same data, `data = { correction = [ … ] }`), `fill`, `corners`.
   - `prediction` — inline prediction ghost text (iOS, macOS): `text`.
 
   Every part that only marks or recolours text another part lays out (here `selection`, `preedit`, `misspelling`,
@@ -2430,8 +2433,7 @@ spaces:
   `color: transparent`, which leaves the text's own colour showing, `libadwaita@1.10.0
   src/stylesheet/_common.scss:64-66`, among them), or only measures the text (`extra_caret`), and its font leaves as the text's, by reference (S2.2): a part to `widget.text`'s leaves
   (`font.family = "= widget.text.font.family"`, …; a field reference, not element data), an *(element)* part
-  (`selection`, `preedit`, `find_match`, `highlight`, `syntax_span`, `extra_caret`, and `text_area`'s
-  `misspelling`), which reads none of its host's parts (S2.2), to the style the `text` part references, leaf by leaf (ADD-A130).
+  (`selection`, `preedit`, `misspelling`, `find_match`, `highlight`, `syntax_span`, `extra_caret`), which reads none of its host's parts (S2.2), to the style the `text` part references, leaf by leaf (ADD-A130).
   - `selection_handle` *(element)* — a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
     WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42): `fill`, `glyph`, `corners` (GNOME's circle with
     one square corner, GN-2.42), `padding` (GN-2.42), `min_width`, `min_height`, `transform` (the insertion handle
@@ -2621,8 +2623,8 @@ spaces:
     point of a text view too (MAC-X14): `glyph`, `padding`.
   - `preedit` *(element)* — as on `input` (its decoration following its own font, the part declaring the same data,
     `data = { preedit = [ … ] }`): `text`, `fill`.
-  - `misspelling` *(element)* — one element per misspelled word (an element here, so it carries
-    the flag `@holds_caret`; its decoration follows its own font, `element.font_underline_offset` and
+  - `misspelling` *(element)* — as on `input`, one element per misspelled word (it carries the flag
+    `@holds_caret`; its decoration follows its own font, `element.font_underline_offset` and
     `element.font_underline_thickness`, which it declares, `data = { misspelling = ["font_underline_offset",
     "font_underline_thickness"] }`, and its `text` references the style the `text` part's references, S2.2): `text`,
     `fill` (a background behind the word: on `kde-breeze` under `cond flavor:kirigami`, Sonnet's highlighter gives
@@ -2682,8 +2684,9 @@ spaces:
   GN-1.281†, KDE K3.48†), `text_selected` (as on input), `current` (on `find_match`, the current match: macOS, iOS);
   keyed `macos-*` `@incremental_find` (an incremental find runs: `find_dimming` drawn, MAC-X15); keyed `kde-breeze`
   `@holds_caret` (on `misspelling`, which the connector sets as Sonnet computes it: where the caret's position in the
-  whole document lies at or between the word's start and end, counted from the start of the word's paragraph,
-  `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:370-381`, the caret's position `:610-624`; so in the first
+  whole document, or the selection's end while text is selected, lies at or between the word's start and end,
+  counted from the start of the word's paragraph, `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:370-381`, the
+  position taken `:610-624`, the selection's end `:617-620`; so in the first
   paragraph it marks the word holding the caret, and in a later one the word whose paragraph offsets the caret's
   document position falls within; Q1.13, ADD-A130); state flags used:
   hover, focused, focus_within, focus_visible, disabled, read_only, drop_target.
@@ -5273,7 +5276,8 @@ spaces:
   - `syntax_span` *(element)* — a run of one syntax role, selected by its own variant (the role) and its own
     `{text_selected}` (its text lies in the selection: KDE's per-style selected-text colours, K-SF10†) (GN-SF10†,
     K-SF10†): `text`, `fill` (the optional background).
-  - `misspelling` — the spell-check mark, as on `input` and `text_area` (GN-P3-27†, K-SF11†): `text` (the
+  - `misspelling` *(element)* — the spell-check mark, one element per misspelled word, as on `input` and `text_area`
+    (GN-P3-27†, K-SF11†): `text` (the
     underline: Pango's error underline, GN-P3-27†, drawn from the font, so its decoration's `thickness` and `offset`
     are references to `element.font_underline_thickness` and `element.font_underline_offset`, S2.8; `data = {
     misspelling = ["font_underline_offset", "font_underline_thickness"] }`; KTextEditor's spell-check underline,
@@ -5357,7 +5361,7 @@ spaces:
   GNOME's `selection` states the text-selection roles, `= role.global.selection_text_background` and
   `= role.global.selection_text_foreground` (and their unfocused roles under the unfocused rule), as `text_area`'s
   base does (GN-SF02†). The text widgets share one name and one element status per part kind: `caret`,
-  `block_caret`, `secondary_caret`, `misspelling` (parts) and `selection` (an element) on `input`, `text_area` and
+  `block_caret`, `secondary_caret` (parts) and `selection` and `misspelling` (elements) on `input`, `text_area` and
   `code_editor`; `invisible` (typed `space`, `tab`, `line_break`, `no_break_space`) and `find_match` (on `text_area` the current match `{current}`),
   elements, on `text_area` and `code_editor`. Group 6's `bracket_match_animation` is `bracket_match.transitions`
   (K-SF07†).

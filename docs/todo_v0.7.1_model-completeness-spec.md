@@ -1094,13 +1094,15 @@ strike line centred a third of the ascent above the baseline (`:6151-6153`), in 
 the line's position to the nearest pixel and keeps the thickness unrounded, takes the thickest of consecutive
 underlined runs, places the strike line's top a third of the ascent above the baseline (`qtdeclarative@6.12.0
 src/quick/items/qquicktextnodeengine.cpp:208-218`, `:411-427`), and caps a wavy line's stroke at 0.8 of the larger
-of one and its width (`src/quick/scenegraph/qsgrhiinternaltextnode.cpp:78-100`, `:137-143`). Neither is
+of one and its thickness (`src/quick/scenegraph/qsgrhiinternaltextnode.cpp:78-100`, `:137-143`). Neither is
 `QFontMetrics`' `underlinePos` or `strikeOutPos`, and the model's operands do not give them (no ceiling, no ascent or
 descent alone), so `kde-breeze`'s decorations are the unmeasured register's until the value phase states each path's
 form. The split is by drawing path, not flavour: a part QStyle draws takes QPainter's form (every Qt Widgets part,
-and under `cond flavor:kirigami` the labels qqc2's style item draws through `CE_PushButton`, the button's, the tool
-button's and the tab button's, mnemonic included, `qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:257`,
-`:1741`, `:2096`); a part drawn as Qt Quick text takes Qt Quick's (under `cond flavor:kirigami` the check box's and
+and under `cond flavor:kirigami` every Kirigami control whose label qqc2's style item draws through QStyle, for example the button's
+(`CE_PushButton`), the tool button's (`CC_ToolButton`), the delay button's (`CE_ToolButtonLabel`), the tab's
+(`CE_TabBarTab`), the header view's (`CE_Header`) and the combo box's (`CC_ComboBox`, `CE_ComboBoxLabel`),
+mnemonics included (`qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1740-1741`, `:1769-1773`, `:1775-1779`,
+`:1830-1835`, `:1903-1924`)); a part drawn as Qt Quick text takes Qt Quick's (under `cond flavor:kirigami` the check box's and
 the menu item's labels, `org.kde.desktop/CheckBox.qml:82`, `org.kde.desktop/MenuItem.qml:72`, and the text area's
 text and its marks) (ADD-A130).
 

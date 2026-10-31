@@ -428,7 +428,8 @@ rationale, each decided in the core's additions register (S22).
 | Q1.13 | `text_area.misspelling.text.decoration.paint @ cond flavor:kirigami (= role.view.negative)` | rule |
 | Q1.13 | `text_area.misspelling.text.fill @ cond flavor:kirigami (= role.view.negative: Sonnet's highlighter recolours the word too, `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:105`, its colour `qqc2-desktop-style@6.31.0 org.kde.desktop/TextArea.qml:94`; ADD-A130)` | rule |
 | Q1.13 | `text_area.misspelling.fill @ {@holds_caret} cond flavor:kirigami (= with_alpha(role.view.negative, 0.1): Sonnet's background on the word holding the caret, `spellcheckhighlighter.cpp:114-117`, `:380-381`; ADD-A130)` | rule |
-| Q1.13 | `text_area.misspelling {@holds_caret}` (the connector-set flag, Sonnet's word against the caret's document position, `spellcheckhighlighter.cpp:370-381`, `:610-624`; ADD-A130) | flag |
+| Q1.13 | `text_area.misspelling {@holds_caret}` (the connector-set flag, Sonnet's word against the caret's document position, or the selection's end while text is selected, `spellcheckhighlighter.cpp:370-381`, `:610-624`; ADD-A130) | flag |
+| Q1.13 | `text_area.misspelling.text.decoration.{thickness,offset} @ cond flavor:kirigami` (Qt Quick's form: the position rounded to the nearest pixel, the thickness unrounded, a wavy line's stroke capped; the unmeasured register's row 4, S2.8, ADD-A130) | rule |
 | Q1.14 | `input.caret.min_width @ cond tablet_mode` | rule |
 | Q1.14 | `input.caret.fill @ cond tablet_mode` | rule |
 | Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode` | rule |

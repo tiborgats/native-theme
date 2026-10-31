@@ -1427,6 +1427,12 @@ Each is decided from the pinned sources; the specification cites them.
   table, by value or by reference to the style's leaf, which validation enforces. **Decision:** the last. The text-scaling role stays the style's, a `Value` so a part references it: on iOS each of Apple's
   styles has its curve; where no curve is read (every scaling but Dynamic Type, `macos-tahoe`'s included, AppKit's styles taking no
   size category) it is stated as none.
+- *A misspelled word holding the caret.* Kirigami's spell checker gives that word a faint negative background, by a
+  comparison of its own (the word's place in its paragraph against the caret's, or the selection end's, in the whole
+  document). Options: a register row until a state exists (the look stays unstated); a state flag of the text widget
+  (it is per word, and the widget holds several); a connector-set keyed flag on the misspelling, made an *(element)*
+  part per word on every text widget, as a code editor's current line carries its mark flags, the connector computing
+  it as Sonnet does, its first-paragraph quirk included. **Decision:** the last, `@holds_caret`.
 - *Font width on macOS.* AppKit's width trait runs from −1 to 1, the model's width is OpenType's percent, and no pinned
   source maps one to the other. Options: a conversion of our own (invented); a table from the four named widths (the
   SDK declares them without values); the font's own `wdth` axis, measured with its scale (OpenType's percent, which no source here pins), the register
