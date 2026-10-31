@@ -1393,18 +1393,37 @@ item's (with the slack) and the text field's (without), which a margin on the ar
 and Breeze's arrow would carry size terms where its source writes a centring; (e) a `min_width` over the content's
 width, which S8 forbids; (f) a value, `content_slack_px`, added to the content's space at its natural width only. (f)
 is the smallest form exact for every surveyed form: the positions and the cut stay the drawn row's, the size the
-platform's. What the content's space is measured at differs too, visibly: the shown text (GtkDropDown, WinUI), the
+platform's. Under the widest-item basis the slack differs by form (Breeze 10 without an icon, 11 with one) and Qt adds
+an icon's `iconSize + 4` per item, so the measure is the largest of whole rows, one per item (and for the
+placeholder and the empty run), each in its own form with that form's slack: an item's icon is counted once, by its
+own row, and a list mixing iconed and plain items comes out as Qt sizes it; measuring texts and adding the current
+item's icon would count an icon twice or for the wrong item. The slack is nonzero only under that basis, so it could
+be a field of `Widest`; it stays a value of its own because it varies by form (with an icon, editable, frameless,
+under Kirigami) and a rule restating one length is smaller than a rule restating the whole basis with its floor, run
+and `or_shown`, and because each whole row reads it under its own form's rules, as it reads the gaps; it is stated 0
+under the other bases. What the content's space is measured at differs too, visibly: the shown text (GtkDropDown, WinUI), the
 shown text with the placeholder and the floating label (Compose), the widest item, each in its own form, with the
 placeholder (QComboBox, GtkComboBox; Kirigami at least 75 and, editable, beside its text field), and a fixed width
 (GtkComboBox's entry, 150 px of text); one basis for all would misstate four platforms, and leaving it to the
 connector would lose a platform rule (R25.3's argument), so `content_width` names it, with QComboBox's empty list
 (seven advances of `x`) as data. When a toolkit measures again (Qt's default takes the width at the first show) is the
-application's policy, not the theme's.
+application's policy, not the theme's; so is a measure that depends on the element's history (Kirigami keeps its
+floor of 75 for a combo emptied after holding items, while one created empty measures nothing,
+`kquickstyleitem.cpp:126`): the model measures the element's present content.
+
+*The natural height.* Breeze centres its icon in the edit field and reserves Qt's `iconSize + 2` inside the frame;
+Compose centres its 48 dp icon boxes on the field's height and takes the larger of those boxes and its text with its
+vertical padding (`TextFieldImpl.kt:1056-1102`, `:1148-1151`), 56, where boxes inside the padding would give 80.
+Options: the icon always in the content box (Compose's height wrong); always on the body's box (Breeze's tall icons
+lose Qt's reserve inside the frame); the icon's vertical margins on Material restated smaller (its centring then off
+under the floating label's uneven padding); a value, `icon_cross_box`, `Content` or `Body`, the end part always
+`Body`. The value is the smallest exact form.
 
 *The editable input.* Breeze, Kirigami, Compose and GTK place the input in the content's space beside the arrow
 (Kirigami's `rightPadding: 24` is the 2 px gap, the 20 px square and the 2 px frame, so the row counts the column
 once); WinUI's text box spans the whole body with `11,5,38,6`, its padding holding the arrow's column, and appears
-only while the combo is focused. Options: WinUI's input in the row with its padding restated (its written 38 becoming
+only while the combo is focused, or under a game controller while its popup is open, which the label's absence rules
+state, the input drawn where the label is not. Options: WinUI's input in the row with its padding restated (its written 38 becoming
 an unwritten 1); `input_placement`, `Row` or `Body`. The second keeps every written value and counts each column
 once.
 
