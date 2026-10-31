@@ -209,9 +209,9 @@ fn kcu_darken(color: Rgb16, ky: f64) -> Rgb16 {
 
 /// KColorScheme's `shade(color, role, contrast)` with no chroma adjustment
 /// (`kcolorscheme.cpp:566-616`), `contrast` as kdeglobals' `[KDE] contrast`
-/// stores it: scaled by 0.1 as `KColorScheme::contrastF` does (`:526`),
-/// then clamped to `-1..=1` (a NaN 1) as `shade` does (`:569`); a
-/// non-finite operand is zero first (S2.2's totality).
+/// stores it: a non-finite operand zero first (S2.2's totality), then
+/// scaled by 0.1 as `KColorScheme::contrastF` does (`:526`) and clamped to
+/// `-1..=1` as `shade` does (`:569`).
 pub fn kde_shade(c: Color, role: KdeShadeRole, contrast: f32) -> Color {
     let contrast = if contrast.is_finite() {
         0.1 * f64::from(contrast)
