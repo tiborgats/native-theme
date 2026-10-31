@@ -9050,7 +9050,9 @@ whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subti
 `badge_label`, `tab_counter` [GN-1.194].
 
 **KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size, their family,
-style, width, `case`, `axes` and `features` by reference to `token.text.roles.body`, the weight their own (S2.8; KTitleWidget's
+style, width, letter and word spacing, decoration, `case`, `axes` and `features` by reference to
+`token.text.roles.body` (every attribute of the default font, `qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28`,
+but the size and weight, `kirigami@6.31.0 src/controls/Heading.qml:14-35`; K3.46), the weight their own (S2.8; KTitleWidget's
 levels 1-4
 state the same factors, so one style serves both and its fact cites both sources) [Q1.3, K1.270]; the types per level:
 `heading_<n>_primary` (the primary type's weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
