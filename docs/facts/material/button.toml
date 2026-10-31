@@ -5232,8 +5232,10 @@ quote = "$pressed-container-shape: md-sys-shape.$corner-large;"
 
 # the menu buttons (MAT-N8): md.comp.{standard,filled,outlined}-menu-button.* — standard is `menu` alone (no
 # container), filled `{menu, primary}`, outlined `{menu, @outlined}`; the trailing icon is the menu indicator. Compose
-# has no menu button and material-web no component for it, so what the tokens leave out (the indicator's glyph) is
-# listed in the lane report, not stated; its placement and gap are material-web's button's trailing icon's (below).
+# has no menu button and material-web no menu-button component: material-web draws these forms as its text, filled and
+# outlined buttons with a trailing icon, so the indicator's placement and gap and the forms' motion (md-ripple,
+# md-elevation; the transitions at the file's end) are those buttons'; what the tokens leave out (the indicator's
+# glyph) is listed in the lane report, not stated.
 
 [[fact]]
 key = "button.body.bindings"
@@ -13774,7 +13776,7 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 # animation-core's FastOutSlowInEasing (Easing.kt:50): those lists close the group. The disabled rule snaps the
 # shadow (Button.kt:1754-1756), a zero duration. Compose's text, outlined
 # and icon buttons have no elevation (`elevation = null`): the state layer alone. The press ripple is no transition
-# (S2.12). The menu button's forms are material-web's (md-ripple, md-elevation), whose motion no fact states yet.
+# (S2.12). The menu buttons' forms are drawn as material-web's buttons (their facts at the group's end).
 # Expressive (flavor:expressive) adds the corner morph: the buttons' and icon buttons' DefaultEffects spring
 # (Button.kt:253-258, IconButton.kt:1579-1584), the toggle buttons' FastSpatial one (ToggleButton.kt:176-181), and
 # the outlined toggle's border colour by DefaultEffects and width by FastSpatial (ToggleButton.kt:1722-1741).
@@ -13799,7 +13801,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -13820,18 +13821,21 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1758-1764"
 quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation -> PressInteraction.Press(Offset.Zero) hoveredElevation -> HoverInteraction.Enter() focusedElevation -> FocusInteraction.Focus()"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -13853,7 +13857,11 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -13875,7 +13883,11 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -13897,7 +13909,11 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -13919,7 +13935,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -13940,13 +13955,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -13959,6 +13972,11 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "if (!enabled) { // No transition when moving to a disabled state animatable.snapTo(target)"
 absent = ["durationMillis"]
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["flat"], latest = { state_layer = "focus_visible" }, not_conditions = ["flavor:expressive"] }
@@ -13969,7 +13987,11 @@ rows = ["MAT-X9"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -13981,7 +14003,11 @@ rows = ["MAT-X9"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -13993,7 +14019,11 @@ rows = ["MAT-X9"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -14015,7 +14045,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14036,13 +14065,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14058,6 +14085,17 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14079,7 +14117,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14090,6 +14127,17 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14111,7 +14159,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14122,6 +14169,17 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14143,12 +14201,22 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButton.kt:1581-1584"
 quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<Float>() val pressed by interactionSource.collectIsPressedAsState() return shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14170,7 +14238,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14191,13 +14258,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14213,6 +14278,17 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.FastSpatial.value<Floa
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:181"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, checked, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14234,7 +14310,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14261,6 +14336,17 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1733-1737"
 quote = "animateColorAsState( targetValue = targetColor, animationSpec = MotionSchemeKeyTokens.DefaultEffects.value(), )"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
+
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["@fab"], conditions = ["flavor:expressive"] }
@@ -14281,7 +14367,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14302,13 +14387,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14319,6 +14402,11 @@ quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation 
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1417-1428"
 quote = "animatable.animateElevation(target = target, from = lastTargetInteraction, to = to)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -14340,7 +14428,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14361,13 +14448,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14378,6 +14463,11 @@ quote = "val lastInteraction = when (animatable.targetValue) { pressedElevation 
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1417-1428"
 quote = "animatable.animateElevation(target = target, from = lastTargetInteraction, to = to)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
 
 [[fact]]
 key = "button.body.transitions"
@@ -14399,7 +14489,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14420,13 +14509,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14449,6 +14536,17 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
+
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["toggle"], states = ["disabled"], not_variants = ["icon_only", "@outlined"], conditions = ["flavor:expressive"] }
@@ -14469,7 +14567,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14490,13 +14587,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14519,6 +14614,17 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:181"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, checked, defaultAnimationSpec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
+
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["flat"], latest = { state_layer = "focus_visible" }, conditions = ["flavor:expressive"] }
@@ -14529,7 +14635,6 @@ rows = ["MAT-X9", "MAT-B11", "MAT-X12"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14540,6 +14645,17 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14551,7 +14667,6 @@ rows = ["MAT-X9", "MAT-B11", "MAT-X12"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14563,6 +14678,17 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
+
 [[fact]]
 key = "button.body.transitions"
 when = { variants = ["icon_only"], latest = { state_layer = "focus_visible" }, conditions = ["flavor:expressive"] }
@@ -14573,12 +14699,22 @@ rows = ["MAT-X9", "MAT-N5", "MAT-X12"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButton.kt:1581-1584"
 quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<Float>() val pressed by interactionSource.collectIsPressedAsState() return shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14590,7 +14726,6 @@ rows = ["MAT-X9", "MAT-X12", "MAT-B12"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14616,6 +14751,17 @@ quote = "animateDpAsState( targetValue = targetWidth, animationSpec = MotionSche
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1733-1737"
 quote = "animateColorAsState( targetValue = targetColor, animationSpec = MotionSchemeKeyTokens.DefaultEffects.value(), )"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:97-100"
+quote = "public class TweenSpec<T>( public val durationMillis: Int = DefaultDurationMillis, public val delay: Int = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 # the lists an elevation rule enters (hover, focus_visible or pressed) on the forms with an elevation: the rest's
 # outgoing shadow specs, then Compose's incoming one, TweenSpec(120, FastOutSlowInEasing) (internal/Elevation.kt:80-88,
@@ -14643,7 +14789,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14674,13 +14819,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14717,7 +14860,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14748,13 +14890,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14786,7 +14926,6 @@ rows = ["MAT-B13", "MAT-X7", "MAT-X9"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14817,13 +14956,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14865,7 +15002,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14896,13 +15032,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14933,6 +15067,12 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -14949,7 +15089,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -14980,13 +15119,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15017,6 +15154,12 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -15028,7 +15171,6 @@ rows = ["MAT-B13", "MAT-X7", "MAT-X9", "MAT-B11", "MAT-X12"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15059,13 +15201,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15096,6 +15236,12 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.DefaultEffects.value<F
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:258"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -15117,7 +15263,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15148,13 +15293,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15185,6 +15328,12 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.FastSpatial.value<Floa
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:181"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, checked, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -15201,7 +15350,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15232,13 +15380,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15269,6 +15415,12 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.FastSpatial.value<Floa
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:181"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, checked, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -15280,7 +15432,6 @@ rows = ["MAT-B13", "MAT-X7", "MAT-X9", "MAT-X12"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15311,13 +15462,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15348,6 +15497,12 @@ quote = "val defaultAnimationSpec = MotionSchemeKeyTokens.FastSpatial.value<Floa
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:181"
 quote = "val buttonShape = shapeByInteraction(shapes, pressed, checked, defaultAnimationSpec)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/AnimationSpec.kt:143-147"
+quote = "public class SpringSpec<T>( public val dampingRatio: Float = Spring.DampingRatioNoBouncy, public val stiffness: Float = Spring.StiffnessMedium, public val visibilityThreshold: T? = null, )"
+absent = ["delay"]
 
 [[fact]]
 key = "button.body.transitions"
@@ -15369,7 +15524,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15400,13 +15554,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15448,7 +15600,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15479,13 +15630,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15522,7 +15671,6 @@ rows = ["MAT-B13", "MAT-X7", "MAT-X9", "MAT-N1"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15553,13 +15701,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15606,7 +15752,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec is FocusInteraction.Focus
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15637,13 +15782,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15685,7 +15828,6 @@ quote = "is HoverInteraction.Enter -> DefaultTweenSpec"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:483"
 quote = "private val DefaultTweenSpec = TweenSpec<Float>(durationMillis = 15, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15716,13 +15858,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15759,7 +15899,6 @@ rows = ["MAT-B13", "MAT-X7", "MAT-X9", "MAT-N1"]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:466"
 quote = "is FocusInteraction.Focus -> TweenSpec(durationMillis = 45, easing = LinearEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15790,13 +15929,11 @@ quote = "private val OutgoingSpecEasing: Easing = CubicBezierEasing(0.40f, 0.00f
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:111"
 quote = "private val DefaultOutgoingSpec = TweenSpec<Dp>(durationMillis = 150, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:113"
 quote = "private val HoveredOutgoingSpec = TweenSpec<Dp>(durationMillis = 120, easing = OutgoingSpecEasing)"
-absent = ["delay"]
 
 [[fact.cite]]
 kind = "published"
@@ -15822,3 +15959,82 @@ quote = "public val FastOutSlowInEasing: Easing = CubicBezierEasing(0.4f, 0.0f, 
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1417-1428"
 quote = "animatable.animateElevation(target = target, from = lastTargetInteraction, to = to)"
+
+# the menu buttons' transitions (MAT-N8, MAT-X9): material-web's buttons' motion, as their indicator's placement is
+# (button.ts:166-168). md-ripple fades its hover layer by `opacity 15ms linear`, both ways (_ripple.scss:64-68,
+# :82-85); it draws no focus layer (material-web shows focus with md-focus-ring), so nothing times the tokens' focus
+# state layer (U74); the filled form's md-elevation moves in 280ms on `map.get($_md-sys-motion, 'emphasized-easing')`,
+# a key the motion map does not hold (_elevation.scss:14-21; tokens/versions/v0_192/_md-sys-motion.scss:33-34 names it
+# `easing-emphasized`), so its curve is not stated (U75), and none at all when disabled (:23-25).
+
+[[fact]]
+key = "button.body.transitions"
+when = { variants = ["menu"], not_variants = ["primary"] }
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
+rows = ["MAT-N8", "MAT-X9"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 ripple/internal/_ripple.scss:64-68"
+quote = "transition: opacity 15ms linear, background-color 15ms linear;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 ripple/internal/_ripple.scss:67"
+quote = "transition: opacity 15ms linear, background-color 15ms linear;"
+absent = ["transition-delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 ripple/internal/_ripple.scss:82-85"
+quote = ".hovered::before { background-color: map.get($tokens, 'hover-color'); opacity: map.get($tokens, 'hover-opacity'); }"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
+
+[[fact]]
+key = "button.body.transitions"
+when = { variants = ["menu", "primary"], states = ["disabled"] }
+value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }, { properties = ["shadow"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
+rows = ["MAT-N8", "MAT-X7", "MAT-X9"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 ripple/internal/_ripple.scss:64-68"
+quote = "transition: opacity 15ms linear, background-color 15ms linear;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 ripple/internal/_ripple.scss:67"
+quote = "transition: opacity 15ms linear, background-color 15ms linear;"
+absent = ["transition-delay"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_elevation.scss:23-25"
+quote = ":host(:is([disabled], [soft-disabled])) md-elevation { transition: none; }"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_elevation.scss:23-25"
+quote = "transition: none;"
+absent = ["transition-duration"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
+
+[[fact]]
+key = "button.body.transitions"
+when = { variants = ["menu"], not_variants = ["primary"], latest = { state_layer = "focus_visible" } }
+pending = "U74"
+rows = ["MAT-N8", "MAT-X9"]
+
+[[fact]]
+key = "button.body.transitions"
+when = { variants = ["menu", "primary"], not_states = ["disabled"] }
+pending = "U75"
+rows = ["MAT-N8", "MAT-X7", "MAT-X9"]
