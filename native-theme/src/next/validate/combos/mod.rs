@@ -90,6 +90,9 @@ pub(super) struct World {
     values: Vec<bool>,
 }
 
+/// What a part is under a world, and the layer and place that says so.
+type ShownAt = (Shown, Option<(usize, String)>);
+
 /// Which rules a combination's evaluation reads.
 #[derive(Clone, Debug, PartialEq)]
 enum Seed {
@@ -2206,7 +2209,7 @@ impl Checks<'_, '_> {
         all: &[World],
         first: TypedPart,
         world: &World,
-        shown: &dyn Fn(&World, TypedPart) -> (Shown, Option<(usize, String)>),
+        shown: &dyn Fn(&World, TypedPart) -> ShownAt,
     ) -> bool {
         let mut seen: Vec<(TypedPart, usize)> = Vec::new();
         let mut pending: Vec<(TypedPart, &World)> = vec![(first, world)];
