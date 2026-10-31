@@ -2972,7 +2972,8 @@ spaces:
 - **Variants:** none typed (the determinate spinner, macOS's, WinUI's, Material's and iOS's C-31, is the state
   `!{indeterminate}`, R3: whether the progress is known changes at run time, as on `progress_bar`). Keyed: `adwaita` `@gtk_spinner` (GtkSpinner,
   GN-1.230); `material-3` `@wavy`, `@thick`, `@four_color`, `@loading_indicator` (the Expressive loading indicator,
-  MAT-N24), `@contained` (its contained form, MAT-N24); the last two are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.spinner]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
+  MAT-N24), `@contained` (its contained form, MAT-N24), `@four_color` and `@loading_indicator` one `exclusive_variants` group
+  (Compose's `LoadingIndicator` takes one colour, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/LoadingIndicator.kt:101`; ADD-A125); `@loading_indicator` and `@contained` are flavour `expressive`'s, declared under `[declare.flavor.expressive.widget.spinner]` only, so `flavor:baseline` answers `NotAvailable` for them (R2.7, R15).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular` (MAC-SN03). `ios-*`: `regular` (UIKit's medium),
   `large` (SP-3a). Others: none (sizes are the body's limits and `diameter`).
 - **Flags:** none of its own; state flags used: indeterminate (set by the connector while no progress is known, on
@@ -2987,8 +2988,8 @@ spaces:
   `macos-*` by a rule under `!{indeterminate}`, whose value arc is the `indicator`, MAC-SN04; `ios-*` by a rule under
   `!{indeterminate}` outside `context pull_to_refresh`, provisional on C-31, Open items, iOS's pull to refresh drawing
   its spokes as the pull progresses, C-10), `icon` (all
-  but `kde-breeze`, `adwaita`; `ios-*` draws none, SP-4a; `kde-breeze` by a rule in `context pull_to_refresh
-  {pulling}`, where the arc alone is drawn, Q2.54†; `adwaita` by a rule outside `@gtk_spinner`, AdwSpinner drawing
+  but `kde-breeze`, `adwaita`; `ios-*` draws none, SP-4a; `kde-breeze` by a rule under `!{indeterminate}` in
+  `context pull_to_refresh {pulling}`, where the arc alone is drawn, Q2.54†; `adwaita` by a rule outside `@gtk_spinner`, AdwSpinner drawing
   the arc, GN-1.226, GN-1.230), `indicator` (`kde-breeze` by a rule outside `context pull_to_refresh`, where it
   draws neither arc nor spokes, its spinner being the icon; `adwaita` by a rule under `@gtk_spinner`, whose spinner
   is the icon, GN-1.230; `macos-*` by a rule under `{indeterminate}`, whose indeterminate spinner is spokes, MAC-SN01;
