@@ -14,8 +14,12 @@
 //! with the assignments of the atoms.
 
 use super::combos::Atom;
+use super::stack::widget_of;
 use crate::next::declare::{Declarations, WidgetDecl};
-use crate::next::selector::{Condition, ContextMatch, ContextScope, Parity, Scheme, TiledEdges};
+use crate::next::selector::{
+    Condition, ContextMatch, ContextScope, Parity, PartRef, Scheme, SetMatch, StateFlag,
+    TiledEdges, VariantRef, WidgetOrPart, WidgetRef,
+};
 use crate::next::widgets::WidgetKind;
 
 /// A decision: the atoms' values a rule's selector needs, each `(atom,
@@ -104,6 +108,10 @@ pub(super) struct Space {
     implies: Vec<(usize, usize)>,
     /// The context matches no one ancestor can hold.
     never: Vec<usize>,
+    /// Under the default flavour, then under each declared one in order:
+    /// the context and sibling matches needing two members of one exclusive
+    /// group of their widget, which the S10 reduction never leaves (S8).
+    reduced: Vec<Vec<usize>>,
     /// The pairs of context matches of one nearest ancestor needing sizes
     /// it cannot have together.
     exclusive_contexts: Vec<(usize, usize)>,
@@ -148,6 +156,38 @@ impl Space {
         };
         let mut exclusive = vec![groups_under(decl.flavors.first())];
         exclusive.extend(decl.flavors.iter().map(|flavor| groups_under(Some(flavor))));
+        let reduced_under = |flavor: Option<&crate::next::key::Key>| {
+            let decls = |widget: WidgetKind| match flavor {
+                Some(flavor) => decl.in_flavor(widget, flavor),
+                None => decl.in_default_flavor(widget),
+            };
+            atoms
+                .iter()
+                .enumerate()
+                .filter(|(_, atom)| match atom {
+                    Atom::Context(context) => reduced_away(
+                        context.target.as_ref(),
+                        &context.states,
+                        &context.variants,
+                        decls,
+                    ),
+                    Atom::Sibling(_, _, sibling) => reduced_away(
+                        sibling.target.as_ref(),
+                        &sibling.states,
+                        &sibling.variants,
+                        decls,
+                    ),
+                    _ => false,
+                })
+                .map(|(at, _)| at)
+                .collect::<Vec<usize>>()
+        };
+        let mut reduced = vec![reduced_under(decl.flavors.first())];
+        reduced.extend(
+            decl.flavors
+                .iter()
+                .map(|flavor| reduced_under(Some(flavor))),
+        );
         let mut only = Vec::new();
         let mut first_even = Vec::new();
         let mut implies = Vec::new();
@@ -229,6 +269,7 @@ impl Space {
             first_even,
             implies,
             never,
+            reduced,
             exclusive_contexts,
         }
     }
@@ -265,6 +306,11 @@ impl Space {
                     return false;
                 }
             }
+        }
+        if let Some(reduced) = flavor.and_then(|flavor| self.reduced.get(flavor))
+            && reduced.iter().any(|at| value(*at) == Some(true))
+        {
+            return false;
         }
         for (only, first, last) in &self.only {
             // A `first` or `last` the atoms do not hold is false.
@@ -697,6 +743,40 @@ pub(super) fn one_size(context: &ContextMatch) -> bool {
     let first = all.first();
     all.iter().all(|size| Some(size) == first)
         && first.is_none_or(|size| !context.sizes.none_of.contains(size))
+}
+
+/// Whether an ancestor or sibling matched by `states` and `variants` on
+/// `target` needs two members of one exclusive flag or variant group of its
+/// widget, as `decls` gives them (S10): the reduction drops all but one of
+/// such flags, and two such variants are no available element (S8).
+fn reduced_away(
+    target: Option<&WidgetOrPart>,
+    states: &SetMatch<StateFlag>,
+    variants: &SetMatch<VariantRef>,
+    decls: impl Fn(WidgetKind) -> WidgetDecl,
+) -> bool {
+    let widget = match target {
+        Some(WidgetOrPart::Widget(WidgetRef::Typed(widget))) => *widget,
+        Some(WidgetOrPart::Part(PartRef::Typed(part))) => widget_of(*part),
+        Some(
+            WidgetOrPart::Widget(WidgetRef::Component(_))
+            | WidgetOrPart::Part(PartRef::Component { .. }),
+        )
+        | None => return false,
+    };
+    fn two<T: PartialEq>(group: &[T], held: &[T]) -> bool {
+        group.iter().filter(|member| held.contains(member)).count() > 1
+    }
+    let decl = decls(widget);
+    decl.exclusive
+        .iter()
+        .flatten()
+        .any(|group| two(group, &states.all_of))
+        || decl
+            .exclusive_variants
+            .iter()
+            .flatten()
+            .any(|group| two(group, &variants.all_of))
 }
 
 /// Whether two matches of one nearest ancestor require sizes it cannot have

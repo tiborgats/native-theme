@@ -998,3 +998,30 @@ fn combination_keyed_item_replaced() {
         ["widgets.button.body.transitions[0].delay_ms: `values.repeat_delay` can be `absent` here"]
     );
 }
+
+/// An ancestor's or sibling's states are reduced by its own widget's
+/// exclusive groups (S8, S10): a match needing two members of one never
+/// holds, so its rule never applies (S12's exclusions).
+#[test]
+fn combination_context_states_reduced_by_their_groups() {
+    let decl = declare("[declare.widget.button]\nexclusive = [[\"hover\", \"pressed\"]]");
+    let rules = |states: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ context = [{{ widget = \"button\", states = {states} }}] }}\n\
+             target = \"button.body\"\nset = {{ stroke = \"absent\" }}\n\
+             [[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\n\
+             set = {{ stroke.top.width_px = 2 }}"
+        )
+    };
+    assert_eq!(alone(&rules("[\"hover\", \"pressed\"]"), &decl), NONE);
+    assert_eq!(
+        alone(&rules("[\"hover\"]"), &decl),
+        ["rules[1].set.stroke: patches the fields of a value that can be `absent`"]
+    );
+    let siblings = "[[rules]]\nwhen = { position = { among = \"any\", next = { widget = \"button\", \
+                    states = [\"hover\", \"pressed\"] } } }\ntarget = \"button.body\"\n\
+                    set = { stroke = \"absent\" }\n\
+                    [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
+                    set = { stroke.top.width_px = 2 }";
+    assert_eq!(alone(siblings, &decl), NONE);
+}
