@@ -20911,6 +20911,13 @@ when = { conditions = ["preset:macos-tahoe"], not_context = [{ scope = "any", wi
 pending = "U90"
 rows = ["MAC-B08"]
 
+# The press and release animations (MAC-X11; the glass bounce on macos-tahoe): the passes capture still frames (U103).
+[[fact]]
+key = "button.body.transitions"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U103"
+rows = ["MAC-X11"]
+
 # ---------------------------------------------------------------------------------------------------------------------
 # button (macos-monterey): AppKit's NSButton as macOS 15.7.9 draws it, measured in the os-probe button pass of run
 # 41006842699's macos-15 job (docs/evidence/os-probe/2026-10-30-run-41006842699/README.md), by the method and the
@@ -41990,3 +41997,10 @@ key = "button.body.focus.transition"
 when = { conditions = ["preset:macos-monterey"], not_variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U140"
 rows = []
+
+# The press and release animations (MAC-X11; the glass bounce on macos-tahoe): the passes capture still frames (U103).
+[[fact]]
+key = "button.body.transitions"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U103"
+rows = ["MAC-X11"]
