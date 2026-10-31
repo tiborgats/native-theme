@@ -102,7 +102,7 @@ fn in_flavor(layer: &Layer, cx: &Context<'_>, flavor: Option<&Key>) -> Vec<Probl
     }
     let mut problems: Vec<Problem> = Vec::new();
     for mut problem in checker.problems {
-        problem.path = layer.shorthands.written(&problem.path);
+        problem.path = layer.shorthands.written(&problem.path, &layer.rules);
         if !problems.contains(&problem) {
             problems.push(problem);
         }

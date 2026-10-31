@@ -1360,6 +1360,21 @@ fn shorthand_faults_at_the_key_as_written() {
     );
 }
 
+/// A rule's shorthand holds while the rule read stays at its index: a rule
+/// inserted before it through the layer's fields is named by its own keys,
+/// not by the shorthand of the rule it displaced.
+#[test]
+fn shorthand_follows_its_rule_after_an_edit() {
+    let mut layer = toml("[[rules]]\ntarget = \"button.body\"\nset = { corners_px = 4 }");
+    let faulty =
+        toml("[[rules]]\ntarget = \"button.body\"\nset = { corners = { top_left_px = -1 } }");
+    layer.rules.insert(0, faulty.rules[0].clone());
+    assert_eq!(
+        bare(&layer),
+        ["rules[0].set.corners.top_left_px: out of range: at least zero"]
+    );
+}
+
 /// A layer built in Rust names its places by the model's paths throughout:
 /// a rule's selector and body by their fields, an input below `entries`.
 #[test]

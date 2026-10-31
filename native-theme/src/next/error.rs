@@ -87,7 +87,8 @@ pub struct Problem {
     /// `rules[2].set.fill`, `inputs.accent.light`, a shorthand's own key:
     /// `corners_px`). A layer keeps the spelling it was made with: one read
     /// from TOML and changed through its fields afterwards is still named
-    /// by its TOML keys.
+    /// by its TOML keys, a rule's shorthand only while the rule read is
+    /// still at its index.
     pub path: String,
     /// The problem.
     pub kind: ProblemKind,

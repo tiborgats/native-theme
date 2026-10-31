@@ -140,6 +140,7 @@ fn finished(mut layer: Layer, cx: Reader) -> Result<Layer, LayerError> {
     } else {
         layer.spelled = Spelled::Toml;
         layer.shorthands = cx.shorthands;
+        layer.shorthands.read_rules(&layer.rules);
         Ok(layer)
     }
 }

@@ -577,10 +577,10 @@ impl<'a> Stack<'a> {
             if let Some(stacked) = layers.get(source.layer) {
                 let shorthands = &stacked.layer.shorthands;
                 for op in &mut source.ops {
-                    op.at = shorthands.written(&op.at);
+                    op.at = shorthands.written(&op.at, &stacked.layer.rules);
                 }
                 for binding in &mut source.bindings {
-                    binding.at = shorthands.written(&binding.at);
+                    binding.at = shorthands.written(&binding.at, &stacked.layer.rules);
                 }
             }
         }
