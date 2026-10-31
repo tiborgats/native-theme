@@ -108,7 +108,10 @@ preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `
 the S10 declarations it states: `available` (alone where false), `variants`, `sizes`, `default_size`,
 `default_size_by_variant`, `densities`, `flags`, `exclusive`, `exclusive_variants`, `recency`, `requires_variants`,
 `sizes_by_variant`, `sizes_by_context`; `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
-not declarations. `[declare] conditions` lists the `system_setting:` keys the entries' axes and the facts' `when`s
+not declarations. A declared variant that only facts left out as their unit is not enabled name is left out of
+`variants` and `exclusive_variants` (off_variants()), as their rules are, since S12 refuses a keyed name no rule selects
+on; one S12 exempts stays (`requires_variants`, `sizes_by_variant`, `default_size_by_variant`, the catalogue's content
+variants). `[declare] conditions` lists the `system_setting:` keys the entries' axes and the facts' `when`s
 name, as `@<key>`. The other keyed namespaces S10 declares (`color_roles`, `durations`, `timings`, `params` with their
 units, `text_styles`, `inputs`, `accent_inputs`, `surface_sets`, …) are left for hand-writing: no fact states their
 units or defaults.
@@ -527,6 +530,7 @@ class Draft:
     models: dict              # widget: the state model's data the round trip reduces by
     left_models: list         # (widget, item): entries of widgets the model does not hold
     staged: int
+    dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
 
 
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
@@ -607,8 +611,9 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             continue
         bases += [(f.section, s, f.header, tuple(dotted), v, f) for s, dotted, v in entries]
     rules = group_rules([f for f in facts if f.status == "rule"])
-    declare, conditions, models, left_models = declarations(items, platform, preset, units, facts)
-    return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged)
+    declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
+                                                                     getattr(ctx, "content_variants", {}))
+    return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped)
 
 
 def remove(tree: dict, path: tuple):
@@ -692,9 +697,9 @@ def group_rules(facts: list) -> list:
     return rules
 
 
-def declarations(items, platform, preset, units, facts):
-    """([declare] tables, `[declare] conditions`, the state models the round trip reduces by, the entries left out)
-    from the platform's state models (S10, S17 *State models*)."""
+def declarations(items, platform, preset, units, facts, content):
+    """([declare] tables, `[declare] conditions`, the state models the round trip reduces by, the entries left out,
+    the variants left out per widget) from the platform's state models (S10, S17 *State models*)."""
     entries = {}
     for it in items:
         if it.table != "model" or it.platform != platform or not isinstance(it.data.get("widget"), str):
@@ -706,7 +711,7 @@ def declarations(items, platform, preset, units, facts):
             continue
         flavor = next((c[7:] for c in conds if c.startswith("flavor:")), None)
         entries.setdefault(it.data["widget"], []).append((it, bool(named), flavor))
-    declare, models, left, settings = [], {}, [], []
+    declare, models, left, settings, dropped = [], {}, [], [], []
     for widget, es in entries.items():
         if not held(units, widget, "widget"):
             left += [(widget, it) for it, _, _ in es]
@@ -720,6 +725,10 @@ def declarations(items, platform, preset, units, facts):
             header = (("flavor", flavor) if flavor else ()) + (kind, name)
             kvs = [("available", False)] if d.get("available") is False else [
                 (k, d[k]) for k in DECLARE_KEYS if k in d]
+            off = off_variants(widget, d, facts, content.get(widget, []))
+            if off:
+                kvs = [(k, without_variants(k, v, off)) for k, v in kvs]
+                dropped.append((widget, sorted(off)))
             declare.append((header, kvs, it))
             if flavor is None:
                 models[widget] = d
@@ -730,7 +739,69 @@ def declarations(items, platform, preset, units, facts):
             settings += [c for c in f.when.get(k, []) if isinstance(c, str)]
     conditions = list(dict.fromkeys("@" + c[len("system_setting:"):] for c in settings
                                     if c.startswith("system_setting:")))
-    return declare, conditions, models, left
+    return declare, conditions, models, left, dropped
+
+
+VARIANT_LISTS = ("variants", "not_variants")
+EXEMPT_VARIANTS = ("requires_variants", "sizes_by_variant", "default_size_by_variant")
+
+
+def named_variants(when, widget) -> set:
+    """The variants of `widget` a fact's `when` names: its own lists (a fact of the widget's keys), and a context's or
+    position sibling's naming the widget."""
+    out = set()
+    for k in VARIANT_LISTS:
+        out |= {v for v in when.get(k, []) if isinstance(v, str)} if isinstance(when.get(k), list) else set()
+    return out
+
+
+def context_variants(when, widget) -> set:
+    out = set()
+    for k in ("context", "not_context"):
+        for e in when.get(k, []) if isinstance(when.get(k), list) else []:
+            if isinstance(e, dict) and e.get("widget") == widget:
+                for vk in VARIANT_LISTS:
+                    out |= {v for v in e.get(vk, []) if isinstance(v, str)}
+    pos = when.get("position") if isinstance(when.get("position"), dict) else {}
+    for k in ("previous", "next"):
+        e = pos.get(k)
+        if isinstance(e, dict) and e.get("widget") == widget:
+            for vk in VARIANT_LISTS:
+                out |= {v for v in e.get(vk, []) if isinstance(v, str)}
+    return out
+
+
+def off_variants(widget, model, facts, content) -> set:
+    """The declared variants of `widget` that only facts left out as their unit is not enabled name: their rules are
+    left out, so the draft declares them neither (S12 refuses a keyed name no rule selects on, "a typo's sign"); they
+    come back with the unit, as the rules do. A variant S12 exempts stays: one `requires_variants`, `sizes_by_variant`
+    or `default_size_by_variant` names, and a content variant the connector sets (the catalogue's pairs, S8)."""
+    declared = {v for v in model.get("variants", []) if isinstance(v, str)}
+    exempt = set(content)
+    exempt |= {v for v in model.get("requires_variants", []) if isinstance(v, str)}
+    for k in EXEMPT_VARIANTS[1:]:
+        exempt |= {e.get("variant") for e in model.get(k, []) if isinstance(e, dict)}
+    named_in, named_off = set(), set()
+    for f in facts:
+        names = context_variants(f.when, widget)
+        if f.kind == "widget" and f.widget == widget:
+            names |= named_variants(f.when, widget)
+        if f.status == LEFT_OUT and f.reason.startswith(UNIT_NOT_ENABLED):
+            named_off |= names
+        else:
+            named_in |= names
+    return (declared & named_off) - named_in - exempt
+
+
+def without_variants(key, value, off):
+    """A declaration with the variants `off` taken out: from `variants`, and from each `exclusive_variants` group (a
+    group left with fewer than two goes, as it excludes nothing)."""
+    if key == "variants" and isinstance(value, list):
+        return [v for v in value if v not in off]
+    if key == "exclusive_variants" and isinstance(value, list):
+        groups = [[v for v in g if v not in off] for g in value if isinstance(g, list)]
+        return [g for g in groups if len(g) >= 2]
+    return value
 
 
 # ---------------------------------------------------------------------------------------------- the draft
@@ -1059,6 +1130,8 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
             f"{k}: {v}" for k, v in sorted(pend.items(), key=lambda kv: int(kv[0][1:]))))
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
+    for w, vs in draft.dropped:
+        out.append(f"# [declare] {w}: variants left out, only facts of units not enabled naming them: {', '.join(vs)}")
     out.append(f"# left for hand-writing: S19.2's staged bases for {draft.preset}: {draft.staged} "
                f"({STAGED_BASES}); the keyed namespaces of [declare] but `conditions`; `[preset] generation`")
     out.append(f"# round trip: {trip.compared} combinations compared, {len(trip.mismatches)} mismatches "
@@ -1111,7 +1184,7 @@ SELF_TEST_FILES = {
 [[model]]
 widget = "button"
 available = true
-variants = ["flat", "primary", "@pill"]
+variants = ["flat", "primary", "@pill", "@raised"]
 sizes = []
 densities = []
 flags = ["@busy"]
@@ -1171,7 +1244,8 @@ quote = "x"
         _fact("button.body.corners.top_left", '"2px"', '{ states = ["hover", "pressed"] }'),
         _fact("button.body.min_width", '"= token.focus.width"', '{ variants = ["primary"] }'),
         _fact("button.body.min_width", '"auto"', '{ variants = ["@pill"] }'),
-        _fact("button.body.fill", '"#000000"', '{ context = [{ scope = "any", widget = "toolbar", part = "bar" }] }'),
+        _fact("button.body.fill", '"#000000"', '{ context = [{ scope = "any", widget = "toolbar", part = "bar" }], '
+                                               'not_variants = ["@raised"] }'),
         _pending("button.body.fill", "U1", '{ states = ["pressed"] }'),
         _fact("button.label.text", '"= token.text.roles.body"'),
         _fact("button.label.text.font.weight", "700"),
@@ -1612,6 +1686,9 @@ def self_test() -> int:
                 (("widget", "button"), ["available", "variants", "sizes", "densities", "flags", "exclusive",
                                         "exclusive_variants", "recency"])]:
             failures.append(f"[declare]: {[(h, kvs) for h, kvs, _ in draft.declare]}")
+        # a variant only the toolbar's left-out fact names is left out of [declare], every other kept
+        if draft.dropped != [("button", ["@raised"])]:
+            failures.append(f"[declare]: variants left out {draft.dropped}, expected only button's @raised")
         if draft.conditions != ["@reduced_chrome"] or [w for w, _ in draft.left_models] != ["toolbar"]:
             failures.append(f"[declare]: conditions {draft.conditions}, left out {draft.left_models}")
         # the round trip: every combination as its fact gives it; and it fails a draft that is not the facts'

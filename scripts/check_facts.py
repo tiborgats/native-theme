@@ -614,6 +614,7 @@ class Context:
         except SystemExit as err:
             raise InputError(str(err)) from err
         self.entries = {e.name: e for e in spec_catalogue.entries(cat_text)}
+        self.content_variants = spec_catalogue.content_variants(cat_text)
         self.structs = core_structs(core_text)
         self.enums = core_enums(core_text)
         self.functions = core_functions(core_text)
