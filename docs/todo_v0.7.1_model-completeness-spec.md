@@ -145,7 +145,7 @@ pub enum ThemeError { PlatformUnsupported, FeatureDisabled,
                       Reader { preset: PresetId, failure: ReaderFailure },   // a failed first read, with the preset
                                                           // `from_system` chose, for `from_preset` (S16)
                       Preset(LayerError) }                // a bundled preset failing validation, which a build
-                                                          // test rules out (S19.1)
+                                                          // test rules out in a release (S19.1)
 pub enum ReaderStatus { Read, NoReader, StandIn,
                         Fallback(ReaderFailure),            // read, but one source failed and another stood in for
                                                             // it, which the failure names (the KDE scheme file, S9.1)
@@ -162,12 +162,44 @@ pub enum PaletteStatus { Applied, Suspended, SkippedForContrast }   // S14
 
 ```rust
 /// Extended sRGB, straight (not premultiplied) alpha. Channels may lie outside 0..=1 (Display P3 colours
-/// expressed in extended sRGB); alpha is 0..=1.
+/// expressed in extended sRGB, or a derivation's result, S2.2); alpha is 0..=1.
 pub struct Color { pub r: f32, pub g: f32, pub b: f32, pub a: f32 }
 ```
 
-It replaces `Rgba` everywhere. Conversion helpers: `to_srgb8_clamped()` for connectors that render sRGB, and
-`to_display_p3()`. TOML: `"#rrggbb"`, `"#rrggbbaa"` (in gamut), `"srgb(r, g, b[, a])"` with floats, or
+It replaces `Rgba` everywhere. Conversion helpers: `to_srgb8_clamped()` (each straight channel and the alpha clamped
+to `0..=1` and rounded to 8 bits), `to_srgb8_premultiplied()` (each channel times the alpha, then clamped to `0..=1`
+and rounded to 8 bits, the alpha with it) and `to_display_p3()`. A derivation's result may leave the gamut too
+(libadwaita's standalone colours, S2.2); the value keeps such channels, a later function clamping them only where its
+source does (S2.2).
+
+**The hand-over** (ADD-A128). A channel outside `0..=1` is clamped where the colour is drawn, as GTK draws it: the
+colour premultiplied, each premultiplied channel clamped to `0..=1`, then blended, on an 8-bit frame (GSK packs the
+colour unpremultiplied and unclamped, `gtk@4.24.1 gsk/gpu/shaders/generate-glsl-interface.py:234`, and premultiplies
+it in the shader, `gsk/gpu/shaders/gskgpucolor.glsl:24`, `gskgpuborder.glsl:32-50` for a border or an outline, the
+focus ring's, `color.glsl:205-206`, `:219-225`; an 8-bit frame holds `0..=1` only, and colour, border, shadow and
+text nodes ask for no deeper one, `gsk/gskcolornode.c:221`, `gsk/gskbordernode.c:396`,
+`gsk/gskoutsetshadownode.c:297`, `gsk/gsktextnode.c:248`). A connector hands its toolkit a colour by the toolkit's
+colour type:
+- a premultiplied colour type (egui's `Color32`, premultiplied sRGB bytes, as the egui connector records,
+  `connectors/native-theme-egui/src/convert.rs:158-159`): `to_srgb8_premultiplied()`, `c·a` clamped, as GTK draws it;
+- a straight float colour type the toolkit takes unclamped and premultiplies itself: the unclamped value;
+- otherwise (a straight 8-bit colour type, or a float type the toolkit clamps before it premultiplies, as the gpui
+  connector clamps today, `connectors/native-theme-gpui/src/colors.rs:20-29`): `to_srgb8_clamped()` or the clamped
+  floats, which cannot be exact. A channel `c` above 1 at alpha `a` then draws up to `(c − 1)·a` too dark, before the
+  store's own clamp (for the focus ring of libadwaita's dark accents over the dark window, up to 34 steps of 255: 13 to 34 for blue, orange, red, pink and purple; about 2 for yellow; 0 for teal,
+  green and slate, in gamut); a
+  channel below 0 draws as GTK draws it, its premultiplied value clamped to 0 either way. The connector's contract
+  records the limit and its size (S21.3).
+
+An opaque colour draws the same in all three. A toolkit that draws into Display P3 takes `to_display_p3()`, which does not clamp, and the same three cases apply
+to its channels there, as GTK draws in the colour state its surface is given (`gdk/wayland/gdksurface-wayland.c:917-929`).
+`color::composite_over` (S16), with which a connector composites a translucent colour over what lies beneath (R5.3),
+draws as this hand-over does: each colour premultiplied, each premultiplied channel clamped to `0..=1`, then blended,
+returning the composite's straight colour,
+so light teal's standalone red, −0.17, composites in its focus ring as GTK draws it (premultiplied at alpha 0.5,
+−0.085, clamped to 0, where blending it unclamped draws about 22 steps of 255 darker).
+
+TOML: `"#rrggbb"`, `"#rrggbbaa"` (in gamut), `"srgb(r, g, b[, a])"` with floats, or
 `"display_p3(r, g, b[, a])"` with floats, a colour as Apple publishes it in Display P3 (MAC-X10), converted to
 extended sRGB when the file is read, so a preset cites the published value exactly.
 
@@ -383,7 +415,7 @@ refuses nothing that check would pass, and the check refuses what the merge cann
 | `kde_selection_inactive(selection, window, selection_background, role_kind)` | colour | where KColorScheme starts the Selection set's Inactive group (`kcolorscheme.cpp:304-316`, `:374-378`): while `token.kde.inactive_change_selection_color` holds (it reads that token itself, listed as its operand), `window`, and for role kind `background` `window` tinted toward `selection_background` by `KColorUtils::tint` with the amount KColorScheme passes there (the implementation's, from that source; the core states no platform value); otherwise `selection`. The preset passes the Selection and Window sets' inactive input roles and the Selection set's active background, and applies `kde_effects(…, inactive, …)` over the result, as KColorScheme does (K3.40, K1.173; R5.1). The Selection set's Disabled group starts from Window's colours whatever the switch (`:317-319`), a plain reference in the preset |
 | `kcu_mix(a, b, bias)`, `kcu_tint(a, b, amount)`, `kcu_shade(c, luma, chroma)` | colour | `KColorUtils`, to `kcolorutils.cpp` |
 | `kde_shade(c, role: KdeShadeRole, contrast)` | colour | `KColorScheme::shade(color, role, contrast)` with no chroma adjustment, to `kcolorscheme@6.31.0 src/kcolorscheme.cpp:566-616`. `contrast` is kdeglobals' `[KDE] contrast` as the file stores it (an integer step, `breeze@6.8.2 colors/BreezeLight.colors:199`); the function first scales it by 0.1, as `KColorScheme::contrastF` does (`kcolorscheme.cpp:519-527`, `:526`), then clamps the result to `-1..=1`, as `shade` does (`:569`); then by the colour's luma it takes one of three branches (a very dark colour, `:574`, a very light one, `:588`, the rest, `:601`), each a `KColorUtils::shade` by an amount of the luma and the contrast, and in the third branch alone `ShadowShade` is darkened after that shade (`KColorUtils::darken`, `:614`); `KdeShadeRole = Light \| Midlight \| Mid \| Dark \| Shadow` (KColorScheme's `LightShade` … `ShadowShade`, `kcolorscheme.h:250-254`); the `role.@shade_*` roles are `= kde_shade(role.window.background, <role>, token.params.color.contrast)`, as `createApplicationPalette` computes Qt's `Light` … `Shadow` from the Window set (`:683-687`) (ADD-A121) |
-| `adw_standalone(c, scheme)` | colour | libadwaita's standalone accent derivation in OKLab, to its stylesheet |
+| `adw_standalone(c, scheme)` | colour | libadwaita's standalone colour as its stylesheet has GTK compute it (ADD-A128): CSS's relative colour of `c` in OKLab, its lightness L limited to at most 0.5 in the light scheme and at least 0.85 in the dark one (`libadwaita@1.10.0 src/stylesheet/_colors.scss:146`, `:151`, `:166-170`; `.osd` and toasts take the dark limit in either scheme, `_common.scss:48-54`, `widgets/_misc.scss:44-50`), as `gtk@4.24.1` computes it with the origin a named colour, as the eight roles' origins are (each background variable, `--accent-bg-color` among them, holds the named colour of that background, `_colors.scss:166-194`; `.osd`'s accent background alone is a literal, `_common.scss:45`, whose standalone colour no role derives): `c` into OKLab (`gtk/gtkcsscolorvalue.c:2207-2237`, `gtk/gtkcsscolor.c:641-665`, `gtk/gtkcolorutils.c:348-355`, `:383-398`), L limited by CSS's `min` or `max` and stored as a single, a, b and the alpha kept (the alpha clamped to `0..=1`, which leaves it unchanged; L not clamped, `gtkcsscolorvalue.c:636-677`), and at once back to sRGB (`:907-931`, `gtkcsscolor.c:641-665`, `gtkcolorutils.c:339-346`, `:357-372`, `:418-425`): the colour GTK's style holds, which every later CSS function and `gtk_widget_get_color` read; each step in GTK's precision (channels and OKLab coordinates as singles, the sRGB curve evaluated in double, a channel below the curve's threshold, a negative one included, on its linear piece) and **unclamped**, a channel outside `0..=1` kept (S2.1, below). Not libadwaita's `adw_rgba_to_standalone` (`src/adw-accent-color.c:130-157`), an application API the stylesheet does not call, which clamps each channel (`:153-155`) |
 | `m3_role(role)` | colour | material-color-utilities' dynamic scheme, the role of that scheme; it reads `input.accent` (the seed), `token.material.{variant, spec_version, contrast_level}` and the colours' scheme itself, listed as its operands |
 | `mul(x, y)`, `div(x, y)`, `add(x, y)`, `sub(x, y)`, `min(x, y)`, `max(x, y)`, `floor(x)`, `round(x)` | number, length, duration or font size | arithmetic (a token times the speed factor; a font size times a factor) (ADD-A56). `floor` rounds toward negative infinity; `round` to the nearest integer, a half away from zero, as Qt's `qRound` does (`qtbase@6.12.0 src/corelib/global/qnumeric.h:535-550`, `:570-573`) and Rust's `f32::round` (ADD-A122). A source's integer arithmetic is written with them: a non-negative real converted to an integer, as `QVariantAnimation::setDuration(int)` takes one, is `floor` (K1.17); `qRound` is `round`; a non-negative integer divided by a positive integer in C++ is `floor(div(…))` (Q3.24) |
 | `qt_lighter(c, factor)`, `qt_darker(c, factor)` | colour | `QColor::lighter`, `QColor::darker` in HSV, to qtbase `qcolor.cpp` (ADD-A50); `factor` is QColor's integer percent (`150` lightens by half), so a stated factor is a whole number; QML's `Qt.lighter`/`Qt.darker` take a real factor, which QML rounds to percent (`qRound(factor * 100)`, `qquickvaluetypes.cpp:52`), stated here as that integer |
@@ -403,6 +435,58 @@ refuses nothing that check would pass, and the check refuses what the merge cann
 | `kde_accent_wm(key: KdeWmKey)` | colour | the rest of the same derivation, `applyScheme()`'s `[WM]` group (`colorsapplicator.cpp:287-338` at v6.8.2), one route with `kde_accent` (one implementation of `applyScheme()`, R25.1, its rules for an unset key and a transparent accent included): it starts from the scheme input `input.kde_scheme.wm.<key>`, what `applyScheme()` writes with no accent (S9.1: the file's `[WM]` key, else its `Header` default); then the inactive background and foreground, while the scheme tints (`token.kde.tint_factor` is `Some`), are the file's `Window` background `input.kde_scheme.window.background_normal` tinted toward the accent and the text on it (`tintColor`, `accentForeground`); the active background and foreground, while `token.kde.titlebar_is_accent_colored` holds, are that `Window` background accented as the title-bar option writes it and the text on it (`accentBackground`, `accentForeground`), else, while the scheme tints, the tinted `Window` background and the text on it; any key neither option changes keeps the start value. `KdeWmKey` (S4.8) names the four keys Breeze reads (`breezehelper.cpp:98-102`) |
 | `name_index(text, count, method: NameIndexMethod)` | number | the index a platform's avatar hashes a name to; `NameIndexMethod = Kirigami \| Adwaita` (Kirigami's `nameutils.cpp`, libadwaita's `adw-avatar.c`), each to its source (R25.3; kirigami-addons' own `nameutils.cpp` is compared with Kirigami's in the value phase and becomes a member if it differs) |
 | `pick(index, c0, c1, …)` | colour | the colour at `index` (R25.3) |
+
+**`adw_standalone`, one form** (ADD-A128, ledger queue #105). Every value the GNOME facts derive with it, the
+roles `role.global.accent_standalone`, `role.global.status.<kind>.standalone` and `role.osd.negative`, `neutral` and
+`positive`, and every value derived from them (a link colour, the focus ring's `alpha`, the visited link's `mix`, the
+symbolic icons' palette), takes this one form, GTK's computed sRGB colour. After the value, GTK uses it three ways,
+each a step of the drawing that no later CSS function reads: as it is, for the symbolic icons' colours and through
+`gtk_widget_get_color` (`gtk@4.24.1 gtk/gtkcssstyle.c:886-895`, `gtk/gtkwidget.c:13458-13468`); clamped to `0..=1`
+and rounded to 16 bits, for a label's link (`gtk/gtklabel.c:888-892`); and not at all for a label's or an entry's
+text, a background, a border, an outline and a shadow, which are drawn from the OKLab coordinates the style keeps beside
+it, and which the renderer converts to sRGB itself (`gtk/gtkrenderlayout.c:60`, `gtk/gtkrenderbackground.c:263`,
+`gtk/gtkrenderborder.c:695-698`, `:761`, `gtk/gtkcssshadowvalue.c:608`, `gtk/gtkcsscolor.c:1214-1240`, `gdk/gdkcolorstate.c:359`), in single precision, the
+cube as two products and the sRGB curve in single, mirrored for a negative channel (`gdk/gdkcolordefs.h:32-42`,
+`:282-287`). That conversion is within 7.9·10⁻⁴ of this form on the 0–255 scale for the channels in gamut on spike
+G's grid, and outside the gamut both agree to 2·10⁻⁴ once clamped (two emulations over the grid at alpha 1, the
+stylesheet's origins being opaque; ledger queue #105); the renderer's 8-bit store
+clamps and rounds each. No check compares a drawn colour finer than that: a vector row compares this form itself
+(below), a published fact, at the quote check's precision, the preset's call of the same function, a read through `gtk_widget_get_color` this form,
+and a capture rounds to 8 bits, by up to half a step, far above these differences (the link's 16-bit rounding is at most
+2·10⁻³), while a render-node file (`.node`) a GNOME harness records holds an OKLab-drawn colour as its OKLab
+coordinates, unrounded (`gsk/gskrendernodeparser.c:5445-5472`), which an analysis converts as this function does
+before comparing. So the function has no second form: one per drawing path would split each role into two that differ, once
+drawn, by less than a capture shows, which no connector's toolkit draws apart. Outside the gamut, where 16 of the
+standalone colours libadwaita documents lie (the default blue's dark one has a blue channel of 1.218717, which
+libadwaita notes is clipped before it is displayed, `doc/css-variables.md:89-92`, `:96-99`, the others marked at
+`:140-438`), the value is clamped where it is drawn, as GTK clamps it (S2.1's hand-over): not by the function, which
+would change an `alpha` or `mix` over an out-of-gamut colour (GTK's `color-mix()` and `alpha()` read the unclamped
+channels, above), visibly on the focus ring, `alpha(role.global.accent_standalone, …)`, and by at most one step of 255
+on the visited link's `mix`; nor at the end of resolution, which would clamp the focus ring's colour before its
+alpha, where GTK's renderer premultiplies it first. **Its vectors** (`native-theme/tests/vectors/adw_standalone.tsv`):
+route `observable_behaviour`, sources `gtk@4.24.1` and `libadwaita@1.10.0`, generation `adwaita`, generator
+`tools/gnome-vectors` at those pins (their packages, S17), inputs `c:colour scheme:enum<Scheme>`, output
+`result:colour`. The generator initialises libadwaita, forces each scheme through `AdwStyleManager`, names each input
+colour with `@define-color`, written in CSS's `color()` notation in `srgb` from the row's exact singles, whose channels
+GTK keeps unclamped and whose alpha it clamps to `0..=1` (`gtk/gtkcsscolorvalue.c:1701-1722`, `:1397-1426`; `rgb()`
+clamps its channels, `:1389-1390`); the named origin keeps GTK on the path the roles' named origins take, where a
+literal origin is computed when parsed and GTK clamps L to `0..=1` (`:1513-1535`, `:1946-1966`). It styles a widget's
+colour as the stylesheet's relative colour of that origin with the stylesheet's own limit, `--standalone-color-oklab`,
+and writes
+`gtk_widget_get_color`'s four singles unrounded as `srgb(…)`. Its rows: spike G's grid (red, green and blue each
+over 0, 51, 102, 153, 204 and 255, /255) at alpha 1 in both schemes, out-of-gamut results included; every
+`AdwAccentColor` colour and the four status backgrounds of each scheme (`_colors.scss:11-22`, `:83-86`) at alpha 1,
+0.75 and 0.5; inputs with a channel above 1 and below 0; inputs whose L lies within a single's step of 0.5 and of
+0.85, and channels at the curve's thresholds, 0.04045 in and 0.0031308 out. The test `vectors_adw_standalone`
+compares each output channel and the alpha unrounded on the 0–255 scale to 1e-3, as every generated table
+(below); `check_function_vectors.py` checks the table's form and that its rows serve `adwaita` under both schemes, as
+the facts call it with `scheme` and with `dark`. The route is the observed behaviour, not `compiled_source`: it runs
+the stylesheet's whole path, the named origin, the limit and the storage included, on spike G's headless display,
+where a harness calling GTK's internal conversion would skip that path; `tools/gnome-vectors` is rewritten to it. Spike G's table, `adw_rgba_to_standalone`'s through
+its public API, clamps, and is not this function's table. The implementation follows the CSS Color 4 conversion
+between sRGB and OKLab (W3C, followed directly, D10) and the stylesheet's limit as described here; GTK's constants
+as singles, the precision of each step and its linear piece for negative channels, which are GTK's own and which the
+1e-3 unrounded comparison needs reproduced, come from the clean room's description of this form (D10 a).
 
 A function is added to this table only with the platform rule that needs it and its source (R5.4). How each KDE
 function treats a translucent input (mixes, keeps or ignores alpha) is read from its source in the value phase and
@@ -439,7 +523,9 @@ spring `time_scale` below zero is zero; a number that becomes an integer (a `Val
 count) is floored and clamped to the integer type's range, a negative one to zero; a loop whose period evaluates to
 zero does not run (the part shows its style without the loop's keyframes: R9's animations off sets the speed factor,
 and so a scaled period, to zero); a non-finite result, or non-finite element data, is zero. A platform function
-follows its source's own clamping first. An expression naming `element.<data>` is re-evaluated by each
+follows its source's own clamping first. No function clamps a colour's channels unless its source does, `Color`
+holding them outside `0..=1` (S2.1): `alpha` and `mix` keep them, as GTK's `alpha()` and `color-mix()` do
+(`gtk@4.24.1 gtk/gtkcsscolorvalue.c:556-564`, `gtk/gtkcsscolor.c:919-970`). An expression naming `element.<data>` is re-evaluated by each
 query, so a connector queries again when the data changes, as for a state (R25.3).
 
 **Checked against their references** (ADD-A113). Each platform function has a vector table under
@@ -1980,7 +2066,7 @@ variant joins this list in the commit that adds it.
 `TextStyle.font`, `Tokens.focus`) patch per
 sub-field (`Sides<Option<Value<Px>>>`), with the same table spelling as a `Fields` patch. An `Option` of a plain
 block (`RippleStyle.indication_box`, `Behavior.key_repeat`) is no compound field: its patch is `Option<Option<T>>`,
-`"none"` or the struct stated whole, in every position (S2.2; ADD-A125).
+`"none"` or the struct stated whole, in every position (S2.2; ADD-A125). `Layer::from_toml` refuses a table missing a field as a mistyped value, naming the leaf (S1's `LayerError`, S11). Its facts may still be stated per leaf, composed by the gate (S17; ADD-A128).
 
 **Merging patches:** a field a later patch sets replaces the earlier value, a `Fields` patch and an `Append` merging
 as below. A **map** (every `Vec` of pairs, `Vec<(Key, V)>`, and `SurfaceMap`, `SchemeMap`) merges by key: an entry
@@ -2871,6 +2957,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | a rule's target | `"colors"`, `"tokens"`, `"<widget>.<part>"`, `"<widget>.values"`, `"component.<key>.<part>"`, `"component.<key>.values"` |
 | a rule's patch | the table `set`; the keys `when`, `target` and `set` are the rule's own |
 | per-contrast input bases | `[inputs.<name>.contrast.increased]`, `[inputs.<name>.contrast.high]`, each with `light` and `dark` |
+| a path pending in a preset (S17) | `[pending]`, one entry per path, its TOML path quoted and its register id: `"tokens.behavior.touch.delay_ms" = "U151"`, the path as S11 writes its key, unit suffix included, which the reader maps to the model's path (`token.behavior.touch.delay`), the spelling of the problems and of the synthetic layers; a preset's only, written by `generate_preset.py`, empty at the release (ADD-A128) |
 | one preset's part of a layer | `[for_preset.<id>.…]` (bases naming that preset's keyed names, in an application layer or a palette) |
 | widget values, component parts | `[widgets.<widget>.values]`, `[components.<key>.<part>]`, `[components.<key>.values]` |
 
@@ -2902,13 +2989,14 @@ derivations; with them a palette states `[declare] schemes`.
 
 Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 
-- a field is missing (S2.2), or `Absent` where not `may_be_absent` (S6.3): among the conditional marks, an `Edge.dash`
+- a field is missing (S2.2), a preset's listed path included (S17, ADD-A128: a path a layer states is stated), or `Absent` where not `may_be_absent` (S6.3): among the conditional marks, an `Edge.dash`
   absent on an edge whose `width` and `paint` can be drawn, an `IconStyle.fill` absent, outside an icon-size context
   (S4.5), where `rendering_mode` can be other than `Original`, or a `Glyph.fill` absent where its `stroke` can be
   absent too and its `source` can be other than `SystemControl`, or a `Glyph.size` absent where its `source` can be
   other than `SystemControl`, or a `RippleStyle.color`, `alpha` or `padding` absent where, under some
   combination of the rules, its `effect` is stated (S12's combinations, the merged value checked, not a patch alone);
-  the other marks conservatively, following references and rules (S2.4, S2.9, S2.12);
+  the other marks conservatively, following references and rules (S2.4, S2.9, S2.12), a preset's listed
+  path read as able to take any value of its type, whatever value a layer gives it (S17);
 - a keyframe of a loop stated as a widget's or a component's value leaves its `part` out (`None`): such a loop is on
   no part, so each keyframe names the part it sets (S2.7);
 - a name is undeclared (S10), except a palette's typed role or surface set the current preset does not declare,
@@ -3017,8 +3105,14 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   declared keyed name no base states, or a declared event that no `presentations` list uses (a typo's sign); exempt:
   the default flavour, each container-size set's default, variants named in `requires_variants` and
   `sizes_by_variant`, what a connector sets (a content variant on the widget or *(element)* part its catalogue pair
-  names, S8, and breakpoint variants), and a `SystemSetting` declared for
-  applications to read (`for_applications = true` in `[declare] conditions`, S10; `Theme::system`);
+  names, S8, and breakpoint variants), a `SystemSetting` declared for
+  applications to read (`for_applications = true` in `[declare] conditions`, S10; `Theme::system`), and a variant a
+  platform preset declares, which the facts gate checks both ways against the platform's state model (S17): a
+  misspelt variant in the preset's declarations differs from the state model, which the gate fails, and one in the
+  state model is no variant of the catalogue's entry, which `check_facts.py`'s state-model rule refuses, so the
+  refusal would catch nothing there and would refuse a variant the platform draws by the rules that apply
+  (libadwaita's `@tab_button`, as `icon_only`); it stays for an application layer's and a palette's declared variants, which no
+  state model checks (ADD-A128);
 - a stated number is not finite;
 - an `exclusive_variants` group names a variant twice (a variant may be in several groups); a
   `default_size_by_variant` entry names a variant the widget does not declare or a size that variant does not take,
@@ -3247,6 +3341,13 @@ impl Theme {
                                                           // than blocking it (`from_system` blocks on them)
     pub fn from_preset(id: PresetId, scheme: Scheme) -> Result<Theme, ThemeError>;   // no reader: the no-reader
                                                           // state below, with this scheme
+    #[doc(hidden)]
+    pub fn from_preset_synthetic(id: PresetId, scheme: Scheme, layers: Vec<Layer>) -> Result<Theme, ThemeError>;
+                                                          // the facts gate's and the build test's route while a
+                                                          // preset's `[pending]` table is not empty (S17, S19.1,
+                                                          // ADD-A128): the preset validated with these layers over
+                                                          // it, all added at once, so a listed path they leave
+                                                          // unstated is the missing-field problem
     pub fn set_preset(&mut self, id: PresetId) -> Result<(), LayerError>;          // a theme change: the reader
                                                           // applies its portable part (accent, scheme, fonts, text
                                                           // scaling, conditions) to any preset and its
@@ -3395,7 +3496,9 @@ failed re-read keeps the previous reader layer and `ReaderState` (S8).
 - *`SystemTheme::with_overlay`:* replaced by `Theme::add_layer` (R2.4): an application's look is a layer in the
   stack, validated when added (S8, S12).
 - *Helpers outside the model:* `color::composite_over` is kept, over `Color` (a translucent colour or appended
-  layer composited over what lies beneath, which connectors do, R5.3); the `fonts` module (`select_face`,
+  layer composited over what lies beneath, which connectors do, R5.3), drawing as S2.1's hand-over does (each colour
+  premultiplied, each premultiplied channel clamped to `0..=1`, then blended, the composite returned as a straight
+  colour; ADD-A128); the `fonts` module (`select_face`,
   `system_face`, `substitute_family`, `substitute_family_cached`) is kept: it finds a resolved font's face on the
   system, which is not a theme value; today's `Theme::preset(name)`, which loads a whole theme by name as
   today's `Theme::from_toml` does, goes with it (below, R21), replaced by `Theme::from_preset(id, scheme)` and `Palette::bundled(id)`; the hidden `kde::from_kde_content_pure`
@@ -3463,7 +3566,34 @@ or `value = "absent"` where S6.3 allows it (S2.2), a plain one (`TextStyle.font`
 (`….text.font.size`), a `Value` field of an enum block (S6.1 lists them: `Value<Timing>`, `Value<Shadow>`) whole, by S11's spelling of
 its variant (`{ cubic_bezier = […] }`), a reference, or `"absent"` where S6.3 allows it (`button.body.shadow =
 "absent"`), a plain or bare enum block (a `Corners` corner, a `token.motion.timings` entry) by its variant only;
-which fields are struct blocks the valid keys decide (below). The
+which fields are struct blocks the valid keys decide (below).
+  **Per-leaf facts of a field set whole** (ADD-A128): facts stated per leaf of a block that S6.1 sets whole (an
+  `Option<B>`: `token.behavior.key_repeat.delay` and `.interval`, each a setting of its own in the sources) are
+  composed into one value per combination, from the applying fact of each leaf (*Which fact applies*, below); a leaf
+  with no applying fact fails as a missing fact, and a leaf whose applying fact is pending makes the whole field
+  pending for that combination: the generator writes nothing for it there (where nothing lies beneath, the preset lists the
+  field as pending, *A pending fact with nothing beneath it*, below), and the gate reports the other leaf's fact with
+  the pending one, unchecked. The gate compares the composed value with the resolved field leaf by leaf, each leaf at its own
+  key's gate tolerance (below), a resolved `None` failing it; the perturbed run compares it leaf by leaf too, a
+  derived leaf (KDE's interval) evaluated, a literal one skipped. The preset generator writes the composed value
+  whole, as S11 spells it, a sub-table holding one leaf per line, each line with its fact's citation comment
+  (`[tokens.behavior.key_repeat]` with `delay_ms = 500  # <citation>` and `interval_ms = 30  # <citation>`; in a
+  rule, its target `"tokens"` and the sub-table `[rules.set.behavior.key_repeat]`, as an inline table holds no
+  comments), so each leaf's citation stays on its line; a leaf fact's `preset:` condition selects the preset's file,
+  not a rule. Where the leaves' facts hold
+  under different `when`s, the value differs between the classes of combinations in which the same fact applies to
+  each leaf, so the generator writes the bases for the class with no condition and a rule for each other class, the
+  overlaps of the leaves' `when`s included, each stating both leaves, in an order where a rule for an overlap comes
+  after the rules it overlaps. A fact keyed by the field itself states it whole (`token.behavior.key_repeat`:
+  `"none"` or a table holding every leaf, as S11 spells it; never a reference, the field being no `Value`), its
+  `None` only so, and a generation's facts state the field whole or per leaf, never both, which `check_facts.py`
+  refuses. Rejected: an `Option<B>` taking `Fields` (refused over `None`, as over `Absent`), a class 2 change to the
+  model that no source needs, as no platform rule changes one leaf while keeping the other from beneath. Setting the
+  field whole costs the layers above the preset a restatement instead: a reader states both leaves wherever it
+  states one, the KDE reader stating the interval, for a `kcminputrc` that sets `RepeatDelay` alone, as KWin reads
+  `RepeatRate` unset (`kwin@6.8.2 src/keyboard_input.cpp:202-204`), cited, as S9.1 states a value a file lacks; and an
+  application that changes only the delay restates the interval, which `Fields` would have spared it at the cost of
+  a patch over `None` that the merge must refuse. The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
   sketches as `scripts/check_spec_names.py` reads them) until `docs/property-registry.toml` is generated (S18), and
   the registry's from then on; palette facts have keys of their own (below). A value is spelled as S11's **Spelling** table spells it in a preset, as a TOML value
@@ -3491,7 +3621,9 @@ which fields are struct blocks the valid keys decide (below). The
   | `measured` | `evidence`, `tolerance` | `conversion`, `inputs` (a measured derivation, below) | `source`, `quote`, `absent` |
 
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
-  a number in the value's canonical unit (a colour's per 8-bit channel, alpha included). For a value with leaves (a
+  a number in the value's canonical unit (a colour's per 8-bit channel, alpha included; channels compare on the 0–255
+scale unclamped, so one outside the gamut lies outside `0..=255`, while a colour measured from drawn pixels is compared
+with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). For a value with leaves (a
   shadow's layers, a curve), the `evidence` path names a table of the evidence file shaped like the value, and
   `tolerance` is one number for every numeric leaf or a table from each numeric leaf's path in the value as S11
   spells it to its number (`{ "layers.0.y_px" = <t>, "layers.0.color" = <t> }`); leaves that are not numbers or
@@ -3538,7 +3670,7 @@ which fields are struct blocks the valid keys decide (below). The
   without a unit takes the value literal's dimension in its
   canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
   within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
-  1e-3. `conversion` is a list from a closed set, applied in order: `percent_to_fraction` (÷ 100), `byte_to_fraction`
+  1e-3, unclamped and unrounded (a channel may lie outside `0..=255`; ADD-A128). `conversion` is a list from a closed set, applied in order: `percent_to_fraction` (÷ 100), `byte_to_fraction`
   (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, for a unitless number of seconds), `negate` (−x, the quoted
   number's sign flipped: WinUI's `FocusVisualMargin`, whose negative margin is an outward distance, S2.10; ADD-A122),
   `ns_font_weight` (an AppKit `NSFontWeight` to S2.8's CSS weight: 100 times one more than the number of the
@@ -3588,6 +3720,36 @@ which fields are struct blocks the valid keys decide (below). The
   `not_drawn` combination) or another option it records, and the commit
   applying it replaces the pending fact. Rejected: `value = "pending"`, a reserved string a text or key value could
   equal and the quote check would read as a literal.
+  **A pending fact with nothing beneath it** (ADD-A128). A preset's **listed path** is a path that, in some
+  combination, has only pending facts on that preset and no fact or base beneath them, so the preset's own layer
+  leaves it unstated there (U151's `token.behavior.touch.delay` and U150's `token.text.fallbacks.families`, `token.text.fallbacks.per_language` and
+  `token.text.fallbacks.per_family`, each an entry of its own, on `adwaita`; a
+  pending `KeyRepeat` leaf in the class of combinations the bases state, which leaves `key_repeat` so). The preset
+  lists each in its `[pending]` table with the register's id (S11: `"tokens.behavior.touch.delay_ms" = "U151"`), which
+  `generate_preset.py` writes from the pending facts. Through `Theme::from_preset`, `from_system` and `set_preset` a
+  listed path is what it is, a field the preset does not state: `ThemeError::Preset(LayerError::Invalid)` (from
+  `set_preset`, `LayerError::Invalid`) reports it as S12's missing field, its `Problem` the existing one, path and kind as they are, so no value is invented and no
+  type, field or variant is added; the register id is the `[pending]` table's and the gate's report's. The gate, and
+  S19.1's build test, load such a preset by `Theme::from_preset_synthetic` (doc-hidden, S16), the route a developer
+  may use too: one layer per listed path states it with a value marked synthetic in the gate's source, never
+  bundled, in the layer's bases, so the preset's own rules still win where they state the path, the layers added at
+  once and validated with the preset, so a listed path they leave unstated is the same missing-field problem. Those
+  bases also override a stand-in's value at a listed path (S8's layer order), so a fact reading that reader value
+  reaches the synthetic one. S12's conservative checks read a listed path as able to take any value of its type,
+  whatever its synthetic value (an expression reading `token.behavior.touch.delay` is checked over every duration).
+  The gate checks that the table holds exactly the preset's listed paths, compares every other fact as before,
+  skips every fact whose evaluation reaches a synthetic value (the synthetic value itself, any value referencing it,
+  a reader-backed fact at a listed path), reporting each, which costs coverage and nothing else, while the facts
+  where the preset's rules state the path are compared, and reports each listed path with its id; 0.8.0 is released
+  with every `[pending]` table empty, as R21 and
+  ADD-A122 require of pending facts. Rejected: the preset left out of the bundle (the gate then resolves none of its
+  facts, M1a design decision 7, against the plan's queue of every preset per unit); a `Pending` answer of the query, and
+  `PresetPending` variants of `ThemeError` and `LayerError` (each a permanent API and variant, which every caller of
+  an exhaustive error handles and the refusal test must trigger, for a state that ends before the release); S6.1's deferral of the field
+  from its unit (it removes the field from every preset and context, and a pending leaf may be a leaf of a type
+  every context shares, as `IconStyle`'s fields are); a placeholder value or `Absent` (both
+  invented: `Absent` says the platform draws nothing where it draws something not yet measured); an earlier
+  generation's value, a fact of another release that the release described need not share.
 - **A measured derivation** (a value that follows an input, as a default button's fill follows the accent) has a
   `measured` citation with `inputs`, the references of its expression the harness varied as written there
   (`inputs = ["input.accent"]`). Its `evidence` path names a list of tables in a TOML evidence file, each a pass:
@@ -3742,7 +3904,28 @@ The gate also resolves each fact's own
 once per flavour, each with its flavour's entries. An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
-`rows`.
+`rows`. **While 0.8.0 is built** (ADD-A128), the 0.8.0 plan enables its units one by one, a unit entering the model
+in the commit whose presets state it (S6.1). A fact belongs to the unit of its key and to the unit of every widget its
+`when`'s positive lists name (`context`, its `scope.nearest`, a `widget`), and the gate skips it while any of those
+units is not enabled. Its negative lists (`not_context`, `not_variants`) never add a unit: `not_context X` applies
+everywhere but inside X, and where X's unit is not enabled no X exists, so the negation holds and the fact applies
+everywhere, in its key's unit alone, as the gate already reads a negation naming a widget the model does not hold
+(the macOS and iOS button facts stated with a `not_context` and no positive context, 1868 and 1574 of them). A skipped fact (a
+fact whose key the model does not hold yet, *The gate*, below, being one case) takes with it every combination where
+it applies, so that no earlier fact
+applies there in its place (as `generate_preset.py` leaves such a fact's combinations out); a combination that holds
+a skipped variant, or a set holding one, or a context naming a widget whose unit is not enabled is skipped too. The
+declarations check skips a state-model variant only where facts name it
+and every one of them is skipped, counting it as it counts facts naming a preset not bundled yet (the M1a design's
+decision 7), neither failing it nor requiring it as a declaration: libadwaita's `@raised`, whose facts' `when`s name
+widgets of units not enabled yet. A variant no fact names yet is checked as any other, so the preset declares it, and
+it draws as the rules that apply give it: with none, as the base (libadwaita's `toggle` and `pane_toggle`); `close`,
+`previous`, `next`, `add`, `clear_field`, `reveal`, `play` and `volume` by their contexts' rules (GN-1.120,
+GN-2.21–2.54); `@tab_button`, whose inner button is an image button (`libadwaita@1.10.0 src/adw-tab-button.ui:33`),
+its stylesheet styling only its counter and indicator (`src/stylesheet/widgets/_buttons.scss:647-662`), as
+`icon_only`, the set `[@tab_button, icon_only]` that the GNOME facts' state model is to state (once facts name it,
+GN-2.37's badge, it is skipped or checked as those facts are). Every unit is enabled by 0.8.0's release, so nothing is
+skipped then.
 
 **Palette facts** (`docs/facts/palettes/<project>.toml`, S14): the colours a project publishes, one fact per colour
 and flavour, keyed `<project>.<flavour>.<the project's name>` (`catppuccin.mocha.surface0`; `<project>` the file's
@@ -3834,7 +4017,9 @@ files and the accents and records them as sources.
 variant the project publishes, their invented light variants and their `icon_set` removed. A build test parses and
 validates every bundled preset and palette (each palette over every preset it has a source for, Dracula's KDE port,
 which lacks two colour groups, among them, S14), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
-release (S16).
+release (S16). The test validates each bundled preset through `from_preset` where its `[pending]` table is empty,
+and through `from_preset_synthetic` with one synthetic layer per listed path where it is not (S17); every table is
+empty at the release, so it is the plain route then (ADD-A128).
 **S19.2** Today's inheritance rules (`[uniform]`, `[per_platform]`) become expressions in each preset's bases,
 converted by a script from `docs/inheritance-rules.toml` before it is removed, then checked by the gate; the
 `[wrong_safety_nets]` are not converted, as the facts replace them.
@@ -3879,7 +4064,12 @@ which are exhaustive for the same reason as the enums (R21).
 **S21.3 The connector contract (R23).** Each connector keeps a contract table (today's contract tables, extended):
 every resolved field it receives, with the toolkit lines that draw it, or the reason the toolkit cannot and what it
 draws instead; the element tree it builds for the query (S8); the window conditions it supplies and how it reads
-them. A connector test fails when a resolved field is neither mapped nor listed. The connectors' milestones apply it
+them; and its colour hand-over (S2.1, ADD-A128): which of S2.1's three colour types its toolkit takes, read from the
+toolkit's pinned source, and in the third case the limit and its size. egui's `Color32` is premultiplied
+(the first case, as the egui connector records, `connectors/native-theme-egui/src/convert.rs:158-159`); iced's
+`Color` and gpui's `Hsla` are float types, whose case (whether the renderer takes them unclamped and premultiplies
+them itself) each connector states when it ports to `Color` (the 0.8.0 plan's M2.1), the toolkits' sources not being
+in the facts' source cache. A connector test fails when a resolved field is neither mapped nor listed. The connectors' milestones apply it
 (R21). While 0.8.0 is built, a table may hold `pending` entries, resolved fields the connector does not map yet, which
 the test accepts; from the connectors' port to the model (the 0.8.0 plan's M2.1) a commit that adds a resolved field
 adds it to every connector's table, mapped or `pending` (the generator lists the new fields), and 0.8.0 is released
@@ -4020,6 +4210,7 @@ lines that cite it.
 | ADD-A124 | the fourth spec batch (queue #42, #49, #60, #73, decided from the sources): recency (CONTRA-6, settled): a widget's named `recency` sets (S10), the selector term `Selector.latest` (S11 `latest = { <set> = "<flag>" }`, the notation `latest s:f`), `Element.state_order` (the order the connector last set the flags in, element data beside the flags, R25.3), unreported flags by the set's stated order, its first the latest, a widget's sets agreeing on their orders, the validation's latest atoms, the state models' `recency` and the gate's combinations per order of the present flags, the facts' `when.latest`; Material's state-layer exclusive groups replaced by its sets `state_layer` and `elevation` (the catalogue's Material recency sets; Compose's `Ripple.kt:250-280`, `Button.kt:1703-1747`, `Card.kt`, `Chip.kt`, `FloatingActionButton.kt`, `ToggleButton.kt`); `Radius::Ellipse` (R7): a quarter of the box's inscribed ellipse, on all four corners with `Circular` curves, `corners::ellipse`, a shadow and a `FollowPart` ring following the ellipse of their own boxes, insets per axis, no corner operand, no shape, no `Concentric` inside it; `kde-breeze`'s QWidget `circular` `Ellipse` and Kirigami's RoundButton `Full` (K1.26), Breeze's own focus ring on it its standard rounded frame (`breezestyle.cpp:6631-6647`, K3.20), not the ellipse; `Transition.from` (R9): a transition applying from any state or from the states it names, matched against the flags before the change after the exclusive drop (`ResolvedTheme::kept_states`, `transitions::governing`), the later applying transition winning, the transitions a keyed list by group and `from` (S6.1), Compose's elevation and Breeze's button fades stated (MAT-B13, MAT-N1, MAT-N9, MAT-CA2, MAT-X7, K1.30); R9's platform curves widened to the curves a toolkit computes by a function of its own (CONTRA-7, settled); the first check's fixes: only the state layer and the shadow follow Material's sets, every other field on plain flags in its source's precedence (the list item's, `ListItemDefaults.kt:1144-1152`); the split button's halves' elevation (`shadow`, the set `elevation`) and the outlined card's hovered and dragged ones; Breeze's base zero transitions `from {disabled}` (Qt keeps a disabled widget's hover) and none under `flavor:kirigami` (qqc2's style item paints with no widget); Compose's state-layer fades and the press ripple's release fade by `from`; S6.1's merged order stated; Qt's clamp cited on the paint engine's path; R7's shape option; "kept" flags in S7.2 and S12; the connector recording the order; an `Ellipse` corner's outward radii; the gate's n! bound; the second check's fixes: `PaintLayer.role` (`LayerRole::StateLayer`, `Ripple`) and `Transition.layer`, a fill's layers timed per role (`transitions::governing` by role, S6.1's key, S12's checks), so a `Ripple` times the press ripple alone and Compose's snapped containers take no transition (toggles, chips, icon buttons); the year cell's, the time picker's and the toolbar buttons' state layers restored; the split button's and the FAB menu's state-layer rows; Material's split-button forms (`tinted`, `@outlined`, `@elevated`) with their shadows; the list's colour order and MAT-L10's corners dropped; the row order where a source ranks no states; the checkbox's, radio's and switch's `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state `opacity` dropped; the third check's fixes: one layer per role (a later rule's role layer replacing the earlier in its place, S6.1, S12), role layers timed by their alpha alone and stated at rest at zero alpha, the press ripple's lifecycle in `TransitionKind::Ripple` (`fade_in`, `origin_timing`, the release an `Interpolate` starting no sooner than `min_press`; `opacity` and `fade` gone), the disabled layer without a role, Compose's colour transitions (the Expressive list item, the date picker's cells, the selectable menu item, the tab's and navigation bar's content, the outlined toggle's border, the split button's corners), the slider's ripple theme, the split button's variant group; Material's navigation items' ripple pill, `bottom_tab_bar.state_layer` and `list.row_state_layer` (the rail; the drawer's on `row_background`), with the bar's, rail's and Expressive items' indicator and content transitions; `PropertyGroup::StrokeWidth`, the stroke's widths timed apart from its colour (the text field, the exposed dropdown and the outlined toggle); the fourth check's fixes: Material's state layer and press ripple a block of the part, `PartStyle.interaction` (`Interaction`, `StateLayerStyle`, `RippleStyle`, S2.12) with the property groups `StateLayer` and `Ripple`, replacing the second and third checks' paint layers with roles (`PaintLayer.role`, `Transition.layer`, one layer per role, role layers stated at rest: gone), drawn over the part's content as Compose's ripple node draws it, ADD-A121's composite under the label gone; the ripple's geometry in the block and its timings in `TransitionKind::Ripple` (`press_delay` for Compose's delay in a scrollable container, its value pending, queue #45); `StrokeWidth` an override of `Stroke`; a stroke becoming absent interpolating to zero width, the checked outlined toggle's border absent; the navigation indicators drawn at rest at zero width and alpha (`opacity`); the Expressive items' unanimated content, the drawer's rows, the text field's container, the date picker's day, re-enabling, the notch, the release fade's start, the checkbox's and radio's ripple colour, citations; the fifth check's fixes: the press ripple Android's `RippleDrawable` (`TransitionKind::Ripple(RippleEffect)`, `RippleEffect::AndroidPatterned` implemented to `RippleDrawable`, `RippleAnimationSession` and `RippleShader` at the pin, its lifecycle and release its own, its colour kept from the press; `fade_in`, `origin_timing`, `min_press`, `press_delay`, `RippleStyle.initial_scale` and `soft_edge` gone, `RippleStyle.bounded` added); the block beneath the part's stroke (`Surface.kt:562-564`, `Border.kt:212-214`); its colours `= surface.foreground`; the press delay `TouchBehavior.delay` with `delay_every_pointer` (Android's tap timeout, `config.xml:3230`); a stroke, edge or paint becoming absent and a width reaching zero; S12's `Ripple` and `StateLayer` checks; the filled field's unanimated hover layer; `@indicator_move` `Instant` on Material's bar and rail; Compose's Oklab interpolation noted for queue #80; the sixth check's fixes: the press ripple a field of the block, `RippleStyle.effect: Value<RippleEffect>`, started when `pressed` becomes kept and exited when it stops being kept, its colour and alpha kept from the press and its geometry following the box (`RippleDrawable.java:754-782`), `ripple::progress` and `ripple::shade` named, hwui's `AnimatedDrawables.h` and the animator duration scale outside the cache (`TransitionKind::Ripple`, `PropertyGroup::Ripple` and their S12 checks gone); an edge whose paint alone becomes absent keeping its width (Breeze's flat button); `delay_every_pointer` gone, a release within the delay delivering the press and its release in one update; the noise phase, the ripple count and `max_radius` stated as the framework does; the filled field's hover layer the block's state layer; the `{pressed}` ripple rows dropped; the seventh and eighth checks' fixes: the ripple taking the block of its first frame drawn after the press, its lifecycle and noise phase starting there (a press and its release in one update taking the style after it), "kept" for the effect's start, the filled field's block beneath its content, an absent delay no delay and the delay for every press, `ripple::phase` | S2.3, S2.4, S2.5, S2.7, S2.10, S2.11, S2.12, S4.2, S6.1, S6.3, S7, S7.2, S8, S10, S11, S12, S17, S22, the catalogue, the KDE and Material traces |
 | ADD-A125 | the fifth spec batch (queue #74, #77, #78, #80, #82, #84, #86–#89, #91–#94, #96, #97 and the macOS facts audit's `tinted` fill, decided from the sources and checked independently until a pass found nothing serious): `token.motion.color_space` (`ColorInterpolation`: `PremultipliedSrgb`, GTK's CSS and Breeze's `KColorUtils::mix`; `StraightSrgb8`, Qt Quick's `ColorAnimation`, `kde-breeze` under `flavor:kirigami`; `Oklab`, Compose's; their clamps and overshoot; WinUI's compositor space and Core Animation's measured), `transitions::interpolate_color`, appearing and vanishing paints from and to transparent black, R9's one space replaced; the identity curve `Timing::Linear` however written; a stated zero duration's `timing` `Absent`, a *stated zero* defined, `PresentationStep` alike; S2.11's box: the content box the box less its padding, the stroke taking no layout space, the size limits on the box (GTK's content-box minimums as `add(<CSS min>, part.padding…)`, so a variant's padding carries through, Breeze's plus its frame less the box's margin); `token.text.font_dpi` 72 on the Apple presets, the specification's own value (S9.4, the citation checkers' exception); S17: an analysis output for a value computed from read values, a keyed list stated merged, nested `axes.contexts` as an ordered chain; S2.12's ripple drawn only inside the computed radius's circle (bounded clipped to the indication's box and the part's outline), `RippleStyle.indication_box` (`IndicationBox { part, outset }`: the checkbox's box with no outset, the tokens' colours on Compose's Material 3 styling branch's geometry and check path (R1.6), the check and the dash two paths, their shift ADD-A126's, its selected outline the tokens' zero width with Compose's checked border colour, every state layer one form (S2.12): the `latest` rules on the alpha alone, the state layer's and the ripple's colours in the base (off the button each colour's own unselected token) and by variant and content state, the halos' from the tokens, error included, the drag handle's (no press ripple but under `@clickable`, a dragged state layer) and the carousel item's `interaction` blocks, and outside the plan's slice the trace rows' keys and selectors alone, the values the unit's facts (M3), the radio's ring grown by Compose's padding, the switch's thumb), `shade` in device pixels; the catalogue: an inline indicator's content space ending the gap before its box where its end margin is the negative of a positive start margin, and before its margin box otherwise, the label's spacing toward the indicator the gap; `ios-*` `@role_primary` (stated without a size, measured at `regular`, with the configuration styles and the prominent glass product), `@cancel` and `destructive` only in the hosts that draw them, no `requires_variants`: the base `UIButton(type: .system)` and every host-drawn button the base in its host's context (the host contexts those the rules select, `dialog.action_area` under `variant alert` and `variant @action_sheet`, a nested chain for the search field's clear button; the combinations drawn there the iOS state model's, the lane's), the roles' and forms' exclusive groups, typed `add`, the `ios-26` done style `primary` in a toolbar and `done` the system Done item, `@corner_dynamic` on `ios-26` only and with the glass styles alone, `@indicator_none` and `@padding_removed` gone; macOS's circular bezel's circle as `body`'s box with `body.margin`, the opaque accent fills `mix` and the translucent ones `alpha(input.accent, <a>)`; `kwin_speed_factor` `= token.motion.speed_factor` with kwinrc's factor read; the macOS `highlight` role `highlightColor`, provisional; `material-3`'s menu button following Compose's buttons beyond its tokens; the toggle border transitions on every toggle form; S2.7's entering sentence removed, how a part enters and leaves ADD-A126's, and the check mark's and the radio dot's representation, rest look and motion together, ADD-A126's (ledger queue #85); `adwaita`'s inconsistent radio a flag; a menu item's check glyph's rest look ADD-A126's with the marks' (ledger queue #85); WinUI's check the accept visual's stroked path (its form ADD-A126's with the mark's representation), its code point WinUI's own fallback, not modelled; WinUI's menu pill `Absent` in the base, drawn by the `{selected}` rules (W1-135), and scaled about its centre while pressed; its list pills' representation ADD-A126's (W1-089, W1-107, W2-12; #85, #110); the combo box's content layout: ADD-A127, to come (ledger queue #113); S2.8's `TextStyle.case`, `Font.axes` and `Font.features` `Value`s (a platform derives them: Kirigami's headings take them from the default font; rejected: plain fields with Qt's defaults stated as literals, which a reader's body-font patch would not reach, and the whole font a `Value`, as a preset's base table holds no reference with changed fields, ledger queue #106), S2.2's typing (a `Value` field takes a reference, a map included) and its lazy composition, S6.1's merge of a map in a `Value` (by entry where both are stated, a reference replacing it whole), S11's spelling (a reference, an empty map `{}`, no change in a patch on the map itself), plain blocks (`TextStyle.font`, `Tokens.focus`, `FocusIndicator.corners`) never a reference, stated per leaf or, in the preset layer's bases, whole, S17 stating them per leaf; `{}` no change in a patch on the map itself outside a `replace`, a creating entry's map otherwise; a TOML table filling the type at its position, a keyframe's `patch` a patch wherever it stands and a `replace`'s inside whole (S2.2, S11), a keyframe's `Fields` resolving over the part's resolved block, `base` in it each field's resolved value, a keyframe on a `NotDrawn` or `DrawnAs` part an all-`None` patch, any keyframe patch over an `Absent` field `None`, not refused (S2.7, S6.1, S12), a `Value<Paint>` table's spelling (`layers` the paint, `append` its `Append`, `replace` unknown), S17's forms (a whole table for a `Value` struct block, a reference and `"absent"` for a `Value` enum block, a bare enum block by its variant only), an `Option` of a plain block stated whole, its patch `Option<Option<T>>` (S2.2, S6.1, S11), no block ever `Auto` (S2.2, S6.1, S12), a table at a `Value` block or paint field in the preset layer's bases a `Set`, a plain block's table per field (S2.2), a whole `Value` struct block in a patch a reference, `"absent"` or `{ replace = { … } }` (`replace` reserved, S11), a struct bare-block entry only `{ replace = { … } }`, an enum block spelt whole by its variant; KTitleWidget's levels not the heading styles (ledger queue #130); a `SystemControl` glyph's size and fill may be absent (S6.3, their meaning beside the rendering ADD-A126's); whether the rendering's cache key needs a background style MAC-L17†'s measurement; the drag handle's click ripple a connector-set keyed content variant (`@clickable`); conditional `Absent` parts reviving under later rules ledger queue #110; when a transition starts and ends and what interrupts it moved to ledger queue #85, #95, #103 (orch-docs; #95 now the trigger review), ADD-A126 to come, `suspended_by_theme_change` and `Transition.from` as ADD-A124 states them, S4.3's running-transition sentence, `FocusKind`'s leaving and R12's pointing there, GN-3.28, K1.129 and K3.24 marked pending; the follow-ups the lanes owe: W1-038's and W1-039's path data from the accept visual's source (`AnimatedAcceptVisualSource.cpp`: the dash `:358-370`, the check `:372-385`, its pressed-on tweak `:392-404`, the resting check's shapes `:777-807`; the chain, the dash's `:832-833`, `:846-848`, `:563`, the resting check's `:1315-1316`, `:1330-1332` (and `:1343-1344`, `:1358-1360` for its second shape), `:780`, so a point p maps to 0.735·p + (24, 22.95) after the (−24, −24) offset, and the 4-unit stroke, `:787`, to 2.94 units; the visual's size, 48 units, `:1855-1857`, arranged to the icon's size, `AnimatedIcon.cpp:153-181`) and the Windows facts' mark as that stroked path, `radio`'s `indeterminate` flag in `adwaita`'s and `windows-11`'s `axes.states` and `windows-11`'s `[indeterminate, checked]` group, a `token.text.font_dpi` row with its fact on `adwaita`, `windows-11` and `material-3` (ADD-A103), zero-duration timings `absent` and `Instant` steps' zero duration, `windows-11`'s padding plus its border, GTK's widgets' padding plus their CSS border and every GTK minimum size as that expression, `indication_box` on every ripple block, `color_space` per preset, the Apple presets' `font_dpi = 72 # S9.4`, the iOS forms, roles and products, the host contexts in `axes.contexts`, `bar_plain` as the base in `context toolbar.bar`, `@system`'s facts as the base's, B-18†'s automatic indicator absent, the base's pressed and disabled looks and the plain bar item's title; the Windows state model's `toolbar.bar` and the tabbed command bar's chain (#86); Material's checkbox geometry and check path, the menu button's motion and ripple (#96), the toggle border on every toggle form (#97); KDE's `kwin_speed_factor = token.motion.speed_factor` and the kwinrc reader row (#93), K1.17's title with no transition; macOS's `tinted` fills as `alpha(input.accent, <a>)`; WinUI's other bordered templates' padding plus `BorderThickness`; the scripts' follow-ups: the citation checkers' `# S9.4` exception, `check_spec_names.py` taking `color_space` among the motion keys (the traces then name `token.motion.color_space` as a leaf path, written `token.motion (color_space …)` until then, as the checker refuses the leaf today); the register rows the ledger owes: `windows-11`'s and Core Animation's colour spaces, the circular bezel's `body.margin`, AppKit's check mark and radio dot animation (MAC-X11's recording) and UIKit's multiselect check (CK-2†), WinUI's checked radio's dot while pressed, the `ios-26` bar items (prominent, system Done, system add, system Action), every style's dynamic corner (the non-glass base on both presets, `@corner_dynamic` on glass on `ios-26`) at the content-size categories other than L, `@corner_dynamic` on `clear`, the prominent glass styles and the sizes other than `regular`, the base's title, the styles' title, padding and `min_height`, and `@role_primary` at the sizes and categories unread, `role.@highlight` under an explicit highlight colour, the `ios-26` plain bar item's title, an alert action's padding | S2.2, S2.7, S2.8, S2.9, S2.10, S2.11, S2.12, S4.1, S4.3, S4.4, S6.1, S6.3, S9.1, S9.4, S11, S12, S15, S17; catalogue; traces; R9, R10, R12 |
 | ADD-A127 | the combo box's content layout (moved from ADD-A125 after its checks 23 to 26; every platform's combo surveyed form by form, editable and not, with and without an icon, at every density and control size, then designed once, R25.16): one content row on `button`'s form, the `arrow` the end part under `button`'s `Inline` rule (the icon's margin box, `icon_text_gap_px`, the content's space holding the label, the placeholder, Material's resting floating label or the row-placed input, `label_arrow_gap_px`, the arrow's margin box), the spare width to the content's space, a long text cut at the space's content box by its elision, the arrow's and the icon's margin boxes centred on `body`'s box and counted against it alone (Compose's 56 dp field round its 48 dp boxes); the arrow area a box at the body's end taking no layout space (`arrow_area.margin`, `max_height`), the arrow placed by the row whether or not one is drawn, on `macos-*` outside `editable` the rendering's `ControlImage.arrow` the end part; under `Widest` the largest whole row on both axes, one per item, placeholder and empty run, each in its own form with its slack; the natural width the row at the content `content_width` names (`ContentWidth { Shown, ShownAndHints { label_padding }, Widest { at_least, empty, or_shown }, Fixed }`, `CharRun`) plus `content_slack_px`, the width a platform sizes and never draws (Breeze's, Kirigami's); `input_placement` (`InputPlacement { Row, Body }`: WinUI's text box over the body where the label is absent, while focused or, under a game controller, open, its padding holding the arrow column once); `label.padding`, `icon.margin`, `arrow.margin`, `icon_clip_inset_px` (the icon cut at Breeze's edit field); `placeholder` on `kde-breeze` and `material-3`, `label` absent where the input is drawn, `placeholder` absent on the editable QComboBox, the GTK entry combo's body drawing no button, `with_icon` declared on `kde-breeze`, `material-3` and `macos-*`; the rows K1.240, Q1.124, GN-1.233, GN-1.238, W1-132, W1-137, W3-39, MAT-CB1, CB-1, MAC-CB01; rejected: the arrow area as the end part, the slack as a moved margin, a wider gap, the slack dropped or in the label's padding, a content-dependent minimum, WinUI's input in the row, the cross axis on the content box; `input`'s fill and stroke absent-able in `context any combo_box` on `kde-breeze` and `material-3`; the follow-ups: the facts of the combo box's content row on every preset (Breeze's 10, 11, 8 and 14, Kirigami's 10, 9, 7 and its editable icon's margin, GTK's drop-down and entry combo, WinUI's base, compact and editable forms, Compose's, the iOS pop-up's measured padding, gap and margins, `kde-breeze`'s `icon_clip_inset_px` 6 framed and 0 frameless editable), `with_icon` in the state models' combinations (S17): `[editable, with_icon]` and `[editable, flat, with_icon]` on `kde-breeze`, `[@filled, with_icon]` on `material-3`, and `[editable, with_icon]` not drawn on `macos-*` (NSComboBox shows no image), the ledger's `docs/todo.md` disposition of WinUI's arrow column (the arrow's margin and the gap, the overlay its editable arrow area); the register rows: the macOS pop-up's and NSComboBox's content row per control size, the iOS pop-up's width basis, spare width and cut | catalogue (`combo_box`, *Entry format*'s content variants); traces; R25.16 |
+| ADD-A128 | a spec batch (ledger queue #105 and the facts gate's eight refused key-repeat facts, decided from the sources, then its checks' fixes): `adw_standalone` is the colour GTK computes for libadwaita's stylesheet, its relative colour in OKLab with L limited to 0.5 or 0.85 through a named origin, in GTK's precision and unclamped, one form for every role and use (the renderer's own single-precision conversion of the OKLab coordinates, the links' 16-bit rounding and the 8-bit store being steps of the drawing, which no check compares finer than a capture's 8 bits), not the clamping `adw_rgba_to_standalone`; no colour function clamps channels its source keeps, and an out-of-gamut colour is clamped where it is drawn, as GTK draws it: premultiplied, then each channel clamped (S2.1's hand-over: `to_srgb8_premultiplied()` for a premultiplied colour type, the unclamped value for a float type the toolkit premultiplies, `to_srgb8_clamped()` with its recorded limit in the third case; S21.3's contract states each connector's case); S17 compares colours unclamped; its vectors from GTK's observable behaviour through `gtk_widget_get_color` over spike G's grid, the accent and status colours translucent too, out-of-gamut inputs and the thresholds; the implementation by CSS Color 4 with GTK's constants and precision from the clean room; an `Option` of a struct set whole, `"none"` or a full table, never `Fields`; facts stated per leaf of such a field composed per combination, a missing leaf a missing fact, a pending leaf a pending field, one rule per class of combinations, one citation comment per leaf line, its `None` a whole fact, whole and per-leaf facts not mixed in a generation, a partial table refused, the reader and the application restating both leaves; `color::composite_over` drawing as the hand-over does; while 0.8.0 is built, a fact belonging to the unit of its key and of every widget its `when` names, skipped while one is not enabled, the combinations where a skipped fact applies, or holding a skipped variant or an unenabled context, skipped with it, a state-model variant skipped only where every fact naming it is, a variant no fact names declared and drawn as the rules that apply give it (`@tab_button` as `icon_only`); S12's unused-variant refusal not applied to a platform preset's variants, which the gate and `check_facts.py` check; a path whose facts on a preset are, in some combination, all pending with nothing beneath listed in the preset's `[pending]` table with its register id (U151), read as any value by S12's conservative checks, the existing missing field through `Theme::from_preset` (`ThemeError::Preset(LayerError::Invalid)`, no type, field or variant added), loaded by the gate and the build test through the doc-hidden `Theme::from_preset_synthetic` with synthetic values in its layers' bases, every fact reaching a synthetic value skipped and reported, the gate checking the table holds exactly the preset's listed paths, every table empty at the release (rejected: the preset out of the bundle, a `Pending` query answer, `PresetPending` error variants, S6.1's unit deferral, a placeholder, `Absent`, an earlier generation's value) | S2.1, S2.2, S6.1, S11, S12, S16, S17, S19.1, S21.3 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
