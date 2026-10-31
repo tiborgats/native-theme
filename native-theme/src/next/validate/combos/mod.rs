@@ -29,6 +29,7 @@ use crate::next::blocks::part_style::RoleRef;
 use crate::next::declare::{DataName, DataOwner, Declarations};
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr, MAX_CHAIN, Ref};
+use crate::next::inputs::InputName;
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
@@ -194,6 +195,41 @@ enum Bindings {
     None,
 }
 
+/// A layer's inputs, common and the current preset's own alike.
+fn stacked_inputs(
+    layer: &crate::next::layer::Layer,
+) -> impl Iterator<Item = &(InputName, crate::next::inputs::InputValue)> {
+    layer.bases.inputs.entries.iter().chain(
+        layer
+            .for_preset
+            .iter()
+            .flat_map(|(_, bases)| &bases.inputs.entries),
+    )
+}
+
+/// The expressions an input states, per scheme and per contrast.
+fn input_exprs(value: &crate::next::inputs::InputValue) -> Vec<&Expr> {
+    let mut out = scheme_exprs(&value.per_scheme);
+    for (_, map) in &value.per_contrast {
+        out.extend(scheme_exprs(map));
+    }
+    out
+}
+
+/// The expressions a scheme map of colours states.
+fn scheme_exprs(
+    map: &crate::next::value::SchemeMap<crate::next::value::Value<crate::next::color::Color>>,
+) -> Vec<&Expr> {
+    [map.light.as_ref(), map.dark.as_ref()]
+        .into_iter()
+        .flatten()
+        .filter_map(|value| match value {
+            crate::next::value::Value::Expr(expr) => Some(expr),
+            _ => None,
+        })
+        .collect()
+}
+
 /// A node of the cycle search: a place, and the step found there.
 type Node = (Target, String, Option<(usize, usize)>);
 
@@ -226,6 +262,7 @@ pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
     out.focus_corners();
     out.concentric();
     out.entries();
+    out.input_cycles();
     out.problems
 }
 
@@ -2263,6 +2300,60 @@ impl Checks<'_, '_> {
             }
         }
         false
+    }
+
+    /// An input whose expression reads itself, through other inputs (S12:
+    /// "forms a cycle"), under either scheme and any contrast: each stated
+    /// expression of every layer's inputs followed through the inputs it
+    /// reads, as evaluation follows them.
+    fn input_cycles(&mut self) {
+        let stack = self.stack;
+        let exprs = |name: &InputName| -> Vec<&Expr> {
+            stack
+                .layers
+                .iter()
+                .flat_map(|stacked| stacked_inputs(stacked.layer))
+                .filter(|(held, _)| held == name)
+                .flat_map(|(_, value)| input_exprs(value))
+                .collect()
+        };
+        for (layer, stacked) in stack.layers.iter().enumerate() {
+            let toml = matches!(stacked.layer.spelled, crate::next::layer::Spelled::Toml);
+            for (name, value) in stacked_inputs(stacked.layer) {
+                let mut seen: Vec<&InputName> = Vec::new();
+                let mut pending: Vec<&Expr> = input_exprs(value);
+                let mut cycle = false;
+                while let Some(expr) = pending.pop() {
+                    for reference in refs(expr) {
+                        let Ref::Input(path) = reference else {
+                            continue;
+                        };
+                        let Some((held, _)) = stack
+                            .layers
+                            .iter()
+                            .flat_map(|stacked| stacked_inputs(stacked.layer))
+                            .find(|(held, _)| held.segments() == path.as_slice())
+                        else {
+                            continue;
+                        };
+                        if held == name {
+                            cycle = true;
+                        } else if !seen.contains(&held) {
+                            seen.push(held);
+                            pending.extend(exprs(held));
+                        }
+                    }
+                }
+                if cycle && !input_exprs(value).is_empty() {
+                    let at = if toml {
+                        format!("inputs.{name}")
+                    } else {
+                        format!("inputs.entries.{name}")
+                    };
+                    self.problem(layer, &at, ProblemKind::ExpressionCycle);
+                }
+            }
+        }
     }
 
     /// `TextRoles` (S4.4): two slots referencing one keyed text style

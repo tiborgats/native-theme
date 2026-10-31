@@ -1397,3 +1397,31 @@ fn combination_cycle_through_two_bindings() {
         "{found:?}"
     );
 }
+
+/// An input reading itself, directly or through another input, is a cycle
+/// (S12), refused at validation as evaluation refuses it.
+#[test]
+fn combination_input_cycle() {
+    let decl = declare("inputs = [\"accent\", \"other\"]");
+    assert_eq!(
+        alone("[inputs.accent]\nlight = \"= input.accent\"", &decl),
+        ["inputs.accent: the expression reads itself"]
+    );
+    assert_eq!(
+        alone(
+            "[inputs.accent]\nlight = \"= input.other\"\n[inputs.other]\nlight = \"= mix(input.accent, #000000, 0.5)\"",
+            &decl
+        ),
+        [
+            "inputs.accent: the expression reads itself",
+            "inputs.other: the expression reads itself"
+        ]
+    );
+    assert_eq!(
+        alone(
+            "[inputs.accent]\nlight = \"#ff0000\"\n[inputs.other]\nlight = \"= input.accent\"",
+            &decl
+        ),
+        NONE
+    );
+}
