@@ -268,11 +268,100 @@ fn gate_fixture_recency_order() {
 }
 
 /// A `not_drawn` combination is not queried: the fixture's preset states a
-/// wrong value only where its state model draws nothing, and passes.
+/// wrong value where its state model draws nothing (pressed), which passes,
+/// and one where it draws (hover), which fails; a pending fact that applies
+/// on no combination is still listed, on none (S17).
 #[test]
 fn gate_fixture_not_drawn_skipped() {
     let report = fixture_report("not_drawn");
+    assert!(report.queried > 0, "{report:?}");
+    assert!(!report.failures.is_empty(), "{report:?}");
+    assert!(
+        report
+            .failures
+            .iter()
+            .all(|failure| failure.contains("button.body.min_width")
+                && failure.contains("\"hover\"")
+                && !failure.contains("\"pressed\"")),
+        "{:?}",
+        report.failures
+    );
+    let pending: Vec<_> = report.pending.values().collect();
+    assert_eq!(pending.len(), 1, "{:?}", report.pending);
+    let (id, key, count) = pending[0];
+    assert_eq!(
+        (id.as_str(), key.as_str(), *count),
+        ("U2", "button.body.min_width", 0)
+    );
+}
+
+/// A `not_drawn` entry's context is matched as the query matches one (S7),
+/// not by equality: `{ widget = "button" }` names the axis' flat button,
+/// inside which the preset's wrong value is never queried.
+#[test]
+fn gate_fixture_not_drawn_context() {
+    let report = fixture_report("not_drawn_context");
     assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.queried > 0, "{report:?}");
+}
+
+/// A `not_drawn` entry with a key the count does not evaluate, and an
+/// entry with more flags than the gate enumerates, are refused, never
+/// evaluated without it (S17).
+#[test]
+fn state_model_refuses_what_the_gate_cannot_enumerate() {
+    let entry = |extra: &str| {
+        format!(
+            "[[model]]\nwidget = \"button\"\navailable = true\nvariants = []\nsizes = []\n\
+             densities = []\nexclusive = []\nrows = []\n{extra}"
+        )
+    };
+    let sizes = entry("not_drawn = [{ states = [\"pressed\"], sizes = [\"mini\"] }]\n");
+    let error = model::Model::read("probe", &sizes).unwrap_err();
+    assert!(error.contains("`sizes`"), "{error}");
+    let flags: Vec<String> = (0..=model::MAX_FLAGS)
+        .map(|n| format!("\"@flag{n}\""))
+        .collect();
+    let many = entry(&format!(
+        "axes = {{ states = [{}], conditions = [], contexts = [] }}\n",
+        flags.join(", ")
+    ));
+    let error = model::Model::read("probe", &many).unwrap_err();
+    assert!(error.contains("flags"), "{error}");
+    let fits =
+        entry("not_drawn = [{ states = [\"pressed\"], context = [{ widget = \"button\" }] }]\n");
+    assert!(model::Model::read("probe", &fits).is_ok());
+}
+
+/// An entry of a negative list naming what the model does not hold leaves
+/// the fact holding: the pressed fact still applies where pressed (S17).
+#[test]
+fn gate_fixture_negative_list_unknown_name() {
+    let report = fixture_report("negative_unknown");
+    assert_eq!(report.failures, Vec::<String>::new());
+}
+
+/// A token's fact is read in the root scope: a `when` stating a flag
+/// there is refused.
+#[test]
+fn gate_fixture_global_when_refused() {
+    let report = fixture_report("global_when");
+    let failures = failing(&report, "cannot hold");
+    assert_eq!(failures.len(), 1, "{:?}", report.failures);
+    assert!(failures[0].contains("token.focus.width"), "{failures:?}");
+}
+
+/// A key whose facts are in two files fails: S17 orders a key's facts
+/// within its file.
+#[test]
+fn gate_fixture_key_in_two_files() {
+    let report = fixture_report("two_files");
+    let failures = failing(&report, "has facts in");
+    assert_eq!(failures.len(), 1, "{:?}", report.failures);
+    assert!(
+        failures[0].contains("button.values.icon_text_gap"),
+        "{failures:?}"
+    );
 }
 
 /// A measured fact compares within its measured tolerance and fails beyond

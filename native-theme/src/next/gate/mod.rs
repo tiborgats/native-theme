@@ -237,6 +237,15 @@ impl Preset {
     }
 }
 
+/// The typed widgets the model holds, each as S11 writes it.
+#[must_use]
+pub fn widgets() -> Vec<String> {
+    registry::widgets()
+        .iter()
+        .map(|info| info.name.to_owned())
+        .collect()
+}
+
 /// The typed widget `name` names.
 fn widget_kind(name: &str) -> Result<WidgetKind, Unread> {
     registry::widget(name)

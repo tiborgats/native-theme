@@ -1,10 +1,16 @@
 [declare.widget.button]
 variants = ["flat"]
 
+# Wrong where the state model draws nothing (pressed), and wrong where it draws (hover).
 [[rules]]
 when = { states = ["pressed"] }
 target = "button.body"
 set = { min_width_px = 99 }
+
+[[rules]]
+when = { states = ["hover"] }
+target = "button.body"
+set = { min_width_px = 41 }
 
 [[rules]]
 when = { variants = ["flat"] }

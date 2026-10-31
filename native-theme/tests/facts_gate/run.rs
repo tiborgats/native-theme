@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
     Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
-    Unread, When, parse_key, parse_value, parse_when, set_whole,
+    Unread, When, parse_key, parse_value, parse_when, set_whole, widgets,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -168,9 +168,25 @@ impl Platform {
             }
         }
         let mut keys: Vec<(String, Result<FactKey, Unread>)> = Vec::new();
+        let mut files: BTreeMap<&str, &str> = BTreeMap::new();
         for fact in &facts {
             if !keys.iter().any(|(key, _)| *key == fact.key) {
                 keys.push((fact.key.clone(), parse_key(&fact.key)));
+            }
+            // S17 orders a key's facts within its file only; the accent
+            // run's facts apply in that run alone.
+            if fact.accent_run {
+                continue;
+            }
+            match files.get(fact.key.as_str()) {
+                Some(file) if *file != fact.file => report.fail(format!(
+                    "`{}` has facts in {file} and {}: a key's facts are one file's, in its order",
+                    fact.key, fact.file
+                )),
+                Some(_) => {}
+                None => {
+                    files.insert(&fact.key, &fact.file);
+                }
             }
         }
         let models_path = directory.join("state-models.toml");
@@ -223,26 +239,46 @@ struct KeyFacts<'f> {
     facts: Vec<Prepared<'f>>,
 }
 
-/// A fact's `when` as the gate reads it (S17): a `not_context` naming a
-/// widget the model does not hold yet left out, as every element the gate
-/// queries lies outside such an ancestor; a `context` naming one is not
-/// held, as no element the gate queries lies inside it.
+/// The negative lists of a `when` (S11): each holds where none of its
+/// entries does.
+const NEGATIVE: [&str; 6] = [
+    "not_context",
+    "not_variants",
+    "not_states",
+    "not_conditions",
+    "not_sizes",
+    "not_densities",
+];
+
+/// A fact's `when` as the gate reads it (S17): an entry of a negative list
+/// naming what the model does not hold yet left out, as no element the gate
+/// queries holds it (a `not_context`'s widget is no ancestor of one, a
+/// variant, flag, condition, size or density is none it can hold); a
+/// positive list naming one is not held, as no element the gate queries
+/// holds what it names.
 fn read_when(when: Option<&Value>) -> Result<When, Unread> {
     let mut when = when
         .cloned()
         .unwrap_or_else(|| Value::Table(toml::Table::new()));
-    if let Some(Value::Array(items)) = when
-        .as_table_mut()
-        .and_then(|table| table.get_mut("not_context"))
-    {
-        items.retain(|item| {
-            let mut probe = toml::Table::new();
-            probe.insert("not_context".to_owned(), Value::Array(vec![item.clone()]));
-            !matches!(parse_when(&Value::Table(probe)), Err(Unread::NotHeld(_)))
-        });
+    if let Some(table) = when.as_table_mut() {
+        for list in NEGATIVE {
+            if let Some(Value::Array(items)) = table.get_mut(list) {
+                items.retain(|item| {
+                    let mut probe = toml::Table::new();
+                    probe.insert(list.to_owned(), Value::Array(vec![item.clone()]));
+                    !matches!(parse_when(&Value::Table(probe)), Err(Unread::NotHeld(_)))
+                });
+            }
+        }
     }
     parse_when(&when)
 }
+
+/// The keys of a `when` a token's, a colour role's or an input's fact may
+/// state: they are read in the root scope, where no element's flag,
+/// variant, size, context, direction or position holds (S17: "under its
+/// `when`", its conditions).
+const GLOBAL_WHEN: [&str; 2] = ["conditions", "not_conditions"];
 
 /// Every fact of `platform` read as the model reads it, whatever preset it
 /// is for (its `preset:` conditions left out): a key, a `when` or a value
@@ -283,6 +319,20 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
             }
             when
         });
+        if key.widget().is_none()
+            && let Some(named) = when
+                .as_ref()
+                .and_then(Value::as_table)
+                .and_then(|table| table.keys().find(|k| !GLOBAL_WHEN.contains(&k.as_str())))
+        {
+            report.fail(format!(
+                "{}: the `when` of `{}` states `{named}`, which a token, role or input fact read \
+                 in the root scope cannot hold",
+                fact.place(),
+                fact.key
+            ));
+            continue;
+        }
         match read_when(when.as_ref()) {
             Ok(_) => {}
             Err(Unread::NotHeld(why)) => {
@@ -794,6 +844,16 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
         }
         let platform = Platform::read(&directory, &mut report);
         read_all(&platform, &mut report);
+        // Every pending fact is listed, with the combinations it applied
+        // in, none where it applied in none (S17).
+        for fact in &platform.facts {
+            if let Stated::Pending(id) = &fact.stated {
+                report
+                    .pending
+                    .entry(fact.place())
+                    .or_insert_with(|| (id.clone(), fact.key.clone(), 0));
+            }
+        }
         report.other_presets += platform
             .facts
             .iter()
@@ -852,7 +912,25 @@ pub fn declarations_run(
     flavor: Option<&str>,
     report: &mut Report,
 ) {
-    for entry in model::in_force(&platform.models, preset.id(), flavor) {
+    let entries = model::in_force(&platform.models, preset.id(), flavor);
+    for widget in widgets() {
+        let available = preset
+            .declared(&widget, flavor)
+            .is_ok_and(|declared| declared.available);
+        if available && !entries.iter().any(|entry| entry.widget == widget) {
+            report.fail(format!(
+                "declarations: `{widget}` is available in {} under {}, and no state model of {} \
+                 states it",
+                preset.id(),
+                flavor.map_or_else(
+                    || "the default flavour".to_owned(),
+                    |f| format!("flavor:{f}")
+                ),
+                platform.name
+            ));
+        }
+    }
+    for entry in entries {
         let declared = match preset.declared(&entry.widget, flavor) {
             Ok(declared) => declared,
             Err(Unread::NotHeld(_)) => continue,
@@ -868,11 +946,12 @@ pub fn declarations_run(
                 .map(|group| set(group))
                 .collect::<BTreeSet<_>>()
         };
+        // In written order: the query takes the first entry that holds (S10).
         let pairs = |pairs: &[(String, Vec<String>)]| {
             pairs
                 .iter()
                 .map(|(name, list)| (name.clone(), set(list)))
-                .collect::<BTreeMap<_, _>>()
+                .collect::<Vec<_>>()
         };
         let mut differ = |what: &str, preset_side: String, model_side: String| {
             if preset_side != model_side {

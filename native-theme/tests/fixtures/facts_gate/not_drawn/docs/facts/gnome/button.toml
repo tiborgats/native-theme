@@ -30,3 +30,10 @@ rows = []
 kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
+
+# Pending where the state model draws nothing: listed, on no combination.
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+pending = "U2"
+rows = []

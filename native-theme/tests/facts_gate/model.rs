@@ -83,7 +83,10 @@ pub struct Model {
 }
 
 impl Model {
-    /// The entries of a `state-models.toml`.
+    /// The entries of a `state-models.toml`; refused where an entry's
+    /// `axes.states` holds more flags than the gate enumerates the subsets
+    /// of ([`MAX_FLAGS`]), or a `not_drawn` entry a key the count does not
+    /// evaluate ([`NOT_DRAWN_KEYS`]).
     pub fn read(file: &str, text: &str) -> Result<Vec<Model>, String> {
         let table: Table = toml::from_str(text).map_err(|error| format!("{file}: {error}"))?;
         let entries = table
@@ -91,11 +94,33 @@ impl Model {
             .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default();
-        Ok(entries
+        let models: Vec<Model> = entries
             .iter()
             .filter_map(Value::as_table)
             .map(|entry| Model::of(file, entry))
-            .collect())
+            .collect();
+        for model in &models {
+            if model.states.len() > MAX_FLAGS {
+                return Err(format!(
+                    "{file}: `{}` states {} flags, more than the {MAX_FLAGS} the gate enumerates",
+                    model.widget,
+                    model.states.len()
+                ));
+            }
+            for when in &model.not_drawn {
+                if let Some(key) = when
+                    .keys()
+                    .find(|key| !NOT_DRAWN_KEYS.contains(&key.as_str()))
+                {
+                    return Err(format!(
+                        "{file}: a `not_drawn` entry of `{}` states `{key}`, which the gate's count \
+                         does not evaluate",
+                        model.widget
+                    ));
+                }
+            }
+        }
+        Ok(models)
     }
 
     fn of(file: &str, entry: &Table) -> Model {
@@ -293,12 +318,29 @@ pub fn condition_vectors(conditions: &[String], schemes: &[String]) -> Vec<Vec<S
     out
 }
 
-/// Every subset of `states`, reduced by `exclusive` (each group keeping its
-/// first present flag), each once, in a stable order.
+/// The most flags an entry's `axes.states` may hold: the gate enumerates
+/// every subset, 2^20 of them at most.
+pub const MAX_FLAGS: usize = 20;
+
+/// The keys of a `not_drawn` entry the count of combinations evaluates
+/// ([`not_drawn`]); the run matches every key as the query does.
+pub const NOT_DRAWN_KEYS: [&str; 8] = [
+    "states",
+    "not_states",
+    "variants",
+    "not_variants",
+    "conditions",
+    "not_conditions",
+    "context",
+    "not_context",
+];
+
+/// Every subset of `states` (at most [`MAX_FLAGS`], which reading the
+/// entry checks), reduced by `exclusive` (each group keeping its first
+/// present flag), each once, in a stable order.
 pub fn state_sets(states: &[String], exclusive: &[Vec<String>]) -> Vec<Vec<String>> {
     let mut out: Vec<Vec<String>> = Vec::new();
-    let count = states.len().min(20);
-    for mask in 0_u32..(1_u32 << count) {
+    for mask in 0_u32..(1_u32 << states.len()) {
         let mut held: Vec<String> = states
             .iter()
             .enumerate()
@@ -481,11 +523,11 @@ pub struct Point {
     pub density: Option<String>,
 }
 
-/// Whether a `not_drawn` entry's `when` holds on a combination, by the
-/// keys a state model's `not_drawn` writes (S17): `states`, `not_states`,
-/// `variants`, `not_variants`, `conditions`, `not_conditions`, `context`,
-/// `not_context` (a context matched by equality with the combination's, as
-/// the entry names one of its `axes.contexts`).
+/// Whether a `not_drawn` entry's `when` holds on a combination, for the
+/// count of an entry's combinations: by [`NOT_DRAWN_KEYS`], the only keys
+/// reading an entry lets it state, a context matched as S7 matches one
+/// against the axis' context (each key it states equal, each list it
+/// states held). The run matches every entry as the query does.
 pub fn not_drawn(
     when: &Table,
     conditions: &[String],
@@ -502,18 +544,27 @@ pub fn not_drawn(
             .cloned()
             .unwrap_or_default()
     };
+    let matches = |wanted: &Value| {
+        let (Some(wanted), Some(held)) = (wanted.as_table(), context.and_then(Value::as_table))
+        else {
+            return false;
+        };
+        wanted.iter().all(|(key, value)| match value {
+            Value::Array(_) => {
+                let listed = strings(held.get(key));
+                strings(Some(value)).iter().all(|x| listed.contains(x))
+            }
+            other => held.get(key) == Some(other),
+        })
+    };
     all("states", states)
         && none("not_states", states)
         && all("variants", variants)
         && none("not_variants", variants)
         && all("conditions", conditions)
         && none("not_conditions", conditions)
-        && contexts("context")
-            .iter()
-            .all(|wanted| Some(wanted) == context)
-        && !contexts("not_context")
-            .iter()
-            .any(|wanted| Some(wanted) == context)
+        && contexts("context").iter().all(matches)
+        && !contexts("not_context").iter().any(matches)
 }
 
 /// What the rules and facts of a widget can tell apart (S17: "reusing what
@@ -536,10 +587,7 @@ impl Mentioned {
     pub fn of_model(model: &Model) -> Mentioned {
         let mut out = Mentioned::default();
         for when in &model.not_drawn {
-            out.states.extend(strings(when.get("states")));
-            out.states.extend(strings(when.get("not_states")));
-            out.variants.extend(strings(when.get("variants")));
-            out.variants.extend(strings(when.get("not_variants")));
+            out.add_when(&Value::Table(when.clone()));
         }
         out.states.extend(model.exclusive.iter().flatten().cloned());
         out.states.extend(
@@ -600,8 +648,9 @@ type VariantSizes<'m> = (Vec<String>, Option<&'m Value>, Vec<Option<String>>);
 
 /// Each combination of `model` under the condition vectors `vectors` (S17),
 /// projected by `mentioned` where it is given, given to `each` with its
-/// context once per distinct combination; `not_drawn`, `requires_variants`
-/// and the size rules applied. The count of combinations `each` was given.
+/// context once per distinct combination; `requires_variants` and the size
+/// rules applied, and, for the count alone (no `mentioned`), `not_drawn`,
+/// which the run matches as the query does. The count of combinations.
 pub fn combinations(
     model: &Model,
     vectors: &[Vec<String>],
@@ -646,6 +695,7 @@ pub fn combinations(
             let drawn: Vec<&Table> = model
                 .not_drawn
                 .iter()
+                .filter(|_| mentioned.is_none())
                 .filter(|when| {
                     strings(when.get("variants"))
                         .iter()
