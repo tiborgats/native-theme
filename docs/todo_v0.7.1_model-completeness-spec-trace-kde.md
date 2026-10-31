@@ -1075,7 +1075,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.71 | `token.behavior.drag_threshold` | token |
 | K3.71 | `token.behavior.drag_time (ADD-A45)` | token |
 | K3.71 | `reader:kde:kdeglobals [KDE] StartDragDist, StartDragTime` | reader |
-| K3.72 | `token.behavior.scroll_lines_per_step` | token |
+| K3.72 | `token.behavior.scroll.wheel_step_lines` (ADD-A130) | token |
 | K3.72 | `reader:kde:kdeglobals [KDE] WheelScrollLines` | reader |
 | K3.73 | `token.behavior.single_click_activates @ cond system_setting:single_click (a `Tokens` rule; one route, S4.2; ADD-A45)` | token |
 | K3.73 | `reader:kde:kdeglobals [KDE] SingleClick -> cond system_setting:single_click` | reader |

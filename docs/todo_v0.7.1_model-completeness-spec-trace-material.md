@@ -682,7 +682,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X31 | `cond input:pen` | condition |
 | MAT-X31 | `PartStyle.{min_width,min_height,padding} @ cond input:mouse / cond input:touch` | rule |
 | MAT-X32† | `token.behavior.touch.{slop,paging_slop,double_tap_slop} (ADD-A45)` | token |
-| MAT-X32† | `token.behavior.scroll_px_per_step` (Android states pixels per wheel step, ADD-A86) | token |
+| MAT-X32† | `token.behavior.scroll.wheel_step_distance` (Android states pixels per wheel step, ADD-A86, ADD-A130) | token |
 | MAT-X32† | `reader:android:ViewConfiguration.getScaledTouchSlop, getScaledPagingTouchSlop, getScaledDoubleTapSlop, getScaledVerticalScrollFactor` | readers (R18) |
 | MAT-X33† | `PartStyle.cursor per part and state` | field |
 | MAT-X33† | `token.pointer.{size,color} (ADD-A46)` | token |

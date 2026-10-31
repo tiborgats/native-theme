@@ -184,7 +184,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-059 | `tooltip.values.{reshow_delay,keyboard_show_delay,display_time}` | field |
 | W1-059 | `tooltip.values.show_delay @ cond input:touch` | rule |
 | W1-059 | `WinUiToolTip (tooltip.values.placement; its gap: the offset from the pointer or the target)` | placement |
-| W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> tooltip.values.{show_delay,reshow_delay}` | reader |
+| W1-059 | `tooltip.values.{show_delay,reshow_delay,keyboard_show_delay}` (multiples of `token.behavior.hover_time`, WinUI's `GetInitialShowDelay`: twice it, once, twice; under `cond input:touch` once and, on a reshow, zero; S4.2, ADD-A130) | field |
+| W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> token.behavior.hover_time` (the tooltip delays follow it by their expressions; ADD-A130) | reader |
 | W1-060 | `scrollbar.{body.min_width,thumb.min_width,thumb.fill} @ cond overlay_scrollbars !{hover} (the panning indicator: a thin thumb)` | rule |
 | W1-060 | `scrollbar.track.fill (Absent) @ cond overlay_scrollbars !{hover} (no track)` | rule |
 | W1-060 | `scrollbar.body.{min_width,min_height}; scrollbar.thumb.{stroke,min_width} (the expanded bar)` | field |
@@ -767,7 +768,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-40 | `menu.body.min_width @ cond input:touch context combo_box` | rule |
 | W3-40 | `menu.body.min_width @ {opened_by_touch} context button.body variant overflow` | rule |
 | W3-40 | `cond input:touch` | condition |
-| W3-41 | `token.behavior.{double_click_time,hover_open_delay,drag_threshold,scroll_lines_per_step}` | token |
+| W3-41 | `token.behavior.{double_click_time,hover_time,drag_threshold}` (`hover_time` the mouse hover time, SPI_GETMOUSEHOVERTIME, S4.2; ADD-A130) | token |
+| W3-41 | `token.behavior.scroll.wheel_step_lines` (SPI_GETWHEELSCROLLLINES; ADD-A130) | token |
 | W3-41 | `token.behavior.key_repeat.delay` (`SPI_GETKEYBOARDDELAY`); `token.behavior.key_repeat.interval` (KeyRepeat requires it: the keyboard repeat rate the row's "keyboard repeat" names, its read named in the value phase) | token |
 | W3-41 | `menu.values.submenu_open_delay` | field |
 | W3-41 | - (`UISettings.MessageDuration`: how long the system's notifications stay, which the shell draws; WinUI has no timed message control) | out (R1.1) |

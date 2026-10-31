@@ -226,6 +226,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.76 | `menu.values.presentations events @submenu_push, @submenu_pop (GtkStack's slide left and right, its default duration)` | field |
 | GN-1.77 | `menu.values.submenu_open_delay @ context any menu_bar (nested popover menus only; the base opens at once)` | rule |
 | GN-1.77 | `menu.values.submenu_switch (TimerRestartedOnMotion)` | field |
+| GN-1.77 | `token.behavior.hover_time (absent: GTK has no hover setting, each widget its own delay, this submenu's and the tooltip's; S4.2, ADD-A130)` | token |
 | GN-1.78 | `menu.item.{min_width,min_height,padding,fill} @ variant icon_only / {focused} variant icon_only / {hover} variant icon_only / {focused,pressed} variant icon_only / {hover,pressed} variant icon_only` (GTK's `:selected`: the highlighted item, S7.2) | rule |
 | GN-1.78 | `menu.item.{padding,stroke,fill} @ variants {icon_only,circular} / {focused} variants {icon_only,circular} / {hover} variants {icon_only,circular} / {focused,pressed} variants {icon_only,circular} / {hover,pressed} variants {icon_only,circular}` | rule |
 | GN-1.78 | `menu.values.icon_row_gap` | field |
@@ -772,6 +773,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.36 | `badge.body.{fill,min_height,padding,corners}, badge.label.text @ variant count; badge.values.cutout` | rule |
 | GN-2.37 | `badge.label.text @ context button.body[@tab_button] / size small context button.body[@tab_button]` (AdwTabButton's counter) | rule |
 | GN-2.37 | `badge.values.{anchor_offset_x,anchor_offset_y} @ context button.body[@tab_button]` | rule |
+| GN-2.37 | `button.icon.glyph @ variant @tab_button / variant @tab_overflow` (the counter frame `adw-tab-counter-symbolic`, a `ThemeIcon` glyph, and from 100 pages `adw-tab-overflow-symbolic` with no counter; ADD-A130) | rule |
 | GN-2.38 | `carousel.item.transitions (Geometry, spring: the page settle), carousel.values.scroll_timeout` | field |
 | GN-2.38 | `page_indicator.dot.transitions, page_indicator.line.transitions` | field |
 | GN-2.39 | `about_dialog.icon.icon.size` | field |
@@ -931,7 +933,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.34 | `token.caret.blink_timeout_ms` | token |
 | GN-3.34 | `reader:gnome:org.gnome.desktop.interface caret blink timeout` | reader |
 | GN-3.35 | `token.caret.blink_style Fade (ADD-A24)` | token |
-| GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(mul(widget.text.line_height, token.params.caret.<aspect_ratio>), <length>): the text part's line, the caret having no font, S2.2; ADD-A44)` | field |
+| GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(floor(mul(widget.text.font_height, token.params.caret.aspect_ratio)), <length>): GTK's stem from the run's font height, the caret having no font, S2.2, S4.2; ADD-A44, ADD-A130)` | field |
+| GN-3.36 | `token.caret.width (absent: GTK's width follows each line, S4.2, S6.3; ADD-A130)` | token |
+| GN-3.36 | `token.params.caret.aspect_ratio (gtk-cursor-aspect-ratio)` | token |
 | GN-3.37 | `token.caret.secondary (the secondary caret's colour; the base of every caret part's secondary caret, ADD-A24)` | token |
 | GN-3.37 | `input.secondary_caret.fill, text_area.secondary_caret.fill (= token.caret.secondary), input.secondary_caret.{min_width,min_height}, text_area.secondary_caret.{min_width,min_height}` (GTK's split cursor) | field |
 | GN-3.38 | `token.caret.shown_in_read_only (ADD-A70)` | token |
@@ -973,8 +977,11 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.47 | `reader:gnome:org.gnome.desktop.peripherals double-click` | reader |
 | GN-3.48 | `token.behavior.drag_threshold` | token |
 | GN-3.48 | `reader:gnome:org.gnome.desktop.peripherals drag threshold` | reader |
+| GN-3.48 | `token.behavior.drag_min_delay (GTK's MIN_TIME_TO_DND: no drag before it, however far the pointer moves), token.behavior.drag_time (absent: only movement starts a drag; S4.2, ADD-A130)` | token |
 | GN-3.49 | `token.behavior.long_press (ADD-A45)` | token |
 | GN-3.50 | `token.behavior.mnemonics OnAlt delay (ADD-A12)` | token |
+| GN-3.50 | `token.behavior.mnemonic_when_disabled (false: no underline on a disabled label or beside a disabled target, gtklabel.c:3878-3880; ADD-A130)` | token |
+| GN-3.50 | `TextStyle.mnemonic_decoration (origin InkBottom, offset = element.font_underline_thickness: Pango's low underline; S2.8, ADD-A130)` | field |
 | GN-3.51 | `token.behavior.spring_loading (ADD-A45)` | token |
 | GN-3.51 | `expander.values.drag_hover_delay, view_switcher.values.drag_hover_delay, sidebar.values.drag_hover_delay, tab.values.drag_hover_delay, component.tab_overview.values.drag_hover_delay` (each `= token.behavior.spring_loading`; the last the tab grid's) | field |
 | GN-3.68† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
@@ -990,8 +997,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.57 | `PartStyle.icon.weight per part (S2.9)` | field |
 | GN-3.58 | `PartStyle.icon.status_colors (the symbolic palette's success, warning, error; ADD-A37)` | field |
 | GN-3.58 | `IconStyle.fill` | field |
+| GN-3.58 | `PartStyle.icon.rendering_mode (from_icon: GTK recolours an icon whose file is symbolic and draws any other as it is; the check context's template, its images recoloured whatever their files, S2.9; ADD-A130)` | field |
 | GN-3.58 | `role.global.status.*` | role |
 | GN-3.59 | `token.icons.sizes.<contexts>` | token |
+| GN-3.59 | `token.icons.sizes.keyed.<contexts>.rendering_mode` (the check box's and radio's `template`, `_checks.scss:67-81`; absent in the contexts that set none, S4.5; the status page's spinner is the `spinner` element in `context status_page`, which carries its own box and loop, GN-1.232, GN-1.229, so no context carries it, S2.9; ADD-A130) | token |
 | GN-3.60 | `PartStyle.opacity of icon parts @ widget states` | rule |
 | GN-3.61 | `PartStyle fill, stroke rules @ cond contrast_high per widget` | rule |
 | GN-3.61 | `roles @ cond contrast_high` | rule |
@@ -1075,6 +1084,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-14† | - | out (R1.1) |
 | GN-P3-15† | `scroll_view.values.wheel_step (= gtk_wheel_step(element.height), gtk_wheel_step(element.width): the view's page sizes, ADD-A90)` (a slider's step is its adjustment's page increment, the application's) | field |
 | GN-P3-15† | `token.behavior.scroll.touchpad_factor` (ADD-A91) | token |
+| GN-P3-15† | `token.behavior.scroll.wheel_step_lines, token.behavior.scroll.wheel_step_distance` (both absent: the step follows the page size, `scroll_view.values.wheel_step`; S4.2, ADD-A130) | token |
 | GN-P3-16† | `Edge.snap (ADD-A33: libadwaita's one-pixel lines at a fractional scale)` | field |
 | GN-P3-16† | - (the display scale itself) | out (R1.1) |
 | GN-P3-17† | - | preset (R1.3) |
