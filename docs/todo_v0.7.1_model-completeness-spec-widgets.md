@@ -81,9 +81,9 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   other sizes unread; the prominent
   bar item (`UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:31` in Xcode 26.6) is `primary` in `context
   toolbar.bar` (TB-4), drawn by the host but unread (hosted by SwiftUI, its Liquid Glass platter no single layer,
-  `forms.<scheme>.bar_prominent`), its values pending a pass that reads them, as are the system Done item's on
-  `ios-26`, the system add item's and the system Action item's (`forms.<scheme>.bar_system_done`, `bar_system_add`,
-  `bar_system_action`, unread); the default `buttonSize` (U129, the entry's *Default sizes*).
+  `forms.<scheme>.bar_prominent`), its values pending a pass that reads them, as are the system Done, add and
+  Action items' on `ios-26` (`forms.<scheme>.bar_system_done`, `bar_system_add`,
+  `bar_system_action`, unread there, read on `ios-13`); the default `buttonSize` (U129, the entry's *Default sizes*).
 - `button` on `macos-tahoe` (ADD-A125): the circular bezel's `body.margin` at every size, and the circle's size at
   `mini` to `regular` (MAC-B08, a register row of its own; the corners U143).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
@@ -3390,7 +3390,8 @@ spaces:
   - `unread_indicator` — kirigami-addons' unread mark on an indicator row (K-KA-39†): `fill`, `min_width`, `padding`.
   - `swipe_area` — the area a swipe reveals (Q1.89, L-13): `fill`, `shadow` (at its edges).
   - `swipe_action` *(element)* — an action button there (L-13, MAC-L12, MAT-L11, Q1.88, W2-29): `fill`, `text`,
-    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `transitions`.
+    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `interaction` (Material's revealed
+    action an icon button with its state layer and press ripple, MAT-L11, S2.12), `transitions`.
   - `swipe_handle` — Kirigami's handle that opens the actions (Q1.88): `icon`.
   - `drop_indicator`, in `section` — the insertion line (and its end circle) between rows (MAC-L11, K1.182,
     GN-1.279†), or the drop zone's area where the platform fills one (Material's drop-zone colour, MAT-L10): `stroke`,
