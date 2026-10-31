@@ -827,3 +827,71 @@ fn combination_patch_over_a_reference_meets_the_referents_rules() {
     );
     assert_eq!(over(below, &later, &decl), NONE);
 }
+
+/// A rule's binding applies under some combinations only: under the others
+/// the colour roles' rules decide the role (S3.3, S12).
+#[test]
+fn combination_a_rules_binding_leaves_the_roles_rules() {
+    let decl = declare("surface_sets = [\"window\"]");
+    let below = "[colors.light.surfaces.window]\nneutral = \"#00ff00\"\n\
+                 [colors.dark.surfaces.window]\nneutral = \"#00ff00\"";
+    let top = "[widgets.button.body]\nfill = \"= mix(surface.neutral, #000000, 0.5)\"\n\
+               [[rules]]\nwhen = { conditions = [\"reduced_motion\"] }\ntarget = \"colors\"\n\
+               set = { surfaces.window.neutral = \"absent\" }\n\
+               [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
+               set = { bindings = [{ role = { role = { surface = \"neutral\" }, value = \
+               \"#ff0000\" } }] }";
+    assert_eq!(
+        over(below, top, &decl),
+        ["widgets.button.body.fill: `surface.neutral` can be `absent` here"]
+    );
+}
+
+/// S3.3's two steps: the root part's bindings apply to every part of the
+/// widget; a `Role { Surface(x) }` binding never answers `role.S.x`; a
+/// `Set(S, x)` binding answers `surface.x` only under a `Surface(S)`
+/// binding.
+#[test]
+fn combination_bindings_follow_s3_3() {
+    let decl = declare("surface_sets = [\"window\", \"header\"]");
+    let below = "[colors.light.surfaces.window]\nneutral = \"absent\"\n\
+                 [colors.dark.surfaces.window]\nneutral = \"absent\"\n\
+                 [colors.light.surfaces.header]\nneutral = \"#000000\"\n\
+                 [colors.dark.surfaces.header]\nneutral = \"#000000\"";
+    let bind = |role: &str| {
+        format!(
+            "[widgets.button.body]\nbindings = [{{ role = {{ role = {role}, value = \
+             \"#ff0000\" }} }}]"
+        )
+    };
+    // (a) The root's binding answers the label's `surface.neutral`.
+    let label = format!(
+        "{}\n[widgets.button.label]\ntext.fill = \"= mix(surface.neutral, #000000, 0.5)\"",
+        bind("{ surface = \"neutral\" }")
+    );
+    assert_eq!(over(below, &label, &decl), NONE);
+    // (b) Step 2 ignores a `Role { Surface(x) }` binding.
+    let role = format!(
+        "{}\nfill = \"= mix(role.window.neutral, #000000, 0.5)\"",
+        bind("{ surface = \"neutral\" }")
+    );
+    assert_eq!(
+        over(below, &role, &decl),
+        ["widgets.button.body.fill: `role.window.neutral` can be `absent` here"]
+    );
+    // (c) A `Set(header, neutral)` binding with no `Surface(header)` one.
+    let set = format!(
+        "{}\nfill = \"= mix(surface.neutral, #000000, 0.5)\"",
+        bind("{ set = [\"header\", \"neutral\"] }")
+    );
+    assert_eq!(
+        over(below, &set, &decl),
+        ["widgets.button.body.fill: `surface.neutral` can be `absent` here"]
+    );
+    // With the `Surface(header)` binding, `surface.neutral` is
+    // `role.header.neutral`, which the `Set` binding answers.
+    let surfaced = "[widgets.button.body]\nbindings = [{ surface = \"header\" }, { role = { role = \
+                    { set = [\"header\", \"neutral\"] }, value = \"#ff0000\" } }]\n\
+                    fill = \"= mix(surface.neutral, #000000, 0.5)\"";
+    assert_eq!(over(below, surfaced, &decl), NONE);
+}

@@ -33,6 +33,7 @@ use crate::next::expr::{ElementDatum, Expr, Ref};
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
+use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
     Condition, ContextMatch, ControlSize, Density, Direction, Parity, PositionMatch, Scheme,
     Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart,
@@ -93,6 +94,8 @@ enum Seed {
     Field(Target, String, bool),
     /// What a part is drawn as.
     Shown(TypedPart),
+    /// A part's bindings.
+    Bindings(TypedPart),
 }
 
 /// A bound on the sources a lookup reads: those before a position, or the
@@ -135,7 +138,8 @@ struct Cx<'s> {
     pos: Pos,
     /// The `TextStyle` holding it, where one does.
     text_style: Option<&'s str>,
-    /// A binding's value, evaluated in the scope outside the binding.
+    /// A binding's value, evaluated in the scope outside the binding: its
+    /// part's own bindings are not in scope.
     in_binding: bool,
 }
 
@@ -171,6 +175,25 @@ enum Place<'s> {
     Binding(&'s Source, &'s BindingOp),
     /// A value a check reads as stated: element data, an input, the scheme.
     Stated,
+}
+
+/// Which bindings a role lookup follows (S2.2, S3.3).
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Bindings {
+    /// Every binding in scope.
+    All,
+    /// The `Surface(S)` bindings only: `active(…)`'s.
+    Surfaces,
+    /// None: the colour roles every binding can fall back to.
+    None,
+}
+
+/// What S3.3's step 1 finds for `surface.x`.
+enum Answer<'s> {
+    /// A `Role { Surface(x) }` binding.
+    Role(Place<'s>),
+    /// A `Surface(S)` binding: the lookup becomes `role.S.x`.
+    Set(SurfaceSet),
 }
 
 /// How many references a chain may follow (S2.2, S12).
@@ -329,53 +352,95 @@ impl<'a> Stack<'a> {
     }
 
     /// The places `reference` reads, stated where `cx` says (S2.2, S3.3):
-    /// a role through the nearest binding of it in scope (the part's own;
-    /// an ancestor's is another element's, so its root value is read), else
-    /// the colour roles of the world's scheme.
+    /// a role through the bindings in scope.
     fn places(&self, world: &World, reference: &Ref, cx: Cx<'_>) -> Vec<Place<'_>> {
+        self.places_in(world, reference, cx, Bindings::All)
+    }
+
+    /// The places `reference` reads, the bindings `bindings` says followed:
+    /// S3.3's two steps over the parts in scope ([`scope_parts`]), each part's
+    /// bindings those of its sources that apply, merged by key (S6.1); with
+    /// no `Surface(S)` binding in scope, an ancestor outside the widget can
+    /// bind any declared set, so `surface.x` reads each.
+    fn places_in(
+        &self,
+        world: &World,
+        reference: &Ref,
+        cx: Cx<'_>,
+        bindings: Bindings,
+    ) -> Vec<Place<'_>> {
         let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
         let roles = self.roles_of(world);
         let field = |target, path: String| Place::Field(target, path, Bound::ALL);
-        if let Some(binding) = self.binding(world, reference, cx) {
-            return vec![binding];
-        }
+        let chain = match bindings {
+            Bindings::None => Vec::new(),
+            Bindings::All | Bindings::Surfaces => scope_parts(cx),
+        };
+        let roles_bound = bindings == Bindings::All;
+        // Step 2: the nearest `Role` binding of exactly that role, else the
+        // colour roles' value.
+        let role = |held: &dyn Fn(&RoleRef) -> bool, path: String| {
+            roles_bound
+                .then(|| self.role_binding(world, &chain, held))
+                .flatten()
+                .unwrap_or_else(|| field(roles, path))
+        };
+        let in_set = |set: SurfaceSet, x: &str| {
+            role(
+                &|held| matches!(held, RoleRef::Set(s, r) if *s == set && r.path() == x),
+                format!("surfaces.{}.{x}", set.name()),
+            )
+        };
         match reference {
-            Ref::Role { set, path } => {
-                vec![field(
-                    roles,
-                    format!("surfaces.{}.{}", set.name(), joined(path)),
+            Ref::Role { set, path } => vec![in_set(*set, &joined(path))],
+            Ref::GlobalRole(path) => {
+                let x = joined(path);
+                vec![role(
+                    &|held| matches!(held, RoleRef::Global(r) if r.path() == x),
+                    format!("global.{x}"),
                 )]
             }
-            Ref::GlobalRole(path) => vec![field(roles, format!("global.{}", joined(path)))],
-            Ref::KeyedRole(key) => vec![field(roles, format!("keyed.{key}"))],
-            Ref::Surface(path) => self
-                .decl()
-                .surface_sets
-                .iter()
-                .map(|set| field(roles, format!("surfaces.{}.{}", set.name(), joined(path))))
-                .collect(),
-            Ref::Active(inner) => self
-                .places(
-                    world,
-                    inner,
-                    Cx {
-                        in_binding: true,
-                        ..cx
-                    },
-                )
-                .into_iter()
-                .map(|place| match place {
-                    Place::Field(target, path, _) => Place::Field(
-                        target,
-                        path,
-                        Bound {
-                            before: None,
-                            bases_only: true,
-                        },
-                    ),
-                    other => other,
-                })
-                .collect(),
+            Ref::KeyedRole(key) => vec![role(
+                &|held| matches!(held, RoleRef::Keyed(k) if k == key),
+                format!("keyed.{key}"),
+            )],
+            // Step 1: the nearest `Role { Surface(x) }` or `Surface(S)`
+            // binding decides; `Surface(S)` makes it `role.S.x`.
+            Ref::Surface(path) => {
+                let x = joined(path);
+                match self.surface_binding(world, &chain, &x, roles_bound) {
+                    Some(Answer::Role(place)) => vec![place],
+                    Some(Answer::Set(set)) => vec![in_set(set, &x)],
+                    None => self
+                        .decl()
+                        .surface_sets
+                        .iter()
+                        .map(|set| in_set(*set, &x))
+                        .collect(),
+                }
+            }
+            // The role found through the `Surface(S)` bindings only, its
+            // value from the bases.
+            Ref::Active(inner) => {
+                let inner_bindings = match bindings {
+                    Bindings::None => Bindings::None,
+                    Bindings::All | Bindings::Surfaces => Bindings::Surfaces,
+                };
+                self.places_in(world, inner, cx, inner_bindings)
+                    .into_iter()
+                    .map(|place| match place {
+                        Place::Field(target, path, _) => Place::Field(
+                            target,
+                            path,
+                            Bound {
+                                before: None,
+                                bases_only: true,
+                            },
+                        ),
+                        other => other,
+                    })
+                    .collect()
+            }
             Ref::Token(path) => vec![field(Target::Tokens, joined(path))],
             Ref::Base => vec![Place::Field(
                 cx.target,
@@ -427,40 +492,59 @@ impl<'a> Stack<'a> {
         }
     }
 
-    /// The part's own binding of the role `reference` names, the last that
-    /// applies (S3.3); none for a binding's own value, read outside it.
-    fn binding(&self, world: &World, reference: &Ref, cx: Cx<'_>) -> Option<Place<'_>> {
-        let Target::Part(_) = cx.target else {
-            return None;
-        };
-        if cx.in_binding {
-            return None;
-        }
-        let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
-        let matches = |role: &RoleRef| match (reference, role) {
-            (Ref::Surface(path), RoleRef::Surface(role) | RoleRef::Set(_, role)) => {
-                role.path() == joined(path)
-            }
-            (Ref::Role { set, path }, RoleRef::Set(held, role)) => {
-                held == set && role.path() == joined(path)
-            }
-            (Ref::Role { path, .. }, RoleRef::Surface(role)) => role.path() == joined(path),
-            (Ref::GlobalRole(path), RoleRef::Global(role)) => role.path() == joined(path),
-            (Ref::KeyedRole(key), RoleRef::Keyed(held)) => held == key,
-            _ => false,
-        };
-        let mut last = None;
-        for (_, source) in self.of(cx.target) {
-            if !self.applies(world, source) {
-                continue;
-            }
-            for binding in &source.bindings {
-                if matches(&binding.role) {
-                    last = Some(Place::Binding(source, binding));
+    /// S3.3's step 2: the `Role` binding of a role `held` matches that the
+    /// nearest part of `chain` stating one binds, under `world`.
+    fn role_binding(
+        &self,
+        world: &World,
+        chain: &[TypedPart],
+        held: &dyn Fn(&RoleRef) -> bool,
+    ) -> Option<Place<'_>> {
+        chain.iter().find_map(|part| {
+            let mut last = None;
+            for (_, source) in self.of(Target::Part(*part)) {
+                if !self.applies(world, source) {
+                    continue;
+                }
+                for binding in &source.bindings {
+                    if held(&binding.role) {
+                        last = Some(Place::Binding(source, binding));
+                    }
                 }
             }
-        }
-        last
+            last
+        })
+    }
+
+    /// S3.3's step 1 for `surface.x`: the nearest part of `chain` binding
+    /// `Role { Surface(x) }` (where `roles`) or a surface set decides, under
+    /// `world`; one part's `Role { Surface(x) }` binding, the role itself,
+    /// before its surface set.
+    fn surface_binding(
+        &self,
+        world: &World,
+        chain: &[TypedPart],
+        x: &str,
+        roles: bool,
+    ) -> Option<Answer<'_>> {
+        chain.iter().find_map(|part| {
+            let mut role = None;
+            let mut set = None;
+            for (_, source) in self.of(Target::Part(*part)) {
+                if !self.applies(world, source) {
+                    continue;
+                }
+                for binding in source.bindings.iter().filter(|_| roles) {
+                    if matches!(&binding.role, RoleRef::Surface(r) if r.path() == x) {
+                        role = Some(Place::Binding(source, binding));
+                    }
+                }
+                if let Some(last) = source.surfaces.last() {
+                    set = Some(*last);
+                }
+            }
+            role.map(Answer::Role).or(set.map(Answer::Set))
+        })
     }
 
     /// What a part is drawn as under `world`: its last `Absent`, `DrawnAs` or
@@ -581,11 +665,10 @@ impl<'a> Stack<'a> {
                                             || (*subtree && is_above(q, &op.path)))
                                 })
                                 .collect();
-                            if related.is_empty() && source.bindings.is_empty() {
+                            if related.is_empty() {
                                 continue;
                             }
-                            if !related.is_empty()
-                                && let Some(rule) = source.rule
+                            if let Some(rule) = source.rule
                                 && !rules.contains(&rule)
                             {
                                 rules.push(rule);
@@ -606,24 +689,22 @@ impl<'a> Stack<'a> {
                                 }
                             }
                         }
-                        if let Target::Part(_) = target {
-                            // A role a part's expression reads may be bound by
-                            // the part itself (S3.3).
-                            for (_, source) in self.of(target) {
-                                if source.bindings.is_empty() {
-                                    continue;
-                                }
-                                if let Some(rule) = source.rule
-                                    && !rules.contains(&rule)
-                                {
-                                    rules.push(rule);
-                                }
-                                for binding in &source.bindings {
-                                    if let Val::Expr(expr) = &binding.value {
-                                        let cx = binding_cx(source);
-                                        pending.extend(self.seeds_of(&any, expr, cx, ""));
-                                    }
-                                }
+                    }
+                }
+                Seed::Bindings(part) => {
+                    for (_, source) in self.of(Target::Part(*part)) {
+                        if source.bindings.is_empty() && source.surfaces.is_empty() {
+                            continue;
+                        }
+                        if let Some(rule) = source.rule
+                            && !rules.contains(&rule)
+                        {
+                            rules.push(rule);
+                        }
+                        for binding in &source.bindings {
+                            if let Val::Expr(expr) = &binding.value {
+                                let cx = binding_cx(source);
+                                pending.extend(self.seeds_of(&any, expr, cx, ""));
                             }
                         }
                     }
@@ -650,8 +731,13 @@ impl<'a> Stack<'a> {
                     false,
                 ));
             }
+            // A role's bindings in scope, and the colour roles whichever
+            // apply (S3.3).
+            if is_role(reference) {
+                out.extend(scope_parts(cx).into_iter().map(Seed::Bindings));
+            }
             for world in any {
-                for place in self.places(world, reference, cx) {
+                for place in self.places_in(world, reference, cx, Bindings::None) {
                     if let Place::Field(target, path, _) = place {
                         out.push(Seed::Field(target, below(&path, rest), true));
                     }
@@ -811,6 +897,50 @@ fn binding_found<'s>(source: &'s Source, binding: &'s BindingOp) -> Found<'s> {
         id: None,
         via: false,
     }
+}
+
+/// Whether `reference` names a colour role, which bindings can answer
+/// (S3.3).
+fn is_role(reference: &Ref) -> bool {
+    matches!(
+        reference,
+        Ref::Role { .. }
+            | Ref::GlobalRole(_)
+            | Ref::KeyedRole(_)
+            | Ref::Surface(_)
+            | Ref::Active(_)
+    )
+}
+
+/// The parts whose bindings are in scope where `cx` is, nearest first
+/// (S2.11, S3.3): a part's own (not for a binding's value, evaluated in the
+/// scope outside it), then each part enclosing it in the catalogue, up to
+/// the root, whose bindings apply to every part of the widget.
+fn scope_parts(cx: Cx<'_>) -> Vec<TypedPart> {
+    let Target::Part(own) = cx.target else {
+        return Vec::new();
+    };
+    let widget = widget_of(own);
+    let Some(info) = registry::widgets().iter().find(|info| info.kind == widget) else {
+        return Vec::new();
+    };
+    let mut chain = vec![own];
+    let mut current = part_info(own);
+    for _ in info.parts {
+        let Some(part) = current.filter(|part| !part.root) else {
+            break;
+        };
+        let parent = part
+            .parent
+            .and_then(|name| info.part(name))
+            .or_else(|| info.parts.iter().find(|p| p.root));
+        match parent.and_then(|parent| TypedPart::from_names(widget, parent.name)) {
+            Some(typed) => chain.push(typed),
+            None => break,
+        }
+        current = parent;
+    }
+    chain.into_iter().skip(usize::from(cx.in_binding)).collect()
 }
 
 /// Whether a `widget.<part>.` path names that part's font metric, not a

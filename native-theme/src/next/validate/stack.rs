@@ -17,7 +17,7 @@ use crate::next::expr::Expr;
 use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, PartInfo};
-use crate::next::roles::ColorRolesPatch;
+use crate::next::roles::{ColorRolesPatch, SurfaceSet};
 use crate::next::selector::{Condition, PartRef, Rule, RuleBody, Scheme, Selector, ValuesPatch};
 use crate::next::value::Value;
 use crate::next::widgets::{PartPatch, Shown, TypedPart, WidgetKind, WidgetValuesPatch};
@@ -153,8 +153,10 @@ pub(super) struct Source {
     pub(super) scheme: Option<Scheme>,
     /// Its steps, in order.
     pub(super) ops: Vec<Op>,
-    /// A part's colour bindings.
+    /// A part's role bindings.
     pub(super) bindings: Vec<BindingOp>,
+    /// A part's surface-set bindings, in order: the last binds (S6.1).
+    pub(super) surfaces: Vec<SurfaceSet>,
 }
 
 /// A rule of the stack.
@@ -524,6 +526,7 @@ impl<'a> Stack<'a> {
             scheme: None,
             ops,
             bindings: Vec::new(),
+            surfaces: Vec::new(),
         });
     }
 
@@ -607,6 +610,7 @@ impl<'a> Stack<'a> {
             field: None,
         };
         let mut bindings = Vec::new();
+        let mut surfaces = Vec::new();
         let ops = match patch {
             PartPatch::Absent => vec![shown(Shown::Absent)],
             PartPatch::DrawnAs { target, variants } => vec![shown(Shown::DrawnAs {
@@ -615,12 +619,13 @@ impl<'a> Stack<'a> {
             })],
             PartPatch::Style(style) => {
                 for (index, binding) in style.bindings.iter().flatten().enumerate() {
-                    if let Binding::Role { role, value } = binding {
-                        bindings.push(BindingOp {
+                    match binding {
+                        Binding::Role { role, value } => bindings.push(BindingOp {
                             role: role.clone(),
                             value: binding_val(value),
                             at: format!("{at}.bindings[{index}].value"),
-                        });
+                        }),
+                        Binding::Surface(set) => surfaces.push(*set),
                     }
                 }
                 let mut ops = vec![shown(Shown::Drawn)];
@@ -636,6 +641,7 @@ impl<'a> Stack<'a> {
             scheme: None,
             ops,
             bindings,
+            surfaces,
         });
     }
 
