@@ -566,7 +566,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | EX-1 | `list.disclosure.transform @ {open}` | rule |
 | EX-1 | `reader:ios:UICellAccessory.outlineDisclosure options` | readers (R18) |
 | EX-2 | `list.disclosure.transitions (Transform)` | field |
-| EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion; ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+| EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion) | field |
 | EX-3 | `list.disclosure.{glyph,fill} @ variant @header / variant @cell` (the outline style; under `.header` the toggling row is a `list.section_header` element, its look that part's) | rule |
 | EX-3 | `reader:ios:UICellAccessory.OutlineDisclosureOptions.style` | readers (R18) |
 | EX-4 | `list.disclosure.glyph.fill @ variant @header` | rule |
@@ -871,7 +871,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-6 | `bottom_tab_bar.values.presentations events @indicator_move, @minimize` (the 26 lens, the minimize) | field |
 | X-MO-6 | `button.body.transitions` (26's interactive glass, 13–18's highlight fade) | field |
 | X-MO-6 | `list.row_background.transitions; list.values.presentations events Appear, Disappear (the row's), @reload (the list's)` (the highlight fade, the row animations) | field |
-| X-MO-6 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse` (the outline disclosure; `@expand`, `@collapse`: ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+| X-MO-6 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse` (the outline disclosure) | field |
 | X-MO-6 | `pull_to_refresh.values.presentations event Disappear` (the refresh) | field |
 | X-MO-8 | `token.behavior.scroll.{deceleration,overscroll,overscroll_effect,snap}` (rubber-band overscroll, paging snap) | token |
 | X-MO-8 | `reader:ios:UIScrollView.DecelerationRate raw values` | readers (R18) |

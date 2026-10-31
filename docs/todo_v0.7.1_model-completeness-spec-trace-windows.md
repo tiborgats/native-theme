@@ -390,8 +390,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-140 | `expander.{arrow.fill,arrow.stroke,arrow.glyph.fill} @ context expander.header {hover} / context expander.header {pressed}` (the header toggle's CommonStates: the arrow nests in the header) | rule |
 | W1-141 | `expander.content.{fill,stroke,corners}` | field |
 | W1-141 | `expander.content.{stroke,corners} @ variant @expand_up (the content above the header)` | rule |
-| W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
-| W1-142 | `expander.content (absent = true) @ !{open}` (written last: `ExpanderContent` collapsed at rest, `microsoft-ui-xaml@2.5.1 src/controls/dev/Expander/Expander.xaml:114`, S2.7) | rule |
+| W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` | field |
 | W1-142 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, the chevron's rotation; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_up_down_small" }, its `QueueOne` queue, `src/controls/dev/Expander/Expander_themeresources.xaml:282`, S2.7, ADD-A126)` | field |
 | W1-143 | `link.text.text.decoration @ variant inline / {hover} variant inline / {pressed} variant inline` | rule |
 | W1-144 | `link.body.fill @ {pressed} / {disabled}` | rule |
@@ -613,7 +612,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.row_title.text.fill @ context form.card {hover} / context form.card {pressed} / context form.card {disabled}` | rule |
 | W2-40† | `form.card.{stroke,padding,min_width,min_height}; form.row_subtitle.text; form.row_icon.{icon,max_width,max_height,padding}; form.row_arrow.{icon,padding}` | field |
 | W2-40† | `form.values.column_gap (the header to content spacing)` | field |
-| W2-40† | `form.row_nested (absent = true) @ !{open} variant expander` (written last: SettingsExpander restyles its `muxc:Expander` with its own template, whose `ExpanderContent` is collapsed at rest, `CommunityToolkit-Windows@8.2.251219 components/SettingsControls/src/SettingsExpander/SettingsExpander.xaml:85`, `:270-279`, S2.7) | rule |
 | W2-40† | `form.* @ variant @right / variant collapsed / variant @right_wrapped_no_icon / variant @left / variant vertical` (RightWrapped is `collapsed`) | rule |
 | W2-40† | `form.values.{collapse,breakpoints} (AtBreakpoints; measured Allocation, width Below the wrap threshold setting `collapsed` and Below the no-icon threshold setting `@right_wrapped_no_icon`, under `@right`)` | field |
 | W2-40† | `form.row_icon.opacity @ {disabled} variant bitmap_icon` (the bitmap header icon dimmed; a glyph icon is recoloured, W3-51†) | rule |

@@ -185,8 +185,7 @@ Each `### <widget>` section states, in this order:
   group). A part nested in a part that answers `NotDrawn` is still queried, in the scope the `NotDrawn` part's
   parent returns (as S8 queries the children of a `NotDrawn` element), and is drawn unless it is absent itself: a list's
   rows nest in `section` and are drawn where no section is; where a nested part is not drawn with its parent (a
-  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. A box an expander reveals is the exception: while `Absent`, nothing
-  in it is drawn or laid out, though its elements are still queried and updated with their presence (S6.3). The parts nested in a
+  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. The parts nested in a
   part a preset draws as another widget (`drawn_as`, below) are still queried, with that widget's element as their
   host: in the scope returned by the query of the substitute's part that holds content (an overlay's box, `body`; a
   control's root), the innermost enclosing part's scope (S8), so `context <substitute>` matches them. Each keeps its
@@ -218,7 +217,7 @@ Each `### <widget>` section states, in this order:
   in its base and `true` by the rules that draw it, its other fields in every state, so a patch reaches it however
   its `shown` rules are ordered (ADD-A126). A `popup` part's opening and closing are ADD-A129's (queue #118), at once meanwhile where
   it is drawn as itself, and as its substitute presents where it is drawn as another widget (S2.7); an overlay's
-  presentations run as stated, and an expander's reveal is #118's, its box `Absent` collapsed. A motion the
+  presentations run as stated; an expander's collapsed content and its reveal are #118's (S2.7). A motion the
   enter rule cannot state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
@@ -3471,7 +3470,7 @@ spaces:
   its full text in a tooltip after the tooltip's own show delay, by press and hold `@ cond tablet_mode`; Q1.82,
   K-KA-36†); `presentations: Vec<PresentationTransition>`, queried with a row for the row's events (`Appear`, a row
   inserted; `Disappear`, a row deleted; `Move`, a row moved to its new place, its distance `element.move_distance`,
-  declared under `values`; `@expand`, `@collapse`, its nested rows revealed and hidden (ADD-A129's, queue #118, S2.7); `@swipe`, its swipe actions
+  declared under `values`; `@expand`, `@collapse`, its nested rows revealed and hidden; `@swipe`, its swipe actions
   revealed and the full-swipe expansion, W2-29, L-13, Q1.84, Q1.89; `@drag_lift`; `@placeholder_fade`, a
   not-yet-loaded row filled in, W-RV-2†; `@spring_load`, a spring-loaded row's flash or blink while a drag hovers it,
   MAC-X21, P3-11†) and with the list for the list's (`@reload`, `@edit_mode`, and `@indicator_move` with the step's
@@ -3541,7 +3540,7 @@ spaces:
   `material-3` by a rule outside `variant sidebar context sidebar.pane[compact]`), `row_selection_indicator` (all
   but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` never, hidden by `shown`, W1-107; `material-3` by a
   rule outside `variant sidebar context sidebar.pane[compact]`, the rail's drawn at rest at zero width and alpha, the
-  drawer's selection being `row_background`'s, MAT-SB1, MAT-N13), `nested` (all but `adwaita`: GN-1.260; `adwaita` by a rule `!{open}`, written last, in every variant, S2.7), `cell` (`windows-11`: no
+  drawer's selection being `row_background`'s, MAT-SB1, MAT-N13), `nested` (all but `adwaita`: GN-1.260), `cell` (`windows-11`: no
   multi-column row among WinUI's lists, W2-12, W2-13, W2-14, W2-33), `column_separator` (`windows-11`, `material-3`:
   no line between cells; `adwaita` by a rule outside `column_separators`, GN-1.169; `macos-*` by a rule outside
   `column_separators` and `@browser`, MAC-L06, MAC-N08; `kde-breeze` by a rule outside `table`, Qt's table grid, K3.53;
@@ -4253,11 +4252,10 @@ spaces:
 
 - **Kind:** typed widget: the stand-alone expanders: GNOME (GtkExpander), KDE (KCollapsibleGroupBox), macOS (the
   disclosure and push-disclosure buttons, SwiftUI's DisclosureGroup), Windows (Expander). An expandable row is a row
-  with a disclosure in its host, one structure for one control: in a list, a `list` row with a `disclosure` and,
-  on `adwaita` alone, its `nested` box (GNOME's AdwExpanderRow in a plain boxed list, GN-2.09, GN-1.260); elsewhere
-  the child rows are rows of their own (Material's expandable list item MAT-L9, MAT-EX1; iOS's outline disclosure
-  EX-1–EX-3, its styles `list`'s keyed `@header`, `@cell` on `disclosure`), until ADD-A129 decides otherwise (queue
-  #118); the reveal is `list`'s events `@expand`, `@collapse`; in a preferences group, a `form.row` of kind `expander` with its
+  with a disclosure in its host, one structure for one control: in a list, a `list` row with a `disclosure` and its
+  `nested` box (Material's expandable list item MAT-L9, MAT-EX1; iOS's outline disclosure EX-1–EX-3, its styles
+  `list`'s keyed `@header`, `@cell` on `disclosure`; GNOME's AdwExpanderRow in a plain boxed list, GN-2.09; the
+  reveal `list`'s events `@expand`, `@collapse`); in a preferences group, a `form.row` of kind `expander` with its
   `row_arrow` and `row_nested` (AdwExpanderRow in an AdwPreferencesGroup, GN-1.257–GN-1.260; Windows'
   SettingsExpander, W2-40†; kirigami-addons' expander card, K-KA-7†).
 - **Available:** every preset but `material-3`, `ios-*` (`available = false`: their expandable item is a list row;
@@ -4279,8 +4277,8 @@ spaces:
 - **Widget values:** `arrow_side: Value<Side>` (today); `arrow_gap_px: Value<Px>` (today);
   `content_indent_px: Value<Px>`
   (today); `drag_hover_delay_ms: Value<Ms>` (a drag hovering the header expands it, GN-1.262);
-  `presentations: Vec<PresentationTransition>`: events `@expand`, `@collapse` (the content's reveal: ADD-A129's,
-  queue #118, no preset writing them until then, S2.7).
+  `presentations: Vec<PresentationTransition>`: events `@expand`, `@collapse` (the content's reveal: GN-1.259, K1.251,
+  W1-142, K3.37).
 - **Variants:** keyed: `macos-*` `@push_disclosure`
   (MAC-EX01, MAC-B01); `windows-11` `@expand_up` (the content opens above the
   header, with its own border thickness and corners, W1-141; a variant because the look changes with it, which a
@@ -4290,7 +4288,7 @@ spaces:
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (Expander CommonStates; its ExpandStates are
   `open`, its ExpandDirectionStates the variant `@expand_up`); others none (states combine); precedence: state models
   (S17).
-- **may_be_absent:** parts: `content` (every preset by a rule `!{open}`, written last, given no box, S2.7); fields: `header.stroke` (`adwaita`, `kde-breeze`, `macos-*`: their expanders draw
+- **may_be_absent:** parts: none; fields: `header.stroke` (`adwaita`, `kde-breeze`, `macos-*`: their expanders draw
   no frame, today's frame off; W1-140 frames Windows'), `content.stroke` (`adwaita`, `kde-breeze`, `macos-*`: the
   same; W1-141), `header.shadow` (every preset: no expander header casts a shadow in the rows GN-1.261, K1.250,
   MAC-EX01, W1-140), `content.fill` (`adwaita`, `kde-breeze`, `macos-*`: the content lies on its container; W1-141
@@ -5881,7 +5879,7 @@ spaces:
   (K-KA-7†); `field_label_gap_px: Value<Px>` (K-KA-9†); `grid_columns: Value<u32>`,
   `grid_min_cell_width_px: Value<Px>`, `grid_gap_px: Value<Px>` (K-KA-15†);
   `presentations: Vec<PresentationTransition>` (queried with the row): events `@expand`, `@collapse` (an expander
-  row's reveal: ADD-A129's, queue #118, S2.7).
+  row's height and opacity, K-KA-7†).
 - **Variants:** typed row kinds `action`, `entry`, `combo`, `switch`, `button`, `expander`, `spin`, `property`
   (GN-2.01–GN-2.10, Q2.56†, K-KA-3†); typed `columns` (a column of labels beside a column of fields: SwiftUI's
   `.formStyle(.columns)`, MAC-LY02†, against macOS's grouped base; Qt's form layout, K1.210, and Kirigami's
@@ -5927,7 +5925,7 @@ spaces:
   measurement shows its sections draw none, MAC-LY02†; the rows are then queried in the page's scope, Nesting),
   `row_edit_icon` (all but `adwaita`, `kde-breeze`: AdwEntryRow's and kirigami-addons' mobile rows' edit icon,
   GN-2.03, K-KA-9†; `kde-breeze` by a rule under `cond flavor:widgets`), `row_indicator` (all but `adwaita`:
-  AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`; under `expander` by a rule `!{open}`, written last: GN-1.259, K-KA-7†, W2-40†, MAC-EX01, S2.7), `row_arrow` (every
+  AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`), `row_arrow` (every
   preset by a rule outside the row kinds that show it, `action`, `combo`, `expander`; `kde-breeze` by a rule under
   `@ka_form_card` while the row draws no background, K-KA-7†), `row_separator` (`windows-11`: the expander items'
   top line is `row.stroke`, W2-40†; `kde-breeze` by a rule outside `@cards` and `@ka_form_card`, and by a rule
@@ -7304,9 +7302,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `popup` — Windows' compact spin popup, W2-01: `fill`, `stroke`, `shadow` (drawn while the stepper is `{focused}`,
     W2-01; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7). Under `@compact` the
     `increment` and `decrement` are drawn in it (NumberBox's only spin buttons there, `NumberBox.xaml:115-166`, the
-    inline ones shown only by `SpinButtonsVisible`, `:26-40`), absent with it. Its indicator glyph in the unfocused text box (`NumberBox.xaml:337-339`, `:365`) and the
-    popup buttons' padding, sizes and stacking (`:116-120`, `:163-164`, `:193-205`) are not modelled yet: the
-    unmeasured register's row for the compact NumberBox.
+    inline ones shown only by `SpinButtonsVisible`, `:26-40`), absent with it. Its indicator glyph, shown whenever it is compact (`NumberBox.cpp:659-679`),
+    and the popup buttons' layout are ADD-A129's (queue #118).
   - `header` — Windows' header label, W2-01: `text`.
 - **Widget values:** `button_layout: Value<StepperButtonLayout>`,
   `StepperButtonLayout { EndColumn, BothEnds, AboveAndBelow, SideBySide }` (a column at the end, both ends, stacked

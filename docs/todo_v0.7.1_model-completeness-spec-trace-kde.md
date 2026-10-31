@@ -332,7 +332,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.184† | `list.disclosure.glyph (the column view's triangle: fill = role.@shade_mid, stroke = role.@shade_dark) @ variant @column_view` | rule |
 | K1.184† | `list.disclosure.glyph.fill @ {selected} variant @column_view / {selected} variant @column_view cond window_inactive` | rule |
 | K1.184† | `role.@shade_mid, role.@shade_dark (KDE's 3-D shades, K3.53)` | role |
-| K1.185† | `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled, S4.1's rule, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`; = token.motion.timings.in_out_quad, `src/widgets/itemviews/qtreeview_p.h:89`; drawn only while the style hint, `token.motion.durations.animations`, is above 0 when the view is made, `qtreeview.cpp:3148`)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+| K1.185† | `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled, S4.1's rule, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`; = token.motion.timings.in_out_quad, `src/widgets/itemviews/qtreeview_p.h:89`; drawn only while the style hint, `token.motion.durations.animations`, is above 0 when the view is made, `qtreeview.cpp:3148`)` | field |
 | K1.190 | `popover.body.shadow (Shadow::Elevation of Breeze's popup entry, K3.2)` | field |
 | K1.191 | `popover.body.corners @ cond not_composited (ADD-A01)` | rule |
 | K1.200 | `splitter.divider.fill @ variant @dock` | rule |
@@ -367,8 +367,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.246 | `combo_box.arrow.glyph.fill @ {disabled} / {hover} / {focused}` | rule |
 | K1.247 | `combo_box.body.stroke, combo_box.arrow.glyph.fill @ variant warning` | rule |
 | K1.250 | `expander.arrow.glyph.fill @ context expander.header {hover}` (the title's hover) | rule |
-| K1.251 | `expander.values.presentations (@expand, @collapse: the content's height; K3.37's duration and timing)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
-| K1.251 | `expander.content (absent = true) @ !{open}` (written last: KCollapsibleGroupBox fixed at its header's height collapsed, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:60`, S2.7) | rule |
+| K1.251 | `expander.values.presentations (@expand, @collapse: the content's height; duration and timing the source's)` | field |
 | K1.260† | `link.text.text.fill (= the link role), link.text.text.decoration @ variant @url_label` | rule |
 | K1.260† | `link.text.text.fill (= the Bright text colour) @ {hover} variant @url_label` | rule |
 | K1.260† | `link.text.text.decoration (Absent) @ variants {@url_label,@float}; link.text.text.decoration @ {hover} variants {@url_label,@float}` | rule |
@@ -627,7 +626,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.103 | `switch.label.opacity @ {disabled}` | rule |
 | Q1.104 | `dialog.scrim.fill @ cond flavor:kirigami` | rule |
 | Q1.104 | `dialog.values.presentations (Appear, Disappear: part scrim, Fade; ADD-B09)` | field |
-| Q1.105 | `dialog.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
+| Q1.105 | `dialog.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, = token.motion.timings.in_out_quad, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:53`, `:63`) @ cond flavor:kirigami` | rule |
 | Q1.106 | `dialog.body.shadow @ cond flavor:kirigami` | rule |
 | Q1.107 | `dialog.body.corners, dialog.body.stroke (Absent), dialog.{header,title,subtitle} (absent = true) @ variant separate_window cond flavor:kirigami` (the title nested in the header has its own rule: Nesting) | rule |
 | Q1.108 | `dialog.body.padding @ cond flavor:kirigami` | rule |
@@ -638,7 +637,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.109 | `dialog.values.action_layout (its alignment) @ cond flavor:kirigami` | rule |
 | Q1.110 | `dialog.values.standard_button_icons` | field |
 | Q1.110 | `dialog.values.button_icons @ cond flavor:kirigami` | rule |
-| Q1.111 | `dialog.values.presentations (Appear, Disappear: Fade, and a Translate of mul(token.params.layout.grid_unit, 2) downward at zero opacity, rising in and sinking out with it; = token.motion.durations.long, = token.motion.timings.in_out_quad, `Dialog.qml:307`, `:310`, as Q1.105's; ADD-B10, ADD-A25) @ cond flavor:kirigami !variant @ka_dialog !variant @search_dialog` (Kirigami's own `Dialog`: its `y` bound to its opacity, `kirigami@6.31.0 src/dialogs/Dialog.qml:303`, the opacity animated in and out, `:306-311`; `SearchDialog.qml:64`, `:168`, a centred `QQC2.Dialog`, and kirigami-addons' `@ka_dialog` dialogs fade with no rise by Q1.105: `DatePopup.qml:16`, `TimePopup.qml:18` and `FormCardDialog.qml:51` are `QQC2.Dialog`s, centred, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:19`, `:48-65`, and `MessageDialog.qml:412-430` states the same fade, `kirigami-addons@1.15.0 src/`) | rule |
+| Q1.111 | `dialog.values.presentations (Appear, Disappear: Fade, and a Translate of mul(token.params.layout.grid_unit, 2) downward at zero opacity, rising in and sinking out with it; = token.motion.durations.long, = token.motion.timings.in_out_quad, `kirigami@6.31.0 src/dialogs/Dialog.qml:307`, `:310`, as Q1.105's; ADD-B10, ADD-A25) @ cond flavor:kirigami !variant @ka_dialog !variant @search_dialog` (Kirigami's own `Dialog`: its `y` bound to its opacity, `kirigami@6.31.0 src/dialogs/Dialog.qml:303`, the opacity animated in and out, `:306-311`; `SearchDialog.qml:64`, `:168`, a centred `QQC2.Dialog`, and kirigami-addons' `@ka_dialog` dialogs fade with no rise by Q1.105: `DatePopup.qml:16`, `TimePopup.qml:18` and `FormCardDialog.qml:51` are `QQC2.Dialog`s, centred, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:19`, `:48-65`, and `MessageDialog.qml:412-430` states the same fade, `kirigami-addons@1.15.0 src/`) | rule |
 | Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` (the stroke: qqc2's `Dialog.qml:85`, Kirigami's `Dialog.qml:341`) | rule |
 | Q1.112 | `dialog.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
 | Q1.113 | `dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami` | rule |
@@ -1006,7 +1005,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.34 | - | out (R1.1) |
 | K3.35 | - (KWin's squash and maximize effects, which KWin runs on every window; its sliding popups, which only a window that asks for them through `KWindowEffects::slideWindow` gets: Plasma's own popups ask, `libplasma src/plasmaquick/popupplasmawindow.cpp:115`, `:132`, `src/plasmaquick/dialog.cpp:318`, and no Breeze, Kirigami, qqc2-desktop-style or plasma-integration source does, by search) | out (R1.1) |
 | K3.37 | `banner.values.presentations (Appear, Disappear: the message widget's height and opacity; = token.motion.durations.message_widget, = token.motion.timings.in_out_sine)` | field |
-| K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = max(<the source's floor>, token.motion.durations.animations), the style hint's duration, kcollapsiblegroupbox.cpp:114-116; = token.motion.timings.in_out_sine)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+| K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = max(<the source's floor>, token.motion.durations.animations), the style hint's duration, kcollapsiblegroupbox.cpp:114-116; = token.motion.timings.in_out_sine)` | field |
 | K3.37 | `token.motion.durations.message_widget` | token |
 | K3.37 | `token.motion.timings.in_out_sine` | token |
 | K3.38† | `component.dock_widget.values.presentations (Move: the dock widgets' re-layout slide; = token.motion.durations.animations, = token.motion.timings.in_out_quad, `qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:62`)` | component |
@@ -1407,9 +1406,8 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-7† | `form.row_arrow.icon (the open-link icon; its rtl form under dir rtl) @ variant @link` | rule |
 | K-KA-7† | `menu @ context form.row variant @link (Open Link, Copy Link, K-KA-31†)` | rule |
 | K-KA-7† | `form.row_arrow.icon (the up arrow) @ {open} variant expander` | rule |
-| K-KA-7† | `form.values.presentations (@expand, @collapse: the rows' height and opacity; = token.motion.durations.long, its timing) @ variant @ka_form_card` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | rule |
-| K-KA-7† | `form.row_nested (absent = true) @ !{open} variant expander` (written last: the collapsed rows invisible, `kirigami-addons@1.15.0 src/formcard/FormDelegateCollapsible.qml:111-112`, S2.7) | rule |
-| K-KA-7† | `form.row_separator @ prev form.row variant expander {open} (under the open header row)` (inside `row_nested`, absent with it collapsed, `FormDelegateCollapsible.qml:101-103`) | rule |
+| K-KA-7† | `form.values.presentations (@expand, @collapse: the rows' height and opacity; = token.motion.durations.long, its timing) @ variant @ka_form_card` | rule |
+| K-KA-7† | `form.row_separator @ prev form.row variant expander {open} (under the open header row)` | rule |
 | K-KA-8† | `checkbox.body.padding (none) @ context form.row variant @ka_form_card / radio.body.padding @ context form.row variant @ka_form_card / switch.body.padding @ context form.row variant @ka_form_card` (the label is the row's title, so the control shows none and its `label` is not queried, S6.3) | rule |
 | K-KA-8† | `form.values.leading_gap @ variants {check,@ka_form_card} / variants {radio,@ka_form_card} (to the icon or text); form.values.icon_text_gap @ variants {radio,@ka_form_card}; form.values.trailing_gap @ variants {switch,@ka_form_card}` | rule |
 | K-KA-8† | `form.row_title.text.fill (= surface.disabled.foreground) @ {disabled} variant @ka_form_card (a colour, not the qqc2 opacity)` | rule |
