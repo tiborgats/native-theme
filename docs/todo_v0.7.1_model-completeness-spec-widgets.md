@@ -8140,7 +8140,7 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   `@plain`'s comment paints no background, its `fill` `Absent`, a drawing field).
 - **State-model source:** the widget's own code (`kwa ktitlewidget.cpp:30-80`; the message types,
   `ktitlewidget.h:115-120`).
-- **Today's fields:** `text_scale` (partial): the level fonts map to keyed text-ramp entries.
+- **Today's fields:** `text_scale` (partial): the level fonts map to `title.text` per level variant (ledger queue #130).
 
 #### component.multi_tab_bar (kde)
 
