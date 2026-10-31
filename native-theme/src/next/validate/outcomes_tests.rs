@@ -259,7 +259,7 @@ fn searched(
     widgets: &[WidgetKind],
     items: &[Item],
 ) -> HashSet<Vec<bool>> {
-    let space = Space::new(atoms, decl, widgets);
+    let space = Space::new(atoms, decl, widgets, true);
     let found = space.outcomes(items);
     let vectors: Vec<Vec<bool>> = found.iter().map(|values| vector(items, values)).collect();
     for values in &found {

@@ -139,8 +139,16 @@ pub(super) struct Space {
 
 impl Space {
     /// The exclusions over `atoms` the declarations and the element's
-    /// widgets give.
-    pub(super) fn new(atoms: &[Atom], decl: &Declarations, widgets: &[WidgetKind]) -> Space {
+    /// widgets give; the widgets' exclusive flag groups only where
+    /// `flag_groups`, as the states are an element's of those widgets
+    /// (a `DrawnAs` substitute reduces its host's states by its own groups,
+    /// S8).
+    pub(super) fn new(
+        atoms: &[Atom],
+        decl: &Declarations,
+        widgets: &[WidgetKind],
+        flag_groups: bool,
+    ) -> Space {
         let index = |atom: &Atom| atoms.iter().position(|held| held == atom);
         let flavors = decl
             .flavors
@@ -154,7 +162,7 @@ impl Space {
                     Some(flavor) => decl.in_flavor(*widget, flavor),
                     None => decl.in_default_flavor(*widget),
                 };
-                for group in decls.exclusive.iter().flatten() {
+                for group in decls.exclusive.iter().flatten().filter(|_| flag_groups) {
                     out.push(
                         group
                             .iter()

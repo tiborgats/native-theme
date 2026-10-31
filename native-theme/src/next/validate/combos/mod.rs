@@ -844,7 +844,7 @@ impl<'a> Stack<'a> {
             });
         // Each outcome is a distinct vector of the rules' applicability, the
         // scheme and the flavour in force (S12): one world each.
-        let (_, worlds) = self.enumerate(&rules, &widgets, scheme_and_flavors);
+        let (_, worlds) = self.enumerate(&rules, &widgets, true, scheme_and_flavors);
         let worlds = Rc::new(worlds);
         self.cache.borrow_mut().insert(rules, Rc::clone(&worlds));
         worlds
@@ -853,11 +853,13 @@ impl<'a> Stack<'a> {
     /// The atoms `rules` name, completed, and one world per distinct
     /// outcome: a vector of the rules' applicability and of the decisions
     /// `outcomes` adds over the atoms, under S12's exclusions with the
-    /// groups `widgets` declare.
+    /// groups `widgets` declare, their exclusive flag groups only where
+    /// `flag_groups`.
     fn enumerate(
         &self,
         rules: &[usize],
         widgets: &[WidgetKind],
+        flag_groups: bool,
         outcomes: impl Fn(&[Atom]) -> Vec<Item>,
     ) -> (Vec<Atom>, Vec<World>) {
         let mut atoms: Vec<Atom> = Vec::new();
@@ -871,7 +873,7 @@ impl<'a> Stack<'a> {
         let compiled = self.compile(&atoms, rules);
         let mut items: Vec<Item> = compiled.iter().map(|(_, needs)| needs.clone()).collect();
         items.extend(outcomes(&atoms));
-        let space = Space::new(&atoms, decl, widgets);
+        let space = Space::new(&atoms, decl, widgets, flag_groups);
         let worlds = space
             .outcomes(&items)
             .iter()
@@ -890,6 +892,45 @@ impl<'a> Stack<'a> {
                 Some((*rule, literals(info.selector, atoms, self.preset())))
             })
             .collect()
+    }
+
+    /// `world` as the element of `widget` sees it: its states reduced by
+    /// the widget's exclusive groups under the flavour in force, each
+    /// group's first held flag kept and the others dropped (S8, S10).
+    fn reduced(
+        &self,
+        atoms: &[Atom],
+        world: &World,
+        widget: WidgetKind,
+        compiled: &[Compiled],
+    ) -> World {
+        let decl = self.decl();
+        let decls = match &world.flavor {
+            Some(flavor) => decl.in_flavor(widget, flavor),
+            None => decl.in_default_flavor(widget),
+        };
+        let mut values = world.values.clone();
+        for group in decls.exclusive.iter().flatten() {
+            let mut kept = false;
+            for flag in group {
+                let Some(index) = atoms
+                    .iter()
+                    .position(|atom| *atom == Atom::State(flag.clone()))
+                else {
+                    continue;
+                };
+                if let Some(value) = values.get_mut(index)
+                    && *value
+                {
+                    *value = !kept;
+                    kept = true;
+                }
+            }
+        }
+        if values == world.values {
+            return world.clone();
+        }
+        self.world(atoms, &values, compiled)
     }
 
     fn world(&self, atoms: &[Atom], values: &[bool], compiled: &[Compiled]) -> World {
@@ -2124,8 +2165,10 @@ impl Checks<'_, '_> {
         let rules = stack.reach(seeds);
         let widgets: Vec<WidgetKind> = registry::widgets().iter().map(|info| info.kind).collect();
         // The conditions, states and variants are outcomes of their own:
-        // a `DrawnAs` reads them (`reaches_again`).
-        let (atoms, all) = stack.enumerate(&rules, &widgets, |atoms| {
+        // a `DrawnAs` reads them (`reaches_again`). The states are the host
+        // element's, which each widget's element reduces by its own groups
+        // (S8): no group excludes them here.
+        let (atoms, all) = stack.enumerate(&rules, &widgets, false, |atoms| {
             atoms
                 .iter()
                 .enumerate()
@@ -2135,13 +2178,19 @@ impl Checks<'_, '_> {
                 .map(|(index, _)| Some(vec![(index, true)]))
                 .collect()
         });
+        let compiled = stack.compile(&atoms, &rules);
+        let shown = |world: &World, part: TypedPart| {
+            let reduced = stack.reduced(&atoms, world, widget_of(part), &compiled);
+            let (shown, at) = stack.shown(&reduced, part);
+            (shown.clone(), at.map(|(layer, at)| (layer, at.to_owned())))
+        };
         for first in &parts {
             for world in &all {
-                let (Shown::DrawnAs { .. }, Some((layer, at))) = stack.shown(world, *first) else {
+                let (Shown::DrawnAs { .. }, Some((layer, at))) = shown(world, *first) else {
                     continue;
                 };
-                if self.reaches_again(&atoms, &all, *first, world) {
-                    self.problem(layer, at, ProblemKind::DrawnAsCycle);
+                if Self::reaches_again(&atoms, &all, *first, world, &shown) {
+                    self.problem(layer, &at, ProblemKind::DrawnAsCycle);
                 }
             }
         }
@@ -2149,21 +2198,22 @@ impl Checks<'_, '_> {
 
     /// Whether `first`, drawn as another widget under `world`, is drawn
     /// again through the `DrawnAs` patches it leads to.
+    /// `shown` answers what a part is under a world, the world's states
+    /// reduced by the part's own widget's groups.
     fn reaches_again(
-        &self,
         atoms: &[Atom],
         all: &[World],
         first: TypedPart,
         world: &World,
+        shown: &dyn Fn(&World, TypedPart) -> (Shown, Option<(usize, String)>),
     ) -> bool {
-        let stack = self.stack;
         let mut seen: Vec<(TypedPart, usize)> = Vec::new();
         let mut pending: Vec<(TypedPart, &World)> = vec![(first, world)];
         while let Some((part, host)) = pending.pop() {
-            let (Shown::DrawnAs { target, variants }, _) = stack.shown(host, part) else {
+            let (Shown::DrawnAs { target, variants }, _) = shown(host, part) else {
                 continue;
             };
-            let drawn: Vec<TypedPart> = match target {
+            let drawn: Vec<TypedPart> = match &target {
                 WidgetOrPart::Part(crate::next::selector::PartRef::Typed(part)) => vec![*part],
                 WidgetOrPart::Widget(WidgetRef::Typed(widget)) => registry::widgets()
                     .iter()
@@ -2193,7 +2243,7 @@ impl Checks<'_, '_> {
                     continue;
                 }
                 for part in &drawn {
-                    if !matches!(stack.shown(next, *part).0, Shown::DrawnAs { .. }) {
+                    if !matches!(shown(next, *part).0, Shown::DrawnAs { .. }) {
                         continue;
                     }
                     if *part == first {
