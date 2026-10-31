@@ -1985,8 +1985,12 @@ kind = "published"
 source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.a11y.interface.gschema.xml.in:25-26"
 quote = "<key name=\"keyboard-focus-visible-timeout\" type=\"i\"> <default>-1</default>"
 
-# token.behavior.hover_open_delay: not stated. S4.2 does not say which delay it is (GTK hard-codes the tooltip's
-# HOVER_TIMEOUT 500, gtktooltip.c:71, and the submenu's OPEN_TIMEOUT 80, gtkmodelbutton.c:1423): reported
+# S4.2 does not say which delay it is (GTK hard-codes the tooltip's HOVER_TIMEOUT 500, gtktooltip.c:71, and the
+# submenu's OPEN_TIMEOUT 80, gtkmodelbutton.c:1423)
+[[fact]]
+key = "token.behavior.hover_open_delay"
+pending = "U149"
+rows = []
 
 # a wheel detent scrolls by the page size to the power 2/3, not by lines (its px step is not expressible: reported)
 [[fact]]
@@ -7137,9 +7141,13 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
 quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
 
-# token.icons.sizes.keyed.status_page_spinner.animation: not stated. The context holds AdwSpinnerPaintable
-# (adw-status-page.c:427-430), which turns forever (adw-spinner-paintable.c:532-539); an IconStyle loop's keyframes patch a
-# part's style, which cannot state the paintable's arc (S2.7 gives a spinner's motion to the spinner widget): reported
+# the context holds AdwSpinnerPaintable (adw-status-page.c:427-430), which turns forever (adw-spinner-paintable.c:532-539);
+# an IconStyle loop's keyframes patch a part's style, which cannot state the paintable's arc (S2.7 gives a spinner's
+# motion to the spinner widget)
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.animation"
+pending = "U148"
+rows = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.about.fill"
@@ -7269,9 +7277,12 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:67-81"
 quote = "check { border-radius: $check_radius; &:checked { -gtk-icon-source: -gtk-recolor(url(\"assets/check.svg\")); } }"
 
-# token.icons.sizes.keyed.check.rendering_mode: not stated. The check's icon is always recoloured
-# (`-gtk-recolor`, _checks.scss:70, :76, :80), GTK's symbolic recolouring, which no RenderingMode names yet (ledger
-# queue #123); a pending fact waits for its unmeasured-register id
+# the check's icon is always recoloured (`-gtk-recolor`, _checks.scss:70, :76, :80), GTK's symbolic recolouring, which
+# no RenderingMode names yet (ledger queue #123)
+[[fact]]
+key = "token.icons.sizes.keyed.check.rendering_mode"
+pending = "U147"
+rows = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.check.scale"
