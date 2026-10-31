@@ -64,7 +64,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-B13 | `button.body.transitions (Shadow: Compose's outgoing specs, from {pressed, focus_visible} and then from {hover}, internal/Elevation.kt:46-113)` | field |
 | MAT-B13 | `button.body.transitions (Shadow: Compose's incoming spec, no from) @ latest elevation:hover / latest elevation:focus_visible / latest elevation:pressed; button.body.transitions (Shadow: a zero duration, Compose snapping into disabled, Button.kt:1750-1770) @ {disabled}` | rule |
 | MAT-B13 | `token.motion.durations.<key>, token.motion.timings.emphasized` | token |
-| MAT-B15 | `button.label.text (= token.text.keyed.label_large)` (a block reference, S2.2: its letter spacing and line height with it) | field |
+| MAT-B15 | `button.label.text (leaf by leaf: token.text.keyed.label_large)` (S20: its letter spacing and line height among the leaves referenced; the four drawn-text leaves as Compose's `Text` draws the app's label with its defaults, `overflow = TextOverflow.Clip`, `softWrap = true` and `maxLines = Int.MAX_VALUE`, so `Elision::None`, `Wrap::Word` and `max_lines` `None`, `material3/Text.kt:117-119`, and its `fill` the button's content colour, which the button provides with `labelLarge`, `material3/Button.kt:167-170`, `Text.kt:125`, stated by variant and state in MAT-B1's rows) | field |
 | MAT-I1 | `input.body.stroke @ {focused} / {hover} / {disabled}` | rule |
 | MAT-I2 | `input.body.stroke @ {disabled}` | rule |
 | MAT-I3 | `input.floating_label.{text,padding} (the label's font at rest; the space below it)` | field |

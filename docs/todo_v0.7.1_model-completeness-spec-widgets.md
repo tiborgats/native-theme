@@ -2627,7 +2627,7 @@ spaces:
   - `misspelling` *(element)* — as on `input`, one element per misspelled word (it carries the flag
     `@holds_caret`; its decoration follows its own font, `element.font_underline_offset` and
     `element.font_underline_thickness`, which it declares, `data = { misspelling = ["font_underline_offset",
-    "font_underline_thickness"] }`, and its `text` references the style the `text` part's references, S2.2): `text`,
+    "font_underline_thickness"] }`, and its `text` references the style the `text` part's references, leaf by leaf, S2.2, S2.8): `text`,
     `fill` (a background behind the word: on `kde-breeze` under `cond flavor:kirigami`, Sonnet's highlighter gives
     the word under `{@holds_caret}` the negative colour at 0.1 alpha, `= with_alpha(role.view.negative, 0.1)`,
     `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:114-117`, `:380-381`; Q1.13, ADD-A130).
@@ -5366,8 +5366,8 @@ spaces:
     is (K-P3-11†): `fill` (the colour of the text under that caret, `= element.color`, which the connector supplies
     as the element's data), `min_width`, `min_height` (the line, and under the editor's Vi variants the caret's
     block, underline and half block, by the same rules as `caret`'s; its block width the character width of the
-    editor's font), `text` (that font, which it measures and does not draw: a reference to the style the `text`
-    part's `text` references, as an *(element)* part reads none of its host's parts, S2.2); `data = { extra_caret =
+    editor's font), `text` (that font, which it measures and does not draw: references, leaf by leaf, to the style the `text`
+    part's `text` references, S2.8, as an *(element)* part reads none of its host's parts, S2.2); `data = { extra_caret =
     ["color", "char_width"] }`.
   - `current_line` *(element)* — the current line, with KDE's mark flags of its own (GN-SF04†, K-SF03†): `fill`.
   - `gutter` (GN-SF05†, K-SF04†) — `fill`.
@@ -7004,7 +7004,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   (`qtexthtmlparser.cpp`); Apple `InlinePresentationIntent`, `PresentationIntent`, the HTML importer; Compose
   `Html.android.kt` span mapping.
 - **Today's fields:** none. Stand-ins: `defaults.mono_font` (K-SF13†, MAC-SF03†, SF-3†) becomes the text ramp's
-  monospace role, referenced from `inline_code.text` (`= token.text.roles.monospace`); `defaults.link_color`
+  monospace role, which `inline_code.text` references leaf by leaf (`font.family = "= token.text.roles.monospace.font.family"`,
+  …, S2.8, its four drawn-text leaves stated as each platform lays out the run; `kde-breeze`'s Markdown importer
+  keeps the enclosing text's size for a code span, K-SF13†); `defaults.link_color`
   (MAC-SF04†, SF-4†) the `link` widget's text fill in `context rich_text`.
 - **Notes:** links in the text are `link` variant `inline` in `context rich_text`, with hover, pressed and visited
   where the platform draws them (MAC-SF04†, SF-4†, K-P4-14†, MAT-P3-20†). Markdown shown by a text view or label
