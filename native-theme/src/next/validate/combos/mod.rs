@@ -34,8 +34,9 @@ use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
-    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, Scheme, Selector, SetMatch,
-    SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart, WidgetRef,
+    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, Scheme,
+    Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart,
+    WidgetRef,
 };
 use crate::next::widgets::{Shown, TypedPart, WidgetKind};
 

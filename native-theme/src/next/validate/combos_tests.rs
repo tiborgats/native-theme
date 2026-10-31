@@ -1162,3 +1162,195 @@ fn combination_sibling_lists_compared_as_sets() {
                     set = { stroke.top.width_px = 2 }";
     assert_eq!(alone(contexts, &decl), NONE);
 }
+
+/// S12's exclusions, one by one: an `Absent` under one `when` and a
+/// `Fields` patch under another meet only where the two can hold together.
+/// Each pair the spec excludes passes; the same pair made independent is
+/// refused, so the pass is the exclusion's.
+#[test]
+fn combination_exclusions_are_s12s() {
+    const REFUSED: &str = "rules[1].set.stroke: patches the fields of a value that can be `absent`";
+    let pair = |first: &str, second: &str, decl: &str| {
+        let rules = format!(
+            "[[rules]]\nwhen = {{ {first} }}\ntarget = \"button.body\"\nset = {{ stroke = \"absent\" }}\n\
+             [[rules]]\nwhen = {{ {second} }}\ntarget = \"button.body\"\n\
+             set = {{ stroke.top.width_px = 2 }}"
+        );
+        // `decl` above the widget's declarations, or after them where it
+        // starts with a newline.
+        let widget = "[declare.widget.button]\nsizes = [\"small\", \"regular\"]\n\
+                      densities = [\"default\", \"compact\"]";
+        let decl = match decl.strip_prefix('\n') {
+            Some(own) => format!("{widget}\n{own}"),
+            None => format!("{decl}\n{widget}"),
+        };
+        alone(&rules, &declare(&decl))
+    };
+    let excluded: &[(&str, &str, &str, &str)] = &[
+        (
+            "scheme",
+            "conditions = [\"scheme:light\"]",
+            "conditions = [\"scheme:dark\"]",
+            "",
+        ),
+        (
+            "input",
+            "conditions = [\"input:mouse\"]",
+            "conditions = [\"input:touch\"]",
+            "",
+        ),
+        (
+            "idiom",
+            "conditions = [\"idiom:phone\"]",
+            "conditions = [\"idiom:pad\"]",
+            "",
+        ),
+        (
+            "device model",
+            "conditions = [\"device_model:a\"]",
+            "conditions = [\"device_model:b\"]",
+            "device_models = [\"a\", \"b\"]",
+        ),
+        (
+            "posture",
+            "conditions = [\"posture:flat\"]",
+            "conditions = [\"posture:book\"]",
+            "",
+        ),
+        (
+            "flavour",
+            "conditions = [\"flavor:one\"]",
+            "conditions = [\"flavor:two\"]",
+            "flavors = [\"one\", \"two\"]",
+        ),
+        (
+            "container size",
+            "conditions = [\"container_size:button:small\"]",
+            "conditions = [\"container_size:button:large\"]",
+            "container_sizes = { button = [\"small\", \"large\"] }",
+        ),
+        (
+            "contrast",
+            "conditions = [\"contrast_increased\"]",
+            "conditions = [\"contrast_high\"]",
+            "",
+        ),
+        (
+            "exclusive flags",
+            "states = [\"hover\"]",
+            "states = [\"pressed\"], not_states = [\"hover\"]",
+            "\nexclusive = [[\"hover\", \"pressed\"]]",
+        ),
+        (
+            "exclusive variants",
+            "variants = [\"primary\"]",
+            "variants = [\"flat\"]",
+            "\nvariants = [\"primary\", \"flat\"]\n\
+             exclusive_variants = [[\"primary\", \"flat\"]]",
+        ),
+        (
+            "control size",
+            "sizes = [\"small\"]",
+            "sizes = [\"regular\"]",
+            "",
+        ),
+        (
+            "density",
+            "densities = [\"default\"]",
+            "densities = [\"compact\"]",
+            "",
+        ),
+        (
+            "direction",
+            "direction = \"ltr\"",
+            "direction = \"rtl\"",
+            "",
+        ),
+        (
+            "size class",
+            "size_class = { horizontal = [\"compact\"] }",
+            "size_class = { horizontal = [\"expanded\"] }",
+            "",
+        ),
+        (
+            "parity",
+            "position = { parity = \"odd\" }",
+            "position = { parity = \"even\" }",
+            "",
+        ),
+        (
+            "an ancestor's size",
+            "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", sizes = [\"small\"] }]",
+            "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\", sizes = [\"regular\"] }]",
+            "",
+        ),
+        (
+            "only is first and last",
+            "position = { only = true }",
+            "position = { first = false }",
+            "",
+        ),
+        (
+            "first is odd",
+            "position = { first = true }",
+            "position = { parity = \"even\" }",
+            "",
+        ),
+        (
+            "tiled within",
+            "conditions = [\"tiled:top,left\"]",
+            "not_conditions = [\"tiled:top\"]",
+            "",
+        ),
+        (
+            "maximized is tiled",
+            "conditions = [\"maximized\"]",
+            "not_conditions = [\"tiled:bottom\"]",
+            "",
+        ),
+    ];
+    for (name, first, second, decl) in excluded {
+        assert_eq!(pair(first, second, decl), NONE, "{name}");
+    }
+    // The same kinds of atom, independent: refused.
+    let independent: &[(&str, &str, &str)] = &[
+        (
+            "two conditions",
+            "conditions = [\"reduced_motion\"]",
+            "conditions = [\"bold_text\"]",
+        ),
+        (
+            "two flags",
+            "states = [\"hover\"]",
+            "states = [\"pressed\"]",
+        ),
+        (
+            "size and density",
+            "sizes = [\"small\"]",
+            "densities = [\"compact\"]",
+        ),
+        (
+            "two axes",
+            "size_class = { horizontal = [\"compact\"] }",
+            "size_class = { vertical = [\"expanded\"] }",
+        ),
+        (
+            "first and last",
+            "position = { first = true }",
+            "position = { last = true }",
+        ),
+        (
+            "two tiled edges",
+            "conditions = [\"tiled:top\"]",
+            "not_conditions = [\"tiled:left\"]",
+        ),
+        (
+            "any ancestors' sizes",
+            "context = [{ widget = \"button\", sizes = [\"small\"] }]",
+            "context = [{ widget = \"button\", sizes = [\"regular\"] }]",
+        ),
+    ];
+    for (name, first, second) in independent {
+        assert_eq!(pair(first, second, ""), [REFUSED], "{name}");
+    }
+}
