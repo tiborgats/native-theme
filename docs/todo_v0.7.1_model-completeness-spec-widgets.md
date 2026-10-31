@@ -2945,7 +2945,7 @@ spaces:
     (S2.6), is (0.5, 0.5), the spinner's centre; the spoke's own shape inside that box is the spoke values', and the
     connector rotates the spoke at index i by i of `spoke_count` equal parts of a turn beyond the transform, each
     spoke behind the leading one faded by `spoke_opacity_ramp`.
-  - `icon` — the rotated or animated icon (KDE's process-working icon, GtkSpinner's animated SVG and its
+  - `icon` — the rotated or animated icon (KDE's rotated icons: KBusyIndicatorWidget's `view-refresh`, K1.230; Kirigami's `process-working-symbolic`, Q1.119; GtkSpinner's animated SVG and its
     reduced-motion replacement) as a glyph: `glyph`, `transform` (its rotation, which the `loop`'s keyframes set:
     K1.230, Q1.119).
 - **Widget values:** `diameter_px: Value<Px>` (the default size; today's `diameter_px`, Q1.120);
@@ -2990,7 +2990,7 @@ spaces:
   but `kde-breeze`, `adwaita`; `ios-*` draws none, SP-4a; `kde-breeze` by a rule under `!{indeterminate}` in
   `context pull_to_refresh {pulling}`, where the arc alone is drawn, Q2.54†; `adwaita` by a rule outside `@gtk_spinner`, AdwSpinner drawing
   the arc, GN-1.226, GN-1.230), `indicator` (`kde-breeze` by a rule outside `context pull_to_refresh`, where it draws neither arc nor spokes,
-  its spinner being the icon, K1.230, and by a rule in `context pull_to_refresh {refreshing}`, where the
+  its spinner being the icon on both flavours, K1.230, Q1.119, and by a rule in `context pull_to_refresh {refreshing}`, where the
   BusyIndicator's icon alone is drawn, Q2.54†; `adwaita` by a rule under `@gtk_spinner`, whose spinner
   is the icon, GN-1.230; `macos-*` by a rule under `{indeterminate}`, whose indeterminate spinner is spokes, MAC-SN01;
   `ios-*` by a rule under `{indeterminate}` and by a rule in `context pull_to_refresh`, its spinners being spokes,

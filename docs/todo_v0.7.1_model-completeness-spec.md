@@ -814,14 +814,14 @@ pub struct Keyframe { pub at: Fraction, pub part: Option<PartRef>,    // None: t
 A keyframe's `patch` resolves to `ResolvedPartStylePatch`, the derive's resolved patch type (S6.1): every field an
 `Option` of that field's type in `ResolvedPartStyle`, `None` where the keyframe does not set it, so the part keeps its
 resolved style there (ADD-A122); a keyframe's `Fields` patch of a block resolves over the part's resolved block, so the
-field's `Some` is that block with the keyframe's fields applied; any keyframe patch of a field whose value resolves
-`Absent`, a block's `Fields` or `Set` or a paint's `Set` or `Append`, is `None`, the field staying absent in that
+field's `Some` is that block with the keyframe's fields applied; any keyframe patch (`Set`, `Fields` or `Append`) of a
+field whose value resolves `Absent`, at any depth, is `None`, the field staying absent in that
 query, so a keyframe animates what is drawn and never draws what is not, and is not refused (S6.1, S12); in each field, `base` is that field's own resolved value on the part before the keyframe
 applies (a paint the part's resolved paint at that field, a rotation or an opacity its resolved value), and an
 `Append` appends over that paint where it is present, wherever the keyframe is stated (the preset layer's bases, a later layer, a rule's
 `set`); a keyframe whose part resolves `NotDrawn` or `DrawnAs` resolves to a patch with every field `None`, its `at` and
 `timing` kept so the neighbours' spans do not change: it animates nothing, and a `DrawnAs` part is drawn by its target,
-a widget or a part, with the target's own rules and motion (S6.3, S12; any combination where a loop meets an absent or
+a widget or a part, with the target's own rules and motion (S6.1, S6.3, S8, S12; any combination where a loop meets an absent or
 substituted part; ADD-A125).
 
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
@@ -1909,8 +1909,8 @@ caption buttons' layout (R13).
 patch type (every field `Option<…>`, where `None` is "this patch does not set it"; paints with `Set`/`Append`), its
 resolved type (every `Value<T>` resolved to `Option<T>`, where `None` is "not drawn", possible only where
 `may_be_absent` allows), for `PartStyle` also a resolved patch type, `ResolvedPartStylePatch`, a keyframe's resolved
-`patch` (every field an `Option` of that field's type in `ResolvedPartStyle`, `None` where the patch does not set it;
-S2.7, ADD-A122), the field-path registry used by the TOML key check of `Layer::from_toml` (S11, the TOML reader's own, `LayerError`) and the facts gate, and the
+`patch` (every field an `Option` of that field's type in `ResolvedPartStyle`, `None` where the patch does not set it, or where it sets a field that resolves `Absent`, or on a part that resolves
+`NotDrawn` or `DrawnAs`; S2.7, ADD-A122), the field-path registry used by the TOML key check of `Layer::from_toml` (S11, the TOML reader's own, `LayerError`) and the facts gate, and the
 `may_be_absent` table. A length that may be `Auto` resolves to `Option<Length>`, `Length = Px(f32) | Auto`, so "sized
 by content" reaches the toolkit; every other length resolves to `Option<Px>`. The resolved type is per type, not per
 part: a `PartStyle` length field that the catalogue marks `auto` on any part, `min_width`, `min_height`, `max_width`,
@@ -2015,11 +2015,9 @@ takes the patch's position, not the replaced one's: for the transitions, whose o
 (S2.7), a rule's transition so comes after the base's, and a layer that restates one transition of a style moves it
 after that style's others, so it restates those it must stay before as well; any other list (`stops`, `layers`
 set with `Set`, `symbol_variants`, `fallbacks`) is replaced whole, an empty one included; `Append` adds paint layers over `base` (R6), and
-over an `Absent` base gives a paint of the appended layers; over a reference it composes lazily, as a `Fields` patch
-does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is, outside a keyframe's patch (S2.7); over an `Absent` paint it
-gives the appended layers, a keyframe's excepted (S2.7). The merge conflicts are two: a `Fields` patch meeting an `Absent` value directly (S2.2), and a map entry created over a value with a field unset that may not be `Absent` (above); each is refused when the layer is added (S12), so resolution never meets it (S8), except a keyframe's `Fields` patch, which resolution meets over its
-part's resolved style: over an `Absent` block its field is `None` in that query, as is a keyframe's `Set` there and a
-keyframe's `Append` over an `Absent` paint (S2.7; ADD-A125).
+over an `Absent` base gives a paint of the appended layers, a keyframe's `Append` excepted (S2.7); over a reference it composes lazily, as a `Fields` patch
+does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is, outside a keyframe's patch (S2.7). The merge conflicts are two: a `Fields` patch meeting an `Absent` value directly (S2.2), and a map entry created over a value with a field unset that may not be `Absent` (above); each is refused when the layer is added (S12), so resolution never meets it (S8), except a keyframe's patch, which resolution meets over its
+part's resolved style: over a field that resolves `Absent` it is `None` in that query (S2.7; ADD-A125).
 
 **S6.2** Inheritance code goes: `inherit_from`, `theme_inherit`, the `[uniform]`, `[per_platform]` and
 `[wrong_safety_nets]` registries and `resolve/inheritance.rs` are removed (R20). Their rules are converted once
@@ -2946,8 +2944,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `Fraction` outside `0..=1`, a negative `Material.saturation` (a typo's sign; only a computed result is clamped,
   S2.2);
 - an expression mistypes, refers to an unknown name, forms a cycle (through bindings too), or can meet an absent
-  operand under any binding and rule it can apply under (a keyframe's field over a block that resolves `Absent`, or on a
-  part that resolves `NotDrawn` or `DrawnAs`, is not evaluated under that combination, S2.7); a call can meet an operand that resolves `Auto` (S2.2:
+  operand under any binding and rule it can apply under (a keyframe's field whose value resolves `Absent`, a block, a paint
+  or any other field, or a keyframe on a part that resolves `NotDrawn` or `DrawnAs`, is not evaluated under that
+  combination, S2.7); a call can meet an operand that resolves `Auto` (S2.2:
   exempt the part's `line_height` operand and `widget.<part>.line_height`, each the line spacing under `auto`, and a
   plain reference on a field that allows `Auto`), or a plain
   reference can bring `Auto` to a field that does not allow it; a `TextStyle`
