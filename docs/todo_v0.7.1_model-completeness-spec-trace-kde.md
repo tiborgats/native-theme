@@ -79,7 +79,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond shaded` | rule |
 | K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.decoration_shadow; = token.motion.timings.out_cubic both ways: the activation runs that curve forward, `breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:279`, and the deactivation runs the in-cubic curve backward, `:278-279`, Qt applying the curve to currentTime over duration, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:200-202`, which in S2.7's forward reading is the out-cubic curve)` | field |
 | K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.params.motion.kwin_speed_factor)), the factor the decoration reads: `[KDE] AnimationDurationFactor` from KWin's main configuration, kwinrc, over kdeglobals, `KSharedConfig::openConfig()` inside KWin, which opens `<application name>rc` with kdeglobals included (`FullConfig`), KWin naming itself `kwin`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:379-380`, `kconfig@6.31.0 src/core/ksharedconfig.h:84`, `src/core/kconfig.h:94-100`, `src/core/kconfig.cpp:643-649`, `kwin@6.8.2 src/main.cpp:139`, `:155` (ADD-A123); S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
-| K1.17 | `token.params.motion.kwin_speed_factor (the decoration's and KWin's factor: kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', as KConfig cascades KWin's main configuration over kdeglobals; ADD-A123)` | token |
+| K1.17 | `token.params.motion.kwin_speed_factor (the decoration's and KWin's factor: kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', as KConfig cascades KWin's main configuration over kdeglobals; ADD-A123: stated `= token.motion.speed_factor`, so it follows kdeglobals' factor under `cond animations_off` too, ADD-A125)` | token |
+| K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor -> token.params.motion.kwin_speed_factor` (the reader's layer states kwinrc's own factor where kwinrc states one, ADD-A125) | reader |
 | K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor` | reader |
 | K1.17 | `window.title.transitions (Text cross-fade; duration as the decoration states it, value phase)` | field |
 | K1.18 | `window.frame.shadow @ cond window_inactive (layers at half strength)` | rule |
@@ -97,7 +98,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.25 | `button.body.fill @ {checked} variant warning` | rule |
 | K1.25 | `button.body.stroke @ variant warning` | rule |
 | K1.26 | `button.body.corners @ variant circular (Ellipse, all four corners, Circular: Breeze's QWidget round button, `_kde_round_button`, drawn with a radius of half its rect's larger side, `breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738-739`, which Qt clamps per axis to half each side of the frame rect, `qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018`, `qpaintengineex.cpp:745-746`, the path fallback `qpainterpath.cpp:3457-3470`: the rect's inscribed ellipse, a circle where it is square; its shadow the same radius on the shadow's rect, `breezehelper.cpp:729-731`, `:1654-1659`, an ellipse of its own box, S2.5; ADD-A124; Kirigami's RoundButton keeps `Full`, Q2.4)` | rule |
-| K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill; margin, `Inline`'s margin in the row, S2.11's: the arrow's box at the right of the label's contents rect, which Breeze sizes with the arrow inside its margins, `breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556`, `:5365-5371`, the value phase stating the start and end margins that move it there; ADD-A123)` | field |
+| K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill; margin, `Inline`'s margin in the row, S2.11's: the arrow's box at the right of the label's contents rect, which Breeze sizes with the arrow inside its margins, `breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556`, `:5365-5371`, the value phase stating the start and end margins that move it there, ADD-A123; the label centred in the space before the arrow's border box less the gap, the catalogue's `Inline` rule, `:5364-5370`, ADD-A125)` | field |
 | K1.27 | `button.values.menu_indicator_gap` | field |
 | K1.28 | `button.icon.icon.size (= token.icons.sizes.small.size)` | field |
 | K1.28 | `button.values.shows_icon` | field |
@@ -984,6 +985,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.15† | - | out (R1.1) |
 | K3.16† | - | out (R1.1) |
 | K3.30 | `token.motion.speed_factor` | token |
+| K3.31 | `token.motion (color_space PremultipliedSrgb: Breeze's fades paint KColorUtils::mix, kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166, S2.7, ADD-A125)` | token |
 | K3.30 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | K3.30 | `cond animations_off (factor 0)` | condition |
 | K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: while the factor is set, = floor(mul(<base>, token.motion.speed_factor)), truncated to whole ms, `breeze@6.8.2 kstyle/breezestyle.cpp:2080`, zero, which a factor below 0.01 gives, turning Breeze's animations off, `:2085`, a positive result turning them on, `:2081-2083`; breezerc AnimationsDuration otherwise)` | token |
@@ -1143,6 +1145,7 @@ rationale, each decided in the core's additions register (S22).
 | Q3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | Q3.25 | `token.motion.durations.* (the floor through max, ADD-A56) @ cond animations_off; the transitions whose duration resolves to zero run instantly; spinner.values.loop @ cond animations_off (Q1.120)` | token |
 | Q3.26 | `token.motion.timings.<key> (one declared timing per easing curve in use)` | token |
+| Q3.26 | `token.motion @ cond flavor:kirigami (color_space StraightSrgb8: QML's ColorAnimation through QVariantAnimation's colour interpolator, qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22, S2.7, ADD-A125)` | rule |
 | Q3.26 | `Timing::Platform(PlatformCurve::KirigamiVelocity)` (SmoothedAnimation by velocity, CONTRA-2) | token |
 | Q3.27 | `token.motion.durations.human_moment (unscaled)` | token |
 | Q3.28 | `tooltip.values.show_delay` | field |

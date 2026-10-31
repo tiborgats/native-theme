@@ -737,7 +737,19 @@ MAT-X13–MAT-X15, X-MO-1).
   transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
   that appears interpolates from its colour at zero alpha, and one that disappears to it, a stroke that becomes
   absent likewise, to zero width; layers are matched by their position in the stack; the `interaction` block's
-  colours change at once and its alphas move (R3); colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
+  colours change at once and its alphas move (R3); colours interpolate in the space the preset's toolkit interpolates
+  in, one of a closed set implemented once in native-theme to each source, as platform curves are (ADD-A125): GTK's
+  CSS transitions and Breeze's `KColorUtils::mix` in premultiplied sRGB (`gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604`,
+  `kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166`), Qt Quick's `ColorAnimation` in straight 8-bit sRGB
+  (`qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`), Compose in Oklab with straight alpha
+  (`androidx@e4d933c9 compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/ColorVectorConverter.kt:30-48`),
+  so a fade passes through other colours in Oklab than in sRGB, and, between colours of different alpha, other
+  colours in straight than in premultiplied sRGB. *One space for all* (premultiplied sRGB, as `mix`
+  does): simplest, but Compose's and Qt Quick's transitions would draw intermediate colours their platforms do not.
+  *A space on every transition*: exact, but each transition states what one toolkit fixes for all of its own, and
+  the facts cite it again each time. *A motion token per preset*, which rules can restate by condition (Kirigami's
+  flavour): exact for every source read, one fact per preset. **Decision:** the token; a toolkit found to mix spaces
+  within one preset and condition is a class 2 change to a per-transition override. A material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's

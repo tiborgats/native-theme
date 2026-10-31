@@ -193,7 +193,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-3 | `button.label.text, button.body.padding, button.body.corners, button.body.min_height @ size mini / small / regular (UIKit medium) / large` | rule |
 | B-3 | `[declare.widget.button] sizes for ios-* and its default size` (`mini` draws as `small` on iPhone: its facts under `idiom:phone` equal `small`'s, the catalogue) | field |
 | B-4 | `button.body.corners @ variant @corner_fixed / variant @corner_small / variant @corner_medium / variant @corner_large / variant pill` (capsule is `pill`) | rule |
-| B-4 | `button.body.corners @ variant @corner_dynamic size mini / variant @corner_dynamic size small / variant @corner_dynamic size regular / variant @corner_dynamic size large` (each radius `= uifm_scaled(<radius>, <text role>)`, following Dynamic Type; ADD-A55) | rule |
+| B-4 | `button.body.corners @ variant @corner_dynamic size mini / variant @corner_dynamic size small / variant @corner_dynamic size regular / variant @corner_dynamic size large` (`ios-26`, on the glass styles; stated at the default category until the host measures which text style's scaling it follows, then `= uifm_scaled(<radius>, <text role>)`, ADD-A55; the catalogue's Open items, ADD-A125) | rule |
 | B-4 | `reader:ios:the Dynamic Type category the dynamic radius follows` | readers (R18) |
 | B-5 | `button.body.opacity @ {pressed} variant flat` (13–18's plain button lowers its label's and image's alpha; it draws no bezel, so the group opacity is theirs) | rule |
 | B-5 | `button.body.transitions @ variant flat` (the alpha's fade, group `Opacity`) | rule |
@@ -209,8 +209,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-10 | `button.icon @ {@loading}` (`absent = true`: the image swapped out for the indicator; `icon` may be absent on `ios-*`) | rule |
 | B-11 | `button.label.text.fill @ variant destructive` | rule |
 | B-11 | `button.label.text.font.weight @ variant @cancel context dialog.action_area` (its weight in alerts and action sheets) | rule |
-| B-11 | `button.label.text @ variant @cancel` (the cancel role; iOS 26's further roles are an open item of the catalogue, not declared) | rule |
+| B-11 | `button.label.text @ variant @cancel` (the cancel role, as normal on a standalone button; iOS 26's further roles are an open item of the catalogue, not declared) | rule |
+| B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, ADD-A125) | rule |
 | B-12 | `button.icon.glyph, button.body.fill, button.body.min_width, button.body.min_height @ variant close / variant @info / variant @contact_add` | rule |
+| B-12 | `button.body.padding, button.label.text @ variant @system` (`UIButton(type: .system)` with no configuration, ADD-A125) | rule |
 | B-12 | `button.body.fill, button.icon.glyph.fill @ {pressed} variant close / {pressed} variant @info / {pressed} variant @contact_add` | rule |
 | B-13 | `button.label.text.font.weight @ variant primary / variant tinted / variant @gray / variant flat` | rule |
 | B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight) | rule |
@@ -223,7 +225,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-17 | `button.body.transitions` (the lift's motion, groups `Transform`, `Shadow`, `Fill`) | field |
 | B-18† | `button.menu_indicator.glyph @ variant menu` (the automatic indicator) | rule |
 | B-18† | `button.menu_indicator.glyph @ variants {menu,@indicator_popup}` | rule |
-| B-18† | `button.menu_indicator @ variants {menu,@indicator_none}` (`absent = true`) | rule |
+| B-18† | `button.menu_indicator @ variants {menu} !variants {@indicator_popup}` (`absent = true`: the automatic indicator, and `none`, which draws alike, the base, ADD-A125) | rule |
 | B-18† | `button.values.menu_trigger @ variants {menu,@menu_on_hold}` (the touch-and-hold variant) | rule |
 | B-18† | `button.values.menu_placement @ variant menu` (`UiKitMenu`; the menu's own look and motion are the MN-* rows) | placement |
 | I-1 | `input.body.{stroke,corners,fill} @ variant line / @bezel / flat` | rule |
@@ -398,6 +400,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TB-4 | `button.label.text.font.weight @ variant done context toolbar.bar` (the done item's weight) | rule |
 | TB-4 | `button.body.fill @ variant primary context toolbar.bar` (the prominent item's tinted glass fill) | rule |
 | TB-4 | `reader:ios:UIBarButtonItem.Style, doneButtonAppearance, prominentButtonAppearance` | readers (R18) |
+| TB-4 | `button.icon.glyph @ variant add context toolbar.bar` (the system add bar item, its glyph UIKit's; the prominent item's values, `primary` here, pending the pass that reads them, ADD-A125) | rule |
 | TB-5 | `toolbar.item_group.{fill,corners,shadow,padding}` (fill a `Material`, corners `Full`) | field |
 | TB-5 | `toolbar.values.group_gap` | field |
 | TB-5 | `reader:ios:UIBarButtonItem.sharesBackground, hidesSharedBackground` | readers (R18) |
@@ -406,7 +409,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TB-7 | `badge.* @ context toolbar.bar` | rule |
 | TB-7 | `reader:ios:UIBarButtonItem.Badge` | readers (R18) |
 | TB-8 | `toolbar.values.fixed_space_width, flexible_space_min_width` | field |
-| TB-8 | `button.body.padding @ variant @padding_removed context toolbar.bar` | rule |
+| TB-8 | `button.body.padding @ context toolbar.bar` (the bar item's padding; `isPaddingRemoved` names no API of the pinned headers, so no variant, the catalogue's Open items, ADD-A125) | rule |
 | L-1 | `list.view.fill, list.section.fill, list.row_background.fill @ variant plain / variant @grouped / variant inset / variant sidebar / variant @sidebar_plain` | rule |
 | L-1 | `reader:ios:UIBackgroundConfiguration list cells resolvedBackgroundColor` | readers (R18) |
 | L-2 | `list.section.corners @ variant inset` | rule |

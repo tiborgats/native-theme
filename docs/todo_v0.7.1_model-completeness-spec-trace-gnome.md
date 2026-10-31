@@ -885,7 +885,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.17 | `role.global.accent_standalone = adw_standalone(...)` | role |
 | GN-3.18 | `token.motion.durations.<transition tokens>` | token |
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
+| GN-3.18 | `token.motion (color_space PremultipliedSrgb: GTK's CSS colour transitions, gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604, S2.7, ADD-A125)` | token |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
+| GN-3.19 | `token.motion.timings.linear (Timing::Linear: CSS's keyword, the Bézier (0, 0, 1, 1), and the code's ADW_LINEAR, t / d, are the identity, S2.7, ADD-A125)` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
 | GN-3.20 | `token.motion.timings.flap_reveal, token.motion.timings.leaflet_child (Timing::Spring, clamp true: the deprecated AdwFlap's reveal and AdwLeaflet's child transition, `libadwaita@1.10.0 src/adw-flap.c:1598-1601`, `adw-leaflet.c:2474-2478`)` | token |
 | GN-3.21 | `token.motion.durations.<timed animations defined in code>` | token |
@@ -894,6 +896,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
 | GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration)` | token |
+| GN-3.23 | `PartStyle.transitions per part, each transition's suspended_by_theme_change (true on the CSS transitions the provider's `* { transition: none; }` reaches, false on the AdwAnimations, S4.3, ADD-A125)` | field |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
@@ -911,6 +914,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
 | GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
+| GN-3.28 | `PartStyle.focus at rest (the ring zero wide, transparent, further out by the mixin's constant, the focus-ring mixin's rest outline, which the transition grows from, S2.10, ADD-A125)` | field |
 | GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |

@@ -748,8 +748,11 @@ pub struct Transition {
     pub kind: TransitionKind,
     pub duration: Value<Ms>,                 // may be absent: for a spring, whose time is its own (S2.7)
     pub delay: Value<Ms>,
-    pub timing: Value<Timing>,                // a timing, or a reference to a timing token
-    pub suspended_by_theme_change: bool,      // libadwaita's CSS transitions are, its AdwAnimations are not
+    pub timing: Value<Timing>,                // a timing, or a reference to a timing token; may be absent:
+                                              // a stated zero duration's (below; ADD-A125)
+    pub suspended_by_theme_change: Option<bool>,   // whether a `Suspend` theme change reaches it (libadwaita's
+                                              // CSS transitions: yes, its AdwAnimations: no); None where the
+                                              // preset's theme change can never be `Suspend` (S4.3; ADD-A125)
     pub from: Option<Vec<StateFlag>>,         // the states it applies from; None: any (below; ADD-A124)
 }
 pub enum TransitionKind {
@@ -794,10 +797,8 @@ after the change governs, both directions; among that style's transitions for a 
 below), the later in stated order wins, a later rule's over an earlier one's and over the base's; a property
 whose group has no transition that applies in that style takes its new value at once, in the frame of the change (no
 transition is no animation, never a toolkit's default one); appearing
-layers interpolate from zero alpha, layers match by stack position, colours interpolate in premultiplied sRGB (Compose's
-own colour animations interpolate in Oklab with straight alpha, `androidx@e4d933c9
-compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/ColorVectorConverter.kt:31-48`, which the
-model does not state yet: ledger queue #80 (orch-docs)); a
+layers interpolate from zero alpha, layers match by stack position, colours interpolate in the space
+`token.motion.color_space` names (*Colour interpolation*, below; ADD-A125); a
 stroke or an edge whose width becomes absent (the whole stroke stated `Absent`, or the edge) interpolates to zero width
 and its paint to zero alpha, and one that appears from them, a width interpolated to zero or below ending it (Compose's
 checked outlined toggle, whose border it drops once the width reaches zero, `ToggleButton.kt:1722-1741`); an edge
@@ -816,6 +817,28 @@ changes (a switch's thumb moving to its new end), when the connector's own layou
 state-triggered icon animation (WinUI's AnimatedIcon, GtkSvg's states, an SF Symbol effect on a change) is a
 `TransitionKind::Keyed` transition of the `Icon` group; a repeating one is `IconStyle.animation` (R25.12).
 
+**Colour interpolation** (`token.motion.color_space`, S4.1, R9, ADD-A125). A transition moves a colour, a paint
+layer's included, through the intermediate colours of the space its toolkit interpolates in, which the preset states
+once, `ColorInterpolation`, a closed set implemented once in `transitions::interpolate_color(from: Color, to: Color,
+t: f32, space: ColorInterpolation) -> Color`, each member to its source: `PremultipliedSrgb`, each channel times alpha
+and alpha interpolated apart, then divided by the alpha, each clamped to `0..=1` (GTK's CSS transitions,
+`gtk@4.24.1 gtk/gtkcsscolorvalue.c:323-329`, `:586-604`; KDE's `KColorUtils::mix`, with which Breeze paints its
+fades, `kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166`); `StraightSrgb8`, each 8-bit channel and the alpha
+interpolated apart without premultiplying and truncated toward zero (Qt's `QVariantAnimation` colour interpolator,
+which QML's `ColorAnimation` uses, `qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`,
+`src/corelib/animation/qvariantanimation_p.h:89-94`, `qtdeclarative@6.12.0 src/quick/util/qquickanimation.cpp:776-782`);
+`Oklab`, L, a, b and the straight alpha interpolated apart and clamped to `0..=1`, `±0.5`, `±0.5` and `0..=1` before
+the conversion back (Compose's `animateColorAsState`, `androidx@e4d933c9
+compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/ColorVectorConverter.kt:30-48`,
+`SingleValueAnimation.kt:57-64`; its `lerp`, `compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/Color.kt:539-579`,
+clamps the fraction instead, which the transitions' converter does not). A member is added, implemented to its
+source, with the fact that needs it (a class 1 change, as a `PlatformCurve` member is). The token is per preset and
+follows its conditions as any token does: Breeze's widgets mix in premultiplied sRGB and Kirigami's QML colour
+animations in straight 8-bit sRGB, so `kde-breeze` states the second by a rule under `cond flavor:kirigami`.
+Rejected: R9's one space for every platform (Compose's colour transitions pass through other colours, and Qt
+Quick's wherever the alpha changes); a space on every `Transition` (a field each transition states, where one toolkit fixes the space for all of
+them).
+
 **The states a transition applies from** (`Transition.from`, R9, ADD-A124). A transition with no `from` applies from
 any state; one with a set applies to a change only where the element held at least one of its flags before the
 change, those flags taken after the exclusive groups' drop (S10). The query is stateless, so the resolved transitions
@@ -825,7 +848,10 @@ element's flags after the drop (S8), and `transitions::governing(transitions: &[
 PropertyGroup, before: StateFlags) -> Option<&ResolvedTransition>` picks, from the style after the change, the last
 that lists the group and applies (`None`: the new value at once). A rule that states no transition for a group keeps the base's or an earlier
 rule's, so a rule entered states a transition of its own wherever the platform moves into it otherwise, a zero
-`duration` where it moves at once. Two platforms need it. Compose chooses an elevation's spec by the interaction
+`duration` where it moves at once. A transition with a stated zero duration runs no curve, so its `timing` is
+`Absent` (S6.3; ADD-A125): the platform has none to cite (Breeze runs no fade, Compose's `snap()` has no easing),
+and a stated timing there would be a value no source gives; a duration that only computes to zero (a speed factor of
+zero) keeps its timing, which the transition takes again when the factor returns. Two platforms need it. Compose chooses an elevation's spec by the interaction
 entered (120 ms, `FastOutSlowInEasing`), or, moving to rest, by the one left (150 ms from press or focus, and from
 drag on cards and chips; 120 ms from hover; both on the curve `(0.4, 0, 0.6, 1)`), and snaps from none and into
 disabled (`androidx@e4d933c9
@@ -867,8 +893,8 @@ field-path list on every transition, its grammar and its checks, for the one pai
 **A curve is stated as its source states it** (ADD-A123; R9, CONTRA-7, settled in ADD-A124): a curve whose control points the source writes (CSS's
 keyword curves, libadwaita's `ADW_EASE`, `ADW_EASE_IN`, `ADW_EASE_OUT` and `ADW_EASE_IN_OUT`, whose points
 `adw-easing.c` passes to its `ease_cubic_bezier`, `libadwaita@1.10.0 src/adw-easing.c:620-627`; WinUI's key splines;
-Material's easing tokens) is a `CubicBezier`; a curve a toolkit computes by a function of its own is
-`Timing::Platform`, naming the toolkit's curve (S11: `{ platform = { qt = "in_out_sine" } }`), implemented once in `timing::evaluate` to that function, even where
+Material's easing tokens) is a `CubicBezier`, the identity excepted (below); a curve a toolkit computes by a function of its own is
+`Timing::Platform`, naming the toolkit's curve (S11: `{ platform = { qt = "in_out_sine" } }`), implemented once in `timing::evaluate` to that function (the identity excepted), even where
 it equals a cubic Bézier in exact arithmetic (Qt's out-cubic, `1 + (t − 1)³`): the curve is then the toolkit's code,
 whose rounding and constants it keeps (Qt's out-expo scales by 1.001, `qtbase@6.12.0
 src/3rdparty/easing/easing.cpp:309-312`), and the facts quote its name, not control points the source never writes.
@@ -883,7 +909,19 @@ the quote check accepts ("this polynomial equals that Bézier"), which states no
 Bézier and needs a checker of its own, and puts control points no source writes in the facts. R9's platform curves are
 the curves a toolkit computes by a function of its own, Kirigami's velocity-dependent ones (CONTRA-2) among them; a
 connector whose toolkit takes only Béziers can be given the exact Bézier of the curves that are one by a helper beside
-`timing::evaluate` when one needs it, with no model change.
+`timing::evaluate` when one needs it, with no model change. **The identity is `Timing::Linear`** however the source
+writes it (ADD-A125): a Bézier whose two control points lie on the diagonal (`x1 = y1`, `x2 = y2`, whose `x(s)` and
+`y(s)` are one polynomial, so `y = x`: CSS's `linear` as GTK parses it, `gtk@4.24.1 gtk/gtkcsseasevalue.c:196`;
+Material's `EasingLinearCubicBezier`, `androidx@e4d933c9
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/MotionTokens.kt:58-59`) and a
+function returning its input (libadwaita's `ADW_LINEAR`, `t / d` called with `d = 1`, `libadwaita@1.10.0
+src/adw-easing.c:127-132`, `:558-559`; Qt's `QEasingCurve::Linear`, `qtbase@6.12.0 src/3rdparty/easing/easing.cpp:37-40`;
+Compose's `LinearEasing`, `compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/Easing.kt:72`)
+are one curve, `y = t` (the Bézier solvers approximate it, the functions return it exactly, and no source adds a
+constant of its own), so `Linear` states all of them and one key holds the
+CSS keyword and `ADW_LINEAR` alike. Rejected: an `AdwEasing::Linear` member (two spellings of the identity, and
+libadwaita's `linear` key would need two values); the Bézier for the CSS keyword (the rule above read literally,
+under which one platform's identity would be stated three ways).
 
 A spring is stated by its damping ratio, as the platforms that publish springs state it (ADD-A121): libadwaita's
 `adw_spring_params_new (damping_ratio, mass, stiffness)`, which derives the damping coefficient from it
@@ -1072,6 +1110,17 @@ no offset or blur, its `spread` the secondary thickness and its colour the secon
 Rejected: the outer edge (WinUI's reading), under which a ring's width change moves its gap to the part and the inner
 ring needs a spread of the outer width plus its own.
 
+**The ring entering and leaving** (ADD-A125). The ring is drawn only under `focus_visible` (`FocusKind`), but a part's
+`focus` resolves in every state, so the style without the flag holds the geometry and paint the ring moves from when
+focus becomes visible and to when it leaves, timed by the `transition` of the style after the change (S2.7). A
+platform that writes the ring at rest states it so: libadwaita's rest outline is `0 solid transparent` at the offset
+`offset + width + 4px` (`$outer` false; `offset + 4px` where it is), and its focused one `width` wide at `offset`, the
+rest selector carrying the transition (`libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-27`), so the rest style
+states the ring zero wide, transparent and 4px further out, and the ring grows in. A part whose rest style states
+`focus` `Absent` has a ring that enters from transparent with its focused geometry (S2.7's rule for a part that
+becomes drawn). Rejected: an entering geometry of its own on `FocusIndicator` (it would repeat what the rest style
+states, and libadwaita writes exactly that style).
+
 ### S2.11 Part style
 
 ```rust
@@ -1103,6 +1152,19 @@ pub enum Binding { Surface(SurfaceSet), Role { role: RoleRef, value: Value<Color
 pub enum RoleRef { Surface(SurfaceRole), Set(SurfaceSet, SurfaceRole), Global(GlobalRole), Keyed(Key) }
                                                       // `surface.x`, `role.<set>.x`, `role.global.x`, `role.@x`
 ```
+
+**The box** (ADD-A125). A part's box is its laid-out rectangle, the one `min_width` … `max_height` bound and its
+`corners` round; its `margin` lies outside it and its `padding` inside it, measured from the box's edge, so its
+**content box** is the box less its `padding`. The stroke takes no layout space: it is drawn in the box (`Inside`),
+across its edge (`Center`) or outside it (`Outside`, past its `outset`), over the padding, so a stroke's width or its
+change never moves the content, as Compose's `Modifier.border`, Breeze's frame and UIKit's background stroke draw.
+A platform whose border adds to the layout states the padding as its padding plus the border's width on that side
+(`= add(<padding>, <border width>)`): CSS's `border` (GTK lays the content inside border and padding) and XAML's
+`BorderThickness`, which WinUI adds to `Padding` before it arranges the content
+(`microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:356-381`,
+`src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:840-845`). Rejected: CSS's box, the content inside the stroke
+as well (the platforms that draw a stroke over their padding, the majority, would each subtract it, and a stroke whose
+width moves, Compose's outlined toggle, would move the content, which it does not).
 
 **Fields per part.** A part has the fields its catalogue entry lists ("the fields that matter"); the derive
 generates that set per part, a field outside it is not part of that part (a patch setting it is refused, S12; the
@@ -1345,7 +1407,9 @@ pub struct MotionTokens {
     pub durations: Vec<(Key, Value<Ms>)>,   // keyed durations, in ms (Keys, below)
     pub timings: Vec<(Key, Timing)>,         // keyed timings (S2.7)
     pub speed_factor: Value<f32>,            // R9
+    pub color_space: Value<ColorInterpolation>,   // the space colour transitions move through (S2.7; ADD-A125)
 }
+pub enum ColorInterpolation { PremultipliedSrgb, StraightSrgb8, Oklab }   // closed; each to its source (S2.7)
 ```
 
 The sketch gives the checkers the keys' types (ADD-A123): a `token.motion.durations.<key>` is a duration, a
@@ -1488,7 +1552,8 @@ Win32's menu drop alignment) has one route: the reader reports the condition onl
 ```rust
 pub enum ThemeChange {
     Crossfade { duration: Value<Ms>, timing: Value<Timing> },
-    Suspend { duration: Value<Ms> },         // suspends the transitions marked `suspended_by_theme_change`
+    Suspend { duration: Value<Ms> },         // suspends the transitions whose `suspended_by_theme_change` is
+                                             // `Some(true)` (below; ADD-A125)
     Instant,
 }
 ```
@@ -1501,7 +1566,16 @@ property transitions of the styles it changes. `resolve` classifies a change by 
 conditions separately (S8), so a reader re-read that changes only a condition is a condition change. The new
 resolution's `token.theme_change` governs a theme change, as the style after a change governs a transition (S2.7):
 a `set_preset` from a preset that suspends to one that crossfades crossfades, and a rule that restates the token
-under a condition (reduced motion) governs every theme change made while it holds. A transition
+under a condition (reduced motion) governs every theme change made while it holds. Which transitions a suspension
+reaches is the transition's `suspended_by_theme_change` (ADD-A125): stated, `true` or `false`, on every transition
+of a preset whose `token.theme_change` can resolve `Suspend` under some combination, and `None` (left out of a
+`transitions` entry, S11) on every transition of a preset whose theme change never can, where the question has no
+answer to cite; S12 refuses a `None` where the theme change can be `Suspend` and a stated value where it cannot. libadwaita's suspension is the provider `* { transition: none; }`
+it adds on every style update (`libadwaita@1.10.0 src/adw-style-manager.c:476-477`, `:237-239`), so its CSS
+transitions state `true` and its `AdwAnimation`s, which no CSS reaches (the tab's close-button fade,
+`adw-tab.c:857-862`), `false`. Rejected: the field required everywhere (the presets that never suspend state a
+`false` no source gives, true only by absence); the reach as a list in the token (a reference grammar for single
+transitions, for what a flag on each says). A transition
 already running when a suspension starts finishes. Under `Crossfade` the window crossfades from the old frame to the
 new, and the property transitions the change triggers do not run (each property is at its new value under the
 fade); where a crossfading platform does otherwise, its facts say so. Under `Instant` there is no window effect: the
@@ -1522,7 +1596,8 @@ pub struct TextRoles {                        // one field per semantic slot, ea
 pub struct TextTokens { pub roles: TextRoles, pub keyed: Vec<(Key, TextStyle)>,
                         pub fallbacks: FontFallbacks, pub rendering: TextRendering, pub scaling: TextScaling,
                         pub font_dpi: Value<f32> }   // logical px per inch (72 points), the platform's, from
-                                                      // the facts; the reader's where it reports one (S9.4)
+                                                      // the facts; the reader's where it reports one (S9.4); may
+                                                      // be absent: no point size to convert (ADD-A125)
 pub enum TextScaling { Linear, AndroidNonLinear, DynamicType }   // S9.4
 pub struct FontFallbacks { pub families: Vec<String>, pub emoji_family: Value<String>,
                            pub per_language: Vec<(LanguageTag, Vec<String>)>,
@@ -1830,7 +1905,10 @@ parameter of a `ScrollDecay`; the catalogue's rule, *Entry format*; `KdeTokens` 
 `Value` field but `size` (S4.5); `IconTokens.theme_fallback`; a spring's
 `Transition.duration` and `PresentationStep.duration` (checked: `Absent` only where the timing, followed through
 references, is a `Spring`; a `Loop.period` is never absent, as its keyframes' `at` are fractions of it);
-`Concentric.minimum`; `Full.maximum`; `Keyframe.timing`; `Glyph.draw_start`. A list (`Vec`) is never `Absent`: it is
+`Concentric.minimum`; `Full.maximum`; `Keyframe.timing`; `Glyph.draw_start`; a zero-duration `Transition.timing`
+(checked: `Absent` only where its `duration` is a stated zero, S2.7; ADD-A125); `token.text.font_dpi` (checked:
+`Absent` only where no value the preset or a layer states, a reader's included, is a point size, so nothing converts
+by it, S9.4; ADD-A125). A list (`Vec`) is never `Absent`: it is
 stated, empty where the platform has none (S2.11). The catalogue's tables are the second source; they cite these
 marks rather than repeat them. The derive generates the tables from the catalogue; `Absent` anywhere
 else is an error when the layer is added (S12).
@@ -2354,7 +2432,9 @@ platform are the rows of the traceability whose target is a reader read (S20); e
 `pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader reports one (the platform's setting: on KDE
 `forceFontDPI` or `Xft.dpi`, as `platform-facts.md` records them under *Font DPI override*) and otherwise the current
 preset's `token.text.font_dpi`, stated per preset from its platform's facts (no number is stated here); one stated in
-pixels is already logical. Validation refuses a DPI, the token's or the reader's, that is not finite and above zero (S12).
+pixels is already logical. Where the platform's point is its logical pixel (AppKit's and UIKit's points, their toolkits' logical
+unit, which S17's quote check reads as px), the preset states its sizes in px and `font_dpi` `Absent`: no number converts them, and a DPI
+stated there would be one no Apple source gives (ADD-A125). Validation refuses a DPI, the token's or the reader's, that is not finite and above zero (S12).
 A reader states the font sizes it reads in logical pixels, converted by its own platform's DPI (its `font_dpi`, else
 its own preset's `token.text.font_dpi`), so they keep their size under any preset it applies them to (S9.5). The
 conversion comes before the text scaling, and both before every font-derived length (convert, then scale, then
@@ -2628,7 +2708,9 @@ not_horizontal, vertical, not_vertical }`, each a list), `direction`, `states`, 
 key per recency set and its flag as the value, `latest = { elevation = "hover" }`: `Selector.latest`, S7.2). A
 transition's `from` is a list of flags, `from = ["hover", "focus_visible", "pressed"]`; left out of an entry of a
 `transitions` list it is `None`, any state (an `Option` in a list item), and in a single `Value<Transition>` (a
-part's `focus.transition`, a component's `"transition"` value) it is stated, `"none"` for any state (S2.11). The
+part's `focus.transition`, a component's `"transition"` value) it is stated, `"none"` for any state (S2.11); a
+transition's `suspended_by_theme_change` likewise, left out of a list entry for `None` and `"none"` in a single
+value, and a zero-duration transition's `timing = "absent"` (S2.7, S4.3; ADD-A125). The
 interaction block (S2.12) is spelt as any block: `interaction.state_layer.alpha = "= …"`, `interaction.ripple.color =
 "= …"`. Every value carries its fact's citation in a comment, as today
 (`scripts/check_preset_citations.py`). Palettes use the same format with `[preset] kind = "palette"` and only
@@ -2712,6 +2794,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - a `Transition.from` is an empty list (it would apply from no state), names a flag twice, or names a keyed flag the
   widget of the element it is queried with does not declare (S2.7; ADD-A124);
 - a `StateLayer` transition is stated on a part whose fields lack `interaction` (S2.7, S2.12; ADD-A124);
+- a `Transition.suspended_by_theme_change` is `None` where `token.theme_change` can resolve `Suspend` under some
+  combination, or stated where it cannot under any (S4.3; ADD-A125); a `Transition.timing` is `Absent` where its
+  `duration` is not a stated zero, or a stated zero duration's timing is stated (S2.7; ADD-A125);
 - an expression nests deeper than 32, or a chain of references is longer than 32;
 - a `Fields` patch can meet an `Absent` or `Auto` block under some combination of the rules before it, following
   references (S2.2; checked conservatively), or `base` or `Append` appears in a layer's bases;
@@ -3191,7 +3276,10 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   (a number a TOML number, a bool a TOML bool, a variant with data a one-key table, a list of layers a list of
   tables), with the key's own length, duration or angle in S2.2's units (`"4px"`, `"150ms"`) since the key carries no
   suffix, while tables nested in a value keep S11's suffixed keys (`x_px = <n>`); the quote check compares its
-  numeric, colour and text leaves.
+  numeric, colour and text leaves. A keyed list (S6.1's: the transitions, bindings and presentations) is stated as
+  the query resolves it under the fact's `when`, the merged list in S6.1's order (the base's items no rule replaces,
+  then each applying rule's), never one rule's patch, as every fact states the resolved value the gate compares
+  (ADD-A125): Breeze's disabled button states the base's four transitions and its rule's two.
 - **Fields.** `key`, `value`, `rows` and at least one `cite` are required, except on a pending fact, which has `pending` in
   place of `value` and no `cite` (below); `when` is optional (no condition);
   `scheme_file` (`<entry> <path>`, a `sources.toml` entry and the scheme file's path in it) and `accent` (a colour
@@ -3325,7 +3413,14 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   of the value inside it, in the file type's form (a dotted key in TOML, a JSON pointer in JSON, `<group>/<key>` in an
   INI file such as kdeglobals, a nested group written as its bracketed names joined by `][`,
   `Colors:Header][Inactive/BackgroundNormal`; `<first column>/<header>` in CSV); for a value read from an image, the committed output of
-  a committed analysis script naming its input image and the pixels it reads. The value there, after `conversion`
+  a committed analysis script naming its input image and the pixels it reads; for a value computed from values a
+  harness read (AppKit's padding, the distance from the alignment rect to the union of the title and image rects,
+  three API reads, `docs/evidence/os-probe/2026-10-30-run-41006842699/README.md`), the committed output of a committed
+  analysis script naming the files it reads and stating in its docstring the arithmetic it applies, so the method is
+  reviewed where it runs and the fact cites its result as it cites an image's (ADD-A125). Every analysis output names
+  its input files in its top-level `input_image`, images or not. Rejected: a `subtract` conversion (a conversion maps
+  one quoted literal, and the value is a difference of read rects); the arithmetic as the fact's expression (an
+  expression is the platform's derivation, which the query evaluates, not the probe's method). The value there, after `conversion`
   (applied to it, read as the quote's literals are), equals the fact's within `tolerance` (a measured derivation's
   passes are checked as its bullet says). The run folder's
   `run.toml` maps each image folder to the preset it serves, the `sources.toml` entry of what it measured (the Xcode,
@@ -3391,7 +3486,10 @@ an element whose connector reports no order resolves as under one of them, so it
 sets hold n flags together gives at most n! orders per combination, Material's widest, the card's and the chip's,
 four flags and so 24; ADD-A124),
 with, from `axes.conditions`, one value or none per condition kind (a
-container size being a condition, one size per container), at most one of `axes.contexts`, from `variants` none,
+container size being a condition, one size per container), at most one of `axes.contexts` (an entry a context
+selector, or a list of them for nested contexts, outermost first, the element inside each, as `when.context` lists
+them: a toolbar inside WinUI's tabbed command bar, `[{ widget = "component.tabbed_command_bar" }, { widget =
+"toolbar", part = "bar" }]`, which the gate builds as that chain of ancestors; ADD-A125), from `variants` none,
 a single variant, or one of the sets `variant_sets` lists or `variant_products` gives (so a platform's dozens of variants are never combined into sets it does
 not draw, and no fact is asked for one),
 one of `densities` or none, and one of `sizes` (none where the list is empty), less those `not_drawn` names and
@@ -3718,6 +3816,7 @@ lines that cite it.
 | ADD-A122 | the second spec batch (queue #47, #50–#55, the GNOME, KDE and Windows reconciliations): a pending measurement (`pending = "U<n>"`, the unmeasured register's entry, counted by the gate and refused by `check_ledger.py --final`); a zero stated by omission cited as an absence; `round(x)` beside `floor(x)` for the sources' integer arithmetic; `Qt.tint` as `kirigami_tint(base, tint, 1)`; a `Fields` patch or `Append` over a reference never a merge conflict, kept with its position; `BlockPatch<T>` and `PaintPatch` named; `Paint::try_from(Vec<PaintLayer>)`; an `Option<Value<T>>` field resolving to `Option<T>` (`Linear.extent`); the `may_be_absent` table two-way, S12 owning the conditional marks; a focus ring's `offset` to its inner edge and its `shadow` cast by that outline (WinUI's inner ring an inset layer); `surface.` reaching a bound set's disabled roles stated; the motion keys' naming rule; a glyph font's fallback chain; the `negate` conversion; a state model's `variant_products`; the catalogue's `menu_indicator_anchor` (`IndicatorAnchor`, an indicator over a corner of the body), adwaita's Window-set disabled pair, `windows-11`'s absent solid status backgrounds and neutral text, `@keyboard_focus_change` (KDE's pen after a keyboard focus change), `@arrow_only` (GTK's arrow-only menu button), the exclusive groups `[indeterminate, checked]` (WinUI), iOS's corner styles and Material's FAB forms; the first check's fixes: the one merge conflict (a `Fields` patch meeting `Absent` or `Auto` directly), the motion keys from a shared name, the one class or the source's words, the pending fact's register Id and a shadowed pending fact failing the gate, two products giving one set, the enum blocks listed, `min_width` and `min_height` as `Option<Length>`, one surface binding per part, `concentric`'s `None` for unequal insets, `damping_coefficient`, `ResolvedPartStylePatch` for a keyframe, a transition with no property group refused; the second check's fixes: the enum blocks defined (a model enum with a variant holding data) and listed, each stated whole; the motion keys' closed list of dropped words applied in every step (UIKit's `default`, QVariantAnimation's `variant`) and the catalogue naming each key or its family; `FontCodePoint`'s chain moved to `token.text.fallbacks.per_family`; a map merging by key with a `BlockPatch` per struct-block entry, an entry for a missing key created from its patch; `GlobalRole::AccentRamp`; `StatusColors` named; `concentric`'s inset from the stated paddings and margins, S12 refusing unequal ones; `Paint::try_from` refusing a bottom `Mask`; a product repeating a variant refused; a pending fact's place in its file; the ring offset on the part's own width; the third check's fixes: a floating part's distance from the window as its `margin` (no `floating_inset` value), the connector summing `inset`; WinUI's `connected_service` by step 2 and the catalogue listing every key the traces use; Breeze's deactivation `out_cubic`; W1-102's indicator box the laid-out glyph; a map entry created over a value only where its unset fields may be `Absent`, else a merge conflict; several pending facts sharing one register row; the fourth check's fixes: W1-102's `min_width` from WinUI's arrange of its zero-width column, S12's map-entry conflict, S2.7's forward reading defined, the floating margins' reference edges and Material's offset on the anchored edge only, a register Id unique among rows, the tab's declared `width` and `height`, the W spike's `connected_service`; the fifth check's fixes: W1-102 limited to the default label position, the label-beside-icon position recorded as not expressible, S12's map-entry check on bases and on rules conservatively, the backward-run wording; the sixth check's fixes: W1-102 excluding the tabbed command bar, where the label-beside-icon chevron is not expressible, and covering the icon-only position; every focus corner the ring's inner corner (S2.10), W3-20 and MAT-X10 from their sources; AdwTabBox's and AdwTabGrid's keys named; `for_preset` bases in S12's map-entry check; the seventh check's fixes: Breeze's focus corners stated as it draws them (`Frame_FrameRadius`, circular for radio, slider and dial), MAT-X10's `inward-offset` and system `inner-offset` told apart, a `FollowPart` ring's outer corner `follow_part(r, offset + width)`, a square part's ring kept square on GTK and WinUI, WinUI's Reveal and DottedLine corners square; the eighth check's fixes: Breeze's focus offsets per part (frames and the dial inset, the checkbox and radio flush with the drawn indicator), the group box's ring the title checkbox's, a ring's `Full` corner on its inner box; the ninth check's fixes: `group_box.body` without `focus`, S8's focus-corner operand on the ring's inner box, `token.focus`'s offset and the slider's inset stated; the tenth check's minors: `Full` on a ring's inner box, the slider's and dial's handle rect, Breeze's default branch unused, the `animations` base the literal | S1, S2.2, S2.4, S2.7, S2.9, S2.10, S3, S3.3, S4.1, S4.4, S6.1, S10, S12, S17, the catalogue |
 | ADD-A123 | the third spec batch (queue #56, #62, #63, #64, #65–#71): a curve a toolkit computes in code is `Timing::Platform` (provisional, CONTRA-7; settled in ADD-A124), `PlatformCurve::Qt(QtEasing)` and `PlatformCurve::Adw(AdwEasing)` beside `KirigamiVelocity`, a curve whose control points the source writes a `CubicBezier`, and the facts quote the curve's name; `with_alpha(c, a)`, which sets the alpha as `Qt.alpha` and CSS's relative colour do, beside the multiplying `alpha` (Q2.5's RoundButton fill); `requires_variants` meaning any one of its forms; `MotionTokens`' Rust sketch; S2.8's weight the CSS weight and the `ns_font_weight` conversion (WebKit's thresholds for AppKit's `NSFontWeight`); a map keyed by text spelt as a TOML table with the text as its keys (`per_family`), its fact keyed by the quoted key; the macOS accent inputs named (`highlight` from `selectedTextBackgroundColor`, `selected_content_background`, `keyboard_focus_indicator`, `selected_control`; `highlightColor` a literal); a `Style` after a `DrawnAs` restoring the part as after `Absent`; a bare block's map entry set to a reference, `Absent` or `Auto` an ill-typed patch; `PlatformCurve` an enum block; the catalogue's `IndicatorAnchor::InlineTop` and an inline indicator's `margin` a margin in the row, an overlaid one's unused sides stated as written (W1-102's tabbed command bar now stated); adwaita's arrow absence rule `@ variants {menu} !variants {@arrow_only,@with_arrow}`; libadwaita's inline transition keys `tab_bar`, `tab_thumbnail`, `bottom_sheet_border_radius`, `bottom_sheet_box_shadow`; `token.params.motion.kwin_speed_factor` (the decoration's factor, kwinrc over kdeglobals); K3.20's offsets; macOS's circular bezel and circle shape one variant (probe-confirmed), `NSComboButton.unified` as `menu`, `automatic` no variant until measured, a size's font `systemFontSizeForControlSize:`'s, the accent-following fills as `mix`; Material's `@extended_fab` `regular` the unsized composable and Expressive's sizes `small`, `large`, `extra_large`, the extended FAB's and Expressive `with_icon` paddings traced, `token.material.variant`'s default not pinned, the dialog title's precision-pointer case an application opt-in with no rule; the first check's fixes: `@with_arrow` and `@arrow_only` content variants the connector sets by GTK's rule (keyed content variants, S8), CONTRA-7 recording the platform-curve reading, K3.20 split (a positive offset on buttons and non-editable combo boxes, the inset inward on line edits, text areas, spin boxes and editable combo boxes), W1-102's `InlineTop` row with its glyph and gap, `ns_font_weight` the model's own conversion, the bare-block entry (`token.motion.timings` too) an ill-typed patch, not a merge conflict, text map keys equal as TOML keys, the unit suffix on map entry keys and none on `Scalar` entries, `"auto"`/`"none"`/`"absent"` exact, `selected_content_background`'s row, `kwin_speed_factor`'s default, an inline row's spare width, libadwaita's `expander_row`, `places_view`, `toggle_group` and `AdwEasing`'s in-cubic and expo members, `context.scope` defaulting to any ancestor, a `PartRef` value's spelling, `LayerError`'s variants by owner; the second check's fixes: S11's example duration key suffixed (`button_ms`), `AdwEasing::EaseInOutSine` (AdwSpinner's arc) and the key `ease_in_out_sine`, every `ADW_EASE_*` the code uses accounted for, CONTRA-7 after CONTRA-6 with `ease_in_cubic`'s Bézier and the sine curves, keyed content variants as one platform's meaning, `@with_arrow`'s other content and `always-show-arrow` as the connector's option, `Problem`'s kinds, `tab_thumbnail` without the instant background change | S1, S2.2, S2.7, S2.8, S4.1, S4.4, S6.1, S6.3, S8, S9.1, S10, S11, S12, S17, the catalogue |
 | ADD-A124 | the fourth spec batch (queue #42, #49, #60, #73, decided from the sources): recency (CONTRA-6, settled): a widget's named `recency` sets (S10), the selector term `Selector.latest` (S11 `latest = { <set> = "<flag>" }`, the notation `latest s:f`), `Element.state_order` (the order the connector last set the flags in, element data beside the flags, R25.3), unreported flags by the set's stated order, its first the latest, a widget's sets agreeing on their orders, the validation's latest atoms, the state models' `recency` and the gate's combinations per order of the present flags, the facts' `when.latest`; Material's state-layer exclusive groups replaced by its sets `state_layer` and `elevation` (the catalogue's Material recency sets; Compose's `Ripple.kt:250-280`, `Button.kt:1703-1747`, `Card.kt`, `Chip.kt`, `FloatingActionButton.kt`, `ToggleButton.kt`); `Radius::Ellipse` (R7): a quarter of the box's inscribed ellipse, on all four corners with `Circular` curves, `corners::ellipse`, a shadow and a `FollowPart` ring following the ellipse of their own boxes, insets per axis, no corner operand, no shape, no `Concentric` inside it; `kde-breeze`'s QWidget `circular` `Ellipse` and Kirigami's RoundButton `Full` (K1.26), Breeze's own focus ring on it its standard rounded frame (`breezestyle.cpp:6631-6647`, K3.20), not the ellipse; `Transition.from` (R9): a transition applying from any state or from the states it names, matched against the flags before the change after the exclusive drop (`ResolvedTheme::kept_states`, `transitions::governing`), the later applying transition winning, the transitions a keyed list by group and `from` (S6.1), Compose's elevation and Breeze's button fades stated (MAT-B13, MAT-N1, MAT-N9, MAT-CA2, MAT-X7, K1.30); R9's platform curves widened to the curves a toolkit computes by a function of its own (CONTRA-7, settled); the first check's fixes: only the state layer and the shadow follow Material's sets, every other field on plain flags in its source's precedence (the list item's, `ListItemDefaults.kt:1144-1152`); the split button's halves' elevation (`shadow`, the set `elevation`) and the outlined card's hovered and dragged ones; Breeze's base zero transitions `from {disabled}` (Qt keeps a disabled widget's hover) and none under `flavor:kirigami` (qqc2's style item paints with no widget); Compose's state-layer fades and the press ripple's release fade by `from`; S6.1's merged order stated; Qt's clamp cited on the paint engine's path; R7's shape option; "kept" flags in S7.2 and S12; the connector recording the order; an `Ellipse` corner's outward radii; the gate's n! bound; the second check's fixes: `PaintLayer.role` (`LayerRole::StateLayer`, `Ripple`) and `Transition.layer`, a fill's layers timed per role (`transitions::governing` by role, S6.1's key, S12's checks), so a `Ripple` times the press ripple alone and Compose's snapped containers take no transition (toggles, chips, icon buttons); the year cell's, the time picker's and the toolbar buttons' state layers restored; the split button's and the FAB menu's state-layer rows; Material's split-button forms (`tinted`, `@outlined`, `@elevated`) with their shadows; the list's colour order and MAT-L10's corners dropped; the row order where a source ranks no states; the checkbox's, radio's and switch's `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state `opacity` dropped; the third check's fixes: one layer per role (a later rule's role layer replacing the earlier in its place, S6.1, S12), role layers timed by their alpha alone and stated at rest at zero alpha, the press ripple's lifecycle in `TransitionKind::Ripple` (`fade_in`, `origin_timing`, the release an `Interpolate` starting no sooner than `min_press`; `opacity` and `fade` gone), the disabled layer without a role, Compose's colour transitions (the Expressive list item, the date picker's cells, the selectable menu item, the tab's and navigation bar's content, the outlined toggle's border, the split button's corners), the slider's ripple theme, the split button's variant group; Material's navigation items' ripple pill, `bottom_tab_bar.state_layer` and `list.row_state_layer` (the rail; the drawer's on `row_background`), with the bar's, rail's and Expressive items' indicator and content transitions; `PropertyGroup::StrokeWidth`, the stroke's widths timed apart from its colour (the text field, the exposed dropdown and the outlined toggle); the fourth check's fixes: Material's state layer and press ripple a block of the part, `PartStyle.interaction` (`Interaction`, `StateLayerStyle`, `RippleStyle`, S2.12) with the property groups `StateLayer` and `Ripple`, replacing the second and third checks' paint layers with roles (`PaintLayer.role`, `Transition.layer`, one layer per role, role layers stated at rest: gone), drawn over the part's content as Compose's ripple node draws it, ADD-A121's composite under the label gone; the ripple's geometry in the block and its timings in `TransitionKind::Ripple` (`press_delay` for Compose's delay in a scrollable container, its value pending, queue #45); `StrokeWidth` an override of `Stroke`; a stroke becoming absent interpolating to zero width, the checked outlined toggle's border absent; the navigation indicators drawn at rest at zero width and alpha (`opacity`); the Expressive items' unanimated content, the drawer's rows, the text field's container, the date picker's day, re-enabling, the notch, the release fade's start, the checkbox's and radio's ripple colour, citations; the fifth check's fixes: the press ripple Android's `RippleDrawable` (`TransitionKind::Ripple(RippleEffect)`, `RippleEffect::AndroidPatterned` implemented to `RippleDrawable`, `RippleAnimationSession` and `RippleShader` at the pin, its lifecycle and release its own, its colour kept from the press; `fade_in`, `origin_timing`, `min_press`, `press_delay`, `RippleStyle.initial_scale` and `soft_edge` gone, `RippleStyle.bounded` added); the block beneath the part's stroke (`Surface.kt:562-564`, `Border.kt:212-214`); its colours `= surface.foreground`; the press delay `TouchBehavior.delay` with `delay_every_pointer` (Android's tap timeout, `config.xml:3230`); a stroke, edge or paint becoming absent and a width reaching zero; S12's `Ripple` and `StateLayer` checks; the filled field's unanimated hover layer; `@indicator_move` `Instant` on Material's bar and rail; Compose's Oklab interpolation noted for queue #80; the sixth check's fixes: the press ripple a field of the block, `RippleStyle.effect: Value<RippleEffect>`, started when `pressed` becomes kept and exited when it stops being kept, its colour and alpha kept from the press and its geometry following the box (`RippleDrawable.java:754-782`), `ripple::progress` and `ripple::shade` named, hwui's `AnimatedDrawables.h` and the animator duration scale outside the cache (`TransitionKind::Ripple`, `PropertyGroup::Ripple` and their S12 checks gone); an edge whose paint alone becomes absent keeping its width (Breeze's flat button); `delay_every_pointer` gone, a release within the delay delivering the press and its release in one update; the noise phase, the ripple count and `max_radius` stated as the framework does; the filled field's hover layer the block's state layer; the `{pressed}` ripple rows dropped; the seventh and eighth checks' fixes: the ripple taking the block of its first frame drawn after the press, its lifecycle and noise phase starting there (a press and its release in one update taking the style after it), "kept" for the effect's start, the filled field's block beneath its content, an absent delay no delay and the delay for every press, `ripple::phase` | S2.3, S2.4, S2.5, S2.7, S2.10, S2.11, S2.12, S4.2, S6.1, S6.3, S7, S7.2, S8, S10, S11, S12, S17, S22, the catalogue, the KDE and Material traces |
+| ADD-A125 | the fifth spec batch (queue #74, #77, #78, #80, #82, #84–#89, #91–#97 and the macOS facts audit's `tinted` fill, decided from the sources): `token.motion.color_space` (`ColorInterpolation`: `PremultipliedSrgb`, GTK's CSS and Breeze's `KColorUtils::mix`; `StraightSrgb8`, Qt Quick's `ColorAnimation`, `kde-breeze` under `flavor:kirigami`; `Oklab`, Compose's), `transitions::interpolate_color`, R9's one space replaced; the identity curve `Timing::Linear` however written (CSS's `linear`, `ADW_LINEAR`, Material's linear Bézier, Qt's and Compose's linear); a stated zero duration's `timing` `Absent`; `Transition.suspended_by_theme_change` an `Option`, stated only where `token.theme_change` can be `Suspend` (S4.3, S11, S12); a focus ring's rest style its entering and leaving geometry (libadwaita's grow-in, S2.10); S2.11's box: the content box the box less its padding, the stroke taking no layout space, CSS's and XAML's borders added to the padding; `token.text.font_dpi` may be absent, `Absent` on Apple presets (S9.4); S17: an analysis output for a value computed from read values (AppKit's padding), `input_image` naming every input, a keyed list stated merged, `axes.contexts` entries nesting contexts; the catalogue: an inline indicator's content space ending the gap before its margin or border box, whichever is further toward the end (Breeze's label, WinUI's chevron), the label's spacing toward the indicator the gap; `ios-*` `@role_primary`, `@system`, typed `add` for the system add bar item, `@corner_dynamic` on `ios-26` only, `@indicator_none` and `@padding_removed` gone, the dynamic corner's scaling, the prominent bar item and the default size measurements (Open items); macOS's circular bezel's drawn circle as `body`'s box with `body.margin`, `tinted`'s and a disabled `primary`'s fills `alpha(input.accent, <a>)`; `kwin_speed_factor` `= token.motion.speed_factor` with kwinrc's factor read; the macOS `highlight` role `highlightColor`; `material-3`'s menu button following Compose's buttons; the toggle border transitions on every toggle form | S2.7, S2.10, S2.11, S4.1, S4.3, S6.3, S9.4, S11, S12, S17; catalogue; traces; R9 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
