@@ -579,6 +579,22 @@ proof = "git ls-remote https://gitlab.gnome.org/GNOME/gtk.git refs/tags/4.24.1 (
 arch = "gtk4 1:4.24.1-1"
 
 [[source]]
+id = "glib@2.90.1"
+kind = "git"
+project = "GNOME/glib"
+repository = "https://gitlab.gnome.org/GNOME/glib.git"
+tag = "2.90.1"
+commit = "e05063ccc6c8f222465a1080927f4c14349f3de6"
+tag_object = "7971940db22b0c290e521d28b3651232100bb55b"
+release = "GLib 2.90.1 (GNOME 51)"
+generations = ["adwaita"]
+researched = "2026-10-31"
+proof = "git ls-remote https://gitlab.gnome.org/GNOME/glib.git refs/tags/2.90.1 (annotated: the ^{} line)"
+arch = "glib2 2.90.1-1"
+sparse = ["glib"]
+note = "The GLib libadwaita 1.10.0 and GTK 4.24.1 build against (both require >= 2.89.3, libadwaita meson.build:36, gtk meson.build:21); its macros (gmacros.h, gtypes.h) define the comparisons and constants libadwaita's easing, spring and colour code use."
+
+[[source]]
 id = "gtk3@3.24.52"
 kind = "git"
 project = "GNOME/gtk"
