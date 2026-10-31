@@ -481,7 +481,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_color cond contrast_high` | rule |
 | GN-1.202 | `reader:gnome:org.gnome.desktop.a11y.interface show-status-shapes` | reader |
 | GN-1.202 | `cond differentiate_without_color (GNOME: from show-status-shapes)` | condition |
-| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; engine GtkSwitch, the switch's own code, not CSS: an activation slides it from the end it rests at and sets the switch's state as the slide ends, a second activation restarting it, a drag and a change made in code moving it at once, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:262-319`, `:779-809`; its duration GTK's constant, unscaled, `ANIMATION_DURATION`, `gtk/gtkswitch.c:203`, and its curve GTK's ease_out_cubic, `gtk/gtkprogresstracker.c:246-251`, a PlatformCurve member with its fact; the connector setting `checked` at the slide's end, `Motion::take_slide_end`; S2.7, ADD-A126)` | field |
+| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; engine GtkSwitch, the switch's own code, not CSS: an activation slides it from the end it rests at and sets the switch's state as the slide ends, a second activation restarting it, a drag and a change made in code moving it at once, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:262-319`, `:779-809`; its duration GTK's constant, `ANIMATION_DURATION`, `gtk/gtkswitch.c:203`, stated `= mul(<its key>, token.motion.speed_factor)`, so it is zero under `cond animations_off` and the activation sets the state at once, `:208-219`, as GTK does; its curve GTK's ease_out_cubic, `gtk/gtkprogresstracker.c:246-251`, libadwaita's, `Timing::Platform(Adw(EaseOutCubic))`, `libadwaita@1.10.0 src/adw-easing.c:174-181`; the connector setting `checked` at the slide's end, `Motion::take_slide_end`; S2.7, ADD-A126)` | field |
 | GN-1.204 | `switch.track.transitions (Fill)` | field |
 | GN-1.204 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
 | GN-1.205 | `switch.track.fill @ {checked} context any variant @osd (any widget, R25.9)` | rule |
@@ -896,7 +896,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
-| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:404-413`; S4.3, ADD-A126)` | token |
+| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:409-413`; S4.3, ADD-A126)` | token |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |

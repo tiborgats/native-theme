@@ -62,7 +62,7 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
     `WinUi` (a pending fact, the preset stating no transition, until then);
-  - `windows-11`: what WinUI's transitions do while their element is not drawn and as it is drawn again, a change
+  - `windows-11`: what WinUI's transitions do under each presence (S2.7's `Presence`) and as the element is painted again, a change
     made meanwhile included, and as animations turn off (S2.7); and on every lane, what a window minimised or
     occluded does to its running transitions (S2.7);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
@@ -9180,7 +9180,7 @@ to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
 `ThemeChange::Suspend` with `conditions = [reduced_motion]`, as libadwaita suspends on a reduced-motion change too
-(GN-3.23; `libadwaita@1.10.0 src/adw-style-manager.c:404-413`, ADD-A126); `kde-breeze` `ThemeChange::Instant`, as
+(GN-3.23; `libadwaita@1.10.0 src/adw-style-manager.c:409-413`, ADD-A126); `kde-breeze` `ThemeChange::Instant`, as
 Breeze's engines and Qt Quick's behaviours stop nothing on a palette change and add no window effect (K-P3-15†;
 `breeze@6.8.2 kstyle/breezestyle.cpp:1693-1696`, `:2059-2107`, ADD-A126); `windows-11` (W-P3-16†, which also covers
 the accent change), `macos-*` (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3`

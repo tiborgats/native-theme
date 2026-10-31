@@ -200,7 +200,15 @@ Expressive tokens and agrees with Compose (the pressed state layer's opacity is 
 older `v0_192/` set says 0.12, which the map's MAT-X8 records as web against Compose). Where the tokens are
 silent, Compose Material 3 is the reference, cited at a pinned commit, experimental or not (for some
 Expressive behaviour it is Google's only implementation); material-web's components, built on the older
-token set, only where Compose has no such component.
+token set, only where Compose has no such component. Where the tokens and Compose disagree, the tokens decide
+(ADD-A126): a look the tokens state that Compose does not draw stays, as the published system is the preset's
+reference and Compose's omission no statement (the filled text field's and select's hover layer,
+`_md-comp-filled-text-field.scss:141`, `:143`, MAT-I11), and a motion no token states is Compose's (its engines,
+its interruptions, the switch handle's spring, MAT-SW8), with no transition where no source times a look the tokens
+add. Weighed: following Android's drawing wherever it departs from the tokens (fidelity to the one implementation
+users meet, but the preset would no longer be the published design system, and the tokens' agreement with Compose,
+the reason for choosing them, would decide nothing); the tokens alone, Compose never (no engines, no motion for most
+transitions).
 
 ### R2 — The model's shape
 
@@ -786,7 +794,7 @@ MAT-X13–MAT-X15, X-MO-1).
     suspended transitions from the rest.
   - *Orthogonal kinds* (an interruption kind, a velocity, an interrupted timing, a rank, slots and a theme-change lane,
     the survey's grouping): each exact only with the sub-rules of one toolkit (GTK's cut and its curve index, the tab
-    bar's two places, the decoration's live ends, AdwEntryRow's replay), five fields where each engine uses one
+    bar's two places, the decoration's live ends, AdwEntryRow's replay), six fields where each engine uses one
     combination, and a combination no toolkit has stays expressible.
   - *A per-preset engine*: `adwaita`, `kde-breeze` and `material-3` each run two engines whose rules differ.
   - *A preset default with a per-transition override*: two homes for one fact.
@@ -802,9 +810,10 @@ MAT-X13–MAT-X15, X-MO-1).
     attempt) and the one case that needs two ways out of a style told apart, Breeze's tab focus line, is stated by
     where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
     GTK delays one and Compose's `updateTransition` replaces an interrupted one; where one group's transitions name
-    two engines, the governing one's draws it. Breeze's ends keep every flag but the test's own, so a fade a flag's
-    style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and fill, its header)
-    are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
+    two engines, the governing one's draws it. Breeze's group draws its flags reduced by its tests, at rest, under a
+    zero and at a run's two ends alike (each failing test's `any` flags dropped, the run's own test excepted), so a
+    fade a flag's style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and
+    fill, its header) are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
     rejected, as Breeze draws a line edit's focus fading out as it is disabled and a disabled tab's hover fade
     (`kstyle/breezehelper.cpp:146-155`, `:1498-1499`). Apple's toolkits, whose
     code is not in the cache, are measured (interrupted at three points, a spring's velocity, stacked changes, a theme
