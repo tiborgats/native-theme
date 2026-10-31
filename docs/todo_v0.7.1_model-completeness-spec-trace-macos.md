@@ -81,7 +81,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W11† | `popover.body, popover.arrow @ context window.title (the rename and location popover)` | rule |
 | MAC-W12† | `window.title_bar.fill (fullScreenUI material) @ cond full_screen` | rule |
 | MAC-W12† | `window.values.full_screen_title_bar_reveal (PointerAtTopEdge)` | field |
-| MAC-W12† | `window.values.presentations event @title_bar_show` | field |
+| MAC-W12† | `window.values.presentations event @title_bar_show` (the reveal's motion: ADD-A129 (queue #118), pending MAC-X32†'s measurement, none stated meanwhile, appearing at once, S2.7) | field |
 | MAC-W12† | `window.frame.{corners,stroke} @ cond full_screen` | rule |
 | MAC-W12† | `menu_bar.values.presentations event Appear @ cond full_screen` (the menu bar coming in with the title bar's reveal at the top edge, as iPadOS's hidden bar does, C-37†) | rule |
 | MAC-W12† | - (the divider between two windows in a full-screen Split View, which the system draws between the two windows) | out (R1.1) |
@@ -140,20 +140,20 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-I09† | `input.{body.fill,text.text.fill} @ {autofilled}` | rule |
 | MAC-I10† | `text_area.values.document_margin; text_area.values.line_padding` | field |
 | MAC-I10† | `reader:macos:NSTextView.textContainerInset, textContainer.lineFragmentPadding -> text_area.values.document_margin, line_padding` | reader |
-| MAC-C01 | `checkbox.mark.glyph @ {indeterminate} = SystemControl(AppKitCheckbox)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | system-control |
-| MAC-C01 | `checkbox.box.fill, checkbox.mark.glyph.size, checkbox.mark.glyph.fill @ {indeterminate}` | rule |
+| MAC-C01 | `checkbox.box.glyph = SystemControl { control: AppKitCheckbox, replaces: [box, mark] }` (the mixed state rendered with the rest, MAC-C06's rendering) | system-control |
+| MAC-C01 | `checkbox.box.fill @ {indeterminate}` (the mixed box's fill unmeasured, the gap map's "accent?", a new render, the catalogue's Open items; the dash itself unmodelled, as the check is, MAC-C06; its extent and colour a new render's, `todo_v0.7.1_model-completeness-gap-map-macos.md:145`, ADD-A126) | rule |
 | MAC-C02 | `checkbox.box.fill @ {pressed} / {checked,pressed}` | rule |
 | MAC-C02 | `radio.ring.fill @ {pressed} / {checked,pressed}` | rule |
-| MAC-C03 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {checked,disabled}` | rule |
+| MAC-C03 | `checkbox.box.fill @ {checked,disabled}` (the mark unmodelled, MAC-C06) | rule |
 | MAC-C04 | `checkbox.box.fill @ {checked,hover}` | rule |
 | MAC-C05 | `checkbox.box.fill @ cond scheme:dark (Linear gradient)` | rule |
 | MAC-C05 | `checkbox.box.stroke (gradient paint), checkbox.box.shadow (inset bevel layer)` | field |
-| MAC-C06 | `checkbox.mark.glyph = SystemControl(AppKitCheckbox)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: which part carries the rendering, drawn in every state or not) | system-control |
-| MAC-C06 | `checkbox.mark.glyph.{source,size,stroke.width} (path and extent; measured)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | field |
-| MAC-C06 | `checkbox.mark.padding` (the mark's inset inside the box; measured) | field |
-| MAC-C07 | `radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}` | rule |
+| MAC-C06 | `checkbox.box.glyph = SystemControl { control: AppKitCheckbox, replaces: [box, mark] }` (AppKit's rendering on the box, a part drawn in every state, so an unchecked control is rendered too; S15, R11, ADD-A126) | system-control |
+| MAC-C06 | `checkbox.mark (absent = true)` (in every state, the base: AppKit names no image for the mark and its outline could only be traced from a render, R11, so the model draws none; the rendering on the box draws it, and without the rendering, off the main thread, off macOS or in a toolkit that cannot composite it, no mark is drawn and a checked and a mixed checkbox differ only where their box fills do, the mixed one a measurement, MAC-C01, the model's limit, R23; no later field patch brings the part back, S6.3, ADD-A126) | field |
+| MAC-C06 | `checkbox.mark` (its measured inset inside the box kept in the facts with its measured extent and colour, R11, the part `Absent` and drawn by no model glyph, the row above, ADD-A126) | field |
+| MAC-C07 | `radio.dot.{corners,min_width,min_height,fill} (Full; the measured diameter, `docs/platform-facts.md:1241`, `radio_dot_diameter`; `indicator_color`, `:1232`, stated there unsourced, so a measurement, a register row); radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}; radio.dot (absent = true) @ !{checked}` (the dot modelled as the cornered fill AppKit draws, measured and shipped today, kept for a connector without the rendering, which replaces it where composited, MAC-C07's rendering; `Absent` unchecked, written last, until MAC-X11's recording says whether AppKit animates it in and out, which would make it a `shown` part, S2.7, ADD-A126) | rule |
 | MAC-C07 | `radio.ring.*, radio.dot.* @ cond window_inactive` | rule |
-| MAC-C07 | `radio.dot.glyph = SystemControl(AppKitRadio)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | system-control |
+| MAC-C07 | `radio.ring.glyph = SystemControl { control: AppKitRadio, replaces: [ring, dot] }` (on the ring, a part drawn in every state; the dot's glyph absent, its form a fill; S15, R11, ADD-A126) | system-control |
 | MAC-MN01 | `menu.item.corners` | field |
 | MAC-MN01 | `menu.body.padding (highlight inset)` | field |
 | MAC-MN02 | `menu.body.padding (top, bottom)` | field |
@@ -162,9 +162,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN04 | `menu.accelerator.text.fill @ {hover} / {disabled}` | rule |
 | MAC-MN04 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
 | MAC-MN04 | `menu.accelerator.text.letter_spacing` (the modifier-glyph spacing; the capture decides whether AppKit spaces the glyphs as text or lays modifiers and key in columns, which would make it a value) | field |
-| MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` | rule |
+| MAC-MN05 | `menu.check_indicator.glyph (NamedSystemImage); menu.check_indicator.glyph @ {indeterminate} (NamedSystemImage)` (the on-state check in the base and the mixed image a patch of it, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
+| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / context any combo_box` (no mark in the combo list meanwhile: whether AppKit's pop-up marks its selected item, `NSPopUpButtonCell.altersStateOfSelectedItem`, not in the cached headers, the facts state as a pending fact under `{selected}` in the `NSPopUpButton` list, not `@pull_down` (`pending = "U…"`, S17's *A pending measurement*), the preset leaving it absent meanwhile; an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MAC-MN05), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MAC-MN06 | `menu.submenu_arrow.glyph` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN06 | `menu.item.fill @ {open}` | rule |
@@ -725,12 +726,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
 | MAC-X11 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
-| MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125; whether AppKit animates them is this row's recording, the catalogue's Open items) | field |
+| MAC-X11 | `checkbox.box.transitions, radio.ring.transitions (the toggle)` (the parts that carry AppKit's rendering where the connector composites it, S15; the dot styled from its measurements and `Absent` unchecked, the mark unmodelled, MAC-C06, MAC-C07; whether AppKit animates the dot in and out is this row's recording, the catalogue's Open items, the input S2.7's rule takes to make it a `shown` part or keep it `Absent`, ADD-A126) | field |
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
 | MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted) | field |
-| MAC-X11 | `FocusIndicator.transition (the ring's appearance)` | field |
+| MAC-X11 | `FocusIndicator.transition (the ring's appearance and disappearance, their geometry and engine measured, S2.10, the catalogue's Open items, ADD-A126)` | field |
 | MAC-X11 | `menu.values.presentations events Appear, Disappear, @submenu_expand; menu.values.activation_flash` | field |
 | MAC-X11 | `popover.values.presentations events Appear, Disappear` | field |
 | MAC-X11 | `dialog.values.presentations events Appear @ variant alert / Appear, Disappear @ variant @sheet` | rule |
@@ -746,7 +747,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `drag_image.values.presentations event @cancel (the failed drop sliding back)` | field |
 | MAC-X11 | `button.values.presentations, list.values.presentations event @spring_load` | field |
 | MAC-X11 | `glass_container.surface.transitions (glass morphing)` | field |
-| MAC-X11 | `PartStyle.transitions and widget presentation transitions` | field |
+| MAC-X11 | `PartStyle.transitions and widget presentation transitions` (each transition's engine measured, interrupted at three points of its run; until then the transitions are pending facts, the preset stating none, S2.7, S17, the catalogue's Open items, ADD-A126) | field |
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
 | MAC-X11 | `window.values.presentations events Appear, Disappear` (the base) `@ variant dialog / variant utility` (window open and close per NSWindow.AnimationBehavior, which the application chooses) | rule |
 | MAC-X11 | - (the minimise effect, which the Dock draws; the full-screen enter and exit, which the window server animates) | out (R1.1) |

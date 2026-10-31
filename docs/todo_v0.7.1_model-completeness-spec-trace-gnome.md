@@ -185,7 +185,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.57 | `checkbox.box.stroke @ {checked}; radio.ring.stroke @ {checked}` (no ring on a checked box or radio, the checked and inconsistent `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`; GN-1.55's note, ADD-A125) | rule |
 | GN-1.58 | `checkbox.box.stroke @ {indeterminate}` (the inconsistent box's `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`, as the checked one's, GN-1.57, its fill GN-1.57's, ADD-A125) | rule |
 | GN-1.58 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` | rule |
-| GN-1.58 | `radio.ring.stroke @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked} (appended layers); radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-60`, `:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`; the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | rule |
+| GN-1.58 | `radio.ring.stroke @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked} (appended layers); radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-60`, `:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`; the dot drawn there, GN-P4-7†'s absent rule naming `indeterminate` beside `checked`, ADD-A125, ADD-A126) | rule |
 | GN-1.60 | `checkbox.box.corners` | field |
 | GN-1.60 | `radio.ring.corners (Full)` | field |
 | GN-1.61 | `checkbox.body.padding, checkbox.body.corners, checkbox.body.focus` | field |
@@ -213,6 +213,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.72 | `menu.accelerator.{opacity,padding}` | field |
 | GN-1.72 | `menu.values.accelerator_gap` | field |
 | GN-1.73 | `menu.check_indicator.{min_width,min_height,padding,glyph}` | field |
+| GN-1.73 | `menu.check_indicator.glyph @ variant radio (GlyphSource::Path from bullet.svg) / {indeterminate} (GlyphSource::Path from dash.svg)` (a checked radio item's bullet, and the dash the CSS gives a mixed node, which GTK4's menus never set, `GtkModelButton` setting only `CHECKED`, `gtk@4.24.1 gtk/gtkmodelbutton.c:407-420`, as libadwaita's `check` and `radio` nodes draw them in menus too, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:80`, `widgets/_menus.scss:83-121`; written before the absent rule, ADD-A126) | rule |
+| GN-1.73 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (GN-1.234), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | GN-1.73 | `menu.check_indicator.margin / menu.check_indicator.margin @ dir rtl` (its margins, the outer one negative, ADD-A79) | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio` | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio cond contrast_high` | rule |
@@ -485,7 +487,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_color cond contrast_high` | rule |
 | GN-1.202 | `reader:gnome:org.gnome.desktop.a11y.interface show-status-shapes` | reader |
 | GN-1.202 | `cond differentiate_without_color (GNOME: from show-status-shapes)` | condition |
-| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide)` | field |
+| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; engine GtkSwitch, the switch's own code, not CSS: an activation slides it from the end it rests at and sets the switch's state as the slide ends, a second activation restarting it, a drag and a change made in code moving it at once, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:262-319`, `:779-809`; its duration GTK's constant, `ANIMATION_DURATION`, `gtk/gtkswitch.c:203`, stated `= mul(<its key>, token.motion.speed_factor)`, so it is zero under `cond animations_off` and the activation sets the state at once, `:208-219`, as GTK does; its curve GTK's ease_out_cubic, `gtk/gtkprogresstracker.c:246-251`, libadwaita's, `Timing::Platform(Adw(EaseOutCubic))`, `libadwaita@1.10.0 src/adw-easing.c:174-181`; the connector setting `checked` at the slide's end, `Motion::take_slide_end`; S2.7, ADD-A126)` | field |
 | GN-1.204 | `switch.track.transitions (Fill)` | field |
 | GN-1.204 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
 | GN-1.205 | `switch.track.fill @ {checked} context any variant @osd (any widget, R25.9)` | rule |
@@ -649,7 +651,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.03 | `form.row.bindings, form.row_title.text.fill, form.row_subtitle.opacity @ variants {entry,error} / variants {entry,warning} / variants {entry,success}` (the accent rebound to the status colour) | rule |
 | GN-2.03 | `input.text.text @ context form.row variants {entry,@monospace}` | rule |
 | GN-2.04 | `form.row_title.text @ variant entry !{empty} / variant entry {focus_within}` | rule |
-| GN-2.04 | `form.row_title.transitions (Geometry, Text: the title shrinking)` | field |
+| GN-2.04 | `form.row_title.transitions (Geometry: the title shrinking and both labels moved by `title_offset`, lerped by the progress, `libadwaita@1.10.0 src/adw-entry-row.c:383-387`, `:395`, its scale and cross-fade the row below; engine AdwAnimation, replays: AdwEntryRow plays it again on each change of its text and of its text's state, its end unchanged included, `libadwaita@1.10.0 src/adw-entry-row.c:141-163`, `:166-189`; S2.7, ADD-A126)` | field |
+| GN-2.04 | `form.row_title.transitions (Transform, Opacity: libadwaita draws two labels, the empty title and the title, each at its own measure, scaled by a factor lerped by the progress, the ratio of the two labels' measured heights, so of their fonts, and no stated `Transform` value (`:381-382`), cross-faded by it, `libadwaita@1.10.0 src/adw-entry-row.c:381-401`, `:433-440`, never one text re-laid out at the sizes between, so the title's change is that scale and cross-fade of the two ends' text, not a Text interpolation; the empty title's geometry a second label the GNOME lane states with its facts, a catalogue part added with them, S2.7, ADD-A126)` | field |
+| GN-2.04 | `input.text.{opacity,transitions} @ context form.row variant entry; input.text.opacity @ context form.row variant entry !{empty} / {focused} context form.row variant entry` (the entry's own text, a part of its own (GN-2.03), its flags its own, `focused` where the row's title reads `focus_within`, drawn inside the title's cross-fade, `libadwaita@1.10.0 src/adw-entry-row.c:433-436`, so its opacity is the row's `empty_progress`: 0 while the row shows its empty title, 1 otherwise, `:141-163`; its transition `Opacity`, engine AdwAnimation, replays, the title's, `:166-189`, so text set while the row is unfocused fades in with the title; S2.7, ADD-A126) | rule |
 | GN-2.05 | `stepper.body.{fill,stroke} @ variant @row (no entry frame)` | rule |
 | GN-2.05 | `stepper.increment.{corners,min_width,min_height,margin}, stepper.decrement.{corners,min_width,min_height,margin} @ variant @row (circular filled buttons, their margins outside the circle, `_lists.scss:240-259`)` | rule |
 | GN-2.06 | `form.row_arrow.{icon,padding} @ variant combo` | rule |
@@ -749,7 +753,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.30 | `menu.body.{padding,corners} @ context any menu_bar (the submenu popovers)` | rule |
 | GN-2.30 | `menu_bar.item.fill @ {open} / {hover}; menu_bar.item.stroke @ cond contrast_high` | rule |
 | GN-2.31 | `banner.body.fill @ variant @info_bar / variants {@info_bar,info} / variants {@info_bar,@question} / variants {@info_bar,warning} / variants {@info_bar,error}` (the first: a GtkInfoBar of `GTK_MESSAGE_OTHER`, no severity, its fill as `_deprecated.scss:150-191` states it) | rule |
-| GN-2.31 | `banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant) | rule |
+| GN-2.31 | `banner.edge_line (absent = false), banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant; the line drawn again over GN-2.11's absent base by `absent = false`, as a field patch does not bring it back, S6.3, ADD-A126) | rule |
 | GN-2.31 | `button.body.fill @ {hover} context banner.action_area variant @info_bar / {pressed} context banner.action_area variant @info_bar` | rule |
 | GN-2.31 | `button.body.{fill,min_width,min_height,corners} @ variant close context banner variant @info_bar (round, flat)` | rule |
 | GN-2.32 | `group_box.body.stroke, group_box.body.corners, group_box.values.title_margin` | field |
@@ -895,6 +899,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.18 | `token.motion.durations.<transition tokens>` | token |
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
 | GN-3.18 | `token.motion (color_space PremultipliedSrgb: GTK's CSS colour transitions, gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604, S2.7, ADD-A125)` | token |
+| GN-3.18 | `PartStyle.transitions, FocusIndicator.transition (engine GtkCss for every stylesheet transition: from the value drawn, a running one cut where the style after has none, a value's curve taken by its property id, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:822-882`; S2.7, ADD-A126)` | field |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
 | GN-3.19 | `token.motion.timings.linear (Timing::Linear: CSS's keyword, the Bézier (0, 0, 1, 1), and the code's ADW_LINEAR, t / d, are the identity, S2.7, ADD-A125)` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
@@ -904,7 +909,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
-| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration)` | token |
+| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; on the application's scheme choice too, the model's pick, `adw-style-manager.c:979-991`; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:409-413`; S4.3, ADD-A126)` | token |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
@@ -921,7 +926,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.71† | - | out (R1.1) |
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
-| GN-3.28 | `FocusIndicator.transition (grow-in)` (its grow-in and its shrink-out, the ring narrowing and moving out as it fades, pending ADD-A126, ledger queue #85) | field |
+| GN-3.28 | `FocusIndicator.transition (grow-in: from the rest outline, zero wide and transparent at the larger offset, and back to it, `libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-27`; engine GtkCss; S2.10, ADD-A126)` | field |
 | GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |
@@ -1134,6 +1139,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-6† | `menu.values.submenu_presentation (Cascade), menu.arrow (absent = true) @ context any menu_bar` (nested popover menus: the submenu opens beside its item, arrowless; GN-1.76's Slide stays the base) | rule |
 | GN-P4-7† | `checkbox.mark.glyph (GlyphSource::Path from check.svg)` | field |
 | GN-P4-7† | `radio.dot.glyph (GlyphSource::Path from bullet.svg)` | field |
+| GN-P4-7† | `checkbox.mark (absent = true) @ !{checked,indeterminate}; radio.dot (absent = true) @ !{checked,indeterminate}` (no mark unchecked, the inconsistent radio's dash drawn on its dot as the check box's on its mark, GN-1.58: GTK swaps the icon source at once, setting none but `:checked`'s and `:indeterminate`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:79-81`, the check's CSS transitions naming neither, `_common.scss:6-7`, so neither is a `shown` part, S2.7; written last, S6.3; ADD-A126) | rule |
 | GN-P4-8† | `menu.values.placement @ context input / context text_area` (GtkPopover, point anchor) | placement |
 | GN-P4-8† | `menu.arrow (absent = true) @ context input / context text_area` (the arrowless text context menu) | rule |
 | GN-P4-8† | `input.values.context_menu_items, text_area.values.context_menu_items` | field |

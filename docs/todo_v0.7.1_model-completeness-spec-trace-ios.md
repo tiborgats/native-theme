@@ -257,12 +257,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TA-4 | `text_area.writing_tools_glow.{fill,shadow,transitions}` | field |
 | TA-5 | `link.text.text @ variant inline context text_area` | rule |
 | TA-5 | - | readers (R18) |
-| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage) @ variant selection` | rule |
+| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage) @ variant selection; checkbox.mark (absent = true) @ !{checked} variant selection` (the check `Absent` unchecked, `checked` the selection's flag, written last, until CK-2†'s measurement says whether UIKit animates it in, which would make it a `shown` part, S2.7, ADD-A126) | rule |
 | CK-1 | `list.accessory.glyph @ variant @checkmark` (the list checkmark accessory) | rule |
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
 | CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
 | CK-2† | `checkbox.box.*, checkbox.mark.* @ {disabled} variant selection` | rule |
-| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125; whether UIKit animates the check, the catalogue's Open items) | rule |
+| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark `Absent` unchecked, CK-1, and whether UIKit animates its check in a measurement, the catalogue's Open items, the input S2.7's rule takes to make it a `shown` part or keep it `Absent`, ADD-A126) | rule |
 | CK-2† | `checkbox.values.presentations event Appear @ variant selection` (the column sliding in with edit mode) | rule |
 | CK-2† | `checkbox.box.{min_width,min_height} @ variant selection` (`= uifm_scaled(<size>, body)`: the circle's size per Dynamic Type; ADD-A55) | rule |
 | CK-2† | `reader:ios:the Dynamic Type category the circle's size follows` | readers (R18) |
@@ -273,8 +273,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-3 | `menu.values.scrollable` | field |
 | MN-4 | `menu.item_subtitle.text` | field |
 | MN-5 | `menu.item_trailing_icon.icon` | field |
-| MN-6 | `menu.check_indicator.glyph @ {checked}` | rule |
-| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` | rule |
+| MN-6 | `menu.check_indicator.glyph` (the checkmark, in the base, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | field |
+| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the mixed mark, a patch of the base's) | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MN-6), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |
@@ -542,7 +543,6 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
-| CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
 | SG-1 | `segmented_control.track.padding (the indicator's inset)` | field |
@@ -854,6 +854,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-1 | `token.motion.timings.*` | token |
 | X-MO-1 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
+| X-MO-1 | `Transition.engine` (UIKit's and Core Animation's, measured: where an interrupted animation starts, its duration and curve, a spring's velocity, stacked changes, a theme change, a deactivation and an occlusion landing in it; until then the transitions are pending facts, the preset stating none, S2.7, S17, the catalogue's Open items, ADD-A126) | field |
 | X-MO-2 | `token.motion.timings.default (Timing::Spring; S4.1's rule drops spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |
@@ -926,7 +927,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SE-3 | `list.row_background.fill @ {pressed} / {selected}` (the grey touch highlight against the tint selection; per context by `context` rules) | rule |
 | X-FO-1 | `PartStyle.focus kind Ring (halo shape, position, width, colour)` | field |
 | X-FO-2 | `list.row_background.fill @ {focus_visible} (cell focus highlight)` | rule |
-| X-FO-2 | `FocusIndicator.transition kind FocusMove (ADD-A19)` | field |
+| X-FO-2 | `FocusIndicator.transition` (UIKit's focus moving between elements, `FocusMove`, ADD-A19: pending with X-MO-1's engine, the preset stating `"absent"` with the pending id, S17, ADD-A126) | field |
 | X-PH-1 | `PartStyle.transform @ {hover} (pointer lift)` | rule |
 | X-PH-1 | `PartStyle.shadow @ {hover}` | rule |
 | X-PH-1 | `PartStyle.fill @ {hover} (highlight)` | rule |
