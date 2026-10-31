@@ -251,6 +251,13 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
 quote = "GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
+# GTK recolours an icon by its name (`-gtk-icon-style: requested`, a `-symbolic` name recoloured), which no
+# RenderingMode states (ledger queue #123)
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+pending = "U152"
+rows = []
+
 [[fact]]
 key = "button.icon.icon.weight"
 value = 400
