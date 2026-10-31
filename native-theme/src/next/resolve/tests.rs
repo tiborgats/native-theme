@@ -1,31 +1,23 @@
-//! S8's resolution, S9.2's accent layer and S9.4's conversion. Every
+//! S8's resolution and S9.2's accent layer. Every
 //! number and name here is synthetic.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 
 use std::sync::Arc;
 
-use super::{
-    Change, Lazily, Pos, ReaderState, Stack, WindowConditions, WindowState, font_dpi, lazily,
-    logical_px, scaled_linear,
-};
+use super::{Change, Pos, ReaderState, Stack, WindowConditions, WindowState};
 use crate::key;
+use crate::next::blocks::Apply;
 use crate::next::blocks::part_style::PartStylePatch;
-use crate::next::blocks::text::{
-    Elision, Font, FontPatch, FontStyle, TextCase, TextStyle, TextStylePatch, Wrap,
-};
-use crate::next::blocks::{Apply, BlockPatch};
 use crate::next::color::Color;
 use crate::next::declare::Declarations;
 use crate::next::error::LayerError;
-use crate::next::expr::Expr;
 use crate::next::inputs::{Accent, Contrast, InputName, InputValue};
 use crate::next::key::Key;
 use crate::next::layer::Layer;
 use crate::next::selector::{Condition, InputKind, Rule, RuleBody, Scheme, Selector, WidgetRef};
-use crate::next::tokens::{TextRolesPatch, TextTokensPatch, TokensPatch};
 use crate::next::toml::layer::read_preset;
-use crate::next::units::{FontSize, Fraction};
+use crate::next::units::Fraction;
 use crate::next::value::{SchemeMap, Value};
 use crate::next::widgets::{ButtonPart, ButtonPatch, PartPatch, PartSlot, TypedPart, WidgetKind};
 
@@ -131,131 +123,6 @@ fn bases_then_rules_order() {
     // A base stated after a rule in the application's layer still comes
     // before every rule.
     assert!(steps.windows(2).all(|pair| pair[0].pos < pair[1].pos));
-}
-
-fn style(size: f32) -> TextStyle {
-    TextStyle {
-        font: Font {
-            family: Value::Stated("Synthetic".to_owned()),
-            size: Value::Stated(FontSize::Px(size)),
-            weight: Value::Stated(400),
-            style: Value::Stated(FontStyle::Normal),
-            width: Value::Absent,
-            axes: Vec::new(),
-            features: Vec::new(),
-        },
-        scaling_role: None,
-        letter_spacing: Value::Absent,
-        word_spacing: Value::Absent,
-        line_height: Value::Auto,
-        decoration: Value::Absent,
-        mnemonic_decoration: Value::Absent,
-        case: TextCase::Mixed,
-        elision: Elision::End,
-        wrap: Wrap::Word,
-        max_lines: None,
-        fill: Value::Absent,
-    }
-}
-
-fn size(px: f32) -> BlockPatch<TextStyle> {
-    BlockPatch::Fields(TextStylePatch {
-        font: Some(FontPatch {
-            size: Some(Value::Stated(FontSize::Px(px))),
-            ..FontPatch::default()
-        }),
-        ..TextStylePatch::default()
-    })
-}
-
-/// Tokens stating the keyed style `x` and the `body` slot.
-fn text(keyed: Option<BlockPatch<TextStyle>>, body: Option<BlockPatch<TextStyle>>) -> TokensPatch {
-    TokensPatch {
-        text: Some(TextTokensPatch {
-            keyed: keyed.map(|patch| vec![(key!("x"), patch)]),
-            roles: body.map(|body| TextRolesPatch {
-                body: Some(body),
-                ..TextRolesPatch::default()
-            }),
-            ..TextTokensPatch::default()
-        }),
-        ..TokensPatch::default()
-    }
-}
-
-fn tokens(patch: TokensPatch) -> Layer {
-    let mut layer = Layer::default();
-    layer.bases.tokens = patch;
-    layer
-}
-
-/// The `body` slot's font size, evaluated as S2.2 composes a `Fields`
-/// patch over a reference: the referenced style's steps and the slot's,
-/// in `lazily`'s order, the slot's reference itself the place followed.
-fn body_size(stack: &Stack) -> FontSize {
-    let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
-    let keyed = |tokens: &TokensPatch| {
-        let keyed = tokens.text.as_ref()?.keyed.as_ref()?;
-        keyed.first().map(|(_, patch)| patch.clone())
-    };
-    let slot = |tokens: &TokensPatch| tokens.text.as_ref()?.roles.as_ref()?.body.clone();
-    let mut value: Value<TextStyle> = Value::Absent;
-    for item in lazily(&theme.tokens, &theme.tokens) {
-        let patch = match item {
-            Lazily::Referenced(step) => keyed(&step.patch),
-            Lazily::Patch(step) => slot(&step.patch).filter(|patch| {
-                // The slot's reference is the place followed, not a patch.
-                !matches!(patch, BlockPatch::Set(Value::Expr(_)))
-            }),
-        };
-        if let Some(patch) = patch {
-            value.apply(patch).unwrap();
-        }
-    }
-    match value {
-        Value::Stated(style) => match style.font.size {
-            Value::Stated(size) => size,
-            other => panic!("{other:?}"),
-        },
-        other => panic!("{other:?}"),
-    }
-}
-
-/// A `Fields` patch over a reference composes lazily (S2.2): the
-/// referenced style's bases (the preset's and a later layer's), then the
-/// patch stated in a base (a reader's font patch on the slot), before every
-/// rule (a preset's `Tokens` rule on the referenced style still reaches
-/// the slot).
-#[test]
-fn fields_patch_composes_lazily_before_rules() {
-    let reference = BlockPatch::Set(Value::Expr(Expr::parse("token.text.keyed.x").unwrap()));
-    let preset = tokens(text(
-        Some(BlockPatch::Set(Value::Stated(style(10.0)))),
-        Some(reference),
-    ));
-    let reader = tokens(text(None, Some(size(14.0))));
-    let later = tokens(text(Some(size(16.0)), None));
-    let state = ReaderState::new(Scheme::Light, 1.0);
-    // The referenced style's later base comes before the slot's patch.
-    let without_rule = stack(
-        preset.clone(),
-        Some((state.clone(), reader.clone())),
-        vec![later.clone()],
-    );
-    assert_eq!(body_size(&without_rule), FontSize::Px(14.0));
-    // A rule on the referenced style comes after every base patch.
-    let mut ruled = preset;
-    let mut selector = Selector::default();
-    selector
-        .conditions
-        .all_of
-        .push(Condition::Scheme(Scheme::Light));
-    ruled.rules.push(Rule::new(
-        selector,
-        RuleBody::Tokens(text(Some(size(12.0)), None)),
-    ));
-    let with_rule = stack(ruled, Some((state, reader)), vec![later]);
-    assert_eq!(body_size(&with_rule), FontSize::Px(12.0));
 }
 
 /// S8's change classification: the first resolution, none, a condition
@@ -455,21 +322,6 @@ fn inputs_take_their_contrast_base() {
     assert_eq!(resolved(&state), [(accent.clone(), color(0.7))]);
     state.contrast = Some(Contrast::Increased);
     assert_eq!(resolved(&state), [(accent, color(0.3))]);
-}
-
-/// S9.4: points become logical pixels by `dpi / 72`, the reader's DPI over
-/// the preset's token; pixels stay; linear scaling multiplies after the
-/// conversion.
-#[test]
-fn points_to_px_then_linear_scaling() {
-    assert_eq!(font_dpi(Some(120.0), Some(96.0)), Some(120.0));
-    assert_eq!(font_dpi(None, Some(96.0)), Some(96.0));
-    assert_eq!(font_dpi(None, None), None);
-    assert_eq!(logical_px(FontSize::Pt(9.0), 96.0), 12.0);
-    assert_eq!(logical_px(FontSize::Px(9.0), 96.0), 9.0);
-    // Converted, then scaled.
-    let dpi = font_dpi(None, Some(96.0)).unwrap();
-    assert_eq!(scaled_linear(logical_px(FontSize::Pt(9.0), dpi), 1.5), 18.0);
 }
 
 /// The stack's refusals, for `layer_error_every_variant_triggers`.

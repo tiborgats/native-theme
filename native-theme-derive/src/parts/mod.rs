@@ -6,6 +6,7 @@ use syn::{DeriveInput, Error, Result};
 mod attrs;
 mod block;
 mod read;
+mod resolve;
 mod walk;
 mod widget;
 

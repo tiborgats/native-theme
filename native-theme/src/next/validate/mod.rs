@@ -21,6 +21,7 @@ use super::declare::Declarations;
 use super::error::{LayerError, Problem};
 use super::layer::Layer;
 use super::presets::PresetId;
+pub(crate) use checks::{TypeTarget, type_env};
 pub(crate) use stack::Stacked;
 
 /// What a layer is to the stack (S8, S9, S14): which checks apply to it.

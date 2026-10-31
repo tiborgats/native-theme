@@ -23,6 +23,7 @@ pub mod placement;
 #[doc(hidden)]
 pub mod platform;
 mod presets;
+mod query;
 #[cfg_attr(
     not(test),
     expect(
@@ -128,6 +129,7 @@ pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeK
 pub use key::Key;
 pub use layer::{Bases, Layer};
 pub use presets::PresetId;
+pub use query::{Element, ElementData, FontMetrics, Scope, Sibling};
 pub use resolve::{
     Change, ContentSizeCategory, ReaderState, Resolution, ResolvedTheme, WindowConditions,
     WindowState,

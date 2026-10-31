@@ -28,7 +28,7 @@ use super::stack::{
 use crate::next::blocks::part_style::RoleRef;
 use crate::next::declare::{DataName, DataOwner, Declarations};
 use crate::next::error::{Problem, ProblemKind};
-use crate::next::expr::{ElementDatum, Expr, Ref};
+use crate::next::expr::{ElementDatum, Expr, MAX_CHAIN, Ref};
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
@@ -201,9 +201,6 @@ enum Answer<'s> {
     /// A `Surface(S)` binding: the lookup becomes `role.S.x`.
     Set(SurfaceSet),
 }
-
-/// How many references a chain may follow (S2.2, S12).
-const MAX_CHAIN: usize = 32;
 
 /// How deep a lookup follows references before it stops: past any chain
 /// S12 allows, so a cycle ends a lookup instead of the stack.

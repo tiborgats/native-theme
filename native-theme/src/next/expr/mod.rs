@@ -41,12 +41,16 @@ use super::key::Key;
 use super::roles::SurfaceSet;
 use super::units::{Deg, Ms, Px};
 
+pub(crate) use eval::{Env, Val};
 pub use parse::{ParseError, ParseErrorKind};
 pub(crate) use ty::{Bound, EnumTy, FieldType, SURFACE_SET, Ty, TypeEnv};
 
 /// How deep an expression may nest: calls and `active(…)` inside each other
 /// (S2.2, S12).
 pub const MAX_DEPTH: usize = 32;
+
+/// How long a chain of references may be (S2.2, S12).
+pub(crate) const MAX_CHAIN: usize = 32;
 
 /// A parsed expression: a literal, a reference or a call.
 #[derive(Clone, Debug, PartialEq)]

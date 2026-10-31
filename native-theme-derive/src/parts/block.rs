@@ -560,7 +560,7 @@ pub(super) fn generic_arg<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
 }
 
 /// The last segment of a plain path type with no arguments.
-fn plain_ident(ty: &Type) -> Option<&Ident> {
+pub(super) fn plain_ident(ty: &Type) -> Option<&Ident> {
     if let Type::Path(type_path) = ty
         && type_path.qself.is_none()
         && let Some(seg) = type_path.path.segments.last()
@@ -573,7 +573,7 @@ fn plain_ident(ty: &Type) -> Option<&Ident> {
 
 /// The field's value is a `Value`, or an `Option` of one, holding one of
 /// `inner` when given.
-fn holds_value(ty: &Type, inner: Option<&[&str]>) -> bool {
+pub(super) fn holds_value(ty: &Type, inner: Option<&[&str]>) -> bool {
     let ty = generic_arg(ty, "Option").unwrap_or(ty);
     generic_arg(ty, "Value").is_some_and(|held| match inner {
         Some(names) => plain_ident(held).is_some_and(|ident| names.iter().any(|n| ident == n)),
@@ -1064,6 +1064,17 @@ fn expand_fields(
     } else {
         TokenStream::new()
     };
+    let resolve_patch = if type_attrs.resolved_patch {
+        resolve_patch_impl(name, &patch, fields)
+    } else {
+        TokenStream::new()
+    };
+    let locate = super::resolve::struct_locate(name, Some(&patch), fields);
+    let resolve = if type_attrs.own_resolved {
+        TokenStream::new()
+    } else {
+        super::resolve::struct_resolve(name, fields)
+    };
     quote! {
         #[doc = #doc]
         #[derive(Clone, Debug, Default, PartialEq)]
@@ -1071,6 +1082,12 @@ fn expand_fields(
         #vis struct #patch { #(#members)* }
 
         #resolved_patch
+
+        #resolve_patch
+
+        #locate
+
+        #resolve
 
         #common
 
@@ -1110,6 +1127,49 @@ fn expand_fields(
         #walk
 
         #walk_patch
+    }
+}
+
+/// `ResolvePatch` for a struct block whose patch is resolved alone (a
+/// keyframe's part style): each field the patch sets, resolved from that
+/// patch's step.
+fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> TokenStream {
+    let c = quote!(crate::next::resolve::compose);
+    let ev = quote!(crate::next::resolve::evaluate);
+    let resolved = format_ident!("Resolved{name}Patch");
+    let members = fields.iter().map(|f| {
+        let ident = &f.ident;
+        let key = ident.as_ref().map(Ident::to_string).unwrap_or_default();
+        let found = super::resolve::patch_locate(f, &quote!(value));
+        let (call, required) = super::resolve::resolve_call(name, f);
+        let call = if required {
+            call
+        } else {
+            quote!(::core::option::Option::Some(#call))
+        };
+        quote! {
+            #ident: match &patch.#ident {
+                ::core::option::Option::Some(value) => {
+                    let rest: &[&str] = &[];
+                    let items = [#c::Fold { pos, target: cx.target(), found: #found }];
+                    cx.at(#key, |cx| #call)
+                }
+                ::core::option::Option::None => ::core::option::Option::None,
+            },
+        }
+    });
+    quote! {
+        impl #ev::ResolvePatch for #name {
+            type ResolvedPatch = #resolved;
+
+            fn resolve_patch<'t: 'f, 'f>(
+                patch: &'f #patch,
+                pos: crate::next::resolve::Pos,
+                cx: &mut #ev::Cx<'t>,
+            ) -> #resolved {
+                #resolved { #(#members)* }
+            }
+        }
     }
 }
 
@@ -1157,7 +1217,26 @@ fn expand_append(
         "Appends to `{list_name}` over the value below; over `Absent`, the appended items \
          are the whole value. Composed lazily over a reference (S2.2)."
     );
+    let c = quote!(crate::next::resolve::compose);
+    let locate = super::resolve::struct_locate(name, None, fields);
+    let resolve = super::resolve::struct_resolve(name, fields);
     Ok(quote! {
+        #locate
+
+        #resolve
+
+        impl #c::Locate for #patch {
+            fn locate(&self, path: &[&str]) -> #c::Found<'_> {
+                if path.is_empty() {
+                    return #c::Found::Node(self);
+                }
+                match self {
+                    #patch::Set(value) => #c::Locate::locate(value, path),
+                    #patch::Append(_) => #c::Found::Missing,
+                }
+            }
+        }
+
         #[doc = #doc]
         #[derive(Clone, Debug, PartialEq)]
         #vis enum #patch {
@@ -1252,6 +1331,7 @@ fn expand_enum(
     let mut variants = Vec::new();
     let mut infos = Vec::new();
     let mut units = Vec::new();
+    let mut arms = Vec::new();
     for variant in &data.variants {
         let ident = &variant.ident;
         let docs = docs(&variant.attrs);
@@ -1269,6 +1349,16 @@ fn expand_enum(
                     quote!(#(#docs)* #ident: #ty,)
                 });
                 variants.push(quote!(#(#docs)* #ident { #(#members)* }));
+                let bindings: Vec<_> = fields.iter().map(|f| &f.ident).collect();
+                let values = fields.iter().map(|f| {
+                    let binding = f.ident.clone().unwrap_or_else(|| format_ident!("value"));
+                    super::resolve::variant_value(name, f, &binding)
+                });
+                arms.push(quote! {
+                    Self::#ident { #(#bindings),* } => ::core::option::Option::Some(
+                        #resolved::#ident { #(#bindings: #values),* }
+                    ),
+                });
                 for f in &fields {
                     let field = f.ident.as_ref().map(Ident::to_string).unwrap_or_default();
                     infos.push(f.field_info(&format!("{snake}.{field}")));
@@ -1286,6 +1376,11 @@ fn expand_enum(
                         let field_docs = &only.docs;
                         variants.push(quote!(#(#docs)* #ident(#(#field_docs)* #ty)));
                         infos.push(only.field_info(&snake));
+                        let binding = format_ident!("value");
+                        let value = super::resolve::variant_value(name, only, &binding);
+                        arms.push(quote! {
+                            Self::#ident(#binding) => ::core::option::Option::Some(#resolved::#ident(#value)),
+                        });
                     }
                     several => {
                         if several.iter().any(|f| !f.is_plain_leaf()) {
@@ -1297,6 +1392,14 @@ fn expand_enum(
                         }
                         let tys = several.iter().map(|f| &f.ty);
                         variants.push(quote!(#(#docs)* #ident(#(#tys),*)));
+                        let bindings: Vec<_> = (0..several.len())
+                            .map(|index| format_ident!("value{index}"))
+                            .collect();
+                        arms.push(quote! {
+                            Self::#ident(#(#bindings),*) => ::core::option::Option::Some(
+                                #resolved::#ident(#(::core::clone::Clone::clone(#bindings)),*)
+                            ),
+                        });
                         let written = several
                             .iter()
                             .map(|f| type_string(&f.ty))
@@ -1319,9 +1422,16 @@ fn expand_enum(
             Fields::Unit => {
                 variants.push(quote!(#(#docs)* #ident));
                 units.push(snake);
+                arms.push(quote!(Self::#ident => ::core::option::Option::Some(#resolved::#ident),));
             }
         }
     }
+    let locate = super::resolve::enum_locate(name);
+    let resolve = if type_attrs.own_resolved {
+        TokenStream::new()
+    } else {
+        super::resolve::enum_resolve(name, &arms)
+    };
     let form = quote!(#r::BlockForm::Enum { unit_variants: &[#(#units),*] });
     let walk = super::walk::enum_walk(
         name,
@@ -1361,5 +1471,9 @@ fn expand_enum(
         #read
 
         #walk
+
+        #locate
+
+        #resolve
     })
 }

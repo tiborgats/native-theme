@@ -3,11 +3,10 @@
 //! accent layer), the conditions in force, and the resolution's three
 //! steps: the bases merged in order, then the `Colors` and `Tokens` rules
 //! whose conditions hold, then each part's and widget's base and its rules
-//! whose conditions hold, kept in order for the query (S8). A `Fields`
-//! patch over a reference composes lazily: the referenced value's bases,
-//! then the bases' patches, then every rule by its place ([`lazily`],
-//! S2.2). Also S9.2's accent layer (its inputs; `kde-breeze`'s derived
-//! roles are M1b's) and S9.4's points to pixels and linear text scaling.
+//! whose conditions hold, kept in order for the query (S8); their
+//! evaluation for an element ([`evaluate`]), a `Fields` patch over a
+//! reference composed lazily ([`compose`], S2.2). Also S9.2's accent layer
+//! (its inputs; `kde-breeze`'s derived roles are M1b's).
 #![cfg_attr(
     not(test),
     expect(
@@ -17,6 +16,9 @@
 )]
 
 use std::sync::Arc;
+
+pub(crate) mod compose;
+pub(crate) mod evaluate;
 
 use super::color::Color;
 use super::declare::Declarations;
@@ -31,7 +33,6 @@ use super::selector::{
     ValuesPatch, WidgetRef,
 };
 use super::tokens::TokensPatch;
-use super::units::FontSize;
 use super::validate::{self, Context, LayerKind, Stacked};
 use super::value::Value;
 use super::widgets::{PartPatch, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch};
@@ -359,6 +360,9 @@ pub struct ResolvedTheme {
     pub(crate) font_dpi: Option<f32>,
     /// The reader's content size category (S9.4).
     pub(crate) content_size_category: Option<ContentSizeCategory>,
+    /// The preset's declarations, which expressions are typed against
+    /// (S2.2, S10).
+    pub(crate) declarations: Declarations,
 }
 
 /// KDE's scheme lists under the scheme in force (S9.1).
@@ -703,6 +707,7 @@ impl Stack {
             text_scaling_factor: reader.map_or(1.0, |state| state.text_scaling_factor),
             font_dpi: reader.and_then(|state| state.font_dpi),
             content_size_category: reader.and_then(|state| state.content_size_category),
+            declarations: self.declarations.clone(),
         };
         let stacked = self.stacked();
         let left_out = self.reader_accent_left_out();
@@ -1050,88 +1055,6 @@ impl Holding<'_> {
             .filter(|size| declared.contains(size))
             .or_else(|| declared.first())
     }
-}
-
-/// One step of a lazy composition (S2.2): the referenced value's own, or
-/// the place's where the patch over the reference is stated.
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum Lazily<'s, A, B> {
-    /// The referenced value's own step.
-    Referenced(&'s Step<A>),
-    /// A step of the place the patch is stated at.
-    Patch(&'s Step<B>),
-}
-
-impl<A, B> Lazily<'_, A, B> {
-    /// The step's place in the stack.
-    pub(crate) fn pos(&self) -> Pos {
-        match self {
-            Lazily::Referenced(step) => step.pos,
-            Lazily::Patch(step) => step.pos,
-        }
-    }
-}
-
-/// The order in which a `Fields` patch over a reference composes, lazily,
-/// where the value is evaluated (S2.2, R2.4): the referenced value's own
-/// bases first, then each patch stated over the reference in a layer's
-/// bases, in layer order, so it composes with the bases before every rule;
-/// then every rule in the stack's order, the referenced value's and the
-/// patches over the reference each at its rule's place (the referenced
-/// value's first within one rule). `referenced` and `patches` are the steps
-/// of the two places, each in order.
-pub(crate) fn lazily<'s, A, B>(
-    referenced: &'s [Step<A>],
-    patches: &'s [Step<B>],
-) -> Vec<Lazily<'s, A, B>> {
-    let bases = |step: &&Step<A>| !step.pos.rule;
-    let mut out: Vec<Lazily<'s, A, B>> = referenced
-        .iter()
-        .filter(bases)
-        .map(Lazily::Referenced)
-        .collect();
-    out.extend(
-        patches
-            .iter()
-            .filter(|step| !step.pos.rule)
-            .map(Lazily::Patch),
-    );
-    let mut rules: Vec<Lazily<'s, A, B>> = referenced
-        .iter()
-        .filter(|step| step.pos.rule)
-        .map(Lazily::Referenced)
-        .chain(
-            patches
-                .iter()
-                .filter(|step| step.pos.rule)
-                .map(Lazily::Patch),
-        )
-        .collect();
-    rules.sort_by_key(|item| (item.pos(), matches!(item, Lazily::Patch(_))));
-    out.extend(rules);
-    out
-}
-
-/// The DPI a size in points converts by (S9.4): the reader's or
-/// stand-in's, where it reports one, else the preset's
-/// `token.text.font_dpi`.
-pub(crate) fn font_dpi(reader: Option<f32>, token: Option<f32>) -> Option<f32> {
-    reader.or(token)
-}
-
-/// A font size, line height, letter or word spacing in logical pixels
-/// (S9.4): one in points as `pt × dpi / 72`, one in pixels as it is.
-pub(crate) fn logical_px(size: FontSize, dpi: f32) -> f32 {
-    match size {
-        FontSize::Pt(points) => points * dpi / 72.0,
-        FontSize::Px(px) => px,
-    }
-}
-
-/// `TextScaling::Linear` (S9.4): a size already in logical pixels times
-/// the reader's factor.
-pub(crate) fn scaled_linear(px: f32, factor: f32) -> f32 {
-    px * factor
 }
 
 /// The stack's refusals, each triggered (S8, S9.2): a stand-in while a

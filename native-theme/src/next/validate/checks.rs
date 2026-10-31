@@ -1785,6 +1785,41 @@ struct Types<'a> {
     region: Region,
 }
 
+/// What typing knows of the model where an expression of `target`'s is
+/// evaluated: the same types the check typed it with (S2.2, S12).
+pub(crate) fn type_env(decl: &Declarations, target: TypeTarget) -> impl TypeEnv + '_ {
+    let region = match target {
+        TypeTarget::Roles => Region::Roles,
+        TypeTarget::Tokens => Region::Tokens,
+        TypeTarget::Values(widget) => Region::Values(widget),
+        TypeTarget::Part(part) => {
+            let widget = widget_of(part);
+            let parts = registry::widgets()
+                .iter()
+                .find(|w| w.kind == widget)
+                .map_or(&[] as &[PartInfo], |w| w.parts);
+            match super::stack::part_info(part) {
+                Some(info) => Region::Part(widget, part, info, parts),
+                None => Region::Tokens,
+            }
+        }
+    };
+    Types { decl, region }
+}
+
+/// Where an expression is stated, for [`type_env`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum TypeTarget {
+    /// The colour roles.
+    Roles,
+    /// The tokens.
+    Tokens,
+    /// A typed widget's part.
+    Part(TypedPart),
+    /// A typed widget's values.
+    Values(WidgetKind),
+}
+
 impl TypeEnv for Types<'_> {
     fn reference(&self, reference: &Ref) -> Option<Ty> {
         let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
