@@ -1411,7 +1411,7 @@ spaces:
     description, K2.7): `text`.
   - `icon` — the image: `icon` (size, fill per state, rendering mode, weight and scale for SF Symbols; its fill an
     expression on `element.color` under `contentTintColor`, MAC-B07; on `kde-breeze` the clear-field, inline-action and
-    chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24; on `adwaita` its `rendering_mode` `from_icon`, GTK recolouring a symbolic icon and drawing any other as it is, S2.9, ADD-A130), `glyph` (for system button types, B-12; for the icon the platform itself names, a `ThemeIcon` glyph: `adwaita`'s AdwTabButton frame, `adw-tab-counter-symbolic` under `@tab_button` and `adw-tab-overflow-symbolic` under `@tab_overflow`, `adw-tab-button.c:103-131`, an icon of libadwaita's resources, which it adds to the icon theme's search path, `src/adw-main.c:95-96`, so a connector finds it by name where those resources are loaded, as under GTK, and elsewhere draws none and records it, R23; GN-2.37, ADD-A130),
+    chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24; on `adwaita` and `kde-breeze` its `rendering_mode` `from_icon`, the icon's own colouring path by path, GTK's symbolic paths and KDE's colour-scheme stylesheet classes taking the style's colours, S2.9, ADD-A130), `glyph` (for system button types, B-12; for the icon the platform itself names, a `ThemeIcon` glyph: `adwaita`'s AdwTabButton frame, `adw-tab-counter-symbolic` under `@tab_button` and `adw-tab-overflow-symbolic` under `@tab_overflow`, `adw-tab-button.c:103-131`, an icon of libadwaita's resources, which it adds to the icon theme's search path, `src/adw-main.c:95-96`, so a connector finds it by name where those resources are loaded, as under GTK, and elsewhere draws none and records it, R23; GN-2.37, ADD-A130),
     `transitions` (state-triggered icon animations, `TransitionKind::Keyed` of group `Icon`: WinUI's AnimatedIcon
     states, W1-024, W3-28; GtkSvg's state transitions, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
     R25.12).
@@ -1572,8 +1572,9 @@ spaces:
     `@arrow_start`, `@arrow_end`, `@arrow_none` (GtkMenuButton's direction; down is the base), `@tab_button`
     (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@tab_overflow` (a content variant the connector
     sets with `@tab_button` where the tab view holds 100 pages or more: AdwTabButton then shows
-    `adw-tab-overflow-symbolic` and no count, so no `badge` element is built, `libadwaita@1.10.0
-    src/adw-tab-button.c:103-131`; ADD-A130), `@custom_child` (a content variant: a button whose
+    `adw-tab-overflow-symbolic` and hides its count, so the connector draws no `badge`; with no tab view it shows
+    the counter frame and no count either, `libadwaita@1.10.0 src/adw-tab-button.c:103-131`, the count hidden at
+    `:128`, the view's page count read only where there is a view, `:105-111`; ADD-A130), `@custom_child` (a content variant: a button whose
     child is neither a label nor an image, so GTK sets neither `.text-button` nor `.image-button`, `gtk/gtkbutton.c:431-432`: the base
     `button` padding, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:22`, where the base, text only, is
     `.text-button`'s, `:72-75`), `@image_text_box` (with `with_icon`: an icon and a label in a box the application
@@ -2379,24 +2380,26 @@ spaces:
     `corners`, `min_height`, `margin` (its bottom margin, GN-1.48).
   - `caret` — the line caret: `fill` (base `= token.caret.color`), `min_width` (the caret's width, base
     `= token.caret.width`, with rules under KDE's tablet mode, Q1.14; on `adwaita`, whose `token.caret.width` is
-    absent, `= add(floor(mul(widget.text.font_height, token.params.caret.aspect_ratio)), <length>)`, GTK's stem from the
-    run's font height, S4.2, GN-3.36, ADD-A130), `min_height` (its height against the line,
+    absent, `= add(floor(mul(element.caret_height, token.params.caret.aspect_ratio)), <length>)`, GTK's stem from the
+    caret's drawn height, S4.2, GN-3.36, ADD-A130), `min_height` (its height against the line,
     X-CA-1), `corners`; its shape is these fields' rules per state and flag (S4.2: macOS's insertion indicator,
     MAC-X14; the overwrite and tablet-mode forms), its colour and width bases and its blink the caret token's
     (`token.caret`, R12, ADD-A24). The caret has no font of its
-    own: a length that follows the text (GNOME's width from the font's height, GN-3.36; iOS's height against the
-    line, X-CA-1) measures the `text` part's font, `widget.text.font_height` or `widget.text.line_height` (S2.2),
-    which the caret declares as its data (`data = { caret = ["widget.text.font_height"] }` on `adwaita`,
-    `["widget.text.line_height"]` where its height follows the line, S8). Absent by rule where the
+    own: a length that follows the text measures the `text` part's font (iOS's height against the line, X-CA-1,
+    `widget.text.line_height`, S2.2), and GNOME's width follows the caret the toolkit draws, `element.caret_height`
+    (S4.2, GN-3.36); the caret declares what it reads as its data (`data = { caret = ["caret_height"] }` on
+    `adwaita`, `["widget.text.line_height"]` where its height follows the line, S8). Every caret part of every text
+    widget declares `caret_height` where its width reads it, its own caret's (`secondary_caret`, `drop_caret`, and
+    the carets of `text_area`, `code_editor` and `selectable_label`, as on `input`; ADD-A130). Absent by rule where the
     platform hides it (with a selection, `{text_selected}`; in overwrite mode, `{overwrite}`, where `block_caret`
     replaces it; ADD-A23).
   - `secondary_caret` — the bidirectional secondary caret where the caret sits between runs of different direction
-    (GNOME's split cursor, Qt's bidi caret; GN-3.37): `fill` (base `= token.caret.secondary`), `min_width`,
-    `min_height`.
+    (GNOME's split cursor, Qt's bidi caret; GN-3.37): `fill` (base `= token.caret.secondary`), `min_width` (on
+    `adwaita` the caret's expression over its own `caret_height`, declared, S4.2), `min_height`.
   - `block_caret` — the block caret (overwrite mode, Qt's input mask), shown under `{overwrite}`: `fill`, `text` (the
     covered character's fill; GNOME GN-1.49, KDE K1.47†).
   - `drop_caret` — the insertion point drawn while a text drag hovers the field (P3-9†, W-P3-9†): `fill`,
-    `min_width`.
+    `min_width` (on `adwaita` the caret's expression over its own `caret_height`, declared, S4.2).
   - `floating_caret` — iOS's floating (trackpad-mode) ghost caret (X-CA-3): `fill`, `opacity`, `corners`.
   - `caret_accessory` — iOS's caret accessories, the dictation and language indicators (X-CA-3): `icon`, `padding`.
   - `dictation_effect` — macOS's dictation effect at the caret (MAC-X14): `fill`, `transitions`.
@@ -9180,8 +9183,8 @@ wherever the block appears and is cited here, not repeated: among the tokens it 
 `none` where keys never repeat, and its `KeyRepeat`'s `delay` and `interval` are stated, S4.2; every parameter
 of a `ScrollDecay` is stated), `IconTokens.theme_fallback`, the `Caret` fields it
 names (`width` among them where the caret's width follows each line, GTK's, S4.2, ADD-A130), every `TextRendering`
-field, each of a keyed text style's `fill`, `elision`, `wrap` and `max_lines` that the platform's style does not set
-(S2.8, ADD-A130), and a `FocusIndicator`'s `shadow` and `transition` (its `dash` is stated, `solid`
+field, each of a keyed text style's or slot's `fill`, `elision`, `wrap` and `max_lines` that the platform's style
+does not set (S2.8, ADD-A130), and a `FocusIndicator`'s `shadow` and `transition` (its `dash` is stated, `solid`
 included, S2.4). `KdeTokens` and `KdeEffects` are stated whole on `kde-breeze`, never `Absent` (`tint_factor` an
 `Option`, `none` where the scheme does not tint; a reader's and a port's unset keys as KColorScheme and `applyScheme()`
 read them, S4.8). The second is this table, for the tokens no block mark covers:

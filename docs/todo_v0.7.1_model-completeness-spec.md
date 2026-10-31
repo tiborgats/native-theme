@@ -226,6 +226,7 @@ ref      := "role." set "." path        typed colour role of a surface set, a pa
                                           scroll_offset, scroll_progress, item_index,
                                           item_count, text, color, screen_width,
                                           screen_height, window_width, window_height, move_distance,
+                                          caret_height (a caret part's own caret, S4.2),
                                           and char_width (the average), max_char_width (the
                                           widest glyph), font_x_height, font_height,
                                           font_underline_offset,
@@ -1034,17 +1035,16 @@ pub struct TextStyle {
                                               // whole `font` a `Value`, as a preset's base table is the
                                               // whole block and cannot hold a reference with changed
                                               // fields (S2.2; ADD-A125)
-    pub elision: Value<Elision>,              // these four: the text as a widget draws it, each `Absent` in a keyed
-    pub wrap: Value<Wrap>,                    // text style whose platform style does not set it, and only there
+    pub elision: Value<Elision>,              // these four: the text as a widget draws it, each `Absent` in a style
+    pub wrap: Value<Wrap>,                    // or slot whose platform style does not set it, and only there
     pub max_lines: Value<Option<u32>>,        // (*Styles and drawn text*, below; ADD-A130); max_lines: wrap to at
     pub fill: Value<Paint>,                   // most n lines, then elide, None no limit (ADD-A67)
 }
 pub enum TextCase { Mixed, Upper, Lower, SmallCaps, Capitalize }
 pub struct Decoration { pub line: DecorationLine, pub style: DecorationStyle, pub by_word: Value<bool>,
-                        pub origin: DecorationOrigin,              // what `offset` is measured from (ADD-A130)
                         pub thickness: Value<Px>, pub offset: Value<Px>, pub paint: Value<Paint> }
-pub enum DecorationOrigin { Baseline, InkBottom }   // the baseline; the bottom of the decorated run's ink
-pub enum DecorationLine { Underline, Overline, Strike }
+pub enum DecorationLine { Underline, UnderlineLow,   // UnderlineLow: below the decorated run's ink (ADD-A130)
+                          Overline, Strike }
 pub enum DecorationStyle { Solid, Double, Dotted, Dashed, DashDot, DashDotDot, Wavy }   // AppKit's patterns
                                                                                       // (MAC-LK01)
 pub enum Elision { None, End, Middle, Start,
@@ -1058,18 +1058,21 @@ pub enum FadeUnder { Part(PartRef), Element { widget: WidgetRef, variant: Option
                                               // tab's close button, GN-1.129)
 ```
 
-A decoration's `offset` is the distance from its `origin` to the line's top edge, positive downward, and its
-`thickness` the line's height. `Baseline` measures from the baseline (an overline's and a strike line's offsets are
-negative); `InkBottom` from the bottom of the ink of the run the line decorates, the glyphs it is drawn under, not
-the font's descent (ADD-A130): Pango's low underline, the one GTK's mnemonics take (Pango gives the accelerator
-character `PANGO_UNDERLINE_LOW`, `pango@1.58.2 pango/pango-markup.c:494-509`), is drawn with its top one underline
+A decoration's `offset` is the distance from the baseline to the line's top edge, positive downward (an overline's
+and a strike line's are negative), and its `thickness` the line's height; an `UnderlineLow` line's `offset` is
+measured from the bottom of the ink of the run it decorates instead, the glyphs it is drawn under, not the font's
+descent (ADD-A130). That is Pango's low underline, the one GTK's mnemonics take (Pango gives the accelerator
+character `PANGO_UNDERLINE_LOW`, `pango@1.58.2 pango/pango-markup.c:494-509`), drawn with its top one underline
 thickness below that run's ink (`pango/pango-renderer.c:383-385`), so `adwaita`'s mnemonic decoration is
-`origin = "ink_bottom"`, `offset = "= element.font_underline_thickness"`; the connector takes the run's ink from its
-own glyph extents while drawing, which no font metric and no element datum gives (a datum is one value per element,
-and each decorated run has its own ink). Rejected: an element datum for the ink's bottom (one per element, where
-the mnemonic's run is one character and a spelling underline's another word); a fixed offset (Pango's follows the
-character: an underlined `g` lies lower than an underlined `F`). Whether a mnemonic is underlined on a disabled
-element is `token.behavior.mnemonic_when_disabled` (S4.2). Where the platform draws the line from the
+`line = "underline_low"`, `offset = "= element.font_underline_thickness"`; the connector takes the run's ink from its
+own glyph extents while drawing, which no font metric and no element datum gives (each decorated run has its own
+ink). A platform that underlines its mnemonic from the font's own metrics (Qt's text drawing) states a plain
+`Underline` (below). Rejected: an
+`origin` field on every decoration (a field every decoration of every lane would state, and one that could put an
+ink-bottom origin on an overline or a strike line, which no platform draws); an element datum for the ink's bottom
+(one per query, where the mnemonic's run is one character and a spelling underline's another word); a fixed offset
+(Pango's follows the character: an underlined `g` lies lower than an underlined `F`). Whether a mnemonic is
+underlined on a disabled element is `token.behavior.mnemonic_when_disabled` (S4.2). Where the platform draws the line from the
 font's own metrics (Pango's underline and strikethrough metrics, Qt's `QFontMetrics::underlinePos`,
 `strikeOutPos` and `lineWidth`, AppKit's `NSFont.underlinePosition` and `underlineThickness`, DirectWrite's font
 metrics, Android's `Paint.getUnderlineThickness`), the preset states them as references to the part's font metrics
@@ -1077,50 +1080,48 @@ metrics, Android's `Paint.getUnderlineThickness`), the preset states them as ref
 the connector measures in this convention from its toolkit's; a number is stated only where the platform draws a
 fixed line (R5.4: a value that follows the font cannot be stated as a result).
 
-**Styles and drawn text** (ADD-A130). A keyed text style (`token.text.keyed.<key>`, which the slots reference, S4.4)
-is the platform's named style. Its `fill`, `elision`, `wrap` and `max_lines` are what a widget does with text drawn
-in it, so each one the platform's style does not set is `Absent` in the style, all four where the style is a font
-and its spacing only: libadwaita's style classes set fonts and no colour (`libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-88`),
-GTK's CSS has no elision, wrapping or line limit at all (GtkLabel's `ellipsize`, `wrap` and `lines` are properties
-of the label, `gtk@4.24.1 gtk/gtklabel.c:2557-2560`, `:2645-2649`, `:2715-2723`), and AppKit's text styles are fonts
-(`NSFont.h:184-187`). Where the platform's style sets one, the style states it: WinUI's `BaseTextBlockStyle` sets
-`TextTrimming` and `TextWrapping`, and the styles based on it inherit both, none setting a `Foreground` or
-`MaxLines`, so their `fill` and `max_lines` are absent (`microsoft-ui-xaml@2.5.1
-src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-51`). This is a mark of this document's holding in a
-keyed text style only (S6.3), as `IconStyle`'s is in an icon-size context. A part's `text` states each leaf its style
-leaves absent, as the widget that draws the text sets it: it references the slot or style and states the leaves over
-it, a `Fields` patch composing lazily over the reference (S2.2), so a GTK label's are GtkLabel's defaults on that
-part and its `fill` the inherited colour, `= surface.foreground`; S12 refuses a part's `text` whose `fill`, `elision`,
-`wrap` or `max_lines` can resolve `Absent`, following references and rules, so no part takes a style's absence for
-its own. `scaling_role` stays the style's: Apple's styles each scale by their own curve. `max_lines` is a
-`Value<Option<u32>>`: `Absent` the style's mark, `"none"` no limit (S6.1 resolves it). Rejected: every style stating
-the platform's label defaults (they are a widget's, GtkLabel's property defaults, not the style's, and a part that
-forgot to restate one would pass with the style's); the four leaves moved out of `TextStyle` onto the part (WinUI's styles
-set two of them, which would lose their one home, and every `text.font` path of the catalogue, the traces and the
-facts would move); `max_lines` as a new enum with a variant for no limit (a type and a spelling for what `Option`
-already says, S1).
+**Styles and drawn text** (ADD-A130). A keyed text style (`token.text.keyed.<key>`) is the platform's named style,
+and a slot (`token.text.roles.<slot>`) references one (S4.4). A style's `fill`, `elision`, `wrap` and `max_lines` are
+what a widget does with text drawn in it, so each one the platform's style does not set is `Absent` in the style, all
+four where the style is a font and its spacing only: libadwaita's style classes set fonts and no colour
+(`libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-88`), GTK's CSS has no elision, wrapping or line limit at
+all (GtkLabel's `ellipsize`, `wrap` and `lines` are properties of the label, `gtk@4.24.1 gtk/gtklabel.c:2557-2560`,
+`:2645-2649`, `:2715-2723`), and AppKit's text styles are fonts (`NSFont.h:184-187`). Where the platform's style sets
+one, the style states it: WinUI's `BaseTextBlockStyle` sets `TextTrimming` and `TextWrapping`, and the styles based on
+it inherit both, none setting a `Foreground` or `MaxLines`, so their `fill` and `max_lines` are absent
+(`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-51`). This is a mark of this
+document's holding in a keyed text style and in a slot only (S6.3), as `IconStyle`'s is in an icon-size context.
 
-The text ramp (S4.4) holds the semantic `TextRole` slots and the keyed platform styles. Weight, width and small caps
-each have one route (principle 2): `Font.weight`, `Font.width` and `TextCase::SmallCaps`; a connector drawing with a
-variable font maps the fields onto its `wght` and `wdth` axes itself.
+A part that draws text states all four itself, whatever its style holds. In the preset's own bases a table is the
+whole block and a reference carries no changed fields (S2.2), so a part's base `text` is a whole table: each leaf that
+follows the style a reference to the slot's or style's leaf (`font.family = "= token.text.roles.body.font.family"`,
+`font.size`, `case`, `letter_spacing`, …, so a reader's patch on the slot reaches it, S9.5; `scaling_role`, an
+`Option`, the style's stated again), and the four drawn-text leaves as the widget draws them: a GTK label's GtkLabel's
+defaults and its `fill` the inherited colour, `= surface.foreground`; a WinUI text that takes its style's trimming and
+wrapping states them as references to the style's leaves (`elision = "= token.text.keyed.body.elision"`), so even
+where the style sets them each part says that it takes them. S12 refuses a part's `text` whose `fill`, `elision`,
+`wrap` or `max_lines` can resolve `Absent` (a style's absence, followed through references and rules), so no part
+takes a style's absence for its own; a layer above the preset may patch a part's leaves over a reference as S2.2
+allows. `scaling_role` stays the style's: on `ios-*` each of Apple's styles scales by its own Dynamic Type curve.
+`max_lines` is a `Value<Option<u32>>`: `Absent` the style's mark, `"none"` no limit (S6.1 resolves it). Rejected:
+every style stating the platform's label defaults (they are a widget's, GtkLabel's property defaults, not the
+style's, and a part that forgot to restate one would pass with the style's); the four leaves moved out of
+`TextStyle` onto the part (WinUI's styles set two of them, which would lose their one home, and every `text.font`
+path of the catalogue, the traces and the facts would move); a part referencing the whole style with its four
+leaves patched over it (a preset's own base table is the whole block, S2.2, and changing that rule for one use would
+change every block's); `max_lines` as a new enum with a variant for no limit (a type and a spelling for what
+`Option` already says, S1).
 
-**Weight** (ADD-A123) is the CSS and OpenType weight, 1 to 1000 (400 regular, 700 bold), as the `wght` axis and CSS's
-`font-weight` state it. A platform reporting another scale is converted to it, in the facts by S17's `conversion` and
-in a reader the same way: AppKit's `NSFontWeight`, a number in −1..1 (`NSFontDescriptor.h`'s `NSFontWeightTrait`,
-whose named constants the SDK declares without values), by `ns_font_weight` (S17), the model's own conversion,
-WebKit's mapping of the system font's weight trait to a CSS weight. Rejected: a table from the nine named `NSFontWeight` constants to 100…900, which
-no pinned source states (the SDK declares the constants without values, `NSFontDescriptor.h:165-175`, and a font's
-trait need not equal one of them).
-
-**Width** (ADD-A130) is a percent of the normal width, as the OpenType `wdth` axis states it (100 normal). AppKit
-reports a width trait instead, `NSFontWidthTrait`, "the relative inter-glyph spacing value", −1 to 1 with 0 the
-regular spacing (`NSFontDescriptor.h:126-128`), and declares its named widths without values (`:177-183`). No pinned
-source maps that trait to a percent, so S17 gains no conversion for it: a `macos-*` style's width is measured as its
-font's own `wdth` coordinate, which is the percent itself (the probe reads the font descriptor's variation,
-`NSFontVariationAttribute`, `NSFontDescriptor.h:110`, and the font's axes with their defaults), its facts pending
-(S17) on an unmeasured-register row until then; a font with no `wdth` axis is that row's to decide from what the
-probe records. Rejected: a linear map of −1..1 onto a percent range, and a table from the four named widths, which no
-pinned source states.
+**Width** (ADD-A130) is a percent of the normal width (100 normal), the scale of the OpenType `wdth` axis, which no
+pinned source here states. AppKit reports a width trait instead, `NSFontWidthTrait`, "the relative inter-glyph
+spacing value", −1 to 1 with 0 the regular spacing (`NSFontDescriptor.h:126-128`), and declares its named widths
+without values (`:177-183`). No pinned source maps that trait to a percent, so S17 gains no conversion for it: a
+`macos-*` style's width is measured on its font's own `wdth` axis (the probe reads the font descriptor's variation,
+`NSFontVariationAttribute`, `NSFontDescriptor.h:110`, and the font's axes with their minimum, default and maximum, so
+the reading carries the scale SF's axis is written in), its facts pending (S17) on an unmeasured-register row, which
+decides from that record how the reading becomes `Font.width` and what a font with no `wdth` axis states.
+Rejected: a linear map of −1..1 onto a percent range, and a table from the four named widths, which no pinned source
+states.
 
 ### S2.9 Icon style and glyph (R11)
 
@@ -1135,7 +1136,7 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                                                                        // colours (ADD-A37)
                        pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original,
-                         FromIcon }   // the icon's own kind decides: recoloured or drawn as it is (ADD-A130)
+                         FromIcon }   // the icon's own colouring, path by path (ADD-A130)
 pub struct Glyph { pub source: GlyphSource, pub size: Value<Px>,   // absent on a `SystemControl` source (S6.3)
                    pub fill: Value<Paint>,              // absent on a stroked-only path or a
                                                         // `SystemControl` source (S6.3)
@@ -1173,24 +1174,30 @@ its rendering mode's colours). It may be absent where `rendering_mode` is `Origi
 there (an icon-size context keeps its own mark, S4.5): S12 refuses it absent under any other mode, following references
 and rules as for any absent operand.
 
-**`FromIcon`** (ADD-A130) is the rendering of a platform that decides per icon: an icon the platform marks as one to
-recolour is recoloured as under `Template`, with `fill` and `status_colors`, and any other is drawn as under
-`Original`; the connector reads the mark from the icon it loads. GTK marks it by the file's name, a symbolic icon
+**`FromIcon`** (ADD-A130) is the rendering of a platform where the icon carries its own colouring, path by path:
+the paths the icon marks as the platform's symbolic colours take the icon style's `fill` and `status_colors`, as
+under `Template`, and every other path keeps its own colour, as under `Original`, so a full-colour icon is drawn as
+it is; the connector reads the marks from the icon it loads. GTK's are a symbolic icon's, by the file's name
 (`-symbolic.svg`, `.symbolic.png`, `-symbolic-ltr.svg`, `-symbolic-rtl.svg`, `gtk@4.24.1 gtk/gtkiconpaintable.c:42-53`,
-`:78`), under its default `-gtk-icon-style: requested` (`gtk/gtkcssstylepropertyimpl.c:1297-1302`), whose `regular`
-and `symbolic` force one lookup or the other (`gtk/gtkiconhelper.c:53-80`) and are stated as `Original` or
-`Template` by the rule that sets them; so a part's icon on `adwaita` states `rendering_mode = "from_icon"`. A
-context's own recolouring comes first: libadwaita's check box and radio recolour their check, dot and dash images
-whatever their files (`-gtk-recolor`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:67-81`), so the
-icon context that holds them states `Template`. Rejected: `Absent` where the platform decides per icon (`Absent` is
-not drawn, and the icon is drawn); `Template` on `adwaita` (a full-colour icon in a button would be recoloured); a
-content variant naming the icon's kind on every widget that draws an icon (the connector holds the icon, which
-carries its kind).
+`:78`), and, in any SVG GTK loads with its extensions, a path's `gpa:` symbolic paint or symbolic colour name
+(`gtk/svg/gtksvg.c:224-237`, resolved to the style's colours, `gtk/svg/gtksvgcolor.c:276-284`), under its default
+`-gtk-icon-style: requested` (`gtk/gtkcssstylepropertyimpl.c:1297-1302`), whose `regular` and `symbolic` force one
+lookup or the other (`gtk/gtkiconhelper.c:53-80`) and are stated as `Original` or `Template` by the rule that sets
+them. KDE's are an SVG's `current-color-scheme` stylesheet classes, which KIconLoader rewrites with the scheme's
+colours in a theme that follows the colour scheme (`kiconthemes@6.31.0 src/kiconloader.cpp:690-705`, `:719-720`), as
+Breeze's does (`breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6`). So a part's icon on `adwaita` and on
+`kde-breeze` states `rendering_mode = "from_icon"`. A context's own recolouring comes first: libadwaita's check box
+and radio recolour their check, dot and dash images whatever their files (`-gtk-recolor`, `libadwaita@1.10.0
+src/stylesheet/widgets/_checks.scss:67-81`), so the icon context that holds them states `Template`. Rejected:
+`Absent` where the platform decides per icon (`Absent` is not drawn, and the icon is drawn); `Template` on `adwaita`
+(a full-colour icon in a button would be recoloured); a content variant naming the icon's kind on every widget that
+draws an icon (the connector holds the icon, which carries its colouring).
 
 **A paintable is not an icon animation** (ADD-A130). `animation` is a loop over the part's own style (a spin as its
 `transform`, a frame sequence), as an animated icon plays. A paintable that draws a widget's own motion is that
-widget's element: libadwaita's status page shows an `AdwSpinnerPaintable` (`libadwaita@1.10.0
-src/adw-status-page.c:427-430`), the spinner AdwSpinner draws, whose motion, a linear 1200 ms turn repeated without
+widget's element: libadwaita's status page shows the paintable the application gives it and adds `.spinner` only
+where that is an `AdwSpinnerPaintable` (`libadwaita@1.10.0 src/adw-status-page.c:424-430`), the spinner AdwSpinner
+draws, whose motion, a linear 1200 ms turn repeated without
 end (`src/adw-spinner-paintable.c:20`, `:532-540`), is `spinner.values.loop` (GN-1.229); so the status page's spinner is a
 `spinner` element in `context status_page` (GN-1.232, the catalogue's *spinner*), and no icon style or icon context
 carries its motion or its size. Rejected: a `Loop` on an icon context (its keyframes could only move the icon's part,
@@ -1316,7 +1323,7 @@ whole box, and Breeze's facts already state it so).
 generates that set per part, a field outside it is not part of that part (a patch setting it is refused, S12; the
 resolved style has it `None`), and a listed field must be stated or stated `Absent` where the model allows (S6.3).
 So a window title states no shadow, and nothing is invented for it. "Missing" applies to every leaf of a listed
-field, its plain enum and bool leaves included (a stated decoration's `line`, `style` and `origin`), its `Value`
+field, its plain enum and bool leaves included (a stated decoration's `line` and `style`), its `Value`
 leaves (a listed `text` states its `case`, `wrap`, `elision` and `fill`, over the keyed style it references where
 that style leaves them absent, S2.8), its
 `Option` leaves (a listed `text` states `max_lines`, `"none"` for no limit, S11), and its list leaves (a `Vec`: a
@@ -1744,20 +1751,24 @@ toast duration, focus-visible rule) are widget values in the catalogue (R17).
 
 **The caret's width** (ADD-A130). GTK draws the caret's stem `floor(h × r + 1)` px wide, `r` the
 `gtk-cursor-aspect-ratio` setting, 0.04 by default (`gtk@4.24.1 gtk/gtksettings.c:392-399`, read at
-`gtk/gtkrenderlayout.c:298-301`; the stem `:126`, `:136`, `:260-276`, an `int`), and `h` the caret's height, which is
-the height of the run at the caret, its font's ascent plus descent: Pango's caret takes the run's logical extents
-(`pango@1.58.2 pango/pango-layout.c:2597-2598`, `:2649`, `:2700`, `:1924`, `:7884`), to which it adds no line height,
-adding that to the line alone (`:5782-5790`), and GTK rounds the caret outward to whole pixels
-(`gtkrenderlayout.c:316-324`), which GTK's default hinted metrics leave as the font's own (`gtk/gtksettings.c:514-516`).
-So the width follows each line's font, and no token can state it (a token reads no part or element data, S2.2): on
-`adwaita` `token.caret.width` is `Absent` (S6.3) and each caret part states its own, `min_width = "=
-add(floor(mul(widget.text.font_height, token.params.caret.aspect_ratio)), 1px)"`, declaring `widget.text.font_height`
-(S8), the secondary and the drop caret alike (GN-3.36, GN-3.37, GN-3.73†); S12's absent-operand check refuses a caret
-part that keeps the token as its base there. The text part's font is the run's wherever the theme sets the text's
-font; runs an application gives fonts of its own (a text view's tags) are its content, which no theme states. Rejected: a token expression evaluated where it is used, as a text
-style's `font_size` is (the caret has no font, so its operand would be another part's, which a token cannot name);
-the text's `line_height`, which holds the line's leading where GTK's caret holds the font alone; a number (GTK
-states none).
+`gtk/gtkrenderlayout.c:298-301`; the stem `:126`, `:136`, `:260-276`, an `int`), and `h` the height of the caret it
+draws: Pango's caret takes the logical extents of the run at the caret (`pango@1.58.2 pango/pango-layout.c:2597-2598`,
+`:2649`, `:2700`, `:1924`, `:7884`), its font's ascent plus descent with no line height (`:5782-5790` adds that to the
+line alone), and GTK rounds that rectangle outward to whole pixels (`gtkrenderlayout.c:316-324`, `:319`). GTK's
+default font rendering is automatic (`gtk/gtksettings.c:999-1002`; GNOME's `font-rendering` default `'automatic'`,
+`gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:305-306`), which turns metric
+hinting off (`gtk/gtkwidget.c:6795-6824`), so the extents are fractional and the rounded height is the font's height
+rounded up, or one more, by where the run's baseline falls: no font metric gives it. So the width follows each
+caret's drawn height, which no token can state (a token reads no part or element data, S2.2): on `adwaita`
+`token.caret.width` is `Absent` (S6.3) and each caret part states its own, `min_width = "=
+add(floor(mul(element.caret_height, token.params.caret.aspect_ratio)), 1px)"`, `caret_height` the height of the caret
+rectangle the connector's toolkit draws for that part (S8's `ElementData`), which every caret part declares (`data =
+{ caret = ["caret_height"] }`; the secondary caret and the drop caret their own, GN-3.36, GN-3.37, GN-3.73†); S12's
+absent-operand check refuses a caret part that keeps the token as its base there. Rejected: a token expression
+evaluated where it is used, as a text style's `font_size` is (the caret has no font, so its operand would be another
+part's, which a token cannot name); the text part's font height (off by one wherever the rounded height crosses a
+multiple of `1 / r`, the rounding depending on the baseline's position); the text's line height (it holds the
+line's leading, which GTK's caret leaves out); a number (GTK states none).
 
 **Wheel steps** (ADD-A130) are `Behavior.scroll`'s, with the rest of a wheel step's motion: `wheel_step_lines`
 (lines per step, which the view's own line step turns into a distance: KDE's and Windows' settings, K3.72, W3-41) and
@@ -1765,16 +1776,19 @@ states none).
 or neither; GTK states neither, its step following the view's page size, its power 2/3
 (`gtk@4.24.1 gtk/gtkscrolledwindow.c:1206-1228`, applied to a wheel detent only, `:1399-1402`, `:1423-1426`,
 `:1530-1536`), which is the
-`scroll_view` value `wheel_step` (`= gtk_wheel_step(element.height)`, S2.2, GN-P3-15†). Only the scrolling widgets
-read them, so they are staged with `scroll` (S6.1). Rejected: the two fields kept in `Behavior` and stated now
+`scroll_view` value `wheel_step` (`= gtk_wheel_step(element.height)`, S2.2, GN-P3-15†). Only widgets of later units
+read them: the scroll view, and Qt's slider, which scrolls by `wheelScrollLines` times its step
+(`qtbase@6.12.0 src/widgets/widgets/qabstractslider.cpp:678-682`); so they are staged with `scroll` (S6.1), and a unit
+that reads them before the scroll view's brings `scroll` with it. Rejected: the two fields kept in `Behavior` and stated now
 (their readers enter later, and GTK's `Absent` would be checked by nothing in M1a); kept there and staged one by one
 (the step's distance would sit apart from its duration and from `touchpad_factor`, the touchpad's counterpart).
 
 **Hover time** (ADD-A130). `hover_time` is the system's one hover time, how long the pointer rests on an element
 before it counts as hovering, where a platform derives its hover delays from one setting: Windows'
 `SPI_GETMOUSEHOVERTIME`, of which WinUI's tooltip delays are multiples (`microsoft-ui-xaml@2.5.1
-src/dxaml/xcp/dxaml/lib/ToolTipService_Partial.cpp:1731-1787`: twice it for a mouse's or a keyboard's first tooltip,
-once for a mouse's reshow, as `static_cast<INT64>(1.5)` is 1, once for a touch's first and zero for its reshow), so
+src/dxaml/xcp/dxaml/lib/ToolTipService_Partial.cpp:1731-1787`: twice it for a mouse's first tooltip and for a keyboard's,
+first or reshown, `:1777-1779`, once for a mouse's reshow, as `static_cast<INT64>(1.5)` is 1, once for a touch's first
+and zero for its reshow; `reshow_delay` is the mouse's), so
 `windows-11`'s tooltip values are expressions on it (`show_delay_ms = "= mul(token.behavior.hover_time, 2)"`) and the
 reader reads the setting into it (W1-059). It is `Absent` where the platform has no such setting and each widget
 states its own delay as its value: GTK's tooltip `HOVER_TIMEOUT`, 500 ms (`gtk@4.24.1 gtk/gtktooltip.c:71`, `:827`),
@@ -1866,7 +1880,8 @@ patch on a slot (a reader's font, S9.5) reaches the same slots under every prese
 depending on which slot a preset's facts happened to name. Which keyed style fills each slot is the preset's facts';
 S12 refuses two slots that can reference one keyed style directly, and a slot that references a slot later in that
 order, under one combination of conditions. A keyed style is the platform's style, so each of its `fill`, `elision`,
-`wrap` and `max_lines` that the platform's style does not set is `Absent`, and the parts that draw text in it state it
+`wrap` and `max_lines` that the platform's style does not set is `Absent` there and in the slots that reference it,
+and the parts that draw text in it state all four
 (S2.8, ADD-A130). Font fallbacks are the platform's one
 chain (per family where the platform keeps one per font), so they are a token and not a field of each font (ADD-A41).
 `per_family` maps a family to the families tried in order where it is missing or lacks a character, and serves a
@@ -2125,7 +2140,7 @@ into the presets' bases as expressions (S19.2).
 
 **S6.3** `Absent` is allowed from two sources: a block's sub-field this document marks "may be absent" (S2),
 wherever that block appears (two marks hold in one place only: `IconStyle`'s fields in an icon-size context, S4.5,
-and `TextStyle`'s drawn-text leaves in a keyed text style, S2.8);
+and `TextStyle`'s drawn-text leaves in a keyed text style and a slot, S2.8);
 and the catalogue's tables, for colour roles, tokens and, per (widget, part, field
 path), at three levels: a
 field of a part (`button.body.shadow`), a whole part (`slider.ticks`: some platform draws no ticks), and a whole
@@ -2154,8 +2169,8 @@ counterpart, R6, R20): every `Material` parameter but `identity` and `fallback`;
 S12 refuses `fill` absent where the stroke can be absent too); `Glyph.size` and `fill` on a `SystemControl` source
 (S15; what a stated size and fill mean beside the rendering is ADD-A126's, ledger queue #85, ADD-A125);
 `RippleStyle.color`, `alpha` and `padding` where its `effect` is absent (no press ripple to draw, ADD-A125); `TextStyle.decoration`, `mnemonic_decoration`, `letter_spacing`, `word_spacing`;
-in a keyed text style only, `TextStyle.fill`, `elision`, `wrap` and `max_lines`, each where the platform's style does
-not set it (S2.8, ADD-A130);
+in a keyed text style and a slot only, `TextStyle.fill`, `elision`, `wrap` and `max_lines`, each where the
+platform's style does not set it (S2.8, ADD-A130);
 `Decoration.by_word`; an `Edge`'s `width` and `paint` (an edge not drawn);
 `Font.width`; every `TextRendering` field; `Stroke.outset`; `Edge.dash` on an edge not drawn only (its `width` or
 `paint` absent; S12 refuses it absent on a drawn edge, S2.4); `PartStyle.shape`, `touch_target`, `margin`,
@@ -2486,6 +2501,8 @@ pub struct ElementData<'a> {                               // R25.3; Default: ze
                                                            // follow: the application's choice (a badge), or the
                                                            // text's colour under a caret (K-P3-11†)
     pub move_distance: Px,                                 // how far a Move presentation moves it (K1.133†)
+    pub caret_height: Px,                                  // a caret part's: its toolkit's caret rectangle's
+                                                           // height, as drawn (S4.2; ADD-A130)
 }
 ```
 
@@ -3013,7 +3030,7 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   combination of the rules, its `effect` is stated (S12's combinations, the merged value checked, not a patch alone);
   the other marks conservatively, following references and rules (S2.4, S2.9, S2.12); a mark of one place does not
   travel with a reference: a part's `text` whose `fill`, `elision`, `wrap` or `max_lines` can resolve `Absent` from
-  the keyed style it references, a caret part whose width can resolve an absent `token.caret.width`, and a part's
+  the style or slot it references (a slot referencing a style takes its absence with the mark), a caret part whose width can resolve an absent `token.caret.width`, and a part's
   icon whose `rendering_mode` can resolve `Absent` from the icon-size context it references are refused (S2.8, S4.2,
   S4.5; ADD-A130);
 - a keyframe of a loop stated as a widget's or a component's value leaves its `part` out (`None`): such a loop is on
@@ -3648,7 +3665,7 @@ spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct bl
   `WebKit@7624.5.1.11.3 Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739`, which WebKit takes only where
   Core Text gives the font no CSS weight of its own (`kCTFontCSSWeightAttribute`, read first, `:725-728`): a fact
   whose evidence records that attribute states it unconverted. AppKit's width trait has no conversion: no pinned
-  source maps `NSFontWidthTrait` to a percent, so a `macos-*` width is measured as the font's `wdth` coordinate
+  source maps `NSFontWidthTrait` to a percent, so a `macos-*` width is measured on the font's `wdth` axis
   (S2.8's *Width*, ADD-A130). A point size stays a
   point size (S9.4 converts it by the preset's font DPI). A JSON-pointer citation's quote occurs in the string value
   at the pointer.
@@ -3877,9 +3894,11 @@ fact that applies (within tolerance; S9.4's Apple `font_dpi`, which has no fact,
 evidence pass under the pass's conditions; a key and combination with no fact fails (R4). **A part not drawn**
 (ADD-A130): where the query answers `NotDrawn` or `DrawnAs` for a part, the gate asks no fact for that part's
 fields and compares none of them, and a field's fact that applies there is no failure either. A field's facts state
-the part's look wherever it is drawn; whether it is drawn is the part's own key, compared as any key (a part the
-facts draw and the preset leaves out fails there, and one the preset draws where a fact says `absent` likewise), so
-that one fact has one home. libadwaita states its menu arrow's look in `menubutton`'s `arrow` block for every arrow
+the part's look wherever it is drawn; whether it is drawn is the part's own key (`<widget>.<part>`), compared under
+every combination: where a part fact applies, its `absent` or `drawn_as` against the query's `NotDrawn` or `DrawnAs`;
+where none applies, the part must be drawn, its own style (`Styled::Style`), so a `NotDrawn` or `DrawnAs` answer there
+fails. So a part the preset leaves out where the facts draw it fails, and one it draws where a fact says `absent`
+likewise, and that one fact has one home. libadwaita states its menu arrow's look in `menubutton`'s `arrow` block for every arrow
 (`libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469`), while GTK's code decides whether the arrow is
 shown (`gtk@4.24.1 gtk/gtkmenubutton.c:623`, `:651-666`), so `adwaita`'s
 `menu_indicator` fields hold without a `when` and `button.menu_indicator` states where it is absent; a `when` on
@@ -4135,7 +4154,7 @@ lines that cite it.
 | ADD-A123 | the third spec batch (queue #56, #62, #63, #64, #65–#71): a curve a toolkit computes in code is `Timing::Platform` (provisional, CONTRA-7; settled in ADD-A124), `PlatformCurve::Qt(QtEasing)` and `PlatformCurve::Adw(AdwEasing)` beside `KirigamiVelocity`, a curve whose control points the source writes a `CubicBezier`, and the facts quote the curve's name; `with_alpha(c, a)`, which sets the alpha as `Qt.alpha` and CSS's relative colour do, beside the multiplying `alpha` (Q2.5's RoundButton fill); `requires_variants` meaning any one of its forms; `MotionTokens`' Rust sketch; S2.8's weight the CSS weight and the `ns_font_weight` conversion (WebKit's thresholds for AppKit's `NSFontWeight`); a map keyed by text spelt as a TOML table with the text as its keys (`per_family`), its fact keyed by the quoted key; the macOS accent inputs named (`highlight` from `selectedTextBackgroundColor`, `selected_content_background`, `keyboard_focus_indicator`, `selected_control`; `highlightColor` a literal); a `Style` after a `DrawnAs` restoring the part as after `Absent`; a bare block's map entry set to a reference, `Absent` or `Auto` an ill-typed patch; `PlatformCurve` an enum block; the catalogue's `IndicatorAnchor::InlineTop` and an inline indicator's `margin` a margin in the row, an overlaid one's unused sides stated as written (W1-102's tabbed command bar now stated); adwaita's arrow absence rule `@ variants {menu} !variants {@arrow_only,@with_arrow}`; libadwaita's inline transition keys `tab_bar`, `tab_thumbnail`, `bottom_sheet_border_radius`, `bottom_sheet_box_shadow`; `token.params.motion.kwin_speed_factor` (the decoration's factor, kwinrc over kdeglobals); K3.20's offsets; macOS's circular bezel and circle shape one variant (probe-confirmed), `NSComboButton.unified` as `menu`, `automatic` no variant until measured, a size's font `systemFontSizeForControlSize:`'s, the accent-following fills as `mix`; Material's `@extended_fab` `regular` the unsized composable and Expressive's sizes `small`, `large`, `extra_large`, the extended FAB's and Expressive `with_icon` paddings traced, `token.material.variant`'s default not pinned, the dialog title's precision-pointer case an application opt-in with no rule; the first check's fixes: `@with_arrow` and `@arrow_only` content variants the connector sets by GTK's rule (keyed content variants, S8), CONTRA-7 recording the platform-curve reading, K3.20 split (a positive offset on buttons and non-editable combo boxes, the inset inward on line edits, text areas, spin boxes and editable combo boxes), W1-102's `InlineTop` row with its glyph and gap, `ns_font_weight` the model's own conversion, the bare-block entry (`token.motion.timings` too) an ill-typed patch, not a merge conflict, text map keys equal as TOML keys, the unit suffix on map entry keys and none on `Scalar` entries, `"auto"`/`"none"`/`"absent"` exact, `selected_content_background`'s row, `kwin_speed_factor`'s default, an inline row's spare width, libadwaita's `expander_row`, `places_view`, `toggle_group` and `AdwEasing`'s in-cubic and expo members, `context.scope` defaulting to any ancestor, a `PartRef` value's spelling, `LayerError`'s variants by owner; the second check's fixes: S11's example duration key suffixed (`button_ms`), `AdwEasing::EaseInOutSine` (AdwSpinner's arc) and the key `ease_in_out_sine`, every `ADW_EASE_*` the code uses accounted for, CONTRA-7 after CONTRA-6 with `ease_in_cubic`'s Bézier and the sine curves, keyed content variants as one platform's meaning, `@with_arrow`'s other content and `always-show-arrow` as the connector's option, `Problem`'s kinds, `tab_thumbnail` without the instant background change | S1, S2.2, S2.7, S2.8, S4.1, S4.4, S6.1, S6.3, S8, S9.1, S10, S11, S12, S17, the catalogue |
 | ADD-A124 | the fourth spec batch (queue #42, #49, #60, #73, decided from the sources): recency (CONTRA-6, settled): a widget's named `recency` sets (S10), the selector term `Selector.latest` (S11 `latest = { <set> = "<flag>" }`, the notation `latest s:f`), `Element.state_order` (the order the connector last set the flags in, element data beside the flags, R25.3), unreported flags by the set's stated order, its first the latest, a widget's sets agreeing on their orders, the validation's latest atoms, the state models' `recency` and the gate's combinations per order of the present flags, the facts' `when.latest`; Material's state-layer exclusive groups replaced by its sets `state_layer` and `elevation` (the catalogue's Material recency sets; Compose's `Ripple.kt:250-280`, `Button.kt:1703-1747`, `Card.kt`, `Chip.kt`, `FloatingActionButton.kt`, `ToggleButton.kt`); `Radius::Ellipse` (R7): a quarter of the box's inscribed ellipse, on all four corners with `Circular` curves, `corners::ellipse`, a shadow and a `FollowPart` ring following the ellipse of their own boxes, insets per axis, no corner operand, no shape, no `Concentric` inside it; `kde-breeze`'s QWidget `circular` `Ellipse` and Kirigami's RoundButton `Full` (K1.26), Breeze's own focus ring on it its standard rounded frame (`breezestyle.cpp:6631-6647`, K3.20), not the ellipse; `Transition.from` (R9): a transition applying from any state or from the states it names, matched against the flags before the change after the exclusive drop (`ResolvedTheme::kept_states`, `transitions::governing`), the later applying transition winning, the transitions a keyed list by group and `from` (S6.1), Compose's elevation and Breeze's button fades stated (MAT-B13, MAT-N1, MAT-N9, MAT-CA2, MAT-X7, K1.30); R9's platform curves widened to the curves a toolkit computes by a function of its own (CONTRA-7, settled); the first check's fixes: only the state layer and the shadow follow Material's sets, every other field on plain flags in its source's precedence (the list item's, `ListItemDefaults.kt:1144-1152`); the split button's halves' elevation (`shadow`, the set `elevation`) and the outlined card's hovered and dragged ones; Breeze's base zero transitions `from {disabled}` (Qt keeps a disabled widget's hover) and none under `flavor:kirigami` (qqc2's style item paints with no widget); Compose's state-layer fades and the press ripple's release fade by `from`; S6.1's merged order stated; Qt's clamp cited on the paint engine's path; R7's shape option; "kept" flags in S7.2 and S12; the connector recording the order; an `Ellipse` corner's outward radii; the gate's n! bound; the second check's fixes: `PaintLayer.role` (`LayerRole::StateLayer`, `Ripple`) and `Transition.layer`, a fill's layers timed per role (`transitions::governing` by role, S6.1's key, S12's checks), so a `Ripple` times the press ripple alone and Compose's snapped containers take no transition (toggles, chips, icon buttons); the year cell's, the time picker's and the toolbar buttons' state layers restored; the split button's and the FAB menu's state-layer rows; Material's split-button forms (`tinted`, `@outlined`, `@elevated`) with their shadows; the list's colour order and MAT-L10's corners dropped; the row order where a source ranks no states; the checkbox's, radio's and switch's `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state `opacity` dropped; the third check's fixes: one layer per role (a later rule's role layer replacing the earlier in its place, S6.1, S12), role layers timed by their alpha alone and stated at rest at zero alpha, the press ripple's lifecycle in `TransitionKind::Ripple` (`fade_in`, `origin_timing`, the release an `Interpolate` starting no sooner than `min_press`; `opacity` and `fade` gone), the disabled layer without a role, Compose's colour transitions (the Expressive list item, the date picker's cells, the selectable menu item, the tab's and navigation bar's content, the outlined toggle's border, the split button's corners), the slider's ripple theme, the split button's variant group; Material's navigation items' ripple pill, `bottom_tab_bar.state_layer` and `list.row_state_layer` (the rail; the drawer's on `row_background`), with the bar's, rail's and Expressive items' indicator and content transitions; `PropertyGroup::StrokeWidth`, the stroke's widths timed apart from its colour (the text field, the exposed dropdown and the outlined toggle); the fourth check's fixes: Material's state layer and press ripple a block of the part, `PartStyle.interaction` (`Interaction`, `StateLayerStyle`, `RippleStyle`, S2.12) with the property groups `StateLayer` and `Ripple`, replacing the second and third checks' paint layers with roles (`PaintLayer.role`, `Transition.layer`, one layer per role, role layers stated at rest: gone), drawn over the part's content as Compose's ripple node draws it, ADD-A121's composite under the label gone; the ripple's geometry in the block and its timings in `TransitionKind::Ripple` (`press_delay` for Compose's delay in a scrollable container, its value pending, queue #45); `StrokeWidth` an override of `Stroke`; a stroke becoming absent interpolating to zero width, the checked outlined toggle's border absent; the navigation indicators drawn at rest at zero width and alpha (`opacity`); the Expressive items' unanimated content, the drawer's rows, the text field's container, the date picker's day, re-enabling, the notch, the release fade's start, the checkbox's and radio's ripple colour, citations; the fifth check's fixes: the press ripple Android's `RippleDrawable` (`TransitionKind::Ripple(RippleEffect)`, `RippleEffect::AndroidPatterned` implemented to `RippleDrawable`, `RippleAnimationSession` and `RippleShader` at the pin, its lifecycle and release its own, its colour kept from the press; `fade_in`, `origin_timing`, `min_press`, `press_delay`, `RippleStyle.initial_scale` and `soft_edge` gone, `RippleStyle.bounded` added); the block beneath the part's stroke (`Surface.kt:562-564`, `Border.kt:212-214`); its colours `= surface.foreground`; the press delay `TouchBehavior.delay` with `delay_every_pointer` (Android's tap timeout, `config.xml:3230`); a stroke, edge or paint becoming absent and a width reaching zero; S12's `Ripple` and `StateLayer` checks; the filled field's unanimated hover layer; `@indicator_move` `Instant` on Material's bar and rail; Compose's Oklab interpolation noted for queue #80; the sixth check's fixes: the press ripple a field of the block, `RippleStyle.effect: Value<RippleEffect>`, started when `pressed` becomes kept and exited when it stops being kept, its colour and alpha kept from the press and its geometry following the box (`RippleDrawable.java:754-782`), `ripple::progress` and `ripple::shade` named, hwui's `AnimatedDrawables.h` and the animator duration scale outside the cache (`TransitionKind::Ripple`, `PropertyGroup::Ripple` and their S12 checks gone); an edge whose paint alone becomes absent keeping its width (Breeze's flat button); `delay_every_pointer` gone, a release within the delay delivering the press and its release in one update; the noise phase, the ripple count and `max_radius` stated as the framework does; the filled field's hover layer the block's state layer; the `{pressed}` ripple rows dropped; the seventh and eighth checks' fixes: the ripple taking the block of its first frame drawn after the press, its lifecycle and noise phase starting there (a press and its release in one update taking the style after it), "kept" for the effect's start, the filled field's block beneath its content, an absent delay no delay and the delay for every press, `ripple::phase` | S2.3, S2.4, S2.5, S2.7, S2.10, S2.11, S2.12, S4.2, S6.1, S6.3, S7, S7.2, S8, S10, S11, S12, S17, S22, the catalogue, the KDE and Material traces |
 | ADD-A125 | the fifth spec batch (queue #74, #77, #78, #80, #82, #84, #86–#89, #91–#94, #96, #97 and the macOS facts audit's `tinted` fill, decided from the sources and checked independently until a pass found nothing serious): `token.motion.color_space` (`ColorInterpolation`: `PremultipliedSrgb`, GTK's CSS and Breeze's `KColorUtils::mix`; `StraightSrgb8`, Qt Quick's `ColorAnimation`, `kde-breeze` under `flavor:kirigami`; `Oklab`, Compose's; their clamps and overshoot; WinUI's compositor space and Core Animation's measured), `transitions::interpolate_color`, appearing and vanishing paints from and to transparent black, R9's one space replaced; the identity curve `Timing::Linear` however written; a stated zero duration's `timing` `Absent`, a *stated zero* defined, `PresentationStep` alike; S2.11's box: the content box the box less its padding, the stroke taking no layout space, the size limits on the box (GTK's content-box minimums as `add(<CSS min>, part.padding…)`, so a variant's padding carries through, Breeze's plus its frame less the box's margin); `token.text.font_dpi` 72 on the Apple presets, the specification's own value (S9.4, the citation checkers' exception); S17: an analysis output for a value computed from read values, a keyed list stated merged, nested `axes.contexts` as an ordered chain; S2.12's ripple drawn only inside the computed radius's circle (bounded clipped to the indication's box and the part's outline), `RippleStyle.indication_box` (`IndicationBox { part, outset }`: the checkbox's box with no outset, the tokens' colours on Compose's Material 3 styling branch's geometry and check path (R1.6), the check and the dash two paths, their shift ADD-A126's, its selected outline the tokens' zero width with Compose's checked border colour, every state layer one form (S2.12): the `latest` rules on the alpha alone, the state layer's and the ripple's colours in the base (off the button each colour's own unselected token) and by variant and content state, the halos' from the tokens, error included, the drag handle's (no press ripple but under `@clickable`, a dragged state layer) and the carousel item's `interaction` blocks, and outside the plan's slice the trace rows' keys and selectors alone, the values the unit's facts (M3), the radio's ring grown by Compose's padding, the switch's thumb), `shade` in device pixels; the catalogue: an inline indicator's content space ending the gap before its box where its end margin is the negative of a positive start margin, and before its margin box otherwise, the label's spacing toward the indicator the gap; `ios-*` `@role_primary` (stated without a size, measured at `regular`, with the configuration styles and the prominent glass product), `@cancel` and `destructive` only in the hosts that draw them, no `requires_variants`: the base `UIButton(type: .system)` and every host-drawn button the base in its host's context (the host contexts those the rules select, `dialog.action_area` under `variant alert` and `variant @action_sheet`, a nested chain for the search field's clear button; the combinations drawn there the iOS state model's, the lane's), the roles' and forms' exclusive groups, typed `add`, the `ios-26` done style `primary` in a toolbar and `done` the system Done item, `@corner_dynamic` on `ios-26` only and with the glass styles alone, `@indicator_none` and `@padding_removed` gone; macOS's circular bezel's circle as `body`'s box with `body.margin`, the opaque accent fills `mix` and the translucent ones `alpha(input.accent, <a>)`; `kwin_speed_factor` `= token.motion.speed_factor` with kwinrc's factor read; the macOS `highlight` role `highlightColor`, provisional; `material-3`'s menu button following Compose's buttons beyond its tokens; the toggle border transitions on every toggle form; S2.7's entering sentence removed, how a part enters and leaves ADD-A126's, and the check mark's and the radio dot's representation, rest look and motion together, ADD-A126's (ledger queue #85); `adwaita`'s inconsistent radio a flag; a menu item's check glyph's rest look ADD-A126's with the marks' (ledger queue #85); WinUI's check the accept visual's stroked path (its form ADD-A126's with the mark's representation), its code point WinUI's own fallback, not modelled; WinUI's menu pill `Absent` in the base, drawn by the `{selected}` rules (W1-135), and scaled about its centre while pressed; its list pills' representation ADD-A126's (W1-089, W1-107, W2-12; #85, #110); the combo box's content layout: ADD-A127, to come (ledger queue #113); S2.8's `TextStyle.case`, `Font.axes` and `Font.features` `Value`s (a platform derives them: Kirigami's headings take them from the default font; rejected: plain fields with Qt's defaults stated as literals, which a reader's body-font patch would not reach, and the whole font a `Value`, as a preset's base table cannot hold a reference with changed fields), S2.2's typing (a `Value` field takes a reference, a list or map included) and its lazy composition, S6.1's merge of a map in a `Value` (by entry where both are stated, a reference replacing it whole), S11's spelling (a reference, an empty map `{}`); a `SystemControl` glyph's size and fill may be absent (S6.3, their meaning beside the rendering ADD-A126's); whether the rendering's cache key needs a background style MAC-L17†'s measurement; the drag handle's click ripple a connector-set keyed content variant (`@clickable`); conditional `Absent` parts reviving under later rules ledger queue #110; when a transition starts and ends and what interrupts it moved to ledger queue #85, #95, #103 (orch-docs; #95 now the trigger review), ADD-A126 to come, `suspended_by_theme_change` and `Transition.from` as ADD-A124 states them, S4.3's running-transition sentence, `FocusKind`'s leaving and R12's pointing there, GN-3.28, K1.129 and K3.24 marked pending; the follow-ups the lanes owe: W1-038's and W1-039's path data from the accept visual's source (`AnimatedAcceptVisualSource.cpp`: the dash `:358-370`, the check `:372-385`, its pressed-on tweak `:392-404`, the resting check's shapes `:777-807`; the chain, the dash's `:832-833`, `:846-848`, `:563`, the resting check's `:1315-1316`, `:1330-1332` (and `:1343-1344`, `:1358-1360` for its second shape), `:780`, so a point p maps to 0.735·p + (24, 22.95) after the (−24, −24) offset, and the 4-unit stroke, `:787`, to 2.94 units; the visual's size, 48 units, `:1855-1857`, arranged to the icon's size, `AnimatedIcon.cpp:153-181`) and the Windows facts' mark as that stroked path, `radio`'s `indeterminate` flag in `adwaita`'s and `windows-11`'s `axes.states` and `windows-11`'s `[indeterminate, checked]` group, a `token.text.font_dpi` row with its fact on `adwaita`, `windows-11` and `material-3` (ADD-A103), zero-duration timings `absent` and `Instant` steps' zero duration, `windows-11`'s padding plus its border, GTK's widgets' padding plus their CSS border and every GTK minimum size as that expression, `indication_box` on every ripple block, `color_space` per preset, the Apple presets' `font_dpi = 72 # S9.4`, the iOS forms, roles and products, the host contexts in `axes.contexts`, `bar_plain` as the base in `context toolbar.bar`, `@system`'s facts as the base's, B-18†'s automatic indicator absent, the base's pressed and disabled looks and the plain bar item's title; the Windows state model's `toolbar.bar` and the tabbed command bar's chain (#86); Material's checkbox geometry and check path, the menu button's motion and ripple (#96), the toggle border on every toggle form (#97); KDE's `kwin_speed_factor = token.motion.speed_factor` and the kwinrc reader row (#93), K1.17's title with no transition; macOS's `tinted` fills as `alpha(input.accent, <a>)`; WinUI's other bordered templates' padding plus `BorderThickness`; the scripts' follow-ups: the citation checkers' `# S9.4` exception, `check_spec_names.py` taking `color_space` among the motion keys (the traces then name `token.motion.color_space` as a leaf path, written `token.motion (color_space …)` until then, as the checker refuses the leaf today); the register rows the ledger owes: `windows-11`'s and Core Animation's colour spaces, the circular bezel's `body.margin`, AppKit's check mark and radio dot animation (MAC-X11's recording) and UIKit's multiselect check (CK-2†), WinUI's checked radio's dot while pressed, the `ios-26` bar items (prominent, system Done, system add, system Action), every style's dynamic corner (the non-glass base on both presets, `@corner_dynamic` on glass on `ios-26`) at the content-size categories other than L, `@corner_dynamic` on `clear`, the prominent glass styles and the sizes other than `regular`, the base's title, the styles' title, padding and `min_height`, and `@role_primary` at the sizes and categories unread, `role.@highlight` under an explicit highlight colour, the `ios-26` plain bar item's title, an alert action's padding | S2.2, S2.7, S2.8, S2.9, S2.10, S2.11, S2.12, S4.1, S4.3, S4.4, S6.1, S6.3, S9.1, S9.4, S11, S12, S15, S17; catalogue; traces; R9, R10, R12 |
-| ADD-A130 | the slice's model gaps (queue #120–#124, the adwaita and macos-tahoe presets' pass 1 and the GNOME fill's audit, decided from the sources): the caret's width `Absent` where it follows each line, GTK's caret parts stating `floor(font_height × aspect ratio) + 1`; the wheel's steps `Behavior.scroll`'s, `wheel_step_lines` and `wheel_step_distance`, staged with it; `hover_open_delay` renamed `hover_time`, the system's one hover time (Windows' tooltip delays its multiples), absent on GTK; `drag_time` Qt's held press and `drag_min_delay` GTK's earliest drag; `mnemonic_when_disabled`; `Decoration.origin` (`DecorationOrigin`: `Baseline`, `InkBottom`, Pango's low underline); `RenderingMode::FromIcon`, the icon's kind deciding, and the check context's `Template`; AdwTabButton's frame a `ThemeIcon` glyph with `@tab_overflow`; a paintable a widget's element, not an icon animation (the status page's spinner); a keyed text style's `fill`, `elision`, `wrap` and `max_lines` `Values`, absent where the platform's style is a font only, the parts stating them, `max_lines` a `Value<Option<u32>>`; `scaling_role`'s `None` and `macos-*`'s `linear`; no conversion for AppKit's width trait, the width measured; `macos-*`'s status roles and set status colours absent (U101) and its Selection set's `border` may be absent; the gate comparing no field, and failing no field's fact, where its part is not drawn | S2.2, S2.8, S2.9, S4.2, S4.4, S6.1, S6.3, S12, S17; catalogue; traces; R4, R5, R10, R11, R12, R17 |
+| ADD-A130 | the slice's model gaps (queue #120–#124, the adwaita and macos-tahoe presets' pass 1 and the GNOME fill's audit, decided from the sources, then the first checks' fixes): the caret's width `Absent` where it follows each caret, GTK's caret parts stating `floor(caret_height × aspect ratio) + 1` over `ElementData.caret_height`, the toolkit's own caret rectangle; the wheel's steps `Behavior.scroll`'s, `wheel_step_lines` and `wheel_step_distance`, staged with it; `hover_open_delay` renamed `hover_time`, the system's one hover time (Windows' tooltip delays its multiples), absent on GTK; `drag_time` Qt's held press and `drag_min_delay` GTK's earliest drag; `mnemonic_when_disabled`; `DecorationLine::UnderlineLow`, Pango's low underline, its offset from the run's ink; `RenderingMode::FromIcon`, the icon's own colouring path by path (`adwaita`, `kde-breeze`), and the check context's `Template`; AdwTabButton's frame a `ThemeIcon` glyph with `@tab_overflow`; a paintable a widget's element, not an icon animation (the status page's spinner); a keyed text style's and a slot's `fill`, `elision`, `wrap` and `max_lines` `Value`s, absent where the platform's style does not set them, every part that draws text stating all four in its base table, `max_lines` a `Value<Option<u32>>`; `scaling_role`'s `None` and `macos-*`'s `linear`; no conversion for AppKit's width trait, the width measured on the font's axis; `macos-*`'s status roles and set status colours absent (U101) and its Selection set's `border` may be absent; the gate comparing no field, and failing no field's fact, where its part is not drawn, a part with no applying part fact expected drawn | S2.2, S2.8, S2.9, S4.2, S4.4, S6.1, S6.3, S8, S12, S17; catalogue; traces; R4, R5, R10, R11, R12, R17 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

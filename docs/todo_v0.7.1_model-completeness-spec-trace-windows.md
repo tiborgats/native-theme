@@ -184,7 +184,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-059 | `tooltip.values.{reshow_delay,keyboard_show_delay,display_time}` | field |
 | W1-059 | `tooltip.values.show_delay @ cond input:touch` | rule |
 | W1-059 | `WinUiToolTip (tooltip.values.placement; its gap: the offset from the pointer or the target)` | placement |
-| W1-059 | `tooltip.values.{show_delay,reshow_delay,keyboard_show_delay}` (multiples of `token.behavior.hover_time`, WinUI's `GetInitialShowDelay`: twice it, once, twice; under `cond input:touch` once and, on a reshow, zero; S4.2, ADD-A130) | field |
+| W1-059 | `tooltip.values.{show_delay,reshow_delay,keyboard_show_delay}` (multiples of `token.behavior.hover_time`, WinUI's `GetInitialShowDelay`: twice it, once (the mouse's reshow), twice (a keyboard's, first or reshown); under `cond input:touch` once and, on a reshow, zero; S4.2, ADD-A130) | field |
 | W1-059 | `reader:windows:SPI_GETMOUSEHOVERTIME -> token.behavior.hover_time` (the tooltip delays follow it by their expressions; ADD-A130) | reader |
 | W1-060 | `scrollbar.{body.min_width,thumb.min_width,thumb.fill} @ cond overlay_scrollbars !{hover} (the panning indicator: a thin thumb)` | rule |
 | W1-060 | `scrollbar.track.fill (Absent) @ cond overlay_scrollbars !{hover} (no track)` | rule |
