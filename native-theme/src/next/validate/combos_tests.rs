@@ -802,3 +802,28 @@ fn combination_active_reads_the_bases_not_itself() {
         ["rules[0].set.global.accent: the expression reads itself"]
     );
 }
+
+/// A `Fields` patch kept on a reference composes lazily (S2.2): the
+/// referenced value's bases, the patches stated in bases, then every rule in
+/// the stack's order, the referenced value's own among them; a rule of the
+/// referent after the patch decides.
+#[test]
+fn combination_patch_over_a_reference_meets_the_referents_rules() {
+    let decl = declare("text_styles = [\"body\"]");
+    let below = "[tokens.text.keyed.body]\nline_height_px = 20\n\
+                 [widgets.button.label]\ntext = \"= token.text.keyed.body\"\n\
+                 [[rules]]\nwhen = { conditions = [\"reduced_motion\"] }\ntarget = \"tokens\"\n\
+                 set = { text.keyed.body.line_height = \"auto\" }";
+    let top = "[widgets.button.label]\ntext.line_height_px = 18\n\
+               text.font.size = \"= add(part.text.line_height, 2px)\"";
+    assert_eq!(
+        over(below, top, &decl),
+        ["widgets.button.label.text.font.size: `part.text.line_height` can be `auto` here"]
+    );
+    // A rule patching the reference after the referent's rule decides.
+    let later = format!(
+        "{top}\n[[rules]]\nwhen = {{ conditions = [\"reduced_motion\"] }}\ntarget = \
+         \"button.label\"\nset = {{ text.line_height_px = 18 }}"
+    );
+    assert_eq!(over(below, &later, &decl), NONE);
+}

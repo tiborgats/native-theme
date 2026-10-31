@@ -257,9 +257,9 @@ impl<'a> Stack<'a> {
                         OpKind::Touch => Some(Got::Stated(Fact::Nothing)),
                         OpKind::Fields { .. } | OpKind::Clear | OpKind::Shown(_) => None,
                     };
+                    // Below a reference, a patch kept on it (S2.2).
                     if let Some(got) = got {
                         local = Some(found(got));
-                        via = None;
                     }
                 } else if is_above(&op.path, q) {
                     match &op.kind {
