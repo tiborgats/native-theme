@@ -541,6 +541,25 @@ fn gate_fixture_refused_key_skips_no_variant() {
     assert!(report.variants_not_held.is_empty(), "{report:?}");
 }
 
+/// Each rule of the projection (ADD-A128), one variant each: a variant
+/// only skipped facts name goes, out of its three-member exclusive group
+/// too, which keeps its other two; one a kept fact names as well stays;
+/// one only a fact of a key the model does not hold names goes; a content
+/// variant S12 exempts stays. A preset declaring what is left passes.
+#[test]
+fn gate_fixture_projection_rules() {
+    let report = fixture_report("variant_projection");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.variants_not_held.iter().collect::<Vec<_>>(),
+        [
+            "gnome/state-models.toml button @raised",
+            "gnome/state-models.toml button @unheld"
+        ]
+    );
+    assert!(report.queried > 0, "{report:?}");
+}
+
 /// A pending fact is listed with its register id and its key, apart from
 /// the failures; one a later fact shadows where both hold fails.
 #[test]
@@ -754,6 +773,63 @@ fn gate_fixture_set_whole_composed() {
         "{:?}",
         missing.failures
     );
+}
+
+/// A set-whole block's leaves compose per combination (ADD-A128): a delay
+/// under high contrast beside an unconditional interval gives two values,
+/// so a preset stating each class passes and one stating the base class's
+/// delay under high contrast fails there; a preset stating the field
+/// `"none"` where the facts state both leaves fails as a resolved `None`.
+#[test]
+fn gate_fixture_set_whole_per_combination() {
+    let report = fixture_report("set_whole_classes");
+    assert_eq!(report.failures, Vec::<String>::new());
+    let one = fixture_report_with("set_whole_classes", "one_class.toml");
+    let failures = failing(&one, "Normal:");
+    assert!(!failures.is_empty(), "{:?}", one.failures);
+    assert_eq!(failures.len(), one.failures.len(), "{:?}", one.failures);
+    assert!(
+        failures
+            .iter()
+            .all(|failure| failure.contains("contrast_high")
+                && failure.contains("token.behavior.key_repeat.delay")),
+        "{failures:?}"
+    );
+    let none = fixture_report_with("set_whole", "none.toml");
+    assert!(
+        !failing(&none, "Normal: `token.behavior.key_repeat.").is_empty(),
+        "{:?}",
+        none.failures
+    );
+    assert!(
+        none.failures
+            .iter()
+            .all(|failure| failure.contains("`token.behavior.key_repeat.")),
+        "{:?}",
+        none.failures
+    );
+}
+
+/// A pending leaf makes the set-whole field pending (ADD-A128): nothing is
+/// compared for it, the pending fact is listed with its id, and the other
+/// leaf's fact is listed unchecked beside it.
+#[test]
+fn gate_fixture_set_whole_pending_leaf() {
+    let report = fixture_report("set_whole_pending");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(
+        report.pending.values().any(|(id, key, count)| id == "U3"
+            && key == "token.behavior.key_repeat.interval"
+            && *count > 0),
+        "{:?}",
+        report.pending
+    );
+    let unchecked: Vec<_> = report.unchecked.values().collect();
+    assert_eq!(unchecked.len(), 1, "{:?}", report.unchecked);
+    let (key, pending, count) = unchecked[0];
+    assert_eq!(key, "token.behavior.key_repeat.delay");
+    assert!(pending.starts_with("U3 at "), "{pending}");
+    assert!(*count > 0);
 }
 
 /// A measured derivation is evaluated over each evidence pass, its varied

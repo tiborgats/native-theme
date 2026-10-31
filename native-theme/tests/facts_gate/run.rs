@@ -101,6 +101,10 @@ pub struct Report {
     /// Each pending fact met: its place, its id, its key, and how many
     /// combinations it applied in.
     pub pending: BTreeMap<String, (String, String, u64)>,
+    /// Each set-whole leaf's fact left unchecked as a sibling leaf's
+    /// applying fact is pending (ADD-A128): its place, its key, the pending
+    /// fact, and how many combinations.
+    pub unchecked: BTreeMap<String, (String, String, u64)>,
     /// The values the model's reader refuses, listed: a failure only for a
     /// preset checked against them.
     pub unread: Vec<String>,
@@ -538,31 +542,59 @@ fn verdict<'p>(
     }
 }
 
+/// A set-whole block's leaf as [`leaf_value`] finds it under a
+/// combination.
+enum LeafFact {
+    /// The leaf's key has no fact at all, which no verdict of its own
+    /// reports.
+    NoKey,
+    /// Its key has facts, none of which applies: its own verdict reports
+    /// it.
+    NoneApplies,
+    /// A pending fact applies: its register id and place.
+    Pending(String, String),
+    /// A fact applies, its value as stated.
+    Value(Value),
+}
+
 /// A set-whole block's value where `fact`, a leaf's, applies (S17): each
 /// leaf's applying fact, as `applies` finds it, composed into one value; a
-/// leaf with no fact fails as a key with no fact, a pending one composes
-/// nothing (it is listed as pending).
+/// leaf with no fact fails as a key with no fact (reported once, by the
+/// leaf's own verdict where its key has facts), and a pending one makes
+/// the field pending there: nothing is composed, and `fact` is listed
+/// unchecked beside the pending fact (ADD-A128).
 fn composed(
     key: &KeyFacts<'_>,
     fact: Option<&Prepared<'_>>,
-    applies: &dyn Fn(&str) -> Option<Option<Value>>,
+    applies: &dyn Fn(&str) -> LeafFact,
     pass: Pass,
     report: &mut Report,
     combination: &dyn Fn() -> String,
 ) -> Option<FactValue> {
     let block = key.set_whole.as_ref()?;
-    fact?.leaf.as_ref()?;
+    let prepared = fact?;
+    prepared.leaf.as_ref()?;
     let mut values = Vec::new();
     for (leaf, _, _) in &block.leaves {
         match applies(leaf) {
-            None => {
+            LeafFact::NoKey => {
                 if pass == Pass::Normal {
                     report.fail(format!("`{leaf}` has no fact under {}", combination()));
                 }
                 return None;
             }
-            Some(None) => return None,
-            Some(Some(value)) => values.push(value),
+            LeafFact::NoneApplies => return None,
+            LeafFact::Pending(id, place) => {
+                if pass == Pass::Normal {
+                    let entry = report
+                        .unchecked
+                        .entry(prepared.fact.place())
+                        .or_insert_with(|| (key.name.clone(), format!("{id} at {place}"), 0));
+                    entry.2 += 1;
+                }
+                return None;
+            }
+            LeafFact::Value(value) => values.push(value),
         }
     }
     let refs: Vec<&Value> = values.iter().collect();
@@ -579,22 +611,31 @@ fn composed(
     }
 }
 
-/// The value as stated of the fact `holds` makes apply to the key `name`:
-/// `None` where none applies, `Some(None)` where a pending one does.
+/// The fact `holds` makes apply to the key `name`, as a set-whole block's
+/// leaf.
 fn leaf_value(
     keys: &[KeyFacts<'_>],
     name: &str,
     holds: &dyn Fn(&When, &FactKey) -> bool,
-) -> Option<Option<Value>> {
-    let key = keys.iter().find(|key| key.name == name)?;
+) -> LeafFact {
+    let Some(key) = keys.iter().find(|key| key.name == name) else {
+        return LeafFact::NoKey;
+    };
     let mut probe = Report::default();
     let fact = applying(
         &key.facts,
         |when| holds(when, &key.key),
         &mut probe,
         &String::new,
-    )?;
-    Some(fact.leaf.clone())
+    );
+    match fact {
+        None => LeafFact::NoneApplies,
+        Some(prepared) => match (&prepared.fact.stated, &prepared.leaf) {
+            (Stated::Pending(id), _) => LeafFact::Pending(id.clone(), prepared.fact.place()),
+            (Stated::Value(_), Some(value)) => LeafFact::Value(value.clone()),
+            (Stated::Value(_), None) => LeafFact::NoneApplies,
+        },
+    }
 }
 
 fn record(
