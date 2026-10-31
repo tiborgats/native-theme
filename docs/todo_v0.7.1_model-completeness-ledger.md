@@ -299,6 +299,8 @@ Retired ids (their rows removed once measured or split; never reused): U2 (the m
 | U147 | `adwaita`: `token.icons.sizes.keyed.check.rendering_mode` (the GNOME gap fill) | no form: the check's icon is always recoloured (`-gtk-recolor`, libadwaita's `_checks.scss:70`, `:76`, `:80`), GTK's symbolic recolouring, which no `RenderingMode` names (queue #123) | spec batch ADD-A130 names the form; then the fact is published | |
 | U148 | `adwaita`: `token.icons.sizes.keyed.status_page_spinner.animation` (the GNOME gap fill) | no form: the icon is `AdwSpinnerPaintable`'s endless turn (`adw-spinner-paintable.c:532-539`), and an icon-style loop patches only a part's style, which cannot state the arc | spec batch ADD-A130 (item 12) gives the form; then the fact is published | |
 | U149 | `adwaita`: `token.behavior.hover_open_delay` (the GNOME gap fill) | the spec does not say which delay the field means: GTK hard-codes a tooltip's 500 ms (`gtktooltip.c:71`) and a submenu's 80 ms (`gtkmodelbutton.c:1423`) | spec batch ADD-A130 (item 4) defines the field; then the fact is published | |
+| U150 | `adwaita`: `token.text.fallbacks.families`, `per_language`, `per_family` (the GNOME gap fill, queue #125) | no source: the chains come from fontconfig's sort of the installed fonts and the distribution's configuration | a probe pass in the GNOME container (`fc-match -s` per family and language), or a `read` input if the reader takes them | |
+| U151 | `adwaita`: `token.behavior.touch.delay` (the GNOME gap fill, queue #125) | not proven from the source | a probe pass timing GTK's touch press in the GNOME container | |
 
 ## Verification rates
 
