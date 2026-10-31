@@ -62,7 +62,9 @@ What it reads from an entry
 - **Variants**: the sub-bullets starting `typed`, their first sentence's names outside parentheses; the keyed ones
   are the presets' (S10).
 - **Content variants** (spec_catalogue.content_variants, from *Entry format*'s list of pairs, not from the entry):
-  the widget's own, typed and keyed (`@custom_child`) as the list writes them, in `WidgetInfo.content_variants`.
+  the widget's own and its *(element)* parts' (a `<widget>.<part>` pair), typed and keyed (`@custom_child`) as the
+  list writes them, in `WidgetInfo.content_variants`, each with its part (`None`: the widget's own). A pair naming a
+  part the widget lacks, or one that is not an *(element)* part, is refused.
 """
 import re
 import subprocess
@@ -711,7 +713,8 @@ def index_file(widgets: list, shared: dict) -> str:
         out += ["    WidgetInfo {", f"        kind: WidgetKind::{W},", f'        name: "{w.name}",',
                 f"        parts: <{W}Theme as WidgetTable>::PARTS,", f"        values: <{W}Theme as WidgetTable>::VALUES,",
                 "        variants: &[" + ", ".join(f"Variant::{camel(v)}" for v in w.variants) + "],",
-                "        content_variants: &[" + ", ".join(f'"{v}"' for v in w.content_variants) + "],", "    },"]
+                "        content_variants: &[" + ", ".join(content_variant(p, v) for p, v in w.content_variants)
+                + "],", "    },"]
     out += ["];"]
     return "\n".join(out) + "\n"
 
@@ -725,6 +728,27 @@ def rustfmt(code: str, name: str) -> str:
     if run.returncode != 0:
         raise InputError(f"rustfmt refused the generated {name}:\n{run.stderr}")
     return run.stdout
+
+
+def content_variants_of(widget, pairs: dict) -> list:
+    """The content variants the catalogue's pairs give `widget`: [(part or None, variant)], its own first, then each
+    *(element)* part's in the part order."""
+    out = [(None, v) for v in pairs.get(widget.name, [])]
+    parts = {p.name: p for p in widget.parts}
+    named = [t.split(".", 1)[1] for t in pairs if t.startswith(widget.name + ".")]
+    for part in named:
+        if part not in parts:
+            raise InputError(f"the content-variant pairs name `{widget.name}.{part}`, a part `{widget.name}` lacks")
+        if not parts[part].element:
+            raise InputError(f"the content-variant pairs name `{widget.name}.{part}`, not an *(element)* part")
+    for p in widget.parts:
+        out += [(p.name, v) for v in pairs.get(f"{widget.name}.{p.name}", [])]
+    return out
+
+
+def content_variant(part, variant: str) -> str:
+    """One `WidgetInfo.content_variants` item: `(None, "<variant>")` or `(Some("<part>"), "<variant>")`."""
+    return f'(None, "{variant}")' if part is None else f'(Some("{part}"), "{variant}")'
 
 
 def generate(root: Path) -> dict:
@@ -743,7 +767,7 @@ def generate(root: Path) -> dict:
         if entry is None:
             raise InputError(f"{UNITS}: `{name}` is no typed widget of the catalogue")
         widget = read_widget(entry, units, shared_table, shared)
-        widget.content_variants = pairs.get(name, [])
+        widget.content_variants = content_variants_of(widget, pairs)
         widgets.append(widget)
     out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared)), f"gen_{w.name}.rs") for w in widgets}
     out[INDEX] = rustfmt(index_file(widgets, shared), INDEX)
@@ -863,6 +887,17 @@ def self_test() -> int:
     expect("shared", [(e.name, e.variants, e.doc) for e in shared.values()],
            [("Side", ["Start", "End"], "A shared value type of the catalogue: a note.")])
     expect("variants", w.variants, ["flat", "round"])
+    expect("content variants", content_variants_of(w, {"knob": ["bare", "@own"], "knob.label": ["with_note"],
+                                                        "dial": ["other"]}),
+           [(None, "bare"), (None, "@own"), ("label", "with_note")])
+    for label, pairs, needle in [("a part the widget lacks", {"knob.none": ["x"]}, "a part `knob` lacks"),
+                                 ("a plain part", {"knob.mark": ["x"]}, "not an *(element)* part")]:
+        try:
+            content_variants_of(w, pairs)
+            failures.append(f"{label}: not refused")
+        except InputError as err:
+            if needle not in str(err):
+                failures.append(f"{label}: refused with {err}, want {needle!r}")
     expect("words", words("RightOrUp"), "Right or up.")
     expect("drop groups", drop_groups("a (b (c)) `(d)` , e"), "a `(d)`, e")
     code = widget_file(w, set(shared))

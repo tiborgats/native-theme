@@ -281,10 +281,10 @@ pub(crate) const WIDGETS: &[WidgetInfo] = &[WidgetInfo {
         Variant::Route,
     ],
     content_variants: &[
-        "icon_only",
-        "with_icon",
-        "@custom_child",
-        "@arrow_only",
-        "@with_arrow",
+        (None, "icon_only"),
+        (None, "with_icon"),
+        (None, "@custom_child"),
+        (None, "@arrow_only"),
+        (None, "@with_arrow"),
     ],
 }];
