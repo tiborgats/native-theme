@@ -1235,6 +1235,10 @@ fn expand_append(
                     #patch::Append(_) => #c::Found::Missing,
                 }
             }
+
+            fn whole(&self) -> bool {
+                ::core::matches!(self, #patch::Set(_))
+            }
         }
 
         #[doc = #doc]

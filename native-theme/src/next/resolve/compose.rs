@@ -61,6 +61,14 @@ impl<'a> Found<'a> {
 pub(crate) trait Locate: Any {
     /// What `path`, field names and map keys, names below `self`.
     fn locate(&self, path: &[&str]) -> Found<'_>;
+
+    /// Whether the step states the value here whole (a block, a stated
+    /// `Value`, a `Set`), not field by field (a patch): what lies below it
+    /// replaces a reference above it, where a patch's fields compose with
+    /// it (S2.2).
+    fn whole(&self) -> bool {
+        true
+    }
 }
 
 /// A leaf at the end of the path; nothing below it.
@@ -122,6 +130,10 @@ where
             BlockPatch::Fields(patch) => patch.locate(path),
         }
     }
+
+    fn whole(&self) -> bool {
+        matches!(self, BlockPatch::Set(_))
+    }
 }
 
 impl<T: Locate> Locate for SurfaceMap<T> {
@@ -132,6 +144,11 @@ impl<T: Locate> Locate for SurfaceMap<T> {
         self.iter()
             .find(|(set, _)| set.name() == *first)
             .map_or(Found::Missing, |(_, value)| value.locate(rest))
+    }
+
+    /// Neither: each entry says.
+    fn whole(&self) -> bool {
+        false
     }
 }
 

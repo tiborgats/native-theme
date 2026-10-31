@@ -969,3 +969,31 @@ fn corner_operands_are_lengths() {
     let theme = resolved(&[BASE, full], 1.0);
     assert_eq!(operand(&theme, "part.corners.top_left"), length(15.0));
 }
+
+/// Task 11a's review: a field read below a reference composes lazily as
+/// the block does (S2.2): the slot's size read directly is the referenced
+/// style's rule's, over the reader's base patch on the slot, as the slot
+/// itself resolves.
+#[test]
+fn a_field_below_a_reference_composes_lazily() {
+    let preset = format!(
+        "{}[tokens.text.roles]\nbody = \"= token.text.keyed.x\"\n\
+         [[rules]]\nwhen = {{ conditions = [\"scheme:light\"] }}\ntarget = \"tokens\"\n\
+         set = {{ text.keyed.x.font.size_px = 12 }}\n",
+        text_style("tokens.text.keyed.x")
+    );
+    let reader = "[tokens.text.roles.body.font]\nsize_px = 14";
+    let theme = resolved(&[&preset, reader], 1.0);
+    assert_eq!(body_size(&theme), Some(Px(12.0)));
+    assert_eq!(
+        operand(&theme, "token.text.roles.body.font.size"),
+        Some(Val::FontSize(Px(12.0)))
+    );
+    // A later base stating the slot whole replaces the reference.
+    let whole = text_style("tokens.text.roles.body");
+    let theme = resolved(&[&preset, reader, &whole], 1.0);
+    assert_eq!(
+        operand(&theme, "token.text.roles.body.font.size"),
+        Some(Val::FontSize(Px(10.0)))
+    );
+}

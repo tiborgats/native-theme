@@ -139,6 +139,10 @@ pub(super) fn struct_locate(
                     _ => #c::Found::Missing,
                 }
             }
+
+            fn whole(&self) -> bool {
+                false
+            }
         }
     }
 }

@@ -543,20 +543,6 @@ fn widget_of(part: TypedPart) -> WidgetKind {
     }
 }
 
-/// The last step that states something at the place, skipping an `Option`
-/// member a patch leaves unset.
-fn last_stated<'f, X: Any>(items: &[Fold<'f>]) -> Option<(usize, Fold<'f>)> {
-    items
-        .iter()
-        .enumerate()
-        .rev()
-        .find(|(_, fold)| match fold.found {
-            Found::Missing => false,
-            other => !other.get::<Option<Value<X>>>().is_some_and(Option::is_none),
-        })
-        .map(|(index, fold)| (index, *fold))
-}
-
 /// A step's `Value`, held directly or as a patch's set member.
 fn value_of<'f, X: Any>(fold: Fold<'f>) -> Option<&'f Value<X>> {
     fold.found.get::<Value<X>>().or_else(|| {
@@ -1081,6 +1067,83 @@ impl<'t> Cx<'t> {
         }
     }
 
+    /// The step that decides a place's value (S2.2): the last that states
+    /// something there, but for a step after a reference above the place
+    /// that patches it below the reference's level, which composes with the
+    /// referenced value instead ([`Cx::through`]); an `Option` member a patch
+    /// leaves unset states nothing.
+    fn decide<'f, X: Any>(&self, items: &[Fold<'f>]) -> Option<(usize, Fold<'f>)> {
+        let stated = items.iter().enumerate().map(|(index, fold)| {
+            let states = match fold.found {
+                Found::Missing => false,
+                other => !other.get::<Option<Value<X>>>().is_some_and(Option::is_none),
+            };
+            (index, states)
+        });
+        let index = self.decider(stated, items)?;
+        items.get(index).map(|fold| (index, *fold))
+    }
+
+    /// Of the steps `candidates` names (each item's index, and whether it
+    /// sets the place rather than patching it), the index of the one that
+    /// decides, by [`Cx::decide`]'s rule; positions in `candidates` are
+    /// `items`' indices.
+    fn decider(
+        &self,
+        candidates: impl Iterator<Item = (usize, bool)>,
+        items: &[Fold<'_>],
+    ) -> Option<usize> {
+        let depth = self.path.len();
+        let mut out: Option<usize> = None;
+        for (index, sets) in candidates {
+            if !sets {
+                continue;
+            }
+            let Some(fold) = items.get(index) else {
+                continue;
+            };
+            let after_reference = out
+                .and_then(|held| items.get(held))
+                .and_then(|held| match held.found {
+                    Found::Through { rest, .. } => Some(depth.saturating_sub(rest)),
+                    _ => None,
+                });
+            if let Some(level) = after_reference
+                && !matches!(fold.found, Found::Through { .. } | Found::Gone)
+                && self.whole_depth(*fold) > level
+            {
+                continue;
+            }
+            out = Some(index);
+        }
+        out
+    }
+
+    /// How deep the step of `fold` states the place whole: the depth of the
+    /// first node on the way from its target's root to the place that is
+    /// whole, the place's own depth where only patches lead there.
+    fn whole_depth(&self, fold: Fold<'_>) -> usize {
+        let depth = self.path.len();
+        let Some(root) = self
+            .roots(fold.target)
+            .into_iter()
+            .find(|root| root.pos == fold.pos)
+        else {
+            return depth;
+        };
+        let mut found = root.found;
+        for (level, segment) in self.path.iter().enumerate() {
+            let Found::Node(node) = found else {
+                return depth;
+            };
+            if node.whole() {
+                return level;
+            }
+            found = node.locate(&[segment.as_str()]);
+        }
+        depth
+    }
+
     /// The text style of the element's part `part`.
     fn part_text(&mut self, part: TypedPart) -> Option<ResolvedTextStyle> {
         self.follow(
@@ -1259,7 +1322,7 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let (at, fold) = last(folds)?;
+        let (at, fold) = self.decide::<()>(folds)?;
         if let Found::Through { expr, rest } = fold.found {
             return self.through(expr, rest, folds, at, fold.target, |cx, composed| {
                 cx.operand(composed)
@@ -1347,7 +1410,7 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let (at, fold) = last_stated::<X>(items)?;
+        let (at, fold) = self.decide::<X>(items)?;
         match fold.found {
             Found::Gone | Found::Missing => None,
             Found::Through { expr, rest } => {
@@ -1516,7 +1579,7 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let (at, fold) = last_stated::<Px>(items)?;
+        let (at, fold) = self.decide::<Px>(items)?;
         if let Found::Through { expr, rest } = fold.found {
             return self.through(expr, rest, items, at, fold.target, |cx, c| {
                 cx.auto(c, signed)
@@ -1561,7 +1624,7 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let (_, fold) = last_stated::<FontSize>(items)?;
+        let (_, fold) = self.decide::<FontSize>(items)?;
         if matches!(value_of::<FontSize>(fold), Some(Value::Auto)) {
             return Some(Length::Auto);
         }
@@ -1573,7 +1636,7 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let (at, fold) = last_stated::<FontSize>(items)?;
+        let (at, fold) = self.decide::<FontSize>(items)?;
         let below = items.get(..at).unwrap_or_default();
         if let Found::Through { expr, rest } = fold.found {
             return self.through(expr, rest, items, at, fold.target, |cx, c| {
@@ -1647,10 +1710,12 @@ impl<'t> Cx<'t> {
                 })
                 .collect()
         };
-        let Some(set) = steps
-            .iter()
-            .rposition(|(_, step)| !matches!(step, Step::Fields(_)))
-        else {
+        let Some(set) = self.decider(
+            steps
+                .iter()
+                .map(|(index, step)| (*index, !matches!(step, Step::Fields(_)))),
+            items,
+        ) else {
             return B::resolve(&fields_after(0), self);
         };
         let (at, step) = steps.get(set)?;
@@ -1700,7 +1765,7 @@ impl<'t> Cx<'t> {
         't: 'f,
         B: ResolveWhole + Locate,
     {
-        let (at, fold) = last(items)?;
+        let (at, fold) = self.decide::<()>(items)?;
         if let Found::Through { expr, rest } = fold.found {
             return self.through(expr, rest, items, at, fold.target, |cx, c| cx.set::<B>(c));
         }
@@ -1753,9 +1818,12 @@ impl<'t> Cx<'t> {
             .enumerate()
             .filter_map(|(index, fold)| paint_step(*fold).map(|step| (index, step)))
             .collect();
-        let set = steps
-            .iter()
-            .rposition(|(_, step)| !matches!(step, PaintStep::Appended(_)));
+        let set = self.decider(
+            steps
+                .iter()
+                .map(|(index, step)| (*index, !matches!(step, PaintStep::Appended(_)))),
+            items,
+        );
         let mut layers: Vec<ResolvedPaintLayer> = Vec::new();
         let mut drawn = false;
         let from = match set {
