@@ -56,6 +56,9 @@ pub(crate) enum FieldType {
     Block {
         /// The type as written (`Value<Paint>`, `Vec<Stop>`, `Edge`).
         ty: &'static str,
+        /// The block's own name (`Paint`, `Stop`, `Edge`; a compound's,
+        /// `Sides`).
+        block: &'static str,
         /// Whether the block is a struct or an enum.
         form: BlockForm,
         /// The block's own table.
@@ -68,6 +71,8 @@ pub(crate) enum FieldType {
     Patch {
         /// The type as written (`PartStylePatch`).
         ty: &'static str,
+        /// The block's name (`PartStyle`).
+        block: &'static str,
         /// The block's table.
         fields: fn() -> &'static [FieldInfo],
     },
@@ -80,13 +85,24 @@ impl PartialEq for FieldType {
         match (self, other) {
             (FieldType::Leaf(a), FieldType::Leaf(b)) => a == b,
             (
-                FieldType::Block { ty, form, fields },
+                FieldType::Block {
+                    ty,
+                    block,
+                    form,
+                    fields,
+                },
                 FieldType::Block {
                     ty: other_ty,
+                    block: other_block,
                     form: other_form,
                     fields: other_fields,
                 },
-            ) => ty == other_ty && form == other_form && fields == other_fields,
+            ) => {
+                ty == other_ty
+                    && block == other_block
+                    && form == other_form
+                    && fields == other_fields
+            }
             (FieldType::Patch { ty, .. }, FieldType::Patch { ty: other, .. }) => ty == other,
             (FieldType::Leaf(_) | FieldType::Block { .. } | FieldType::Patch { .. }, _) => false,
         }
@@ -371,8 +387,10 @@ fn find_in(fields: &'static [FieldInfo], path: &str, value: bool) -> Option<&'st
         };
         let (ty, below) = match field.ty {
             FieldType::Leaf(ty) => (ty, None),
-            FieldType::Block { ty, form, fields } => (ty, Some((form, fields))),
-            FieldType::Patch { ty, fields } => (ty, Some((BlockForm::Struct, fields()))),
+            FieldType::Block {
+                ty, form, fields, ..
+            } => (ty, Some((form, fields))),
+            FieldType::Patch { ty, fields, .. } => (ty, Some((BlockForm::Struct, fields()))),
         };
         let levels = key_levels(ty);
         if rest.is_empty() {

@@ -395,6 +395,7 @@ fn a_map_of_blocks_resolves_its_blocks_and_merges_by_key() {
         field(MapProbe::FIELDS, "paints").map(|f| f.ty),
         Some(FieldType::Block {
             ty: "Vec<(crate::next::Key,Value<super::paint::Paint>)>",
+            block: "Paint",
             form: BlockForm::Struct,
             fields: Paint::FIELDS
         })
@@ -594,6 +595,7 @@ fn a_table_names_its_form_and_unit_variants() {
         field(Corners::FIELDS, "top_left").map(|f| f.ty),
         Some(FieldType::Block {
             ty: "Radius",
+            block: "Radius",
             form: Radius::FORM,
             fields: Radius::FIELDS
         })
@@ -765,6 +767,7 @@ fn field_tables_reach_nested_blocks() {
         field(Edge::FIELDS, "paint").map(|f| f.ty),
         Some(FieldType::Block {
             ty: "Value<Paint>",
+            block: "Paint",
             form: BlockForm::Struct,
             fields: Paint::FIELDS
         })
@@ -781,6 +784,7 @@ fn field_tables_reach_nested_blocks() {
         field(Shadow::FIELDS, "layers").map(|f| f.ty),
         Some(FieldType::Block {
             ty: "Vec<ShadowLayer>",
+            block: "ShadowLayer",
             form: BlockForm::Struct,
             fields: ShadowLayer::FIELDS
         })

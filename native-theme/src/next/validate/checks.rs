@@ -2,7 +2,6 @@
 //! own, every problem collected, one problem per fault.
 
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::walk::{ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker};
@@ -456,7 +455,7 @@ struct Checker<'a> {
     keyed_kind: Option<&'a [(Key, ScalarUnit)]>,
     /// Each widget's declarations under the flavours checked against,
     /// computed once.
-    widget_decls: RefCell<Vec<(WidgetKind, Rc<[WidgetDecl]>)>>,
+    widget_decls: Vec<(WidgetKind, Rc<[WidgetDecl]>)>,
 }
 
 impl<'a> Checker<'a> {
@@ -469,7 +468,7 @@ impl<'a> Checker<'a> {
             toml,
             flavor: None,
             keyed_kind: None,
-            widget_decls: RefCell::new(Vec::new()),
+            widget_decls: Vec::new(),
         }
     }
 
@@ -649,16 +648,15 @@ impl<'a> Checker<'a> {
     /// The widget's declarations under each flavour (S10): a name is
     /// declared where some flavour declares it; which flavour a rule
     /// applies under is S12's combination check's.
-    fn widget_decls(&self, widget: WidgetKind) -> Rc<[WidgetDecl]> {
-        let mut cache = self.widget_decls.borrow_mut();
-        if let Some((_, decls)) = cache.iter().find(|(held, _)| *held == widget) {
+    fn widget_decls(&mut self, widget: WidgetKind) -> Rc<[WidgetDecl]> {
+        if let Some((_, decls)) = self.widget_decls.iter().find(|(held, _)| *held == widget) {
             return Rc::clone(decls);
         }
         let decls: Rc<[WidgetDecl]> = match self.flavor {
             Some(flavor) => Rc::from([self.decl().in_flavor(widget, flavor)]),
             None => Rc::from(self.decl().in_each_flavor(widget)),
         };
-        cache.push((widget, Rc::clone(&decls)));
+        self.widget_decls.push((widget, Rc::clone(&decls)));
         decls
     }
 
@@ -1896,9 +1894,8 @@ fn field_type(fields: &'static [FieldInfo], path: &str) -> Option<Ty> {
         Some(Ty::Key(set)) if set == KEY_OF_PLACE => {
             let (parent, name) = path.rsplit_once('.').unwrap_or(("", path));
             let owner = registry::find(fields, parent).and_then(|parent| match parent.ty {
-                registry::FieldType::Block { ty, .. } | registry::FieldType::Patch { ty, .. } => {
-                    Some(block_name(ty))
-                }
+                registry::FieldType::Block { block, .. }
+                | registry::FieldType::Patch { block, .. } => Some(block),
                 registry::FieldType::Leaf(_) => None,
             });
             match owner.and_then(|owner| declaration_of_field(owner, name)) {
@@ -1907,30 +1904,6 @@ fn field_type(fields: &'static [FieldInfo], path: &str) -> Option<Ty> {
             }
         }
         ty => ty,
-    }
-}
-
-/// The block a field's type as written holds (`Value<IconStyle>`,
-/// `Option<TextRendering>`, `Vec<(Key,Shadow)>`, `FontPatch`): its name
-/// without its wrappers and a patch's `Patch`.
-fn block_name(ty: &'static str) -> &'static str {
-    let mut name = ty;
-    loop {
-        let inner = ["Value<", "Option<", "Vec<", "Box<"]
-            .iter()
-            .find_map(|wrapper| name.strip_prefix(wrapper));
-        match inner {
-            Some(inner) => {
-                let inner = inner.strip_suffix('>').unwrap_or(inner);
-                name = match inner.strip_prefix('(') {
-                    Some(pair) => pair
-                        .split_once(',')
-                        .map_or(pair, |(_, value)| value.strip_suffix(')').unwrap_or(value)),
-                    None => inner,
-                };
-            }
-            None => return name.strip_suffix("Patch").unwrap_or(name),
-        }
     }
 }
 
@@ -2937,12 +2910,11 @@ mod table_tests {
             for field in fields {
                 let name = field.path.rsplit('.').next().unwrap_or(field.path);
                 out.push((owner, name));
-                let (ty, below) = match field.ty {
+                let (block, below) = match field.ty {
                     Registry::Leaf(_) => continue,
-                    Registry::Block { ty, fields, .. } => (ty, fields),
-                    Registry::Patch { ty, fields } => (ty, fields()),
+                    Registry::Block { block, fields, .. } => (block, fields),
+                    Registry::Patch { block, fields, .. } => (block, fields()),
                 };
-                let block = block_name(ty);
                 if !seen.contains(&block) {
                     seen.push(block);
                     visit(block, below, out, seen);
@@ -3087,8 +3059,16 @@ mod table_tests {
             Some("symbol_scales")
         );
         assert_eq!(declaration_of_field("Transform", "scale"), None);
-        assert_eq!(block_name("Value<IconStyle>"), "IconStyle");
-        assert_eq!(block_name("Option<TextRenderingPatch>"), "TextRendering");
-        assert_eq!(block_name("Vec<(Key,Shadow)>"), "Shadow");
+        let fields =
+            <crate::next::blocks::part_style::PartStyle as crate::next::blocks::Table>::FIELDS;
+        let block = |path| match registry::find(fields, path).map(|info| info.ty) {
+            Some(
+                registry::FieldType::Block { block, .. } | registry::FieldType::Patch { block, .. },
+            ) => Some(block),
+            _ => None,
+        };
+        assert_eq!(block("icon"), Some("IconStyle"));
+        assert_eq!(block("shadow"), Some("Shadow"));
+        assert_eq!(block("icon.animation.keyframes.patch"), Some("PartStyle"));
     }
 }

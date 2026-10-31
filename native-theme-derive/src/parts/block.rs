@@ -409,11 +409,12 @@ impl BlockField {
             .flatten()
             .and_then(|ident| ident.to_string().strip_suffix("Patch").map(str::to_owned));
         let ty = match (self.block(), &self.shape, patched) {
-            (_, _, Some(block)) => {
-                let block = renamed(&self.ty, &format_ident!("{block}"));
+            (_, _, Some(name)) => {
+                let block = renamed(&self.ty, &format_ident!("{name}"));
                 quote! {
                     #r::FieldType::Patch {
                         ty: #written,
+                        block: #name,
                         fields: {
                             fn fields() -> &'static [#r::FieldInfo] {
                                 <#block as #b::Table>::FIELDS
@@ -437,9 +438,11 @@ impl BlockField {
                         }
                     }
                 });
+                let name = compound.name;
                 quote! {
                     #r::FieldType::Block {
                         ty: #written,
+                        block: #name,
                         form: #r::BlockForm::Struct,
                         fields: &[#(#members),*],
                     }
@@ -466,9 +469,11 @@ impl BlockField {
                 } else {
                     quote!(<#inner as #b::Table>::FIELDS)
                 };
+                let name = block.name.to_string();
                 quote! {
                     #r::FieldType::Block {
                         ty: #written,
+                        block: #name,
                         form: <#inner as #b::Table>::FORM,
                         fields: #fields,
                     }

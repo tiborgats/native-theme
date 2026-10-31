@@ -99,7 +99,7 @@ mod tests {
             "crate :: next :: blocks :: merge_slot_by_key (& mut self . params , params)",
             "impl crate :: next :: blocks :: sealed :: Sealed for Probe",
             "path : \"stroke\" , ty : crate :: next :: registry :: FieldType :: Block { \
-             ty : \"Value<Stroke>\" , form : < Stroke as crate :: next :: blocks :: Table > :: FORM , \
+             ty : \"Value<Stroke>\" , block : \"Stroke\" , form : < Stroke as crate :: next :: blocks :: Table > :: FORM , \
              fields : < Stroke as crate :: next :: blocks :: Table > :: FIELDS , } , \
              may_be_absent : true , auto : false",
             "path : \"params\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Vec<(Key,Value<Scalar>)>\")",
@@ -220,7 +220,7 @@ mod tests {
             "crate :: next :: blocks :: replace_slot (& mut held . left , later . left)",
             "if let :: core :: option :: Option :: Some (value) = later . vertical { self . flip . vertical = value ; }",
             "path : \"margin\" , ty : crate :: next :: registry :: FieldType :: Block { ty : \"Sides<Value<Px>>\" , \
-             form : crate :: next :: registry :: BlockForm :: Struct , fields : & [crate :: next :: registry :: FieldInfo { \
+             block : \"Sides\" , form : crate :: next :: registry :: BlockForm :: Struct , fields : & [crate :: next :: registry :: FieldInfo { \
              path : \"top\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
              may_be_absent : true , auto : false , \
              value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty , }",
@@ -395,7 +395,7 @@ mod tests {
         for expected in [
             "pub patch : ResolvedPartStylePatch",
             "ty : crate :: next :: registry :: FieldType :: Patch { ty : \"PartStylePatch\" , \
-             fields : { fn fields () -> & 'static [crate :: next :: registry :: FieldInfo] { \
+             block : \"PartStyle\" , fields : { fn fields () -> & 'static [crate :: next :: registry :: FieldInfo] { \
              < PartStyle as crate :: next :: blocks :: Table > :: FIELDS } fields } , }",
             "crate :: next :: blocks :: replace_slot (& mut self . patch , patch)",
         ] {
