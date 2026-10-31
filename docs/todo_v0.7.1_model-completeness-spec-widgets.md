@@ -40,14 +40,15 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `avatar.fallback_icon` on `adwaita` (AdwAvatar's icon fallback, which GN-2.14 does not name; listed absent until the
   facts state it).
 - `button`: iOS 26's further bar-item roles (none declared yet).
-- Triggers (S2.7, ADD-A125): Core Animation's and UIKit's transitions on `macos-*` and `ios-*`, which no cached source
-  states, measured by a condition change (a window deactivating, a scheme change) while a part's flags stay, whether
-  it animates; WinUI's Mica fade (W3-10), a condition change, measured likewise; pending facts until then.
-- `role.@highlight` on `macos-*` (`highlightColor`): a literal per scheme, provisional until a probe pass changes the
-  highlight setting and reads it; should the setting move it, it becomes an input (S9.1; ADD-A125).
-- `button` on `material-3`: whether every part with a bounded ripple is a Compose `Surface`, which clips its content to
-  its shape (`Surface.kt:564`), so the ripple to the part's outline; a part that is not is a class 2 change (a clip
-  field) (S2.12; ADD-A125).
+- `role.@highlight` on `macos-*` (`highlightColor`): a literal per scheme, provisional until a probe pass sets an
+  explicit highlight colour other than the accent's and reads it (run 41006842699's accent pass already moved the
+  effective highlight, `selectedTextBackgroundColor`, `os-probe-macos-26/probe.toml:635` against
+  `accent-red/probe.toml:635`, and left `highlightColor` alike); should that move it, it becomes an input (S9.1;
+  ADD-A125).
+- Every `material-3` part whose `interaction` states a bounded ripple: whether it is a Compose `Surface`, which clips
+  its content to its shape (`Surface.kt:564`), so the ripple to the part's outline; Compose's plain menu item is a
+  clickable `Row` with no clip (`Menu.kt:2152-2160`), its shaped item a `Surface` (`:2020-2050`), so the facts state
+  per part which; a part that is no `Surface` is a class 2 change (a clip field) (S2.12; ADD-A125).
 - `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw (ADD-A125).
 - The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
   `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
@@ -2024,7 +2025,8 @@ spaces:
   - `thumb_icon`, in `thumb` — Material's check or close icon on the handle (MAT-SW3): `icon`, `glyph` (the symbol: the check
     under `{checked}`, the close otherwise, MAT-SW3), `opacity` (the disabled icon's opacity, MAT-SW3), `transitions`
     (MAT-SW8's icon transitions).
-  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `interaction` (its state layer and press ripple, Compose's ripple indication, `Switch.kt:191-198`; S2.12),
+  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `interaction` (its state layer and press ripple, Compose's ripple indication, `Switch.kt:191-198`; S2.12; the
+    ripple's `box_part` `thumb`, no outset, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
   - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
     Q1.103).
@@ -2109,7 +2111,8 @@ spaces:
     these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
-  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12),
+  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
+    ripple's `box_part` `box` with `box_outset` Compose's `CheckboxDefaultPadding`, `Checkbox.kt:1064-1065`, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
@@ -2181,7 +2184,8 @@ spaces:
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
     (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
-  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12),
+  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
+    ripple's `box_part` `ring` with `box_outset` Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`.
 - **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
@@ -9157,10 +9161,7 @@ setting; the value phase states it). Rules set it
 to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3.25, W3-37, W3-52†, MAT-X20).
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
-`ThemeChange::Suspend` (GN-3.23; it reaches the CSS transitions, `trigger = "value_change"`, and no `AdwAnimation`, a
-`state_change` trigger with no conditions, S2.7, S4.3, ADD-A125); `kde-breeze` `Instant`, as Breeze's state engines start no fade on a theme change and
-Kirigami's QML behaviours run as Qt Quick runs them (their triggers, S2.7, S4.3, ADD-A125; KWin's Blend Changes
-cross-fade is the compositor's, out of scope, K-P3-15†); `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
+`ThemeChange::Suspend` (GN-3.23); `kde-breeze` (K-P3-15†), `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
 (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3` (MAT-P3-18†). A stated zero duration on
 `Crossfade` or `Suspend` is refused, as that change is `Instant` (S12; a computed zero, under a speed factor of zero,
 is not).

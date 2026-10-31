@@ -500,7 +500,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, the probe's accent pass leaving it unchanged, `os-probe-macos-26/probe.toml:667`, `:741` against `accent-red/probe.toml`; whether the highlight setting moves it unmeasured, provisional until then, the catalogue's Open items; no input, ADD-A123, ADD-A125) | role |
+| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, run 41006842699's accent pass leaving it unchanged, `os-probe-macos-26/probe.toml:667`, `:741` against `accent-red/probe.toml`; whether the highlight setting moves it unmeasured, provisional until then, the catalogue's Open items; no input, ADD-A123, ADD-A125) | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
 | MAC-TS03† | `token.text.keyed.large_title_tight` | token |
