@@ -86,11 +86,15 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   `bar_system_action`, unread there, read on `ios-13`); the default `buttonSize` (U129, the entry's *Default sizes*).
 - `button` on `macos-tahoe` (ADD-A125): the circular bezel's `body.margin` at every size, and the circle's size at
   `mini` to `regular` (MAC-B08, a register row of its own; the corners U143).
-- `checkbox` and `radio` (ADD-A125, measurements, their rest looks stated): whether AppKit animates the check mark
+- `checkbox` and `radio` (ADD-A125, measurements for ADD-A126, which states the mark's and the dot's
+  representation, ledger queue #85): whether AppKit animates the check mark
   and the radio dot in and out (MAC-X11's recording), and UIKit the multiselect circle's check (CK-2†), each a
   register row; on `windows-11`, a checked radio's dot while pressed, which two visual-state groups set (the pressed
   dot's opacity by `Pressed` and `Checked`, `RadioButton_themeresources.xaml:298-300`, `:353`), measured as a
   register row (W1-041).
+- `macos-*`'s AppKit rendering (ADD-A125): its cache key holds no background style, so a control in an emphasized
+  selected table row (`NSTableCellView`'s background style, MAC-L17†) renders its plain look until the key carries it
+  (S15).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -188,8 +192,8 @@ Each `### <widget>` section states, in this order:
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
   is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event: where its platform
   draws nothing of it in a state at rest (a check mark unchecked, a radio's dot, a selection pill, a slider's value
-  bubble, a picker's popup), it is `Absent` there by a rule written after the part's other rules (S2.7), and how it
-  enters and leaves, faded, drawn on along its
+  bubble, a picker's popup), it is `Absent` there by a rule (the check mark's and the radio dot's
+  representation ADD-A126's, S2.7), and how it enters and leaves, faded, drawn on along its
   path, trimmed or grown, is ADD-A126's (S2.7); a scale or slide while it is drawn is its `transform` per state. A
   motion
   no field's transition can state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
@@ -1307,9 +1311,8 @@ spaces:
     no fill, GN-1.73), `check_indicator.stroke` (all but `adwaita`, `kde-breeze`: the mark alone; `adwaita` by a rule
     outside `radio`, whose ring alone is outlined, GN-1.73), `check_indicator.corners` (all but `adwaita`,
     `kde-breeze`: the mark alone; `adwaita` by a rule outside `radio`, GN-1.73), `check_indicator.shadow` (all but
-    `kde-breeze`: Breeze alone draws a box behind the mark, K1.69, Q1.31), `check_indicator.glyph` (every preset by
-    a rule outside `{checked}` and `{indeterminate}`, in `context combo_box` outside `{selected}`, written last: an
-    unchecked item draws no mark, its column kept, S2.7), `body.shadow` (`kde-breeze` by a rule
+    `kde-breeze`: Breeze alone draws a box behind the mark, K1.69, Q1.31), `check_indicator.glyph` (an unchecked item draws no mark, its column kept: the
+    mark's rest look, ADD-A126's with the check mark's, ledger queue #85, S2.7), `body.shadow` (`kde-breeze` by a rule
     under `cond not_composited`: Breeze's menus without an alpha channel, K1.64; `adwaita` by a rule under `cond
     not_composited`, as its popovers, GN-1.183; `windows-11` by a rule under `!cond system_setting:drop_shadow`,
     W3-53†), `body.stroke` (`material-3`, `ios-*`: the platform outlines no menu).
@@ -2160,25 +2163,12 @@ spaces:
     `min_height`, `min_width` (W1-040), `opacity`, `focus` (where the platform rings indicator and label together,
     GN-1.61), `touch_target` (Material's minimum interactive size, MAT-C9, MAT-X22).
   - `box` — the indicator: `fill`, `stroke`, `corners`, `shadow` (KDE's hover ring and macOS 12–15's bevel are inset
-    layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `glyph` (`macos-*`:
-    AppKit's whole-control rendering, `SystemControl { control: AppKitCheckbox, replaces: [box, mark] }`, on the
-    part drawn in every state, S15, R11, MAC-C06), `transitions`.
+    layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`.
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
-    `QPainterPath`, WinUI's accept visual's stroked path, its Segoe Fluent code point the fallback, iOS's named
-    symbol), `padding` (its inset inside the box), `opacity` and `transform` (per state while drawn), `transitions`.
-    At rest the mark draws nothing while neither checked nor indeterminate on every preset, so it is `Absent` there
-    by a rule `@ !{checked,indeterminate}` (S2.7), written after every other rule on the
-    part, as a later `Style` patch brings it back (S6.3), and clearing no field stated before it, so the drawn states
-    keep theirs: `adwaita` (no icon source but `:checked`'s and
-    `:indeterminate`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:80`), `kde-breeze`
-    (`CheckOff` draws nothing, `breeze@6.8.2 kstyle/breezehelper.cpp:942-943`), `windows-11` (the AnimatedIcon's
-    accept visual at its Off frames, W1-039), `material-3` (Compose's drawn fraction 0, MAT-C8), `ios-*` (the
-    empty multiselect circle, CK-1); the check's path when checked, the dash or dots when indeterminate. On
-    `macos-*` the mark has no model of its own and is `Absent` in every state: AppKit's rendering on the `box` draws
-    it (R11, MAC-C06). How it is drawn on, trimmed off or faded is ADD-A126's (ledger queue #85, ADD-A125), and
-    whether AppKit or UIKit animates it at all is unmeasured (Open items). Rejected for now: the mark drawn in every
-    state at its hidden values (`glyph.draw_extent` 0), which has no reading on a font glyph, a filled shape or an
-    icon (S2.7; orch-docs `docs/todo_v0.7.1_model-completeness-a126-inputs.md`).
+    `QPainterPath`, WinUI's accept visual's stroked path (the template's code point WinUI's own fallback, drawn only
+    where the visual cannot be built, `AnimatedIcon.cpp:473-479`, not modelled; W1-039), AppKit's whole-control
+    rendering, iOS's named symbol), `padding` (its inset inside the box, MAC-C06), `opacity` and `transform` (per
+    state while drawn), `transitions` (its entrance and exit: absent while neither checked nor indeterminate; the mark's and the dot's representation, rest look and motion together, is ADD-A126's (ledger queue #85, S2.7)).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
@@ -2206,11 +2196,10 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`,
-    written last; `macos-*` in every state; above),
+  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`;
+    its representation ADD-A126's, above),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
-  - fields: `box.glyph` (all but `macos-*`: AppKit's rendering alone, MAC-C06), `body.fill` (the value phase names
-    the presets from the facts: the rows fill only the box, W1-037,
+  - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
     K1.57, MAT-X10), `box.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61;
     `kde-breeze` under `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `label.focus` (all but
@@ -2256,20 +2245,14 @@ spaces:
   - `body` — the whole control (the root): `padding`, `corners` (GNOME rounds a grouped one fully, GN-1.63),
     `opacity`, `focus`, `touch_target` (as `checkbox`).
   - `ring` — the outer circle: `fill`, `stroke`, `corners`, `shadow` (KDE's hover ring, K1.52), `min_width`,
-    `min_height`, `focus`, `glyph` (`macos-*`: AppKit's whole-control rendering, `SystemControl { control:
-    AppKitRadio, replaces: [ring, dot] }`, S15, R11, MAC-C07), `transitions` (the hover ring fading in, K1.52).
+    `min_height`, `focus`, `transitions` (the hover ring fading in, K1.52).
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
-    `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`.
-    At rest an unchecked radio draws no dot, so it is `Absent` by a rule `@ !{checked}` (S2.7), written after every other rule on the
-    part, as a later `Style` patch brings it back (S6.3), and clearing no field stated before it, so the drawn states
-    keep theirs; on
-    `adwaita` `@ !{checked,indeterminate}`, GTK's inconsistent radio drawing the dash (`_checks.scss:78-80`,
-    GN-1.58); on `macos-*` in every state, AppKit's rendering on the `ring` drawing it (R11, MAC-C07); on
-    `windows-11` `@ !{checked,pressed}`: WinUI's checked glyph is hidden unchecked, and an unchecked radio shows a second dot while
-    pressed (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`,
-    `:348-353`, `:362`, `:374`, `:376`, W1-041, W1-042). How it grows, shrinks or appears is ADD-A126's (ledger queue
-    #85, ADD-A125).
+    `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
+    (its scale animation, W1-041; absent while unchecked; the mark's and the dot's representation, rest look
+    and motion together, is ADD-A126's (ledger queue #85, S2.7): `adwaita`'s inconsistent radio draws the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:79-81`, GN-1.58, and WinUI's unchecked radio a
+    second dot while pressed, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`,
+    `:376`, W1-041).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
     ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`; its colours
@@ -2281,16 +2264,17 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. Others none.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked,
   indeterminate (`adwaita`: GTK's inconsistent check button in a group, which libadwaita draws with the dash,
-  `_checks.scss:78-80`, GN-1.58).
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates; CheckStates is
-  `checked`, not a group); others none (states combine; `material-3`'s state layers are a recency set, below);
+  `_checks.scss:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`, GN-1.58; `windows-11`'s empty `Indeterminate`
+  state).
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates) and
+  `[indeterminate, checked]` (its CheckStates, `IsChecked` one nullable value, the `Indeterminate` state empty and
+  drawn as unchecked, `RadioButton_themeresources.xaml:348`, `:362-363`); others none (states combine; `material-3`'s state layers are a recency set, below);
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`, written last,
-    `adwaita` `@ !{checked,indeterminate}`, `windows-11` `@ !{checked,pressed}`, `macos-*` in every state, above).
-  - fields: `ring.glyph` (all but `macos-*`: AppKit's rendering alone, MAC-C07), `ring.focus` (`adwaita`: GTK rings
-    indicator and label together, the `body`, GN-1.61; `kde-breeze` under
+  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`; its representation
+    ADD-A126's, above).
+  - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
     Q1.21), `ring.shadow` (`kde-breeze` by a rule outside `{hover}`, K1.52; the value phase names the others from the
@@ -2298,7 +2282,7 @@ spaces:
     `dot.glyph` (`windows-11`, `material-3`: their dot is a round fill, W1-042, MAT-C1; `kde-breeze` where the value
     phase reads Breeze's dot as a fill, `renderRadioButton`, `hp:995-1075`), `dot.fill` (`adwaita`: its dot is a
     path glyph, GN-P4-7†; `kde-breeze` where the value phase reads Breeze's dot as a glyph), `dot.corners`
-    (`adwaita`: its dot is a glyph, GN-P4-7†; `kde-breeze` where the value phase reads
+    (`adwaita`, `macos-*`: their dot is a glyph, GN-P4-7†, MAC-C07; `kde-breeze` where the value phase reads
     Breeze's dot as a glyph).
 - **State-model source:** as `checkbox`, with Breeze's `renderRadioButton` (`hp:995-1075`), AppKit's radio `NSButton`
   and the whole-control rendering (`SystemControl::AppKitRadio`), WinUI's RadioButton template, and Material's radio
@@ -9633,8 +9617,8 @@ connector.
 ### system controls
 
 None. No row of group 8 needs `SystemControl` (S15): the AppKit whole-control renderings are the checkbox, radio,
-pop-up, disclosure and push-disclosure rows of the control groups (MAC-C06, `checkbox.box.glyph`; MAC-C07, the radio,
-`radio.ring.glyph` as `SystemControl(AppKitRadio)`; MAC-CB01, MAC-EX02, MAC-L10; the push disclosure, `expander @
+pop-up, disclosure and push-disclosure rows of the control groups (MAC-C06; MAC-C07, the radio,
+`radio.dot.glyph` as `SystemControl(AppKitRadio)`; MAC-CB01, MAC-EX02, MAC-L10; the push disclosure, `expander @
 variant @push_disclosure`, MAC-EX01, ADD-A58). `render_system_control` returns `None` for a control size AppKit lacks on the
 running macOS (`extra_small`; `extra_large` before macOS 26), sizes the `macos-*` presets do not declare (S15, S7.3). The gradient fill of the
 macOS 12 to 15 checkbox (MAC-X09) is a `PaintKind::Linear` and needs no rendering.
