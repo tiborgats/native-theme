@@ -1,3 +1,26 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// This file ports the Android Open Source Project's
+// graphics/java/android/graphics/drawable/RippleAnimationSession.java and
+// RippleShader.java (frameworks/base at android-17.0.0_r1), whose notices
+// follow; it stays under that licence whatever licence the rest of the crate
+// is used under (the 0.8.0 plan's D10).
+//
+// Copyright (C) 2020 The Android Open Source Project
+// Copyright (C) 2021 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! A press ripple's three functions (S2.12): how far the effect has run,
 //! its noise phase, and its colour at a point, each implemented once to its
 //! source.

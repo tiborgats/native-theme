@@ -2,7 +2,9 @@
 name = "native-theme"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+# `src/next/ripple.rs` is a port of AOSP code under its own Apache-2.0 licence (the
+# 0.8.0 plan's D10), whatever licence a user picks for the rest.
+license = "(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0"
 rust-version.workspace = true
 repository.workspace = true
 homepage.workspace = true
