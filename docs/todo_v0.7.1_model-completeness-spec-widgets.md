@@ -2720,7 +2720,7 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the combo box's content layout: ADD-A127); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the combo box's content layout: ADD-A127, to come, ledger queue #113); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
