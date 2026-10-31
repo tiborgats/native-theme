@@ -253,7 +253,8 @@ Each `### <widget>` section states, in this order:
   entry's `adwaita` variants give the rule); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
   `icon_only`, `with_icon`; `menu.item`: `icon_only`; `list.row`: `icon_only`, `with_icon`, `with_subtitle`,
   `three_line`, `with_avatar`, `with_image`, `with_video`; `breadcrumb.crumb`: `with_icon`; `chip`: `with_icon`;
-  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `badge`:
+  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `splitter`: Material's keyed `@clickable` (the `splitter`
+  entry gives the rule); `badge`:
   `custom_color`; `toolbar`: `with_search`, `with_prompt`; `form`: `collapsed` (KDE's form layout when its wide layout
   does not fit); `form.row`: `bitmap_icon`, `activatable`; `rich_text.code_block`: `fenced`; `window`:
   `no_caption_buttons`, `print`, `page_setup`, `app_chooser`; `rubber_band`: `in_canvas`, `dock_target`; `banner`: `vertical` (the actions wrapped below the
@@ -1432,9 +1433,9 @@ spaces:
     toward the end and leaves the row's size alone); `Inline` centres its margin box on the row's cross axis,
     `InlineTop` puts it at the row's top, the top margin then the distance from the top of `body`'s content box
     (`body`'s box less its padding, S2.11; ADD-A125). The content's space, at every width, runs from the row's start
-    to `menu_indicator_gap_px` before the indicator's margin box, or before its box where a negative end margin
-    offsets its positive start margin (the box moved, not spaced), whichever lies further toward the end (ADD-A125;
-    a lone positive start margin is CSS's space between content and indicator, so its margin box ends the content's
+    to `menu_indicator_gap_px` before the indicator's box where its start margin is positive and its end margin the
+    negative of it (the box moved, not spaced), and before its margin box otherwise (ADD-A125; a lone or partly
+    offset positive start margin is CSS's space between content and indicator, so its margin box ends the content's
     space): a negative start margin draws the indicator into the gap and leaves the content's space
     as it is (WinUI's chevron, its negative start margin under the label's end margin, W1-102), while a positive one,
     with a matching negative end margin moving the indicator toward the end, gives the content's space the width it
@@ -2175,12 +2176,12 @@ spaces:
     size decides between the two; rejected: the default branch's geometry, which the tokens contradict, and the
     tokens' box with the default padding, a box no branch draws; S2.12, ADD-A125).
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
-    `QPainterPath`, WinUI's accept visual's stroked path (the template's code point WinUI's own fallback, drawn only
+    `QPainterPath`, WinUI's accept visual's stroked path (its form ADD-A126's with the mark's representation, ledger
+    queue #85; the template's code point WinUI's own fallback, drawn only
     where the visual cannot be built, `AnimatedIcon.cpp:473-479`, not modelled; W1-039), AppKit's whole-control
     rendering, iOS's named symbol), `padding` (its inset inside the box, MAC-C06), `opacity` and `transform` (per
-    state while drawn), `transitions` (its entrance and exit: absent while neither checked nor indeterminate, as written
-    before ADD-A125, which decides nothing here: the mark's and the dot's representation, rest look and motion
-    together, is ADD-A126's, ledger queue #85, S2.7).
+    state while drawn), `transitions` (its entrance and exit: the mark's and the dot's representation, rest look and
+    motion together, is ADD-A126's, ledger queue #85, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
@@ -2202,7 +2203,7 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`; the marks' rest look is ADD-A126's, ledger queue #85, S2.7, so the rule as written before ADD-A125 decides nothing here),
+  - parts: `state_layer` (all but `material-3`), `mark` (where and in which form it is not drawn: ADD-A126's, ledger queue #85, S2.7),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
   - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
@@ -2254,8 +2255,8 @@ spaces:
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked, as written before ADD-A125, which decides nothing here: the
-    mark's and the dot's representation, rest look and motion together, is ADD-A126's, ledger queue #85, S2.7; `adwaita`'s inconsistent radio draws the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:79-81`, GN-1.58, and WinUI's unchecked radio a
+    (its scale animation, W1-041; the mark's and the dot's representation, rest look and motion together, is
+    ADD-A126's, ledger queue #85, S2.7; `adwaita`'s inconsistent radio draws the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:79-81`, GN-1.58, and WinUI's unchecked radio a
     second dot while pressed, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`,
     `:376`, W1-041).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
@@ -2278,12 +2279,13 @@ spaces:
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`; the marks' rest look is ADD-A126's, ledger queue #85, S2.7, so the rule as written before ADD-A125 decides nothing here).
+  - parts: `state_layer` (all but `material-3`), `dot` (where and in which form it is not drawn: ADD-A126's, ledger queue #85, S2.7).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
     Q1.21), `ring.shadow` (`kde-breeze` by a rule outside `{hover}`, K1.52; the value phase names the others from the
-    facts); each preset states the form its dot is drawn in, a glyph or a cornered fill, and the others `Absent`:
+    facts); each preset states the form its dot is drawn in, a glyph or a cornered fill, and the others `Absent` (the
+    form ADD-A126's with the dot's representation, ledger queue #85):
     `dot.glyph` (`windows-11`, `material-3`: their dot is a round fill, W1-042, MAT-C1; `kde-breeze` where the value
     phase reads Breeze's dot as a fill, `renderRadioButton`, `hp:995-1075`), `dot.fill` (`adwaita`: its dot is a
     path glyph, GN-P4-7†; `kde-breeze` where the value phase reads Breeze's dot as a glyph), `dot.corners`
@@ -2718,8 +2720,10 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends `label_arrow_gap_px` before the `arrow_area`'s box,
-  `button`'s `Inline` rule with no margin, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends `label_arrow_gap_px` before the `arrow_area`'s box
+  where an arrow area is drawn, and otherwise before the `arrow`'s, measured from its margin box or box as `button`'s
+  `Inline` rule decides: GTK spaces the label's stack and the `arrow` by the box's `border-spacing`,
+  `libadwaita@1.10.0 src/stylesheet/widgets/_dropdowns.scss:2-3`, `:14-18`, its arrow area absent; ADD-A125); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
@@ -3529,7 +3533,7 @@ spaces:
   accessory or reorder handle on their rows, L-12, Q2.43; `kde-breeze` by a rule `cond flavor:widgets`, the handle
   being Kirigami's, Q2.43), `row_inner_border` (all but `windows-11`: W2-13, W2-14), `row_state_layer` (all but `material-3`: MAT-N13;
   `material-3` by a rule outside `variant sidebar context sidebar.pane[compact]`), `row_selection_indicator` (all
-  but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` by a rule outside `{selected}`; `material-3` by a
+  but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` by its base, W1-107, its representation ADD-A126's, ledger queue #85, #110; `material-3` by a
   rule outside `{selected}` in the drawer, the rail's drawn at rest at zero width and alpha, and outside `sidebar`,
   MAT-N13), `nested` (all but `adwaita`: GN-1.260), `cell` (`windows-11`: no
   multi-column row among WinUI's lists, W2-12, W2-13, W2-14, W2-33), `column_separator` (`windows-11`, `material-3`:
