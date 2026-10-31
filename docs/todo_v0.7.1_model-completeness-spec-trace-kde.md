@@ -751,7 +751,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.14 | `component.title_widget.{container.padding,title.text} @ context component.page_view` (the page title header is KTitleWidget, one home) | rule |
 | K2.14 | `component.page_view.header_separator.stroke` | component |
 | K2.14 | `input @ context component.page_view; component.page_view.search_container.padding (its container's margins, per side)` (the search line edit) | component |
-| K2.15 | `component.title_widget.title.text (= token.text.keyed.heading_<n>) @ variant @level_1 … (one per declared level of K1.270)` | component |
+| K2.15 | `component.title_widget.title.text @ variant @level_1 … @level_4` (KTitleWidget's own level style per level, not Kirigami's `heading_<n>`: the label's inherited font's weight, the application font by default, and K1.270's factor of the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`; not yet stated exactly, ledger queue #130, ADD-A125) | component |
 | K2.15 | `component.title_widget.comment.text.fill, component.title_widget.comment.fill @ variant @info / variant @warning / variant @error` (one look for the three, from the palette's highlighted text and highlight as Qt applies the source's style sheet, value phase; `MessageType` has no positive type, `ktitlewidget.h:115-120`) | component |
 | K2.15 | `component.title_widget.icon.icon` | component |
 | K2.16 | `component.multi_tab_bar.tab_button.fill, component.multi_tab_bar.tab_button.padding` | component |

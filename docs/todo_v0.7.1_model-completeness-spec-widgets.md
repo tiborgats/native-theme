@@ -8126,9 +8126,9 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   - `comment` — `text`, `fill` (its look by message type, below).
 - **Widget values:** none (alignment of icon and text is the layout, `layout.*`).
 - **Variants:** keyed text level `@level_1`, `@level_2`, `@level_3`, `@level_4` (KTitleWidget's four levels, each
-  per its keyed text style of K1.270; those styles not yet stated exactly, as KTitleWidget keeps the application
-  font's weight and sizes its levels from the whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, unlike Kirigami's heading: ledger queue
-  #130, the KDE lane's); keyed
+  its own text style, not Kirigami's `heading_<n>`: K1.270's factors, the label's inherited font's weight, the
+  application font by default, and the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`; not yet stated exactly, ledger
+  queue #130, the KDE lane's, K2.15); keyed
   message type `@plain`, `@info`, `@warning`, `@error` for `comment`, KTitleWidget's `MessageType` (`Plain`, `Info`,
   `Warning`, `Error`, `ktitlewidget.h:115-120`; it has no positive type). The source gives `@info`, `@warning` and
   `@error` one look, a style sheet naming the palette's highlighted-text and highlight colours for the comment's text
@@ -9055,8 +9055,8 @@ whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subti
 style, width, letter and word spacing, decoration, `case`, `axes` and `features` by reference to
 `token.text.roles.body` (every attribute of the default font, `qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28`,
 but the size and weight, `kirigami@6.31.0 src/controls/Heading.qml:14-35`; K3.46), the weight their own (S2.8) [Q1.3, K1.270]; KTitleWidget's
-levels 1-4 state the same factors but keep the application font's weight and take the size from its whole point
-size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, so they are not these styles, `title_widget`'s entry; the types per level:
+levels 1-4 state the same factors but keep the label's inherited font's weight and take the size from the
+application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, so they are not these styles, `title_widget`'s entry; the types per level:
 `heading_<n>_primary` (the primary type's weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
 `smallest_readable`, a full font (family, style, size) read from `smallestReadableFont`, also Kirigami's `smallFont`
 [K1.271, Q1.2]; the Breeze-derived fonts `flat_group_title`, `command_link_title`, `menu_section` (each derived from
