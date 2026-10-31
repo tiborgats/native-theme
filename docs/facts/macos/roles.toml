@@ -5218,10 +5218,13 @@ pending = "U101"
 rows = []
 
 # macos-tahoe fill (preset gaps, pass 1): the surface-set roles AppKit has no colour for. NSColor's class and its
-# deprecated category (NSColor.h:77-401, :403-452, Xcode 26.6) declare no per-region status background, no
-# visited-link, hover-decoration or shade colour, no alternate colour but the content one
-# (alternatingContentBackgroundColors, the view set's, below) and of the disabled looks only text colours, which the
-# catalogue's role record lets every one of these be absent on macos-* (the may_be_absent column).
+# categories (NSColor.h:77-401, :403-452, :455-457, Xcode 26.6) declare no per-region status background, no
+# visited-link or shade colour, no alternate colour but the content one (alternatingContentBackgroundColors, the
+# view set's, below), and no disabled or hover colour of a region but the disabled text colours. AppKit's disabled
+# and hover looks are effects applied to a part's own colour, NSColorSystemEffectDisabled and
+# NSColorSystemEffectRollover (:68-74) through colorWithSystemEffect: (:290), not colours of a surface set, so
+# they belong to the parts' {disabled} and {hover} rules; the catalogue's role record lets every one of these
+# fields be absent on macos-* (the may_be_absent column).
 
 [[fact]]
 key = "role.window.background_alternate"
@@ -5239,6 +5242,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5260,6 +5269,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.link_visited"
@@ -5277,6 +5292,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5298,6 +5319,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.shade"
@@ -5315,6 +5342,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5336,6 +5369,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.background_active"
@@ -5353,6 +5392,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5374,6 +5419,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.background_visited"
@@ -5391,6 +5442,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5412,6 +5469,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.background_neutral"
@@ -5429,6 +5492,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5450,6 +5519,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.background"
@@ -5467,6 +5542,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5488,6 +5569,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.foreground_inactive"
@@ -5505,6 +5592,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5526,6 +5619,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.link"
@@ -5543,6 +5642,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5564,6 +5669,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.negative"
@@ -5581,6 +5692,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5602,6 +5719,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.positive"
@@ -5619,6 +5742,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5640,6 +5769,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.decoration_hover"
@@ -5657,6 +5792,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5678,6 +5819,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.shade_darker"
@@ -5695,6 +5842,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5716,6 +5869,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.background_active"
@@ -5733,6 +5892,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5754,6 +5919,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.background_visited"
@@ -5771,6 +5942,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5792,6 +5969,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.window.disabled.background_neutral"
@@ -5809,6 +5992,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5830,6 +6019,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.foreground_active"
@@ -5847,6 +6042,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5868,6 +6069,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.decoration_hover"
@@ -5885,6 +6092,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5906,6 +6119,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.shade_darker"
@@ -5923,6 +6142,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5944,6 +6169,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.background_link"
@@ -5961,6 +6192,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -5982,6 +6219,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.background_negative"
@@ -5999,6 +6242,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6020,6 +6269,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.background_positive"
@@ -6037,6 +6292,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6058,6 +6319,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.background_alternate"
@@ -6075,6 +6342,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6096,6 +6369,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.foreground_active"
@@ -6113,6 +6392,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6134,6 +6419,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.link_visited"
@@ -6151,6 +6442,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6172,6 +6469,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.neutral"
@@ -6189,6 +6492,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6210,6 +6519,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.decoration_focus"
@@ -6227,6 +6542,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6248,6 +6569,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.shade"
@@ -6265,6 +6592,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6286,6 +6619,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.border"
@@ -6303,6 +6642,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6324,6 +6669,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.background_link"
@@ -6341,6 +6692,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6362,6 +6719,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.background_negative"
@@ -6379,6 +6742,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6400,6 +6769,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.view.disabled.background_positive"
@@ -6417,6 +6792,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6438,6 +6819,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.foreground_active"
@@ -6455,6 +6842,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6476,6 +6869,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.decoration_hover"
@@ -6493,6 +6892,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6514,6 +6919,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.shade_darker"
@@ -6531,6 +6942,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6552,6 +6969,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.background_link"
@@ -6569,6 +6992,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6590,6 +7019,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.background_negative"
@@ -6607,6 +7042,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6628,6 +7069,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.background_positive"
@@ -6645,6 +7092,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6666,6 +7119,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.background_alternate"
@@ -6683,6 +7142,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6704,6 +7169,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.foreground_active"
@@ -6721,6 +7192,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6742,6 +7219,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.link_visited"
@@ -6759,6 +7242,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6780,6 +7269,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.neutral"
@@ -6797,6 +7292,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6818,6 +7319,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.decoration_focus"
@@ -6835,6 +7342,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6856,6 +7369,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.shade"
@@ -6873,6 +7392,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6894,6 +7419,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.border"
@@ -6911,6 +7442,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6932,6 +7469,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.background_link"
@@ -6949,6 +7492,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -6970,6 +7519,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.background_negative"
@@ -6987,6 +7542,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
@@ -7008,6 +7569,12 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSColor (NSDeprecated)"
 absent = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
 
 [[fact]]
 key = "role.selection.disabled.background_positive"
@@ -7025,6 +7592,12 @@ absent = []
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
 quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
 
 
