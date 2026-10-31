@@ -1704,19 +1704,24 @@ quote = "&:hover { background-image: image(RGB(0 0 6 / 5%));"
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["menu", "@opaque"], states = ["open", "hover"] }
-value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
+value = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 rows = ["GN-1.32", "GN-1.26"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:5"
-quote = "$button_checked_hover_color: color-mix(in srgb, currentColor 35%, transparent);"
-conversion = ["percent_to_fraction"]
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:8"
+quote = "$opaque_button_default_bg: color-mix(in srgb, var(--window-bg-color) 85%, var(--window-fg-color));"
+conversion = ["percent_to_fraction", "complement"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:47-48"
-quote = "&:hover { background-color: $button_checked_hover_color;"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:418-421"
+quote = "&.opaque { background-color: $opaque_button_default_bg;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:431-437"
+quote = "> button { @extend %opaque_button; &, &:checked { background-color: transparent; color: inherit; }"
 
 [[fact.cite]]
 kind = "published"
@@ -1753,19 +1758,24 @@ quote = "&.keyboard-activating, &:active { background-image: image(RGB(0 0 6 / 3
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["menu", "@opaque"], states = ["open", "pressed"] }
-value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
+value = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 rows = ["GN-1.32", "GN-1.26"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:6"
-quote = "$button_checked_active_color: color-mix(in srgb, currentColor 40%, transparent);"
-conversion = ["percent_to_fraction"]
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:8"
+quote = "$opaque_button_default_bg: color-mix(in srgb, var(--window-bg-color) 85%, var(--window-fg-color));"
+conversion = ["percent_to_fraction", "complement"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:51-53"
-quote = "&.keyboard-activating, &:active { background-color: $button_checked_active_color;"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:418-421"
+quote = "&.opaque { background-color: $opaque_button_default_bg;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:431-437"
+quote = "> button { @extend %opaque_button; &, &:checked { background-color: transparent; color: inherit; }"
 
 [[fact.cite]]
 kind = "published"
@@ -2470,6 +2480,100 @@ quote = "&.has-open-popup { background-image: image($view_selected_hover_color);
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:328-329"
 quote = "&.card { background-color: var(--card-bg-color);"
+
+# `.osd button.card:checked` (0,3,1) comes after the checked card's state rules and sets only the background colour:
+# under an OSD ancestor the checked card's base is the current colour at 10%, under each state's image
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:276"
+quote = "$view_selected_color: color-mix(in srgb, var(--accent-bg-color) 25%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:345-347"
+quote = "&:checked { background-color: var(--card-bg-color); background-image: image($view_selected_color);"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked", "hover"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:277"
+quote = "$view_selected_hover_color: color-mix(in srgb, var(--accent-bg-color) 32%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:349"
+quote = "&:hover { background-image: image($view_selected_hover_color); }"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked", "pressed"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
+rows = ["GN-1.35"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:278"
+quote = "$view_selected_active_color: color-mix(in srgb, var(--accent-bg-color) 39%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:351-352"
+quote = "&.keyboard-activating, &:active { background-image: image($view_selected_active_color); }"
+
+[[fact]]
+key = "button.body.fill"
+when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"], not_variants = ["menu"], states = ["checked", "open"] }
+value = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
+rows = ["GN-1.35", "GN-1.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:356-358"
+quote = ".osd & { background-color: color-mix(in srgb, currentColor 10%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:277"
+quote = "$view_selected_hover_color: color-mix(in srgb, var(--accent-bg-color) 32%, transparent);"
+conversion = ["percent_to_fraction"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:354"
+quote = "&.has-open-popup { background-image: image($view_selected_hover_color); }"
 
 [[fact]]
 key = "button.body.shadow"

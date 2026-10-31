@@ -977,18 +977,13 @@ quote = "--accent-color: oklab( from var(--accent-bg-color) var(--standalone-col
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:146"
-quote = "--standalone-color-oklab: min(l, 0.5) a b;"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:145-147"
+quote = ":root { --standalone-color-oklab: min(l, 0.5) a b; }"
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:151"
-quote = "--standalone-color-oklab: max(l, 0.85) a b;"
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/adw-accent-color.c:141-146"
-quote = "adw_rgb_to_oklab (rgba->red, rgba->green, rgba->blue, &L, &a, &b); if (dark) L = MAX (L, 0.85); else L = MIN (L, 0.5);"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:149-153"
+quote = "@media (prefers-color-scheme: dark) { :root { --standalone-color-oklab: max(l, 0.85) a b; } }"
 
 # libadwaita states the accent as one background, one foreground and one standalone colour (:166-170): no ramp
 [[fact]]

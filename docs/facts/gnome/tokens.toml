@@ -1985,17 +1985,8 @@ kind = "published"
 source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.a11y.interface.gschema.xml.in:25-26"
 quote = "<key name=\"keyboard-focus-visible-timeout\" type=\"i\"> <default>-1</default>"
 
-# GTK has no system hover time (GtkSettings states none; the tooltip's and the submenu's delays are their own)
-[[fact]]
-key = "token.behavior.hover_open_delay"
-value = "absent"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtksettings.c:314-1070"
-quote = "gtk_settings_class_init (GtkSettingsClass *class)"
-absent = []
+# token.behavior.hover_open_delay: not stated. S4.2 does not say which delay it is (GTK hard-codes the tooltip's
+# HOVER_TIMEOUT 500, gtktooltip.c:71, and the submenu's OPEN_TIMEOUT 80, gtkmodelbutton.c:1423): reported
 
 # a wheel detent scrolls by the page size to the power 2/3, not by lines (its px step is not expressible: reported)
 [[fact]]
@@ -2047,7 +2038,9 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtktext.c:3421"
 quote = "gtk_text_obscure_mouse_cursor (self);"
 
-# GNOME has no single-click setting; GTK's list views activate on a double click unless the application asks
+# the item views' activation (KDE's sense of the token, K3.73): GtkListView, GtkGridView and GtkColumnView activate an
+# item on a double click unless the application sets single-click-activate; GNOME has no setting for it (GtkListBox's
+# and GtkFlowBox's rows are no item view)
 [[fact]]
 key = "token.behavior.single_click_activates"
 value = false
@@ -2056,6 +2049,16 @@ rows = []
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklistview.c:954-956"
+quote = "g_param_spec_boolean (\"single-click-activate\", NULL, NULL, FALSE,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgridview.c:1185-1187"
+quote = "g_param_spec_boolean (\"single-click-activate\", NULL, NULL, FALSE,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcolumnview.c:934-936"
 quote = "g_param_spec_boolean (\"single-click-activate\", NULL, NULL, FALSE,"
 
 # a touch drag scrolls once it passes the drag threshold
@@ -2133,6 +2136,12 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
 quote = "/* GTK NAMED COLORS"
 absent = ["elevation"]
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 doc/css-variables.md:1-1328"
+quote = "Title: CSS Variables"
+absent = ["elevation"]
+
 
 # libadwaita states no size classes: an AdwBreakpoint's condition is the application's (the widgets' own thresholds
 # are their breakpoint values, GN-1.197)
@@ -6730,6 +6739,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 # the context sets no weight: GTK's initial `normal`, inherited
 [[fact]]
@@ -6804,6 +6818,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 # the context sets no weight: GTK's initial `normal`, inherited
 [[fact]]
@@ -6896,6 +6915,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 # the status page's icon colour, the compact and spinner pages' too (their rules set none)
 [[fact]]
@@ -6967,6 +6991,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page_compact.fill"
@@ -7043,6 +7072,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 [[fact]]
 key = "token.icons.sizes.keyed.status_page_spinner.fill"
@@ -7103,22 +7137,9 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
 quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
 
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.animation"
-value = "absent"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
-quote = "> .icon {"
-absent = ["animation", "animation-name"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
-quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
-absent = []
+# token.icons.sizes.keyed.status_page_spinner.animation: not stated. The context holds AdwSpinnerPaintable
+# (adw-status-page.c:427-430), which turns forever (adw-spinner-paintable.c:532-539); an IconStyle loop's keyframes patch a
+# part's style, which cannot state the paintable's arc (S2.7 gives a spinner's motion to the spinner widget): reported
 
 [[fact]]
 key = "token.icons.sizes.keyed.about.fill"
@@ -7195,6 +7216,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 # the logo is a GtkImage of icon size 2 (large), so `.large-icons` gives its weight; the dialog's rule sets only the size
 [[fact]]
@@ -7230,29 +7256,22 @@ quote = ".large-icons { -gtk-icon-size: 32px; -gtk-icon-weight: 134; }"
 
 [[fact]]
 key = "token.icons.sizes.keyed.check.fill"
-value = "= surface.foreground"
+value = "= role.global.accent_foreground"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-[[fact]]
-key = "token.icons.sizes.keyed.check.rendering_mode"
-value = "absent"
-rows = []
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-55"
+quote = "&:checked, &:indeterminate { background-color: var(--accent-bg-color); color: var(--accent-fg-color);"
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-65"
-quote = "check, radio {"
-absent = ["-gtk-icon-style"]
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:67-81"
+quote = "check { border-radius: $check_radius; &:checked { -gtk-icon-source: -gtk-recolor(url(\"assets/check.svg\")); } }"
 
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
-quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+# token.icons.sizes.keyed.check.rendering_mode: not stated. The check's icon is always recoloured
+# (`-gtk-recolor`, _checks.scss:70, :76, :80), GTK's symbolic recolouring, which no RenderingMode names yet (ledger
+# queue #123); a pending fact waits for its unmeasured-register id
 
 [[fact]]
 key = "token.icons.sizes.keyed.check.scale"
@@ -7272,7 +7291,7 @@ rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-65"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-81"
 quote = "check, radio {"
 absent = ["-gtk-icon-filter"]
 
@@ -7288,7 +7307,7 @@ rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-65"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-81"
 quote = "check, radio {"
 absent = ["animation", "animation-name"]
 
@@ -7297,6 +7316,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
 quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
 absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
 
 # the context sets no weight: GTK's initial `normal`, inherited
 [[fact]]
@@ -7306,7 +7330,7 @@ rows = ["GN-3.57"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-65"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-81"
 quote = "check, radio {"
 absent = ["-gtk-icon-weight"]
 
