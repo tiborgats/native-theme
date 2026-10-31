@@ -2076,77 +2076,149 @@ fn refusal_unused_every_kind() {
     );
 }
 
+/// One fieldless variant per `ProblemKind` variant, of the same name, in
+/// `ProblemKind`'s order: `layer_error_every_variant_triggers` maps each kind
+/// to its own, so the count is the last one's, and two kinds sharing one
+/// fail the test.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum V {
+    Toml,
+    UnknownKey,
+    Mistyped,
+    UnknownName,
+    NotAKey,
+    Expression,
+    Missing,
+    DuplicateKey,
+    NotFinite,
+    PartWithoutWidget,
+    NotAPartField,
+    AppendInBases,
+    AbsentNotAllowed,
+    AutoNotAllowed,
+    CallNotAllowed,
+    OutOfRange,
+    NoLayer,
+    MaskAtBottom,
+    TooFewStops,
+    NoProperties,
+    ZeroDuration,
+    KeyframesNotIncreasing,
+    KeyframeWithoutPart,
+    FollowPartOutsideFocus,
+    RouteDuplicated,
+    KdeAccentArgument,
+    PickWithoutColors,
+    TooDeep,
+    BaseInBases,
+    ElementOperand,
+    SurfaceInRoles,
+    IllTyped,
+    OtherElementsPart,
+    UndeclaredData,
+    Undeclared,
+    NotConditions,
+    WidgetUnavailable,
+    AccentInput,
+    ListedTwice,
+    SizeNotTaken,
+    NotABlock,
+    UnitMismatch,
+    FieldsOver,
+    DrawnAsCycle,
+    TextScaleUnderDynamicType,
+    AbsentOperand,
+    AutoOperand,
+    ExpressionCycle,
+    ChainTooLong,
+    PartNotDrawn,
+    CornerAtLayout,
+    UnequalOffsets,
+    UnequalInsets,
+    TextRoleShared,
+    TextRoleOrder,
+    ShapeOverContinuous,
+    EntryCreatedUnset,
+    ElementSizeInLayout,
+    LeftToPreset,
+    Unused,
+}
+
+impl V {
+    /// How many there are: the last one's place, plus one.
+    const COUNT: usize = V::Unused as usize + 1;
+}
+
 /// Every `LayerError` and `ProblemKind` variant, each triggered by a
 /// fixture: S11's reader's kinds by text it refuses, S12's by a layer or a
-/// stack it refuses. `index` matches every variant without a wildcard, and
-/// `COUNT` names how many there are, so a new variant does not compile
-/// until it is indexed, and fails here until a fixture triggers it.
+/// stack it refuses. `index` matches every variant without a wildcard,
+/// each to its own `V`, so a new variant does not compile until it is
+/// indexed, and fails here until a fixture triggers it.
 #[test]
 fn layer_error_every_variant_triggers() {
     use crate::next::error::ProblemKind as K;
-    const COUNT: usize = 60;
-    fn index(kind: &K) -> usize {
+    fn index(kind: &K) -> V {
         match kind {
-            K::Toml(_) => 0,
-            K::UnknownKey => 1,
-            K::Mistyped { .. } => 2,
-            K::UnknownName { .. } => 3,
-            K::NotAKey(_) => 4,
-            K::Expression(_) => 5,
-            K::Missing => 6,
-            K::DuplicateKey { .. } => 7,
-            K::NotFinite => 8,
-            K::PartWithoutWidget => 9,
-            K::NotAPartField { .. } => 10,
-            K::AppendInBases => 11,
-            K::AbsentNotAllowed => 12,
-            K::AutoNotAllowed => 13,
-            K::CallNotAllowed => 14,
-            K::OutOfRange { .. } => 15,
-            K::NoLayer => 16,
-            K::MaskAtBottom => 17,
-            K::TooFewStops => 18,
-            K::NoProperties => 19,
-            K::ZeroDuration => 20,
-            K::KeyframesNotIncreasing => 21,
-            K::KeyframeWithoutPart => 22,
-            K::FollowPartOutsideFocus => 23,
-            K::RouteDuplicated { .. } => 24,
-            K::KdeAccentArgument { .. } => 25,
-            K::PickWithoutColors => 26,
-            K::TooDeep => 27,
-            K::BaseInBases => 28,
-            K::ElementOperand { .. } => 29,
-            K::SurfaceInRoles => 30,
-            K::IllTyped { .. } => 31,
-            K::OtherElementsPart { .. } => 32,
-            K::UndeclaredData { .. } => 33,
-            K::Undeclared { .. } => 34,
-            K::NotConditions => 35,
-            K::WidgetUnavailable { .. } => 36,
-            K::AccentInput => 37,
-            K::ListedTwice { .. } => 38,
-            K::SizeNotTaken { .. } => 39,
-            K::NotABlock => 40,
-            K::UnitMismatch { .. } => 41,
-            K::FieldsOver { .. } => 42,
-            K::DrawnAsCycle => 43,
-            K::TextScaleUnderDynamicType => 44,
-            K::AbsentOperand { .. } => 45,
-            K::AutoOperand { .. } => 46,
-            K::ExpressionCycle => 47,
-            K::ChainTooLong => 48,
-            K::PartNotDrawn { .. } => 49,
-            K::CornerAtLayout { .. } => 50,
-            K::UnequalOffsets { .. } => 51,
-            K::UnequalInsets { .. } => 52,
-            K::TextRoleShared { .. } => 53,
-            K::TextRoleOrder { .. } => 54,
-            K::ShapeOverContinuous => 55,
-            K::EntryCreatedUnset { .. } => 56,
-            K::ElementSizeInLayout { .. } => 57,
-            K::LeftToPreset { .. } => 58,
-            K::Unused { .. } => 59,
+            K::Toml(_) => V::Toml,
+            K::UnknownKey => V::UnknownKey,
+            K::Mistyped { .. } => V::Mistyped,
+            K::UnknownName { .. } => V::UnknownName,
+            K::NotAKey(_) => V::NotAKey,
+            K::Expression(_) => V::Expression,
+            K::Missing => V::Missing,
+            K::DuplicateKey { .. } => V::DuplicateKey,
+            K::NotFinite => V::NotFinite,
+            K::PartWithoutWidget => V::PartWithoutWidget,
+            K::NotAPartField { .. } => V::NotAPartField,
+            K::AppendInBases => V::AppendInBases,
+            K::AbsentNotAllowed => V::AbsentNotAllowed,
+            K::AutoNotAllowed => V::AutoNotAllowed,
+            K::CallNotAllowed => V::CallNotAllowed,
+            K::OutOfRange { .. } => V::OutOfRange,
+            K::NoLayer => V::NoLayer,
+            K::MaskAtBottom => V::MaskAtBottom,
+            K::TooFewStops => V::TooFewStops,
+            K::NoProperties => V::NoProperties,
+            K::ZeroDuration => V::ZeroDuration,
+            K::KeyframesNotIncreasing => V::KeyframesNotIncreasing,
+            K::KeyframeWithoutPart => V::KeyframeWithoutPart,
+            K::FollowPartOutsideFocus => V::FollowPartOutsideFocus,
+            K::RouteDuplicated { .. } => V::RouteDuplicated,
+            K::KdeAccentArgument { .. } => V::KdeAccentArgument,
+            K::PickWithoutColors => V::PickWithoutColors,
+            K::TooDeep => V::TooDeep,
+            K::BaseInBases => V::BaseInBases,
+            K::ElementOperand { .. } => V::ElementOperand,
+            K::SurfaceInRoles => V::SurfaceInRoles,
+            K::IllTyped { .. } => V::IllTyped,
+            K::OtherElementsPart { .. } => V::OtherElementsPart,
+            K::UndeclaredData { .. } => V::UndeclaredData,
+            K::Undeclared { .. } => V::Undeclared,
+            K::NotConditions => V::NotConditions,
+            K::WidgetUnavailable { .. } => V::WidgetUnavailable,
+            K::AccentInput => V::AccentInput,
+            K::ListedTwice { .. } => V::ListedTwice,
+            K::SizeNotTaken { .. } => V::SizeNotTaken,
+            K::NotABlock => V::NotABlock,
+            K::UnitMismatch { .. } => V::UnitMismatch,
+            K::FieldsOver { .. } => V::FieldsOver,
+            K::DrawnAsCycle => V::DrawnAsCycle,
+            K::TextScaleUnderDynamicType => V::TextScaleUnderDynamicType,
+            K::AbsentOperand { .. } => V::AbsentOperand,
+            K::AutoOperand { .. } => V::AutoOperand,
+            K::ExpressionCycle => V::ExpressionCycle,
+            K::ChainTooLong => V::ChainTooLong,
+            K::PartNotDrawn { .. } => V::PartNotDrawn,
+            K::CornerAtLayout { .. } => V::CornerAtLayout,
+            K::UnequalOffsets { .. } => V::UnequalOffsets,
+            K::UnequalInsets { .. } => V::UnequalInsets,
+            K::TextRoleShared { .. } => V::TextRoleShared,
+            K::TextRoleOrder { .. } => V::TextRoleOrder,
+            K::ShapeOverContinuous => V::ShapeOverContinuous,
+            K::EntryCreatedUnset { .. } => V::EntryCreatedUnset,
+            K::ElementSizeInLayout { .. } => V::ElementSizeInLayout,
+            K::LeftToPreset { .. } => V::LeftToPreset,
+            K::Unused { .. } => V::Unused,
         }
     }
     fn problems(result: Result<(), LayerError>) -> Vec<Problem> {
@@ -2358,35 +2430,50 @@ fn layer_error_every_variant_triggers() {
     let rule = |when: &str, target: &str, set: &str| {
         format!("[[rules]]\nwhen = {when}\ntarget = \"{target}\"\nset = {set}\n")
     };
-    let fixtures: Vec<(usize, Vec<Problem>)> = vec![
-        (0, read("[widgets")),
-        (1, read("[widgets.button.body]\nshine = 1")),
-        (2, read("[widgets.button.body]\nopacity = true")),
+    let fixtures: Vec<(V, Vec<Problem>)> = vec![
+        (V::Toml, read("[widgets")),
+        (V::UnknownKey, read("[widgets.button.body]\nshine = 1")),
+        (V::Mistyped, read("[widgets.button.body]\nopacity = true")),
         (
-            3,
+            V::UnknownName,
             read("[widgets.button.icon.icon]\nrendering_mode = \"glossy\""),
         ),
-        (4, read("[colors.light.keyed]\nBad = \"#000000\"")),
-        (5, read("[widgets.button.body]\nopacity = \"= add(\"")),
-        (6, preset_problems("")),
-        (7, over(&keyed, &declare("color_roles = [\"a\"]"), &[])),
-        (8, over(&nan, &none, &[])),
+        (V::NotAKey, read("[colors.light.keyed]\nBad = \"#000000\"")),
         (
-            9,
+            V::Expression,
+            read("[widgets.button.body]\nopacity = \"= add(\""),
+        ),
+        (V::Missing, preset_problems("")),
+        (
+            V::DuplicateKey,
+            over(&keyed, &declare("color_roles = [\"a\"]"), &[]),
+        ),
+        (V::NotFinite, over(&nan, &none, &[])),
+        (
+            V::PartWithoutWidget,
             read("[widgets.button.icon]\ndrawn_as = { part = \"label\", variants = [] }"),
         ),
-        (10, read("[widgets.button.label]\nopacity = 0.5")),
-        (11, over(&append, &none, &[])),
-        (12, read("[widgets.button.body]\nopacity = \"absent\"")),
-        (13, read("[widgets.button.body]\npadding.top_px = \"auto\"")),
         (
-            14,
+            V::NotAPartField,
+            read("[widgets.button.label]\nopacity = 0.5"),
+        ),
+        (V::AppendInBases, over(&append, &none, &[])),
+        (
+            V::AbsentNotAllowed,
+            read("[widgets.button.body]\nopacity = \"absent\""),
+        ),
+        (
+            V::AutoNotAllowed,
+            read("[widgets.button.body]\npadding.top_px = \"auto\""),
+        ),
+        (
+            V::CallNotAllowed,
             read("[widgets.button.values]\nshows_icon = \"= max(1, 2)\""),
         ),
-        (15, read("[widgets.button.body]\nopacity = 1.5")),
-        (16, over(&body(fill(Vec::new())), &none, &[])),
+        (V::OutOfRange, read("[widgets.button.body]\nopacity = 1.5")),
+        (V::NoLayer, over(&body(fill(Vec::new())), &none, &[])),
         (
-            17,
+            V::MaskAtBottom,
             over(
                 &body(fill(vec![
                     layer_of(BlendMode::Mask),
@@ -2396,53 +2483,71 @@ fn layer_error_every_variant_triggers() {
                 &[],
             ),
         ),
-        (18, over(&stops, &none, &[])),
+        (V::TooFewStops, over(&stops, &none, &[])),
         (
-            19,
+            V::NoProperties,
             over(
                 &transitions(vec![transition(Vec::new(), Timing::Linear)]),
                 &none,
                 &[],
             ),
         ),
-        (20, over(&suspend, &none, &[])),
-        (21, over(&keyframes, &none, &[])),
-        (22, super::checks::triggers::keyframe_without_part()),
+        (V::ZeroDuration, over(&suspend, &none, &[])),
+        (V::KeyframesNotIncreasing, over(&keyframes, &none, &[])),
         (
-            23,
+            V::KeyframeWithoutPart,
+            super::checks::triggers::keyframe_without_part(),
+        ),
+        (
+            V::FollowPartOutsideFocus,
             read("[widgets.button.body]\ncorners.top_left = \"follow_part\""),
         ),
-        (24, over(&route, &none, &[])),
+        (V::RouteDuplicated, over(&route, &none, &[])),
         (
-            25,
+            V::KdeAccentArgument,
             read(
                 "[colors.light.global]\naccent = \"= kde_accent(osd, background_normal, inactive)\"",
             ),
         ),
-        (26, read("[colors.light.global]\naccent = \"= pick(1)\"")),
-        (27, over(&deep, &none, &[])),
-        (28, read("[colors.light.global]\naccent = \"= base\"")),
         (
-            29,
+            V::PickWithoutColors,
+            read("[colors.light.global]\naccent = \"= pick(1)\""),
+        ),
+        (V::TooDeep, over(&deep, &none, &[])),
+        (
+            V::BaseInBases,
+            read("[colors.light.global]\naccent = \"= base\""),
+        ),
+        (
+            V::ElementOperand,
             read("[colors.light.global]\naccent = \"= mix(#000000, #ffffff, element.progress)\""),
         ),
         (
-            30,
+            V::SurfaceInRoles,
             read("[colors.light.global]\naccent = \"= surface.foreground\""),
         ),
-        (31, read("[widgets.button.body]\nopacity = \"= #ff0000\"")),
-        (32, super::checks::triggers::other_elements_part()),
         (
-            33,
+            V::IllTyped,
+            read("[widgets.button.body]\nopacity = \"= #ff0000\""),
+        ),
+        (
+            V::OtherElementsPart,
+            super::checks::triggers::other_elements_part(),
+        ),
+        (
+            V::UndeclaredData,
             read("[widgets.button.body]\nopacity = \"= element.progress\""),
         ),
         (
-            34,
+            V::Undeclared,
             read("[colors.light.global]\naccent = \"= role.window.background\""),
         ),
-        (35, read(&rule("{ states = [\"hover\"] }", "tokens", "{}"))),
         (
-            36,
+            V::NotConditions,
+            read(&rule("{ states = [\"hover\"] }", "tokens", "{}")),
+        ),
+        (
+            V::WidgetUnavailable,
             over(
                 &toml(
                     "[widgets.button.icon]\ndrawn_as = { widget = \"button\", part = \"body\", variants = [] }",
@@ -2452,11 +2557,11 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (
-            37,
+            V::AccentInput,
             over(&toml("[inputs.accent]\nlight = \"#3584e4\""), &accents, &[]),
         ),
         (
-            38,
+            V::ListedTwice,
             over(
                 &toml("[inputs.kde_scheme.groups]\nlight = [\"window\", \"window\"]"),
                 &sets,
@@ -2464,23 +2569,23 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (
-            39,
+            V::SizeNotTaken,
             preset_problems(
                 "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
                  default_size_by_variant = [{ variant = \"primary\", size = \"large\" }]",
             ),
         ),
         (
-            40,
+            V::NotABlock,
             over(
                 &toml("[tokens.text.keyed]\nbody = \"= token.text.roles.body\""),
                 &styles,
                 &[],
             ),
         ),
-        (41, over(&mismatch, &layout, &[])),
+        (V::UnitMismatch, over(&mismatch, &layout, &[])),
         (
-            42,
+            V::FieldsOver,
             read(&format!(
                 "{}{}",
                 rule(
@@ -2496,40 +2601,40 @@ fn layer_error_every_variant_triggers() {
             )),
         ),
         (
-            43,
+            V::DrawnAsCycle,
             read("[widgets.button.icon]\ndrawn_as = { widget = \"button\", variants = [] }"),
         ),
         (
-            44,
+            V::TextScaleUnderDynamicType,
             read(
                 "[tokens.text]\nscaling = \"dynamic_type\"\n[widgets.button.body]\n\
                   min_height_px = \"= mul(24px, text_scale)\"",
             ),
         ),
         (
-            45,
+            V::AbsentOperand,
             read(
                 "[widgets.button.body]\nmargin.top_px = \"absent\"\n\
                   min_width_px = \"= add(part.margin.top, 4px)\"",
             ),
         ),
         (
-            46,
+            V::AutoOperand,
             read(
                 "[widgets.button.body]\nmax_width_px = \"auto\"\n\
                   min_width_px = \"= add(part.max_width, 4px)\"",
             ),
         ),
         (
-            47,
+            V::ExpressionCycle,
             read(
                 "[widgets.button.body]\nmin_width_px = \"= part.min_height\"\n\
                   min_height_px = \"= part.min_width\"",
             ),
         ),
-        (48, chain),
+        (V::ChainTooLong, chain),
         (
-            49,
+            V::PartNotDrawn,
             read(&format!(
                 "[widgets.button.label]\npadding.top_px = \"= widget.menu_indicator.min_height\"\n\
                  [widgets.button.menu_indicator]\nabsent = true\n{}",
@@ -2537,28 +2642,28 @@ fn layer_error_every_variant_triggers() {
             )),
         ),
         (
-            50,
+            V::CornerAtLayout,
             read(
                 "[widgets.button.body]\ncorners.top_left = { concentric = { minimum_px = 2 } }\n\
                   focus.width_px = \"= part.corners.top_left\"",
             ),
         ),
         (
-            51,
+            V::UnequalOffsets,
             read(
                 "[widgets.button.body.focus]\ncorners.top_left = \"follow_part\"\n\
                   offset.top_px = 2\noffset.left_px = 3",
             ),
         ),
         (
-            52,
+            V::UnequalInsets,
             read(
                 "[widgets.button.body]\ncorners.top_left = { concentric = { minimum_px = 2 } }\n\
                   margin.top_px = 2\nmargin.left_px = 3",
             ),
         ),
         (
-            53,
+            V::TextRoleShared,
             over(
                 &toml(
                     "[tokens.text.roles]\nbody = \"= token.text.keyed.body\"\n\
@@ -2569,7 +2674,7 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (
-            54,
+            V::TextRoleOrder,
             over(
                 &toml(
                     "[tokens.text.roles]\ncaption = \"= token.text.keyed.body\"\n\
@@ -2579,9 +2684,9 @@ fn layer_error_every_variant_triggers() {
                 &[],
             ),
         ),
-        (55, shape),
+        (V::ShapeOverContinuous, shape),
         (
-            56,
+            V::EntryCreatedUnset,
             over(
                 &toml("[tokens.text.keyed.caption]\nline_height = \"auto\""),
                 &styles,
@@ -2589,28 +2694,46 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (
-            57,
+            V::ElementSizeInLayout,
             over(
                 &toml("[widgets.button.body]\npadding.left_px = \"= mul(element.width, 0.1)\""),
                 &data,
                 &[],
             ),
         ),
-        (58, left),
+        (V::LeftToPreset, left),
         (
-            59,
+            V::Unused,
             preset_problems("[declare]\nflavors = [\"widgets\", \"kirigami\"]"),
         ),
     ];
-    let mut covered = [false; COUNT];
+    // Each variant is one `V`: two kinds the fixtures meet never share one.
+    let mut met: Vec<(std::mem::Discriminant<K>, V)> = Vec::new();
+    for (_, found) in &fixtures {
+        for problem in found {
+            let held = (std::mem::discriminant(&problem.kind), index(&problem.kind));
+            assert!(
+                met.iter().all(|(d, v)| (*d == held.0) == (*v == held.1)),
+                "two variants indexed as {:?}",
+                held.1
+            );
+            if !met.contains(&held) {
+                met.push(held);
+            }
+        }
+    }
+    let mut covered = [false; V::COUNT];
     for (expected, found) in &fixtures {
-        let kinds: Vec<usize> = found.iter().map(|problem| index(&problem.kind)).collect();
-        assert!(kinds.contains(expected), "variant {expected}: {found:?}");
-        if let Some(slot) = covered.get_mut(*expected) {
+        let kinds: Vec<V> = found.iter().map(|problem| index(&problem.kind)).collect();
+        assert!(kinds.contains(expected), "variant {expected:?}: {found:?}");
+        let slot = covered.get_mut(*expected as usize);
+        assert!(slot.is_some(), "{expected:?} past `V::COUNT`");
+        if let Some(slot) = slot {
+            assert!(!*slot, "{expected:?} has two fixtures");
             *slot = true;
         }
     }
-    let missing: Vec<usize> = (0..COUNT)
+    let missing: Vec<usize> = (0..V::COUNT)
         .filter(|i| !covered.get(*i).copied().unwrap_or(false))
         .collect();
     assert_eq!(missing, Vec::<usize>::new());
