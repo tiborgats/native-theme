@@ -203,7 +203,7 @@ Each `### <widget>` section states, in this order:
   one `values()` is queried with (S8): queried with an item *(element)* (a row, a tab, a thumbnail), the events and
   their element data (`move_distance`) are that item's; queried with the widget's own element, they are the widget's
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
-  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event. One the platform hides
+  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event, unless an event reveals it (an expander's content, S2.7). One the platform hides
   at once is `Absent` by a rule in the states it is hidden in (WinUI's combo-box selection pill, W1-135, a title bar
   in full screen): it appears and leaves at once (S2.7), and no later field patch brings it back (S6.3). One the platform draws on, grows, trims,
   fades or slides out (a check mark, a radio's dot, a slider's value bubble, WinUI's list selection pill) lists
@@ -216,8 +216,8 @@ Each `### <widget>` section states, in this order:
   on every preset, beneath each preset's state rules as every base patch is; a `shown` part states `shown = false`
   in its base and `true` by the rules that draw it, its other fields in every state, so a patch reaches it however
   its `shown` rules are ordered (ADD-A126). A `popup` part's opening and closing are ADD-A129's (queue #118), at once meanwhile where
-  it is drawn as itself and as its substitute presents where drawn as another widget (S2.7); an overlay's
-  presentations run as stated. A motion the
+  it is drawn as itself, and as its substitute presents where it is drawn as another widget (S2.7); an overlay's or
+  an expander's presentations run as stated. A motion the
   enter rule cannot state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
@@ -3434,7 +3434,7 @@ spaces:
   - `section_index` *(element)* — iOS's A–Z index (L-15): `text`, `fill` (its tracking background is its pressed
     fill).
   - `nested` — the box holding an expanded row's nested rows (GNOME's `list.nested` under an AdwExpanderRow in a
-    boxed list, GN-1.260): `fill`, `padding`.
+    boxed list, GN-1.260): `fill`, `padding`, `shown` (`adwaita`'s hidden outside `{open}`, GN-1.259; S2.7).
 - **Widget values:** `row_background_inset: Sides<Value<Px>>` (rules by position: K1.170's larger first-row top;
   K-KA-38†, K-KA-39†; a sidebar's selected row, MAC-SB04); `row_gap_px: Value<Px>` (GN-1.166, Q1.79, MAT-L6, MAT-L8);
   `intercell_gap: Axes<Value<Px>>`
@@ -4271,12 +4271,13 @@ spaces:
     the disclosure bezel, S15, MAC-B01), `fill`, `stroke` (WinUI's chevron button border per state, W1-140), `corners`
     (WinUI's chevron button), `opacity`, `transform` (rotation per state), `min_width`, `min_height` (its size per
     control size, MAC-EX05†), `transitions` (X-MO-6).
-  - `content` — the disclosed area: `fill` (W1-141), `stroke`, `corners`, `padding`.
+  - `content` — the disclosed area: `fill` (W1-141), `stroke`, `corners`, `padding`, `shown` (hidden outside `{open}`
+    where a row states the reveal, K1.251, W1-142; S2.7).
 - **Widget values:** `arrow_side: Value<Side>` (today); `arrow_gap_px: Value<Px>` (today);
   `content_indent_px: Value<Px>`
   (today); `drag_hover_delay_ms: Value<Ms>` (a drag hovering the header expands it, GN-1.262);
-  `presentations: Vec<PresentationTransition>`: events `@expand`, `@collapse` (the content's reveal: GN-1.259, K1.251,
-  W1-142, K3.37).
+  `presentations: Vec<PresentationTransition>`: events `@expand`, `@collapse` (the content's reveal: K1.251, K3.37,
+  W1-142; `adwaita`'s GtkExpander states none, revealing it at once, `gtkexpander.c:900-921`).
 - **Variants:** keyed: `macos-*` `@push_disclosure`
   (MAC-EX01, MAC-B01); `windows-11` `@expand_up` (the content opens above the
   header, with its own border thickness and corners, W1-141; a variant because the look changes with it, which a
@@ -4286,7 +4287,9 @@ spaces:
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (Expander CommonStates; its ExpandStates are
   `open`, its ExpandDirectionStates the variant `@expand_up`); others none (states combine); precedence: state models
   (S17).
-- **may_be_absent:** parts: none; fields: `header.stroke` (`adwaita`, `kde-breeze`, `macos-*`: their expanders draw
+- **may_be_absent:** parts: `content` (`adwaita`, `macos-*` by a rule `!{open}`, written last: GtkExpander removes it
+  at once, `gtkexpander.c:900-921`; macOS's reveal pending MAC-X11; `kde-breeze`, `windows-11` never, hidden by `shown`,
+  S2.7); fields: `header.stroke` (`adwaita`, `kde-breeze`, `macos-*`: their expanders draw
   no frame, today's frame off; W1-140 frames Windows'), `content.stroke` (`adwaita`, `kde-breeze`, `macos-*`: the
   same; W1-141), `header.shadow` (every preset: no expander header casts a shadow in the rows GN-1.261, K1.250,
   MAC-EX01, W1-140), `content.fill` (`adwaita`, `kde-breeze`, `macos-*`: the content lies on its container; W1-141
@@ -5454,7 +5457,7 @@ spaces:
   - `popup` — the picker's own flyout, popover or docked container, holding the calendar or the looping selectors
     (one name with `time_picker.popup`): `fill`, `stroke`, `corners` (MAT-N16), `shadow`, `padding`, `min_width`,
     `min_height` (MAT-N16); where a field opens it, it is drawn only `{open}`, its opening and closing ADD-A129's
-    (queue #118), at once meanwhile (S2.7). `popup_header` and
+    (queue #118), at once meanwhile where it is drawn as itself (S2.7). `popup_header` and
     `divider` nest in it. `kde-breeze` draws it with another widget under `with_popup`, each flavour its own: under
     `cond flavor:widgets` `popup` is `drawn_as = { widget = "menu", variants = [] }` (KDateComboBox opens a menu,
     K2.23†), under `cond flavor:kirigami` `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`
@@ -5838,7 +5841,8 @@ spaces:
     `icon`, `glyph` (an arrow drawn as a glyph: GNOME's expander arrow, stated with the same field kind as
     `list.disclosure.glyph`, GN-1.257), `padding`, `opacity`, `transform`, `transitions`
   - `row_nested` — the box holding an expander row's nested rows (GNOME's `list.nested` fill, GN-1.260; Windows'
-    SettingsExpander items, W2-40†): `fill`, `padding`
+    SettingsExpander items, W2-40†): `fill`, `padding`, `shown` (hidden outside `{open}` where a row states the
+    reveal, GN-1.259, K-KA-7†; S2.7)
   - `row_separator` *(element)*, in `card` — the line between two rows, an element whose previous and next siblings
     are rows (GN-1.165; Kirigami's separator, dimmed, Q2.56†, K-KA-4†): `stroke` (the line, its top edge), `opacity`,
     `margin` (its insets from the card's sides, Q2.56†, K-KA-4†: a line's insets are its `margin`, as a stroke lies
@@ -5923,7 +5927,7 @@ spaces:
   measurement shows its sections draw none, MAC-LY02†; the rows are then queried in the page's scope, Nesting),
   `row_edit_icon` (all but `adwaita`, `kde-breeze`: AdwEntryRow's and kirigami-addons' mobile rows' edit icon,
   GN-2.03, K-KA-9†; `kde-breeze` by a rule under `cond flavor:widgets`), `row_indicator` (all but `adwaita`:
-  AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`), `row_arrow` (every
+  AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`; under `expander` by a rule `!{open}`, written last, where no row states the reveal, `windows-11`'s W2-40†, S2.7; `adwaita`, `kde-breeze` hidden by `shown`), `row_arrow` (every
   preset by a rule outside the row kinds that show it, `action`, `combo`, `expander`; `kde-breeze` by a rule under
   `@ka_form_card` while the row draws no background, K-KA-7†), `row_separator` (`windows-11`: the expander items'
   top line is `row.stroke`, W2-40†; `kde-breeze` by a rule outside `@cards` and `@ka_form_card`, and by a rule
@@ -7297,9 +7301,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     `transitions` (KDE's animated arrow hover, K2.3).
   - `separator` — between the buttons, or between the text and the buttons (GN-2.24, C-4, MAC-N01): `stroke` (the
     line, its start edge between buttons side by side, its top edge between stacked ones).
-  - `popup` — Windows' compact spin popup, W2-01: `fill`, `stroke`, `shadow` (its closed state, NumberBox opening it
-    on focus, `microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`, ADD-A129's, queue #118;
-    drawn at rest under `@compact` meanwhile).
+  - `popup` — Windows' compact spin popup, W2-01: `fill`, `stroke`, `shadow` (a popup part, so its presence is ADD-A129's,
+    queue #118, S2.7: its closed state, NumberBox opening it on focus, `microsoft-ui-xaml@2.5.1
+    src/controls/dev/NumberBox/NumberBox.cpp:415-439`; drawn at rest under `@compact` meanwhile).
   - `header` — Windows' header label, W2-01: `text`.
 - **Widget values:** `button_layout: Value<StepperButtonLayout>`,
   `StepperButtonLayout { EndColumn, BothEnds, AboveAndBelow, SideBySide }` (a column at the end, both ends, stacked

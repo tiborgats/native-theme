@@ -263,7 +263,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` | rule |
 | W1-089 | `list.row_selection_indicator.transitions (Opacity, Transform: a zero duration, engine WinUi) @ variant sidebar / {selected} variant sidebar` (written after W1-107's `{selected}` rule, which it overrides there: NavigationView's pill, its template's rectangle at opacity 0, `src/controls/dev/NavigationView/NavigationView_themeresources.xaml:602`, `:220-222`, is set to 0 and 1 at once in code where no move runs, `src/controls/dev/NavigationView/NavigationView.cpp:2130-2131`, and as a move completes, `:2246-2255`; its motion is the move's, the `@indicator_move` presentation, W1-090; ADD-A126) | rule |
 | W1-089 | `list.values.selection_indicator_edge @ variant sidebar` (the pill at the row's leading edge) | rule |
-| W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` (ADD-A129 (queue #118)) | rule |
+| W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` (ADD-A129 (queue #118): its key frames, `src/controls/dev/NavigationView/NavigationView.cpp:2185-2240`; no step stated meanwhile, the pill moving at once by W1-089's zeros, S2.7) | rule |
 | W1-091 | `list.{row_background.fill,row_background.stroke,row.text.fill} @ {pressed} / {selected} / {selected,hover} / {selected,pressed} / {disabled} / {checked} variant sidebar` | rule |
 | W1-092 | `list.{row.min_height,row.padding,row_background.corners,leading_icon.min_width,leading_icon.min_height} @ variant sidebar (row height, icon box, its margin)` | rule |
 | W1-092 | `list.values.{row_background_inset,leading_gap} @ variant sidebar (the item margin, the icon to text gap)` | rule |
@@ -391,6 +391,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-141 | `expander.content.{fill,stroke,corners}` | field |
 | W1-141 | `expander.content.{stroke,corners} @ variant @expand_up (the content above the header)` | rule |
 | W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` | field |
+| W1-142 | `expander.content.shown (false); expander.content.shown @ {open} (true)` (`ExpanderContent` collapsed at rest and at the collapse's end, `microsoft-ui-xaml@2.5.1 src/controls/dev/Expander/Expander.xaml:114`, `:53`, `:82`, S2.7) | rule |
 | W1-142 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, the chevron's rotation; ADD-A27; engine WinUiAnimatedIcon { visual = "chevron_up_down_small" }, its `QueueOne` queue, `src/controls/dev/Expander/Expander_themeresources.xaml:282`, S2.7, ADD-A126)` | field |
 | W1-143 | `link.text.text.decoration @ variant inline / {hover} variant inline / {pressed} variant inline` | rule |
 | W1-144 | `link.body.fill @ {pressed} / {disabled}` | rule |
@@ -611,6 +612,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.row_title.text.fill @ context form.card {hover} / context form.card {pressed} / context form.card {disabled}` | rule |
 | W2-40† | `form.card.{stroke,padding,min_width,min_height}; form.row_subtitle.text; form.row_icon.{icon,max_width,max_height,padding}; form.row_arrow.{icon,padding}` | field |
 | W2-40† | `form.values.column_gap (the header to content spacing)` | field |
+| W2-40† | `form.row_nested (absent = true) @ !{open} variant expander` (written last: no row states the reveal, which appears at once until ADD-A129, queue #118 holding its slide, `CommunityToolkit-Windows@8.2.251219 components/SettingsControls/src/SettingsExpander/SettingsExpander.xaml:149-200`, S2.7) | rule |
 | W2-40† | `form.* @ variant @right / variant collapsed / variant @right_wrapped_no_icon / variant @left / variant vertical` (RightWrapped is `collapsed`) | rule |
 | W2-40† | `form.values.{collapse,breakpoints} (AtBreakpoints; measured Allocation, width Below the wrap threshold setting `collapsed` and Below the no-icon threshold setting `@right_wrapped_no_icon`, under `@right`)` | field |
 | W2-40† | `form.row_icon.opacity @ {disabled} variant bitmap_icon` (the bitmap header icon dimmed; a glyph icon is recoloured, W3-51†) | rule |

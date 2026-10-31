@@ -368,6 +368,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.247 | `combo_box.body.stroke, combo_box.arrow.glyph.fill @ variant warning` | rule |
 | K1.250 | `expander.arrow.glyph.fill @ context expander.header {hover}` (the title's hover) | rule |
 | K1.251 | `expander.values.presentations (@expand, @collapse: the content's height; duration and timing the source's)` | field |
+| K1.251 | `expander.content.shown (false); expander.content.shown @ {open} (true)` (the content hidden collapsed, drawn while its `@collapse` runs, S2.7) | rule |
 | K1.260† | `link.text.text.fill (= the link role), link.text.text.decoration @ variant @url_label` | rule |
 | K1.260† | `link.text.text.fill (= the Bright text colour) @ {hover} variant @url_label` | rule |
 | K1.260† | `link.text.text.decoration (Absent) @ variants {@url_label,@float}; link.text.text.decoration @ {hover} variants {@url_label,@float}` | rule |
@@ -637,7 +638,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.109 | `dialog.values.action_layout (its alignment) @ cond flavor:kirigami` | rule |
 | Q1.110 | `dialog.values.standard_button_icons` | field |
 | Q1.110 | `dialog.values.button_icons @ cond flavor:kirigami` | rule |
-| Q1.111 | `dialog.values.presentations (Appear: Fade with a Translate rise, ADD-B10, ADD-A25) @ cond flavor:kirigami` | rule |
+| Q1.111 | `dialog.values.presentations (Appear: Fade with a Translate rise, ADD-B10, ADD-A25) @ cond flavor:kirigami !variant @ka_dialog` (Kirigami's own `Dialog`; kirigami-addons' `@ka_dialog` dialogs fade with no rise by Q1.105: `DatePopup.qml:16`, `TimePopup.qml:18` and `FormCardDialog.qml:51` are `QQC2.Dialog`s, centred, `qqc2-desktop-style@6.31.0 org.kde.desktop/Dialog.qml:19`, `:48-56`, and `MessageDialog.qml:412-430` states the same fade, `kirigami-addons@1.15.0 src/`) | rule |
 | Q1.112 | `dialog.scrim.fill, dialog.body.shadow, dialog.body.stroke (= kirigami_lerp(surface.background, surface.foreground, token.params.color.frame_contrast)), dialog.body.bindings (Surface(View)) @ cond flavor:kirigami` (the stroke: qqc2's `Dialog.qml:85`, Kirigami's `Dialog.qml:341`) | rule |
 | Q1.112 | `dialog.scrim.transitions (Opacity; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |
 | Q1.113 | `dialog.body.max_width, dialog.body.max_height (= sub(element.window_width, <margins>), sub(element.window_height, <margins>), ADD-A78) @ cond flavor:kirigami` | rule |
@@ -1407,6 +1408,7 @@ rationale, each decided in the core's additions register (S22).
 | K-KA-7† | `menu @ context form.row variant @link (Open Link, Copy Link, K-KA-31†)` | rule |
 | K-KA-7† | `form.row_arrow.icon (the up arrow) @ {open} variant expander` | rule |
 | K-KA-7† | `form.values.presentations (@expand, @collapse: the rows' height and opacity; = token.motion.durations.long, its timing) @ variant @ka_form_card` | rule |
+| K-KA-7† | `form.row_nested.shown (false) @ variant expander; form.row_nested.shown (true) @ {open} variant expander` (the nested rows hidden collapsed, S2.7) | rule |
 | K-KA-7† | `form.row_separator @ prev form.row variant expander {open} (under the open header row)` | rule |
 | K-KA-8† | `checkbox.body.padding (none) @ context form.row variant @ka_form_card / radio.body.padding @ context form.row variant @ka_form_card / switch.body.padding @ context form.row variant @ka_form_card` (the label is the row's title, so the control shows none and its `label` is not queried, S6.3) | rule |
 | K-KA-8† | `form.values.leading_gap @ variants {check,@ka_form_card} / variants {radio,@ka_form_card} (to the icon or text); form.values.icon_text_gap @ variants {radio,@ka_form_card}; form.values.trailing_gap @ variants {switch,@ka_form_card}` | rule |
