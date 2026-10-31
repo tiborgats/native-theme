@@ -2803,6 +2803,34 @@ source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-453"
 quote = "arrow { min-height: 16px; min-width: 16px;"
 
 [[fact]]
+key = "button.menu_indicator.min_height"
+value = "16px"
+rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-453"
+quote = "arrow { min-height: 16px; min-width: 16px;"
+
+# the arrow sets no margin: GTK's initial 0 on every side (its distance from the content is the box's spacing,
+# `menu_indicator_gap`)
+[[fact]]
+key = "button.menu_indicator.margin"
+value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-468"
+quote = "arrow {"
+absent = ["margin", "margin-top", "margin-right", "margin-bottom", "margin-left"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1021-1044"
+quote = "gtk_css_style_property_register (\"margin-top\", GTK_CSS_PROPERTY_MARGIN_TOP, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_SIZE, parse_margin, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
 key = "button.menu_indicator.transform"
 value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []

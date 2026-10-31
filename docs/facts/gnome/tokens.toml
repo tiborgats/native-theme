@@ -2129,6 +2129,12 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkgestureclick.c:216-218"
 quote = "if (gdk_device_get_source (priv->current_device) == GDK_SOURCE_MOUSE && !_gtk_gesture_click_check_within_threshold (click, \"gtk-double-click-distance\", x, y)) _gtk_gesture_click_stop (click);"
 
+# not proven from the source whether GTK delays a touch press inside a scrolling container: a probe pass decides
+[[fact]]
+key = "token.behavior.touch.delay"
+pending = "U151"
+rows = []
+
 # libadwaita has no elevation ramp: each widget states its own box-shadow
 [[fact]]
 key = "token.elevation"
@@ -6232,6 +6238,22 @@ kind = "published"
 source = "gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:731-748"
 quote = "xft_settings_set_xsettings (GsdXSettingsManager *manager, GsdXftSettings *settings)"
 absent = []
+
+# fontconfig's sort of the installed fonts under the distribution's configuration (GN-FM02†): no pinned source
+[[fact]]
+key = "token.text.fallbacks.families"
+pending = "U150"
+rows = ["GN-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_language"
+pending = "U150"
+rows = ["GN-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_family"
+pending = "U150"
+rows = []
 
 [[fact]]
 key = "token.text.fallbacks.emoji_family"
