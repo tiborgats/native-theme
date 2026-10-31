@@ -537,6 +537,29 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
 quote = "%button, button {"
 
+# AdwBackButton shows an icon and no title, so no title is shortened or replaced (the previous page's title is
+# its tooltip)
+[[fact]]
+key = "button.values.back_title_fallback"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-back-button.c:514-550"
+quote = "button = gtk_button_new_from_icon_name (\"go-previous-symbolic\");"
+
+# a press hides GTK's tooltip; no button shows one on click
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktooltip.c:965-971"
+quote = "case GDK_BUTTON_PRESS: case GDK_KEY_PRESS: case GDK_DRAG_ENTER: case GDK_GRAB_BROKEN: case GDK_SCROLL: gtk_tooltip_hide_tooltip (tooltip); break;"
+
 [[fact]]
 key = "button.values.display_mode"
 value = "absent"
@@ -617,6 +640,18 @@ quote = "gtk_css_number_value_new (0, GTK_CSS_S));"
 kind = "published"
 source = "libadwaita@1.10.0 src/adw-style-manager.c:476-477"
 quote = "\"* { transition: none; }\");"
+
+# libadwaita draws no state layer and no press ripple: its state colours are the fill's layers
+[[fact]]
+key = "button.body.interaction"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = []
 
 [[fact]]
 key = "button.body.fill"
@@ -2496,7 +2531,6 @@ quote = "if (has_arrow && !has_only_arrow) gtk_widget_add_css_class (menu_button
 
 [[fact]]
 key = "button.menu_indicator.glyph.size"
-when = { variants = ["menu"] }
 value = "16px"
 rows = ["GN-1.40"]
 
@@ -2512,7 +2546,6 @@ quote = "gtk_css_number_value_new (16, GTK_CSS_PX));"
 
 [[fact]]
 key = "button.menu_indicator.glyph.fill"
-when = { variants = ["menu"] }
 value = "= surface.foreground"
 rows = ["GN-1.40"]
 
@@ -2524,7 +2557,6 @@ quote = "GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 # a themed (symbolic) icon, filled, not stroked
 [[fact]]
 key = "button.menu_indicator.glyph.stroke"
-when = { variants = ["menu"] }
 value = "absent"
 rows = ["GN-1.40"]
 
@@ -2537,7 +2569,6 @@ quote = "arrow {"
 # fallback names and no text direction
 [[fact]]
 key = "button.menu_indicator.glyph.source"
-when = { variants = ["menu"] }
 value = { theme_icon = { name = "pan-down-symbolic", fallbacks = [] } }
 rows = ["GN-1.40"]
 
@@ -2618,7 +2649,6 @@ quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->
 # the CSS icon lookup is direction-less (`GTK_TEXT_DIR_NONE`): no `-rtl` name, no flip
 [[fact]]
 key = "button.menu_indicator.glyph.mirroring"
-when = { variants = ["menu"] }
 value = "never"
 rows = []
 
@@ -2629,7 +2659,6 @@ quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->
 
 [[fact]]
 key = "button.menu_indicator.glyph.axes"
-when = { variants = ["menu"] }
 value = {}
 rows = []
 
@@ -2641,7 +2670,6 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "button.menu_indicator.glyph.draw_extent"
-when = { variants = ["menu"] }
 value = "absent"
 rows = []
 
@@ -2652,7 +2680,6 @@ quote = "arrow {"
 
 [[fact]]
 key = "button.menu_indicator.glyph.draw_start"
-when = { variants = ["menu"] }
 value = "absent"
 rows = []
 
@@ -2663,7 +2690,6 @@ quote = "arrow {"
 
 [[fact]]
 key = "button.menu_indicator.min_width"
-when = { variants = ["menu"] }
 value = "16px"
 rows = ["GN-1.40"]
 
@@ -2674,7 +2700,6 @@ quote = "arrow { min-height: 16px; min-width: 16px;"
 
 [[fact]]
 key = "button.menu_indicator.transform"
-when = { variants = ["menu"] }
 value = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
 rows = []
 
@@ -2697,7 +2722,6 @@ quote = "transform->translate.x = gtk_css_number_value_new (0, GTK_CSS_PX); tran
 
 [[fact]]
 key = "button.menu_indicator.transitions"
-when = { variants = ["menu"] }
 value = []
 rows = []
 
