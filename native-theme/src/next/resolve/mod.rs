@@ -935,7 +935,7 @@ fn step<P>(pos: Pos, selector: Option<Selector>, patch: P) -> Step<P> {
 
 /// An input's value under `scheme`: its per-contrast base where `contrast`
 /// holds and it states one for it, else its per-scheme value (S9).
-fn input_value(
+pub(crate) fn input_value(
     value: &InputValue,
     scheme: Scheme,
     contrast: Option<Contrast>,

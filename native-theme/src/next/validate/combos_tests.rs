@@ -1424,4 +1424,41 @@ fn combination_input_cycle() {
         ),
         NONE
     );
+    // One scheme at a time: under light accent reads other's `#000000`,
+    // under dark other reads accent's `#ffffff`.
+    assert_eq!(
+        alone(
+            "[inputs.accent]\nlight = \"= input.other\"\ndark = \"#ffffff\"\n\
+             [inputs.other]\nlight = \"#000000\"\ndark = \"= input.accent\"",
+            &decl
+        ),
+        NONE
+    );
+    // The values in force: the top layer's accent replaces the preset's.
+    assert_eq!(
+        over(
+            "[inputs.accent]\nlight = \"= input.other\"\n[inputs.other]\nlight = \"#000000\"",
+            "[inputs.accent]\nlight = \"#ff0000\"\n[inputs.other]\nlight = \"= input.accent\"",
+            &decl
+        ),
+        NONE
+    );
+    // Through a colour role.
+    assert_eq!(
+        alone(
+            "[inputs.other]\nlight = \"= mix(role.global.accent, #000000, 0.5)\"\n\
+             [colors.light.global]\naccent = \"= input.other\"",
+            &decl
+        ),
+        ["inputs.other: the expression reads itself"]
+    );
+    // Under one contrast alone.
+    assert_eq!(
+        alone(
+            "[inputs.other]\nlight = \"#000000\"\n[inputs.other.contrast.high]\n\
+             light = \"= input.other\"",
+            &decl
+        ),
+        ["inputs.other: the expression reads itself"]
+    );
 }
