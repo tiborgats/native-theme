@@ -20,7 +20,7 @@ use std::any::Any;
 use super::compose::{self, Fold, Found, Locate, Target};
 use super::{Pos, ResolvedTheme};
 use crate::IconSet;
-use crate::next::blocks::outline::{DashPattern, ShapeKind};
+use crate::next::blocks::outline::{DashPattern, Radius, ShapeKind, full};
 use crate::next::blocks::paint::{
     BlendMode, Paint, PaintLayer, PaintPatch, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer,
 };
@@ -1265,6 +1265,9 @@ impl<'t> Cx<'t> {
                 cx.operand(composed)
             });
         }
+        if let Some(radius) = fold.found.get::<Radius>() {
+            return self.corner(radius, fold).map(Val::Length);
+        }
         macro_rules! typed {
             ($($ty:ty),*) => {
                 $(
@@ -1352,10 +1355,15 @@ impl<'t> Cx<'t> {
                     cx.value::<X>(c, signed)
                 })
             }
-            Found::Node(_) | Found::Leaf(_) => match value_of::<X>(fold)? {
-                Value::Stated(x) => Some(x.clone()),
-                Value::Absent | Value::Auto => None,
-                Value::Expr(expr) => self.expr::<X>(expr, items, at, fold.target, signed),
+            Found::Node(_) | Found::Leaf(_) => match value_of::<X>(fold) {
+                Some(Value::Stated(x)) => Some(x.clone()),
+                Some(Value::Absent | Value::Auto) => None,
+                Some(Value::Expr(expr)) => self.expr::<X>(expr, items, at, fold.target, signed),
+                None => {
+                    let radius = fold.found.get::<Radius>()?;
+                    let px = self.corner(radius, fold)?;
+                    X::from_val(&Val::Length(px))
+                }
             },
         }
     }
@@ -1429,6 +1437,48 @@ impl<'t> Cx<'t> {
             .iter()
             .find(|(held, _)| held.as_str() == group)
             .map(|(_, group)| group.unit)
+    }
+
+    /// A corner operand's length (S8): a `Px` radius's own; `Full` half the
+    /// smaller side of the element's box, at most its `maximum`, a focus
+    /// corner's on that box grown by the indicator's `offset` on each side;
+    /// none for the corners only the connector computes at layout, which
+    /// validation refuses as operands (S12).
+    fn corner<'f>(&mut self, radius: &'f Radius, fold: Fold<'f>) -> Option<Px>
+    where
+        't: 'f,
+    {
+        match radius {
+            Radius::Px(value) => self.value::<Px>(
+                &[Fold {
+                    found: Found::Leaf(value),
+                    ..fold
+                }],
+                false,
+            ),
+            Radius::Full { maximum } => {
+                let element = self.element?;
+                let (mut width, mut height) = (element.data.width.0, element.data.height.0);
+                if self.path.first().is_some_and(|first| first == "focus") {
+                    let path = vec!["focus".to_owned(), "offset".to_owned()];
+                    let offset = self.follow(fold.target, path, false, |cx, folds| {
+                        Some(cx.sides::<Px>(folds, true))
+                    })?;
+                    let side = |px: Option<Px>| px.map_or(0.0, |Px(px)| px);
+                    width += side(offset.left) + side(offset.right);
+                    height += side(offset.top) + side(offset.bottom);
+                }
+                let maximum = self.value::<Px>(
+                    &[Fold {
+                        found: Found::Leaf(maximum),
+                        ..fold
+                    }],
+                    false,
+                );
+                Some(full(Px(width), Px(height), maximum))
+            }
+            Radius::Ellipse | Radius::Concentric { .. } | Radius::FollowPart => None,
+        }
     }
 
     /// An `Option<Value<X>>` field's value: `Some(None)` where the step states

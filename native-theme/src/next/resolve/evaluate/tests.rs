@@ -952,3 +952,20 @@ fn keyed_scalar_calls_typed_by_their_unit() {
     .declarations;
     assert_eq!(operand(&theme, "token.params.layout.k0"), length(4.0));
 }
+
+/// Task 11a's review: a corner operand is a length (S8): a `Px` corner its
+/// radius, a `Full` one half the smaller side of the element's box (120 by
+/// 30 here), in a call as a plain reference alike.
+#[test]
+fn corner_operands_are_lengths() {
+    let px = "[widgets.button.body]\ncorners_px = 4";
+    let theme = resolved(&[BASE, px], 1.0);
+    assert_eq!(operand(&theme, "part.corners.top_left"), length(4.0));
+    assert_eq!(
+        call(&theme, "add(part.corners.top_left, 1px)", Ty::Length),
+        length(5.0)
+    );
+    let full = "[widgets.button.body.corners]\ntop_left = { full = { maximum_px = \"absent\" } }";
+    let theme = resolved(&[BASE, full], 1.0);
+    assert_eq!(operand(&theme, "part.corners.top_left"), length(15.0));
+}
