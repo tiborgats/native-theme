@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
     Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
-    Unread, When, content_variants, parse_key, parse_value, parse_when, set_whole, widgets,
+    Unread, When, content_variants, parse_key, parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -117,6 +117,9 @@ pub struct Report {
     pub variants_not_held: BTreeSet<String>,
     /// Facts of the accent run, which this gate does not run.
     pub accent_run: usize,
+    /// Field facts that apply where their part is not drawn, so compare
+    /// nothing: the part's own key is compared there (S17, ADD-A130).
+    pub fields_not_drawn: u64,
     /// Combinations skipped: a context or a condition the gate cannot set.
     pub combinations_skipped: u64,
     /// Every state model's combinations, by entry.
@@ -435,6 +438,25 @@ fn prepare<'f>(
                 set_whole: block,
                 facts: vec![prepared],
             }),
+        }
+    }
+    // A part's own key is compared under every combination, drawn where no
+    // part fact applies (S17, ADD-A130), so a part with no fact has its key
+    // too.
+    for widget in widgets() {
+        for part in parts(&widget) {
+            let name = format!("{widget}.{part}");
+            if out.iter().any(|held| held.name == name) {
+                continue;
+            }
+            if let Ok(key) = parse_key(&name) {
+                out.push(KeyFacts {
+                    name,
+                    key,
+                    set_whole: None,
+                    facts: Vec::new(),
+                });
+            }
         }
     }
     out
@@ -1582,19 +1604,11 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
         for (key, fact) in widget_keys.iter().zip(applying_facts) {
             let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
             if !session.drawn(&key.key) {
-                // A field of a part not drawn: no fact is asked for it, and
-                // one that applies states a value the platform draws none
-                // for (S17).
-                if pass == Pass::Normal
-                    && let Some(prepared) = fact
-                    && matches!(prepared.fact.stated, Stated::Value(_))
-                {
-                    report.fail(format!(
-                        "`{}` has a fact ({place}) under {}, where its part is {}",
-                        key.name,
-                        describe(),
-                        session.answer(&key.key)
-                    ));
+                // A field of a part not drawn: no fact is asked for it and
+                // none is compared, one that applies there no failure; the
+                // part's own key states whether it is drawn (S17, ADD-A130).
+                if pass == Pass::Normal && fact.is_some() {
+                    report.fields_not_drawn += 1;
                 }
                 continue;
             }

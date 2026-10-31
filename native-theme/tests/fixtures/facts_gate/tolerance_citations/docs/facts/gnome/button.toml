@@ -79,3 +79,24 @@ tolerance = 0.5
 kind = "measured"
 evidence = "docs/evidence/probe-host/2026-10-31-run-1/other-image/probe.toml#values.icon_text_gap"
 tolerance = 0.1
+
+# The parts the base leaves out (S17, ADD-A130: a part with no part fact is expected drawn).
+[[fact]]
+key = "button.icon"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.menu_indicator"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

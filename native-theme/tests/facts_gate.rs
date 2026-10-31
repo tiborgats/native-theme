@@ -221,18 +221,19 @@ fn gate_fixture_requires_variant_own_when() {
     assert!(report.queried > 0, "{report:?}");
 }
 
-/// A field of a part the query does not draw asks no fact, and a fact
-/// that applies there fails, as it states a value the platform draws none
-/// for (S17): the icon's size fact applies only to the flat button.
+/// A part the preset leaves out where no part fact applies fails at the
+/// part's own key, which with no part fact is expected drawn; its field's
+/// fact, which applies only where the button is flat, compares nothing
+/// where the part is not drawn and fails nothing (S17, ADD-A130).
 #[test]
 fn gate_fixture_part_not_drawn() {
     let report = fixture_report("part_not_drawn");
     assert!(
-        failing(&report, "has no fact").is_empty(),
+        failing(&report, "button.icon.icon.size").is_empty(),
         "{:?}",
         report.failures
     );
-    let failures = failing(&report, "where its part is NotDrawn");
+    let failures = failing(&report, "`button.icon` at");
     assert!(!failures.is_empty(), "{:?}", report.failures);
     assert_eq!(
         failures.len(),
@@ -241,11 +242,34 @@ fn gate_fixture_part_not_drawn() {
         report.failures
     );
     assert!(
-        failures
-            .iter()
-            .all(|failure| failure.contains("button.icon.icon.size")
-                && failure.contains("variants: [\"flat\"]")),
+        failures.iter().all(|failure| failure.contains("NotDrawn")
+            && failure.contains("no fact of the whole part (drawn)")),
         "{failures:?}"
+    );
+    assert!(report.fields_not_drawn > 0, "{report:?}");
+}
+
+/// libadwaita's menu indicator pattern (S17, ADD-A130): the part's own
+/// facts state where it is absent (`not_variants = ["flat"]`, and `flat`
+/// without `@with_arrow`), its field's fact holds without a `when`. A
+/// preset drawing the part exactly where the facts do passes, its field
+/// compared where drawn and nothing compared where not; one leaving the
+/// part out where the facts draw it fails at the part's key alone.
+#[test]
+fn gate_fixture_part_absent_by_its_own_facts() {
+    let report = fixture_report("part_absent_fields");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.fields_not_drawn > 0, "{report:?}");
+    let dropped = fixture_report("part_absent_dropped");
+    assert!(!dropped.failures.is_empty(), "{dropped:?}");
+    assert!(
+        dropped
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`button.subtitle` at")
+                && failure.contains("[\"@with_arrow\", \"flat\"]")),
+        "{:?}",
+        dropped.failures
     );
 }
 

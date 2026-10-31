@@ -68,12 +68,24 @@ kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
 
-# The icon is absent (the base states it so): its field's fact applies only where the button is
-# flat, so it asks no fact elsewhere and states a value the platform draws none for there.
+# The icon is drawn: no part fact states it absent, so the preset leaving it out (its base does)
+# fails at the part's own key, while its field's fact, which applies where the button is flat,
+# compares nothing where the part is not drawn (S17, ADD-A130).
 [[fact]]
 key = "button.icon.icon.size"
 when = { variants = ["flat"] }
 value = "16px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# The part the base leaves out but the icon (S17, ADD-A130).
+[[fact]]
+key = "button.menu_indicator"
+value = "absent"
 rows = []
 
 [[fact.cite]]

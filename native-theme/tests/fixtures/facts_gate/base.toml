@@ -238,7 +238,7 @@ interaction = "absent"
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
 text = "= token.text.roles.body"
 [widgets.button.subtitle]
-absent = true
+text = "= token.text.roles.body"
 [widgets.button.icon]
 absent = true
 [widgets.button.menu_indicator]

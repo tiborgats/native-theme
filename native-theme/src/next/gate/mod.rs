@@ -246,6 +246,15 @@ pub fn widgets() -> Vec<String> {
         .collect()
 }
 
+/// The parts of the widget `widget`, each as S11 writes it; none for a
+/// widget the model does not hold.
+#[must_use]
+pub fn parts(widget: &str) -> Vec<String> {
+    registry::widget(widget)
+        .map(|info| info.parts.iter().map(|part| part.name.to_owned()).collect())
+        .unwrap_or_default()
+}
+
 /// The content variants of the widget `widget`, as S11 writes them: the
 /// variants its connector sets from the element's content (the catalogue's
 /// pairs, S8), which S12 exempts from being selected on.
@@ -1071,9 +1080,9 @@ pub enum Outcome {
         /// The fact's value, evaluated where the theme's is.
         fact: String,
     },
-    /// The key's part is not drawn, or drawn by another widget, where a
-    /// fact of its field applies: a failure, as the fact states a value
-    /// where the platform draws none (S17).
+    /// The key's part is not drawn, or drawn by another widget, where the
+    /// comparison needs it drawn: a measured derivation's pass, whose
+    /// evidence measured the part drawn, fails so (S17, ADD-A130).
     NotDrawn,
 }
 
@@ -1768,20 +1777,6 @@ impl Session<'_> {
             | Place::Input(_)
             | Place::KdeList(_) => true,
         }
-    }
-
-    /// The query's answer for the key's part, as the report writes it.
-    #[must_use]
-    pub fn answer(&self, key: &FactKey) -> String {
-        let queried = match &key.place {
-            Place::WholePart(part) | Place::Part(part, _) => self.queried(*part),
-            Place::Values(..)
-            | Place::Token(_)
-            | Place::Role(..)
-            | Place::Input(_)
-            | Place::KdeList(_) => self.root(),
-        };
-        queried.map_or_else(String::new, |queried| format!("{:?}", queried.answer))
     }
 
     /// Whether `when`, a state model's `not_drawn` entry (S17), holds for
