@@ -373,6 +373,9 @@ pub(crate) fn merge_by<T>(earlier: &mut Vec<T>, later: Vec<T>, same: impl Fn(&T,
 /// `same` pairs it with, and the merged list holds the earlier items not
 /// replaced, in their order, then the later items, in theirs, so a
 /// replacing item takes the later list's position.
+/// Item by item, as S6.1's "the later item replacing the earlier whole"
+/// reads: of two items of one key in one later list, the second is the
+/// later and replaces the first, at its own position.
 pub(crate) fn merge_keyed_by<T>(
     earlier: &mut Vec<T>,
     later: Vec<T>,
