@@ -1408,7 +1408,9 @@ Each is decided from the pinned sources; the specification cites them.
   Options: `Absent` (which means not drawn); `Template` always (a full-colour icon would be recoloured); a content
   variant naming each icon's kind on every widget that draws icons (the connector already holds the icon and its
   kind); a rendering mode for the per-icon rule. **Decision:** the last, `FromIcon`, the icon's own colouring path by path, on `adwaita` and
-  `kde-breeze`; a context that recolours whatever
+  `kde-breeze`, each mark beyond the foreground an entry of the icon style's colour map under the platform's own name
+  (libadwaita's accent beside its three statuses, KDE's seven stylesheet classes), the map renamed `symbolic_colors`
+  as it holds more than statuses; a context that recolours whatever
   the file, libadwaita's check box, states `Template`. The tab button's icon, which libadwaita names itself, is a glyph
   by its icon name, with a content variant for the form it shows from a hundred tabs.
 - *A paintable's motion.* libadwaita's status page shows a spinner paintable, which loops for ever. Options: an icon
@@ -1421,8 +1423,8 @@ Each is decided from the pinned sources; the specification cites them.
   (another widget's values, and a part that forgot to restate them would pass with the style's); move the four leaves
   onto the part (WinUI's styles would lose their one home, and every text path would move); keep them in the style,
   each absent where the platform's style does not set it, every part that draws text stating all four in its base
-  table, by value or by reference to the style's leaf, which validation enforces. **Decision:** the last. The text-scaling role stays the style's: on iOS each of Apple's styles has its
-  curve; where no curve is read (every scaling but Dynamic Type, `macos-tahoe`'s included, AppKit's styles taking no
+  table, by value or by reference to the style's leaf, which validation enforces. **Decision:** the last. The text-scaling role stays the style's, a `Value` so a part references it: on iOS each of Apple's
+  styles has its curve; where no curve is read (every scaling but Dynamic Type, `macos-tahoe`'s included, AppKit's styles taking no
   size category) it is stated as none.
 - *Font width on macOS.* AppKit's width trait runs from −1 to 1, the model's width is OpenType's percent, and no pinned
   source maps one to the other. Options: a conversion of our own (invented); a table from the four named widths (the

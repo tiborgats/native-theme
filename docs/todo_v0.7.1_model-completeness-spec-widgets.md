@@ -2420,6 +2420,14 @@ spaces:
   - `correction` — iOS's autocorrection mark and bubble, Material's suggestion underline: `text` (its decoration, as
     `misspelling`'s, the part declaring the same data, `data = { correction = [ … ] }`), `fill`, `corners`.
   - `prediction` — inline prediction ghost text (iOS, macOS): `text`.
+
+  `selection`, `preedit`, `misspelling`, `grammar_mark`, `correction` and `block_caret` mark or recolour text the
+  `text` part lays out, so its elision, wrapping and line limit are theirs: each states its `text`'s `elision`,
+  `wrap` and `max_lines` absent (below), its `fill` where it recolours the text (`selection`, `preedit`,
+  `block_caret`) and absent where it only adds a line, and its font leaves as the text's: a part by reference to
+  `widget.text`'s leaves (`font.family = "= widget.text.font.family"`, …, declared as its data, S8), an *(element)*
+  part (`selection`, `preedit`), which reads none of its host's parts (S2.2), by reference to the style the `text`
+  part references, leaf by leaf (ADD-A130).
   - `selection_handle` *(element)* — a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
     WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42): `fill`, `glyph`, `corners` (GNOME's circle with
     one square corner, GN-2.42), `padding` (GN-2.42), `min_width`, `min_height`, `transform` (the insertion handle
@@ -2499,7 +2507,23 @@ spaces:
     and `adwaita` draw handles for touch selections only, and `ios-*` and `material-3` state the rule where the value
     phase's facts show UIKit and Android draw none for a pointer's selection), `magnifier` (all but `adwaita`,
     `material-3`, `ios-*`), `strength_meter` (all but `kde-breeze`), `strength_meter_fill` (all but `kde-breeze`).
-  - fields: `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
+  - fields: `selection.text.elision` (every preset: a mark on the `text` part's text, ADD-A130),
+    `selection.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130), `selection.text.max_lines`
+    (every preset: a mark on the `text` part's text, ADD-A130), `preedit.text.elision` (every preset: a mark on the
+    `text` part's text, ADD-A130), `preedit.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130),
+    `preedit.text.max_lines` (every preset: a mark on the `text` part's text, ADD-A130), `misspelling.text.elision`
+    (every preset: a mark on the `text` part's text, ADD-A130), `misspelling.text.wrap` (every preset: a mark on the
+    `text` part's text, ADD-A130), `misspelling.text.max_lines` (every preset: a mark on the `text` part's text,
+    ADD-A130), `grammar_mark.text.elision` (every preset: a mark on the `text` part's text, ADD-A130),
+    `grammar_mark.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130), `grammar_mark.text.max_lines`
+    (every preset: a mark on the `text` part's text, ADD-A130), `correction.text.elision` (every preset: a mark on the
+    `text` part's text, ADD-A130), `correction.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130),
+    `correction.text.max_lines` (every preset: a mark on the `text` part's text, ADD-A130), `block_caret.text.elision`
+    (every preset: a mark on the `text` part's text, ADD-A130), `block_caret.text.wrap` (every preset: a mark on the
+    `text` part's text, ADD-A130), `block_caret.text.max_lines` (every preset: a mark on the `text` part's text,
+    ADD-A130), `misspelling.text.fill` (every preset: a mark on the `text` part's text, ADD-A130),
+    `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, ADD-A130), `correction.text.fill` (every
+    preset: a mark on the `text` part's text, ADD-A130); `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
     `kde-breeze` under `flat`, K1.41; the value phase names the others from the facts), `body.focus` (the value
     phase names the presets from the facts where the field marks focus by its stroke alone, as `focus_border_color`
     maps below).
@@ -2671,7 +2695,28 @@ spaces:
   `material-3` state the rule where the value phase's facts show UIKit and Android draw none for a pointer's
   selection; one wording with `input`, one platform behaviour), `magnifier` (all but `adwaita`, `material-3`,
   `ios-*`), `find_match` (all but `macos-*`, `ios-*`: NSTextFinder's and UIFindInteraction's indicators); fields:
-  `body.shadow` (the value phase names the presets from the facts), `body.fill` (every preset by a rule under
+  `selection.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `selection.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `selection.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `preedit.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `preedit.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `preedit.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `body.shadow` (the
+  value phase names the presets from the facts), `body.fill` (every preset by a rule under
   `flat`), `body.focus` (the value phase names the presets from the facts; Breeze rings the frame, K3.20); values:
   `document_margin` (every member where the platform states no inset inside the document: the value phase names the
   presets; Qt's, AppKit's and UIKit's are K-P4-9†, MAC-I10†, P3-1†), `line_padding_px` (all but `macos-*`,
@@ -5271,7 +5316,17 @@ spaces:
   a rule under `{text_selected}` and by a rule under `{overwrite}`, as on `input`; `kde-breeze` by a rule under
   `{overwrite}`, its caret staying while text is selected, K3.43), `block_caret` (`adwaita` by a rule under
   `!{overwrite}`, by a rule under `!{focused}` and by a rule under `{text_selected}`, GN-P4-4†; `kde-breeze` by a
-  rule under `!{overwrite}`); values: `minimap_width_px` (`adwaita`: K-P3-12†'s minimap width is KTextEditor's),
+  rule under `!{overwrite}`); fields: `selection.text.elision` (every preset: a mark on the `text` part's text, as on
+  `input`, ADD-A130), `selection.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `selection.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130); values:
+  `minimap_width_px` (`adwaita`: K-P3-12†'s minimap width is KTextEditor's),
   `gutter_padding` (`kde-breeze`: GN-SF05†'s gutter padding is GtkSourceView's).
 - **State-model source:** GtkSourceView's style-scheme reference (`style-reference.md`), the Adwaita schemes,
   `GtkSourceView.css`; KTextEditor's `kateconfig.cpp` colour list, `katerenderer.cpp`, `kateviewhelpers.cpp` and
@@ -9106,7 +9161,7 @@ platform default monospace typeface (MAT-X36†).
   `panel`, each a `Value<IconStyle>`, absent on the presets the token absence table names for it, *tokens* below) and
   `keyed: Vec<(Key, IconStyle)>`, so a context also carries
   weight, scale and rendering mode where the platform's context sets them (in a context only `size` is required, every
-  other `IconStyle` `Value` field may be absent, and its list `symbol_variants` and maps `axes`, `status_colors` are
+  other `IconStyle` `Value` field may be absent, and its list `symbol_variants` and maps `axes`, `symbolic_colors` are
   stated, `[]` and `{}` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9, `from_icon` on a part where the platform decides per icon, ADD-A130; a `scale` names a key of
   `[declare] symbol_scales`, S10) [D-19, MAC-IC02]. Kirigami: `small`, `small_medium`, `medium`, `large`, `huge`, `enormous`, `for_labels`
   [Q1.1]. Kirigami computes `for_labels` from the default font's height, ascent plus descent (`kirigami_label_icon_size`,

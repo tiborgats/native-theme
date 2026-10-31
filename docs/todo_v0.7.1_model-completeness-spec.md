@@ -1017,8 +1017,9 @@ pub struct Font {
 pub enum AxisValue { Fixed(f32), FollowsSize }  // SF's and Segoe UI Variable's optical size
 pub struct TextStyle {
     pub font: Font,
-    pub scaling_role: Option<TextRole>,       // whose Dynamic Type curve scales it (S9.4); None: no curve of its
-                                              // own, body's under `DynamicType`; no other kind reads it (ADD-A130)
+    pub scaling_role: Value<Option<TextRole>>,   // whose Dynamic Type curve scales it (S9.4); None: no curve of
+                                              // its own, body's under `DynamicType`; no other kind reads it; a
+                                              // `Value`, so a part references its style's (ADD-A130)
     pub letter_spacing: Value<FontSize>, pub word_spacing: Value<FontSize>,   // word spacing: K3.46; pt or px,
                                               // may be negative, converted and scaled as a line height, or an
                                               // expression on font_size, which follows the scaled font (S9.4)
@@ -1064,7 +1065,10 @@ measured from the bottom of the ink of the run it decorates instead, the glyphs 
 descent (ADD-A130). That is Pango's low underline, the one GTK's mnemonics take (Pango gives the accelerator
 character `PANGO_UNDERLINE_LOW`, `pango@1.58.2 pango/pango-markup.c:494-509`), drawn with its top one underline
 thickness below that run's ink (`pango/pango-renderer.c:383-385`), so `adwaita`'s mnemonic decoration is
-`line = "underline_low"`, `offset = "= element.font_underline_thickness"`; the connector takes the run's ink from its
+`line = "underline_low"`, `offset = "= element.font_underline_thickness"`, stated on each part whose text takes a
+mnemonic (a button's, a check box's, a menu item's label), which declares `font_underline_thickness` (`data = { label
+= ["font_underline_thickness"] }`, S8), while `adwaita`'s styles and slots state `mnemonic_decoration` absent, as a
+token reads no element data (S2.2); the connector takes the run's ink from its
 own glyph extents while drawing, which no font metric and no element datum gives (each decorated run has its own
 ink). A platform that underlines its mnemonic from the font's own metrics (Qt's text drawing) states a plain
 `Underline` (below). Rejected: an
@@ -1078,7 +1082,16 @@ font's own metrics (Pango's underline and strikethrough metrics, Qt's `QFontMetr
 metrics, Android's `Paint.getUnderlineThickness`), the preset states them as references to the part's font metrics
 (`thickness = "= element.font_underline_thickness"`, `offset = "= element.font_strikeout_offset"`, S2.2, S8), which
 the connector measures in this convention from its toolkit's; a number is stated only where the platform draws a
-fixed line (R5.4: a value that follows the font cannot be stated as a result).
+fixed line (R5.4: a value that follows the font cannot be stated as a result). Two platforms draw the line elsewhere
+than the font's position, each a case the value phase states: GTK's CSS underline (`text-decoration`) is Pango's
+`_LINE` kind (`gtk@4.24.1 gtk/gtkcssstyle.c:507-522`), drawn at the font's position but, across the line's
+consecutive runs underlined alike, at the lowest of their positions and the thickest of their thicknesses
+(`pango@1.58.2 pango/pango-renderer.c:386-397`), which for a part of one font is the font's own, a plain
+`Underline` with the font metrics (`UnderlineLow`, the ink's, is another line); Qt draws the line's top at the
+font's offset rounded up, held within the descent less the thickness where the offset lies inside it, the
+thickness rounded to whole pixels, at least one, without antialiasing (`qtbase@6.12.0
+src/gui/painting/qpainter.cpp:6120-6131`), which the model's operands do not give (no ceiling, no descent alone), so
+`kde-breeze`'s decorations are the unmeasured register's until the value phase states Qt's form (ADD-A130).
 
 **Styles and drawn text** (ADD-A130). A keyed text style (`token.text.keyed.<key>`) is the platform's named style,
 and a slot (`token.text.roles.<slot>`) references one (S4.4). A style's `fill`, `elision`, `wrap` and `max_lines` are
@@ -1095,8 +1108,7 @@ document's holding in a keyed text style and in a slot only (S6.3), as `IconStyl
 A part that draws text states all four itself, whatever its style holds. In the preset's own bases a table is the
 whole block and a reference carries no changed fields (S2.2), so a part's base `text` is a whole table: each leaf that
 follows the style a reference to the slot's or style's leaf (`font.family = "= token.text.roles.body.font.family"`,
-`font.size`, `case`, `letter_spacing`, …, so a reader's patch on the slot reaches it, S9.5; `scaling_role`, an
-`Option`, the style's stated again), and the four drawn-text leaves as the widget draws them: a GTK label's GtkLabel's
+`font.size`, `case`, `letter_spacing`, `scaling_role`, …, so a reader's patch on the slot reaches it, S9.5), and the four drawn-text leaves as the widget draws them: a GTK label's GtkLabel's
 defaults and its `fill` the inherited colour, `= surface.foreground`; a WinUI text that takes its style's trimming and
 wrapping states them as references to the style's leaves (`elision = "= token.text.keyed.body.elision"`), so even
 where the style sets them each part says that it takes them. S12 refuses a part's `text` whose `fill`, `elision`,
@@ -1132,8 +1144,9 @@ pub struct IconStyle { pub size: Value<Px>, pub fill: Value<Paint>, pub renderin
                        pub axes: Vec<(AxisTag, AxisValue)>,  // Material Symbols' fill, grade, optical size (MAT-X27)
                        pub state_effect: Value<Key>,       // KDE's icon effect for the state the rule selects (K3.60)
                        pub symbol_variants: Vec<Key>,      // SF Symbols' `.fill`, `.circle`, … (R25.8)
-                       pub status_colors: Vec<(Key, Value<Paint>)>,   // a symbolic icon's success, warning, error
-                                                                       // colours (ADD-A37)
+                       pub symbolic_colors: Vec<(Key, Value<Paint>)>,  // the colours an icon's marked paths take
+                                                                       // beyond `fill`, by the platform's mark
+                                                                       // names (ADD-A37, ADD-A130)
                        pub animation: Value<Loop> }        // a repeating icon animation; may be absent (R25.12)
 pub enum RenderingMode { Template, Monochrome, Hierarchical, Palette, Multicolor, Original,
                          FromIcon }   // the icon's own colouring, path by path (ADD-A130)
@@ -1175,9 +1188,16 @@ there (an icon-size context keeps its own mark, S4.5): S12 refuses it absent und
 and rules as for any absent operand.
 
 **`FromIcon`** (ADD-A130) is the rendering of a platform where the icon carries its own colouring, path by path:
-the paths the icon marks as the platform's symbolic colours take the icon style's `fill` and `status_colors`, as
+the paths the icon marks as the platform's symbolic colours take the icon style's `fill` and `symbolic_colors`, as
 under `Template`, and every other path keeps its own colour, as under `Original`, so a full-colour icon is drawn as
-it is; the connector reads the marks from the icon it loads. GTK's are a symbolic icon's, by the file's name
+it is; the connector reads the marks from the icon it loads. `symbolic_colors` holds one entry per mark beyond the
+foreground, keyed by the platform's own name for it in snake_case and declared (`[declare] symbolic_colors`, S10):
+`adwaita`'s `success`, `warning`, `error` and `accent`, its icon palette (`libadwaita@1.10.0
+src/stylesheet/_common.scss:18-21`, GTK looking each up and falling back to the foreground,
+`gtk@4.24.1 gtk/gtkcssstyle.c:875-896`); `kde-breeze`'s `background`, `highlight`, `highlighted_text`,
+`positive_text`, `neutral_text`, `negative_text` and `accent`, KIconLoader's stylesheet classes beside
+`ColorScheme-Text`, which is `fill` (`kiconthemes@6.31.0 src/kiconcolors.cpp:16-23`). The map was `status_colors`;
+it is renamed because it holds the accent and KDE's background and selection colours, which are no statuses. GTK's are a symbolic icon's, by the file's name
 (`-symbolic.svg`, `.symbolic.png`, `-symbolic-ltr.svg`, `-symbolic-rtl.svg`, `gtk@4.24.1 gtk/gtkiconpaintable.c:42-53`,
 `:78`), and, in any SVG GTK loads with its extensions, a path's `gpa:` symbolic paint or symbolic colour name
 (`gtk/svg/gtksvg.c:224-237`, resolved to the style's colours, `gtk/svg/gtksvgcolor.c:276-284`), under its default
@@ -1324,9 +1344,9 @@ generates that set per part, a field outside it is not part of that part (a patc
 resolved style has it `None`), and a listed field must be stated or stated `Absent` where the model allows (S6.3).
 So a window title states no shadow, and nothing is invented for it. "Missing" applies to every leaf of a listed
 field, its plain enum and bool leaves included (a stated decoration's `line` and `style`), its `Value`
-leaves (a listed `text` states its `case`, `wrap`, `elision` and `fill`, over the keyed style it references where
-that style leaves them absent, S2.8), its
-`Option` leaves (a listed `text` states `max_lines`, `"none"` for no limit, S11), and its list leaves (a `Vec`: a
+leaves (a listed `text` states every one, the four drawn-text leaves among them, in its base table, S2.8, its
+`max_lines` and `scaling_role` `Value`s holding an `Option`, `"none"` for no limit and no curve, S11), and its list
+leaves (a `Vec`: a
 listed part's `bindings` and `transitions`, an icon style's `symbol_variants`; and a listed `text`'s `font.axes` and
 `font.features`, maps in a `Value`, stated, referenced or empty, S11). A list is never `Absent`: where the platform has none it is stated empty, `[]` (a map `{}`, S11), with its citation,
 as the catalogue's *Entry format* says; left out it is missing, as any leaf. An `Option` inside a list item or an
@@ -1906,7 +1926,7 @@ pub struct IconSizeTokens { pub toolbar: Value<IconStyle>, pub small: Value<Icon
 Each context is an icon style (size, weight, scale, rendering mode), the platform's further contexts as keys (ADD-A43).
 In a context only `size` is required: every other `IconStyle` `Value` field may be absent there (a context states
 weight, scale and rendering mode only where the platform's context sets them), a mark of this document's (S6.3); its
-list `symbol_variants` and its maps `axes` and `status_colors` are stated, empty (`[]`, `{}`) where the context sets none
+list `symbol_variants` and its maps `axes` and `symbolic_colors` are stated, empty (`[]`, `{}`) where the context sets none
 (S2.11). A part takes a context's `Value` fields by reference to each (`size_px = "= token.icons.sizes.toolbar.size"`),
 its list and maps stated; a reference to the whole context
 brings its absent fields with it, which validation checks like any (S12). `theme_fallback` is the theme the platform's
@@ -2047,9 +2067,9 @@ stated at the field: `Linear.extent` and `offset`, `Caret.blink_timeout`, `Focus
 `max_count`)
 resolves to `Option<T>`, not `Option<Option<T>>`, `None` keeping the field's meaning (`extent`: over the box): the
 `Value` inside is never `Absent`, as no mark allows it there, and the derive refuses `may_be_absent` or `auto` on such
-a field (ADD-A122). A `Value<Option<T>>` field (`TextStyle.max_lines`, the one there is) is a `Value` like any other
-and resolves to `Option<Option<T>>`: the outer `None` absent where its mark allows (a keyed text style's, S2.8), the
-inner the field's own meaning (no limit) (ADD-A130). The `may_be_absent` table is two-way, a field allowed `Absent` or not: a conditional mark
+a field (ADD-A122). A `Value<Option<T>>` field (`TextStyle.max_lines` and `scaling_role`, the two there are) is a `Value` like any other
+and resolves to `Option<Option<T>>`: the outer `None` absent where its mark allows (a keyed text style's `max_lines`, S2.8), the
+inner the field's own meaning (no limit, no curve of its own) (ADD-A130). The `may_be_absent` table is two-way, a field allowed `Absent` or not: a conditional mark
 (`Edge.dash` on an edge not drawn, `IconStyle.fill` only under `Original`, `Glyph.fill` only beside a stroke that is drawn,
 `IconStyle`'s fields outside an icon-size context, S4.5) is marked allowed, and its condition is S12's check, which
 evaluates the field's siblings, enums and context under each combination; rejected: a third mark, which would still
@@ -2107,7 +2127,7 @@ for a key not yet held is added; an entry for a key held merges into it as a fie
 struct blocks (`ColorRoles.surfaces`' `SurfaceRoles`, `token.text.keyed`, `token.icons.sizes.keyed`) takes per entry
 the block's `BlockPatch` (`Set | Fields`), merged as a block field's is: a reader stating one role of a colour set
 changes that role alone, and a rule restating `token.text.keyed.body.font.size` the size alone; a map of paints
-(`IconStyle.status_colors`) takes a `PaintPatch` per entry; a map of maps (`token.params`' groups, a `Material`'s or
+(`IconStyle.symbolic_colors`) takes a `PaintPatch` per entry; a map of maps (`token.params`' groups, a `Material`'s or
 a keyed transition's `params` inside a block) merges at each level by this rule; a map of any other values (enums,
 enum blocks, scalars, lists: `token.motion.timings`, `token.elevation`) replaces the entry (ADD-A122); a `Value` of a
 map (`Font.axes`, `Font.features`) merges by key where both are stated; a reference replaces it whole; a stated map
@@ -2823,7 +2843,7 @@ device_models = [ … ]
 material_params = { <key> = "<unit>" }
 durations = [ … ]                              # motion durations' keys
 icon_contexts = [ … ]
-status_colors = [ … ]
+symbolic_colors = [ … ]
 drag_cursors = [ … ]
 accent_ramp = [ … ]
 rendering_engines = [ … ]                      # TextRendering.engine
@@ -3891,7 +3911,8 @@ every combination of its state model, it replaces the stand-in with one holding 
 passes its window conditions in `WindowConditions`), resolves, and queries the element, its `state_order` the
 combination's order (S8), and compares each key with the
 fact that applies (within tolerance; S9.4's Apple `font_dpi`, which has no fact, with its definition), and, for a measured derivation, also evaluates its expression over each
-evidence pass under the pass's conditions; a key and combination with no fact fails (R4). **A part not drawn**
+evidence pass under the pass's conditions; a key and combination with no fact fails (R4), but for a part's own key,
+which with no part fact is expected drawn (below). **A part not drawn**
 (ADD-A130): where the query answers `NotDrawn` or `DrawnAs` for a part, the gate asks no fact for that part's
 fields and compares none of them, and a field's fact that applies there is no failure either. A field's facts state
 the part's look wherever it is drawn; whether it is drawn is the part's own key (`<widget>.<part>`), compared under

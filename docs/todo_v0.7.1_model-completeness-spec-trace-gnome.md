@@ -934,6 +934,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.34 | `reader:gnome:org.gnome.desktop.interface caret blink timeout` | reader |
 | GN-3.35 | `token.caret.blink_style Fade (ADD-A24)` | token |
 | GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(floor(mul(element.caret_height, token.params.caret.aspect_ratio)), <length>): GTK's stem from the caret's drawn height, the run's extents rounded outward, `data = { caret = ["caret_height"] }`, S4.2; ADD-A44, ADD-A130)` | field |
+| GN-3.36 | `input.secondary_caret.min_width, text_area.secondary_caret.min_width, input.drop_caret.min_width, text_area.drop_caret.min_width, code_editor.caret.min_width, code_editor.secondary_caret.min_width, selectable_label.caret.min_width` (the same stem over each part's own `caret_height`, each declaring it, `data = { secondary_caret = ["caret_height"] }`, …; S4.2, ADD-A130) | field |
 | GN-3.36 | `token.caret.width (absent: GTK's width follows each line, S4.2, S6.3; ADD-A130)` | token |
 | GN-3.36 | `token.params.caret.aspect_ratio (gtk-cursor-aspect-ratio)` | token |
 | GN-3.37 | `token.caret.secondary (the secondary caret's colour; the base of every caret part's secondary caret, ADD-A24)` | token |
@@ -981,7 +982,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.49 | `token.behavior.long_press (ADD-A45)` | token |
 | GN-3.50 | `token.behavior.mnemonics OnAlt delay (ADD-A12)` | token |
 | GN-3.50 | `token.behavior.mnemonic_when_disabled (false: no underline on a disabled label or beside a disabled target, gtklabel.c:3878-3880; ADD-A130)` | token |
-| GN-3.50 | `TextStyle.mnemonic_decoration (line UnderlineLow, offset = element.font_underline_thickness: Pango's low underline; S2.8, ADD-A130)` | field |
+| GN-3.50 | `button.label.text.mnemonic_decoration` and every label that takes a mnemonic (line UnderlineLow, thickness and offset = element.font_underline_thickness, declared `data = { label = ["font_underline_thickness"] }`: Pango's low underline; the styles' and slots' `mnemonic_decoration` absent, a token reading no element data; S2.8, ADD-A130) | field |
 | GN-3.51 | `token.behavior.spring_loading (ADD-A45)` | token |
 | GN-3.51 | `expander.values.drag_hover_delay, view_switcher.values.drag_hover_delay, sidebar.values.drag_hover_delay, tab.values.drag_hover_delay, component.tab_overview.values.drag_hover_delay` (each `= token.behavior.spring_loading`; the last the tab grid's) | field |
 | GN-3.68† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
@@ -995,7 +996,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.56 | `token.text.rendering.engine (font-rendering: automatic or manual, keyed; ADD-B04)` | token |
 | GN-3.56 | `reader:gnome:org.gnome.desktop.interface font-antialiasing, font-hinting, font-rgba-order, font-rendering` | reader |
 | GN-3.57 | `PartStyle.icon.weight per part (S2.9)` | field |
-| GN-3.58 | `PartStyle.icon.status_colors (the symbolic palette's success, warning, error; ADD-A37)` | field |
+| GN-3.58 | `PartStyle.icon.symbolic_colors (the icon palette's success, warning, error and accent, `_common.scss:18-21`; keys declared `[declare] symbolic_colors`; ADD-A37, ADD-A130)` | field |
 | GN-3.58 | `IconStyle.fill` | field |
 | GN-3.58 | `PartStyle.icon.rendering_mode (from_icon: the icon's own colouring, path by path, a symbolic file's or a path's symbolic paint taking the style's colours; the check context's template, its images recoloured whatever their files, S2.9; ADD-A130)` | field |
 | GN-3.58 | `role.global.status.*` | role |

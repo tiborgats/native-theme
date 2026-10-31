@@ -1060,7 +1060,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.60 | `IconStyle.state_effect @ {disabled} / {hover} (keys declared in icon_state_effects, each implemented to KIconEffect's source; S2.9)` | field |
 | K3.60 | `PartStyle.icon.state_effect, PartStyle.opacity @ {disabled} (to gray and semi-transparent)` | rule |
 | K3.60 | `token.params.icon_effect.<key> (the effects' amounts: the gamma of the active effect, the gray and transparency of the disabled one)` | token |
-| K3.61 | `IconStyle.fill (= surface.foreground), IconStyle.status_colors (= the status roles) per icon mode (ADD-A37)` | field |
+| K3.61 | `IconStyle.fill (= surface.foreground, ColorScheme-Text), IconStyle.symbolic_colors (background, highlight, highlighted_text, positive_text, neutral_text, negative_text, accent: KIconLoader's stylesheet classes, `kiconcolors.cpp:16-23`) per icon mode (ADD-A37, ADD-A130)` | field |
 | K3.61 | `PartStyle.icon.rendering_mode (from_icon: KIconLoader recolours an SVG's colour-scheme stylesheet classes in a theme that follows the colour scheme, Breeze's; S2.9, ADD-A130)` | field |
 | K3.62 | `PartStyle.icon.fill @ {selected} / {pressed} (selection foreground)` | rule |
 | K3.63 | `token.icons.sizes.toolbar, token.icons.sizes.keyed.main_toolbar, token.icons.sizes.small, token.icons.sizes.large, token.icons.sizes.dialog, token.icons.sizes.panel` | token |
