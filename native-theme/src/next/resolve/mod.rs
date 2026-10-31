@@ -732,7 +732,7 @@ impl Stack {
     }
 
     /// The contrast in force: set, else the reader's.
-    fn contrast(&self) -> Option<Contrast> {
+    pub(crate) fn contrast(&self) -> Option<Contrast> {
         self.contrast
             .or_else(|| self.reader_state().and_then(|state| state.contrast))
     }
@@ -742,6 +742,32 @@ impl Stack {
         self.flavor
             .as_ref()
             .or_else(|| self.declarations.flavors.first())
+    }
+
+    /// Whether `selector`'s conditions hold for a window whose connector
+    /// states `window`, as resolution decides them (S7, S8): the facts
+    /// gate's test of which fact applies (S17).
+    pub(crate) fn conditions_hold(&self, window: &WindowConditions, selector: &Selector) -> bool {
+        Holding {
+            reader: self.reader_state(),
+            window,
+            scheme: self.scheme(),
+            contrast: self.contrast(),
+            flavor: self.flavor(),
+            preset: self.preset,
+            declarations: &self.declarations,
+        }
+        .conditions_hold(selector)
+    }
+
+    /// The preset's declarations (S10).
+    pub(crate) fn declarations(&self) -> &Declarations {
+        &self.declarations
+    }
+
+    /// The preset's own layer.
+    pub(crate) fn preset_layer(&self) -> &Layer {
+        &self.preset_layer
     }
 
     /// Whether the reader's common accent is left out (S8, S9.5): the

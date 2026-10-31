@@ -8,4 +8,4 @@ mod model;
 pub(crate) mod read;
 #[cfg(test)]
 mod tests;
-mod when;
+pub(crate) mod when;

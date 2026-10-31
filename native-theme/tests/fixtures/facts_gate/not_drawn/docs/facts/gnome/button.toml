@@ -1,0 +1,32 @@
+# Synthetic facts (S17).
+
+[[fact]]
+key = "button.body.fill"
+value = "#e0e0e0"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["flat"] }
+value = "#00000000"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+value = "40px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

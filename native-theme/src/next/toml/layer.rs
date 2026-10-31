@@ -219,6 +219,18 @@ fn read_inputs(item: &Item, at: &str, cx: &mut Reader) -> InputBases {
     inputs
 }
 
+/// The inputs an `[inputs]` table states (S11), as a layer's bases read
+/// them, or every problem reading them.
+pub(crate) fn read_inputs_table(item: &Item) -> Result<InputBases, Vec<Problem>> {
+    let mut cx = Reader::default();
+    let inputs = read_inputs(item, "inputs", &mut cx);
+    if cx.failed() {
+        Err(cx.into_problems())
+    } else {
+        Ok(inputs)
+    }
+}
+
 /// The keys an input's value is stated by.
 const INPUT_VALUE_KEYS: [&str; 3] = ["light", "dark", "contrast"];
 
@@ -539,6 +551,18 @@ fn read_rule(item: &Item, at: &str, cx: &mut Reader) -> Option<Rule> {
         _ => None,
     };
     Some(Rule::new(selector?, body?))
+}
+
+/// A rule's body from its target and its `set` (S11), as a rule states
+/// them, or every problem reading them.
+pub(crate) fn read_rule_body(target: &str, set: &Item) -> Result<RuleBody, Vec<Problem>> {
+    let mut cx = Reader::default();
+    let target = Item::String(target.to_owned());
+    let body = read_body(&target, set, "", &mut cx);
+    match body {
+        Some(body) if !cx.failed() => Ok(body),
+        _ => Err(cx.into_problems()),
+    }
 }
 
 /// A rule's target and its patch (S11): `colors`, `tokens`,

@@ -6,16 +6,11 @@
 
 mod blocks;
 pub mod color;
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "S12's checks read the declarations (M1a task 8); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
-    )
-)]
 mod declare;
 mod error;
 pub mod expr;
+#[doc(hidden)]
+pub mod gate;
 mod inputs;
 mod key;
 mod layer;
@@ -24,13 +19,6 @@ pub mod placement;
 pub mod platform;
 mod presets;
 mod query;
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "the rest is read by S12's checks and the facts gate (M1a tasks 8 and 14); an `allow`, as Rust 1.95 (CI's egui and gpui checks) counts what dead code under an `expect` uses as used, and stable does not"
-    )
-)]
 mod registry;
 mod resolve;
 pub mod ripple;

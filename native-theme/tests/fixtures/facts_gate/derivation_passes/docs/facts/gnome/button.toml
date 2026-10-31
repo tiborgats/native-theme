@@ -1,0 +1,59 @@
+# Synthetic facts (S17): every key the preset states, by the combinations it draws.
+
+[[fact]]
+key = "button.body.fill"
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/derivations.toml#derivation.fill"
+tolerance = 0.5
+inputs = ["input.accent"]
+
+[[fact]]
+key = "button.body.min_width"
+value = "40px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+value = "44px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+when = { states = ["hover"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

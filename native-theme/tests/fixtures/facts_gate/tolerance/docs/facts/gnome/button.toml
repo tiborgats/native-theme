@@ -1,0 +1,53 @@
+# Synthetic facts (S17).
+
+[[fact]]
+key = "button.body.fill"
+value = "#e0e0e0"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["flat"] }
+value = "#00000000"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+value = "40.5px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.toml#body.min_width"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+value = "44px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.values.icon_text_gap"
+value = "4.6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.toml#values.icon_text_gap"
+tolerance = 0.5

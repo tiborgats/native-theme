@@ -34,6 +34,7 @@ use crate::next::expr::{
     Bound, ElementDatum, Env, Expr, FieldType, Literal, MAX_CHAIN, MAX_DEPTH, Name, Ref, Ty, Val,
     bounded,
 };
+use crate::next::inputs::InputName;
 use crate::next::key::Key;
 use crate::next::query::{Element, Scope, ScopeEntry, own_entries};
 use crate::next::roles::SurfaceSet;
@@ -467,7 +468,21 @@ pub(crate) struct Cx<'t> {
     /// material's or a keyed kind's `params`): the depth of its place and
     /// the declared units (S2.7, S10).
     params: Option<(usize, &'t [(Key, ScalarUnit)])>,
+    /// A step stated after every other, or an input's value in place of the
+    /// theme's: a fact's value evaluated where the preset's is (S17).
+    extra: Option<Extra<'t>>,
     refusals: Vec<Refusal>,
+}
+
+/// What the facts gate evaluates in place of the theme's own (S17): a step
+/// after every other step of its target, kept for every element, or an
+/// input's value.
+#[derive(Clone, Copy)]
+pub(crate) enum Extra<'t> {
+    /// A step of a target, its fold at the target's root.
+    Step(Fold<'t>),
+    /// An input and its value under the scheme and contrast in force.
+    Input(&'t InputName, &'t Value<Color>),
 }
 
 /// Whose declared parameters a keyed scalar map holds (S2.7, S10).
@@ -733,6 +748,7 @@ impl<'t> Cx<'t> {
             bases_only: false,
             sizes: None,
             params: None,
+            extra: None,
             refusals: Vec::new(),
         }
     }
@@ -839,7 +855,19 @@ impl<'t> Cx<'t> {
 
     /// The steps of `target`'s root, in the stack's order: a part's those
     /// that apply to the element (S8 step 3), its style patches only.
-    fn roots(&self, target: Target) -> Vec<Fold<'t>> {
+    pub(crate) fn roots(&self, target: Target) -> Vec<Fold<'t>> {
+        let mut out = self.own_roots(target);
+        if let Some(Extra::Step(fold)) = self.extra
+            && fold.target == target
+        {
+            out.push(fold);
+        }
+        out
+    }
+
+    /// The theme's own steps of `target`'s root, as [`Cx::roots`] gives
+    /// them.
+    fn own_roots(&self, target: Target) -> Vec<Fold<'t>> {
         let theme = self.theme;
         let fold = |pos, found| Fold { pos, target, found };
         match target {
@@ -1047,11 +1075,19 @@ impl<'t> Cx<'t> {
             Ref::Token(path) => Some(place(Target::Tokens, segments(path))),
             Ref::Input(path) => {
                 let theme = self.theme;
-                let value = theme
-                    .inputs
-                    .iter()
-                    .find(|(name, _)| name.segments() == path.as_slice())
-                    .map(|(_, value)| value)?;
+                let extra = match self.extra {
+                    Some(Extra::Input(name, value)) if name.segments() == path.as_slice() => {
+                        Some(value)
+                    }
+                    _ => None,
+                };
+                let value = extra.or_else(|| {
+                    theme
+                        .inputs
+                        .iter()
+                        .find(|(name, _)| name.segments() == path.as_slice())
+                        .map(|(_, value)| value)
+                })?;
                 let fold = Fold {
                     pos: Pos {
                         rule: false,
@@ -1703,6 +1739,21 @@ impl<'t> Cx<'t> {
             .map(|(_, group)| group.unit)
     }
 
+    /// The colour `reference` names, read from the colour roles (S3.3);
+    /// `None`: not drawn.
+    pub(crate) fn color_of(&mut self, reference: &Ref) -> Option<Color> {
+        match self.reference(reference, Target::Roles)? {
+            Answer::Val(val) => Color::from_val(&val),
+            Answer::Place {
+                target,
+                path,
+                bases_only,
+            } => self.follow(target, path, bases_only, |cx, folds| {
+                cx.value::<Color>(folds, false)
+            }),
+        }
+    }
+
     /// A corner operand's length (S8): a `Px` radius's own; `Full` half the
     /// smaller side of the element's box, at most its `maximum`, a focus
     /// corner's on that box grown by the indicator's `offset` on each side;
@@ -2328,7 +2379,7 @@ impl<'t> Cx<'t> {
     /// The element's part's style (S8 step 3): `None` where its last patch
     /// that says what it is makes it `Absent` or drawn as another widget
     /// (S6.3); its own bindings evaluated first, in the scope outside it.
-    fn part(&mut self, part: TypedPart) -> Option<<PartStyle as Block>::Resolved> {
+    pub(crate) fn part(&mut self, part: TypedPart) -> Option<<PartStyle as Block>::Resolved> {
         let shown = self
             .theme
             .part_steps(part)
@@ -2439,17 +2490,7 @@ impl ResolvedTheme {
         reference: &Ref,
     ) -> Evaluated<Option<Color>> {
         let mut cx = Cx::new(self, scope, None, &|_| true, Target::Roles);
-        let value = match cx.reference(reference, Target::Roles) {
-            Some(Answer::Val(val)) => Color::from_val(&val),
-            Some(Answer::Place {
-                target,
-                path,
-                bases_only,
-            }) => cx.follow(target, path, bases_only, |cx, folds| {
-                cx.value::<Color>(folds, false)
-            }),
-            None => None,
-        };
+        let value = cx.color_of(reference);
         Evaluated {
             value,
             refusals: cx.refusals,
@@ -2487,6 +2528,23 @@ impl ResolvedTheme {
             cx.optional::<Px>(folds, false)
         })
         .flatten()
+    }
+
+    /// `f` over an evaluation context in `scope` for `element`, its kept
+    /// rules those `applies` accepts, `extra` evaluated beside the theme's
+    /// own steps (S17's gate).
+    pub(crate) fn evaluate_in<'t, R>(
+        &'t self,
+        scope: &'t Scope,
+        element: Option<&'t Element<'t>>,
+        applies: &'t dyn Fn(&Selector) -> bool,
+        target: Target,
+        extra: Option<Extra<'t>>,
+        f: impl FnOnce(&mut Cx<'t>) -> R,
+    ) -> R {
+        let mut cx = Cx::new(self, scope, element, applies, target);
+        cx.extra = extra;
+        f(&mut cx)
     }
 
     /// The keyed scalar `token.params.<group>.<key>` in `scope`, typed by
