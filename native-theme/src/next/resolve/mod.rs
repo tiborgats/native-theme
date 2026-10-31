@@ -16,6 +16,8 @@
     )
 )]
 
+use std::sync::Arc;
+
 use super::color::Color;
 use super::declare::Declarations;
 use super::error::{LayerError, Problem};
@@ -275,10 +277,13 @@ pub struct WindowState {
 /// What a window's last resolution read.
 #[derive(Clone, Debug)]
 struct Recorded {
-    /// The layers, in the stack's order.
-    layers: Vec<Layer>,
+    /// The layers, in the stack's order, shared with the stack.
+    layers: Vec<Arc<Layer>>,
     preset: Option<PresetId>,
     reader: Option<ReaderState>,
+    /// Whether the reader's common accent was left out (S8, S9.5), which
+    /// its own preset and whether it is a stand-in decide.
+    accent_left_out: bool,
     scheme: Scheme,
     contrast: Option<Contrast>,
     window: WindowConditions,
@@ -347,9 +352,9 @@ pub struct ResolvedTheme {
     /// Each typed widget's values' bases, then its rules whose conditions
     /// hold.
     pub(crate) values: Vec<(WidgetKind, Vec<Step<WidgetValuesPatch>>)>,
-    /// The reader's or stand-in's text scaling factor; `None` without
-    /// either (S9.4).
-    pub(crate) text_scaling_factor: Option<f32>,
+    /// The reader's or stand-in's text scaling factor; 1 without either,
+    /// as S16's no-reader state has it (S9.4).
+    pub(crate) text_scaling_factor: f32,
     /// The reader's font DPI, where it reports one (S9.4).
     pub(crate) font_dpi: Option<f32>,
     /// The reader's content size category (S9.4).
@@ -374,30 +379,31 @@ enum Reader {
     /// The system's reader: its state and layer, and its own preset (S9.5).
     Read {
         state: ReaderState,
-        layer: Box<Layer>,
+        layer: Arc<Layer>,
         own: Option<PresetId>,
     },
     /// The application's stand-in.
     StandIn {
         state: ReaderState,
-        layer: Box<Layer>,
+        layer: Arc<Layer>,
     },
 }
 
 /// The stack (S8): the preset's declarations and layer, the reader or its
 /// stand-in, the application's layers, the accent the application set, and
 /// the application's conditions. Every change validates the whole stack
-/// and is refused whole (S8, S12).
+/// and is refused whole (S8, S12). The layers are shared: a copy of the
+/// stack, a change's or a window's record, copies no layer.
 #[derive(Clone, Debug)]
 pub(crate) struct Stack {
     preset: Option<PresetId>,
     declarations: Declarations,
-    preset_layer: Box<Layer>,
+    preset_layer: Arc<Layer>,
     reader: Option<Reader>,
-    layers: Vec<Layer>,
+    layers: Vec<Arc<Layer>>,
     accent: Option<Accent>,
     /// The accent layer, derived from `accent` (S9.2).
-    accent_layer: Box<Layer>,
+    accent_layer: Arc<Layer>,
     /// The scheme the application picked; `None`: the reader's.
     picked: Option<Scheme>,
     /// The scheme without a reader (`from_preset`'s).
@@ -420,11 +426,11 @@ impl Stack {
         let stack = Stack {
             preset,
             declarations,
-            preset_layer: Box::new(layer),
+            preset_layer: Arc::new(layer),
             reader: None,
             layers: Vec::new(),
             accent: None,
-            accent_layer: Box::default(),
+            accent_layer: Arc::default(),
             picked: None,
             default_scheme: scheme,
             contrast: None,
@@ -436,8 +442,7 @@ impl Stack {
     }
 
     /// `change` over a copy of the stack, kept where the whole stack
-    /// validates, else refused with the theme as it was (S8). The layers
-    /// are boxed: a layer is large, and a copy stays off the stack.
+    /// validates, else refused with the theme as it was (S8).
     fn change(&mut self, change: impl FnOnce(&mut Stack)) -> Result<(), LayerError> {
         let mut changed = Box::new(self.clone());
         change(&mut changed);
@@ -454,7 +459,7 @@ impl Stack {
         layer: Layer,
         own: Option<PresetId>,
     ) -> Result<(), LayerError> {
-        let layer = Box::new(layer);
+        let layer = Arc::new(layer);
         self.change(|stack| stack.reader = Some(Reader::Read { state, layer, own }))
     }
 
@@ -468,13 +473,13 @@ impl Stack {
         if matches!(self.reader, Some(Reader::Read { .. })) {
             return Err(LayerError::ReaderPresent);
         }
-        let layer = Box::new(layer);
+        let layer = Arc::new(layer);
         self.change(|stack| stack.reader = Some(Reader::StandIn { state, layer }))
     }
 
     /// Adds an application layer, last.
     pub(crate) fn add_layer(&mut self, layer: Layer) -> Result<(), LayerError> {
-        self.change(|stack| stack.layers.push(layer))
+        self.change(|stack| stack.layers.push(Arc::new(layer)))
     }
 
     /// Sets the accent (S9.2), or clears it (`None`: the system's again).
@@ -519,8 +524,8 @@ impl Stack {
     /// accent's derived inputs those the preset's `accent_inputs` names, an
     /// accent carrying more for another preset (S9.5) (`kde-breeze`'s
     /// derived roles enter with its preset, M1b).
-    fn derived_accent(&self) -> Box<Layer> {
-        let mut layer = Box::<Layer>::default();
+    fn derived_accent(&self) -> Arc<Layer> {
+        let mut layer = Layer::default();
         if let Some(accent) = &self.accent {
             if let Ok(name) = InputName::new("accent") {
                 let entries = &mut layer.bases.inputs.entries;
@@ -535,7 +540,7 @@ impl Stack {
                     .cloned(),
             );
         }
-        layer
+        Arc::new(layer)
     }
 
     /// The layers in the stack's order, each with what it is to the stack.
@@ -558,6 +563,17 @@ impl Stack {
             layer: &self.accent_layer,
             kind: LayerKind::Accent,
         });
+        out
+    }
+
+    /// The layers in the stack's order, shared.
+    fn shared_layers(&self) -> Vec<Arc<Layer>> {
+        let mut out = vec![Arc::clone(&self.preset_layer)];
+        if let Some(Reader::Read { layer, .. } | Reader::StandIn { layer, .. }) = &self.reader {
+            out.push(Arc::clone(layer));
+        }
+        out.extend(self.layers.iter().cloned());
+        out.push(Arc::clone(&self.accent_layer));
         out
     }
 
@@ -651,13 +667,10 @@ impl Stack {
 
     fn recorded(&self, conditions: &WindowConditions) -> Recorded {
         Recorded {
-            layers: self
-                .stacked()
-                .iter()
-                .map(|stacked| stacked.layer.clone())
-                .collect(),
+            layers: self.shared_layers(),
             preset: self.preset,
             reader: self.reader_state().cloned(),
+            accent_left_out: self.reader_accent_left_out(),
             scheme: self.scheme(),
             contrast: self.contrast(),
             window: conditions.clone(),
@@ -687,7 +700,7 @@ impl Stack {
             tokens: Vec::new(),
             parts: Vec::new(),
             values: Vec::new(),
-            text_scaling_factor: reader.map(|state| state.text_scaling_factor),
+            text_scaling_factor: reader.map_or(1.0, |state| state.text_scaling_factor),
             font_dpi: reader.and_then(|state| state.font_dpi),
             content_size_category: reader.and_then(|state| state.content_size_category),
         };
@@ -736,6 +749,16 @@ fn is_accent(name: &InputName) -> bool {
     matches!(name.segments(), [only] if only.as_str() == "accent")
 }
 
+/// Whether two records' layers are equal, however they were reached: the
+/// same shared layer, else equal values.
+fn same_layers(last: &[Arc<Layer>], now: &[Arc<Layer>]) -> bool {
+    last.len() == now.len()
+        && last
+            .iter()
+            .zip(now)
+            .all(|(a, b)| Arc::ptr_eq(a, b) || a == b)
+}
+
 /// What changed between two resolutions of a window (S8, S4.3).
 fn classify(last: &Recorded, now: &Recorded) -> Change {
     let reader_values = match (&last.reader, &now.reader) {
@@ -743,8 +766,9 @@ fn classify(last: &Recorded, now: &Recorded) -> Change {
         (None, None) => false,
         _ => true,
     };
-    let theme = last.layers != now.layers
+    let theme = !same_layers(&last.layers, &now.layers)
         || last.preset != now.preset
+        || last.accent_left_out != now.accent_left_out
         || reader_values
         || last.scheme != now.scheme
         || last.contrast != now.contrast;
@@ -1005,9 +1029,17 @@ impl Holding<'_> {
         }
     }
 
-    /// The size a container reports, else its declared default, the first
-    /// (S10), with or without a reader.
+    /// The size a container reports where the preset declares it, else its
+    /// declared default, the first (S10), with or without a reader: exactly
+    /// one declared size holds (S7.1).
     fn container_size(&self, container: &WidgetRef) -> Option<&Key> {
+        let declared = self
+            .declarations
+            .container_sizes
+            .iter()
+            .find(|(held, _)| held == container)
+            .map(|(_, sizes)| sizes.as_slice())
+            .unwrap_or_default();
         self.reader
             .and_then(|r| {
                 r.container_sizes
@@ -1015,13 +1047,8 @@ impl Holding<'_> {
                     .find(|(held, _)| held == container)
                     .map(|(_, size)| size)
             })
-            .or_else(|| {
-                self.declarations
-                    .container_sizes
-                    .iter()
-                    .find(|(held, _)| held == container)
-                    .and_then(|(_, sizes)| sizes.first())
-            })
+            .filter(|size| declared.contains(size))
+            .or_else(|| declared.first())
     }
 }
 

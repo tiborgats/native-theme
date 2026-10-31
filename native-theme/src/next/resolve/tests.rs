@@ -3,6 +3,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 
+use std::sync::Arc;
+
 use super::{
     Change, Lazily, Pos, ReaderState, Stack, WindowConditions, WindowState, font_dpi, lazily,
     logical_px, scaled_linear,
@@ -19,26 +21,27 @@ use crate::next::error::LayerError;
 use crate::next::expr::Expr;
 use crate::next::inputs::{Accent, Contrast, InputName, InputValue};
 use crate::next::layer::Layer;
-use crate::next::selector::{Condition, InputKind, Rule, RuleBody, Scheme, Selector};
+use crate::next::key::Key;
+use crate::next::selector::{Condition, InputKind, Rule, RuleBody, Scheme, Selector, WidgetRef};
 use crate::next::tokens::{TextRolesPatch, TextTokensPatch, TokensPatch};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::{FontSize, Fraction};
 use crate::next::value::{SchemeMap, Value};
-use crate::next::widgets::{ButtonPart, ButtonPatch, PartPatch, PartSlot, TypedPart};
+use crate::next::widgets::{ButtonPart, ButtonPatch, PartPatch, PartSlot, TypedPart, WidgetKind};
 
 /// A stack of these layers, unvalidated: the resolution alone is tested.
 fn stack(preset: Layer, reader: Option<(ReaderState, Layer)>, layers: Vec<Layer>) -> Stack {
     Stack {
         preset: None,
         declarations: Declarations::default(),
-        preset_layer: Box::new(preset),
+        preset_layer: Arc::new(preset),
         reader: reader.map(|(state, layer)| super::Reader::StandIn {
             state,
-            layer: Box::new(layer),
+            layer: Arc::new(layer),
         }),
-        layers,
+        layers: layers.into_iter().map(Arc::new).collect(),
         accent: None,
-        accent_layer: Box::default(),
+        accent_layer: Arc::default(),
         picked: None,
         default_scheme: Scheme::Light,
         contrast: None,
@@ -278,7 +281,7 @@ fn change_classification() {
     stack.add_layer(body(0.5)).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
     // An equal stack is no change, however it was reached.
-    stack.layers = vec![body(0.5)];
+    stack.layers = vec![Arc::new(body(0.5))];
     assert_eq!(change(&stack, &mut state, &plain), Change::Unchanged);
     stack.pick(Some(Scheme::Dark)).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
@@ -293,13 +296,13 @@ fn change_classification() {
     let mut read = ReaderState::new(Scheme::Light, 1.0);
     stack.reader = Some(super::Reader::StandIn {
         state: read.clone(),
-        layer: Box::default(),
+        layer: Arc::default(),
     });
     assert_eq!(change(&stack, &mut state, &inactive), Change::ThemeChange);
     read.reduced_motion = true;
     stack.reader = Some(super::Reader::StandIn {
         state: read.clone(),
-        layer: Box::default(),
+        layer: Arc::default(),
     });
     assert_eq!(
         change(&stack, &mut state, &inactive),
@@ -308,14 +311,14 @@ fn change_classification() {
     read.text_scaling_factor = 1.5;
     stack.reader = Some(super::Reader::StandIn {
         state: read.clone(),
-        layer: Box::default(),
+        layer: Arc::default(),
     });
     assert_eq!(change(&stack, &mut state, &inactive), Change::ThemeChange);
     // The reader's scheme under a picked one changes nothing in force.
     read.scheme = Scheme::Dark;
     stack.reader = Some(super::Reader::StandIn {
         state: read,
-        layer: Box::default(),
+        layer: Arc::default(),
     });
     assert_eq!(change(&stack, &mut state, &inactive), Change::Unchanged);
 }
@@ -564,4 +567,73 @@ fn accent_layer_states_only_the_accent_inputs() {
             (InputName::new("accent").unwrap(), color(0.1)),
         ]
     );
+}
+
+/// S16's no-reader state: a text-scaling factor of 1; a stand-in's own
+/// factor where one is set.
+#[test]
+fn no_reader_scales_text_by_one() {
+    let mut stack = stack(Layer::default(), None, Vec::new());
+    let factor = |stack: &Stack| {
+        stack
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .text_scaling_factor
+    };
+    assert_eq!(factor(&stack), 1.0);
+    stack
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.5), Layer::default())
+        .unwrap();
+    assert_eq!(factor(&stack), 1.5);
+}
+
+/// S7.1: exactly one declared size of a container holds; a reported size
+/// the preset does not declare leaves the declared default.
+#[test]
+fn undeclared_container_size_takes_the_default() {
+    let button = WidgetRef::Typed(WidgetKind::Button);
+    let size = |s| Condition::ContainerSize {
+        container: button.clone(),
+        size: Key::new(s).unwrap(),
+    };
+    let mut preset = body(0.1);
+    preset.rules.push(body_rule(size("compact"), 0.3));
+    preset.rules.push(body_rule(size("regular"), 0.5));
+    let opacities = |reported: &str| {
+        let mut state = ReaderState::new(Scheme::Light, 1.0);
+        state
+            .container_sizes
+            .push((button.clone(), Key::new(reported).unwrap()));
+        let mut stack = stack(preset.clone(), Some((state, Layer::default())), Vec::new());
+        stack.declarations.container_sizes =
+            vec![(button.clone(), vec![key!("compact"), key!("regular")])];
+        let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
+        let mut slot = PartSlot::default();
+        theme
+            .part_steps(TypedPart::Button(ButtonPart::Body))
+            .iter()
+            .map(|step| {
+                slot.apply(step.patch.clone()).unwrap();
+                stated_opacity(&slot).unwrap()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(opacities("regular"), [0.1, 0.5]);
+    assert_eq!(opacities("huge"), [0.1, 0.3]);
+}
+
+/// A window's record shares the stack's layers, copying none, and a
+/// reader's accent left out or applied (its own preset, a stand-in) is a
+/// theme change (S8, S9.5).
+#[test]
+fn window_record_shares_the_layers() {
+    let stack = stack(body(0.1), None, vec![body(0.2)]);
+    let mut state = WindowState::default();
+    let _ = stack.resolve(&mut state, &window());
+    let last = state.last.as_ref().unwrap();
+    assert!(Arc::ptr_eq(&last.layers[0], &stack.preset_layer));
+    assert!(Arc::ptr_eq(&last.layers[1], &stack.layers[0]));
+    let mut now = last.clone();
+    now.accent_left_out = !last.accent_left_out;
+    assert_eq!(super::classify(last, &now), Change::ThemeChange);
 }
