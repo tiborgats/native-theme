@@ -13,8 +13,9 @@ use super::toml::layer::read_preset;
 
 /// A theme: a bundled preset, the reader or its stand-in, the
 /// application's layers and the accent it set, and the application's
-/// conditions (S8, S16).
-#[derive(Clone, Debug)]
+/// conditions (S8, S16). Not `Clone`: a copy would hold the original's
+/// layers under their ids, which name one theme's layers only (S1).
+#[derive(Debug)]
 #[non_exhaustive]
 pub struct Theme {
     preset: PresetId,

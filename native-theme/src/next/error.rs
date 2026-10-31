@@ -118,6 +118,12 @@ pub struct Problem {
     /// from TOML and changed through its fields afterwards is still named
     /// by its TOML keys, a rule's shorthand only while the rule read is
     /// still at its index.
+    ///
+    /// A reader's or stand-in's state is named from its
+    /// [`ReaderState`](crate::next::ReaderState)'s fields
+    /// (`text_scaling_factor`, `font_dpi`, `container_sizes[2]`), as it is
+    /// no layer's; a flavour the preset does not declare has the empty path,
+    /// as it is no value's.
     pub path: String,
     /// The problem.
     pub kind: ProblemKind,

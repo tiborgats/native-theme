@@ -18,6 +18,9 @@ use crate::next::widgets::WidgetKind;
 /// A mutation of the stack.
 type Mutation = dyn Fn(&mut Stack) -> Result<(), LayerError>;
 
+/// Whether a refusal is the one a mutation expects.
+type Refused = fn(&LayerError) -> bool;
+
 /// A preset file's declarations, `declare` its `[declare]` table's body.
 fn declarations(declare: &str) -> Declarations {
     read_preset(&format!(
@@ -75,13 +78,18 @@ fn mutation_refused_whole() {
     let before = stack.clone();
     let mut bad_state = ReaderState::new(Scheme::Light, 1.0);
     bad_state.font_dpi = Some(0.0);
-    let refusals: Vec<(&str, Box<Mutation>)> = vec![
+    let invalid: Refused = |e| matches!(e, LayerError::Invalid(_));
+    let accent: Refused = |e| matches!(e, LayerError::AccentInputsMissing(_));
+    let unknown: Refused = |e| matches!(e, LayerError::UnknownLayer(_));
+    let refusals: Vec<(&str, Refused, Box<Mutation>)> = vec![
         (
             "a preset failing validation",
+            invalid,
             Box::new(|stack| stack.set_preset(None, Declarations::default(), Layer::default())),
         ),
         (
             "a preset whose accent inputs the accent lacks",
+            accent,
             Box::new(|stack| {
                 let more = declarations(
                     "inputs = [\"accent\", \"accent_ramp.light1\", \"accent_ramp.light2\"]\n\
@@ -92,41 +100,52 @@ fn mutation_refused_whole() {
         ),
         (
             "a stand-in's state",
+            invalid,
             Box::new(move |stack| stack.set_reader_stand_in(bad_state.clone(), Layer::default())),
         ),
         (
             "a stand-in's layer",
+            invalid,
             Box::new(|stack| {
                 stack.set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), body(2.0))
             }),
         ),
         (
             "an undeclared flavour",
+            invalid,
             Box::new(|stack| stack.set_flavor(key!("c"))),
         ),
         (
             "a layer added",
+            invalid,
             Box::new(|stack| stack.add_layer(body(2.0)).map(|_| ())),
         ),
         (
             "a layer replaced",
+            invalid,
             Box::new(move |stack| stack.replace_layer(id, body(2.0))),
         ),
         (
             "an unknown layer replaced",
+            unknown,
             Box::new(|stack| stack.replace_layer(LayerId::next(), body(0.6))),
         ),
         (
             "an unknown layer removed",
+            unknown,
             Box::new(|stack| stack.remove_layer(LayerId::next())),
         ),
         (
             "an accent lacking an accent input",
+            accent,
             Box::new(|stack| stack.set_accent(Some(Accent::new(input(0.3))))),
         ),
     ];
-    for (what, refusal) in refusals {
-        assert!(refusal(&mut stack).is_err(), "{what} accepted");
+    for (what, reason, refusal) in refusals {
+        match refusal(&mut stack) {
+            Err(e) => assert!(reason(&e), "{what} refused for another reason: {e:?}"),
+            Ok(()) => panic!("{what} accepted"),
+        }
         assert_eq!(stack, before, "{what} changed the stack");
     }
     let mut read = declared();

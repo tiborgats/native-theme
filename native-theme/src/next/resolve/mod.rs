@@ -682,6 +682,9 @@ impl Stack {
     /// the layers below it, and the reader's or stand-in's state (S8, S12);
     /// the preset was checked when it was set. A layer's check meets the
     /// faults below it its combinations reach again: each is listed once.
+    /// Problems are compared by value and a [`Problem`] names no layer, so
+    /// two layers with one fault at one path are listed once too: the
+    /// caller fixing one layer and retrying is shown the other's.
     fn validate(&self) -> Result<(), LayerError> {
         let stacked = self.stacked();
         let mut problems: Vec<Problem> = self

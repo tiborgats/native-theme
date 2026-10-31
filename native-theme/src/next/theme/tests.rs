@@ -10,21 +10,19 @@ use crate::next::selector::Scheme;
 use crate::next::toml::layer::read_preset;
 
 /// S19.1's build test: every bundled preset reads, states its own key as
-/// its `id`, and validates under each scheme, so `Theme::from_preset` never
-/// meets its error in a release (S16). It passes vacuously while
-/// `PresetId` is empty (until M1a task 15), and fails for any preset
-/// bundled later that does not validate.
+/// its `id`, and validates, so `Theme::from_preset` never meets its error
+/// in a release (S16). `PresetId::all` lists every variant, as the one
+/// list in `presets` writes it. One scheme is enough: the stack's
+/// validation covers every scheme whichever is in force (S12).
 #[test]
 fn every_bundled_preset_validates() {
     for &id in PresetId::all() {
         let file = read_preset(id.source()).unwrap_or_else(|e| panic!("{}: {e}", id.key()));
         assert_eq!(file.id, id.key());
         assert_eq!(PresetId::from_key(id.key()), Some(id));
-        for scheme in Scheme::ALL {
-            Theme::from_preset(id, scheme)
-                .map(drop)
-                .unwrap_or_else(|e| panic!("{} under {scheme:?}: {e}", id.key()));
-        }
+        Theme::from_preset(id, Scheme::Light)
+            .map(drop)
+            .unwrap_or_else(|e| panic!("{}: {e}", id.key()));
     }
 }
 
