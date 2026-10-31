@@ -452,7 +452,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-04 | `button.{body.fill,icon.glyph,body.transform} @ variant previous context picker_wheel.container / variant next context picker_wheel.container (the up and down buttons)` | rule |
 | W2-04 | `button.body.transform @ {pressed} variant previous context picker_wheel.container / {pressed} variant next context picker_wheel.container (their press scale)` | rule |
 | W2-04 | `button.* @ variant @accept context time_picker / variant @dismiss context time_picker / variant @accept context date_picker / variant @dismiss context date_picker (the accept and dismiss row)` | rule |
-| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (its opening and closing: ADD-A129, queue #118) | rule |
+| W2-04 | `time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (their opening and closing: ADD-A129, queue #118, at once meanwhile, S2.7) | rule |
 | W2-05 | `color_picker.plane.{stroke,min_width,min_height} @ variant @box / variant @ring` | rule |
 | W2-05 | `color_picker.selection_ellipse.{stroke,corners,min_width,min_height}` (the selection ellipse) | field |
 | W2-05 | `color_picker.preview.corners (the previous and current colours)` | field |

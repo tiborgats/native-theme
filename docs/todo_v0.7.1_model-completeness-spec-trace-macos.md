@@ -81,7 +81,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W11† | `popover.body, popover.arrow @ context window.title (the rename and location popover)` | rule |
 | MAC-W12† | `window.title_bar.fill (fullScreenUI material) @ cond full_screen` | rule |
 | MAC-W12† | `window.values.full_screen_title_bar_reveal (PointerAtTopEdge)` | field |
-| MAC-W12† | `window.values.presentations event @title_bar_show` | field |
+| MAC-W12† | `window.values.presentations event @title_bar_show` (the reveal's motion: ADD-A129 (queue #118), as stated meanwhile, S2.7) | field |
 | MAC-W12† | `window.frame.{corners,stroke} @ cond full_screen` | rule |
 | MAC-W12† | `menu_bar.values.presentations event Appear @ cond full_screen` (the menu bar coming in with the title bar's reveal at the top edge, as iPadOS's hidden bar does, C-37†) | rule |
 | MAC-W12† | - (the divider between two windows in a full-screen Split View, which the system draws between the two windows) | out (R1.1) |
