@@ -1142,3 +1142,23 @@ fn combination_latest_of_a_recency_set() {
         ["rules[1].set.stroke: patches the fields of a value that can be `absent`"]
     );
 }
+
+/// Two positions among the same widgets, listed in another order or with
+/// one twice, count among one set of siblings: one parity at a time (S12),
+/// so an `Absent` under odd and a `Fields` patch under even never meet; an
+/// ancestor scope alike.
+#[test]
+fn combination_sibling_lists_compared_as_sets() {
+    let decl = declare("");
+    let rules = "[[rules]]\nwhen = { position = { among = [\"button\", \"button\"], parity = \"odd\" } }\n\
+                 target = \"button.body\"\nset = { stroke = \"absent\" }\n\
+                 [[rules]]\nwhen = { position = { among = [\"button\"], parity = \"even\" } }\n\
+                 target = \"button.body\"\nset = { stroke.top.width_px = 2 }";
+    assert_eq!(alone(rules, &decl), NONE);
+    let contexts = "[[rules]]\nwhen = { context = [{ scope = { nearest = [\"button\", \"button\"] }, \
+                    widget = \"button\" }] }\ntarget = \"button.body\"\nset = { stroke = \"absent\" }\n\
+                    [[rules]]\nwhen = { not_context = [{ scope = { nearest = [\"button\"] }, \
+                    widget = \"button\" }] }\ntarget = \"button.body\"\n\
+                    set = { stroke.top.width_px = 2 }";
+    assert_eq!(alone(contexts, &decl), NONE);
+}

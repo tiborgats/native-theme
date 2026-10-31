@@ -21,7 +21,7 @@ use crate::next::toml::layer::read_widget;
 use crate::next::toml::read::{FromToml, Reader, Spelling};
 
 /// The typed widgets, one variant per widget of an enabled unit.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WidgetKind {
     /// `button`.
     Button,

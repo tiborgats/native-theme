@@ -615,7 +615,7 @@ def index_file(widgets: list, shared: dict) -> str:
         out.append(f"pub use {module}::{{{', '.join(names)}}};")
     out.append("")
     out += ["/// The typed widgets, one variant per widget of an enabled unit.",
-            "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]", "pub enum WidgetKind {"]
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]", "pub enum WidgetKind {"]
     for w in widgets:
         out += [f"    /// `{w.name}`.", f"    {camel(w.name)},"]
     out += ["}", ""]

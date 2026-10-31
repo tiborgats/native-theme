@@ -687,7 +687,7 @@ pub struct SizeClasses {
 }
 
 /// A widget: a typed one, or a keyed component a preset declares (S5.1).
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WidgetRef {
     /// A typed widget.
     Typed(WidgetKind),

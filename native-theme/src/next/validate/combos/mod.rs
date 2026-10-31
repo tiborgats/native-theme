@@ -34,7 +34,7 @@ use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
-    Condition, ContextMatch, ControlSize, Density, Direction, Parity, Scheme, Selector, SetMatch,
+    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, Scheme, Selector, SetMatch,
     SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart, WidgetRef,
 };
 use crate::next::widgets::{Shown, TypedPart, WidgetKind};
@@ -1140,16 +1140,16 @@ fn selector_literals(
         selector
             .context
             .iter()
-            .map(|context| (Atom::Context(context.clone()), Some(true))),
+            .map(|context| (Atom::Context(context_as_set(context)), Some(true))),
     );
     out.extend(
         selector
             .not_context
             .iter()
-            .map(|context| (Atom::Context(context.clone()), Some(false))),
+            .map(|context| (Atom::Context(context_as_set(context)), Some(false))),
     );
     if let Some(p) = &selector.position {
-        let among = &p.among;
+        let among = &among_as_set(&p.among);
         // `only` holds exactly when `first` and `last` do (S12): the
         // atoms of both are named with it.
         if p.first.is_some() || p.only.is_some() {
@@ -1174,6 +1174,32 @@ fn selector_literals(
         }
     }
     (!excluded).then_some(out)
+}
+
+/// A list of widgets as the set it names: sorted, each once, so two lists
+/// of the same widgets are one scope.
+fn widgets_as_set(widgets: &[WidgetRef]) -> Vec<WidgetRef> {
+    let mut out = widgets.to_vec();
+    out.sort();
+    out.dedup();
+    out
+}
+
+/// The siblings `among` counts, its widgets as a set.
+fn among_as_set(among: &SiblingScope) -> SiblingScope {
+    match among {
+        SiblingScope::Kinds(widgets) => SiblingScope::Kinds(widgets_as_set(widgets)),
+        other @ (SiblingScope::SameKind | SiblingScope::Any) => other.clone(),
+    }
+}
+
+/// A context match, the widgets its scope names as a set.
+fn context_as_set(context: &ContextMatch) -> ContextMatch {
+    let mut out = context.clone();
+    if let ContextScope::NearestAmong(widgets) = &context.scope {
+        out.scope = ContextScope::NearestAmong(widgets_as_set(widgets));
+    }
+    out
 }
 
 fn push_atom(atoms: &mut Vec<Atom>, atom: Atom) {
