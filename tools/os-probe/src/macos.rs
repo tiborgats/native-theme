@@ -1,7 +1,9 @@
 //! macOS: NSProcessInfo, NSFont, NSColor in both appearances, AppKit control
 //! sizes and cell geometry for every NSControlSize, PNG renders of each
 //! control at regular size, and, last, a key window's captures: a sidebar
-//! material, a table header and a selected segment, sampled per appearance.
+//! material, a table header and a selected segment, sampled per appearance,
+//! and a table's selected row ([`selection`]); the fonts' descriptors and
+//! line heights are read in [`text`].
 //! With `--button-pass`, only the buttons in titled windows per state and
 //! condition ([`buttons`], its pixel work in [`layer`]). The calls
 //! objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has none.
@@ -9,6 +11,8 @@
 mod buttons;
 mod ffi;
 mod layer;
+mod selection;
+mod text;
 
 pub(crate) use buttons::Mode as ButtonMode;
 
@@ -102,6 +106,7 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
             out::put_table(&mut mac, "environment", env);
             out::put_table(&mut mac, "metrics", metrics_table(mtm));
             out::put_table(&mut mac, "tokens", tokens_table(mtm));
+            out::put_table(&mut mac, "line_height", text::line_height_table(mtm));
             out::put_table(&mut mac, "controls", controls_table(mtm, &version, out_dir));
             // Last: it makes the application regular and active, which no
             // earlier section may see.
@@ -110,14 +115,21 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
                 "key_window",
                 key_window_table(mtm, &app, out_dir, not_key),
             );
+            out::put_table(
+                &mut mac,
+                "selection",
+                selection::selection_table(mtm, &app, out_dir),
+            );
         }
         _ => {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
             out::put(&mut mac, "environment", reason.clone());
             out::put(&mut mac, "metrics", reason.clone());
             out::put(&mut mac, "tokens", reason.clone());
+            out::put(&mut mac, "line_height", reason.clone());
             out::put(&mut mac, "controls", reason.clone());
-            out::put(&mut mac, "key_window", reason);
+            out::put(&mut mac, "key_window", reason.clone());
+            out::put(&mut mac, "selection", reason);
         }
     }
     out::put_table(doc, "macos", mac);
@@ -228,7 +240,7 @@ fn fonts_table() -> Table {
         &mut named,
         "arguments",
         out::text(
-            "size 0.0 (the default size); the monospaced fonts at systemFontSize and NSFontWeightRegular",
+            "size 0.0 (the default size); the monospaced fonts at systemFontSize and NSFontWeightRegular; systemFontOfSize_smallSystemFontSize at smallSystemFontSize",
         ),
     );
     let class_fonts: [(&str, FontOfSize); 10] = [
@@ -275,6 +287,12 @@ fn fonts_table() -> Table {
             Err(reason) => out::put(&mut named, name, out::unavailable(reason)),
         }
     }
+    let small = NSFont::smallSystemFontSize();
+    out::put_table(
+        &mut named,
+        "systemFontOfSize_smallSystemFontSize",
+        font_table(&NSFont::systemFontOfSize(small)),
+    );
     out::put_table(&mut t, "named", named);
 
     let mut styles = Table::new();
@@ -292,11 +310,7 @@ fn fonts_table() -> Table {
                 match ffi::preferred_font(style) {
                     Ok(font) => {
                         out::put_table(&mut styles, name, font_table(&font));
-                        let descriptor = font.fontDescriptor();
-                        let bold = descriptor.fontDescriptorWithSymbolicTraits(
-                            descriptor.symbolicTraits() | NSFontDescriptorSymbolicTraits::TraitBold,
-                        );
-                        match NSFont::fontWithDescriptor_size(&bold, 0.0) {
+                        match emphasized_font(&font) {
                             Some(f) => out::put_table(&mut emphasized, name, font_table(&f)),
                             None => out::put(
                                 &mut emphasized,
@@ -313,7 +327,23 @@ fn fonts_table() -> Table {
     }
     out::put_table(&mut t, "preferredFontForTextStyle", styles);
     out::put_table(&mut t, "preferredFontForTextStyle_emphasized", emphasized);
+    out::put(
+        &mut t,
+        "descriptor_method",
+        out::text(text::DESCRIPTOR_METHOD),
+    );
     t
+}
+
+/// A text style's emphasized font: its fontDescriptor with
+/// NSFontDescriptorTraitBold added to its symbolicTraits, at the
+/// descriptor's size; `None` where fontWithDescriptor:size: is nil.
+fn emphasized_font(font: &NSFont) -> Option<Retained<NSFont>> {
+    let descriptor = font.fontDescriptor();
+    let bold = descriptor.fontDescriptorWithSymbolicTraits(
+        descriptor.symbolicTraits() | NSFontDescriptorSymbolicTraits::TraitBold,
+    );
+    NSFont::fontWithDescriptor_size(&bold, 0.0)
 }
 
 fn font_table(font: &NSFont) -> Table {
@@ -342,6 +372,7 @@ fn font_table(font: &NSFont) -> Table {
     out::put(&mut t, "leading", out::float(font.leading()));
     out::put(&mut t, "capHeight", out::float(font.capHeight()));
     out::put(&mut t, "xHeight", out::float(font.xHeight()));
+    out::put_table(&mut t, "descriptor", text::descriptor_table(font));
     t
 }
 
@@ -2173,6 +2204,7 @@ fn key_window_table(
                 &mut run,
                 &window,
                 &dir,
+                "renders/key_window",
                 key,
                 window_frame.size,
                 &points,
@@ -2346,15 +2378,17 @@ fn system_expected(appearance: &NSAppearance, system: &[SystemPatch]) -> Vec<(St
     expected
 }
 
-/// Capture `window` to `<dir>/<key>.png` with `screencapture` and sample it
-/// at `points` and at the calibration `patches`, given in points from the
-/// window frame's top left; each patch's sample is checked against what it
-/// is filled with (`expected`).
+/// Capture `window` to `<dir>/<key>.png` (`<rel>/<key>.png` from the
+/// output directory) with `screencapture` and sample it at `points` and at
+/// the calibration `patches`, given in points from the window frame's top
+/// left; each patch's sample is checked against what it is filled with
+/// (`expected`).
 #[allow(clippy::too_many_arguments)]
 fn capture(
     run: &mut Table,
     window: &NSWindow,
     dir: &Path,
+    rel: &str,
     key: &str,
     frame_points: NSSize,
     points: &[(&str, NSPoint)],
@@ -2377,11 +2411,7 @@ fn capture(
             return;
         }
     };
-    out::put(
-        run,
-        "file",
-        out::text(format!("renders/key_window/{key}.png")),
-    );
+    out::put(run, "file", out::text(format!("{rel}/{key}.png")));
     let data = NSData::with_bytes(&bytes);
     let Some(rep) = NSBitmapImageRep::imageRepWithData(&data) else {
         out::put(

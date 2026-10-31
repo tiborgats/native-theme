@@ -18,6 +18,7 @@
 //! application active (`--inactive`).
 
 mod extras;
+mod transition;
 
 use std::cell::Cell;
 use std::path::{Path, PathBuf};
@@ -133,6 +134,9 @@ pub(crate) enum Mode {
     NotKey,
     /// The probe's application deactivated, another one active.
     Inactive,
+    /// The window key, two buttons focused and unfocused while the screen
+    /// is recorded ([`transition`]).
+    FocusTransition,
 }
 
 impl Mode {
@@ -142,6 +146,7 @@ impl Mode {
             Mode::Focus => "focus",
             Mode::NotKey => "not_key",
             Mode::Inactive => "inactive",
+            Mode::FocusTransition => "focus_transition",
         }
     }
 
@@ -158,6 +163,9 @@ impl Mode {
             }
             Mode::Inactive => {
                 "each sheet's window made key (the application activated first where it is not active), then -[NSApplication deactivate] and, where the application is still active after the pump, `open -b com.apple.finder` (the inactive table); the states normal, pressed and disabled over every backdrop; then the toolbar window"
+            }
+            Mode::FocusTransition => {
+                "no sheet is captured; the push sheet's window made key, and two of its buttons focused and unfocused while screencapture -v records the screen (focus_transition)"
             }
         }
     }
@@ -799,6 +807,17 @@ pub(super) fn button_pass_table(
         any_key: Cell::new(false),
     };
 
+    if mode == Mode::FocusTransition {
+        out::put_table(
+            &mut t,
+            "focus_transition",
+            transition::transition_table(&pass, version),
+        );
+        out::put(&mut t, "all_captures_key", out::boolean(pass.all_key.get()));
+        out::put(&mut t, "any_capture_key", out::boolean(pass.any_key.get()));
+        return t;
+    }
+
     let mut sheets = Table::new();
     let style_groups: Vec<&[Style]> = Style::ALL.chunks(STYLE_ROWS).collect();
     let mut built: Vec<Result<Sheet, String>> = vec![push_sheet(mtm, version)];
@@ -979,7 +998,7 @@ impl Pass<'_> {
                 out::put_table(t, "inactive", self.deactivate());
                 None
             }
-            Mode::Key | Mode::Focus => None,
+            Mode::Key | Mode::Focus | Mode::FocusTransition => None,
         };
         out::put(&mut *t, "isKeyWindow", out::boolean(window.isKeyWindow()));
         out::put(&mut *t, "isMainWindow", out::boolean(window.isMainWindow()));

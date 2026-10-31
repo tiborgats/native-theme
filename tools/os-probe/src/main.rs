@@ -11,14 +11,16 @@
 //! that it supports macOS and Windows only and exits with success.
 //!
 //! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass
-//! [--focus | --not-key | --inactive]]`. `--out` (or `--out=<dir>`) names the
+//! [--focus | --focus-transition | --not-key | --inactive]]`. `--out` (or `--out=<dir>`) names the
 //! output directory, `os-probe-out` by default; `--not-key`, macOS only,
 //! makes the key-window section capture its window after a second window has
 //! taken the key; `--button-pass`, macOS only, runs the button pass alone:
 //! buttons in titled windows, captured per state, control size and
 //! appearance over the window's background and three opaque backdrops, with
 //! the window key, or with each button focused (`--focus`), a second window
-//! key (`--not-key`) or another application active (`--inactive`).
+//! key (`--not-key`) or another application active (`--inactive`); with
+//! `--focus-transition` it records the screen instead while two buttons are
+//! focused and unfocused.
 
 #![deny(unsafe_code)]
 #![deny(
@@ -54,7 +56,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --not-key | --inactive]]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus and --inactive, with --button-pass only: each button focused in turn, or another application active)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive]]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -70,6 +72,8 @@ struct Options {
     focus: bool,
     /// Whether the button pass captures with another application active.
     inactive: bool,
+    /// Whether the button pass records the focus ring's transition instead.
+    focus_transition: bool,
 }
 
 /// The options from the command line, or the usage error.
@@ -87,6 +91,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
     let mut button_pass = false;
     let mut focus = false;
     let mut inactive = false;
+    let mut focus_transition = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
@@ -95,6 +100,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             Some("--button-pass") => button_pass = true,
             Some("--focus") => focus = true,
             Some("--inactive") => inactive = true,
+            Some("--focus-transition") => focus_transition = true,
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
                 None => return Err(format!("--out needs a directory\n{USAGE}")),
@@ -111,12 +117,12 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             }
         }
     }
-    if (focus || inactive) && !button_pass {
+    if (focus || inactive || focus_transition) && !button_pass {
         return Err(format!(
-            "--focus and --inactive need --button-pass\n{USAGE}"
+            "--focus, --focus-transition and --inactive need --button-pass\n{USAGE}"
         ));
     }
-    if [focus, inactive, not_key]
+    if [focus, inactive, not_key, focus_transition]
         .iter()
         .filter(|set| **set)
         .count()
@@ -124,7 +130,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
         && button_pass
     {
         return Err(format!(
-            "the button pass takes one of --focus, --not-key and --inactive\n{USAGE}"
+            "the button pass takes one of --focus, --focus-transition, --not-key and --inactive\n{USAGE}"
         ));
     }
     Ok(Options {
@@ -133,6 +139,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
         button_pass,
         focus,
         inactive,
+        focus_transition,
     })
 }
 
@@ -169,6 +176,8 @@ fn run(options: &Options) -> ExitCode {
     if options.button_pass {
         let mode = if options.focus {
             macos::ButtonMode::Focus
+        } else if options.focus_transition {
+            macos::ButtonMode::FocusTransition
         } else if options.inactive {
             macos::ButtonMode::Inactive
         } else if options.not_key {
@@ -235,6 +244,7 @@ mod tests {
             button_pass: false,
             focus: false,
             inactive: false,
+            focus_transition: false,
         })
     }
 
@@ -290,6 +300,7 @@ mod tests {
                 button_pass: true,
                 focus: false,
                 inactive: false,
+                focus_transition: false,
             })
         };
         assert_eq!(parse(&["--button-pass"]), pass("os-probe-out"));
@@ -311,6 +322,7 @@ mod tests {
                 button_pass: true,
                 focus,
                 inactive,
+                focus_transition: false,
             })
         };
         assert_eq!(
@@ -325,7 +337,20 @@ mod tests {
             parse(&["--button-pass", "--not-key"]),
             with(false, true, false)
         );
+        assert_eq!(
+            parse(&["--focus-transition", "--button-pass"]),
+            Ok(Options {
+                out: PathBuf::from("os-probe-out"),
+                not_key: false,
+                button_pass: true,
+                focus: false,
+                inactive: false,
+                focus_transition: true,
+            })
+        );
         assert!(parse(&["--focus"]).is_err());
+        assert!(parse(&["--focus-transition"]).is_err());
+        assert!(parse(&["--button-pass", "--focus", "--focus-transition"]).is_err());
         assert!(parse(&["--inactive"]).is_err());
         assert!(parse(&["--button-pass", "--focus", "--inactive"]).is_err());
         assert!(parse(&["--button-pass", "--focus", "--not-key"]).is_err());

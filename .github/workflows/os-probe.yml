@@ -141,7 +141,8 @@ jobs:
             for h in NSButton.h NSButtonCell.h NSColor.h NSFont.h NSEvent.h NSText.h \
                      NSAnimationContext.h NSScrollView.h NSControl.h NSCell.h \
                      NSFontDescriptor.h NSComboButton.h NSToolbarItem.h \
-                     NSTextInsertionIndicator.h; do
+                     NSTextInsertionIndicator.h NSLayoutManager.h NSTableView.h \
+                     NSTableRowView.h NSTableCellView.h; do
               cp "$headers/$h" "$out/$h"
               echo "copy $h: exit $?"
               shasum -a 256 "$out/$h"
@@ -160,6 +161,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/universalaccess"
           for setting in "com.apple.universalaccess reduceTransparency" \
                          "com.apple.universalaccess increaseContrast" \
+                         "com.apple.universalaccess reduceMotion" \
                          "-g AppleReduceDesktopTinting" \
                          "-g AppleAccentColor" \
                          "-g AppleKeyboardUIMode"; do
@@ -230,6 +232,78 @@ jobs:
             echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
           } >> "$out/settings.txt" 2>&1
           tail -n 2 "$out/settings.txt"
+      # The focus ring's transition (--focus-transition): with keyboard
+      # navigation on, the push sheet's regular plain and default buttons
+      # focused and unfocused per appearance while `screencapture -v` records
+      # the screen, once with the image's Reduce Motion (on) and once with it
+      # off, each into its own folder; then each recording cut by ffmpeg
+      # (installed with brew where the image has none) to the button's
+      # <stem>.crop, frame by frame, into <stem>-frames/ with the frames'
+      # times in <stem>-frames.csv (ffprobe). settings.txt records each
+      # write, read-back and restore, ffmpeg.txt the tool and each cut.
+      - name: Record the focus ring's transition (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          restore() {
+            image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write "$1" "$2" -bool true ;;
+              0) defaults write "$1" "$2" -bool false ;;
+              absent) defaults delete "$1" "$2" ;;
+              -[0-9]*|[0-9]*) defaults write "$1" "$2" -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore $2 to the image's ($image): exit $?"
+            echo "read back: $(defaults read "$1" "$2" 2>&1)"
+          }
+          for motion in image off; do
+            if [ "$motion" = image ]; then
+              out=os-probe-out/button-pass-focus-transition
+            else
+              out=os-probe-out/button-pass-focus-transition-reduce-motion-off
+            fi
+            mkdir -p "$out"
+            {
+              echo "image's AppleKeyboardUIMode: $(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+              defaults write -g AppleKeyboardUIMode -int 2
+              echo "write AppleKeyboardUIMode 2: exit $?"
+              echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+              echo "image's reduceMotion: $(cat "$RUNNER_TEMP/universalaccess/reduceMotion" 2>/dev/null || echo 'not recorded')"
+              if [ "$motion" = off ]; then
+                defaults write com.apple.universalaccess reduceMotion -bool false
+                echo "write reduceMotion false: exit $?"
+              fi
+              echo "read back: $(defaults read com.apple.universalaccess reduceMotion 2>&1)"
+            } > "$out/settings.txt" 2>&1
+            cat "$out/settings.txt"
+            cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --focus-transition
+            {
+              restore -g AppleKeyboardUIMode
+              restore com.apple.universalaccess reduceMotion
+            } >> "$out/settings.txt" 2>&1
+            tail -n 4 "$out/settings.txt"
+          done
+          log=os-probe-out/button-pass-focus-transition/ffmpeg.txt
+          {
+            if ! command -v ffmpeg >/dev/null; then
+              HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ffmpeg
+              echo "brew install ffmpeg: exit $?"
+            fi
+            ffmpeg -hide_banner -version | head -n 1
+            for mov in os-probe-out/button-pass-focus-transition*/*/transition-*.mov; do
+              stem="${mov%.mov}"
+              if [ ! -f "$stem.crop" ]; then echo "$mov: no $stem.crop"; continue; fi
+              mkdir -p "$stem-frames"
+              ffmpeg -hide_banner -nostdin -loglevel error -i "$mov" -vf "crop=$(cat "$stem.crop")" \
+                -fps_mode passthrough "$stem-frames/%05d.png"
+              echo "ffmpeg $mov crop=$(cat "$stem.crop"): exit $?, $(ls "$stem-frames" | wc -l) frames"
+              ffprobe -v error -select_streams v:0 -show_entries frame=pts_time -of csv=p=0 "$mov" > "$stem-frames.csv"
+              echo "ffprobe $mov: exit $?"
+            done
+          } > "$log" 2>&1
+          cat "$log"
       - name: Run the button pass with Increase Contrast on (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true

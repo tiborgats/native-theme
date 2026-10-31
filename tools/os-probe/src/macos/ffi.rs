@@ -11,17 +11,23 @@ use objc2::runtime::NSObjectProtocol;
 use objc2::{AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
     NSBackingStoreType, NSBitmapFormat, NSBitmapImageFileType, NSBitmapImageRep, NSButton, NSCell,
-    NSColorSpace, NSDeviceRGBColorSpace, NSFont, NSFontTextStyle, NSFontTextStyleBody,
+    NSColorSpace, NSControlTextEditingDelegate, NSDeviceRGBColorSpace, NSFont,
+    NSFontFeatureSettingsAttribute, NSFontSlantTrait, NSFontTextStyle, NSFontTextStyleBody,
     NSFontTextStyleCallout, NSFontTextStyleCaption1, NSFontTextStyleCaption2,
     NSFontTextStyleFootnote, NSFontTextStyleHeadline, NSFontTextStyleLargeTitle,
     NSFontTextStyleSubheadline, NSFontTextStyleTitle1, NSFontTextStyleTitle2,
-    NSFontTextStyleTitle3, NSFontTraitsAttribute, NSFontWeightBlack, NSFontWeightBold,
-    NSFontWeightHeavy, NSFontWeightLight, NSFontWeightMedium, NSFontWeightRegular,
-    NSFontWeightSemibold, NSFontWeightThin, NSFontWeightTrait, NSFontWeightUltraLight, NSToolbar,
-    NSToolbarDelegate, NSToolbarItem, NSWindow, NSWindowStyleMask,
+    NSFontTextStyleTitle3, NSFontTraitsAttribute, NSFontVariationAttribute, NSFontWeightBlack,
+    NSFontWeightBold, NSFontWeightHeavy, NSFontWeightLight, NSFontWeightMedium,
+    NSFontWeightRegular, NSFontWeightSemibold, NSFontWeightThin, NSFontWeightTrait,
+    NSFontWeightUltraLight, NSFontWidthTrait, NSLayoutManager, NSTableCellView, NSTableColumn,
+    NSTableView, NSTableViewDataSource, NSTableViewDelegate, NSTextField, NSToolbar,
+    NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
 };
+use objc2_core_foundation::{CFArray, CFBundle, CFDictionary, CFRetained, CFString, CFType};
+use objc2_core_text::{CTFont, kCTFontOpticalSizeAttribute};
 use objc2_foundation::{
-    NSArray, NSDefaultRunLoopMode, NSDictionary, NSObject, NSRect, NSRunLoopMode, NSString,
+    NSArray, NSDefaultRunLoopMode, NSDictionary, NSInteger, NSObject, NSRect, NSRunLoopMode,
+    NSString,
 };
 
 /// `NSFontWeightRegular`.
@@ -103,6 +109,110 @@ pub(super) fn font_trait_keys() -> Result<(&'static NSString, &'static NSString)
     // SAFETY: reads AppKit `extern` NSString constants, as
     // native-theme/src/macos.rs does.
     Ok(unsafe { (NSFontTraitsAttribute, NSFontWeightTrait) })
+}
+
+/// The font descriptor keys the probe reads: `NSFontSlantTrait` and
+/// `NSFontWidthTrait` (in the traits dictionary), `NSFontVariationAttribute`
+/// and `NSFontFeatureSettingsAttribute` (in the attributes).
+pub(super) struct DescriptorKeys {
+    pub(super) slant: &'static NSString,
+    pub(super) width: &'static NSString,
+    pub(super) variation: &'static NSString,
+    pub(super) feature_settings: &'static NSString,
+}
+
+/// The descriptor keys of [`DescriptorKeys`].
+pub(super) fn descriptor_keys() -> DescriptorKeys {
+    // SAFETY: each reads an AppKit `extern` NSString constant.
+    unsafe {
+        DescriptorKeys {
+            slant: NSFontSlantTrait,
+            width: NSFontWidthTrait,
+            variation: NSFontVariationAttribute,
+            feature_settings: NSFontFeatureSettingsAttribute,
+        }
+    }
+}
+
+/// `kCTFontOpticalSizeAttribute`.
+pub(super) fn ct_optical_size_key() -> &'static CFString {
+    // SAFETY: reads a Core Text `extern` CFString constant.
+    unsafe { kCTFontOpticalSizeAttribute }
+}
+
+/// The symbol of the Core Text attribute key WebKit reads a font's CSS
+/// weight by (`CTFontCopyAttribute`), which the SDK's headers do not
+/// declare.
+pub(super) const CT_CSS_WEIGHT_SYMBOL: &str = "kCTFontCSSWeightAttribute";
+
+/// The `CFStringRef` Core Text exports as [`CT_CSS_WEIGHT_SYMBOL`], looked
+/// up by name in the `com.apple.CoreText` bundle (`CFBundleGetDataPointerForName`),
+/// or why it is not there.
+pub(super) fn ct_css_weight_key() -> Result<&'static CFString, String> {
+    let id = CFString::from_static_str("com.apple.CoreText");
+    let bundle = CFBundle::bundle_with_identifier(Some(&id))
+        .ok_or_else(|| "CFBundleGetBundleWithIdentifier(com.apple.CoreText) is NULL".to_owned())?;
+    let name = CFString::from_static_str(CT_CSS_WEIGHT_SYMBOL);
+    let symbol = bundle.data_pointer_for_name(Some(&name));
+    if symbol.is_null() {
+        return Err(format!("Core Text exports no {CT_CSS_WEIGHT_SYMBOL}"));
+    }
+    // SAFETY: the symbol is Core Text's exported `const CFStringRef`, as
+    // WebKit declares it (Source/WebCore/PAL/pal/spi/cf/CoreTextSPI.h): a
+    // non-null, aligned pointer to one pointer-sized global of the loaded
+    // framework, written before the framework's initialisers return and
+    // never after, so reading it here is reading an `extern` constant.
+    let key: *const CFString = unsafe { *symbol.cast::<*const CFString>() };
+    // SAFETY: a CFString the framework owns for the life of the process,
+    // never mutated; `as_ref` returns `None` for NULL.
+    unsafe { key.as_ref() }.ok_or_else(|| format!("{CT_CSS_WEIGHT_SYMBOL} is NULL"))
+}
+
+/// `CTFontCopyVariation` of `font`, toll-free bridged.
+pub(super) fn ct_variation(font: &NSFont) -> Option<CFRetained<CFDictionary>> {
+    let font: &CTFont = font.as_ref();
+    // SAFETY: a live CTFont the call only reads; the copy it returns is
+    // owned by the `CFRetained`.
+    unsafe { font.variation() }
+}
+
+/// `CTFontCopyVariationAxes` of `font`.
+pub(super) fn ct_variation_axes(font: &NSFont) -> Option<CFRetained<CFArray>> {
+    let font: &CTFont = font.as_ref();
+    // SAFETY: as for `ct_variation`.
+    unsafe { font.variation_axes() }
+}
+
+/// `CTFontCopyFeatureSettings` of `font`.
+pub(super) fn ct_feature_settings(font: &NSFont) -> Option<CFRetained<CFArray>> {
+    let font: &CTFont = font.as_ref();
+    // SAFETY: as for `ct_variation`.
+    unsafe { font.feature_settings() }
+}
+
+/// `CTFontCopyAttribute` of `font` for `key`.
+pub(super) fn ct_attribute(font: &NSFont, key: &CFString) -> Option<CFRetained<CFType>> {
+    let font: &CTFont = font.as_ref();
+    // SAFETY: a live CTFont and a CFString attribute key, both only read;
+    // the copy it returns is owned by the `CFRetained`.
+    unsafe { font.attribute(key) }
+}
+
+/// `-[NSLayoutManager lineFragmentRectForGlyphAtIndex:effectiveRange:]`
+/// without the effective range.
+pub(super) fn line_fragment_rect(layout: &NSLayoutManager, glyph: usize) -> NSRect {
+    // SAFETY: a NULL effective-range pointer, which the method documents as
+    // allowed.
+    unsafe { layout.lineFragmentRectForGlyphAtIndex_effectiveRange(glyph, std::ptr::null_mut()) }
+}
+
+/// `-[NSTableCellView setTextField:]`: `field`, a subview of `cell`, as its
+/// text field.
+pub(super) fn set_text_field(cell: &NSTableCellView, field: &NSTextField) {
+    // SAFETY: the outlet is unretained; `field` is a subview of `cell`, so
+    // the view hierarchy keeps it alive as long as the cell, and the
+    // `TableSource` that hands the cell out holds both.
+    unsafe { cell.setTextField(Some(field)) };
 }
 
 /// A borderless, buffered, non-deferred NSWindow that is never ordered
@@ -387,6 +497,90 @@ impl ToolbarDelegate {
             .map(|item| item.itemIdentifier())
             .collect();
         NSArray::from_retained_slice(&ids)
+    }
+}
+
+/// What the table source hands its table: the column identifiers, in
+/// order, and per row one view per column, made beforehand.
+pub(super) struct TableCells {
+    columns: Vec<Retained<NSString>>,
+    rows: Vec<Vec<Retained<NSView>>>,
+}
+
+define_class!(
+    // SAFETY: NSObject has no subclassing requirements, and `TableSource`
+    // does not implement `Drop`.
+    #[unsafe(super(NSObject))]
+    #[thread_kind = MainThreadOnly]
+    #[name = "NativeThemeOsProbeTableSource"]
+    #[ivars = TableCells]
+    pub(super) struct TableSource;
+
+    // SAFETY: NSObjectProtocol has no requirements beyond NSObject's.
+    unsafe impl NSObjectProtocol for TableSource {}
+
+    // SAFETY: every method of the protocol is optional; none is implemented.
+    unsafe impl NSControlTextEditingDelegate for TableSource {}
+
+    // SAFETY: the method's selector, argument and return types are
+    // NSTableViewDataSource's (objc2-app-kit's `NSTableViewDataSource`).
+    unsafe impl NSTableViewDataSource for TableSource {
+        #[unsafe(method(numberOfRowsInTableView:))]
+        fn number_of_rows(&self, _table: &NSTableView) -> NSInteger {
+            NSInteger::try_from(self.ivars().rows.len()).unwrap_or(NSInteger::MAX)
+        }
+    }
+
+    // SAFETY: the method's selector, argument and return types are
+    // NSTableViewDelegate's (objc2-app-kit's `NSTableViewDelegate`).
+    unsafe impl NSTableViewDelegate for TableSource {
+        #[unsafe(method_id(tableView:viewForTableColumn:row:))]
+        fn view_for(
+            &self,
+            _table: &NSTableView,
+            column: Option<&NSTableColumn>,
+            row: NSInteger,
+        ) -> Option<Retained<NSView>> {
+            self.ivars().view(column, row)
+        }
+    }
+);
+
+impl TableCells {
+    /// The view for `column` in `row`, `None` outside the table.
+    fn view(&self, column: Option<&NSTableColumn>, row: NSInteger) -> Option<Retained<NSView>> {
+        let identifier = column?.identifier();
+        let index = self.columns.iter().position(|c| **c == *identifier)?;
+        let row = usize::try_from(row).ok()?;
+        self.rows.get(row)?.get(index).cloned()
+    }
+}
+
+impl TableSource {
+    /// A data source and delegate that gives a view-based table `rows`, one
+    /// view per column of `columns` in each.
+    pub(super) fn new(
+        mtm: MainThreadMarker,
+        columns: Vec<Retained<NSString>>,
+        rows: Vec<Vec<Retained<NSView>>>,
+    ) -> Retained<Self> {
+        let this = Self::alloc(mtm).set_ivars(TableCells { columns, rows });
+        // SAFETY: NSObject's `init` on an allocated instance whose ivars are
+        // set, as objc2's `define_class!` documents.
+        unsafe { msg_send![super(this), init] }
+    }
+}
+
+/// Make `source` the data source and delegate of `table`, or, with `None`,
+/// clear both.
+pub(super) fn set_table_source(table: &NSTableView, source: Option<&TableSource>) {
+    let data_source = source.map(objc2::runtime::ProtocolObject::from_ref);
+    let delegate = source.map(objc2::runtime::ProtocolObject::from_ref);
+    // SAFETY: both properties are weak; the caller keeps `source` alive
+    // while the table can call it and clears both before dropping it.
+    unsafe {
+        table.setDataSource(data_source);
+        table.setDelegate(delegate);
     }
 }
 
