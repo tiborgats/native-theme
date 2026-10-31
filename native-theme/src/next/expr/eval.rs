@@ -124,9 +124,11 @@ impl Platform {
             }
             Platform::KirigamiLerp => {
                 let (a, b, balance) = (arg(0), arg(1), arg(2));
-                // Qt's invalid colour (a colour outside 16-bit storage, a NaN
-                // balance) has no value in the model: transparent, as a
-                // non-finite result is zero (S2.2's *Totality*).
+                // A colour outside sRGB's gamut enters as Qt's extended RGB;
+                // Qt's invalid colour (a NaN channel, an alpha outside
+                // `0..=1`, a NaN balance) has no value in the model:
+                // transparent, as a non-finite result is zero (S2.2's
+                // *Totality*).
                 let lerped = crate::next::platform::kirigami_lerp::kirigami_lerp(
                     channels(a.as_ref().map_or_else(transparent, color)),
                     channels(b.as_ref().map_or_else(transparent, color)),
@@ -444,6 +446,20 @@ mod tests {
                 r: grey,
                 g: grey,
                 b: grey,
+                a: 1.0
+            })
+        );
+        // An extended colour (Display P3's red lies outside sRGB) enters as
+        // Qt's extended RGB, its channels clamped: drawn, not transparent.
+        assert_eq!(
+            value(
+                "kirigami_lerp(display_p3(1, 0, 0), display_p3(1, 0, 0), 0)",
+                Ty::Color
+            ),
+            Val::Color(Color {
+                r: 1.0,
+                g: 0.0,
+                b: 0.0,
                 a: 1.0
             })
         );

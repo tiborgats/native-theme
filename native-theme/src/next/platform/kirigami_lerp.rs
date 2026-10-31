@@ -159,44 +159,122 @@ fn lerp(x: f32, y: f32, t: f64) -> f64 {
 /// the short way round). A colour without a hue, or with hue exactly 0, takes the other
 /// colour's hue for both ends. `None` stands for Qt's invalid colour, which only a NaN
 /// balance produces.
+pub fn kirigami_lerp_rgb16(a: [u16; 4], b: [u16; 4], balance: f32) -> Option<[u16; 4]> {
+    lerp_entered(Entered::from_rgb16(a), Entered::from_rgb16(b), balance)
+}
+
+/// Interpolates between two model colours `[red, green, blue, alpha]`, as
+/// [`kirigami_lerp_rgb16`] does, returning the result's channels (16-bit storage over 65535).
+///
+/// Channels within [0, 1] enter Qt's storage rounded to 16 bits. A colour with red, green or
+/// blue outside [0, 1] (alpha within it) is Qt's extended RGB: all four channels are rounded to
+/// half precision, its hue, saturation and value are those of its red, green and blue clamped
+/// to [0, 1] and stored in 16 bits, and its alpha is the half value. `None` when an input has a
+/// NaN channel or an alpha outside [0, 1] (Qt's invalid colour), or for a NaN balance.
+pub fn kirigami_lerp(a: [f32; 4], b: [f32; 4], balance: f32) -> Option<[f32; 4]> {
+    let [r, g, bl, al] = lerp_entered(Entered::from_reals(a)?, Entered::from_reals(b)?, balance)?;
+    Some([unit_of(r), unit_of(g), unit_of(bl), unit_of(al)])
+}
+
+/// What Kirigami reads of an input colour: its HSV storage (for hue, saturation and value) and
+/// its real alpha.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Entered {
+    hsv: Hsv16,
+    alpha: f32,
+}
+
+impl Entered {
+    /// An RGB colour from its 16-bit storage.
+    fn from_rgb16(rgba: [u16; 4]) -> Self {
+        let hsv = rgb_to_hsv(rgba);
+        Self {
+            hsv,
+            alpha: unit_of(hsv.alpha),
+        }
+    }
+
+    /// A colour built from real channels as Qt's `fromRgbF` builds it; `None` for an invalid
+    /// colour (alpha outside [0, 1] or NaN, or a NaN channel).
+    fn from_reals(c: [f32; 4]) -> Option<Self> {
+        let [r, g, b, a] = c;
+        if !in_unit(a) {
+            return None;
+        }
+        if in_unit(r) && in_unit(g) && in_unit(b) {
+            return Some(Self::from_rgb16(c.map(|x| qround_u16(x * 65535.0))));
+        }
+        if r.is_nan() || g.is_nan() || b.is_nan() {
+            return None;
+        }
+        let [hr, hg, hb, ha] = c.map(round_to_half);
+        let clamped = |x: f32| qround_u16(65535.0 * x.clamp(0.0, 1.0));
+        let rgb16 = [
+            clamped(hr),
+            clamped(hg),
+            clamped(hb),
+            qround_u16(65535.0 * ha),
+        ];
+        Some(Self {
+            hsv: rgb_to_hsv(rgb16),
+            alpha: ha,
+        })
+    }
+}
+
+/// Kirigami's interpolation of two read colours, built back through Qt's from-HSV constructor
+/// and converted to 16-bit RGB storage.
 #[allow(
     clippy::modulo_arithmetic,
     reason = "a float remainder, which cannot panic"
 )]
-fn kirigami_lerp_rgb16(a: [u16; 4], b: [u16; 4], balance: f32) -> Option<[u16; 4]> {
+fn lerp_entered(a: Entered, b: Entered, balance: f32) -> Option<[u16; 4]> {
     let t = f64::from(balance.clamp(0.0, 1.0));
-    let (ha, hb) = (rgb_to_hsv(a), rgb_to_hsv(b));
+    let (ha, hb) = (a.hsv, b.hsv);
     let (hue_a, hue_b) = (hue_of(ha), hue_of(hb));
     let start = if hue_a > 0.0 { hue_a } else { hue_b }.max(0.0);
     let end = if hue_b > 0.0 { hue_b } else { hue_a }.max(0.0);
     let hue = lerp(start, end, t) % 1.0;
     let sat = lerp(unit_of(ha.saturation), unit_of(hb.saturation), t).clamp(0.0, 1.0);
     let val = lerp(unit_of(ha.value), unit_of(hb.value), t).clamp(0.0, 1.0);
-    let alpha = lerp(unit_of(ha.alpha), unit_of(hb.alpha), t).clamp(0.0, 1.0);
+    let alpha = lerp(a.alpha, b.alpha, t).clamp(0.0, 1.0);
     let built = hsv_from_reals(hue as f32, sat as f32, val as f32, alpha as f32)?;
     Some(hsv_to_rgb(built))
 }
 
-/// Interpolates between two model colours `[red, green, blue, alpha]` with channels in [0, 1],
-/// as `kirigami_lerp_rgb16` does, returning the result's channels (16-bit storage over 65535).
-///
-/// Each channel enters Qt's storage rounded to 16 bits. `None` when an input channel lies
-/// outside [0, 1] or is NaN (such a colour is not plain 16-bit RGB in Qt), or when the
-/// interpolation yields Qt's invalid colour (a NaN balance).
-pub fn kirigami_lerp(a: [f32; 4], b: [f32; 4], balance: f32) -> Option<[f32; 4]> {
-    let a16 = rgb16_from_reals(a)?;
-    let b16 = rgb16_from_reals(b)?;
-    let [r, g, bl, al] = kirigami_lerp_rgb16(a16, b16, balance)?;
-    Some([unit_of(r), unit_of(g), unit_of(bl), unit_of(al)])
+/// The power of two `2^e` as a single, for `e` within the normal exponent range.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "the exponent clamped to -126..=127 plus 127, within 1..=254: no overflow"
+)]
+fn pow2(e: i32) -> f32 {
+    let biased = u32::try_from(e.clamp(-126, 127) + 127).unwrap_or(127);
+    f32::from_bits(biased << 23)
 }
 
-/// Qt's 16-bit RGB storage of real channels, each `qRound(c × 65535)` in single; `None` when a
-/// channel lies outside [0, 1] or is NaN.
-fn rgb16_from_reals(c: [f32; 4]) -> Option<[u16; 4]> {
-    if !c.iter().all(|&x| in_unit(x)) {
-        return None;
+/// A single rounded to the nearest IEEE half-precision value (ties to even), returned widened
+/// back to single. Beyond half's range the result is an infinity of the same sign; NaN and
+/// infinities pass through.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "an 8-bit biased exponent less 137, and its negation: no overflow"
+)]
+fn round_to_half(x: f32) -> f32 {
+    if !x.is_finite() {
+        return x;
     }
-    Some(c.map(|x| qround_u16(x * 65535.0)))
+    let magnitude = x.abs();
+    if magnitude >= 65520.0 {
+        return f32::INFINITY.copysign(x);
+    }
+    let quantum_exp = if magnitude < pow2(-14) {
+        -24
+    } else {
+        let biased = i32::try_from((magnitude.to_bits() >> 23) & 0xff).unwrap_or(127);
+        biased - 127 - 10
+    };
+    let steps = (magnitude * pow2(-quantum_exp)).round_ties_even();
+    (steps * pow2(quantum_exp)).copysign(x)
 }
 
 #[cfg(test)]
@@ -302,5 +380,117 @@ mod tests {
             kirigami_lerp_rgb16(a, b, 7.0),
             kirigami_lerp_rgb16(a, b, 1.0)
         );
+    }
+
+    #[test]
+    #[allow(
+        clippy::excessive_precision,
+        reason = "half-precision values written exactly"
+    )]
+    fn half_rounding() {
+        assert_eq!(round_to_half(0.3), 0.300048828125);
+        assert_eq!(qround_u16(65535.0 * round_to_half(0.3)), 19664);
+        assert_eq!(round_to_half(1.0), 1.0);
+        assert_eq!(
+            round_to_half(-0.1).to_bits(),
+            (-0.0999755859375f32).to_bits()
+        );
+        assert_eq!(round_to_half(65504.0), 65504.0);
+        assert_eq!(round_to_half(65520.0), f32::INFINITY);
+        assert_eq!(round_to_half(pow2(-25)), 0.0);
+        assert_eq!(round_to_half(pow2(-24)), pow2(-24));
+    }
+
+    #[test]
+    #[allow(
+        clippy::excessive_precision,
+        reason = "half-precision values written exactly"
+    )]
+    fn extended_entry() {
+        let Some(entered) = Entered::from_reals([1.5, 0.3, 0.3, 0.3]) else {
+            panic!("an extended colour is valid");
+        };
+        assert_eq!(entered.alpha, 0.300048828125);
+        assert_eq!(entered.hsv, rgb_to_hsv([65535, 19664, 19664, 19664]));
+        assert!(Entered::from_reals([f32::INFINITY, -2.0, 0.5, 1.0]).is_some());
+        assert!(Entered::from_reals([f32::NAN, 0.5, 0.5, 1.0]).is_none());
+        assert!(Entered::from_reals([1.2, 0.5, 0.5, 1.5]).is_none());
+        assert!(Entered::from_reals([0.5, 0.5, 0.5, f32::NAN]).is_none());
+        let opaque = [0.2, 0.4, 0.6, 1.0];
+        for t in [0.0, 0.3, 1.0] {
+            assert!(kirigami_lerp([1.2, 0.5, 0.25, 0.3], opaque, t).is_some());
+        }
+    }
+
+    /// An input or expected value the description has not stated yet is `None`.
+    struct PendingRow {
+        a: Option<[f32; 4]>,
+        b: Option<&'static str>,
+        balance: Option<f32>,
+        expected: Option<[f64; 4]>,
+    }
+
+    /// The six extended-RGB rows of `qcolor_helpers.md` section 11. Their expected values come from
+    /// the generator (`tools/kde-vectors`, a `fromRgbF` input form) once it computes them; the
+    /// inputs the section leaves open are `None` until then.
+    const EXTENDED_ROWS: [PendingRow; 6] = [
+        PendingRow {
+            a: Some([1.2, 0.5, 0.25, 1.0]),
+            b: Some("#3daee9"),
+            balance: Some(0.5),
+            expected: None,
+        },
+        PendingRow {
+            a: Some([-0.1, 0.5, 1.0, 1.0]),
+            b: Some("#232629"),
+            balance: Some(0.2),
+            expected: None,
+        },
+        PendingRow {
+            a: Some([1.5, 0.3, 0.3, 1.0]),
+            b: None,
+            balance: None,
+            expected: None,
+        },
+        PendingRow {
+            a: Some([1.2, 0.5, 0.25, 0.3]),
+            b: None,
+            balance: Some(0.5),
+            expected: None,
+        },
+        PendingRow {
+            a: None,
+            b: Some("#3daee9"),
+            balance: Some(0.2),
+            expected: None,
+        },
+        PendingRow {
+            a: None,
+            b: None,
+            balance: None,
+            expected: None,
+        },
+    ];
+
+    #[test]
+    #[ignore = "expected values come from the generator"]
+    fn extended_vectors() {
+        let mut failures = Vec::new();
+        for (i, row) in EXTENDED_ROWS.iter().enumerate() {
+            let inputs = (|| Some((row.a?, parse_hex(row.b?)?, row.balance?, row.expected?)))();
+            let Some((a, b, t, expected)) = inputs else {
+                failures.push(format!("row {i}: not fully stated"));
+                continue;
+            };
+            match kirigami_lerp(a, b, t) {
+                Some(got)
+                    if got
+                        .iter()
+                        .zip(expected.iter())
+                        .all(|(&g, &e)| ((f64::from(g) - e) * 255.0).abs() <= 1e-3) => {}
+                got => failures.push(format!("row {i}: got {got:?}")),
+            }
+        }
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
     }
 }
