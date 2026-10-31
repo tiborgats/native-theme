@@ -717,13 +717,15 @@ MAT-X13–MAT-X15, X-MO-1).
   (`gtkcssanimatedstyle.c`). A transition may name the flags whose clearing it applies to (`from`): one with
   none applies to any change, and one with a set only to a change that clears one of its flags, held before and
   not after, after the exclusive groups' drop (R3; ADD-A125), as Compose takes its outgoing spec on going to rest and
-  Breeze fades only as a flag turns off. A transition also states what starts it (ADD-A125): any change of its value
-  (CSS's transitions, QML's `Behavior`, Compose's `animate*AsState`) or only a change of the element's states (Breeze's
-  state engines, `breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-29`, and libadwaita's
-  `AdwAnimation`s), so a condition or theme change runs the first and never the second. *One trigger per toolkit*
-  was rejected, as libadwaita's and WinUI's widgets hold both kinds; *ignoring it*, as Breeze's two-way fades would
-  then run on a window deactivation, which Breeze draws at once; where several transitions that apply state one for the same property, the
-  later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
+  Breeze fades only as a flag turns off; where several transitions that apply state one for the same property, the
+  later in stated order wins. A transition also states what starts it (ADD-A125): any change of its value (CSS's
+  transitions, QML's `Behavior`, Compose's `animate*AsState`, WinUI's brush transitions) or only a change of the
+  element's states or of the conditions it names (Breeze's state engines, `breeze@6.8.2
+  kstyle/animations/breezewidgetstatedata.cpp:12-29`, its decoration's shadow on the window's activation, libadwaita's
+  `AdwAnimation`s, WinUI's visual-state storyboards), so a theme change, or a condition it does not name, runs the
+  first and never the second; a trigger no cached source states is measured. *One trigger per toolkit* was rejected,
+  as libadwaita's and WinUI's widgets hold both kinds; *ignoring it*, as Breeze's two-way fades would then run on a
+  window deactivation, which Breeze draws at once. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
   entered, or, moving to rest, by the one left (150 ms from press or focus, and drag on cards and chips; 120 ms from
   hover), and snaps from none and into disabled (`androidx@e4d933c9
   compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-113`,
@@ -799,15 +801,16 @@ MAT-X13–MAT-X15, X-MO-1).
   (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
   `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
   `AdwAnimation`, still runs, `adw-tab.c:857-862`: a suspension reaches the value-driven transitions, and a reached
-  one running when it starts jumps to its new value, as GTK carries no transition into a style whose transitions are
-  off, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:822-826`; the specification's S2.7 states the rest, ADD-A125); or instant (an instant switch with property transitions as usual, the value-driven
+  one running when it starts jumps to its new value, as GTK carries no transition into a style whose one transition
+  has a duration and a delay that sum to zero, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:822-826`; what other running
+  transitions do is not yet stated, ledger queue #103, ADD-A126 to come; ADD-A125); or instant (an instant switch with property transitions as usual, the value-driven
   ones running, as Kirigami's QML behaviours do on `kde-breeze`, whose Breeze fades a theme change never starts). Each preset's kind is a fact of its toolkit's own drawing, measured
   where no source states it (`kde-breeze`'s is `Instant` from Breeze's and Qt Quick's code, ADD-A125; KWin's Blend
   Changes cross-fade of every window is the compositor's, out of scope, R1.1). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their value-driven property
   transitions run as stated, and a state-driven one starts only on those it names (Breeze's decoration shadow on a
   change of the window's activation, `breeze@6.8.2 kdecoration/breezedecoration.cpp:241`, `:275-286`, K1.17;
-  ADD-A125). Mica's fade (W3-10) is either, its trigger measured with W-P3-16†. What a running transition does when a change interrupts it is the specification's
-  ADD-A126 (ledger queue #103).
+  ADD-A125). Mica's fade (W3-10) is either, its trigger a measurement (the specification's open items). What a running
+  transition does when a change interrupts it is not yet stated: ledger queue #103 (orch-docs), ADD-A126 to come.
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes

@@ -40,6 +40,15 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `avatar.fallback_icon` on `adwaita` (AdwAvatar's icon fallback, which GN-2.14 does not name; listed absent until the
   facts state it).
 - `button`: iOS 26's further bar-item roles (none declared yet).
+- Triggers (S2.7, ADD-A125): Core Animation's and UIKit's transitions on `macos-*` and `ios-*`, which no cached source
+  states, measured by a condition change (a window deactivating, a scheme change) while a part's flags stay, whether
+  it animates; WinUI's Mica fade (W3-10), a condition change, measured likewise; pending facts until then.
+- `role.@highlight` on `macos-*` (`highlightColor`): a literal per scheme, provisional until a probe pass changes the
+  highlight setting and reads it; should the setting move it, it becomes an input (S9.1; ADD-A125).
+- `button` on `material-3`: whether every part with a bounded ripple is a Compose `Surface`, which clips its content to
+  its shape (`Surface.kt:564`), so the ripple to the part's outline; a part that is not is a class 2 change (a clip
+  field) (S2.12; ADD-A125).
+- `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw (ADD-A125).
 - The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
   `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
   thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
@@ -1398,7 +1407,7 @@ spaces:
     leaves (Breeze's push button sizes its arrow with both of the button's `Button_MarginWidth` margins, `breeze@6.8.2
     kstyle/breezestyle.cpp:3546-3556`, then draws it at the end of the contents rect, the button less
     `Frame_FrameWidth`, `:2216-2219`, and centres the text in the rect from the start margin to `Button_ItemSpacing`
-    before the arrow, `:5364-5372`, wider than the row less the arrow's margin box by `Button_MarginWidth`, K1.27); with
+    before the arrow, `:5364-5372`, wider than the row less the arrow's margin box and the gap by `Button_MarginWidth`, K1.27); with
     no start margin the two readings agree. Rejected: the margin box alone (Breeze's label half a `Button_MarginWidth`
     toward the start of where Breeze draws it, at every width); the border box alone with WinUI's values as written
     (its label would lose the chevron's negative start margin from its space); the border box alone with WinUI's gap
@@ -1575,8 +1584,11 @@ spaces:
     an element being one style or one form (ADD-A125); the roles `@cancel`, `@role_primary` and `destructive` are one
     `exclusive_variants` group, as a button holds one `UIButton.Role`, and each configuration style with a role is a
     set the state model's `variant_products` gives (a group `{ any = [@cancel, @role_primary, destructive] }` beside
-    the style's), as the host drew them (`cells.<scheme>.<style>__role_*`), the role's weight rule stated after the
-    styles' own weight rules, B-13 (ADD-A125); the state
+    the style's, and on `ios-26` a product `[{ one = [glass, clear] }, { one = [primary] }, { any = [@cancel,
+    @role_primary, destructive] }]` for the prominent glass styles), as the host drew them
+    (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`), the role's weight
+    rule stated after the styles' own weight rules, B-13, and stated at `regular` (UIKit's medium), the one size the
+    host drew it at, the others a measurement (Open items; ADD-A125); the state
     model's `variant_sets` lists the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
@@ -1596,7 +1608,9 @@ spaces:
     bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types
     `@system` (`UIButton(type: .system)` with no configuration, the form before `UIButton.Configuration`, drawn and
     measured apart from every style, its title smaller and its padding other than `flat`'s, the host's
-    `forms.<scheme>.system` against `cells.<scheme>.plain.medium`; a form that is no configuration, in the configuration styles' exclusive groups and in
+    `forms.<scheme>.system` against `cells.<scheme>.plain.medium`, its title a literal size, not a text role, as UIKit
+    gives it a font of its own, no text style (`text_style = "CTFontRegularUsage"` against the styles'
+    `UICTFontTextStyleShortBody`, the host's `run1/index.toml`), its size at other content size categories unread; a form that is no configuration, in the configuration styles' exclusive groups and in
     `requires_variants`, as `@info` is; ADD-A125), `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
     `@indicator_popup` (the pull-down indicator; automatic is the base, and `none`, which draws as automatic in every

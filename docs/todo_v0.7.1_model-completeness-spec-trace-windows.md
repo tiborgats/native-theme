@@ -645,7 +645,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-09 | `role.@layer_fill_default, role.@layer_fill_alt, role.@layer_on_acrylic_fill_default, role.@layer_on_accent_acrylic_fill_default, role.@layer_on_mica_base_alt_*` | role |
 | W3-09 | `PartStyle.fill (a Color layer over the backdrop's Material: the content and commanding layers, Paint.layers)` | field |
 | W3-10 | `window.content.fill @ cond window_inactive (PaintKind::Material @mica to Material.fallback)` | rule |
-| W3-10 | `window.content.transitions (the material to colour crossfade)` | field |
+| W3-10 | `window.content.transitions (the material to colour crossfade on deactivation; its trigger measured: the catalogue's Open items, ADD-A125)` | field |
 | W3-11 | `role.global.scrim` | role |
 | W3-11 | `dialog.scrim.fill` | field |
 | W3-11 | `menu.dismiss_overlay.fill; popover.dismiss_overlay.fill (the light-dismiss overlays when enabled)` | field |
