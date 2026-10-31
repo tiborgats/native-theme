@@ -1605,10 +1605,11 @@ spaces:
     `UICTFontTextStyleShortBody`, the host's `run1/index.toml`); and every button a UIKit host draws for itself is that
     element in its host's context, which the connector building the host's elements sets as it builds them, for
     UIKit's own items alone (an application's configured button placed as a bar item's custom view is no bar item)
-    (Nested controls). The host contexts are those the rules name, as they name them: `dialog.action_area` under
-    `variant alert` and under `variant @action_sheet` (an alert's or action sheet's actions, DL-5, DL-7, DL-8, C-11),
+    (Nested controls). The host contexts are those the rules select: `dialog.action_area` under
+    `variant alert` and under `variant @action_sheet` (an alert's or action sheet's actions, DL-5, DL-7, DL-8, C-11,
+    B-11),
     `toolbar.bar` (a bar button item, its default plain style `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115`
-    in Xcode 26.6: TB-4, TB-6, TB-8, P3-3†, C-1, C-2, C-29), `toolbar_editor` (P4-10†), `bottom_tab_bar.bar` (T-13,
+    in Xcode 26.6: TB-4, TB-6, TB-8, P3-3†, P4-10†, C-1, C-2, C-3, C-29, B-13, X-MO-3), `toolbar_editor` (P4-10†), `bottom_tab_bar.bar` (T-13,
     C-22), `search_field` (C-3), `input` (I-2), the nested chain `[{ widget = "search_field", part = "body" }, { widget =
     "input" }]` (the search field's clear button, which C-3's and I-2's rules both select, S17's ordered chain),
     `calendar.header` (C-6), `edit_menu` (C-14), `find_bar` (C-25), `media_controls.bar` (C-42†), `ink_toolbar`
@@ -1651,7 +1652,8 @@ spaces:
     weight trait 0.3 against 0.0, `ns_font_weight`'s 600, while the typed `primary` is the filled style; the cancel and destructive roles
     draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
     facts there; iOS 26's further
-    bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
+    bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
+    `forms.<scheme>.bar_system_action`), in `context toolbar.bar` as `add` is (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
     `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every
     style, state and scheme the host captured, is the base under another name, the connector mapping it; ADD-A125);
@@ -2071,7 +2073,7 @@ spaces:
     under `{checked}`, the close otherwise, MAT-SW3), `opacity` (the disabled icon's opacity, MAT-SW3), `transitions`
     (MAT-SW8's icon transitions).
   - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `interaction` (its state layer and press ripple, Compose's ripple indication, `Switch.kt:191-198`; S2.12; the
-    ripple's `indication_box` the `thumb` with a zero outset, ADD-A125),
+    ripple's `indication_box` the `thumb` with a zero outset; its colours the tokens', R1.6, MAT-SW4, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
   - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
     Q1.103).
@@ -2157,9 +2159,9 @@ spaces:
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
-    ripple's `indication_box` the `box`, no outset; `material-3` takes the tokens' colours, R1.6, and where the tokens
-    are silent, Compose's Material 3 styling branch's geometry: the tokens' container (`CheckboxTokens.ContainerSize`) with no padding and the
-    branch's check path, `ComposeMaterial3Flags.kt:40-44`, `Checkbox.kt:518-530`, `:711-718`; the branch is opt-in at
+    ripple's `indication_box` the `box`, no outset; `material-3` takes the tokens' colours, R1.6, and the tokens'
+    container (`CheckboxTokens.ContainerSize`), and where the tokens are silent (the padding, the indication's box, the
+    check path), Compose's Material 3 styling branch: no padding and its check path, `ComposeMaterial3Flags.kt:40-44`, `Checkbox.kt:518-530`, `:711-718`; the branch is opt-in at
     the pin, the flag false and experimental, `ComposeMaterial3Flags.kt:38`, `:49`, so an application that does not opt
     in draws the default branch, Material 2 styling, Compose's own box size and padding, `:1064-1067`, and the tokens'
     size decides between the two; rejected: the default branch's geometry, which the tokens contradict, and the
@@ -2233,11 +2235,11 @@ spaces:
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7's transparent, on
-    `windows-11` the platform's own `#00FFFFFF` as a stated paint once WinUI's arithmetic is measured).
+    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
-    ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`, ADD-A125),
+    ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`; its colours
+    the tokens', R1.6, MAT-C2, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`.
 - **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
@@ -2689,8 +2691,8 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends the gap before the `arrow_area` part's margin box or its
-  box, whichever is further toward the end, as `button`'s `Inline` rule states it, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends `label_arrow_gap_px` before the `arrow_area`'s box,
+  `button`'s `Inline` rule with no margin, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
