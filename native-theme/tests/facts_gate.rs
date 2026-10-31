@@ -70,6 +70,55 @@ fn gate_fixture_passes() {
     assert!(report.queried > 0, "{report:?}");
 }
 
+/// The negative control's pair: facts stating one wrong value per key
+/// class (a token, a colour role, an input, a widget value and a part's
+/// field) fail at each, so `gate_fixture_passes` passing means each class
+/// is compared.
+#[test]
+fn gate_fixture_wrong_value_per_key_class() {
+    let report = fixture_report("wrong_values");
+    for key in [
+        "token.focus.width",
+        "role.global.accent",
+        "input.accent",
+        "button.values.icon_text_gap",
+        "button.body.fill",
+    ] {
+        assert!(
+            !failing(&report, &format!("Normal: `{key}` at")).is_empty(),
+            "{key}: {:?}",
+            report.failures
+        );
+    }
+}
+
+/// The last fact in file order applies, not the most specific: a later,
+/// unconditional 40px applies where an earlier pressed fact holds too, and
+/// a preset stating 40px everywhere passes (S17 *Which fact applies*).
+#[test]
+fn gate_fixture_later_less_specific_fact_applies() {
+    let report = fixture_report("file_order");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// Of several measured citations serving the preset, the smallest
+/// tolerance holds; a citation serving another preset is not the
+/// preset's (S17 *The gate's tolerance*).
+#[test]
+fn gate_fixture_tolerance_of_citations() {
+    let report = fixture_report("tolerance_citations");
+    assert!(!report.failures.is_empty(), "{report:?}");
+    assert!(
+        report
+            .failures
+            .iter()
+            .all(|failure| failure.contains("button.body.min_width")),
+        "{:?}",
+        report.failures
+    );
+}
+
 /// `gate_fixture_missing_fact_fails`: a key with no fact on a combination
 /// the state model draws fails (R4).
 #[test]
@@ -221,6 +270,170 @@ fn gate_fixture_declarations_mismatch_fails() {
     );
 }
 
+/// Each of S10's declarations the declarations run compares, one case
+/// each: the preset declaring it otherwise than the state model fails at
+/// that declaration (S17, ADD-A116), an exclusive group's precedence order
+/// and the size lists' written order included; a widget available in the
+/// preset that no state model states fails too.
+#[test]
+fn gate_declarations_each_compared() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
+    // A table's entries, one line each, every value inline.
+    let inline = |table: &toml::Table| {
+        table
+            .iter()
+            .map(|(key, value)| format!("{key} = {value}\n"))
+            .collect::<String>()
+    };
+    // A TOML table, `extra`'s keys over `defaults`'.
+    let merged = |defaults: &str, extra: &str| {
+        let mut table: toml::Table = toml::from_str(defaults).unwrap();
+        table.extend(toml::from_str::<toml::Table>(extra).unwrap());
+        table
+    };
+    let model_of = |extra: &str| {
+        let entry = merged(
+            "widget = \"button\"\navailable = true\nvariants = [\"flat\", \"primary\"]\n\
+             sizes = []\ndensities = []\nexclusive = []\nrows = []\n\
+             axes = { states = [\"hover\", \"pressed\"], conditions = [], contexts = [] }\n",
+            extra,
+        );
+        format!("[[model]]\n{}", inline(&entry))
+    };
+    let sized = "sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n";
+    // (declaration, the preset's declarations, the state model's own lines)
+    let cases: Vec<(&str, String, String)> = vec![
+        ("available", String::new(), "available = false\n".to_owned()),
+        (
+            "variants",
+            "variants = [\"flat\"]\n".to_owned(),
+            String::new(),
+        ),
+        ("sizes", sized.to_owned(), "sizes = []\n".to_owned()),
+        (
+            "default_size",
+            sized.to_owned(),
+            "sizes = [\"small\", \"regular\"]\ndefault_size = \"small\"\n".to_owned(),
+        ),
+        (
+            "default_size_by_variant",
+            format!(
+                "{sized}default_size_by_variant = [{{ variant = \"flat\", size = \"small\" }}]\n"
+            ),
+            sized.to_owned(),
+        ),
+        (
+            "densities",
+            "densities = [\"compact\"]\n".to_owned(),
+            String::new(),
+        ),
+        ("flags", "flags = [\"@armed\"]\n".to_owned(), String::new()),
+        (
+            "exclusive",
+            "exclusive = [[\"pressed\", \"hover\"]]\n".to_owned(),
+            String::new(),
+        ),
+        (
+            "exclusive",
+            "exclusive = [[\"pressed\", \"hover\"]]\n".to_owned(),
+            "exclusive = [[\"hover\", \"pressed\"]]\n".to_owned(),
+        ),
+        (
+            "exclusive_variants",
+            "exclusive_variants = [[\"flat\", \"primary\"]]\n".to_owned(),
+            String::new(),
+        ),
+        (
+            "recency",
+            "recency = { lift = [\"pressed\", \"hover\"] }\n".to_owned(),
+            String::new(),
+        ),
+        (
+            "requires_variants",
+            "requires_variants = [\"flat\", \"primary\"]\n".to_owned(),
+            String::new(),
+        ),
+        (
+            "sizes_by_variant",
+            format!("{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"] }}]\n"),
+            sized.to_owned(),
+        ),
+        (
+            "sizes_by_variant",
+            format!(
+                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"] }}, \
+                 {{ variant = \"primary\", sizes = [\"regular\"] }}]\n"
+            ),
+            format!(
+                "{sized}sizes_by_variant = [{{ variant = \"primary\", sizes = [\"regular\"] }}, \
+                 {{ variant = \"flat\", sizes = [\"small\"] }}]\n"
+            ),
+        ),
+        (
+            "sizes_by_context",
+            format!(
+                "{sized}sizes_by_context = [{{ context = \"button\", sizes = [\"small\"] }}]\n"
+            ),
+            sized.to_owned(),
+        ),
+    ];
+    for (declaration, declared, stated) in &cases {
+        let button = merged("variants = [\"flat\", \"primary\"]\n", declared);
+        // A declared flag or recency set is one a rule selects on (S12).
+        let rules = match *declaration {
+            "flags" => {
+                "[[rules]]\nwhen = { states = [\"@armed\"] }\ntarget = \"button.body\"\nset = { opacity = 1 }\n"
+            }
+            "recency" => {
+                "[[rules]]\nwhen = { latest = { lift = \"hover\" } }\ntarget = \"button.body\"\nset = { opacity = 1 }\n"
+            }
+            _ => "",
+        };
+        let declare = format!("[declare.widget.button]\n{}{rules}", inline(&button));
+        let preset = Preset::from_toml(&format!("{base}\n{declare}"))
+            .unwrap_or_else(|error| panic!("{declaration}: {declare}: {error}"));
+        let models = model::Model::read("gnome/state-models.toml", &model_of(&stated)).unwrap();
+        let platform = run::Platform {
+            name: "gnome".to_owned(),
+            facts: Vec::new(),
+            keys: Vec::new(),
+            models,
+        };
+        let mut report = run::Report::default();
+        run::declarations_run(&platform, &preset, None, &mut report);
+        let needle = format!("`button` {declaration} under");
+        assert!(
+            report
+                .failures
+                .iter()
+                .any(|failure| failure.contains(&needle)),
+            "{declaration}: {declare} against {stated}: {:?}",
+            report.failures
+        );
+    }
+    let preset = Preset::from_toml(&format!(
+        "{base}\n[declare.widget.button]\nvariants = [\"flat\"]\n"
+    ))
+    .unwrap();
+    let platform = run::Platform {
+        name: "gnome".to_owned(),
+        facts: Vec::new(),
+        keys: Vec::new(),
+        models: Vec::new(),
+    };
+    let mut report = run::Report::default();
+    run::declarations_run(&platform, &preset, None, &mut report);
+    assert!(
+        report
+            .failures
+            .iter()
+            .any(|failure| failure.contains("`button` is available")),
+        "{:?}",
+        report.failures
+    );
+}
+
 /// A pending fact is listed with its register id and its key, apart from
 /// the failures; one a later fact shadows where both hold fails.
 #[test]
@@ -248,13 +461,37 @@ fn gate_fixture_pending_counted_and_shadowed() {
 /// fails where pressed is the latest.
 #[test]
 fn gate_fixture_recency_order() {
+    let names = |list: &[&str]| list.iter().map(|&n| n.to_owned()).collect::<Vec<_>>();
     assert_eq!(
         model::orders(
-            &["pressed".into(), "hover".into()],
-            &[("lift".into(), vec!["pressed".into(), "hover".into()])]
+            &names(&["pressed", "hover"]),
+            &[("lift".into(), names(&["pressed", "hover"]))]
         )
         .len(),
         2
+    );
+    // Three members of one set: one order per latest flag, the six
+    // permutations counted three times.
+    assert_eq!(
+        model::orders(
+            &names(&["a", "b", "c"]),
+            &[("s".into(), names(&["a", "b", "c"]))]
+        )
+        .len(),
+        3
+    );
+    // Two sets sharing `b`: one order per pair of latest flags, (b, c),
+    // (b, b), (a, c) and (a, b).
+    assert_eq!(
+        model::orders(
+            &names(&["a", "b", "c"]),
+            &[
+                ("s".into(), names(&["a", "b"])),
+                ("t".into(), names(&["b", "c"]))
+            ]
+        )
+        .len(),
+        4
     );
     let report = fixture_report("recency_order");
     let failures = failing(&report, "button.body.min_width");
