@@ -127,6 +127,12 @@ A `[[fact]]` (S17 *Fields*):
   text as a key (`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`; S11, ADD-A123), any other map a snake_case key
   (S1's key grammar), a unit-valued entry with its unit's suffix (`button_ms = <n>`), and each entry's value is
   checked as the map's value type.
+- A compound field (`Sides<…>`, `Axes<…>`, not inside a `Value`) stated whole as `"absent"`, `"auto"` or `"none"`
+  is a finding (compound_problems: the key's core type followed into the value, as map_problems follows it): such a
+  field is no `Value`, S6.1 patching it per member (spec line 1755, *Compound fields*), and a `may_be_absent` mark
+  on it allows each `Value` member to be absent, never the whole (S6.3, spec line 1800), S11's keywords meaning
+  `Value::Auto`, `Value::Absent` and an `Option`'s `None` (spec lines 2604-2606); its members are stated, each with
+  its unit's suffix (`{ top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }`).
 - A transition (transition_problems: every `Transition` table the key's type reaches in the value; S2.7, S11, S12;
   ADD-A124): its `from` is stated in a single transition (`"none"` for any state) and may be left out of a list's
   entry only (`None`); as a list it is not empty, names no flag twice and no keyed flag the key's widget does not
@@ -1618,6 +1624,7 @@ def fact_problems(ctx, item: Item) -> list:
             out += [(item.ln("value"), p) for p in value_problems(ctx, d["value"], dim, typ=typ)]
             out += [(item.ln("value"), p) for p in transition_problems(ctx, d["key"], d["value"], typ, widget)]
             out += [(item.ln("value"), p) for p in map_problems(ctx, d["value"], typ)]
+            out += [(item.ln("value"), p) for p in compound_problems(ctx, d["value"], typ)]
             if isinstance(d["value"], str) and text_leaves(ctx, d["value"], typ):
                 out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
                                             "(S11)") for c in item.cites if c.data.get("kind") == "measured"
@@ -2478,6 +2485,28 @@ def map_problems(ctx, value, t, path="value") -> list:
     return []
 
 
+COMPOUND_TYPE = re.compile(r"(Sides|Axes)<.+>")   # S6.1's compound fields, patched per member
+
+
+def compound_problems(ctx, value, t, path="value") -> list:
+    """A compound field (`Sides<…>`, `Axes<…>`, not inside a `Value`) stated whole by one of S11's keywords, where
+    S6.1 patches it per member and S6.3 allows its members, not the whole, to be absent (spec lines 1755, 1800), in
+    `value` under the core's type `t`."""
+    raw = (t or "").strip()
+    m = COMPOUND_TYPE.fullmatch(raw)
+    if m:
+        if isinstance(value, str) and value in KEYWORDS:
+            return [f"{path}: {value!r} states a {m.group(1)} whole, which is no `Value` (S6.1 patches it per member, "
+                    f"S6.3 lets each member be absent): state each member (`{{ top_px = \"{value}\", … }}`)"]
+        return []
+    if isinstance(value, list):
+        it = item_type(t) if t else None
+        return [p for i, v in enumerate(value) for p in compound_problems(ctx, v, it, f"{path}[{i}]")] if it else []
+    if isinstance(value, dict) and t:
+        return [p for k, v in value.items() for p in compound_problems(ctx, v, child_type(ctx, t, k), f"{path}.{k}")]
+    return []
+
+
 def canonical_when(when):
     """A `when` as a comparable value: its lists of names as sets (two `when`s equal as S11 reads them)."""
     if isinstance(when, dict):
@@ -3117,6 +3146,8 @@ _INTERACTION = ('[[fact]]\nkey = "button.body.interaction.state_layer.alpha"\nwh
 _MAC_FACT = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:macos-monterey"], states = ["hover"] }'
              '\nvalue = "#ffffff"\nrows = []\n' + _MAC_CITE)
 _MAP = '[[fact]]\nkey = "token.motion.durations"\nvalue = { button = "200ms" }\nrows = []\n' + _CITE
+_SIDES = ('[[fact]]\nkey = "button.body.padding"\nvalue = { top_px = "absent", right_px = "absent", '
+          'bottom_px = "absent", left_px = "absent" }\nrows = []\n' + _CITE)
 
 # (label, file, old, new, the findings wanted: substrings, one per finding)
 SELF_TEST_CASES = [
@@ -3628,6 +3659,16 @@ SELF_TEST_CASES = [
     ("map: an empty table", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }', "{}"), []),
     ("map: an empty map written []", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }', "[]"),
      ["value: an empty map written `[]`, where S11 spells a TOML table (`{}`)"]),
+    # a compound field stated whole by a keyword (S6.1's compound fields, S6.3, S11)
+    ("sides: every member absent", "docs/facts/gnome/sides.toml", None, _SIDES, []),
+    ("sides: a member's length", "docs/facts/gnome/sides.toml", None, _SIDES.replace('top_px = "absent"', "top_px = 4"),
+     []),
+    ("sides: absent as a whole", "docs/facts/gnome/sides.toml", None,
+     _SIDES.replace(_SIDES[_SIDES.index("{ top_px"):_SIDES.index("\nrows")], '"absent"'),
+     ["value: 'absent' states a Sides whole, which is no `Value`"]),
+    ("sides: auto as a whole", "docs/facts/gnome/sides.toml", None,
+     _SIDES.replace(_SIDES[_SIDES.index("{ top_px"):_SIDES.index("\nrows")], '"auto"'),
+     ["value: 'auto' states a Sides whole, which is no `Value`"]),
     ("map: an empty map written [] inside a block", "docs/facts/gnome/map.toml", None,
      _MAP.replace('"token.motion.durations"', '"token.motion"').replace('{ button = "200ms" }', "{ durations = [] }"),
      ["value.durations: an empty map written `[]`"]),

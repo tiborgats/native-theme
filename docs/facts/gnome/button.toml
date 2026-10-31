@@ -549,7 +549,7 @@ quote = "%button, button {"
 
 [[fact]]
 key = "button.values.hit_extension"
-value = "absent"
+value = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
 rows = []
 
 [[fact.cite]]
