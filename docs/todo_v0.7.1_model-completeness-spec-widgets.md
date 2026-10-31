@@ -63,8 +63,8 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
     `WinUi` (a pending fact, the preset stating no transition, until then);
   - `windows-11`: what WinUI's transitions do under each presence (S2.7's `Presence`) and as the element is painted again, a change
-    made meanwhile included, and as animations turn off (S2.7); and on every lane, what a window minimised or
-    occluded does to its running transitions (S2.7);
+    made meanwhile included, and as animations turn off (S2.7); and on every lane, which `Presence` a minimised
+    window's elements have (an occluded window's are `Unpainted`, S2.7);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
     element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
   - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2).

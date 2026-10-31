@@ -194,7 +194,8 @@ in places (the focus indicator, K3.20 against Q3.30); Material 3 has its baselin
 
 **Decision:** flavours. `kde-breeze`: `widgets` (default; most KDE applications) and `kirigami`;
 `material-3`: `baseline` (default) and `expressive`. `material-3` describes the Material 3 design system
-as Google currently publishes it, the look Android's own Material 3 (Compose) draws: its token set
+as Google currently publishes it, the published token set, which Android's own Material 3 (Compose) draws save
+where the facts record otherwise: its token set
 `tokens/versions/latest/` in material-web, at a pinned commit, which holds the baseline and the
 Expressive tokens and agrees with Compose (the pressed state layer's opacity is 0.1 in both, where the
 older `v0_192/` set says 0.12, which the map's MAT-X8 records as web against Compose). Where the tokens are
@@ -208,7 +209,9 @@ its interruptions, the switch handle's spring, MAT-SW8), with no transition wher
 add. Weighed: following Android's drawing wherever it departs from the tokens (fidelity to the one implementation
 users meet, but the preset would no longer be the published design system, and the tokens' agreement with Compose,
 the reason for choosing them, would decide nothing); the tokens alone, Compose never (no engines, no motion for most
-transitions).
+transitions). A look the tokens add that Compose lacks takes its states from material-web's component, which
+the tokens were written for, where it states them (the filled field's layer shown only on an enabled field,
+`material-web@2.5.0 field/internal/_filled-field.scss:71-73`).
 
 ### R2 — The model's shape
 
@@ -811,7 +814,7 @@ MAT-X13–MAT-X15, X-MO-1).
     where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
     GTK delays one and Compose's `updateTransition` replaces an interrupted one; where one group's transitions name
     two engines, the governing one's draws it. Breeze's group draws its flags reduced by its tests, at rest, under a
-    zero and at a run's two ends alike (each failing test's `any` flags dropped, the run's own test excepted), so a
+    zero and at a run's two ends alike (each failing test's `any` flags dropped, the run's own test excepted, but those a passing test names), so a
     fade a flag's style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and
     fill, its header) are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
     rejected, as Breeze draws a line edit's focus fading out as it is disabled and a disabled tab's hover fade
@@ -858,7 +861,8 @@ MAT-X13–MAT-X15, X-MO-1).
   fade, an `AdwAnimation`, still runs, `adw-tab.c:854-862`, and a CSS transition running when the suspension starts
   ends at its new value, as GTK carries none into a style whose transitions are all zero,
   `gtkcssanimatedstyle.c:822-826`; libadwaita also suspends on a reduced-motion change, which the token names,
-  `adw-style-manager.c:412`; ADD-A126); or instant (an instant switch with each engine's transitions as for any
+  `adw-style-manager.c:412`, and on the application's own scheme choice, `adw_style_manager_set_color_scheme`,
+  `:979-991`, the model's `pick`; ADD-A126); or instant (an instant switch with each engine's transitions as for any
   change). Each preset's kind is a fact, measured where no source states it (`kde-breeze`'s is `Instant`, from
   Breeze's and Qt Quick's code, which stop nothing and add no window effect, ADD-A126). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: they start the value
   engines' transitions of the values they move and turn the Breeze tests that name them, so Breeze's decoration

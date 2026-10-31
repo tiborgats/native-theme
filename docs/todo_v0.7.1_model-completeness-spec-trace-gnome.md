@@ -896,7 +896,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
-| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:409-413`; S4.3, ADD-A126)` | token |
+| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; on the application's scheme choice too, the model's pick, `adw-style-manager.c:979-991`; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:409-413`; S4.3, ADD-A126)` | token |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
