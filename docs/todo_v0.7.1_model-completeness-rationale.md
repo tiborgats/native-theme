@@ -1411,19 +1411,25 @@ application's policy, not the theme's; so is a measure that depends on the eleme
 floor of 75 for a combo emptied after holding items, while one created empty measures nothing,
 `kquickstyleitem.cpp:126`): the model measures the element's present content.
 
-*The natural height.* Breeze centres its icon in the edit field and reserves Qt's `iconSize + 2` inside the frame;
-Compose centres its 48 dp icon boxes on the field's height and takes the larger of those boxes and its text with its
-vertical padding (`TextFieldImpl.kt:1056-1102`, `:1148-1151`), 56, where boxes inside the padding would give 80.
-Options: the icon always in the content box (Compose's height wrong); always on the body's box (Breeze's tall icons
-lose Qt's reserve inside the frame); the icon's vertical margins on Material restated smaller (its centring then off
-under the floating label's uneven padding); a value, `icon_cross_box`, `Content` or `Body`, the end part always
-`Body`. The value is the smallest exact form.
+*The natural height.* Compose centres its 48 dp icon boxes on the field's height and takes the larger of those boxes
+and its text with its vertical padding (`TextFieldImpl.kt:1709-1745`, `:1786`, `:1904`), 56, where boxes inside the
+padding would give 80; Breeze centres its icon in the edit field and reserves Qt's `iconSize + 2` inside the frame.
+Options: the icon in the content box (Compose's height wrong); the icon's vertical margins on Material restated
+smaller (its centring then off under the floating label's uneven padding); a value choosing the content box or the
+body's box per preset; the icon, as the end part, always on the body's box, Breeze's top and bottom margins 7 (Qt's 1
+and the frame's 6). The last is chosen: Breeze's even frame centres the edit field on the body, so its icon lands on
+the same pixels, the 7 keeps Qt's reserve on the frameless editable combo too, whose field has no frame, and no
+surveyed form needs the content box for the icon, so the value would decide nothing. The editable forms' inputs take
+the vertical padding that makes the height Qt's (`fontHeight + 2` inside Breeze's frame, `qcombobox.cpp:632`,
+`breezestyle.cpp:3366-3370`): 1 at the top and bottom on Breeze, 2 under Kirigami inside qqc2's 5, the frameless
+editable combo keeping the 6 of the framed one; their text is centred, so nothing drawn moves.
 
 *The editable input.* Breeze, Kirigami, Compose and GTK place the input in the content's space beside the arrow
-(Kirigami's `rightPadding: 24` is the 2 px gap, the 20 px square and the 2 px frame, so the row counts the column
+(Kirigami's editable end padding of 24 is the 2 px gap, the 20 px square and the 2 px frame, so the row counts the column
 once); WinUI's text box spans the whole body with `11,5,38,6`, its padding holding the arrow's column, and appears
-only while the combo is focused, or under a game controller while its popup is open, which the label's absence rules
-state, the input drawn where the label is not. Options: WinUI's input in the row with its padding restated (its written 38 becoming
+only while the combo is focused, or under a game controller from the popup's opening until focus leaves, which the
+label's absence rules state, the input drawn where the label is not (the game controller's history, the box staying
+after the popup closes, approximated by the popup's `open`). Options: WinUI's input in the row with its padding restated (its written 38 becoming
 an unwritten 1); `input_placement`, `Row` or `Body`. The second keeps every written value and counts each column
 once.
 
