@@ -431,6 +431,12 @@ pub(crate) struct Cx<'t> {
     /// Inside an expression on a `Font.size`: font sizes read converted, not
     /// yet scaled (S9.4).
     unscaled: bool,
+    /// Inside `active(…)`: every place read reads its bases alone, and no
+    /// `Role` binding is followed (S2.2).
+    bases_only: bool,
+    /// The DPI and the scaling factor, read once outside every chain of
+    /// references (S9.4); `None` until read.
+    sizes: Option<(Option<f32>, Option<f32>)>,
     refusals: Vec<Refusal>,
 }
 
@@ -635,6 +641,8 @@ impl<'t> Cx<'t> {
             text: Vec::new(),
             visiting: Vec::new(),
             unscaled: false,
+            bases_only: false,
+            sizes: None,
             refusals: Vec::new(),
         }
     }
@@ -764,12 +772,15 @@ impl<'t> Cx<'t> {
             });
             return None;
         }
+        let bases_only = bases_only || self.bases_only;
         let folds = self.locate(target, &path, bases_only);
         self.visiting.push(key);
+        let saved_bases = std::mem::replace(&mut self.bases_only, bases_only);
         let saved_target = std::mem::replace(&mut self.target, target);
         let saved_path = std::mem::replace(&mut self.path, path);
         let saved_text = std::mem::take(&mut self.text);
         let out = f(self, &folds);
+        self.bases_only = saved_bases;
         self.text = saved_text;
         self.path = saved_path;
         self.target = saved_target;
@@ -851,7 +862,20 @@ impl<'t> Cx<'t> {
                     target: Target::Roles,
                     found: Found::Leaf(value),
                 };
-                self.operand(&[fold]).map(Answer::Val)
+                // An input reading itself, directly or through others, is a
+                // cycle (S12), refused as any other.
+                let key = (Target::Roles, format!("input.{}", segments(path).join(".")));
+                if self.visiting.contains(&key) {
+                    self.refusals.push(Refusal::Cycle {
+                        target: key.0,
+                        path: key.1,
+                    });
+                    return None;
+                }
+                self.visiting.push(key);
+                let value = self.operand(&[fold]);
+                self.visiting.pop();
+                value.map(Answer::Val)
             }
             Ref::Base => None,
             Ref::Scheme => Key::new(self.theme.scheme.name())
@@ -929,6 +953,7 @@ impl<'t> Cx<'t> {
     /// colour roles' value. `active(…)` (`bases`) follows the `Surface(S)`
     /// bindings only, and reads the bases (S2.2).
     fn role(&self, reference: &Ref, bases: bool) -> Answer {
+        let bases = bases || self.bases_only;
         let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
         let in_own_bindings = match self.own_part {
             Some(part) => {
@@ -1133,27 +1158,45 @@ impl<'t> Cx<'t> {
     /// The DPI points convert by (S9.4): the reader's, else the preset's
     /// `token.text.font_dpi`.
     fn dpi(&mut self) -> Option<f32> {
-        if let Some(dpi) = self.theme.font_dpi {
-            return Some(dpi);
+        self.sizes().0
+    }
+
+    /// The DPI and the scaling factor, read once, outside the chain of
+    /// references being followed (S2.2 counts an expression's own
+    /// references only); while they are being read, none.
+    fn sizes(&mut self) -> (Option<f32>, Option<f32>) {
+        if let Some(sizes) = self.sizes {
+            return sizes;
         }
-        let path = vec!["text".to_owned(), "font_dpi".to_owned()];
-        self.follow(Target::Tokens, path, false, |cx, folds| {
-            cx.value::<f32>(folds, false)
-        })
+        self.sizes = Some((None, None));
+        let saved = std::mem::take(&mut self.visiting);
+        let dpi = match self.theme.font_dpi {
+            Some(dpi) => Some(dpi),
+            None => {
+                let path = vec!["text".to_owned(), "font_dpi".to_owned()];
+                self.follow(Target::Tokens, path, false, |cx, folds| {
+                    cx.value::<f32>(folds, false)
+                })
+            }
+        };
+        let path = vec!["text".to_owned(), "scaling".to_owned()];
+        let scaling = self.follow(Target::Tokens, path, false, |cx, folds| {
+            cx.plain::<TextScaling>(folds)
+        });
+        let factor = match scaling {
+            Some(TextScaling::Linear) => Some(self.theme.text_scaling_factor),
+            Some(TextScaling::AndroidNonLinear | TextScaling::DynamicType) | None => None,
+        };
+        self.visiting = saved;
+        self.sizes = Some((dpi, factor));
+        (dpi, factor)
     }
 
     /// The factor font sizes scale by under the preset's
     /// `token.text.scaling` (S9.4): `Linear`'s product; `None` for the
     /// non-linear kinds, whose curves are not implemented yet.
     fn factor(&mut self) -> Option<f32> {
-        let path = vec!["text".to_owned(), "scaling".to_owned()];
-        let scaling = self.follow(Target::Tokens, path, false, |cx, folds| {
-            cx.plain::<TextScaling>(folds)
-        })?;
-        match scaling {
-            TextScaling::Linear => Some(self.theme.text_scaling_factor),
-            TextScaling::AndroidNonLinear | TextScaling::DynamicType => None,
-        }
+        self.sizes().1
     }
 
     /// `px` scaled by the text scaling (S9.4).
@@ -1454,14 +1497,17 @@ impl<'t> Cx<'t> {
             Value::Expr(Expr::Lit(Literal::Px(px))) => Some((*px, false)),
             Value::Expr(expr) => {
                 let field = FieldType::new(Ty::FontSize, Bound::Unbounded);
+                // Inside an expression on a `Font.size`, every font size reads
+                // converted and not yet scaled, however deep (S9.4).
                 let saved = self.unscaled;
-                self.unscaled = size;
+                let unscaled = size || saved;
+                self.unscaled = unscaled;
                 let val = self.call(expr, &field, fold.target, |cx| {
                     cx.font_value(below, size).map(|(px, _)| Val::FontSize(px))
                 });
                 self.unscaled = saved;
                 let px = Px::from_val(&val?)?;
-                Some((px, !size))
+                Some((px, !unscaled))
             }
         }
     }

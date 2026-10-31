@@ -857,3 +857,83 @@ fn text_scales_once_after_conversion() {
     assert_eq!(text.letter_spacing, Some(Px(-1.5)));
     assert_eq!(text.word_spacing, Some(Px(18.0)));
 }
+
+/// Task 11a's review: an input reading itself is a cycle, refused at
+/// evaluation as any other (S12), not an unbounded recursion.
+#[test]
+fn input_cycle_refused() {
+    let cycle = "[inputs.accent]\nlight = \"= input.accent\"\n\
+                 [colors.light.global]\naccent = \"= input.accent\"";
+    let theme = resolved(&[BASE, cycle], 1.0);
+    let scope = scope();
+    let found = theme.evaluate_role(&scope, &reference("role.global.accent"));
+    assert_eq!(found.value, None);
+    assert!(
+        matches!(found.refusals.as_slice(), [Refusal::Cycle { .. }]),
+        "{:?}",
+        found.refusals
+    );
+}
+
+/// Task 11a's review: `active(…)` reads every place it reaches from the
+/// bases alone, before any rule, and follows no `Role` binding (S2.2).
+#[test]
+fn active_reads_the_bases_throughout() {
+    let layers = "[colors.light.surfaces.window]\nbackground = \"= role.global.accent\"\n\
+                  [[rules]]\nwhen = { conditions = [\"scheme:light\"] }\ntarget = \"colors\"\n\
+                  set = { global.accent = \"#ff0000\" }";
+    let theme = resolved(&[BASE, layers], 1.0);
+    assert_eq!(
+        operand(&theme, "active(role.window.background)"),
+        Some(Val::Color(rgb(0x33, 0x66, 0xcc)))
+    );
+    // Without `active`, the rule reaches it.
+    assert_eq!(
+        operand(&theme, "role.window.background"),
+        Some(Val::Color(rgb(0xff, 0, 0)))
+    );
+}
+
+/// Task 11a's review: the DPI and the scaling are read outside a chain of
+/// references, so a chain of 32 ending in a call is not refused.
+#[test]
+fn sizes_read_outside_the_chain() {
+    let mut chain = "[tokens.motion.durations]\n".to_owned();
+    for index in 2..33 {
+        chain.push_str(&format!(
+            "d{index}_ms = \"= token.motion.durations.d{}\"\n",
+            index + 1
+        ));
+    }
+    chain.push_str("d33_ms = \"= add(7ms, 0ms)\"\n");
+    let theme = resolved(&[BASE, &chain], 1.0);
+    let scope = scope();
+    let (value, refusals) = with_body(&theme, &scope, |cx| {
+        let value = cx.operand_of(&reference("token.motion.durations.d2"), Target::Part(BODY));
+        (value, cx.refusals.clone())
+    });
+    assert_eq!(value, Some(Val::Duration(crate::next::units::Ms(7.0))));
+    assert_eq!(refusals, []);
+}
+
+/// Task 11a's review: a `Font.size` over a `Font.size` over a stated size
+/// reads both converted and not yet scaled, and is scaled once (S9.4).
+#[test]
+fn nested_font_sizes_scale_once() {
+    let a = text_style("tokens.text.keyed.a");
+    let b = text_style("tokens.text.keyed.b");
+    let c = text_style("tokens.text.keyed.c");
+    let patch = "[tokens.text.keyed.b]\nfont.size = \"= mul(token.text.keyed.a.font.size, 2)\"\n\
+                 [tokens.text.keyed.c]\nfont.size = \"= mul(token.text.keyed.b.font.size, 1.5)\"\n\
+                 [widgets.button.label]\ntext = \"= token.text.keyed.c\"";
+    let theme = resolved(&[BASE, &format!("{a}{b}{c}"), patch], 1.5);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
+    let size = theme
+        .evaluate_part(LABEL, &element, &|_| true)
+        .value
+        .and_then(|label| label.text)
+        .and_then(|text| text.font.size);
+    // 10px, doubled, times 1.5, scaled once by 1.5.
+    assert_eq!(size, Some(Px(10.0 * 2.0 * 1.5 * 1.5)));
+}
