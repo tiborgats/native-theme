@@ -1122,7 +1122,8 @@ fn combination_ellipse_corners() {
 /// apply together, and a rule on a latest flag never applies without it.
 #[test]
 fn combination_latest_of_a_recency_set() {
-    let decl = declare("[declare.widget.button]\nrecency = { glow = [\"hover\", \"focus_visible\"] }");
+    let decl =
+        declare("[declare.widget.button]\nrecency = { glow = [\"hover\", \"focus_visible\"] }");
     let rules = |second: &str| {
         format!(
             "[[rules]]\nwhen = {{ latest = {{ glow = \"hover\" }} }}\ntarget = \"button.body\"\n\

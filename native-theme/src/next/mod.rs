@@ -29,6 +29,7 @@ mod presets;
 )]
 mod registry;
 mod resolve;
+pub mod ripple;
 mod roles;
 #[cfg(test)]
 mod roles_tokens_tests;
