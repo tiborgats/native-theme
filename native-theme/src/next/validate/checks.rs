@@ -1580,6 +1580,14 @@ impl<'a> Checker<'a> {
 }
 
 impl Visit for Checker<'_> {
+    /// S9.4's non-linear curves are not implemented yet: refused until they
+    /// are, so no preset resolves its sizes unscaled.
+    fn enum_variant(&mut self, path: &Path, owner: &'static str, name: &'static str) {
+        if owner == "TextScaling" && name != "linear" {
+            self.problem(&path.to_string(), ProblemKind::TextScalingNotImplemented);
+        }
+    }
+
     /// A block's or a leaf's own checks.
     fn check(&mut self, path: &Path, node: Node<'_>) {
         let at = path.to_string();

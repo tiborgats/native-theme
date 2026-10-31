@@ -2210,6 +2210,7 @@ enum V {
     CornerAtLayout,
     UnequalOffsets,
     EllipseCorners,
+    TextScalingNotImplemented,
     UnequalInsets,
     TextRoleShared,
     TextRoleOrder,
@@ -2297,6 +2298,7 @@ fn layer_error_every_variant_triggers() {
             K::TextRoleOrder { .. } => V::TextRoleOrder,
             K::ShapeOverCorners => V::ShapeOverCorners,
             K::EllipseCorners => V::EllipseCorners,
+            K::TextScalingNotImplemented => V::TextScalingNotImplemented,
             K::EntryCreatedUnset { .. } => V::EntryCreatedUnset,
             K::ElementSizeInLayout { .. } => V::ElementSizeInLayout,
             K::LeftToPreset { .. } => V::LeftToPreset,
@@ -2822,6 +2824,14 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (
+            V::TextScalingNotImplemented,
+            over(
+                &toml("[tokens.text]\nscaling = \"dynamic_type\""),
+                &Declarations::default(),
+                &[],
+            ),
+        ),
+        (
             V::RecencyTooSmall,
             preset_problems("[declare.widget.button]\nrecency = { glow = [\"hover\"] }"),
         ),
@@ -2984,4 +2994,18 @@ fn refusal_unused_flag_in_a_latest_term() {
             .any(|problem| problem.contains("`@x` is declared but unused")),
         "{found:?}"
     );
+}
+
+/// S9.4's non-linear curves are refused until they are implemented; linear
+/// scaling is not.
+#[test]
+fn refusal_text_scaling_not_implemented() {
+    for kind in ["android_non_linear", "dynamic_type"] {
+        assert_eq!(
+            bare(&toml(&format!("[tokens.text]\nscaling = \"{kind}\""))),
+            ["tokens.text.scaling: a text scaling whose curve is not implemented yet"],
+            "{kind}"
+        );
+    }
+    assert_eq!(bare(&toml("[tokens.text]\nscaling = \"linear\"")), NONE);
 }
