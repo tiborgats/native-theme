@@ -159,12 +159,19 @@ fn lerp(x: f32, y: f32, t: f64) -> f64 {
 /// the short way round). A colour without a hue, or with hue exactly 0, takes the other
 /// colour's hue for both ends. `None` stands for Qt's invalid colour, which only a NaN
 /// balance produces.
-pub fn kirigami_lerp_rgb16(a: [u16; 4], b: [u16; 4], balance: f32) -> Option<[u16; 4]> {
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "the 16-bit entry the vector table tests; the model's colours enter by `kirigami_lerp`"
+    )
+)]
+fn kirigami_lerp_rgb16(a: [u16; 4], b: [u16; 4], balance: f32) -> Option<[u16; 4]> {
     lerp_entered(Entered::from_rgb16(a), Entered::from_rgb16(b), balance)
 }
 
 /// Interpolates between two model colours `[red, green, blue, alpha]`, as
-/// [`kirigami_lerp_rgb16`] does, returning the result's channels (16-bit storage over 65535).
+/// `kirigami_lerp_rgb16` does, returning the result's channels (16-bit storage over 65535).
 ///
 /// Channels within [0, 1] enter Qt's storage rounded to 16 bits. A colour with red, green or
 /// blue outside [0, 1] (alpha within it) is Qt's extended RGB: all four channels are rounded to
