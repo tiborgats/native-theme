@@ -730,9 +730,9 @@ MAT-X13–MAT-X15, X-MO-1).
   (`gtkcssanimatedstyle.c`); a part is a `shown` part exactly when its source animates its entrance or exit, styled
   in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
   the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
-  under the style it enters, the ninth check's form, which no engine runs for a part it did not draw, GTK creating
-  transitions only from a previous style, `gtkcssanimatedstyle.c:1033-1034`, and which the test- and key-driven
-  engines could not time; rejected too:
+  under the style it enters, the ninth check's form: a part's entry is stated by its hidden style (`shown`), so it
+  never enters from a style the preset did not state, while the indicator, a block, takes its other end from the
+  style it is in without the flag, S2.10; rejected too:
   timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could not both fade out as
   the focus leaves a selected tab and vanish as another tab is selected, both ways leaving one style). A transition may name the states it applies from (`from`, a set of flags): one with
   none applies from any state, and one with a set only where the element held one of its flags before the change,
@@ -846,8 +846,7 @@ MAT-X13–MAT-X15, X-MO-1).
     measurement, their transitions pending facts the presets state none of meanwhile, with no placeholder member (a
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
-    appears) is a presentation event's matter, not settled here: register-rows-to-add's row "interrupted
-    presentations", WinUI's picker reopened mid-close settled from its source (its key frames state their start).
+    appears) is a presentation event's matter, not settled here: presentations: ADD-A129.
 - **A part not shown at rest, drawn on, grown or trimmed off** (ADD-A126; ledger queue #85): Breeze draws its check
   on by a dash and grows its radio dot both ways, WinUI's accept visual trims its check on and off and its pressed
   radio dot grows, Compose draws its check by a fraction and grows its dot by its radius, GTK swaps the icon at once,

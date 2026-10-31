@@ -255,12 +255,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TA-4 | `text_area.writing_tools_glow.{fill,shadow,transitions}` | field |
 | TA-5 | `link.text.text @ variant inline context text_area` | rule |
 | TA-5 | - | readers (R18) |
-| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage), checkbox.mark.shown (false) @ variant selection` (the check hidden unchecked, `checked` the selection's flag, CK-2†, S2.7's *A part not shown at rest*, ADD-A126) | rule |
+| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage), checkbox.mark.shown (true) @ variant selection; checkbox.mark (absent = true) @ !{checked} variant selection` (the check `Absent` unchecked, `checked` the selection's flag, written last, until CK-2†'s measurement says whether UIKit animates it in, which would make it a `shown` part, S2.7, ADD-A126) | rule |
 | CK-1 | `list.accessory.glyph @ variant @checkmark` (the list checkmark accessory) | rule |
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
-| CK-2† | `checkbox.box.fill, checkbox.mark.{glyph,shown} @ {checked} variant selection` (shown, true, while selected, ADD-A126) | rule |
+| CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
 | CK-2† | `checkbox.box.*, checkbox.mark.* @ {disabled} variant selection` | rule |
-| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark hidden unselected, `shown = false`, and whether UIKit animates its check in a register row, the catalogue's Open items, its entry stated as S2.7's *A part not shown at rest* has it once measured, ADD-A126) | rule |
+| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark `Absent` unchecked, CK-1, and whether UIKit animates its check in a measurement, the catalogue's Open items, the input S2.7's rule takes to make it a `shown` part or keep it `Absent`, ADD-A126) | rule |
 | CK-2† | `checkbox.values.presentations event Appear @ variant selection` (the column sliding in with edit mode) | rule |
 | CK-2† | `checkbox.box.{min_width,min_height} @ variant selection` (`= uifm_scaled(<size>, body)`: the circle's size per Dynamic Type; ADD-A55) | rule |
 | CK-2† | `reader:ios:the Dynamic Type category the circle's size follows` | readers (R18) |
@@ -271,8 +271,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-3 | `menu.values.scrollable` | field |
 | MN-4 | `menu.item_subtitle.text` | field |
 | MN-5 | `menu.item_trailing_icon.icon` | field |
-| MN-6 | `menu.check_indicator.glyph @ {checked}` (the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
-| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph` (the checkmark, in the base, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | field |
+| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the mixed mark, a patch of the base's) | rule |
 | MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (MN-6, CB-3), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
@@ -539,7 +539,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
-| CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2; the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
+| CB-3 | `menu.check_indicator.glyph @ context combo_box` (the checkmark on the current item, the base's, drawn where MN-6's absent rule's `!{selected} context any combo_box` leaves it: a combo list's chosen value is `selected`, S7.2) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
 | SG-1 | `segmented_control.track.padding (the indicator's inset)` | field |
