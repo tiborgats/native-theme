@@ -1156,20 +1156,9 @@ fn platform_curves_evaluate_to_their_sources() {
     assert_eq!(evaluate(&qt(QtEasing::InQuad), 1.5), Some(1.0));
     assert_eq!(evaluate(&qt(QtEasing::InQuad), f64::NAN), Some(0.0));
     assert_eq!(evaluate(&Timing::Linear, 0.3), Some(0.3));
-    // Kirigami's curve follows the velocity, not the elapsed fraction; a
-    // spring's time is its own.
+    // Kirigami's curve follows the velocity, not the elapsed fraction.
     let kirigami = Timing::Platform(PlatformCurve::KirigamiVelocity);
     assert_eq!(evaluate(&kirigami, 0.5), None);
-    let spring = Timing::Spring {
-        mass: 1.0,
-        stiffness: 100.0,
-        damping_ratio: 1.0,
-        initial_velocity: 0.0,
-        rest_epsilon: 0.001,
-        clamp: false,
-        time_scale: Value::Stated(1.0),
-    };
-    assert_eq!(evaluate(&spring, 0.5), None);
 }
 
 #[test]
@@ -1481,4 +1470,156 @@ fn governing_picks_the_last_that_applies() {
         ms(governing(&widths, PropertyGroup::Stroke, StateFlags::new())),
         Some(Ms(90.0))
     );
+}
+
+/// `timing::evaluate`'s cubic Bézier, steps and spring readings (S2.7),
+/// against `tools/motion-vectors`' rows: libadwaita's `ease_cubic_bezier`
+/// and `AdwSpringAnimation` compiled unchanged, CSS's steps as its
+/// specification states them. Synthetic inputs; to 1e-12.
+#[test]
+fn timing_curves_steps_and_springs_evaluate_to_their_sources() {
+    use super::motion::StepJump;
+    let ts = [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0];
+    let close = |timing: &Timing, expected: [f64; 7]| {
+        for (t, e) in ts.iter().zip(expected) {
+            let found = evaluate(timing, *t);
+            assert!(
+                found.is_some_and(|found| (found - e).abs() < 1e-12),
+                "{timing:?} at {t}: {found:?} against {e}"
+            );
+        }
+    };
+    close(
+        &Timing::CubicBezier(0.25, 0.1, 0.25, 1.0),
+        [
+            0.0,
+            0.094_796_306_076_449_88,
+            0.408_510_592_009_645,
+            0.802_403_388_022_173_9,
+            0.960_458_978_416_227,
+            0.994_316_477_555_586_8,
+            1.0,
+        ],
+    );
+    close(
+        &Timing::CubicBezier(0.4, 0.0, 0.2, 1.0),
+        [
+            0.0,
+            0.025_863_014_095_740_506,
+            0.236_587_352_394_173_67,
+            0.775_561_308_066_363_4,
+            0.959_367_736_558_153_2,
+            0.994_353_928_673_286_5,
+            1.0,
+        ],
+    );
+    close(
+        &Timing::CubicBezier(0.3, 1.5, 0.7, -0.5),
+        [
+            0.0,
+            0.371_187_408_711_156_4,
+            0.582_882_941_635_209_3,
+            0.499_999_999_650_754_03,
+            0.417_117_058_364_790_74,
+            0.628_812_591_288_843_6,
+            1.0,
+        ],
+    );
+    let steps = |jump| Timing::Steps { count: 3, jump };
+    let third = 1.0 / 3.0;
+    close(
+        &steps(StepJump::JumpStart),
+        [third, third, third, 2.0 * third, 1.0, 1.0, 1.0],
+    );
+    close(
+        &steps(StepJump::JumpEnd),
+        [0.0, 0.0, 0.0, third, 2.0 * third, 2.0 * third, 1.0],
+    );
+    close(
+        &steps(StepJump::JumpNone),
+        [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0],
+    );
+    close(
+        &steps(StepJump::JumpBoth),
+        [0.25, 0.25, 0.25, 0.5, 0.75, 0.75, 1.0],
+    );
+    assert_eq!(
+        evaluate(
+            &Timing::Steps {
+                count: 0,
+                jump: StepJump::JumpEnd
+            },
+            0.5
+        ),
+        None
+    );
+    assert_eq!(
+        evaluate(
+            &Timing::Steps {
+                count: 1,
+                jump: StepJump::JumpNone
+            },
+            0.5
+        ),
+        None
+    );
+    let spring = |damping_ratio: f32, stiffness: f32, clamp: bool| Timing::Spring {
+        mass: 1.0,
+        stiffness,
+        damping_ratio,
+        initial_velocity: 0.0,
+        rest_epsilon: 0.001,
+        clamp,
+        time_scale: Value::Stated(1.0),
+    };
+    close(
+        &spring(1.0, 1000.0, false),
+        [
+            0.0,
+            0.143_419_438_658_750_06,
+            0.509_120_327_018_800_3,
+            0.858_390_120_131_423_8,
+            0.964_468_193_272_726_8,
+            0.985_363_722_665_784_8,
+            1.0,
+        ],
+    );
+    close(
+        &spring(0.5, 400.0, false),
+        [
+            0.0,
+            0.546_579_744_990_795_2,
+            1.159_985_620_627_251,
+            0.975_293_995_594_440_2,
+            1.003_581_400_112_352_6,
+            1.001_603_612_751_132,
+            1.0,
+        ],
+    );
+    close(
+        &spring(2.0, 300.0, false),
+        [
+            0.0,
+            0.512_815_171_447_901_2,
+            0.851_505_791_961_524_5,
+            0.979_627_396_316_486_4,
+            0.997_204_988_757_960_5,
+            0.999_148_081_152_376_2,
+            1.0,
+        ],
+    );
+    close(
+        &spring(0.5, 400.0, true),
+        [
+            0.0,
+            0.026_502_370_364_927_863,
+            0.144_583_588_886_352_6,
+            0.448_681_390_975_173_1,
+            0.760_425_023_507_253_4,
+            0.912_979_367_157_554_8,
+            1.0,
+        ],
+    );
+    // Undamped, the motion never ends: no elapsed fraction.
+    assert_eq!(evaluate(&spring(0.0, 400.0, false), 0.5), None);
 }
