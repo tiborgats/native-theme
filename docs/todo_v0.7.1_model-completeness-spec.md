@@ -808,8 +808,8 @@ A keyframe's `patch` resolves to `ResolvedPartStylePatch`, the derive's resolved
 resolved style there (ADD-A122).
 
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
-a transition starts when a property's resolved value changes (under the value engines; Breeze's start on their test,
-*The engine*, below; ADD-A126); the transition stated by the style
+a transition starts when a property's resolved value changes (under the value engines; Breeze's start on their test
+and `GtkSwitch` on an activation, *The engine*, below; ADD-A126); the transition stated by the style
 after the change governs, both directions; among that style's transitions for a property group that apply (`from`,
 below), the later in stated order wins, a later rule's over an earlier one's and over the base's; a property
 whose group has no transition that applies in that style takes its new value at once, in the frame of the change (no
@@ -932,7 +932,11 @@ the member and the transitions; no placeholder member stands in. A stated zero n
 change instant (the Breeze fade it hides, Compose's snap, GTK's `transition: none`), its Breeze test empty, as an
 engine can treat one otherwise: GTK holds a zero duration's start for its delay (`gtkcssanimatedstyle.c:840-843`,
 `gtk/gtkcsstransition.c:59-60`), and Compose's `updateTransition` replaces an interrupted snap by its interruption
-spring (below). The members:
+spring (below). `material-3` follows its token set and, where the tokens are silent, Compose's code (R1.6): the
+tokens state durations and easings but neither the engine nor what an interruption does, so its engines are
+Compose's, and a motion no token states is Compose's (the switch handle's FastSpatial spring, MAT-SW8), while a look
+the tokens state that Compose does not draw stays, with no transition where no source times it (the filled field's
+hover layer, MAT-I11). The members:
 
 - **The value engines**, `GtkCss`, `AdwAnimation`, `QtQuick`, `ComposeAnimatable`, `ComposeTransition` and `WinUi`,
   start a transition when a value it times changes (the comparison above, the style after governing by `from`, the
@@ -940,7 +944,9 @@ spring (below). The members:
   running transition's value included, to the new value, over its own delay and duration counted from the change and
   on its own curve, so a change that undoes a running one takes its full duration back; during its delay it draws its
   start. One transition runs per value: a new one replaces the running one, and a change that leaves a value as it
-  is starts nothing for it and leaves its running transition as it runs, but under `GtkCss` (below). A spring starts
+  is starts nothing for it and leaves its running transition as it runs, but under `GtkCss` and a replaying
+  `AdwAnimation` (below); a transition whose group another engine's transition governs now ends at the value drawn,
+  which the governing one starts from. A spring starts
   at its stated `initial_velocity`, but under the Compose members (below). The sources: GTK starts from the source
   style's value, the delay drawing its start (`gtk@4.24.1 gtk/gtkcssanimatedstyle.c:866-875`,
   `gtk/gtkcsstransition.c:59-60`); Qt Quick's `Behavior` stops the running animation and starts one from the
@@ -955,23 +961,34 @@ spring (below). The members:
   `src/dxaml/xcp/components/brushes/WUCBrushManager.cpp:537-575`).
   - `GtkCss`, GTK's CSS transitions (`gtkcssanimatedstyle.c:808-882`). A running transition whose end does not change
     runs on only where a transition of the style after applies to its group whose duration and delay are not both
-    zero, and otherwise ends at its value at once (`:822-826`, `:840-863`), so a style stating `transition: none` cuts
+    zero, and otherwise ends at its new value at once (`:822-826`, `:840-863`), so a style stating `transition: none` cuts
     what runs. GTK takes a value's curve by its own property id, modulo the number of curves the style lists, not by
     the item that names the value (`:872`; `gtk/gtkcssarrayvalue.c:494-504`; the ids are the order of the enum at
-    `gtk/gtkcsstypesprivate.h:186-187`): where one CSS list names different curves, the facts state its items one
-    per CSS item in the stylesheet's order and the engine takes each value's curve as GTK does, and where it names
-    one, every value takes that. The one such list at the pin, `bottom-sheet > sheet`'s `border-radius 100ms ease-out,
-    box-shadow 250ms ease` (`libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:6-10`), so times its shadow
-    (`GTK_CSS_PROPERTY_BOX_SHADOW`, `gtkcsstypesprivate.h:209`) and its top-right and bottom-left corners (`:227`,
-    `:229`) by ease-out and its other two corners by ease. A theme change's `Suspend` reaches this member alone (S4.3).
+    `gtk/gtkcsstypesprivate.h:186-187`): where a style's CSS list names one curve, every value takes it; where it
+    names several, the facts state the list one transition per CSS item in the stylesheet's order, and the engine
+    takes each value's curve as the list's at its GTK property id modulo the number of those items. The one such
+    list at the pin, `bottom-sheet > sheet`'s `border-radius 100ms ease-out, box-shadow 250ms ease`
+    (`libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:6-10`), two items, so times its shadow
+    (`GTK_CSS_PROPERTY_BOX_SHADOW`, id 22, `gtkcsstypesprivate.h:209`) and its top-right and bottom-left corners
+    (`:227`, `:229`, ids 40 and 42) by ease-out and its other two corners (ids 39 and 41) by ease: the engine maps
+    `Shadow` to `BOX_SHADOW` and each corner of `Corners` to its `BORDER_*_RADIUS`, the fields such a list names, and
+    S12 refuses a `GtkCss` style naming several curves otherwise. A theme change's `Suspend` reaches this member
+    alone (S4.3). While its element is hidden GTK styles it not (`gtk/gtkcssnode.c:1341-1342`): a running transition
+    goes on by its clock, and the change made meanwhile is styled as it is shown, with the change accumulated and no
+    `GTK_CSS_CHANGE_ANIMATIONS`, so it starts its transitions then, from the values drawn before the hide
+    (`:1029-1035`, `:396-399`, `:436-440`).
   - `AdwAnimation { replays }`, libadwaita's `AdwTimedAnimation` and `AdwSpringAnimation` as its widgets play them:
     a progress between two ends, the style the change left and the style it entered, both resolved now, as the widget
     computes what it draws from the progress (AdwEntryRow's title, `src/adw-entry-row.c:120-129`, `:381-385`, `:433`),
     each play running the progress from where it is drawn over the full duration (`adw-animation.c:575-608`,
-    `src/adw-timed-animation.c:80-112`, `adw-entry-row.c:156-162`); a play toward a third style starts from the value
-    drawn. A theme change, under every kind, moves both ends and starts nothing, as the widget plays it on its own
-    triggers, which a style update is not: under `Instant` and `Suspend` it runs on between its new ends, and under
-    `Crossfade` it ends at its new value with every transition of that frame (S4.3). Without `replays` the widget plays
+    `src/adw-timed-animation.c:80-112`, `adw-entry-row.c:156-162`); the played animations at the pin each move between
+    two styles (the entry row's title, the tab's close button). It starts where its end, under the resolution after,
+    differs between the update's two flag sets, or on its replay trigger, so a theme change, under every kind, moves
+    both ends and starts nothing, as the widget plays it on its own triggers, which a style update is not: under
+    `Instant` and `Suspend` it runs on between its new ends, and under `Crossfade` it ends at its new value with every
+    transition of that frame (S4.3). As its element stops being drawn it ends at its end, and a change while it is not
+    drawn takes effect at once, as libadwaita skips an animation whose widget unmaps and plays none while unmapped
+    (`adw-animation.c:228-245`). Without `replays` the widget plays
     it as its value changes (`adw-tab.c:124-133`); with it, also on every change of the element's flags, of the
     window's activity and of its text, its end unchanged included, so a running one restarts from where it is:
     AdwEntryRow's title, played on each change of its inner text's state flags, the backdrop's among them, and of its
@@ -989,6 +1006,8 @@ spring (below). The members:
     velocity, which its curve's implementation keeps and turns as `reversingMode`'s default, `Eased`, does
     (`qquickbehavior.cpp:383-389`, its duration −1, `src/quick/util/qquicksmoothedanimation.cpp:106-108`; `:240-262`,
     `:380-398`; qqc2's switch handle, `qqc2-desktop-style@6.31.0 org.kde.desktop/private/SwitchIndicator.qml:80-85`).
+    A behaviour reads no visibility, only its `enabled` gating it (`qquickbehavior.cpp:147`, `:252-265`,
+    `:361-426`), so a change while its item is hidden runs as any, unseen, the item shown again mid-run or at its end.
     QML's state `Transition`s, which Kirigami uses for its presentations, cancel the running one and start from the
     value read as they start (`src/quick/util/qquicktransitionmanager.cpp:96`, `src/quick/util/qquickstate.cpp:33`,
     `:43`), as a `Behavior` does; a `reversible` one chosen backward runs its curve mirrored over the full duration
@@ -1000,7 +1019,11 @@ spring (below). The members:
     spring starts at the running motion's velocity, `animateTo`'s default (`Animatable.kt:227-243`; zero once a motion
     has ended, `:354-361`), per component of the value in the space it moves in (`token.motion.color_space` for a
     colour); a tween ignores it. Its play time is the elapsed time divided by the speed factor, read every frame, a
-    factor of zero ending it at once (`SuspendAnimation.kt:279-281`, `:328-337`).
+    factor of zero ending it at once (`SuspendAnimation.kt:279-281`, `:328-337`): in the model its duration, stated
+    with the factor (S4.1), is re-read at every update by its key (group, `from`), the last read standing where the
+    style after lists none. Its state lives in the composition (`AnimateAsState.kt:415-427`): an element that stops
+    being drawn by leaving it drops its runs, and one drawn again starts at its values; one drawn transparent or
+    unplaced is drawn, and runs on.
   - `ComposeTransition`, a child animation of Compose's `updateTransition` (its text fields, checkbox, list item,
     menu, tab, FAB, tooltip and floating toolbar; `AnimatedVisibility` and `Crossfade` run theirs on a `Transition`
     too, the chip's leading icon and the segmented button's check, `material3/…/Chip.kt:3453`, `:3487`,
@@ -1027,14 +1050,24 @@ spring (below). The members:
   focus_visible, pressed]`, `none = [disabled]` (`kstyle/breezestyle.cpp:4546-4549`); the line edit's focus `hasFocus`
   and hover `mouseOver && !hasFocus`, each with `enabled` (`:3934-3940`, `:4064-4070`); a conjunct the part's own
   rule already holds is stated by that rule's selector instead (the tab focus line's `selected`, K1.129). An element
-  part has one run per test a transition of its styles names, made at its first turn: a time `s` from zero to the
-  duration and a direction, up while the test holds over the element's kept flags (S8) and the conditions holding
-  (the window's, the reader's and the application's). A run moves only as its test changes: a theme change, a
+  part has one run per test a transition of its styles names (a `BreezeTabBar` test's runs held in its widget's
+  places, below), made at its first turn: a time `s` from zero to the duration and a direction, up while the test
+  holds over the element's kept flags (S8) and the window's conditions. A group a Breeze transition times draws its
+  **rest value** where no seen run of it runs, by its tests, as Breeze does (`if (animated) … else if (<test>) …`,
+  `kstyle/breezehelper.cpp:1496-1501`, `:157-164`): the style with the `any` flags of each of its failing tests
+  removed, but those a passing test of the group names, so a hovered disabled tab, which Qt still marks hovered
+  (`qtbase@6.12.0 src/widgets/widgets/qtabbar.cpp:146-151`), draws its `{disabled}` style, and a hovered focused line
+  edit its `{focused}` one. Breeze evaluates a test only as it paints the part (`kstyle/breezestyle.cpp:3919`,
+  `:3939-3940`, `:4511`, `:4547-4549`, `:7175`, `:7202`), so a run goes on by its clock while its element is not drawn
+  and a test that changed meanwhile turns at the first frame drawn after (nothing in the state engines,
+  `animations/breezewidgetstatedata.cpp`, `breezetabbardata.cpp`, `breezeheaderviewdata.cpp`, handles hiding or
+  showing). A run moves only as its test changes: a theme change, a
   condition it does not name, an input or a layer turns none, as Breeze reads the palette as it paints and stops
   nothing on a palette change (`breezestyle.cpp:1693-1696`, `:2059-2107`, `:2148-2156`,
   `animations/breezeanimations.cpp:49-82`). It draws, for each group it times (a `FocusIndicator.transition`'s
   indicator one group), `mix(V⁻, V⁺, o)`: `V⁺` the part's style with the test's `any` flags and `conditions` held,
-  `V⁻` with them not held, every other flag, the test's `none` flags included, as it is, both resolved now, so its
+  `V⁻` with them not held (an indicator's end without `focus_visible` being S2.10's, transparent), every other flag,
+  the test's `none` flags included, as it is, both resolved now, so its
   ends follow every other change, as Breeze mixes the colours of the live state (`kstyle/breezehelper.cpp:142-166`,
   `:715-725`), an end absent or appearing taking the rules for appearing and vanishing paints, strokes and widths
   (above), and `o` its point. So where a `none` flag's style gives both ends one value the fade is not seen, as
@@ -1046,24 +1079,26 @@ spring (below). The members:
   by a stated zero in that flag's style (below). The runs rank by the order their tests first appear in the part's
   base transitions (a test that only a rule names, after those, in the rules' order), Breeze's precedence per drawing
   function, not per state: a frame's focus before its hover, a slider's, an arrow's or a dial's hover before its
-  focus, the enable fade before both (`animations/breezewidgetstateengine.h:45-103`, `breezestyle.cpp:3943-3944`,
-  `:8117-8118`). Of an element's seen runs that time a group, the first that runs draws it; with none, the part draws
-  its current value.
+  focus (`animations/breezewidgetstateengine.h:45-103`, `breezestyle.cpp:3943-3944`, `:8117-8118`; the enable fade
+  mixes palettes only in item text, `:1615-1626`, and competes in no frame). Of an element's seen runs that time a
+  group, the first that runs draws it; with none, the part draws its rest value.
 
   At each update, for each group: where the last transition of the style after that lists it and applies (`from`) is
   a stated zero or another engine's, that zero or engine governs the group (a value engine starting from the value
   drawn) and its Breeze runs are hidden; otherwise each run whose test turned takes its timing from the last
   transition of the style after with its test that applies, seen where there is one and hidden where there is none,
-  and the runs whose test did not turn stay as they are. A hidden run goes on, the part drawing its current value,
-  until a later turn shows it. So the button's pen turning up is hidden, its `from` naming flags the element did not
+  and the runs whose test did not turn stay as they are. A hidden run goes on, the part drawing its rest value (or
+  what the governing zero or engine gives), until a later turn shows it. So the button's pen turning up is hidden, its `from` naming flags the element did not
   hold, and the highlight is drawn at once (`breezehelper.cpp:710-711`, `:721-724`); the `{disabled}` rule's zeros
   hide the pen and the fill while disabled, and the base's zeros `from {disabled}` hide the pen turning up as a
   hovered button is enabled again. A run's timing is re-read at every update from the style after's transition with
   its key (group, `from`, test), the last one read standing where that style lists none, so a theme change that
   changes the duration moves the point to `s / D′`, as `setDuration` keeps Qt's `currentTime`
-  (`qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:200-202`, `:490-503`): a point past 1 counts as 1, as
-  Qt clamps it (`src/corelib/tools/qeasingcurve.cpp:1471`), so a run going up ends and one going down holds its end
-  until `s` falls below `D′`, and a `D′` of zero ends it at its end at once. A curve Qt applies to the time
+  (`qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:200-202`, `:490-503`): where `s` passes `D′`, Qt clamps
+  the time to the duration at the run's next step (`src/corelib/animation/qabstractanimation.cpp:599-601`,
+  `:1335-1351`), so a run going up ends there and one going down sets `s` to `D′` and runs down from it, the frame
+  before that step drawing the clamped point (`src/corelib/tools/qeasingcurve.cpp:1471`); a `D′` of zero ends it at
+  its end at once. A curve Qt applies to the time
   (`Timing::Platform(Qt(_))`, the decoration's) is read forward in each direction: a run going up draws `o = f(s/D)`
   and one going down `o = 1 − f(1 − s/D)`. A `Steps` timing is Breeze's quantisation of the opacity,
   `floor(o · steps) / steps` in Qt's orientation whichever way the run goes (`animations/breezeanimationdata.h:73-80`,
@@ -1086,15 +1121,22 @@ spring (below). The members:
     going down: a newer one cuts the older of its kind, which draws its end at once, and an element's run going up
     draws over its run going down (`breezetabbardata.cpp:54-95`, `:98-119`).
 - **GTK's switch**, `GtkSwitch`: GtkSwitch slides its thumb in its own code, not by CSS (`gtk@4.24.1
-  gtk/gtkswitch.c:182-216`). An activation of the switch (a click on it or its activation key, `:242-259`, `:320-324`;
-  `MotionUpdate.activated`) starts the slide of the thumb's `Geometry` from the end it rests at toward the other, over
-  the transition's duration on its curve, and a second activation while it slides restarts it from that end
-  (`:206-216`); the switch's state changes only as the slide ends (`:192-195`), so the connector sets the element's
-  `checked` as `Motion` reports the slide's end (`Motion::slide_ended`), two activations in one slide toggling it
-  once, and the track's CSS fade (`GtkCss`) starts then. A drag moves the thumb with the pointer and, as it ends, sets
-  the state with the thumb at its end at once (`:262-319`); a change of the state made in code ends a slide and moves
-  the thumb at once (`:779-809`). Its curve is GTK's `ease_out_cubic` (`gtk/gtkprogresstracker.c:246-251`), a
-  `PlatformCurve` member added with its fact (S2.7's curves).
+  gtk/gtkswitch.c:182-216`), as a fraction `handle_pos` between its two ends that its allocation lays the thumb at
+  (`:188-191`, `:198`, `:374-378`). An activation of the switch (a click on it or its activation key, `:242-259`,
+  `:320-324`; `MotionUpdate.activated`, with `slide_to` the thumb's box at the other end, the connector's layout of
+  it under `checked` toggled) starts the slide from the box the thumb rests at toward `slide_to`, over the
+  transition's duration, a constant (`ANIMATION_DURATION`, `:203`, which no speed factor scales), on its curve, and
+  a second activation while it slides restarts it from that box (`:206-216`); with GTK's animations off an
+  activation sets the state at once (`:208-219`). The switch's state changes only as the slide ends (`:192-195`):
+  `Motion::take_slide_end` reports that end once, as an event, and the connector then sets the element's `checked`,
+  as GTK's default `state-set` handler sets its `:checked` (`:552-559`, `:841-857`; an application's handler that
+  returns true keeps it, which the connector follows), so two activations in one slide toggle it once, and the
+  track's CSS fade (`GtkCss`) starts then. A slide goes on while the switch is not drawn, its tick running while the
+  widget is realized, mapped or not (`gtk/gtkwidget.c:3203-3212`, `:8069-8076`), and sets the state as it ends. A drag
+  moves the thumb with the pointer and, as it ends, sets the state with the thumb at its end at once (`:262-319`); a
+  change of the state made in code ends a slide and moves the thumb to its end at once, while one to the state it
+  already has ends the slide and leaves the thumb where it is drawn (`:779-809`). Its curve is GTK's `ease_out_cubic`
+  (`gtk/gtkprogresstracker.c:246-251`), a `PlatformCurve` member added with its fact (S2.7's curves).
 - **Apple's toolkits**, Core Animation, AppKit and UIKit, have no source in the cache: the transitions of `macos-*` and
   `ios-*` are pending facts (above, S17) until the probe and the iOS host measure their engine, interrupting each
   animated control state at about 0.3, 0.5 and 0.7 of its run: where the next run starts (the value drawn, the old
@@ -1105,54 +1147,60 @@ spring (below). The members:
 **Several on one value, and what ends them** (ADD-A126). A value engine runs one transition per value, the newest
 (GTK one per property, `gtkcssanimatedstyle.c:831-882`); Breeze's runs rank by their tests' order, and its tab-bar runs
 share, per test, their widget's two places (above). Where one group's transitions name two engines, the governing
-transition's engine draws it (above). A loop's keyframes draw over a transition of the same property, as GTK applies
-its animations after its transitions (`gtkcssanimatedstyle.c:993-1001`, `:1033-1036`). An element that stops being
-drawn ends its transitions where its engine does: libadwaita skips an `AdwAnimation` to its end as its widget unmaps
-and plays none while it is unmapped (`adw-animation.c:228-245`); GTK's CSS transitions and Breeze's runs go on by
-their clocks while a widget is hidden, so one shown again inside its run goes on from there (GTK drops them only on a
-toplevel's realize or unrealize and a reparent, `gtk/gtkcssnode.c:1287-1299`, its root check `:1291-1293`, `:737`;
-`gtk/gtkwidget.c:8079`, `:8098`; nothing in Breeze's `kstyle/animations/` handles hiding or showing); what Qt Quick,
-Compose and WinUI do is measured (the catalogue's Open items). A transition's duration is fixed at its start, but
-Breeze's, re-read at every update, and Compose's, whose play time is divided by the speed factor every frame (above):
-so as animations turn off (`animations_off`, R9) Breeze's and Compose's running transitions end at once, libadwaita's
-`AdwAnimation`s run on to their ends (libadwaita reads the setting as it plays, `adw-animation.c:228-233`), and Qt
-Quick's behaviours run on until the next write of their property, which stops them and sets the value
-(`qquickbehavior.cpp:369-377`, `setEnabled` stopping nothing, `:258-265`); GTK draws the base style once the element
-has no frame clock (`gtk/gtkcsswidgetnode.c:127-128`), from its next style update, and whether that is at once, and
-what WinUI does, are measured (the catalogue's Open items).
+transition's engine draws it, and a transition of the engine that no longer governs ends at the value drawn (above).
+A loop's keyframes draw over a transition of the same property, as GTK applies its animations after its transitions
+(`gtkcssanimatedstyle.c:993-1001`, `:1033-1036`). The connector updates `Motion` with every update of its element,
+drawn or not (`MotionUpdate.drawn`), and each engine does with an element not drawn as its member says: `GtkCss`'s
+transitions and Breeze's runs go on by their clocks, and a change made meanwhile starts its transitions, or turns
+its tests, at the first frame drawn after, compared with the last results drawn (GTK styles no hidden node, and
+Breeze tests only as it paints, above; GTK drops its transitions only on a toplevel's realize or unrealize and on a
+reparent, `gtk/gtkcssnode.c:1287-1299`, its root check `:1291-1293`, `:737`, `gtk/gtkwidget.c:8079`, `:8098`); an
+`AdwAnimation` ends at its end and a change meanwhile takes effect at once; `QtQuick`'s behaviours run any change
+meanwhile, unseen; the Compose members drop their runs, the element drawn again at its values; `GtkSwitch`'s slide
+goes on; `WinUi`'s are measured (the catalogue's Open items). A transition's duration is fixed at its start, but
+Breeze's and Compose's, re-read at every update by their keys (above): so as animations turn off (`animations_off`,
+R9) Breeze's and Compose's running transitions end at once, libadwaita's `AdwAnimation`s and `GtkSwitch`'s slide run
+on to their ends (libadwaita reads the setting as it plays, `adw-animation.c:228-233`; GtkSwitch as it activates,
+`gtk/gtkswitch.c:208-219`), and Qt Quick's behaviours run on until the next write of their property, which stops them
+and sets the value (`qquickbehavior.cpp:369-377`, `setEnabled` stopping nothing, `:257-265`); GTK draws the base
+style once the element has no frame clock (`gtk/gtkcsswidgetnode.c:127-128`), from its next style update, and
+whether that is at once, and what WinUI does, are measured (the catalogue's Open items).
 
 **A theme change and a state change in one update** (ADD-A126). The engines compare the update as any other, both
 flag sets kept under the new resolution (above), so a theme change by itself turns no Breeze test, a state change in
 its update turns the tests it changes, and the value engines start where values change, as the kind lets them (S4.3):
 under `Instant` every engine as for any change; under `Suspend` the same, but the `GtkCss` transitions, which run
-none; under `Crossfade` none, every running transition ending at its new value and every Breeze run standing at the
-end its test now points to.
+none until the window's suspension ends; under `Crossfade` none, every running transition ending at its new value
+and every Breeze run standing at the end its test now points to.
 
 The connector keeps, per element part, the runs `native_theme::transitions` steps, with its previous query results:
 
 ```rust
-pub struct Motion;   // native_theme::transitions: one element part's running transitions, kept by the connector
-pub struct Places;   // one widget instance's `BreezeTabBar` places (a tab bar's, a header's), kept by the connector
+#[derive(Default)] pub struct Motion;   // native_theme::transitions: one element part's running transitions
+#[derive(Default)] pub struct Places;   // one widget instance's `BreezeTabBar` places (a tab bar's, a header's)
+pub struct Drawn { pub style: ResolvedPartStyle, pub rect: Rect }   // what to draw: the style, and the box the
+                                                                     // part is laid out at (a `Geometry` transition)
 impl Motion {
-    pub fn update(&mut self, update: &MotionUpdate<'_>, places: &mut Places);   // with each update of the element
-    pub fn sample(&self, now: Ms, places: &Places,
-                  style_with: &mut dyn FnMut(StateFlags, &[Condition]) -> ResolvedPartStyle)
-        -> ResolvedPartStyle;                               // the style to draw at `now`; `style_with` queries the
-                                                            // part under other flags and conditions (Breeze's and
-                                                            // `AdwAnimation`'s ends, above)
-    pub fn slide_ended(&self, now: Ms) -> bool;             // a `GtkSwitch` slide at its end (above)
+    pub fn update(&mut self, update: &MotionUpdate<'_>, places: Option<&mut Places>);   // every update of the
+                                                            // element; `places` where a `BreezeTabBar` test runs
+    pub fn sample(&self, now: Ms, places: Option<&Places>,
+                  style_with: &mut dyn FnMut(StateFlags, &WindowConditions) -> ResolvedPartStyle) -> Drawn;
+                                                            // `style_with` queries the part under other flags and
+                                                            // window conditions (Breeze's and `AdwAnimation`'s ends)
+    pub fn take_slide_end(&mut self, now: Ms) -> bool;      // a `GtkSwitch` slide's end, reported once (above)
 }
 pub struct MotionUpdate<'a> {
     pub at: Ms,                                             // the update's frame time
+    pub drawn: bool,                                        // whether the element is drawn in this frame
     pub before: &'a ResolvedPartStyle, pub after: &'a ResolvedPartStyle,
+    pub rect_before: Rect, pub rect_after: Rect,            // the part's laid-out box (a `Geometry` transition)
     pub kept_before: StateFlags, pub kept_after: StateFlags,   // both under the resolution after (above)
-    pub conditions_before: &'a [Condition], pub conditions_after: &'a [Condition],   // every condition holding,
-                                                            // the window's, the reader's and the application's (S7.1)
-    pub box_before: Rect, pub box_after: Rect,              // the part's laid-out box (a `Geometry` transition)
+    pub conditions_before: &'a WindowConditions, pub conditions_after: &'a WindowConditions,   // S8
+    pub change: Change,                                     // `Resolution.change` (S8)
     pub theme_change: &'a ResolvedThemeChange,              // the new resolution's token (S4.3)
-    pub suspends: bool,                                     // the update starts a suspension: a theme change, or a
-                                                            // change of a condition its `Suspend.conditions` names
-    pub activated: bool,                                    // the element activated (a `GtkSwitch`'s trigger)
+    pub suspended_until: Option<Ms>,                        // the window's `Suspend` window, kept by the connector
+                                                            // with its `WindowState` (S4.3)
+    pub activated: bool, pub slide_to: Option<Rect>,        // a `GtkSwitch`'s activation and the other end (above)
     pub text_changed: bool,                                 // an `AdwAnimation { replays }`'s trigger (above)
 }
 ```
@@ -1540,9 +1588,9 @@ layer: the ripple node draws its content first and then its ripples and its stat
 (`compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:373-377`), and
 `Modifier.surface` draws the border over the indication, the border node drawing its content first
 (`Surface.kt:562-564`; `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Border.kt:212-214`,
-`:282-286`). The filled text field and combo box have no block: Compose's text field draws no hover layer, which the
-tokens and material-web state (`material-web@2.5.0 field/internal/field.ts:134-150`), and `material-3` follows
-Compose's code (MAT-I11, R1.6, ledger queue #96; ADD-A126). The state layer fills the part's outline in `color` at `alpha` (the colour's own alpha replaced, as
+`:282-286`). The filled text field's and combo box's block (their `body` entries in the catalogue say so) is drawn over
+the fill and beneath the nested parts and the stroke, as material-web draws the state layer after the background and
+before the indicator, the label and the text (`material-web@2.5.0 field/internal/field.ts:134-150`). The state layer fills the part's outline in `color` at `alpha` (the colour's own alpha replaced, as
 `copy(alpha = …)` does, `Ripple.kt:380-385`). Its colour is not interpolated: a change of `state_layer.color` takes
 effect in the frame of the change, as the ripple node draws the state layer in the current colour every frame
 (`Ripple.kt:373-386`, common code that runs on Android), and the `StateLayer` group's transitions time its alpha alone.
@@ -1552,7 +1600,9 @@ every rebinding of the part's surface (Material's facts bind `surface.foreground
 and are restated only where the tokens give another colour (R1.6). Rules set the block's fields by `Fields` patches
 (S6.1), so a rule that sets the part's `fill` leaves it as it is. `interaction` may be absent: a part draws it where its
 platform has a ripple node (Material's parts the catalogue lists it on), and every other preset states it `Absent`
-there. GTK's and libadwaita's state layers are no such block: they are CSS
+there; the filled text field's hover layer, which the tokens state (`material-web@2.5.0
+tokens/versions/latest/sass/_md-comp-filled-text-field.scss:141`, `:143`) where Compose draws none, is its state
+layer too, and changes at once, as no source times it (MAT-I11; R1.6's reading, S2.7, ADD-A126). GTK's and libadwaita's state layers are no such block: they are CSS
 background layers, paint layers of the `fill` animated as CSS animates them (R6).
 
 **The press ripple is no transition**: it is `ripple.effect`, a platform's effect from a closed set implemented once in
@@ -1929,7 +1979,12 @@ the accent, the fonts, the contrast and reduced motion (`adw-style-manager.c:336
 last no theme change here, so `adwaita`'s token names it in `conditions`; its stylesheet reads no reduced-motion query,
 so that change moves no value and only suspends (rejected: `ReducedMotion` made a theme change for every preset, which
 would put every platform's reduced-motion change under its kind, unread on the Apple presets; leaving the window out,
-a state change within it fading where libadwaita draws it at once). Under `Crossfade` the window crossfades from the frame before the
+a state change within it fading where libadwaita draws it at once). The suspension is the window's: the connector
+keeps its end with the window's `WindowState` (`MotionUpdate.suspended_until`, S2.7), started by a theme change the
+reader, an input or a theme-change condition makes and by a change of a condition `Suspend.conditions` names; a theme
+change the application alone makes, by a layer, a palette or `set_preset`, starts none and runs as under `Instant`,
+as libadwaita updates its style only on its five triggers above and GTK animates any other provider change
+(`gtk@4.24.1 gtk/gtkcssnode.c:396-399`, `:433-440`). Under `Crossfade` the window crossfades from the frame before the
 change to the frames after it, and no transition runs in the change's frame: a running one ends at its new value and
 none starts, a state change landing in that update's included, while the frames after draw everything else as under
 `Instant` (a presentation, the press ripple, a transition a later update starts). No toolkit read crossfades (KWin's
@@ -2382,8 +2437,8 @@ pub enum SharedFlag { Empty, InFill, Today, OtherMonth, Current, Multiline, Fill
 menu item's keyboard or pointer highlight is `Focused` or `Hover`, never `Selected`; `Checked` is "toggled on" (a check
 box, a toggle button, a menu item's check). A connector sets them by that meaning on every platform. The focus flags
 (`Focused`, `FocusWithin`, `FocusVisible`) are the toolkit's in an inactive window (ADD-A126): GTK and Qt clear them as
-the window deactivates (`gtk@4.24.1 gtk/gtkwindow.c:6172-6175`, `:5230-5232`, `:5270`; `qtbase@6.12.0
-src/widgets/kernel/qapplication.cpp:1890-1891`, `hasFocus()` being `focusWidget() == this`, `src/widgets/kernel/qwidget.cpp:6507`),
+the window deactivates (`gtk@4.24.1 gtk/gtkwindow.c:6172-6175`, `:5231-5233`, `:5271`; `qtbase@6.12.0
+src/widgets/kernel/qapplication.cpp:1891-1892`, `hasFocus()` being `focusWidget() == this`, `src/widgets/kernel/qwidget.cpp:6506`),
 so on `adwaita` and `kde-breeze` a window deactivating is a flag change for its focused element, whose focus
 transitions run out (S2.7, S2.10); whether AppKit, UIKit, WinUI and Compose keep them in an inactive window is
 measured with each lane's focus rows, and where a platform keeps them its facts state the inactive window's focus
@@ -3195,9 +3250,12 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   zero, or its kind not `Interpolate` (an engine's time runs on its duration alone, S2.7); a `BreezeTest` has `any`
   and `conditions` both empty on a transition that is not a stated zero, or any list not empty on a stated zero,
   names a flag twice or in both `any` and `none`, names a keyed flag the widget does not
-  declare (as a rule's `states` may not, above), or names a condition whose change is a theme change (`Scheme`,
-  `ContrastIncreased`, `ContrastHigh`, S4.3), `Preset(_)`, or `ContainerSize` (held per container, not per window); a
-  `ThemeChange::Suspend.conditions` names one of those (ADD-A126);
+  declare (as a rule's `states` may not, above), or names a condition other than the window's (S7.1's group "by the
+  connector", whose toggled style the connector can resolve, S2.7); a `FocusIndicator.transition`'s Breeze test names
+  no `focus_visible` in `any`; a `GtkSwitch` transition is not the switch thumb's `Geometry` one, `Interpolate`, with
+  no delay; a `GtkCss` style's transitions name several curves where the facts quote no one CSS list for them (S2.7);
+  a `ThemeChange::Suspend.conditions` names a condition whose change is a theme change (`Scheme`,
+  `ContrastIncreased`, `ContrastHigh`, S4.3), `Preset(_)` or `ContainerSize` (ADD-A126);
 - an expression nests deeper than 32, or a chain of references is longer than 32;
 - a `Fields` patch can meet an `Absent` or `Auto` block under some combination of the rules before it, following
   references (S2.2; checked conservatively), or `base` or `Append` appears in a layer's bases;
@@ -4229,7 +4287,7 @@ lines that cite it.
 | ADD-A123 | the third spec batch (queue #56, #62, #63, #64, #65–#71): a curve a toolkit computes in code is `Timing::Platform` (provisional, CONTRA-7; settled in ADD-A124), `PlatformCurve::Qt(QtEasing)` and `PlatformCurve::Adw(AdwEasing)` beside `KirigamiVelocity`, a curve whose control points the source writes a `CubicBezier`, and the facts quote the curve's name; `with_alpha(c, a)`, which sets the alpha as `Qt.alpha` and CSS's relative colour do, beside the multiplying `alpha` (Q2.5's RoundButton fill); `requires_variants` meaning any one of its forms; `MotionTokens`' Rust sketch; S2.8's weight the CSS weight and the `ns_font_weight` conversion (WebKit's thresholds for AppKit's `NSFontWeight`); a map keyed by text spelt as a TOML table with the text as its keys (`per_family`), its fact keyed by the quoted key; the macOS accent inputs named (`highlight` from `selectedTextBackgroundColor`, `selected_content_background`, `keyboard_focus_indicator`, `selected_control`; `highlightColor` a literal); a `Style` after a `DrawnAs` restoring the part as after `Absent`; a bare block's map entry set to a reference, `Absent` or `Auto` an ill-typed patch; `PlatformCurve` an enum block; the catalogue's `IndicatorAnchor::InlineTop` and an inline indicator's `margin` a margin in the row, an overlaid one's unused sides stated as written (W1-102's tabbed command bar now stated); adwaita's arrow absence rule `@ variants {menu} !variants {@arrow_only,@with_arrow}`; libadwaita's inline transition keys `tab_bar`, `tab_thumbnail`, `bottom_sheet_border_radius`, `bottom_sheet_box_shadow`; `token.params.motion.kwin_speed_factor` (the decoration's factor, kwinrc over kdeglobals); K3.20's offsets; macOS's circular bezel and circle shape one variant (probe-confirmed), `NSComboButton.unified` as `menu`, `automatic` no variant until measured, a size's font `systemFontSizeForControlSize:`'s, the accent-following fills as `mix`; Material's `@extended_fab` `regular` the unsized composable and Expressive's sizes `small`, `large`, `extra_large`, the extended FAB's and Expressive `with_icon` paddings traced, `token.material.variant`'s default not pinned, the dialog title's precision-pointer case an application opt-in with no rule; the first check's fixes: `@with_arrow` and `@arrow_only` content variants the connector sets by GTK's rule (keyed content variants, S8), CONTRA-7 recording the platform-curve reading, K3.20 split (a positive offset on buttons and non-editable combo boxes, the inset inward on line edits, text areas, spin boxes and editable combo boxes), W1-102's `InlineTop` row with its glyph and gap, `ns_font_weight` the model's own conversion, the bare-block entry (`token.motion.timings` too) an ill-typed patch, not a merge conflict, text map keys equal as TOML keys, the unit suffix on map entry keys and none on `Scalar` entries, `"auto"`/`"none"`/`"absent"` exact, `selected_content_background`'s row, `kwin_speed_factor`'s default, an inline row's spare width, libadwaita's `expander_row`, `places_view`, `toggle_group` and `AdwEasing`'s in-cubic and expo members, `context.scope` defaulting to any ancestor, a `PartRef` value's spelling, `LayerError`'s variants by owner; the second check's fixes: S11's example duration key suffixed (`button_ms`), `AdwEasing::EaseInOutSine` (AdwSpinner's arc) and the key `ease_in_out_sine`, every `ADW_EASE_*` the code uses accounted for, CONTRA-7 after CONTRA-6 with `ease_in_cubic`'s Bézier and the sine curves, keyed content variants as one platform's meaning, `@with_arrow`'s other content and `always-show-arrow` as the connector's option, `Problem`'s kinds, `tab_thumbnail` without the instant background change | S1, S2.2, S2.7, S2.8, S4.1, S4.4, S6.1, S6.3, S8, S9.1, S10, S11, S12, S17, the catalogue |
 | ADD-A124 | the fourth spec batch (queue #42, #49, #60, #73, decided from the sources): recency (CONTRA-6, settled): a widget's named `recency` sets (S10), the selector term `Selector.latest` (S11 `latest = { <set> = "<flag>" }`, the notation `latest s:f`), `Element.state_order` (the order the connector last set the flags in, element data beside the flags, R25.3), unreported flags by the set's stated order, its first the latest, a widget's sets agreeing on their orders, the validation's latest atoms, the state models' `recency` and the gate's combinations per order of the present flags, the facts' `when.latest`; Material's state-layer exclusive groups replaced by its sets `state_layer` and `elevation` (the catalogue's Material recency sets; Compose's `Ripple.kt:250-280`, `Button.kt:1703-1747`, `Card.kt`, `Chip.kt`, `FloatingActionButton.kt`, `ToggleButton.kt`); `Radius::Ellipse` (R7): a quarter of the box's inscribed ellipse, on all four corners with `Circular` curves, `corners::ellipse`, a shadow and a `FollowPart` ring following the ellipse of their own boxes, insets per axis, no corner operand, no shape, no `Concentric` inside it; `kde-breeze`'s QWidget `circular` `Ellipse` and Kirigami's RoundButton `Full` (K1.26), Breeze's own focus ring on it its standard rounded frame (`breezestyle.cpp:6631-6647`, K3.20), not the ellipse; `Transition.from` (R9): a transition applying from any state or from the states it names, matched against the flags before the change after the exclusive drop (`ResolvedTheme::kept_states`, `transitions::governing`), the later applying transition winning, the transitions a keyed list by group and `from` (S6.1), Compose's elevation and Breeze's button fades stated (MAT-B13, MAT-N1, MAT-N9, MAT-CA2, MAT-X7, K1.30); R9's platform curves widened to the curves a toolkit computes by a function of its own (CONTRA-7, settled); the first check's fixes: only the state layer and the shadow follow Material's sets, every other field on plain flags in its source's precedence (the list item's, `ListItemDefaults.kt:1144-1152`); the split button's halves' elevation (`shadow`, the set `elevation`) and the outlined card's hovered and dragged ones; Breeze's base zero transitions `from {disabled}` (Qt keeps a disabled widget's hover) and none under `flavor:kirigami` (qqc2's style item paints with no widget); Compose's state-layer fades and the press ripple's release fade by `from`; S6.1's merged order stated; Qt's clamp cited on the paint engine's path; R7's shape option; "kept" flags in S7.2 and S12; the connector recording the order; an `Ellipse` corner's outward radii; the gate's n! bound; the second check's fixes: `PaintLayer.role` (`LayerRole::StateLayer`, `Ripple`) and `Transition.layer`, a fill's layers timed per role (`transitions::governing` by role, S6.1's key, S12's checks), so a `Ripple` times the press ripple alone and Compose's snapped containers take no transition (toggles, chips, icon buttons); the year cell's, the time picker's and the toolbar buttons' state layers restored; the split button's and the FAB menu's state-layer rows; Material's split-button forms (`tinted`, `@outlined`, `@elevated`) with their shadows; the list's colour order and MAT-L10's corners dropped; the row order where a source ranks no states; the checkbox's, radio's and switch's `state_layer` parts holding the press ripple and the state layer as appended role layers, their per-state `opacity` dropped; the third check's fixes: one layer per role (a later rule's role layer replacing the earlier in its place, S6.1, S12), role layers timed by their alpha alone and stated at rest at zero alpha, the press ripple's lifecycle in `TransitionKind::Ripple` (`fade_in`, `origin_timing`, the release an `Interpolate` starting no sooner than `min_press`; `opacity` and `fade` gone), the disabled layer without a role, Compose's colour transitions (the Expressive list item, the date picker's cells, the selectable menu item, the tab's and navigation bar's content, the outlined toggle's border, the split button's corners), the slider's ripple theme, the split button's variant group; Material's navigation items' ripple pill, `bottom_tab_bar.state_layer` and `list.row_state_layer` (the rail; the drawer's on `row_background`), with the bar's, rail's and Expressive items' indicator and content transitions; `PropertyGroup::StrokeWidth`, the stroke's widths timed apart from its colour (the text field, the exposed dropdown and the outlined toggle); the fourth check's fixes: Material's state layer and press ripple a block of the part, `PartStyle.interaction` (`Interaction`, `StateLayerStyle`, `RippleStyle`, S2.12) with the property groups `StateLayer` and `Ripple`, replacing the second and third checks' paint layers with roles (`PaintLayer.role`, `Transition.layer`, one layer per role, role layers stated at rest: gone), drawn over the part's content as Compose's ripple node draws it, ADD-A121's composite under the label gone; the ripple's geometry in the block and its timings in `TransitionKind::Ripple` (`press_delay` for Compose's delay in a scrollable container, its value pending, queue #45); `StrokeWidth` an override of `Stroke`; a stroke becoming absent interpolating to zero width, the checked outlined toggle's border absent; the navigation indicators drawn at rest at zero width and alpha (`opacity`); the Expressive items' unanimated content, the drawer's rows, the text field's container, the date picker's day, re-enabling, the notch, the release fade's start, the checkbox's and radio's ripple colour, citations; the fifth check's fixes: the press ripple Android's `RippleDrawable` (`TransitionKind::Ripple(RippleEffect)`, `RippleEffect::AndroidPatterned` implemented to `RippleDrawable`, `RippleAnimationSession` and `RippleShader` at the pin, its lifecycle and release its own, its colour kept from the press; `fade_in`, `origin_timing`, `min_press`, `press_delay`, `RippleStyle.initial_scale` and `soft_edge` gone, `RippleStyle.bounded` added); the block beneath the part's stroke (`Surface.kt:562-564`, `Border.kt:212-214`); its colours `= surface.foreground`; the press delay `TouchBehavior.delay` with `delay_every_pointer` (Android's tap timeout, `config.xml:3230`); a stroke, edge or paint becoming absent and a width reaching zero; S12's `Ripple` and `StateLayer` checks; the filled field's unanimated hover layer; `@indicator_move` `Instant` on Material's bar and rail; Compose's Oklab interpolation noted for queue #80; the sixth check's fixes: the press ripple a field of the block, `RippleStyle.effect: Value<RippleEffect>`, started when `pressed` becomes kept and exited when it stops being kept, its colour and alpha kept from the press and its geometry following the box (`RippleDrawable.java:754-782`), `ripple::progress` and `ripple::shade` named, hwui's `AnimatedDrawables.h` and the animator duration scale outside the cache (`TransitionKind::Ripple`, `PropertyGroup::Ripple` and their S12 checks gone); an edge whose paint alone becomes absent keeping its width (Breeze's flat button); `delay_every_pointer` gone, a release within the delay delivering the press and its release in one update; the noise phase, the ripple count and `max_radius` stated as the framework does; the filled field's hover layer the block's state layer; the `{pressed}` ripple rows dropped; the seventh and eighth checks' fixes: the ripple taking the block of its first frame drawn after the press, its lifecycle and noise phase starting there (a press and its release in one update taking the style after it), "kept" for the effect's start, the filled field's block beneath its content, an absent delay no delay and the delay for every press, `ripple::phase` | S2.3, S2.4, S2.5, S2.7, S2.10, S2.11, S2.12, S4.2, S6.1, S6.3, S7, S7.2, S8, S10, S11, S12, S17, S22, the catalogue, the KDE and Material traces |
 | ADD-A125 | the fifth spec batch (queue #74, #77, #78, #80, #82, #84, #86–#89, #91–#94, #96, #97 and the macOS facts audit's `tinted` fill, decided from the sources; eight independent checks): `token.motion.color_space` (`ColorInterpolation`: `PremultipliedSrgb`, GTK's CSS and Breeze's `KColorUtils::mix`; `StraightSrgb8`, Qt Quick's `ColorAnimation`, `kde-breeze` under `flavor:kirigami`; `Oklab`, Compose's; their clamps and overshoot; WinUI's compositor space and Core Animation's measured), `transitions::interpolate_color`, appearing and vanishing paints from and to transparent black or a platform's own transparent, R9's one space replaced; the identity curve `Timing::Linear` however written; a stated zero duration's `timing` `Absent`, a *stated zero* defined, `PresentationStep` alike; S2.11's box: the content box the box less its padding, the stroke taking no layout space; `token.text.font_dpi` 72 on the Apple presets, the specification's own value (S9.4, the citation checkers' exception); S17: an analysis output for a value computed from read values, a keyed list stated merged, nested `axes.contexts` as an ordered chain; S2.12's ripple drawn only inside the computed radius's circle (bounded clipped to the indication's box and the part's outline), `RippleStyle.box_part` and `box_outset` (the indication's box: the checkbox's and radio's indicator grown by Compose's padding, the switch's thumb), `shade` in device pixels; the catalogue: an inline indicator's content space ending the gap before its margin or border box, whichever is further toward the end, the label's spacing toward the indicator the gap; `ios-*` `@role_primary` (stated at `regular`, with the prominent glass product), `@system` (its literal title), the roles' and forms' exclusive groups, typed `add`, the `ios-26` done style `primary` in a toolbar and `done` the system Done item, `@corner_dynamic` on `ios-26` only, `@indicator_none` and `@padding_removed` gone; macOS's circular bezel's circle as `body`'s box with `body.margin`, the opaque accent fills `mix` and the translucent ones `alpha(input.accent, <a>)`; `kwin_speed_factor` `= token.motion.speed_factor` with kwinrc's factor read; the macOS `highlight` role `highlightColor`, provisional; `material-3`'s menu button following Compose's buttons beyond its tokens; the toggle border transitions on every toggle form; when a transition starts and ends and what interrupts it moved to ledger queue #85, #95, #103 (orch-docs), ADD-A126 to come, `suspended_by_theme_change` and `Transition.from` as ADD-A124 states them; the follow-ups the lanes owe: zero-duration timings `absent`, `windows-11`'s padding plus its border and GTK's widgets' plus their CSS border, `color_space` per preset, the iOS forms and roles; the register rows the ledger owes: `windows-11`'s and Core Animation's colour spaces, the circular bezel's `body.margin`, the `ios-26` bar items (prominent, system Done, system add), `@corner_dynamic`, `@system`'s title and `@role_primary` at the sizes and categories unread, `role.@highlight` under an explicit highlight colour | S2.7, S2.11, S2.12, S4.1, S6.3, S9.4, S11, S12, S17; catalogue; traces; R9 |
-| ADD-A126 | the sixth spec batch, the transition semantics (queue #85, #95, #103; #91 settled by ADD-A125's S17 rule, which the engines follow; decided from a survey of every toolkit's code at its pin): `Transition.engine`, a closed set (`TransitionEngine`: `GtkCss`, `AdwAnimation { replays }`, `QtQuick`, `Breeze(BreezeTest)`, `BreezeTabBar(BreezeTest)`, `ComposeAnimatable`, `ComposeTransition`, `WinUi`), each implemented once in `native_theme::transitions` to its source (`transitions::Motion`, `Places`, `MotionUpdate`), stated on every transition, a stated zero's included, replacing `suspended_by_theme_change`; the value engines start on a value change, from the value drawn over their own timing, one per value, GTK's cutting a running one where the style after states none and taking a value's curve by its property id, Compose's carrying a spring's velocity and its `updateTransition` replacing an interrupted tween by its interruption spring, libadwaita's spring never carrying one, AdwEntryRow's title replaying on every change, WinUI's brush fading in from its own colour at zero alpha; Breeze's engines on their quoted test, turning where they are (an undo entering the other curve at `1 − p`, the decoration's shadow on `window_inactive` alone) or restarting in two places per tab bar and header, ranked in stated order, drawn between the live state's styles, a zero or no applying transition leaving a run unseen, their duration re-read; a loop over a transition; an element not drawn ending its transitions, animations turning off ending Breeze's and Compose's; a part becoming absent gone at once, the style after governing both ways; the focus indicator entering from and leaving to the rest style's, transparent (libadwaita's growing ring), its `properties` empty; the focus flags the toolkit's in an inactive window (GTK and Qt clear them); `ThemeChange::Suspend.conditions` (`adwaita`'s reduced motion) and each kind's effect on running and starting transitions, `Suspend` reaching `GtkCss` alone, `kde-breeze` `Instant` from its code; the KDE trace corrected (K1.44's two ranked engines, K1.129's line on the selected tab, the group box's line never fading, K2.8, K3.24's group); the follow-ups the lanes owe: every transition's `engine` cited, K1.44, K1.129 and K2.8 restated, `adwaita`'s `Suspend.conditions`, `kde-breeze`'s `Instant`, GtkSwitch's slide (GN-1.203); the measurements the ledger owes as register rows: Apple's engines (interrupted at three points, a spring's velocity, stacked changes, a theme change, a deactivation and reduced motion in a run), AppKit's ring in and out, WinUI's theme switch, handoff velocity and Mica's engine, GTK's animations toggle, the focus flags in an inactive window off GNOME and KDE; a presentation interrupted is not settled here, for the ledger's queue; the first check's fixes: `GtkSwitch` (GtkSwitch's slide, its state set as the slide ends, `Motion::slide_ended`, GN-1.203); a platform with no engine source stating no transition, its facts pending, `engine` required only where a transition is stated, no placeholder member; Breeze's ends keeping every flag but the test's `any`, a zero in an excluded flag's style hiding what Breeze hides, the governing transition per update choosing a group's engine (two engines on one group), the rank by the base list's test order, `Steps` as Breeze's quantisation in both directions (`jump_end`), the tab bar unquantised and the header view stepped, the re-read timing's key and its clamp, a stated zero's test empty; `AdwAnimation` a progress between ends resolved now, a theme change moving them under every kind, its replays and springs as the source has them; an element not drawn per engine (GTK's and Breeze's run on, libadwaita's skip), Qt Quick's behaviours cut at the next write; `MotionUpdate` with every condition, the laid-out box, the token on every update, `suspends` and `activated`, `sample`'s `style_with`; the new resolution's `Suspend.conditions`; a `Crossfade` leaving Breeze runs at their ends; a tab's focus flags only while current, the tab's `focus_visible_when` `AnyFocus` (K1.129); `material-3` following Compose: MAT-SW8 the FastSpatial spring, MAT-I11's and MAT-CB1's filled fields with no hover layer (S2.12, the catalogue's `input.body` and `combo_box.body` without `interaction`); K1.8's caption glyph a zero, K1.17's shadow on activation alone, K1.177's disabled zero, K3.24's label line stated at rest; the follow-ups the lanes owe besides: the KDE facts' Breeze steps `jump_end`, the Material lane's hover indicator colours (MAT-I11, MAT-CB1) by Compose's code, GtkSwitch's curve a `PlatformCurve` member; the register rows besides: Qt Quick's, Compose's and WinUI's transitions while their element is not drawn, an occlusion in an Apple run | S2.7, S2.10, S2.12, S4.3, S6.1, S7.2, S8, S11, S12, S17; catalogue; traces; R9, R12 |
+| ADD-A126 | the sixth spec batch, the transition semantics (queue #85, #95, #103; #91 settled by ADD-A125's S17 rule, which the engines follow; decided from a survey of every toolkit's code at its pin): `Transition.engine`, a closed set (`TransitionEngine`: `GtkCss`, `AdwAnimation { replays }`, `QtQuick`, `Breeze(BreezeTest)`, `BreezeTabBar(BreezeTest)`, `ComposeAnimatable`, `ComposeTransition`, `WinUi`), each implemented once in `native_theme::transitions` to its source (`transitions::Motion`, `Places`, `MotionUpdate`), stated on every transition, a stated zero's included, replacing `suspended_by_theme_change`; the value engines start on a value change, from the value drawn over their own timing, one per value, GTK's cutting a running one where the style after states none and taking a value's curve by its property id, Compose's carrying a spring's velocity and its `updateTransition` replacing an interrupted tween by its interruption spring, libadwaita's spring never carrying one, AdwEntryRow's title replaying on every change, WinUI's brush fading in from its own colour at zero alpha; Breeze's engines on their quoted test, turning where they are (an undo entering the other curve at `1 − p`, the decoration's shadow on `window_inactive` alone) or restarting in two places per tab bar and header, ranked in stated order, drawn between the live state's styles, a zero or no applying transition leaving a run unseen, their duration re-read; a loop over a transition; an element not drawn as each engine has it, animations turning off ending Breeze's and Compose's; a part becoming absent gone at once, the style after governing both ways; the focus indicator entering from and leaving to the rest style's, transparent (libadwaita's growing ring), its `properties` empty; the focus flags the toolkit's in an inactive window (GTK and Qt clear them); `ThemeChange::Suspend.conditions` (`adwaita`'s reduced motion) and each kind's effect on running and starting transitions, `Suspend` reaching `GtkCss` alone, `kde-breeze` `Instant` from its code; the KDE trace corrected (K1.44's two ranked engines, K1.129's line on the selected tab, the group box's line never fading, K2.8, K3.24's group); the follow-ups the lanes owe: every transition's `engine` cited, K1.44, K1.129 and K2.8 restated, `adwaita`'s `Suspend.conditions`, `kde-breeze`'s `Instant`, GtkSwitch's slide (GN-1.203); the measurements the ledger owes as register rows: Apple's engines (interrupted at three points, a spring's velocity, stacked changes, a theme change, a deactivation and reduced motion in a run), AppKit's ring in and out, WinUI's theme switch, handoff velocity and Mica's engine, GTK's animations toggle, the focus flags in an inactive window off GNOME and KDE; a presentation interrupted is not settled here, for the ledger's queue; the first check's fixes: `GtkSwitch` (GtkSwitch's slide, its state set as the slide ends, `Motion::slide_ended`, GN-1.203); a platform with no engine source stating no transition, its facts pending, `engine` required only where a transition is stated, no placeholder member; Breeze's ends keeping every flag but the test's `any`, a zero in an excluded flag's style hiding what Breeze hides, the governing transition per update choosing a group's engine (two engines on one group), the rank by the base list's test order, `Steps` as Breeze's quantisation in both directions (`jump_end`), the tab bar unquantised and the header view stepped, the re-read timing's key and its clamp, a stated zero's test empty; `AdwAnimation` a progress between ends resolved now, a theme change moving them under every kind, its replays and springs as the source has them; an element not drawn per engine (GTK's and Breeze's run on, libadwaita's skip), Qt Quick's behaviours cut at the next write; `MotionUpdate` with every condition, the laid-out box, the token on every update, `suspends` and `activated`, `sample`'s `style_with`; the new resolution's `Suspend.conditions`; a `Crossfade` leaving Breeze runs at their ends; a tab's focus flags only while current, the tab's `focus_visible_when` `AnyFocus` (K1.129); MAT-SW8 the FastSpatial spring; K1.8's caption glyph a zero, K1.17's shadow on activation alone, K1.177's disabled zero, K3.24's label line stated at rest; the follow-ups the lanes owe besides: the KDE facts' Breeze steps `jump_end`, GtkSwitch's curve a `PlatformCurve` member; the register rows besides: Qt Quick's, Compose's and WinUI's transitions while their element is not drawn, an occlusion in an Apple run; the second check's fixes: R1.6's reading stated once (the tokens first, Compose's code where they are silent: MAT-SW8's spring, MAT-I11's and MAT-CB1's hover layer kept, with no transition, S2.12); a Breeze group at rest drawn by its tests (a failing test's `any` flags removed), Breeze testing only as it paints; `Motion::sample` returning `Drawn` with the laid-out box, `GtkSwitch`'s `slide_to` and `take_slide_end`, its constant duration, hidden slide, animations off, `state-set` and code changes; `MotionUpdate.drawn`, each engine's not-drawn rule (GTK's change styled on show, Qt Quick's run unseen, Compose's dropped), `change` and the window's `suspended_until`, window conditions only, `Option<&mut Places>`, `Default`; Qt's clamp at the next step; an engine no longer governing ending at the value drawn; `AdwAnimation`'s start test and two ends; GTK's curve map and S12's check; the suspension's triggers (an application's layer, palette or `set_preset` animating); Compose's duration re-read; S12: a ring's Breeze test on `focus_visible`, `GtkSwitch` on the thumb's `Geometry`; K1.132's hover fill, K1.177's and K2.8's zeros' engines, K3.24's check box line a stroke under `{focused}`, MAT-SW8's pressed snap; WinUI's not-drawn and animations-off measurements | S2.7, S2.10, S2.12, S4.3, S6.1, S7.2, S8, S11, S12, S17; catalogue; traces; R9, R12 |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

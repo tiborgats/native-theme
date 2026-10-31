@@ -713,7 +713,7 @@ MAT-X13–MAT-X15, X-MO-1).
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
   input), except during a theme change, which the theme-change token governs, and except under Breeze's engines,
-  which start on their own test (below); the transition of the style
+  which start on their own test, and GtkSwitch's slide, which starts on an activation (below); the transition of the style
   after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`), and a part that becomes absent is gone at once, as that style states nothing for it
   (ADD-A126; rejected: timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could
@@ -721,7 +721,7 @@ MAT-X13–MAT-X15, X-MO-1).
   style). A transition may name the states it applies from (`from`, a set of flags): one with
   none applies from any state, and one with a set only where the element held one of its flags before the change,
   after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
-  later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
+  later in stated order wins (Breeze's runs rank instead, below). Two platforms need `from`. Compose chooses an elevation's spec by the interaction
   entered, or, moving to rest, by the one left (150 ms from press or focus, and drag on cards and chips; 120 ms from
   hover), and snaps from none and into disabled (`androidx@e4d933c9
   compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-113`,
@@ -786,7 +786,7 @@ MAT-X13–MAT-X15, X-MO-1).
     suspended transitions from the rest.
   - *Orthogonal kinds* (an interruption kind, a velocity, an interrupted timing, a rank, slots and a theme-change lane,
     the survey's grouping): each exact only with the sub-rules of one toolkit (GTK's cut and its curve index, the tab
-    bar's two places, the decoration's live ends, AdwEntryRow's replay), five fields where each preset uses one
+    bar's two places, the decoration's live ends, AdwEntryRow's replay), five fields where each engine uses one
     combination, and a combination no toolkit has stays expressible.
   - *A per-preset engine*: `adwaita`, `kde-breeze` and `material-3` each run two engines whose rules differ.
   - *A preset default with a per-transition override*: two homes for one fact.

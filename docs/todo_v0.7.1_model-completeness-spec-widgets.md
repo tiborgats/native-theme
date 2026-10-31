@@ -62,9 +62,9 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
     `WinUi` (a pending fact, the preset stating no transition, until then);
-  - `kde-breeze` under `flavor:kirigami`, `material-3` and `windows-11`: what Qt Quick's behaviours, Compose's
-    animations and WinUI's transitions do while their element is not drawn (hidden, scrolled out, its window
-    minimised) and as it is drawn again (S2.7);
+  - `windows-11`: what WinUI's transitions do while their element is not drawn and as it is drawn again, a change
+    made meanwhile included, and as animations turn off (S2.7); and on every lane, what a window minimised or
+    occluded does to its running transitions (S2.7);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
     element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
   - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2).
@@ -2283,7 +2283,7 @@ spaces:
     host: Kirigami's search dialog field, Q1.118; a GTK linked box's overlap, each entry's negative start or top
     margin, GN-1.42), `min_width`, `min_height`, `max_width`, `opacity` (today's
     `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes rebind the accent
-    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†); no `interaction`, as Compose's text field draws no hover layer (MAT-I11, S2.12; ADD-A126).
+    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
   - `text` — the entered text: `text`, `transitions` (RL-2†).
   - `placeholder` — the placeholder text: `text`, `transitions` (macOS's centred search placeholder moving to the
     leading edge on focus, MAC-N02).
@@ -2632,7 +2632,7 @@ spaces:
   - `body` — the trigger box (the root): `fill`, `stroke` (per state), `corners`, `shadow` (Breeze's button shadow on
     the non-flat, non-editable combo), `padding`, `margin` (a GTK linked box's overlap, the drop-down's button's
     negative start or top margin, GN-1.42), `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
-    Button set, View set when editable), `transitions`; no `interaction`, as Compose's exposed dropdown field draws no hover layer (MAT-CB1, S2.12; ADD-A126).
+    Button set, View set when editable), `transitions`, `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
   - `label` — the current value's text: `text`.
   - `placeholder` — WinUI's placeholder text: `text`.
   - `icon` — the leading icon (Material's), or the current item's icon (Qt's `CE_ComboBoxLabel`, Q1.122; AppKit's
