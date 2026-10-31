@@ -505,3 +505,187 @@ From `register-rows-to-add.md`, removed there and listed here:
 - CalendarDatePicker flyout transition (`windows-11`): `FlyoutBase_partial.cpp:1971-1975`, the `PopupThemeTransition`;
 - full-screen title bar reveal (`windows-11`, W-P3-2†): a revealed condition;
 - the pickers' popup `shown` on `ios-*` (C-5) and `macos-*` (MAC-N04), missing at ac413107 (12a's 15, 12b's 5).
+
+## Added from checks 14a and 14b (the interim popup absence, withdrawn from ADD-A126 at the fourteenth round)
+
+ADD-A126's thirteenth round made every picker popup `Absent` while closed; the fourteenth round reverted every popup row and catalogue sentence to its pre-ADD-A126 state (W2-03, W2-04, C-5, MAC-N04, MAT-N16, MAT-N17, the pickers' `popup` entries and widget values), and S2.7 now says a popup's presence and presentation, and an expander's revealed content, are queue #118's. The findings on the withdrawn form:
+
+### From check-14a.md
+
+### 2. MAT-N17's new `time_picker.popup (absent = true) @ !{open}` hides Material's whole time picker, and the catalogue does not allow it
+
+Where: T-mat:551; W:7424-7425 (no field on `material-3`), W:7445-7449, W:7489-7490 (flags), W:7505-7510
+(may_be_absent).
+
+- **Nothing opens it.** On `material-3` the time picker has no trigger: "its dial or input sits in `popup`, the
+  picker's dialog container" (W:7424-7425). Every part MAT-N17 styles nests in `popup`: the dial, the selector
+  cells, the period selector, the headline and the separator. So under this rule the whole picker is `NotDrawn`
+  unless `open` holds.
+- **The flag is not Material's.** The catalogue gives `open` only to "Windows' flyout, iOS's popover shown"
+  (W:7489-7490).
+- **The catalogue does not list it.** `time_picker`'s may_be_absent lists `popup` for `macos-*`, `kde-breeze`,
+  `windows-11` and `ios-*`, not for `material-3` (W:7505-7510). Where that table is per preset, S12 refuses the
+  rule ("`Absent` where not `may_be_absent`", S:3565).
+- **The date picker shows the same unclarity, from before this round.**
+  - MAT-N16:538 makes the `@modal` and `@input` header absent `@ !{open}` "as the popup it nests in" (W:5503-5505).
+  - But this round's popup rule is only `variant with_popup` (T-mat:536). So a closed modal picker draws its
+    container and not its header.
+- **Fix.**
+  - Drop MAT-N17's row. Material's time picker is a dialog's content, and its showing is the dialog's presentation
+    (ADD-A129, queue #118).
+  - Scope MAT-N16:538's `!{open}` clause to `variant with_popup`, or define `open` for Material's dialog pickers.
+
+### From check-14a.md
+
+### 3. "Every picker popup `Absent` while closed" leaves out `kde-breeze`, which the catalogue says states it, and several variants
+
+Where:
+- S:4715 (the S22 row: "every picker popup `Absent` while closed (W2-03, W2-04, C-5, MAC-N04, MAT-N16, MAT-N17)");
+- W:5498-5501 (date_picker may_be_absent: "`kde-breeze` by a rule `!{open}` … under `with_popup` (on `kde-breeze`
+  in both flavours)"; "`macos-*`, `ios-*` by a rule under `inline`");
+- W:7505-7509 (time_picker: "`kde-breeze` … by a rule `!{open}` under `variant with_popup cond flavor:kirigami`";
+  "`ios-*` also by a rule under `variant inline`");
+- T-kde:788 (K2.23†), :1462 (K-KA-20†), :1478 (K-KA-23†).
+
+- **KDE draws a closed popup.** No KDE row makes the popup absent. K2.23†, K-KA-20† and K-KA-23† only set
+  `drawn_as`, which is a presence (S6.3). So a closed KDE picker's `popup` answers `Styled::DrawnAs`, and the
+  connector builds a menu or dialog while the picker is closed.
+- **Other variants draw it too.**
+  - `macos-*` states the absence only under `text_field` (T-macos:572). Its popup is drawn under `inline` and
+    `@text_field_and_stepper`.
+  - `ios-*`'s time-picker absence is only `variant with_popup` (T-ios:623). Under `inline` (C-7) its popup is drawn.
+  - With nothing stated there, the popup looks empty, until an application's base patch of `popup.fill` paints a
+    box. That is the very thing the Entry format's one spelling promises cannot happen (W:212-215).
+- **The catalogue's KDE claims are not new**, but this round's claim is.
+- **A related false sentence.** W:5465 says macOS's `text_field` "open[s] no popup". MAC-N04 states the calendar
+  overlay (`presentsCalendarOverlay`) under `variant text_field` (T-macos:570-572).
+- **Fix.**
+  - Add `date_picker.popup (absent = true) @ !{open} variant with_popup` to K2.23† and K-KA-20†, and the
+    `time_picker` one to K-KA-23†, written after the `drawn_as` rows.
+  - Add the `inline` (and macOS `@text_field_and_stepper`) absences, or drop those clauses from may_be_absent.
+  - Correct W:5465 ("macOS's textField opens its calendar overlay where the application sets
+    `presentsCalendarOverlay`").
+
+### From check-14b.md
+
+1. **Material's time picker is hidden whole, and Material's modal and input date pickers are half-hidden. The new
+   rows key Material's pickers on `open`, which no Material picker without a trigger can reach.**
+   - Where:
+     - T-mat:551 (MAT-N17: `time_picker.popup (absent = true) @ !{open}`);
+     - T-mat:536 (MAT-N16: `date_picker.popup (absent = true) @ !{open} variant with_popup`) against T-mat:538
+       (`date_picker.{popup_header,headline,supporting_text,divider} (absent = true) @ !{open}`, "nested in the
+       popup, they are absent with it");
+     - W:7424-7426 (Material's time picker has no trigger: "its dial or input sits in `popup`, the picker's dialog
+       container");
+     - W:7480 (time picker flags: "open (Windows' flyout, iOS's popover shown)");
+     - W:7505-7510 (the popup's may_be_absent: `macos-*`, `kde-breeze`, `windows-11`, `ios-*`, not `material-3`);
+     - W:7521-7524 (Material's popup placed `CenteredInHost`, "a dial or an input in a dialog … is this popup");
+     - W:5503-5504 (`popup_header` absent `!{open}` "as the `popup` it nests in").
+   - Evidence:
+     - **The time picker.** It has no field (`field` absent on `material-3`, W:7511). The catalogue does not list
+       `open` among Material's flags for it, and nothing opens it. So `!{open}` holds in every state, and
+       `time_picker.popup` is `Absent` everywhere on `material-3`. That is the container holding the dial, the
+       selectors, the headline and the separator.
+       - The catalogue's own may_be_absent list for `popup` leaves `material-3` out.
+       - The new row therefore contradicts the entry and removes Material's whole time picker. Its parts are then
+         laid out in the body without their container (finding 2).
+     - **The date picker.** Row 536 makes the container absent closed only under `with_popup`. Row 538, older,
+       makes the header, headline, supporting text and divider absent `!{open}` in every variant.
+       - Under `@modal` and `@input`, the forms whose tokens give that header (T-mat:537), a closed picker draws its
+         container without its header.
+       - Or, if the connector never sets `open` on a modal picker, the header is never drawn.
+       - So row 538's "absent with it" and the catalogue's "as the `popup` it nests in" are false for `@modal` and
+         `@input`.
+   - Fix. Decide whether a picker with no trigger is ever closed. The smaller answer follows the catalogue: Material's
+     time picker, and its modal and input date pickers, are the dialog itself and are never `{open}`-keyed.
+     - Drop MAT-N17's absence row.
+     - Scope T-mat:538's `!{open}` rule to `variant with_popup`, the docked form, whose field opens it (as row 536 is).
+     - Restate W:5503-5504 to match.
+     - (The other answer adds `open` to Material's time-picker flags, says who sets it, adds `material-3` to the
+       popup's may_be_absent and widens row 536 to `@modal` and `@input`. That is more text, and it conflicts with
+       "the connector builds no dialog element", W:7524.)
+
+### From check-14b.md
+
+2. **A closed popup's content is drawn where the popup was. The catalogue says the popup "carries" it, but the
+   Nesting rule and S6.3 say the opposite.**
+   - Where:
+     - W:7465-7467 (`time_picker`: "The parts in `popup` are its content: they nest in it on every preset, so the
+       popup's entering and leaving carry them");
+     - against W:184-186 (Nesting: "A part nested in a part that answers `NotDrawn` is still queried … and is drawn
+       unless it is absent itself");
+     - and S:2676-2679 ("The parts nested in it are still queried and laid out in its parent's place …, so a part
+       removed with its content states the content absent under the same selector").
+   - Evidence:
+     - The thirteenth round made every picker popup `Absent` while closed. So whatever nests in it now falls back to
+       the picker's body while the picker is closed.
+       - `material-3`'s `dial`, `dial_selector`, `dial_track`, `dial_center`, `dial_label`, `selector_cell`,
+         `period_selector`, `headline` and `time_separator` (MAT-N17) have no absence of their own.
+       - `kde-breeze`'s kirigami `time_separator` (K-KA-23†, nested in the popup drawn as a dialog) has none either,
+         once the catalogue's `!{open}` rule is written (finding 4).
+     - MAT-N16 does what S6.3 asks for its date picker (T-mat:538: the nested parts absent `!{open}`). MAT-N17 does
+       not.
+     - The elements queried in `context <picker>.popup` are left undecided by the text: whether the connector builds
+       them while the popup is `NotDrawn`. These are W2-03's and MAC-N04's `calendar`, and W2-04's and C-7's
+       `picker_wheel`.
+   - Fix:
+     - Replace W:7465-7467's clause with: "a preset that makes `popup` absent states its nested parts absent under
+       the same selector (S6.3, as MAT-N16 does)".
+     - Add those rows wherever the popup stays `Absent` by `!{open}`: MAT-N17's, if finding 1 keeps it, and
+       K-KA-23†'s `time_separator`.
+     - Add one sentence to the Nesting bullet: "an element queried in the scope of a part that answers `NotDrawn` is
+       built only where the connector draws that part's content (a closed popup's calendar or wheels are not built)",
+       or route it to ADD-A129 (queue #118) by name.
+
+### From check-14b.md
+
+4. **`kde-breeze` draws its date and time picker popups while they are closed. S2.7 and the catalogue say they are
+   `Absent` there, and no KDE row says so.**
+   - Where:
+     - S:848-849 ("a popup's open and close the one exception, `Absent` where closed until ADD-A129");
+     - W:5498-5500 (`date_picker.popup` absent on "`kde-breeze` by a rule `!{open}` … under `with_popup` (on
+       `kde-breeze` in both flavours)");
+     - W:7506-7508 (`time_picker.popup` on `kde-breeze`: "by a rule `!{open}` under `variant with_popup cond
+       flavor:kirigami`");
+     - against T-kde:788 (K2.23†), T-kde:1462 (K-KA-20†) and T-kde:1478 (K-KA-23†), whose `drawn_as` rules apply in
+       every state, with no absence row anywhere in T-kde for either popup.
+   - Evidence:
+     - The round added `!{open}` rows to six lanes (W2-03, W2-04, C-5, MAC-N04, MAT-N16, MAT-N17) and none to KDE.
+       That follows 13b's remark that KDE's `drawn_as` popups "need neither". The catalogue disagrees.
+     - S6.3 gives a `DrawnAs` part no closed state: a `drawn_as` popup is the substitute's element whenever it is not
+       `Absent` (S:2582-2586, S:3100).
+     - So a closed `flavor:kirigami` picker draws a `dialog @ variant @ka_dialog` with its scrim (T-kde:1478). A
+       closed `flavor:widgets` date picker draws a `menu`.
+     - `flavor:widgets`' `time_picker.popup`, which the catalogue makes absent in every state (W:7505-7506, "by a rule
+       under `cond flavor:widgets`"), has no row either.
+   - Fix:
+     - Add to K2.23† `date_picker.popup (absent = true) @ !{open} variant with_popup cond flavor:widgets`. Add the
+       same with `flavor:kirigami` to K-KA-20† and `time_picker.popup` to K-KA-23†. Each is written after the
+       `drawn_as` rule, as the other lanes' rows are.
+     - Add K2.24†'s `time_picker.popup (absent = true) @ cond flavor:widgets` and K2.23†'s `@ variant text_field`
+       row.
+     - Or state once, in S6.3 or the Entry format, that the catalogue's "by a rule" may_be_absent clauses are
+       generated without a trace row. Then drop the six rows the round added, so the rule has one home (see
+       finding 14).
+
+### From check-14b.md
+
+5. **"The one exception" is not the only one, and the S2.7 sentence's "it" lost its antecedent.**
+   - Where: S:846-851. "A part hidden at rest is a `shown` part exactly when …, a part whose motion is unmeasured
+     `Absent` where hidden until the measurement decides …, and a popup's open and close the one exception, `Absent`
+     where closed until ADD-A129 (queue #118): it states `shown = false` where it is hidden …". Also W:205 ("A part
+     shown and hidden with a state needs no event").
+   - Evidence:
+     - **Another exception.** The expander's content is hidden by `open` and revealed by the presentation events
+       `@expand` and `@collapse` (W:4270-4271; `list`'s likewise, W:4251). By S2.7's letter that is a `shown` part.
+       It is neither `shown` nor `Absent` (its parts' may_be_absent: none, W:4284). So the "one exception" has a
+       second case, and the Entry format's "needs no event" has a counterexample.
+       - Whether a collapsed `windows-11` Expander draws its content's fill and border (W1-141) is left undecided.
+       - #118's scope does not name expanders.
+     - **The antecedent.** After the inserted clauses, "it states `shown = false`" reads back to "a popup".
+   - Fix:
+     - Split the sentence: "A part hidden at rest is a `shown` part exactly when its source animates its entrance or
+       exit by state: it states `shown = false` …. Two cases wait: a part whose motion is unmeasured is `Absent` where
+       hidden until the measurement decides (MAC-X11, CK-2†), and a part a presentation reveals (a popup's open and
+       close, an expander's content by `@expand`/`@collapse`) is `Absent` where closed until ADD-A129 (queue #118)."
+     - Add the expander's content to #118, or state its absence collapsed.
