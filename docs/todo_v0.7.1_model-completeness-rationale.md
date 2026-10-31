@@ -604,6 +604,36 @@ added only when a platform's rule needs it. Composition over the value beneath i
 `base` (R6), not a colour function. Evaluation follows dependencies; a cycle is an error when its layer is added
 (R2.8).
 
+*libadwaita's standalone colours* (the specification's ADD-A128, ledger queue #105). The stylesheet writes them as
+GTK's CSS relative colour, the background colour in OKLab with its lightness limited (at most 0.5 light, at least
+0.85 dark), and GTK computes an sRGB colour from it at once, unclamped, which every later CSS function and
+`gtk_widget_get_color` read; the renderer draws text, backgrounds, borders and shadows from the OKLab coordinates by
+a single-precision conversion of its own, and the 8-bit store clamps. Which form the function is:
+
+- *libadwaita's C function `adw_rgba_to_standalone`* (the first reading, spike G's table). For: a public API, a table
+  already generated. Against: the stylesheet does not call it, and it clamps each channel, where GTK keeps them;
+  most of libadwaita's documented standalone colours leave the gamut, which its documentation notes are clipped
+  only before display (`libadwaita@1.10.0 doc/css-variables.md:88-99`), so an
+  `alpha` or `mix` over it (the focus ring, the visited link) differs from what GTK draws.
+- *GTK's computed sRGB colour, unclamped, one function.* For: the value the style holds and the icon palette, the
+  links, every later CSS function and GTK's public colour API read; the model's extended sRGB holds it (R5.5).
+  Against: text, backgrounds, borders and shadows are drawn by the renderer's own conversion, within 7.9·10⁻⁴ (0–255)
+  in gamut on spike G's grid, which no check can see (a vector compares this form, a published fact the same
+  function, a capture rounds to 8 bits).
+- *Two functions, a form per drawing path.* For: each path's arithmetic. Against: the renderer's conversion is a
+  drawing step, not a theme value; one role is drawn both ways (a destructive button's standalone colour is its label's
+  text and its symbolic icon's colour), so each role would split in two, differing once drawn by less than a capture shows, which no connector's
+  toolkit draws apart.
+- *The renderer's form alone.* Against: no later CSS function reads it, and out of the gamut it mirrors negative
+  channels where the computed form keeps the linear piece.
+
+**Decision:** GTK's computed sRGB colour, one function, unclamped; a channel outside the gamut is clamped where the
+colour is drawn, as GTK clamps it, not by the function (which changes every `alpha` and `mix` over it) nor at the end
+of resolution (which clamps a translucent colour before GTK's renderer premultiplies it). Its vectors come from GTK
+itself, through `gtk_widget_get_color` with libadwaita's stylesheet loaded, so the reference is the stylesheet's own path; the
+conversion follows CSS Color 4, and GTK's constants and per-step precision, which the vectors' 1e-3 needs, come from
+the clean room (D10).
+
 **R5.5 — Representation (C28).** macOS and iOS define system colours beyond sRGB (Display P3; MAC-X10, D-17);
 `Rgba` and the macOS reader's conversion to sRGB clip them. HDR appears only in the colour well's content
 (MAC-X10), the application's data.
@@ -1344,6 +1374,12 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
   (`token.behavior.touch.delay`); the checkbox's, radio's and switch's
   `state_layer` parts holding the block, their per-state opacity dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
   property group that overrides `Stroke` where stated; a stroke becoming absent interpolating to zero width.
+
+Amended in place by the specification's batch ADD-A128 (2026-10-31), decided from the sources in the ledger's queue
+#105:
+
+- R5.4: libadwaita's standalone colours are the colour GTK computes for its stylesheet, unclamped, one function for
+  every role; a colour outside the gamut is clamped where it is drawn.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
