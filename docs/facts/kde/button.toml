@@ -7352,6 +7352,18 @@ quote = "if ((hovered || visualFocus || down) && enabled) { penBrush = highlight
 
 [[fact.cite]]
 kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:715"
+quote = "if (bgAnimation != AnimationData::OpacityInvalid && enabled) {"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:721"
+quote = "if (penAnimation != AnimationData::OpacityInvalid && enabled) {"
+absent = []
+
+[[fact.cite]]
+kind = "published"
 source = "qtbase@6.12.0 src/widgets/styles/qstyleoption.cpp:151-152"
 quote = "if (widget->underMouse()) state |= QStyle::State_MouseOver;"
 
@@ -7404,6 +7416,7 @@ rows = ["K1.30"]
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1740-1742"
 quote = "KQuickStyleItem::style()->drawControl(QStyle::CE_PushButton, m_styleoption, painter);"
+absent = []
 
 [[fact.cite]]
 kind = "published"
@@ -7414,11 +7427,13 @@ quote = "DataMap<WidgetStateData>::Value data(WidgetStateEngine::data(object, mo
 kind = "published"
 source = "breeze@6.8.2 kstyle/animations/breezedatamap.h:38-40"
 quote = "if (!(enabled() && key)) { return Value(); }"
+absent = []
 
 [[fact.cite]]
 kind = "published"
 source = "breeze@6.8.2 kstyle/animations/breezewidgetstateengine.h:40-42"
 quote = "qreal opacity(const void *object, AnimationMode mode) { return isAnimated(object, mode) ? data(object, mode).data()->opacity() : AnimationData::OpacityInvalid;"
+absent = []
 
 [[fact.cite]]
 kind = "published"
