@@ -2581,8 +2581,9 @@ spaces:
   `button @ variant reveal context input` (GN-2.23, W2-16, K1.48; their visibility the values above, their fade the
   `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). The decorations
   of `preedit`, `misspelling`, `grammar_mark` and `correction` follow the font (S2.8): where the platform draws the
-  line from the font's own metrics (Pango's, Qt's `QFontMetrics`, AppKit's `NSFont`, DirectWrite's, Android's
-  `Paint`), their `thickness` and `offset` are the references the parts state, and a number is stated only where the
+  line from the font's own metrics (Pango's, AppKit's `NSFont`, DirectWrite's, Android's `Paint`; Qt draws its own
+  adjustment of them, the unmeasured register's, S2.8, ADD-A130), their `thickness` and `offset` are the references the
+  parts state, and a number is stated only where the
   platform draws a fixed line (macOS's spelling and grammar dots, MAC-X28); the value phase states which per preset
   from the facts (GN-1.281†, K1.49†, W1-151†, MAT-I18†). Provenance: group
   6 wrote the password field as `password` and its hint timeout as a value of its own, merged into `mask_reveal_ms`;
