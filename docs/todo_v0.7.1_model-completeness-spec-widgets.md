@@ -2770,7 +2770,8 @@ spaces:
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `disabled_background`,
   `disabled_text_color` → `body.fill`, `label.text.fill @ {disabled}`; `border.*` → `body.stroke`, `body.corners`,
   `body.padding`, `body.shadow`.
-- **Notes:** Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
+- **Notes:** Open: its content layout (the label, the icon, the arrow area and the arrow, editable and not, sized and
+  drawn): ADD-A127, to come (ledger queue #113). Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
   popover and GtkDropDown's list, the qqc2 combo's Menu and QComboBox's list, macOS's pop-up menu, iOS's menu,
   Material's exposed drop-down menu, WinUI's ComboBox popup: W1-133–W1-136, GN-1.234, MAC-CB04); the editable combo's
   text is an `input` in `context any combo_box`; GNOME's search entry in the popup is a `search_field` in `context menu`
@@ -9088,8 +9089,8 @@ platform default monospace typeface (MAT-X36†).
   `panel`, each a `Value<IconStyle>`, absent on the presets the token absence table names for it, *tokens* below) and
   `keyed: Vec<(Key, IconStyle)>`, so a context also carries
   weight, scale and rendering mode where the platform's context sets them (in a context only `size` is required, every
-  other `IconStyle` `Value` field may be absent, and its lists, `axes`, `symbol_variants`, `status_colors`, are stated,
-  `[]` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9; a `scale` names a key of
+  other `IconStyle` `Value` field may be absent, and its list `symbol_variants` and maps `axes`, `status_colors` are
+  stated, `[]` and `{}` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9; a `scale` names a key of
   `[declare] symbol_scales`, S10) [D-19, MAC-IC02]. Kirigami: `small`, `small_medium`, `medium`, `large`, `huge`, `enormous`, `for_labels`
   [Q1.1]. Kirigami computes `for_labels` from the default font's height, ascent plus descent (`kirigami_label_icon_size`,
   ADD-A53);
