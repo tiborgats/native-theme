@@ -27,7 +27,7 @@ use super::stack::{
     widget_of,
 };
 use crate::next::blocks::part_style::RoleRef;
-use crate::next::declare::Declarations;
+use crate::next::declare::{DataName, DataOwner, Declarations};
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr, Ref};
 use crate::next::key::Key;
@@ -83,6 +83,8 @@ pub(super) struct World {
     applies: Vec<bool>,
     /// The scheme in force.
     scheme: Scheme,
+    /// The flavour in force, where the atoms choose one.
+    flavor: Option<Key>,
     /// The atoms' values, in the order the check gathered them.
     values: Vec<bool>,
 }
@@ -755,6 +757,7 @@ impl<'a> Stack<'a> {
             .map(|scheme| World {
                 applies: vec![true; self.rules.len()],
                 scheme,
+                flavor: None,
                 values: Vec::new(),
             })
             .collect()
@@ -837,9 +840,17 @@ impl<'a> Stack<'a> {
                 *slot = holds;
             }
         }
+        let flavor = atoms
+            .iter()
+            .zip(values)
+            .find_map(|(atom, value)| match atom {
+                Atom::Cond(Condition::Flavor(flavor)) if *value => Some(flavor.clone()),
+                _ => None,
+            });
         World {
             applies,
             scheme,
+            flavor,
             values: values.to_vec(),
         }
     }
@@ -1554,12 +1565,46 @@ impl Checks<'_, '_> {
         for found in stack.effective(world, Target::Part(named), &path) {
             let refused = match variant(&found) {
                 Some("concentric" | "follow_part") => true,
-                Some("full") => element_of(target) != Some(named),
+                Some("full") => {
+                    if element_of(target) == Some(named) {
+                        self.size_data(world, target, op);
+                    }
+                    element_of(target) != Some(named)
+                }
                 _ => false,
             };
             if refused {
                 let operand = operand.to_owned();
                 self.problem(&op.at, ProblemKind::CornerAtLayout { operand });
+            }
+        }
+    }
+
+    /// A `Full` corner operand reads `element.width` and `element.height`
+    /// (S8): the data the reading part (or the widget's values) declares
+    /// under the flavour in force, under each where the world chooses none.
+    fn size_data(&mut self, world: &World, target: Target, op: &Op) {
+        let decl = self.stack.decl();
+        let (widget, owner) = match target {
+            Target::Part(part) => (widget_of(part), DataOwner::Part(part)),
+            Target::Values(widget) => (widget, DataOwner::Values),
+            Target::Roles(_) | Target::Tokens => return,
+        };
+        let decls = match &world.flavor {
+            Some(flavor) => vec![decl.in_flavor(widget, flavor)],
+            None => decl.in_each_flavor(widget),
+        };
+        for datum in [ElementDatum::Width, ElementDatum::Height] {
+            let name = DataName::Element(datum);
+            let declared = decls.iter().all(|decl| {
+                decl.data
+                    .iter()
+                    .flatten()
+                    .any(|(held, names)| *held == owner && names.contains(&name))
+            });
+            if !declared {
+                let datum = Ref::Element(datum).to_string();
+                self.problem(&op.at, ProblemKind::UndeclaredData { datum });
             }
         }
     }

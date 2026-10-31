@@ -390,8 +390,9 @@ fn combination_corner_operands() {
         ]
     );
     assert_eq!(bare(&corners("\"follow_part\"")).len(), 2);
+    let sized = declare("[declare.widget.button]\ndata = { body = [\"width\", \"height\"] }");
     assert_eq!(
-        bare(&corners("{ full = { maximum_px = \"absent\" } }")),
+        alone(&corners("{ full = { maximum_px = \"absent\" } }"), &sized),
         NONE
     );
     let px = "[widgets.button.body]\ncorners.top_left_px = 4\n\
@@ -920,4 +921,21 @@ fn combination_widget_part_from_the_values() {
         ),
         "{problems:?}"
     );
+}
+
+/// A corner operand that can resolve `Full` reads the element's width and
+/// height, which its part declares (S8, S12).
+#[test]
+fn combination_full_corner_needs_the_size_data() {
+    let full = "[widgets.button.body]\ncorners.top_left = { full = { maximum_px = \"absent\" } }\n\
+                focus.width_px = \"= part.corners.top_left\"";
+    assert_eq!(
+        bare(full),
+        [
+            "widgets.button.body.focus.width_px: `element.width` is element data the part does not declare",
+            "widgets.button.body.focus.width_px: `element.height` is element data the part does not declare",
+        ]
+    );
+    let decl = declare("[declare.widget.button]\ndata = { body = [\"width\", \"height\"] }");
+    assert_eq!(alone(full, &decl), NONE);
 }
