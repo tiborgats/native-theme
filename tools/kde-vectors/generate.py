@@ -12,61 +12,56 @@ Writes `native-theme/tests/vectors/kirigami_lerp.tsv` and `native-theme/tests/ve
   it (`:526`), over KColorUtils' `shade` and `darken` and KHCY (`kguiaddons@6.31.0 src/colors/kcolorutils.cpp`,
   `src/colors/kcolorspaces.cpp`) and Qt's `QColor`.
 
-Each file is fetched at the commit `docs/facts/sources.toml` pins and compiled as it is; `stubs/` stands in for the
-headers the projects' builds generate (export and logging macros) and `harness.cpp` calls the functions. The sources
-are built with Arch Linux's `makepkg.conf` flags for x86-64 (`-O2 -march=x86-64 -mtune=generic`), the build
-`sources.toml`'s `arch` fields name: that target has no fused multiply-add, so `QColor::toRgb`'s `1.0f - (s * f)` is
-rounded twice. A second build adds `-mfma` (a build that fuses it, as an x86-64-v3 or an ARM build may); the table
-holds inputs on which the two differ, so a port that fuses fails a row.
+Each file is read from the source cache (`scripts/update_sources.sh`) as the commit `docs/facts/sources.toml` pins
+holds it, through git's objects (`tools/pinned.py`), and compiled as it is; `stubs/` stands in for the headers the
+projects' builds generate (export and logging macros) and `harness.cpp` calls the functions. `moc`, the compiler,
+the linker and both harnesses run under bubblewrap with no network, writing only the build folder (the harnesses
+nothing: they print their results). The reference build targets the x86-64 baseline (`-O2 -march=x86-64
+-mtune=generic`), the target of the x86-64 packages `sources.toml`'s `arch` fields name, which has no fused
+multiply-add, so `QColor::toRgb`'s `1.0f - (s * f)` is rounded twice. A second build adds `-mfma` (a build that fuses
+it, as an x86-64-v3 or an ARM build may); the table holds inputs on which the two differ, so a port that fuses fails a
+row.
 
-The remaining sources Qt's and KDE's headers need are the system's: it requires g++, Qt 6.12.0's development headers
-(private ones included) and `moc`, and the KF6 Config 6.31 headers and libraries; it refuses another Qt. Run from
-the repository root:
+The remaining sources Qt's and KDE's headers need are the system's: it requires g++, bubblewrap, Qt 6.12.0's
+development headers (private ones included) and `moc`, and the KF6 Config 6.31 headers and libraries; it refuses
+another Qt or KConfig. Run from the repository root, the source cache's folder optional:
 
-    python3 -I tools/kde-vectors/generate.py
+    python3 -I tools/kde-vectors/generate.py [source cache]
 """
 
-import os
 import random
+import re
 import struct
 import subprocess
 import sys
 import tempfile
-import tomllib
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tools"))
+import citations  # noqa: E402
+import pinned  # noqa: E402
+
 VECTORS = ROOT / "native-theme" / "tests" / "vectors"
-SOURCES = ROOT / "docs" / "facts" / "sources.toml"
 QT_VERSION = "6.12.0"
+# KConfig's minor, kconfig@6.31.0's: the headers' KCONFIG_VERSION_STRING.
+KCONFIG_MINOR = "6.31"
 SEED = 20261030
 RANDOM_INPUTS = 20_000
-# Arch Linux's makepkg.conf CFLAGS for x86-64, the parts that decide the code generated.
+# The x86-64 baseline: no fused multiply-add.
 REFERENCE_FLAGS = ["-O2", "-march=x86-64", "-mtune=generic"]
 FUSED_FLAGS = REFERENCE_FLAGS + ["-mfma", "-ffp-contract=fast"]
 
-# Each source: its sources.toml id, the URL of one file at a commit, and the files.
-FETCH = {
-    "qtbase@6.12.0": (
-        "https://code.qt.io/cgit/qt/qtbase.git/plain/{path}?id={commit}",
-        ["src/gui/painting/qcolor.cpp", "src/gui/painting/qcolor_p.h", "src/gui/painting/qdrawhelper_p.h"],
-    ),
-    "kirigami@6.31.0": (
-        "https://invent.kde.org/frameworks/kirigami/-/raw/{commit}/{path}",
-        ["src/platform/colorutils.cpp", "src/platform/colorutils.h"],
-    ),
-    "kcolorscheme@6.31.0": (
-        "https://invent.kde.org/frameworks/kcolorscheme/-/raw/{commit}/{path}",
-        ["src/kcolorscheme.cpp", "src/kcolorscheme.h", "src/kcolorschemehelpers_p.h",
-         "src/kcolorschememanager_p.h", "src/kcolorschememodel.h"],
-    ),
-    "kguiaddons@6.31.0": (
-        "https://invent.kde.org/frameworks/kguiaddons/-/raw/{commit}/{path}",
-        ["src/colors/kcolorutils.cpp", "src/colors/kcolorutils.h", "src/colors/kcolorspaces.cpp",
-         "src/colors/kcolorspaces_p.h", "src/colors/kguiaddons_colorhelpers_p.h"],
-    ),
+# Each source's sources.toml id and the files read from it.
+FILES = {
+    "qtbase@6.12.0": ["src/gui/painting/qcolor.cpp", "src/gui/painting/qcolor_p.h", "src/gui/painting/qdrawhelper_p.h"],
+    "kirigami@6.31.0": ["src/platform/colorutils.cpp", "src/platform/colorutils.h"],
+    "kcolorscheme@6.31.0": ["src/kcolorscheme.cpp", "src/kcolorscheme.h", "src/kcolorschemehelpers_p.h",
+                            "src/kcolorschememanager_p.h", "src/kcolorschememodel.h"],
+    "kguiaddons@6.31.0": ["src/colors/kcolorutils.cpp", "src/colors/kcolorutils.h", "src/colors/kcolorspaces.cpp",
+                          "src/colors/kcolorspaces_p.h", "src/colors/kguiaddons_colorhelpers_p.h"],
 }
 COMPILED = [
     ("qtbase@6.12.0", "src/gui/painting/qcolor.cpp"),
@@ -77,6 +72,7 @@ COMPILED = [
 ]
 QT_INCLUDE = Path("/usr/include/qt6")
 KF6_INCLUDE = Path("/usr/include/KF6")
+MOC = Path("/usr/lib/qt6/moc")
 LIBS = ["-lQt6Quick", "-lQt6Qml", "-lQt6Gui", "-lQt6Core", "-lKF6ConfigCore", "-lKF6ConfigGui"]
 
 # Breeze 6.8.2's inputs (BreezeLight.colors, BreezeDark.colors): the Header, Window and View sets' background and
@@ -132,28 +128,25 @@ def f32_text(x):
     return repr(x)
 
 
-def fetch(cache: Path):
-    """Each source's files at its pinned commit, under cache/<id>/<path>."""
-    sources = {s["id"]: s for s in tomllib.loads(SOURCES.read_text(encoding="utf-8"))["source"]}
-    for sid, (url, paths) in FETCH.items():
-        commit = sources[sid]["commit"]
-        for path in paths:
-            target = cache / sid / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with urllib.request.urlopen(url.format(path=path, commit=commit), timeout=120) as response:
-                target.write_bytes(response.read())
-
-
 def qt_version():
     out = subprocess.run(["pkg-config", "--modversion", "Qt6Gui"], capture_output=True, text=True, check=False)
     return out.stdout.strip()
 
 
+def kconfig_version():
+    """The KF6 Config headers' `KCONFIG_VERSION_STRING`; empty where they are missing."""
+    try:
+        header = (KF6_INCLUDE / "KConfig" / "kconfig_version.h").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    found = re.search(r'#define KCONFIG_VERSION_STRING "([^"]+)"', header)
+    return found.group(1) if found else ""
+
+
 def build(cache: Path, work: Path, flags, name):
-    """The harness, the pinned sources compiled with `flags`."""
+    """The harness, the pinned sources compiled with `flags`, sandboxed."""
     platform = cache / "kirigami@6.31.0" / "src" / "platform"
-    moc = subprocess.run(["/usr/lib/qt6/moc", str(platform / "colorutils.h")], capture_output=True, text=True,
-                         check=True).stdout
+    moc = pinned.sandboxed([MOC, platform / "colorutils.h"], capture_output=True, text=True, check=True).stdout
     (work / "moc_colorutils.cpp").write_text(moc, encoding="utf-8")
     qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui", QT_INCLUDE / "QtQml", QT_INCLUDE / "QtQuick",
           QT_INCLUDE / "QtCore" / QT_VERSION, QT_INCLUDE / "QtCore" / QT_VERSION / "QtCore",
@@ -169,17 +162,17 @@ def build(cache: Path, work: Path, flags, name):
     for sid, path in COMPILED + [(None, str(HERE / "harness.cpp"))]:
         source = cache / sid / path if sid else Path(path)
         obj = work / f"{name}-{Path(path).stem}.o"
-        subprocess.run([*common, "-c", str(source), "-o", str(obj)], check=True)
+        pinned.sandboxed([*common, "-c", source, "-o", obj], writable=[work], check=True)
         objects.append(str(obj))
     exe = work / name
-    subprocess.run(["g++", *flags, "-o", str(exe), *objects, *LIBS], check=True)
+    pinned.sandboxed(["g++", *flags, "-o", exe, *objects, *LIBS], writable=[work], check=True)
     return exe
 
 
 def run(exe: Path, calls):
-    """Each call's result, the QColor's channels as floats."""
+    """Each call's result, the QColor's channels as floats; the harness sandboxed, writing nothing."""
     text = "".join(line + "\n" for line in calls)
-    out = subprocess.run([str(exe)], input=text, capture_output=True, text=True, check=True).stdout
+    out = pinned.sandboxed([exe], input=text, capture_output=True, text=True, check=True).stdout
     results = [tuple(float(x) for x in line.split()) for line in out.splitlines()]
     if len(results) != len(calls):
         sys.exit(f"{exe.name}: {len(results)} results for {len(calls)} calls")
@@ -226,11 +219,14 @@ def write_table(path: Path, header, columns, rows):
 def main():
     if qt_version() != QT_VERSION:
         sys.exit(f"Qt {qt_version() or '(none)'} found; the pin is Qt {QT_VERSION}")
+    if not kconfig_version().startswith(KCONFIG_MINOR + "."):
+        sys.exit(f"KF6 Config {kconfig_version() or '(none)'} found; the pin is KConfig {KCONFIG_MINOR}")
+    source_cache = citations.cache_dir(sys.argv[1] if len(sys.argv) > 1 else None)
     rng = random.Random(SEED)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         cache = tmp / "sources"
-        fetch(cache)
+        pinned.materialise(source_cache, [(sid, path) for sid, paths in FILES.items() for path in paths], cache)
         reference = build(cache, tmp, REFERENCE_FLAGS, "reference")
         fused = build(cache, tmp, FUSED_FLAGS, "fused")
 

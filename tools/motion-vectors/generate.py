@@ -16,15 +16,17 @@ constants and curves from `RippleAnimationSession.java:42-48`, `:113-139`, `:150
 which `PathInterpolator` approximates through the native `Path.approximate` outside the cache, solved exactly by
 bisection to the double's precision.
 
-Requires gcc, `pkg-config` with GLib's headers, and a JDK (javac, java). Prints the rows, which the tests in
+Each copied source is read from the source cache as its pinned commit holds it, through git's objects
+(`tools/pinned.py`), and the compilers and both programs run under bubblewrap with no network, writing only the
+build folder (the programs nothing: they print their rows).
+
+Requires gcc, `pkg-config` with GLib's headers, bubblewrap, and a JDK (javac, java). Prints the rows, which the tests in
 `native-theme/src/next/blocks/part_tests.rs` (`timing_*`) and `native-theme/src/next/ripple.rs` (`ripple_*`) hold.
 Run from the repository root:
 
     python3 -I tools/motion-vectors/generate.py [source cache]
 """
 
-import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -32,17 +34,21 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent / "scripts"))
+sys.path.insert(0, str(HERE.parent))
 import citations  # noqa: E402
+import pinned  # noqa: E402
 
 
-def lines(path: Path, first: int, last: int) -> str:
-    return "\n".join(path.read_text(encoding="utf-8").splitlines()[first - 1:last]) + "\n"
+def lines(cache: Path, sid: str, path: str, first: int, last: int) -> str:
+    """Lines `first` to `last` of `path` at `sid`'s pinned commit."""
+    text = pinned.pinned(cache, sid, path).decode("utf-8")
+    return "\n".join(text.splitlines()[first - 1:last]) + "\n"
 
 
 def run_timing(cache: Path, work: Path) -> str:
-    src = cache / "libadwaita@1.10.0" / "src"
-    easing = lines(src / "adw-easing.c", 477, 541)
-    spring = lines(src / "adw-spring-animation.c", 101, 243)
+    adw = "libadwaita@1.10.0"
+    easing = lines(cache, adw, "src/adw-easing.c", 477, 541)
+    spring = lines(cache, adw, "src/adw-spring-animation.c", 101, 243)
     harness = (HERE / "timing.c").read_text(encoding="utf-8")
     program = harness.replace("/* ADW_EASING */", easing).replace("/* ADW_SPRING */", spring)
     c = work / "timing.c"
@@ -52,20 +58,21 @@ def run_timing(cache: Path, work: Path) -> str:
     libs = subprocess.run(["pkg-config", "--libs", "glib-2.0"], check=True, capture_output=True,
                           text=True).stdout.split()
     exe = work / "timing"
-    subprocess.run(["gcc", "-O2", "-march=x86-64", "-mtune=generic", *flags, str(c), "-o", str(exe), *libs, "-lm"],
-                   check=True)
-    return subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
+    pinned.sandboxed(["gcc", "-O2", "-march=x86-64", "-mtune=generic", *flags, c, "-o", exe, *libs, "-lm"],
+                     writable=[work], check=True)
+    return pinned.sandboxed([exe], check=True, capture_output=True, text=True).stdout
 
 
 def run_ripple(cache: Path, work: Path) -> str:
-    shader = cache / "frameworks-base@android-17.0.0_r1" / "graphics/java/android/graphics/drawable/RippleShader.java"
-    setters = lines(shader, 124, 125) + lines(shader, 138, 184) + lines(shader, 194, 198)
+    base = "frameworks-base@android-17.0.0_r1"
+    shader = "graphics/java/android/graphics/drawable/RippleShader.java"
+    setters = (lines(cache, base, shader, 124, 125) + lines(cache, base, shader, 138, 184)
+               + lines(cache, base, shader, 194, 198))
     harness = (HERE / "Ripple.java").read_text(encoding="utf-8")
     java = work / "Ripple.java"
     java.write_text(harness.replace("    /* RIPPLE_SHADER */", setters), encoding="utf-8")
-    subprocess.run(["javac", "-d", str(work), str(java)], check=True)
-    return subprocess.run(["java", "-cp", str(work), "Ripple"], check=True, capture_output=True,
-                          text=True).stdout
+    pinned.sandboxed(["javac", "-d", work, java], writable=[work], check=True)
+    return pinned.sandboxed(["java", "-cp", work, "Ripple"], check=True, capture_output=True, text=True).stdout
 
 
 def main() -> int:
