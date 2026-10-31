@@ -8127,8 +8127,8 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
 - **Widget values:** none (alignment of icon and text is the layout, `layout.*`).
 - **Variants:** keyed text level `@level_1`, `@level_2`, `@level_3`, `@level_4` (KTitleWidget's four levels, each
   per its keyed text style of K1.270; those styles not yet stated exactly, as KTitleWidget keeps the application
-  font's weight and sizes its levels from the whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, unlike Kirigami's heading: a ledger queue
-  row for the KDE lane); keyed
+  font's weight and sizes its levels from the whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, unlike Kirigami's heading: ledger queue
+  #130, the KDE lane's); keyed
   message type `@plain`, `@info`, `@warning`, `@error` for `comment`, KTitleWidget's `MessageType` (`Plain`, `Info`,
   `Warning`, `Error`, `ktitlewidget.h:115-120`; it has no positive type). The source gives `@info`, `@warning` and
   `@error` one look, a style sheet naming the palette's highlighted-text and highlight colours for the comment's text
