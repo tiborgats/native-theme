@@ -44,14 +44,14 @@
 #                  native-theme and native-theme-derive, their library tests,
                  next's integration tests, doctests and missing-docs gate,
 #                  next's integration tests, doctests and missing-docs gate,
-#                  CI's two MSRV checks, and the 0.8.0 plan's data checks
+#                  CI's MSRV job's checks, and the 0.8.0 plan's data checks
 #                  (the generated widgets, the function vectors, the facts and
 #                  their citations, the specification's names, entries and
 #                  traceability, the ledger). Nothing else; its summary says
 #                  it is no per-commit or release check.
 #
-# CI's MSRV job (its two `cargo +<rust-version> check` runs, -D warnings) runs
-# in every mode, so no local gate misses what it checks.
+# CI's MSRV job (every `cargo check` it runs, each on its toolchain, -D
+# warnings) runs in every mode, so no local gate misses what it checks.
 #
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
@@ -80,7 +80,8 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  clippy (-D warnings, all targets and features) and the
                  strict panic lints on
                  native-theme and native-theme-derive, their library tests,
-                 CI's two MSRV checks (cargo +1.88.0, -D warnings), and the
+                 CI's MSRV job's checks (each on its toolchain, -D warnings),
+                 and the
                  0.8.0 plan's data checks (generate_widgets.py --check,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py, check_spec_names.py,
@@ -439,15 +440,30 @@ fi
 NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 
 # CI's MSRV job (.github/workflows/ci.yml, `msrv`): a lint can fire at the
-# MSRV and not on stable, so both of its rust-version checks deny warnings.
-# Every mode runs them.
+# MSRV and not on stable, so the job denies warnings, and it runs every
+# command below, each on its toolchain: the workspace's rust-version, then
+# the connectors' (the job's second toolchain, read from ci.yml). Every mode
+# runs all of them, exactly as the job does.
 MSRV_TOOLCHAIN="+$(grep -E '^rust-version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')"
+CONNECTOR_TOOLCHAIN="+$(sed -n '/^  msrv:/,/^  [a-z-]*:$/p' .github/workflows/ci.yml \
+    | grep -oE 'rust-toolchain@[0-9.]+' | sed -n 2p | cut -d@ -f2)"
 msrv_checks() {
     run_check "MSRV $MSRV_TOOLCHAIN, -D warnings (the workspace but the gpui and egui crates, all features)" \
         env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check --workspace --exclude native-theme-gpui \
         --exclude native-theme-egui --exclude native-theme-egui-widgets --all-features --locked
     run_check "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, default features)" \
         env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check -p native-theme --locked
+    run_check "MSRV $CONNECTOR_TOOLCHAIN, -D warnings (the egui crates, all features)" \
+        env RUSTFLAGS=-Dwarnings cargo "$CONNECTOR_TOOLCHAIN" check -p native-theme-egui \
+        -p native-theme-egui-widgets --all-features --locked
+    run_check "MSRV $CONNECTOR_TOOLCHAIN, -D warnings (native-theme-gpui)" \
+        env RUSTFLAGS=-Dwarnings cargo "$CONNECTOR_TOOLCHAIN" check -p native-theme-gpui --locked
+    run_check "MSRV $CONNECTOR_TOOLCHAIN, -D warnings (native-theme-gpui, native, watch)" \
+        env RUSTFLAGS=-Dwarnings cargo "$CONNECTOR_TOOLCHAIN" check -p native-theme-gpui \
+        --features native,watch --locked
+    run_check "MSRV $CONNECTOR_TOOLCHAIN, -D warnings (native-theme-gpui, gpui-fast, native, watch)" \
+        env RUSTFLAGS=-Dwarnings cargo "$CONNECTOR_TOOLCHAIN" check -p native-theme-gpui \
+        --features gpui-fast,native,watch --locked
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -26,9 +26,9 @@ mod presets;
 mod query;
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "the rest is read by S12's checks and the facts gate (M1a tasks 8 and 14)"
+        reason = "the rest is read by S12's checks and the facts gate (M1a tasks 8 and 14); an `allow`, as Rust 1.95 (CI's egui and gpui checks) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 mod registry;
