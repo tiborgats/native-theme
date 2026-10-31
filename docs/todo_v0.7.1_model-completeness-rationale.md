@@ -727,9 +727,12 @@ MAT-X13–MAT-X15, X-MO-1).
   which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
   as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`), and a part that becomes absent is gone at once, as that style states nothing for it, a
-  part a platform hides by state and draws on or trims off being styled in every state and hidden by `shown`
-  instead (below; ADD-A126; rejected:
+  (`gtkcssanimatedstyle.c`); a part is a `shown` part exactly when its source animates its entrance or exit, styled
+  in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
+  the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
+  under the style it enters, the ninth check's form, which no engine runs for a part it did not draw, GTK creating
+  transitions only from a previous style, `gtkcssanimatedstyle.c:1033-1034`, and which the test- and key-driven
+  engines could not time; rejected too:
   timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could not both fade out as
   the focus leaves a selected tab and vanish as another tab is selected, both ways leaving one style). A transition may name the states it applies from (`from`, a set of flags): one with
   none applies from any state, and one with a set only where the element held one of its flags before the change,
@@ -843,7 +846,8 @@ MAT-X13–MAT-X15, X-MO-1).
     measurement, their transitions pending facts the presets state none of meanwhile, with no placeholder member (a
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
-    appears) is a presentation event's matter, not settled here.
+    appears) is a presentation event's matter, not settled here: register-rows-to-add's row "interrupted
+    presentations", WinUI's picker reopened mid-close settled from its source (its key frames state their start).
 - **A part not shown at rest, drawn on, grown or trimmed off** (ADD-A126; ledger queue #85): Breeze draws its check
   on by a dash and grows its radio dot both ways, WinUI's accept visual trims its check on and off and its pressed
   radio dot grows, Compose draws its check by a fraction and grows its dot by its radius, GTK swaps the icon at once,
@@ -893,12 +897,11 @@ MAT-X13–MAT-X15, X-MO-1).
     GN-2.31, could be restated by narrower selectors): an application layer that draws a part its preset hides
     cannot restate the preset's selectors, so it says so. One rule for every part and block, base or conditional, in
     every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
-    part, which is the layer's statement, not an accident. Keeping the presets' own mistakes visible, S12 refuses a
-    dead patch, one that meets `Absent` wherever its rule applies and so sets nothing (a checked rule's glyph table
-    over a base `"absent"` glyph), while a patch that meets a drawn value under some combination (an application's
-    `@ {hover}` over a menu check) passes. A part that becomes drawn appears at once, as no engine animates a part
-    it did not draw (GTK creates transitions only from a previous style, `gtkcssanimatedstyle.c:1030-1031`); one
-    that animates in is `shown`.
+    part, which is the layer's statement, not an accident. Rejected: refusing a *dead patch*, one meeting `Absent`
+    wherever its rule applies (ADD-A126's tenth check): S6.3 keeps a patch's fields beneath an `Absent`, so a patch
+    latent under one combination is not dead (a later `Present` draws it), and whether one is dead hangs on how each
+    preset spells its bases (a drawn base glyph, or an `"absent"` one with checked `Set`s), so one application layer
+    would load on `adwaita` and be refused on four presets, breaking the layers' portability for no gain.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
@@ -1028,8 +1031,9 @@ fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields 
 becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
 indicator of the style without the flag, its paint and shadow transparent, so libadwaita's ring grows in from and
 shrinks out to its rest outline, zero wide and transparent at a larger offset (`libadwaita@1.10.0
-src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` in that style appears and is gone at once, as no engine animates a
-part or block that was not drawn (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
+src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` in that style enters from its own geometry, transparent, under the
+transition of the style it enters (Breeze's tab line fading in on a newly selected tab), and is gone at once
+(ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
 no platform draws at rest); every preset stating its rest ring transparent, with no rule (every focusable part's rest
 style restating the ring, one left at the focused paint jumping in); an entering geometry on the block (a repeat of
 the rest style). The focus flags are the toolkit's in an inactive window, which GTK and Qt clear (S7.2).

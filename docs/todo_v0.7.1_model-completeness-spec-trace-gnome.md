@@ -210,6 +210,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.72 | `menu.accelerator.{opacity,padding}` | field |
 | GN-1.72 | `menu.values.accelerator_gap` | field |
 | GN-1.73 | `menu.check_indicator.{min_width,min_height,padding,glyph}` | field |
+| GN-1.73 | `menu.check_indicator.glyph @ variant radio (GlyphSource::Path from bullet.svg) / {indeterminate} (GlyphSource::Path from dash.svg)` (a checked radio item's bullet and a mixed item's dash, as libadwaita's `check` and `radio` nodes draw them in menus too, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:80`, `widgets/_menus.scss:83-121`; written before the absent rule, ADD-A126) | rule |
 | GN-1.73 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (GN-1.234), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | GN-1.73 | `menu.check_indicator.margin / menu.check_indicator.margin @ dir rtl` (its margins, the outer one negative, ADD-A79) | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio` | rule |
