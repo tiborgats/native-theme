@@ -1,0 +1,2079 @@
+# windows-11's tokens of the slice (S4.1 motion, S4.2 behaviour, S4.4 text ramp, S4.5 icon sizes, the focus
+# indicator S2.10): microsoft-ui-xaml at winui3/release/2.5.1, the Windows App SDK API reference and Microsoft
+# Learn's design pages at their pinned commits. Written by the Windows facts lane.
+
+
+# Motion: WinUI's standard durations and its control key spline (Common_themeresources_any.xaml), and the two
+# Fluent easings Learn states.
+
+[[fact]]
+key = "token.motion.durations.control_normal"
+value = "250ms"
+rows = ["W3-30"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:603"
+quote = "<x:String x:Key=\"ControlNormalAnimationDuration\">00:00:00.250</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:28"
+quote = "|ControlNormalAnimationDuration | 250ms |"
+
+[[fact]]
+key = "token.motion.durations.control_fast"
+value = "167ms"
+rows = ["W3-30"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:604"
+quote = "<x:String x:Key=\"ControlFastAnimationDuration\">00:00:00.167</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:29"
+quote = "|ControlFastAnimationDuration | 167ms |"
+
+[[fact]]
+key = "token.motion.durations.control_fast_after"
+value = "168ms"
+rows = ["W3-30"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:605"
+quote = "<x:String x:Key=\"ControlFastAnimationAfterDuration\">00:00:00.168</x:String>"
+
+[[fact]]
+key = "token.motion.durations.control_faster"
+value = "83ms"
+rows = ["W3-30", "W1-023", "W1-123"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:606"
+quote = "<x:String x:Key=\"ControlFasterAnimationDuration\">00:00:00.083</x:String>"
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:30"
+quote = "|ControlFasterAnimationDuration | 83ms |"
+
+[[fact]]
+key = "token.motion.timings.control_fast_out_slow_in"
+value = { cubic_bezier = [0, 0, 0, 1] }
+rows = ["W3-31", "W1-123"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:602"
+quote = "<x:String x:Key=\"ControlFastOutSlowInKeySpline\">0,0,0,1</x:String>"
+
+[[fact]]
+key = "token.motion.timings.fast_out_slow_in"
+value = { cubic_bezier = [0, 0, 0, 1] }
+rows = ["W3-31"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:45"
+quote = "cubic-bezier(0, 0, 0, 1)"
+
+[[fact]]
+key = "token.motion.timings.slow_out_fast_in"
+value = { cubic_bezier = [1, 0, 1, 1] }
+rows = ["W3-31"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/motion/timing-and-easing.md:66"
+quote = "cubic-bezier(1 , 0 , 1 , 1)"
+
+# The connected animation's default duration and curve, CConnectedAnimationService's own (S4.1 step 2:
+# `connected_service`); the scroll into view is measured (W-P4-3†) and pending (register U50).
+[[fact]]
+key = "token.motion.durations.connected_service"
+value = "300ms"
+rows = ["W3-33"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26"
+quote = "static const INT64 s_DefaultDuration = 3000000; // 300ms"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:33"
+quote = "m_defaultDuration.Duration = s_DefaultDuration;"
+
+[[fact]]
+key = "token.motion.timings.connected_service"
+value = { cubic_bezier = [0.8, 0, 0.2, 1] }
+rows = ["W3-33"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:27-28"
+quote = "static const wfn::Vector2 s_ControlPoint1 = { 0.8f, 0.0f }; // Default control points for easing function static const wfn::Vector2 s_ControlPoint2 = { 0.2f, 1.0f };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:300"
+quote = "CreateCubicBezierEasingFunction(renderTarget->GetDCompTreeHost()->GetCompositor(), s_ControlPoint1, s_ControlPoint2, &cubicBezier)"
+
+[[fact]]
+key = "token.motion.durations.scroll_into_view"
+pending = "U50"
+rows = ["W-P4-3†"]
+
+[[fact]]
+key = "token.motion.timings.scroll_into_view"
+pending = "U50"
+rows = ["W-P4-3†"]
+
+
+# Behaviour: the system defaults the Win32 reference states (the reader reads the user's).
+
+[[fact]]
+key = "token.behavior.double_click_time"
+value = "500ms"
+rows = ["W3-41"]
+
+[[fact.cite]]
+kind = "published"
+source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-setdoubleclicktime.md:62"
+quote = "The number of milliseconds that may occur between the first and second clicks of a double-click. If this parameter is set to 0, the system uses the default double-click time of 500 milliseconds. If this parameter value is greater than 5000 milliseconds, the system sets the value to 5000 milliseconds."
+
+[[fact]]
+key = "token.behavior.scroll_lines_per_step"
+value = 3
+rows = ["W3-41"]
+
+[[fact.cite]]
+kind = "published"
+source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-systemparametersinfoa.md:1294"
+quote = "Retrieves the number of lines to scroll when the vertical mouse wheel is moved. The <i>pvParam</i> parameter must point to a <b>UINT</b> variable that receives the number of lines. The default value is 3."
+
+
+# The system focus visual is drawn only on an element in the Keyboard focus state (focusmgr.cpp's GetFocusTarget);
+# a programmatic focus counts as Keyboard where the last input was a keyboard or a gamepad (CoerceFocusState);
+# no timeout.
+[[fact]]
+key = "token.behavior.focus_visible_when"
+value = { keyboard = {} }
+rows = ["W3-21"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2704-2706"
+quote = "// Get the element we need to draw the focus rect on. Returning nullptr will cause the focus rectangle // to not be drawn CDependencyObject* CFocusManager::GetFocusTarget()"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:2731-2733"
+quote = "if (candidateAsElement && candidateAsElement->IsFocused() && candidateAsElement->IsKeyboardFocused())"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/uielement.h:867-870"
+quote = "bool IsKeyboardFocused() const { return GetFocusState() == DirectUI::FocusState::Keyboard; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:3199-3202"
+quote = "// Set the new focus state with the last input device type // if the focus state set as programmatic. if (focusState == DirectUI::FocusState::Programmatic) {"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/dll/focusmgr.cpp:3218-3237"
+quote = "{ case DirectUI::InputDeviceType::Keyboard: // In case of non focus navigation keys from SIP, we do not want to display // focus rectangle, hence setting new focus state as a Pointer. if (m_contentRoot.GetInputManager().LastInputWasNonFocusNavigationKeyFromSIP()) { return DirectUI::FocusState::Pointer; } /* * Intentional fall through in the case where input is * a. any one of focus navigation key(Tab or an arrow key) from SIP or * b. any key from actual hardware keyboard */ __fallthrough; case DirectUI::InputDeviceType::GamepadOrRemote: return DirectUI::FocusState::Keyboard; default: // For all other rest of the cases, setting focus state to Pointer // will make sure that focus rectangle will not be drawn return DirectUI::FocusState::Pointer;"
+
+# Shape: WinUI's two corner radii (CornerRadius_themeresources.xaml), the same in every theme.
+
+[[fact]]
+key = "token.params.shape.control_corner_radius"
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:5"
+quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:9"
+quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:13"
+quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
+
+[[fact]]
+key = "token.params.shape.overlay_corner_radius"
+value = "8px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:6"
+quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:10"
+quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:14"
+quote = "<CornerRadius x:Key=\"OverlayCornerRadius\">8,8,8,8</CornerRadius>"
+
+# The focus indicator: the HighVisibility system focus visual (the default FocusVisualKind), a 2 px outer ring
+# in FocusStrokeColorOuter whose outer edge lies at the element's FocusVisualMargin (0 unless a style sets it).
+
+[[fact]]
+key = "token.focus.kind"
+value = "ring"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/application_focusvisualkind.md:18"
+quote = "The type of visual feedback used to indicate the UI element that has focus. The default value is [HighVisibility](focusvisualkind.md)."
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/focusvisualkind.md:22"
+quote = "### -field HighVisibility:1"
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = ["W3-19"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualprimarythickness.md:18"
+quote = "The thickness of the outer border of a [HighVisibility](focusvisualkind.md) focus visual. The default is `2`."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:24"
+quote = "const XTHICKNESS DefaultFocusVisualPrimaryThickness = { 2, 2, 2, 2 };"
+
+[[fact]]
+key = "token.focus.paint"
+value = "= role.@focus_stroke_outer"
+rows = ["W3-19"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:389-398"
+quote = "case KnownPropertyIndex::FrameworkElement_FocusVisualPrimaryBrush:"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:15"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualPrimaryBrush\" ResourceKey=\"FocusStrokeColorOuterBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:29"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualPrimaryBrush\" ResourceKey=\"FocusStrokeColorOuterBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:43"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualPrimaryBrush\" ResourceKey=\"FocusStrokeColorOuterBrush\" />"
+
+[[fact]]
+key = "token.focus.dash"
+value = "solid"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/focusvisualkind.md:22"
+quote = "### -field HighVisibility:1"
+
+# The offset is to the ring's inner edge (S2.10, ADD-A122): WinUI shrinks the element's bounds by the margin and
+# draws the outer ring inside them, so the inner edge lies the margin negated less the ring's width out.
+[[fact]]
+key = "token.focus.offset.top"
+value = "= sub(0px, token.focus.width)"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
+quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
+
+[[fact]]
+key = "token.focus.offset.right"
+value = "= sub(0px, token.focus.width)"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
+quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
+
+[[fact]]
+key = "token.focus.offset.bottom"
+value = "= sub(0px, token.focus.width)"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
+quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
+
+[[fact]]
+key = "token.focus.offset.left"
+value = "= sub(0px, token.focus.width)"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
+quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/inc/FocusRectNudging.h:389"
+quote = "const XRECTF focusRectBounds = ShrinkRectByThickness(elementBounds, focusRectMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; }"
+
+# The ring's inner corners (S2.10, ADD-A122): WinUI takes the focus target's CornerRadius less the mean of the two
+# margins at each corner for the outer ring, and that less the outer thickness for the inner border (the outer
+# ring's inner edge), each at least 0 and a square corner kept square: follow_part where the part's corner is
+# rounded and its offsets equal; a part with a square corner states Px(0). Each corner is one arc whose two
+# extents are that one radius (geometry.cpp:986-993, :1148-1159): circular.
+[[fact]]
+key = "token.focus.corners.top_left"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.top_right"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+value = "follow_part"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:72-78"
+quote = "void AdjustCornerRadius(XCORNERRADIUS& cornerRadius, XTHICKNESS& adjustment) { if (cornerRadius.topLeft != 0) { cornerRadius.topLeft -= (adjustment.top + adjustment.left) * 0.5f; if (cornerRadius.topLeft < 0) cornerRadius.topLeft = 0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:211-215"
+quote = "// We need to adjust the corner radius based upon our margin which affects where the focus rect // will be rendered. The objective is to keep the length of the straight edges of the focus // element and the two border rectangles the same length. Applying the margin will adjust for // the outer border and when we render, we will adjust it again for the inner border. AdjustCornerRadius(options->cornerRadius, *finalMargin);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:489-492"
+quote = "if (type == FocusElementType::Inner) { AdjustCornerRadius(cornerRadius, options.firstThickness); }"
+
+[[fact]]
+key = "token.focus.corners.curve"
+value = "circular"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:478-483"
+quote = "XCORNERRADIUS cornerRadius = { options.cornerRadius.topLeft, options.cornerRadius.topRight, options.cornerRadius.bottomRight, options.cornerRadius.bottomLeft };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/geometry.cpp:986-989"
+quote = "fLeftTop = MAX(0.0f, rCornerRadius.topLeft - left); fTopLeft = MAX(0.0f, rCornerRadius.topLeft - top); fTopRight = MAX(0.0f, rCornerRadius.topRight - top); fRightTop = MAX(0.0f, rCornerRadius.topRight - right);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/geometry.cpp:1148-1159"
+quote = "arcSize.width = (corners[4].x - corners[1].x); arcSize.height = (corners[4].y - corners[1].y); arcSize.width = arcSize.width > 0 ? arcSize.width : -arcSize.width; arcSize.height = arcSize.height > 0 ? arcSize.height : -arcSize.height; pSink->AddArc( corners[4], arcSize, 0.0f, TRUE, FALSE );"
+
+
+# The HighVisibility visual's inner ring (ADD-A17): a 1 px border in FocusStrokeColorInner drawn just inside the
+# outer ring, its bounds the outer ring's deflated by the outer thickness (FocusRectManager.cpp:450-455): one inset
+# shadow layer cast by the ring's inner outline (S2.10, ADD-A122), spread 1, no blur, no offset.
+[[fact]]
+key = "token.focus.shadow"
+value = { layers = [ { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true } ] }
+rows = ["W3-19"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:25"
+quote = "const XTHICKNESS DefaultFocusVisualSecondaryThickness = { 1, 1, 1, 1 };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:388-398"
+quote = "case KnownPropertyIndex::FrameworkElement_FocusVisualSecondaryBrush: case KnownPropertyIndex::FrameworkElement_FocusVisualPrimaryBrush: { const FocusVisualType forFocusVisualType = m_nIndex == KnownPropertyIndex::FrameworkElement_FocusVisualSecondaryBrush ? FocusVisualType::Secondary : FocusVisualType::Primary; xref_ptr<CDependencyObject> spFocusBorderBrush; IFC_RETURN(GetDefaultFocusVisualBrush( forFocusVisualType, core, referenceObject, spFocusBorderBrush.ReleaseAndGetAddressOf())); defaultValue->SetObjectAddRef(spFocusBorderBrush.get());"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:16"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualSecondaryBrush\" ResourceKey=\"FocusStrokeColorInnerBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:30"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualSecondaryBrush\" ResourceKey=\"FocusStrokeColorInnerBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources.xaml:44"
+quote = "<StaticResource x:Key=\"SystemControlFocusVisualSecondaryBrush\" ResourceKey=\"FocusStrokeColorInnerBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
+quote = "{ XTHICKNESS* thickness = (type == FocusElementType::Outer ? &options.firstThickness : &options.secondThickness); xref_ptr<CSolidColorBrush> brush = (type == FocusElementType::Outer ? options.firstBrush : options.secondBrush); bool focusRectDirty = false; XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; } // Let's just not deal with negative sizes. bounds.Width = MAX(0.0f, bounds.Width);"
+
+# The type ramp: TextBlock_themeresources.xaml's styles (`UseVisualStyle Latest`), all based on BaseTextBlockStyle
+# (XamlAutoFontFamily, which WinUI resolves to Segoe UI Variable for a Latin-script default language, SemiBold,
+# CharacterEllipsis, Wrap, LineStackingStrategy MaxHeight, no LineHeight: the font's own line spacing).
+
+[[fact]]
+key = "token.text.keyed.caption.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.caption.font.size"
+value = "12px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:3"
+quote = "<x:Double x:Key=\"CaptionTextBlockFontSize\">12</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:20"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource CaptionTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.caption.font.weight"
+value = 400
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:21"
+quote = "<Setter Property=\"FontWeight\" Value=\"Normal\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_normal.md:14"
+quote = "Specifies a font weight value of 400."
+
+[[fact]]
+key = "token.text.keyed.caption.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.caption.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.caption.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.caption.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.caption.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.caption.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.caption.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.caption.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.body.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.body.font.size"
+value = "14px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:4"
+quote = "<x:Double x:Key=\"BodyTextBlockFontSize\">14</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:12"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource BodyTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.body.font.weight"
+value = 400
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:24"
+quote = "<Setter Property=\"FontWeight\" Value=\"Normal\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_normal.md:14"
+quote = "Specifies a font weight value of 400."
+
+[[fact]]
+key = "token.text.keyed.body.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.body.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.body.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.body.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.body.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.body.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.body.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.body.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.size"
+value = "14px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:4"
+quote = "<x:Double x:Key=\"BodyTextBlockFontSize\">14</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:12"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource BodyTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.weight"
+value = 600
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:13"
+quote = "<Setter Property=\"FontWeight\" Value=\"SemiBold\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_semibold.md:14"
+quote = "Specifies a font weight value of 600."
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.body_strong.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.body_strong.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.body_strong.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.body_strong.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.body_strong.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.body_strong.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.body_large.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:27"
+quote = "<Style x:Key=\"BodyLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.body_large.font.size"
+value = "18px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:5"
+quote = "<x:Double x:Key=\"BodyLargeTextBlockFontSize\">18</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:29"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource BodyLargeTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:27"
+quote = "<Style x:Key=\"BodyLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.body_large.font.weight"
+value = 400
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:28"
+quote = "<Setter Property=\"FontWeight\" Value=\"Normal\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_normal.md:14"
+quote = "Specifies a font weight value of 400."
+
+[[fact]]
+key = "token.text.keyed.body_large.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.body_large.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.body_large.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.body_large.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.body_large.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.body_large.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.body_large.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.body_large.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:32"
+quote = "<Style x:Key=\"BodyLargeStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.size"
+value = "18px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:5"
+quote = "<x:Double x:Key=\"BodyLargeTextBlockFontSize\">18</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:33"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource BodyLargeTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:32"
+quote = "<Style x:Key=\"BodyLargeStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.weight"
+value = 600
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:32"
+quote = "<Style x:Key=\"BodyLargeStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:13"
+quote = "<Setter Property=\"FontWeight\" Value=\"SemiBold\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_semibold.md:14"
+quote = "Specifies a font weight value of 600."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.size"
+value = "20px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:6"
+quote = "<x:Double x:Key=\"SubtitleTextBlockFontSize\">20</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:37"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource SubtitleTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.weight"
+value = 600
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:13"
+quote = "<Setter Property=\"FontWeight\" Value=\"SemiBold\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_semibold.md:14"
+quote = "Specifies a font weight value of 600."
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.subtitle.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.subtitle.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.subtitle.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.subtitle.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.subtitle.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.subtitle.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.title.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.title.font.size"
+value = "28px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:7"
+quote = "<x:Double x:Key=\"TitleTextBlockFontSize\">28</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:41"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource TitleTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.title.font.weight"
+value = 600
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:13"
+quote = "<Setter Property=\"FontWeight\" Value=\"SemiBold\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_semibold.md:14"
+quote = "Specifies a font weight value of 600."
+
+[[fact]]
+key = "token.text.keyed.title.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.title.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.title.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.title.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.title.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.title.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.title.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.title.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.title_large.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.title_large.font.size"
+value = "40px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:8"
+quote = "<x:Double x:Key=\"TitleLargeTextBlockFontSize\">40</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:45"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource TitleLargeTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.title_large.font.weight"
+value = 600
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:13"
+quote = "<Setter Property=\"FontWeight\" Value=\"SemiBold\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_semibold.md:14"
+quote = "Specifies a font weight value of 600."
+
+[[fact]]
+key = "token.text.keyed.title_large.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.title_large.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.title_large.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.title_large.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.title_large.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.title_large.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.title_large.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.title_large.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+[[fact]]
+key = "token.text.keyed.display.font.family"
+value = "Segoe UI Variable"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:11"
+quote = "<Setter Property=\"FontFamily\" Value=\"XamlAutoFontFamily\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "token.text.keyed.display.font.size"
+value = "68px"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:9"
+quote = "<x:Double x:Key=\"DisplayTextBlockFontSize\">68</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:49"
+quote = "<Setter Property=\"FontSize\" Value=\"{StaticResource DisplayTextBlockFontSize}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.keyed.display.font.weight"
+value = 600
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:13"
+quote = "<Setter Property=\"FontWeight\" Value=\"SemiBold\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_semibold.md:14"
+quote = "Specifies a font weight value of 600."
+
+[[fact]]
+key = "token.text.keyed.display.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "token.text.keyed.display.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0. Positive values increase tracking and loosen character spacing. Negative values decrease tracking and tighten the character spacing."
+
+[[fact]]
+key = "token.text.keyed.display.line_height"
+value = "auto"
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:16"
+quote = "<Setter Property=\"LineStackingStrategy\" Value=\"MaxHeight\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "token.text.keyed.display.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_textdecorations.md:29"
+quote = "A value of the enumeration. The default is **None**."
+
+[[fact]]
+key = "token.text.keyed.display.elision"
+value = "end"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:14"
+quote = "<Setter Property=\"TextTrimming\" Value=\"CharacterEllipsis\" />"
+
+[[fact]]
+key = "token.text.keyed.display.wrap"
+value = "word"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:15"
+quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
+
+[[fact]]
+key = "token.text.keyed.display.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+
+[[fact]]
+key = "token.text.keyed.display.font.axes"
+value = { opsz = "follows_size" }
+rows = ["W3-23"]
+
+[[fact.cite]]
+kind = "published"
+source = "windows-dev-docs@f54166ed hub/apps/design/signature-experiences/typography.md:29"
+quote = "When using XAML common controls, the Segoe UI Variable font will be selected by default for supported [languages](#languages). When this font or another variable font with an optical axis is used, the optical size will automatically match the requested font-size. When using HTML, optical scaling is also automatic, but you will need to specify the Segoe UI Variable font in CSS."
+
+# The nineteen text roles: each the keyed style the catalogue's Windows column names, a shared style referenced
+# by its owner slot (S4.4).
+
+[[fact]]
+key = "token.text.roles.body"
+value = "= token.text.keyed.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.caption"
+value = "= token.text.keyed.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.title1"
+value = "= token.text.keyed.title"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.title2"
+value = "= token.text.keyed.subtitle"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.title3"
+value = "= token.text.roles.title2"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.headline"
+value = "= token.text.roles.title2"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.large_title"
+value = "= token.text.keyed.title_large"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.display_large"
+value = "= token.text.keyed.display"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.display_medium"
+value = "= token.text.roles.display_large"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.display_small"
+value = "= token.text.roles.display_large"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.body_emphasized"
+value = "= token.text.keyed.body_strong"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+
+[[fact]]
+key = "token.text.roles.callout"
+value = "= token.text.keyed.body_large"
+rows = ["W1-147"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:27"
+quote = "<Style x:Key=\"BodyLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.footnote"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.caption2"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.label"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+[[fact]]
+key = "token.text.roles.numeric"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+# Icon sizes: the app-bar button's icon box (AppBarButtonContentHeight, used by AppBarButton's ContentViewbox).
+
+[[fact]]
+key = "token.icons.sizes.toolbar.size"
+value = "16px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/Materials/Reveal/RevealBrush_themeresources.xaml:563"
+quote = "<x:Double x:Key=\"AppBarButtonContentHeight\">16</x:Double>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:366"
+quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\""
+
+# Font fallbacks (S4.4, ADD-A122, ADD-A123): the symbol font is the XAML FontFamily list SymbolThemeFontFamily,
+# Segoe Fluent Icons then Segoe MDL2 Assets, which every FontCodePoint glyph's family takes.
+
+[[fact]]
+key = 'token.text.fallbacks.per_family."Segoe Fluent Icons"'
+value = ["Segoe MDL2 Assets"]
+rows = ["W-FM01†"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20"
+quote = "<FontFamily x:Key=\"SymbolThemeFontFamily\">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>"

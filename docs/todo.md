@@ -143,7 +143,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 ### Tab: the border is the selected tab's, and KDE's live tab colours
 
 - [ ] [1.0] `kde-breeze` now states `tab.border.color`, `line_width_px`,
-      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md:1354-1357`,
+      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md@fc6109d1:1354-1357`,
       §2.11). Breeze strokes only the selected tab; an unselected tab has no
       pen and rounds 5 on the row's outer ends only (breezehelper.cpp:1488-1507,
       breezestyle.cpp:7248-7253), and Windows' cell (`:1341`) is also
@@ -176,7 +176,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       divider are rounded — and the colour of the divider line between
       segments, then add what the platforms state to `SegmentedControlTheme`
       (`native-theme/src/model/widgets/mod.rs:944-976`), which states the
-      divider's width, `separator_width` (`docs/platform-facts.md:991`), and
+      divider's width, `separator_width` (`docs/platform-facts.md@fc6109d1:991`), and
       no colour or join. Until the model states them, the egui widgets crate
       draws its segments `separator_width` apart as separate segments, with no
       divider line (`docs/archive/todo_egui-widgets-spec.md` §4.4); nothing is to be
@@ -188,7 +188,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       box and its stroke width — in `docs/platform-facts.md` §2.5 **first**,
       then add to `CheckboxTheme` what the platforms state. The model has no
       field for the mark: `indicator_width` is the box
-      (`docs/platform-facts.md:984`), and §2.5 says of the mark only that it
+      (`docs/platform-facts.md@fc6109d1:984`), and §2.5 says of the mark only that it
       fills the indicator, except for GNOME's `padding: 3` (`:1237-1238`).
       Each toolkit draws its own: egui a three-point line in an 8 px square
       (`Spacing::icon_width_inner`, `egui/src/style.rs:1467`, read at
@@ -328,11 +328,11 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] `docs/platform-facts.md` derives macOS `border.padding_vertical` as the
       outer height less the content height, halved — "3 **(measured)**
-      (22−16)/2" for the button (`docs/platform-facts.md:1185`), and the same
+      (22−16)/2" for the button (`docs/platform-facts.md@fc6109d1:1185`), and the same
       shape for the text input (`:1214`), the menu (`:1262`), the tab
       (`:1353`) and the list (`:1434`). Outer less content is border plus padding, yet the outer-box
       rule counts border, padding and content as separate parts
-      (`docs/platform-facts.md:901-906`), and a padding is what lies inside the
+      (`docs/platform-facts.md@fc6109d1:901-906`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
       `macos-monterey` states the button's `padding_top_px = 1.0` and
       `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml`
@@ -349,20 +349,20 @@ cannot tell which file a bare number continues, so it does not look for one.
       M2a Step 7 (2026-10-11) took the button's row from the OS probe:
       AppKit's title rect sits 1 below the top and 3 above the bottom of the
       20-tall bezel, measured from its outer (alignment-rect) edge
-      (`docs/platform-facts.md:1185`), and the pop-up button's likewise
+      (`docs/platform-facts.md@fc6109d1:1185`), and the pop-up button's likewise
       (`:1623`). Those are offsets from the outer edge, so the border's
       share is still open on those two rows, as on the text input, menu, tab
       and list rows.
       M2a Step 8 (2026-10-11) took the text input's row from the probe too:
       the title rect sits 2 below the top and 2 above the bottom of the
-      21-tall field on macOS 14.8.9 (`docs/platform-facts.md:1214`), from the
+      21-tall field on macOS 14.8.9 (`docs/platform-facts.md@fc6109d1:1214`), from the
       outer edge again, so its border's share is open as the other two's.
 
 ### Presets: a spinner stroke width platform-facts does not give
 
 - [ ] [1.0] `docs/platform-facts.md` §2.23 gives the spinner a stroke width on
       Windows only — macOS draws fins, KDE and GNOME rotate an icon — and
-      states **(none)** for the other three (`docs/platform-facts.md:1601`),
+      states **(none)** for the other three (`docs/platform-facts.md@fc6109d1:1601`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
       (`native-theme/src/presets/macos-monterey.toml`,
@@ -378,7 +378,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       field where the icon set has no animated indicator
       (`docs/archive/todo_egui-widgets-spec.md` §4.3).
       Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
-      `min_diameter` either (**(none)**, `docs/platform-facts.md:1600`), yet
+      `min_diameter` either (**(none)**, `docs/platform-facts.md@fc6109d1:1600`), yet
       `kde-breeze` and `adwaita` (and their `-live` twins, until M1-T4-01
       removed them) state `min_diameter_px = 16.0` in both variants.
       `min_diameter` is required in `ResolvedSpinnerTheme` too
@@ -390,7 +390,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] `docs/platform-facts.md` §2.8 measures `scrollbar.thumb_color` for
       macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
-      (`docs/platform-facts.md:1305`), yet neither `macos-monterey` nor
+      (`docs/platform-facts.md@fc6109d1:1305`), yet neither `macos-monterey` nor
       `windows-11` states it: their scrollbar sections state
       `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
@@ -420,7 +420,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       `ScrollBarThumbFillPointerOver` are both `ControlStrongFillColorDefault`,
       `#72000000` / `#8BFFFFFF` (ScrollBar_themeresources.xaml:138-139, :26-27;
       Common_themeresources_any.xaml:226, :22, microsoft-ui-xaml 8463f45; now
-      beside the measurement in `docs/platform-facts.md:1305-1306`). The
+      beside the measurement in `docs/platform-facts.md@fc6109d1:1305-1306`). The
       preset states what WinUI 3 draws elsewhere, but its measured hover and
       pressed thumbs (`#a0a0a0`, `#787878`) are lighter or darker than that
       brush, and WinUI does not change the thumb on hover: decide whether
@@ -437,12 +437,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       option with no source. Two citations were one line off: the dark scroll
       bar this entry cited as `macos-monterey.toml:640-654` was `:641-655` at 2ca74471, and
       the egui entry's dark `track_color` (`:646`) was `:647`. The validator also
-      named `docs/platform-facts.md:1307` and `:181` as "citing probe 15" (its
+      named `docs/platform-facts.md@fc6109d1:1307` and `:181` as "citing probe 15" (its
       words; `:1307` gives the macOS 14.8.9 probe's legacy 15): re-check what
       each should cite now that the reader reads the width live (e6c5c737).
       *W2-j (2026-10-26):* §2.8's KDE `thumb_hover_color` cell now has its
       source and value, Breeze's `DecorationHover` at half alpha over the
-      window, #96cfed / #2f6888 (`docs/platform-facts.md:1306`), which
+      window, #96cfed / #2f6888 (`docs/platform-facts.md@fc6109d1:1306`), which
       kde-breeze states and the reader writes (D7). The KDE `thumb_color`
       cell (`:1305`) is still the placeholder "thumb color". By the same
       source a resting handle is `WindowText` at alpha 0.5 (breezehelper.cpp:279
@@ -529,7 +529,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] `defaults.selection_inactive_background` is the selection fill of a
       window that has lost focus. Only macOS states it
-      (`docs/platform-facts.md:1061`, `unemphasizedSelectedContentBackgroundColor`;
+      (`docs/platform-facts.md@fc6109d1:1061`, `unemphasizedSelectedContentBackgroundColor`;
       the reader, `native-theme/src/macos.rs:107`), and `ResolvedTheme` has no
       text colour to pair with it: a toolkit that swapped the fill in on focus
       loss would paint the active `selection_text_color` on it. The egui
@@ -545,7 +545,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       A question, not a claim: the macOS reader also writes the unemphasised
       colour into `input.selection_background` (`native-theme/src/macos.rs:490`,
       `:502`), where platform-facts gives an input's selection as
-      `← defaults.text_selection_background` (`docs/platform-facts.md:1210`),
+      `← defaults.text_selection_background` (`docs/platform-facts.md@fc6109d1:1210`),
       `selectedTextBackgroundColor` on macOS (`:1062`). Neither the reader's
       comments nor the commit that added the assignment (`d87483c8`) say why a text
       field's selection takes the unfocused colour. Is it intended? Fix the
@@ -554,7 +554,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       `input.selection_background`, and
       `read_macos_leaves_the_text_field_selection_to_inheritance`
       (`native-theme/src/macos.rs:1017`) pins it, so the field inherits
-      `defaults.text_selection_background`, as `docs/platform-facts.md:1210`
+      `defaults.text_selection_background`, as `docs/platform-facts.md@fc6109d1:1210`
       gives it. The research task above (the text colour on the unemphasised
       selection) stays open.
 
@@ -588,10 +588,10 @@ cannot tell which file a bare number continues, so it does not look for one.
       *M2b fix round 2 (2026-10-11):* windows-11's `defaults.border.color` is
       now `CardStrokeColorDefault` as the resource gives it, `#0000000f` light
       and `#00000019` dark (Common_themeresources_any.xaml:250, :46,
-      microsoft-ui-xaml 8463f45; `docs/platform-facts.md:1055`), so its dark
+      microsoft-ui-xaml 8463f45; `docs/platform-facts.md@fc6109d1:1055`), so its dark
       `#454545` is closed. `splitter.hover_color` keeps the old `#e5e5e5` /
       `#454545` with no source ❓: WinUI 3 has no draggable divider
-      (`docs/platform-facts.md:1468`); it is for M3 with the other soft
+      (`docs/platform-facts.md@fc6109d1:1468`); it is for M3 with the other soft
       options that have no facts row.
       *M2e Step 7 (2026-10-11):* adwaita's `defaults.border.color` is now the
       computed `#dcdcde` / `#434347`, and its popover outline libadwaita
@@ -620,7 +620,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       Breeze 6.7).
       *M2e fix round 1 (2026-10-11):* kde-breeze's `separator.line_color`
       (`#c4c8c6` / `#3e4550`, no source) is no longer stated: the separator
-      inherits `defaults.border.color` (`docs/platform-facts.md:1476`), so
+      inherits `defaults.border.color` (`docs/platform-facts.md@fc6109d1:1476`), so
       the unsourced `#bcc0bf` / `#4d545b` above is now its line colour too.
       kde-breeze light's `button.active_text_color`, the text on the accent
       fill, is `#ffffff` (`[Colors:Selection] ForegroundNormal`,
@@ -634,9 +634,9 @@ cannot tell which file a bare number continues, so it does not look for one.
       *M4 T36 (2026-10-13):* kde-breeze's disabled switch thumb, the
       `#fcfcfc80` above, is the handle's Disabled shade since 74fc414d,
       Disabled `[Colors:Button] BackgroundNormal` (`#f0f0f0` / `#272a2e`,
-      `docs/platform-facts.md:1523`). kde-breeze's `defaults.border.color` is
+      `docs/platform-facts.md@fc6109d1:1523`). kde-breeze's `defaults.border.color` is
       still open, and two facts cells disagree on it:
-      `docs/platform-facts.md:1055` gives KDE's `border.color` as "(preset) —
+      `docs/platform-facts.md@fc6109d1:1055` gives KDE's `border.color` as "(preset) —
       derived from background", while `:1476` gives the separator, which
       inherits it, as Breeze's `separatorColor()`, mix(Window, WindowText,
       frameContrast). State the computed mix in the preset and the `:1051` cell
@@ -760,7 +760,7 @@ model, the platform presets and the three connectors
       for the progress bar (and for the text field, check box, drop-down,
       segmented control and expander), as `docs/platform-facts.md`'s macOS cells give.
 
-### macOS 27 Golden Gate: no preset of its own yet
+### macOS 27 Golden Gate and iOS 27: no preset of their own yet
 
 - [ ] [1.0] When GitHub offers a non-preview macOS 27 runner image (today only the
       `xcode-27` preview, actions/runner-images #14404), run the OS probe on it and
@@ -768,8 +768,8 @@ model, the platform presets and the three connectors
       carries. If it does, build `macos-golden-gate` (D8's key: Apple's codename for
       27) with a row in `pipeline.rs`'s `MACOS_GENERATIONS`; if not, raise
       `macos-tahoe`'s `last_verified` to 27. Until then a Mac on 27 gets
-      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (plan
-      D4). The preview probe already differs from 26.6.2 in the segmented
+      `macos-tahoe`, and `SystemTheme::version_match` reports `PresetOlder` (the
+      code-review plan's D4, `docs/archive/`). The preview probe already differs from 26.6.2 in the segmented
       control's width (98 against 91), the stepper's height (24 against 26),
       `underPageBackgroundColor` and the text field's render fill
       (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-xcode-27`).
@@ -778,6 +778,20 @@ model, the platform presets and the three connectors
       disabled slider's bar left of the knob #d9d9d9 / #3d3d3d (26: #dfdfdf /
       #393939; `docs/platform-facts.md` §2.9 `disabled_fill_color`, §2.21
       `disabled_checked_background`).
+      Carried here from the v0.7.1 specification by the 0.8.0 plan's D12
+      (2026-10-29: `macos-tahoe` and `ios-26` describe 26.x), what only 27
+      draws, each a model addition for 27's preset: macOS's pull to refresh
+      (`NSScrollView.refreshController`, MAC-N24; a `pull_to_refresh` on the
+      macOS preset), a status item's expanded interface
+      (`NSStatusItemExpandedInterfaceSession`, MAC-N34†; a `menu_bar` variant
+      `@expanded_interface` and its `extra_window` look), iOS 27's sheet
+      placements (`preferredPlacement`: `@placement_center`, `_leading`,
+      `_trailing`, with a side anchor, SF-7†), iOS 27.2's navigation-bar
+      `titleAlignment` (C-1), and iOS 27.1's `UIVerticalBarBehavior` and
+      `UIBarButtonItem.axisBehavior` (the iOS gap map's 26 column); the gap
+      maps' rows and the traces' `newest (R1.5)` lines name them. For iOS 27
+      the same decision is taken when a non-preview runner image carries its
+      simulator: `ios-26` re-described, or a preset of its own.
 
 ### macOS: the window background macOS 14 and 15 draw is not the one they read
 
@@ -1066,7 +1080,7 @@ model, the platform presets and the three connectors
       `DwmGetColorizationColor` as `window.title_bar_background` whether or not
       the user turned on *Show accent colour on title bars*; since 8c133614 it
       does not, and outside high contrast the title bar is the preset's Mica
-      fallback (bcb1d2c2; `docs/platform-facts.md:1160`, `:374`). With the
+      fallback (bcb1d2c2; `docs/platform-facts.md@fc6109d1:1160`, `:374`). With the
       setting on, Windows draws the title bar in an accent colour the theme then
       misses. The probe reads the setting as `ColorPrevalence` under
       `HKCU\Software\Microsoft\Windows\DWM` (0 on the Windows 11 25H2 runner,
@@ -1126,7 +1140,7 @@ model, the platform presets and the three connectors
 ### KDE reader: `switch.thumb_background` and `menu.icon_size` are not read
 
 - [ ] [v0.7.x] From M4 T36 (2026-10-13): kde-breeze states the switch thumb as
-      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md:1523`)
+      `[Colors:Button] BackgroundNormal` (a7da50c7; `docs/platform-facts.md@fc6109d1:1523`)
       and the menu icon size as KIconLoader's Small, 16 (`:1268`), but the KDE
       reader writes neither: a custom colour scheme keeps Breeze's thumb, and
       an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
@@ -1143,7 +1157,7 @@ model, the platform presets and the three connectors
       Breeze's Qt Widgets menu is filled with `frameBackgroundColor()`,
       mix(Window, Base, 0.3) (breezestyle.cpp `drawPanelMenuPrimitive`;
       breezehelper.cpp:200-203, as the T36 implementer read them), while
-      `docs/platform-facts.md:1253` gives KDE's `menu.background_color` as
+      `docs/platform-facts.md@fc6109d1:1253` gives KDE's `menu.background_color` as
       `[Colors:Window] BackgroundNormal`, which qqc2-desktop-style's `Menu.qml`
       uses (`Kirigami.Theme.backgroundColor`). The row depends on which toolkit
       it describes. Cite both at v6.7.5 / v6.31.0 in the facts cell, decide
@@ -1196,7 +1210,7 @@ model, the platform presets and the three connectors
       `one-dark.toml`, `solarized.toml` and `tokyo-night.toml`, each
       `[light.expander] hover_background` and `[dark.expander] hover_background`).
       kde-breeze's was unset in M6 T16b: the
-      §2.27 `frame_enabled` row (`docs/platform-facts.md:1686`) says
+      §2.27 `frame_enabled` row (`docs/platform-facts.md@fc6109d1:1686`) says
       `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and
       nothing else. Find each platform's source for a hovered expander header
       (a facts row), or unset the value; the gpui connector's
@@ -1465,7 +1479,7 @@ model, the platform presets and the three connectors
       M8 T16c fix round 1 (2026-10-17): kde-breeze states those four now,
       `disabled_checked_background` #e6e7e8 / #26292c and
       `disabled_unchecked_background` #e9e9e9 / #2e3135
-      (`docs/platform-facts.md:1529-1530`); the switch's disabled tracks close.
+      (`docs/platform-facts.md@fc6109d1:1529-1530`); the switch's disabled tracks close.
       M8 final fix (2026-10-17): adwaita `button.hover_background` `#d5d5d5` /
       `#464649` (`adwaita.toml` `[light.button] hover_background`,
       `[dark.button] hover_background`; §2.3 `hover_background`, whose GNOME
@@ -1473,7 +1487,7 @@ model, the platform presets and the three connectors
       15 %, a translucent replacement of the rest fill, #dcdcde / #434347 over
       the window).
       M9a T17 (2026-10-18): the sidebar padding is stated from §2.12's rows
-      (`docs/platform-facts.md:1380-1381`): adwaita 6 across, 6 top and 4
+      (`docs/platform-facts.md@fc6109d1:1380-1381`): adwaita 6 across, 6 top and 4
       bottom (`adwaita.toml`
       `[light.sidebar.border] padding_horizontal_px, padding_top_px, padding_bottom_px`,
       the same in `[dark.sidebar.border]`); windows-11 3 across
@@ -1537,7 +1551,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From the windows-11 `preset-validator` after M4 T35 (2026-10-13;
       the stopping rule sent everything T35's fix round did not take here):
-      - `defaults.shadow_color`: `docs/platform-facts.md:1057` gives Windows
+      - `defaults.shadow_color`: `docs/platform-facts.md@fc6109d1:1057` gives Windows
         two layers (the ambient one drawn, 14 % low, 20 % high), and the
         model's one shadow colour serves both the popup and the window
         shadows; unchanged. Decide what the one field states, or split it.
@@ -1549,7 +1563,7 @@ model, the platform presets and the three connectors
         wrong kind.
       - Under high contrast the reader writes `input.background_color` as
         `COLOR_BTNFACE` (`native-theme/src/windows.rs:363`), where the facts'
-        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md:1203`); the
+        Win32 cell names `COLOR_WINDOW` (`docs/platform-facts.md@fc6109d1:1203`); the
         Win32 cell is not the HC mapping, and the HC writes have no facts rows.
         Give the HC mappings their rows.
       - The link's hover and pressed text have no high-contrast mapping
@@ -1576,22 +1590,6 @@ model, the platform presets and the three connectors
       `docs/platform-facts.md` row says that any desktop uses it for fonts.
       Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
       the step so the chain ends at 96.
-
-### CI: the macOS and Windows legs and the strict-panic steps have not run
-
-- [ ] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
-      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
-      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
-      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
-      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
-      none of them has run, nor the macOS and Windows runtime tests the M4
-      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
-      and T26, known-unrun). Run them at the next pull request or push to
-      `main`, and fix what fails.
-      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
-      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
-      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
-      tag's commit before the upload; a branch push still runs nothing.
 
 ### Dependencies: zbus 6 and the three unmaintained-crate advisories
 
@@ -1783,13 +1781,13 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
 The gap map's cross-check (pass 2, 2026-10-28) found more; `platform-facts.md` lines are at
 caeddd6b, each platform file's *Cross-check* section has the detail.
 
-- [ ] [v0.7.x] **Menu items are rounded on four platforms.** `platform-facts.md:1265`
+- [ ] [v0.7.x] **Menu items are rounded on four platforms.** `platform-facts.md@fc6109d1:1265`
       (§2.6 `border.corner_radius`) calls the items rectangular. WinUI draws the menu in
       `OverlayCornerRadius` and each item in `ControlCornerRadius`
       (`MenuFlyout_themeresources.xaml:285`, `:309` at microsoft-ui-xaml 8463f45), Breeze's
       highlighted item is rounded, macOS 11+ rounds its hover highlight (gap map
       MAC-MN01), and libadwaita's is `$menu_radius` (the GNOME entry above).
-- [ ] [v0.7.x] **macOS.** (1) `platform-facts.md:1622` says the 12–15 pop-up button casts
+- [ ] [v0.7.x] **macOS.** (1) `platform-facts.md@fc6109d1:1622` says the 12–15 pop-up button casts
       no shadow, and `:1644` the same of the selected segment; the gap map (MAC-X01,
       MAC-SG02) finds both, and the cells were likely read from the non-key render, which
       cannot show them; settle them on the macOS 14 key-window render (the review of
@@ -1801,18 +1799,18 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       at run time (MAC-SB09†). (4) `:1568` gives the 12–15 dialog icon 64 px with no
       source (MAC-IC04†).
 - [ ] [v0.7.x] **Windows.** (1) The reader never sets `scrollbar.overlay_mode`, which
-      `platform-facts.md:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2)
+      `platform-facts.md@fc6109d1:1310` ties to `UISettings.AutoHideScrollBars` (W1-152†). (2)
       WinUI's TextBox template has no read-only and no invalid state
       (`TextBox_themeresources.xaml:255-291`): settles W1-033. The layout cells
       (`:1503-1506`) are the first Windows entry's (2).
-- [ ] [v0.7.x] **GNOME, more "(none)" cells libadwaita states.** `platform-facts.md:1600`
+- [ ] [v0.7.x] **GNOME, more "(none)" cells libadwaita states.** `platform-facts.md@fc6109d1:1600`
       spinner `min_diameter` (16), `:1601` spinner `stroke_width` (radius ÷ 8, AdwSpinner),
       `:1639` segmented `separator_width` (1 px, `_misc.scss:20-23`), `:1641` segmented
       `border.corner_radius` (9); `:1061` gives a reason (":backdrop handles this") for a
       rule libadwaita does not have.
 - [ ] [v0.7.x] **Material has a scrollbar.** Compose Material 3 draws one
       (`Scrollbar.kt`, `NonInteractiveScrollbarDefaults` at `:119-148`, androidx
-      1e677685), against `platform-facts.md:1304-1311` and the gap map's "M3 has no
+      1e677685), against `platform-facts.md@fc6109d1:1304-1311` and the gap map's "M3 has no
       scrollbar component" (MAT-SC3†). Its `Text` also styles the links of rich text,
       `colorScheme.primary` and an underline (`Text.kt:673-695`), where
       `platform-facts.md` §2.28 states no Material link value.
@@ -1836,12 +1834,6 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
 
 ### native-theme-egui connector
 
-- [ ] [1.0] Implement the companion widget crate, `native-theme-egui-widgets`, per
-      `docs/archive/todo_egui-widgets-spec.md` (rationale:
-      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
-      segmented control and link wrappers. Milestone undecided; it starts after
-      the connector, whose API it consumes. When it is scheduled, re-verify the
-      spec against the connector as built, then write its plan.
 - [ ] [1.0] Map the platform font-rendering preferences (see Core API above) onto
       `Visuals::text_options` (`egui/src/style.rs:1001`) and the faces egui
       draws with. Map `font_hinting` (default `true`,
@@ -1892,7 +1884,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
 
 - [ ] [1.0] **For M6: two defects in gpui's pressed button fill, shown by
       `macos-tahoe`** (M2a Step 9). macOS 26 draws the push button in a
-      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md:1177`),
+      translucent fill, `#00000014` / `#ffffff14` (`docs/platform-facts.md@fc6109d1:1177`),
       and no source gives its pressed fill, so the connector derives one.
       (1) `tc.button_active = tc.button.blend(tc.secondary_active)`
       (`connectors/native-theme-gpui/src/colors.rs:355`): `Hsla::blend` keeps
@@ -1906,7 +1898,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `DERIVED_PRESSED_FILL` once the pressed fill is opaque or stated. The
       hover fill is not affected: `macos-tahoe` states `macos-monterey`'s
       opaque `button.hover_background` (`#e0e0e5` / `#444446`), carried and
-      marked "no macOS 26 source" (`docs/platform-facts.md:1192` is ❓; the
+      marked "no macOS 26 source" (`docs/platform-facts.md@fc6109d1:1192` is ❓; the
       inherited window colour is a wrong safety net,
       `docs/inheritance-rules.toml:167`), so the contract's check that a
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
@@ -2574,13 +2566,13 @@ What is still open on the iced side:
       modes and `list.hover_background` and `sidebar.hover_background` in
       light; dark's list and sidebar hover is `#2e4a5e`. The facts cells
       give no colour: "`[Colors:View] DecorationHover` blend"
-      (`docs/platform-facts.md:1379`, `:1435`), "(Breeze src) thumb hover"
+      (`docs/platform-facts.md@fc6109d1:1379`, `:1435`), "(Breeze src) thumb hover"
       (`:1306`). `segmented_control.hover_background` and
       `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
       BreezeDark colour) have no facts row. Values unchanged until a source
       gives them.
       M8 T21 (2026-10-17): since M8 T15 that row's KDE cell
-      (`docs/platform-facts.md:1192`) reads "← `background_color`: no hover
+      (`docs/platform-facts.md@fc6109d1:1192`) reads "← `background_color`: no hover
       fill" (breezehelper.cpp:693-707), hover being the `Highlight` outline;
       the button's `#93cee9` is listed in *Presets: values the M8 T15
       platform-facts rows disagree with* ("From M8 T15 (2026-10-17)", fix
@@ -2762,248 +2754,6 @@ What is still open on the iced side:
       The other three questions in that section answered themselves: the
       work landed on the v0.5.9 branch, the six Button variants' field names
       were corrected by the citation pass, and `Command` has a real demo.
-- [ ] [1.0] **Finish auditing the Widget Info "Not themeable" entries for
-      *resolvability*.** 257 entries over 107 panels; 99 cite an upstream
-      symbol, 158 do not, and an uncited one is an assertion nobody checked.
-      The audit is not "is this sentence accurate" but "could the connector
-      do something about it" -- those are the same question, because "not
-      themeable" is itself a claim about resolvability.
-
-      Method, one entry at a time: (1) does native-theme model a field for
-      this property; (2) does a `geometry::` builder carry it; (3) does
-      upstream apply the caller's refinement to the element that would
-      receive it, or to an ancestor of it. A "no" at (3) with a "yes" at (1)
-      is Tier U, not an absence, and the note should say which.
-
-      Scoped by where the answer can differ: **70 of the 158 are under
-      widgets native-theme models no counterpart for at all** (Alert, Tag,
-      Badge, Kbd, the charts, Avatar, Breadcrumb, Skeleton, the text
-      samples) -- those claims are true, but because of *our* model rather
-      than upstream, so the note should say that and the fix is a model
-      addition. The other **88 sit under one of the 27 modelled widgets**
-      and are where a resolvable gap can hide.
-
-      Three done, and the hit rate justifies the rest: a Button's
-      `font-weight` was called hardcoded on ten panels and was simply not
-      carried -- fixed, `geometry::button` now applies it. A Separator's
-      thickness and a Slider's track height and thumb size are genuinely
-      unreachable, but the model carries all three, so they are Tier U
-      (already in "inner geometry exposed", now under *Upstream PRs to
-      gpui-component*, "PR: expose checkbox/radio indicator size as theme
-      token") and the notes now say so
-      rather than "hardcoded".
-
-      Forty more checked 2026-09-22, and the largest single finding is a
-      **whole category the model is missing**: `Theme::motion` is a public,
-      writable `MotionTokens` field (`gpui-component/theme/mod.rs:170`,
-      `theme/motion.rs:8-20`: four durations, three easings, two springs, two
-      distances) read by at least eighteen call sites — `Checkbox`, `Switch`,
-      `Slider`, `Accordion`, `Collapsible`, `Progress`, `ProgressCircle`,
-      `TabBar`, `TabPanel`, `Carousel`, the charts and the plot tooltip. The
-      connector replaces the whole `Theme` on every `apply` and so overwrites
-      `motion` with `Default::default()`, because **native-theme models no
-      motion at all** (`model/animated.rs` is animated *icons*: frames and
-      transforms, nothing about widget transitions). Four "animation:
-      hardcoded" notes were therefore false — Progress, Accordion,
-      Collapsible and the Switch's timing all read the theme — and the notes
-      now say whose gap it is. Five others are true literals with no token
-      behind them (Skeleton, Notification, Sheet, Dialog, Spinner), and the
-      Carousel's note already had it right. **Decide whether to model motion**:
-      the platforms do state some of it (KDE's `AnimationDurationFactor`,
-      Windows' `SPI_GETCLIENTAREAANIMATION`, the existing
-      `prefers_reduced_motion()` detect), and a `MotionSpec` would light up
-      those eighteen readers at once.
-
-      Also corrected: a `Button Sizes` panel called padding and min-height
-      "varies per Size" where upstream copies the caller's style *before* the
-      Size arm and re-applies it after (`button/button.rs:576`, `:690`), so a
-      refinement wins — that demo simply omits it on purpose, and the note now
-      says so. `TabBar`'s padding looked like the same shape
-      (`tab/tab_bar.rs:517-518`), and that was wrong for the bar in question:
-      the showcase's `TabBar` is an Underline one, whose bar and tabs have no
-      horizontal padding at all, and its spacing is a per-Size gap on an inner
-      row the refinement never reaches (corrected in the sixth pass below).
-      The three `Link` notes became Tier U and an upstream PR candidate above.
-
-      Six more were wrong in the plainest way — they described upstream
-      inaccurately. A `Tree`'s "indent per depth level" and "hardcoded
-      ChevronRight" are in neither this demo nor upstream: `Tree::new` takes a
-      `render_item` closure and `tree.rs` draws no row content at all, so both
-      are the application's to draw and this demo draws neither. A
-      `DropdownButton`'s arrow is a `Caret` reached through
-      `Button::dropdown_caret`, and its colour is the button variant's own
-      text colour at 75% — themed, where the note said hardcoded. An `Alert`'s
-      variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
-      delay is the application's only for a tooltip set on an element: a
-      `Button`'s goes through `Root`'s overlay, whose 500ms is a module const
-      (corrected in the sixth pass). A
-      `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
-      `DataTable`'s row height has an escape hatch.
-
-      A third batch found the mistake behind several of the others at once:
-      **gpui-component sets the rem to `Theme::font_size`** (`root.rs:582`), so
-      a `rems()` or a `text_base()` upstream is already the platform's size.
-      Six Button panels had called their label size Tier U when it is
-      `button_text_size` — `text_xs`/`text_sm`/`text_base`, a fixed ratio of
-      the platform's body text.
-      0.7.1 (2026-10): no longer true of a Medium Button label —
-      `button_text_size` is `text_sm` at Medium (`sizing.rs:337-343`); see the
-      `Size::Size(px)` item below and `geometry::button_label` (v0.6.1).
-      The `Headings` panel listed px figures that
-      were its rem ladder at a 16px rem, which no bundled preset produces. A
-      `Buttons with Icons` panel listed its icon colour as not themeable when
-      it follows the button's own text token, and its icon size is rems too.
-      And an `Editor`'s line height is only what the widget sets *first*:
-      upstream applies the caller's refinement last and says in a comment that
-      this is on purpose. Seven more were true and gained the citation that
-      proves it — Breadcrumb, Clipboard, Calendar and DatePicker glyphs built
-      inline with no setter, `DescriptionList` spacing, `Empty`'s dashed
-      border, and a `ButtonGroup` that has no gap to set because it joins its
-      buttons by turning edges off.
-
-      A fourth pass sharpened the three remaining `inner element (Tier U)`
-      notes that could be checked cheaply. All three are Tier U, but each was
-      hiding half the answer: a `Checkbox`'s indicator and a `Select`'s caret
-      are sized in rems and so already follow the platform's font, and the
-      caret's *colour* is themed. What is genuinely unreachable is the
-      absolute-px field the model states beside each -- `indicator_width`,
-      `arrow_icon_size` -- because both consumers fold `Size::Size` into the
-      catch-all arm.
-
-      A fifth pass took the "unmodelled widget" bucket, and it collapsed:
-      Alert, Tag, Kbd and Breadcrumb are each `Styled` and apply the caller's
-      refinement after their own paddings, so "hardcoded" was wrong about
-      every one of them -- what is absent is a model, not a receiver. That
-      pass put `Badge` in the same list, and the sixth pass found it does not
-      belong there: `Badge::render` applies the refinement to the wrapper
-      around the badged element (`badge.rs:116`), and the pill is an absolute
-      child built after it with its own literals, so nothing reaches it.
-      Two outright falsehoods fell out with it: a `Kbd` was said to use a
-      monospace font, and `kbd.rs` sets no family at all, so it inherits the
-      window's platform UI font; and a `Label`'s "font weights: hardcoded"
-      turned out to be the opposite -- nothing sets a weight anywhere, which
-      is now its own item above.
-
-      After five passes: sixty-three entries audited, thirty-one wrong. The
-      73 left uncited were set aside as "API facts no theme could set" --
-      and that label was itself unchecked.
-
-      **A sixth pass (2026-09-22) read all 73: sixteen were wrong, and four more were themed facts filed under the wrong heading.** A
-      disabled `Button`'s cursor is the default arrow, not `not-allowed`. The
-      `Loading Button` demo showed no spinner at all, because a `Button` draws
-      its spinner *in place of its icon* and that one had none (the demo now
-      has one). An `Input`'s placeholder is painted with `muted_foreground`,
-      a theme field, where the note said it was not -- and the model states
-      `input.placeholder_color` from each platform's own placeholder colour, so
-      that is Tier U. A `DatePicker` defaults to `%Y/%m/%d`, not `YYYY-MM-DD`.
-      An `AvatarGroup` drops the fourth avatar with no marker, because its
-      overflow marker is a `⋯` avatar, not a `+N` count, and only
-      `.ellipsis()` adds it. `Empty`'s "hardcoded 2rem" is rems and settable.
-      Markdown headings are sized from a **fixed 14px**, not from the base
-      font. The code `Editor`'s background is a fixed `#0a0a0a`/`#ffffff`,
-      because the highlight theme the connector installs sets one and the
-      `input_background()` fallback is never reached. A `Popover`'s anchor is
-      an `Anchor`, not a `Corner`; a `Sidebar`'s children implement
-      `SidebarItem`; a `ContextMenu` needs `InteractiveElement` too; a
-      candlestick's colours are `chart_bullish`/`chart_bearish`, not green and
-      red. And the **`AppMenuBar` was empty**: it reads gpui-base's
-      `GlobalState` menus, which only `set_app_menus` fills, and the showcase
-      only called `cx.set_menus` (fixed: it now fills both).
-
-      Fifteen entries in all were themed facts filed under "Not themeable":
-      those four -- the icon sizes and paddings the `Attachment`, `Toolbar` and
-      `Dialog` demos apply themselves -- the `Dialog`'s footer gap, and the ten
-      Button panels' font-weight, carried by `geometry::button` since the
-      first pass. They are config lines now.
-
-      Re-reading found three of this audit's own corrections wrong -- the
-      `Badge` padding (above), the `Tooltip` delay and the `TabBar` padding --
-      and three more cited entries: the `Badge`'s text and size notes, and a
-      `SidebarToggleButton` icon called hardcoded that is 1rem.
-
-      **The colour claims have the same failure, and the gate cannot see
-      it.** The citation gate checks that the cited line reads the named
-      token -- not that the line is on this widget's path, in this demo's
-      variant. Ten claims named the wrong token and passed: the navigation
-      `TabBar` is an Underline bar, and its "active bg `tab_active`" and "bar
-      bg `tab_bar`" are the `Tab` variant's (an Underline bar has no fill and
-      marks the active tab with a `primary` underline); a `Calendar` has no
-      `popover` fill; a `Collapsible` paints neither the `accordion` fill nor
-      the `border` it was given; a `Rating`'s empty star, a `Pagination`'s
-      page numbers and a `SidebarToggleButton`'s icon are not `foreground`;
-      a `Combobox` row hovers with `accent`, not `list_hover`; and a
-      `GroupBox`'s edge is the card's, through `geometry::group_box_content`.
-      Nine more had the right token at a line borrowed from another widget,
-      and five config lines were wrong (three `radius` lines the builders
-      override or the variant ignores, a `Calendar` that is `radius_lg`, and
-      a `ProgressCircle` that draws `spinner.diameter` at 75%).
-
-      Tally after six passes: 136 "Not themeable" entries audited, 47
-      wrong, 15 misfiled across the section, and three of the corrections
-      themselves wrong.
-
-      **A seventh pass (2026-09-22) read the 100 entries that already
-      carried a citation when the audit began** and had not changed since
-      -- the prose gate held their symbols, nothing held their meaning.
-      Seventeen were wrong and nine more were true but hid the resolvable
-      half. The wrong ones repeat the earlier shapes. "Hardcoded" said of
-      rems a refinement reaches: a `Bubble`'s padding, a `Message`'s slot
-      gap, a `Marker`'s row gap, a `TitleBar`'s 34px (settable; the model
-      states no title-bar height). Fills called absent that are painted: an
-      unchecked `Checkbox`, a `Radio` and an `OtpInput` box are all
-      `input_background()`, and a `Carousel` does draw a `ring` focus ring.
-      And plain misreadings: a `Radio`'s indicator is a circle, not half the
-      theme radius; a `Textarea`'s rows are Input's 1.25rem, not the font's
-      line height; an `Alert`'s tints are its colour faded into transparent
-      white, not mixed toward white; `sheet.margin_top` is gpui-component's
-      own setting, not a native-theme field; gpui *does* have a motion switch
-      and `with_animation` honours it; the spacing tokens have a reader (a
-      `Dialog`'s viewport margin), they just have no field behind them. Two
-      Tier U verdicts were wrong the other way: a `Toggle` folds the caller's
-      refinement into its *checked* style, so `segmented_control`'s active
-      colours reach a checked toggle, and its size is settable too.
-
-      The colour claims beside them had the same rate. **A named `Avatar`
-      takes no theme colour at all** -- fill, initials and edge are OKLCH
-      literals hashed from the initials, twelve hues -- so the three claims
-      on that panel and one on `Message` described an anonymous avatar the
-      demo does not show. An `OtpInput`'s digits are `foreground`, not the
-      `secondary_foreground` of a masked asterisk. `MessageScroller`'s jump
-      button is refined to `background`/`border`/`foreground` over its
-      `secondary` variant. And **the theme's `shadow` flag has one reader**:
-      `ButtonVariant::shadow` is `false` for every variant but `Custom`
-      (`button/button.rs:1050-1055`), so the "shadow" config line on eleven
-      panels -- six buttons, Input, NumberInput, Checkbox, Radio, Slider --
-      described nothing on screen.
-
-      Tally: 236 "Not themeable" entries audited, 64 wrong, 15 misfiled.
-
-      **An eighth pass (2026-09-22) read every remaining colour claim
-      against the code that paints the demo**, not only the cited line. The
-      recurring error is a claim that names upstream's token where a
-      `geometry::` builder the demo applies has replaced it: ten builders set
-      a corner radius and seven a colour, and they land last. So the
-      "border-radius: radius" line on eighteen panels -- ten buttons,
-      Textarea, InputGroup, NumberInput, Combobox, Select, Radio, Dialog,
-      AlertDialog -- showed a radius the builder overrides, and is gone; a
-      Radio's and a Select's label colour is the platform's font colour, not
-      the `foreground` the claim named (both now say "upstream"). Four claims
-      described a variant the demo does not build: an icon badge, a `Label`'s
-      highlights, an outline `Kbd`'s edge, an empty `ColorPicker` swatch (the
-      demo's has a value, painted with itself). Three had no reader at all:
-      `ThemeColor::list` on List and Tree, and `group_box` on a Settings page,
-      whose groups are `GroupBoxVariant::Normal`. And the code `Editor`'s
-      edge is the Input frame's `input`, while the `border` it claimed paints
-      the indent guides. Fourteen more cited a line from another widget
-      (InputGroup, NumberInput, Combobox and DatePicker borrowed `Input`'s;
-      DataTable borrowed the declarative `Table`'s header and a column
-      selection line for its row selection).
-
-      Tally for the colour claims: 374 read, 30 wrong, 25 cited on a
-      borrowed line; for the config lines, 36 wrong (eleven `shadow`, twenty
-      radii, five others). The audit of the Widget Info panels is complete:
-      every "Not themeable" entry, colour claim and config line has now been
-      read against the source that paints it.
 - [ ] [1.0] Two focus claims hold only while `Theme::focus_ring` is on — the
       Switch panel's ring and the DataTable panel's keyboard-focus line: with
       it off a bordered element's border is tinted instead
@@ -3342,7 +3092,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-monterey, kde-breeze, adwaita 120 |
       | `combo_box.arrow_icon_size` | macOS: a chevron measured 6 × 10, not a square (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
-      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1638`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
+      | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md@fc6109d1:1638`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
       | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
@@ -3357,18 +3107,18 @@ the gap — closing it is a change, and each wants its own decision.
       `progress_bar.min_width` 100, `tab.min_width` 64, the dialog bounds
       320/560/140/600, `spinner.stroke_width` 2, `combo_box.min_width` 120,
       `combo_box.arrow_icon_size` 17 (the chevron measures 7 × 10.5 on macOS
-      26, `docs/platform-facts.md:1619`, not a square either),
+      26, `docs/platform-facts.md@fc6109d1:1619`, not a square either),
       `expander.header_height` 40 and the icon sizes small 16, large 32,
       dialog 22 and panel 20; it makes
       `macos-monterey`'s choice of the small toolbar mode, 24 (the cell's
       macOS 26 tag: "same"). It does not carry `scrollbar.groove_width`:
       macOS 26 reports `scrollerWidth` 17 in both modes
-      (`docs/platform-facts.md:1307`), which `macos-tahoe` states; and it
+      (`docs/platform-facts.md@fc6109d1:1307`), which `macos-tahoe` states; and it
       leaves `layout.container_margin` unstated. It carries the same way,
       wherever else the model requires a number that no source gives for
       macOS 26: `focus_ring_offset` -1, `border.corner_radius_lg` 10 (Tahoe's
       window radii are larger per third-party measurements,
-      `docs/platform-facts.md:177`; not adopted, no API gives them),
+      `docs/platform-facts.md@fc6109d1:177`; not adopted, no API gives them),
       `border.line_width` 0.5, `border.shadow_enabled`,
       `button.icon_text_gap` and `menu.icon_text_gap` 4, `tooltip.max_width`
       300, `scrollbar.min_thumb_length` 40, `tab.min_height` 24,
@@ -3391,7 +3141,7 @@ the gap — closing it is a change, and each wants its own decision.
       kde-breeze states 8. Two value mismatches the audit noticed and did
       not follow: adwaita's `checkbox.indicator_width` 20 against §2.5's
       "libadwaita CSS: 14" (Ch. 1 gives 20 with padding:
-      `docs/platform-facts.md:1233` gives GNOME 14, the CSS `min-width`,
+      `docs/platform-facts.md@fc6109d1:1233` gives GNOME 14, the CSS `min-width`,
       which is the content box, while `adwaita.toml` states the 20-point box
       that `:980` defines, 14 + 2 · `padding: 3px`, so the table cell should
       read 20; it does since 963bcdd2, which closes this mismatch), and windows-11's
@@ -4069,7 +3819,7 @@ M8 T21 fix round 1 (2026-10-17): its M7, M8 and M9a items are closed, in
 [`archive/todo_closed.md`](archive/todo_closed.md) under *Closed items from M6 close
 (2026-10-16): items carried to M7, M8, M9a and the presets*; the three `[1.0]` preset
 items below stay.
-- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, `kde-breeze.toml` `[light.segmented_control] hover_background`, `[dark.segmented_control] hover_background`). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, `kde-breeze.toml` `[light.segmented_control] hover_background`, `[dark.segmented_control] hover_background`). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md@fc6109d1:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
       M8 T21 fix round 1 (2026-10-17): its
       `segmented_control.hover_background` and `expander.arrow_color` are also
       items of *Presets: values the M8 T15 platform-facts rows disagree with*

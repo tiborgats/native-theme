@@ -99,10 +99,11 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.27 | `button.body.padding @ variant icon_only` | rule |
 | GN-1.27 | `button.body.min_width @ variant icon_only` | rule |
 | GN-1.27 | `button.body.padding @ variant with_icon` | rule |
-| GN-1.27 | `button.values.icon_text_gap @ variant with_icon` | rule |
-| GN-1.27 | `button.label.padding @ variant with_icon` | rule |
-| GN-1.27 | `button.body.padding @ variant @arrow_only` | rule |
-| GN-1.27 | `button.values.menu_indicator_gap @ variant @arrow_only` | rule |
+| GN-1.27 | `button.values.icon_text_gap @ variants {with_icon,@image_text_box}` (the box GTK's classes style, `> box`, `> box > box`; AdwButtonContent's gap is GN-1.39's) | rule |
+| GN-1.27 | `button.label.padding @ variants {with_icon,@image_text_box}` (on both sides) | rule |
+| GN-1.27 | `button.body.padding @ variant @custom_child` (GtkButton's base padding, no `.text-button` or `.image-button` class; the base is `.text-button`'s) | rule |
+| GN-1.27 | `button.body.padding @ variant @with_arrow` | rule |
+| GN-1.27 | `button.values.menu_indicator_gap @ variant @with_arrow` | rule |
 | GN-1.28 | `button.body.corners @ variant circular` | rule |
 | GN-1.28 | `button.body.min_width, button.body.min_height, button.body.padding @ variant circular` | rule |
 | GN-1.28 | `button.body.corners, button.body.padding @ variant pill` | rule |
@@ -111,8 +112,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.29 | `button.body.fill @ {hover} / {pressed} / {checked} / {checked,hover} / {checked,pressed} variant flat` | rule |
 | GN-1.29 | `button.body.opacity @ {disabled} !{checked} variant flat` | rule |
 | GN-1.29 | `button.body.shadow @ {hover} / {pressed} / {checked} variant flat cond contrast_high (inset ring layer)` | rule |
-| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar (the flat look; libadwaita flattens image, image-text and arrow buttons only)` | rule |
-| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar` | rule |
+| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar (the flat look; libadwaita flattens image, image-text and arrow buttons only)` | rule |
+| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar` | rule |
 | GN-1.30 | `button.body.fill, button.label.text.fill @ variant primary` | rule |
 | GN-1.30 | `button.body.fill @ {hover} / {pressed} / {checked} / {checked,hover} / {checked,pressed} variant primary (appended layers)` | rule |
 | GN-1.30 | `button.body.focus @ variant primary (outer, offset)` | rule |
@@ -136,7 +137,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.38 | `button.body.shadow @ cond contrast_high (inset ring layer at rest)` | rule |
 | GN-1.39 | `button.values.icon_text_gap @ variant with_icon (AdwButtonContent's box)` | rule |
 | GN-1.39 | `button.label.{padding,text} @ variant with_icon / variant with_icon dir rtl (the label's heavier weight, its end padding)` | rule |
-| GN-1.39 | `button.label.padding @ variants {with_icon,@arrow_only} / variants {with_icon,@arrow_only} dir rtl (no end padding next to the arrow)` | rule |
+| GN-1.39 | `split_button.primary_label.padding (no end padding: `splitbutton > button > buttoncontent` drops the content's, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:638-643`; a menu button's label keeps its end padding beside the arrow, the `.arrow-button > box > buttoncontent` branch never matching, as GtkMenuButton puts its child in a `contents` node, `gtk@4.24.1 gtk/gtkmenubutton.c:1516`, `:1527-1532`; ADD-A122)` | field |
 | GN-1.40 | `button.menu_indicator.glyph (ThemeIcon, size) @ variant menu` | rule |
 | GN-1.40 | `button.menu_indicator.glyph @ variant @arrow_up / variant @arrow_start / variant @arrow_end / variant @arrow_none` | rule |
 | GN-1.41 | `badge.body.{fill,min_width,min_height,corners} @ variants {dot,attention} context view_switcher.item` (the accent radial dot on a stack or view switcher's button, which is a `view_switcher.item` element; Nested controls) | rule |
@@ -145,7 +146,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.42 | `button.body.corners @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variant @linked pos last among any / context any layout variant @linked pos only among any` (position among siblings of any kind, `SiblingScope::Any`, CONTRA-3) | rule |
 | GN-1.42 | `button.body.corners @ context any layout variant @linked pos first among any dir rtl / context any layout variant @linked pos last among any dir rtl` | rule |
 | GN-1.42 | `button.body.corners @ context any layout variants {@linked,vertical} pos first among any / context any layout variants {@linked,vertical} pos last among any` | rule |
-| GN-1.42 | `layout.values.item_gap @ variant @linked / variants {@linked,vertical} (negative overlap)` | rule |
+| GN-1.42 | `button.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (the overlap is each child's own negative start or top margin, none on the first, `_linked.scss:16-21`, `:34-37`) | rule |
+| GN-1.42 | `input.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (an entry in a linked box overlaps as a button does, `_linked.scss:9-10`, `:16-21`, `:34-37`) | rule |
+| GN-1.42 | `combo_box.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (a drop-down's button in a linked box overlaps likewise, `_linked.scss:5`, `:16-21`, `:34-37`) | rule |
 | GN-1.43 | `input.values.icon_text_gap` | field |
 | GN-1.43 | `input.icon.padding @ variant leading / variant trailing (the icon's margin toward the text)` | rule |
 | GN-1.44 | `input.icon.opacity` | field |
@@ -354,7 +357,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.148 | `list.row_background.stroke @ {selected} / {hover} / {pressed} cond contrast_high variant sidebar` | rule |
 | GN-1.149 | `toolbar.bar.padding, toolbar.bar.corners, toolbar.bar.bindings (surface Osd) @ variant @osd` | rule |
 | GN-1.150 | `toolbar.bar.padding @ variant @collapse_spacing` | rule |
-| GN-1.151 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar (a popover between them restores the raised look)` | rule |
+| GN-1.151 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar (a popover between them restores the raised look)` | rule |
 | GN-1.151 | `split_button.{primary,secondary}.fill, split_button.divider.opacity @ !variant primary !variant destructive !variant @opaque !variant @raised context nearest {toolbar, popover} = toolbar.bar` (the flat split button; `.raised` is `@raised`) | rule |
 | GN-1.151 | `combo_box.body.{fill,shadow} @ !variant @raised context nearest {toolbar, popover} = toolbar.bar` (the flat drop-down; `.raised` is `@raised`) | rule |
 | GN-1.152 | `switch.body.padding @ context toolbar.bar` | rule |
@@ -404,6 +407,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.174 | `list.row_background.focus @ variant grid` | rule |
 | GN-1.175 | `rubber_band.body.{fill,stroke} @ context list` | rule |
 | GN-1.176 | `list.view.fill, list.row.text.fill @ {disabled}` | rule |
+| GN-1.176 | `role.view.disabled.background, role.view.disabled.foreground` (the `.view:disabled` pair) | role |
+| GN-1.176 | `role.window.disabled.background, role.window.disabled.foreground` (the GTK 3 compatibility colours `insensitive_bg_color`, `insensitive_fg_color`, `libadwaita@1.10.0 src/stylesheet/_compat-colors.scss:12-13`; ADD-A122) | role |
 | GN-1.177 | `list.row_background.corners @ {selected} variant grid` | rule |
 | GN-1.178 | `scroll_view.edge_effect.{fill,stroke} @ variant top {scrolled} context list variant table (under the column view's header)` | rule |
 | GN-1.279† | `list.branch_line.stroke (dash, ADD-A32), list.row_separator.stroke, list.column_separator.stroke (dash, ADD-A32) @ variant @tree_view / variant @tree_view cond contrast_high` | rule |
@@ -882,7 +887,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
+| GN-3.20 | `token.motion.timings.flap_reveal, token.motion.timings.leaflet_child (Timing::Spring, clamp true: the deprecated AdwFlap's reveal and AdwLeaflet's child transition, `libadwaita@1.10.0 src/adw-flap.c:1598-1601`, `adw-leaflet.c:2474-2478`)` | token |
 | GN-3.21 | `token.motion.durations.<timed animations defined in code>` | token |
+| GN-3.21 | `token.motion.durations.flap_fold, token.motion.durations.leaflet_mode (the deprecated AdwFlap's fold and AdwLeaflet's mode transition, `libadwaita@1.10.0 src/adw-flap.c:1551`, `adw-leaflet.c:2445`)` | token |
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
@@ -890,7 +897,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
-| GN-3.24 | `token.motion.durations.scroll_animation` | token |
+| GN-3.24 | `token.motion.durations.scrolled_window` | token |
 | GN-3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | GN-3.25 | `dialog.values.presentations @ cond reduced_motion (bottom sheet slide to crossfade)` | rule |
 | GN-3.25 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
@@ -904,7 +911,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
 | GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
-| GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box)` | field |
+| GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |
 | GN-3.31 | `token.focus @ cond contrast_high (paint)` | rule |

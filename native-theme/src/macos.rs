@@ -27,6 +27,8 @@
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]
+use objc2::{ClassType, rc::Retained};
+#[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{
     NSAppearance, NSColor, NSColorSpace, NSControlSize, NSFont, NSFontTraitsAttribute,
     NSFontWeightRegular, NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
@@ -359,14 +361,26 @@ fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
 fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
     let system_size = NSFont::systemFontSize();
     let system_font = NSFont::systemFontOfSize(system_size);
+    // objc2-app-kit 0.3.2's binding of `monospacedSystemFontOfSize:weight:`
+    // returns `Retained<NSFont>` and panics when AppKit returns nil, which it
+    // does intermittently; sent as a message whose result is an `Option`, a
+    // nil font is `None`, and the monospace font then stays missing.
     // SAFETY: `NSFontWeightRegular` is an AppKit `extern` constant (a CGFloat,
-    // valid for the process's lifetime); the class method takes no pointer.
-    let mono_font =
-        unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, NSFontWeightRegular) };
+    // valid for the process's lifetime); the class method takes two CGFloats
+    // and returns an `NSFont` or nil, the types the message states.
+    let mono_font: Option<Retained<NSFont>> = unsafe {
+        objc2::msg_send![
+            NSFont::class(),
+            monospacedSystemFontOfSize: system_size,
+            weight: NSFontWeightRegular
+        ]
+    };
 
     (
         fontspec_from_nsfont(&system_font),
-        fontspec_from_nsfont(&mono_font),
+        mono_font
+            .as_deref()
+            .map_or_else(crate::FontSpec::default, fontspec_from_nsfont),
     )
 }
 

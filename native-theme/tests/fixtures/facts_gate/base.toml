@@ -1,0 +1,263 @@
+# The facts gate fixtures' preset (S17): every field the model holds stated, each value
+# synthetic, no platform's. Each case's `preset.toml` is appended to it: its widget's
+# declarations and its rules.
+[preset]
+id = "probe"
+generation = "probe-1"
+[declare]
+text_styles = ["body"]
+inputs = ["accent"]
+surface_sets = ["window"]
+[inputs.accent]
+light = "#3366cc"
+dark = "#3366cc"
+[colors.light]
+keyed = {}
+[colors.light.surfaces.window]
+foreground = "#202020"
+background = "#f0f0f0"
+background_alternate = "absent"
+foreground_inactive = "= role.window.foreground"
+foreground_active = "absent"
+link = "= role.window.foreground"
+link_visited = "absent"
+negative = "= role.window.foreground"
+neutral = "absent"
+positive = "absent"
+decoration_focus = "absent"
+decoration_hover = "absent"
+shade = "absent"
+shade_darker = "absent"
+border = "= role.window.foreground"
+background_active = "absent"
+background_link = "absent"
+background_visited = "absent"
+background_negative = "absent"
+background_neutral = "absent"
+background_positive = "absent"
+disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
+[colors.light.global]
+accent = "#3366cc"
+accent_foreground = "#ffffff"
+accent_standalone = "= role.global.accent"
+accent_ramp = {}
+shadow_reference = "absent"
+selection_text_background = "#3366cc"
+selection_text_foreground = "absent"
+selection_text_background_unfocused = "absent"
+selection_text_foreground_unfocused = "absent"
+find_highlight = "absent"
+drop_highlight = "absent"
+scrim = "absent"
+[colors.light.global.status]
+success = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+warning = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+error = { fill = "#cc3333", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+info = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+neutral = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+destructive = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+[colors.dark]
+keyed = {}
+[colors.dark.surfaces.window]
+foreground = "#f0f0f0"
+background = "#202020"
+background_alternate = "absent"
+foreground_inactive = "= role.window.foreground"
+foreground_active = "absent"
+link = "= role.window.foreground"
+link_visited = "absent"
+negative = "= role.window.foreground"
+neutral = "absent"
+positive = "absent"
+decoration_focus = "absent"
+decoration_hover = "absent"
+shade = "absent"
+shade_darker = "absent"
+border = "= role.window.foreground"
+background_active = "absent"
+background_link = "absent"
+background_visited = "absent"
+background_negative = "absent"
+background_neutral = "absent"
+background_positive = "absent"
+disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
+[colors.dark.global]
+accent = "#3366cc"
+accent_foreground = "#ffffff"
+accent_standalone = "= role.global.accent"
+accent_ramp = {}
+shadow_reference = "absent"
+selection_text_background = "#3366cc"
+selection_text_foreground = "absent"
+selection_text_background_unfocused = "absent"
+selection_text_foreground_unfocused = "absent"
+find_highlight = "absent"
+drop_highlight = "absent"
+scrim = "absent"
+[colors.dark.global.status]
+success = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+warning = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+error = { fill = "#cc3333", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+info = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+neutral = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+destructive = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
+
+[tokens]
+elevation = {}
+size_classes = {}
+params = {}
+[tokens.motion]
+durations = {}
+timings = {}
+speed_factor = 1
+[tokens.text]
+scaling = "linear"
+font_dpi = 96
+[tokens.text.keyed.body]
+font = { family = "Probe Sans", size_px = 12, weight = 400, style = "normal", width = "absent", axes = {}, features = {} }
+scaling_role = "none"
+letter_spacing = "absent"
+word_spacing = "absent"
+line_height = "auto"
+decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+mnemonic_decoration = { line = "underline", style = "solid", by_word = "absent", thickness_px = 1, offset_px = 1, paint = "#000000" }
+case = "mixed"
+elision = "end"
+wrap = "word"
+max_lines = "none"
+fill = "#000000"
+[tokens.text.roles]
+body = "= token.text.keyed.body"
+body_emphasized = "= token.text.roles.body"
+caption = "= token.text.roles.body"
+caption_emphasized = "= token.text.roles.body"
+caption2 = "= token.text.roles.body"
+footnote = "= token.text.roles.body"
+subheadline = "= token.text.roles.body"
+callout = "= token.text.roles.body"
+headline = "= token.text.roles.body"
+title1 = "= token.text.roles.body"
+title2 = "= token.text.roles.body"
+title3 = "= token.text.roles.body"
+large_title = "= token.text.roles.body"
+display_large = "= token.text.roles.body"
+display_medium = "= token.text.roles.body"
+display_small = "= token.text.roles.body"
+label = "= token.text.roles.body"
+monospace = "= token.text.roles.body"
+numeric = "= token.text.roles.body"
+[tokens.text.fallbacks]
+families = []
+emoji_family = "Probe Emoji"
+per_language = {}
+per_family = {}
+[tokens.text.rendering]
+engine = "absent"
+antialiasing = "absent"
+hinting = "absent"
+subpixel_order = "absent"
+lcd_filter = "absent"
+gamma = "absent"
+contrast = "absent"
+[tokens.icons]
+set = "freedesktop"
+theme = "absent"
+theme_fallback = "absent"
+mirroring = {}
+[tokens.icons.sizes]
+toolbar = "absent"
+small = "absent"
+large = "absent"
+dialog = "absent"
+panel = "absent"
+keyed = {}
+[tokens.focus]
+kind = "ring"
+width_px = 2
+paint = "#3366cc"
+dash = "solid"
+offset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+corners_px = 4
+corners.curve = "circular"
+shadow = "absent"
+transition = "absent"
+[tokens.caret]
+color = "#000000"
+width_px = 1
+blink_on_ms = 500
+blink_off_ms = 500
+blink_timeout_ms = "none"
+blink_style = "hard"
+secondary = "absent"
+shown_in_read_only = "absent"
+solid_while_typing = "absent"
+[tokens.behavior]
+double_click_time_ms = "absent"
+double_click_distance_px = "absent"
+drag_threshold_px = "absent"
+hover_open_delay_ms = "absent"
+key_repeat = "none"
+scroll_lines_per_step = "absent"
+scroll_px_per_step_px = "absent"
+hide_pointer_while_typing = "absent"
+hide_pointer_delay_ms = "absent"
+hide_pointer_fade_ms = "absent"
+long_press_ms = "absent"
+spring_loading_ms = "absent"
+drag_time_ms = "absent"
+single_click_activates = "absent"
+double_click_height_px = "absent"
+mnemonics = "never"
+focus_visible_when = "absent"
+[tokens.behavior.touch]
+slop_px = "absent"
+paging_slop_px = "absent"
+double_tap_time_ms = "absent"
+double_tap_slop_px = "absent"
+delay_ms = "absent"
+[widgets.button.body]
+fill = "#e0e0e0"
+stroke = "absent"
+corners_px = 4
+corners.curve = "circular"
+shadow = "absent"
+padding = { top_px = 1, right_px = 2, bottom_px = 3, left_px = 4 }
+margin = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+min_width_px = 40
+min_height_px = "auto"
+max_width_px = "auto"
+opacity = 1
+transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
+focus = "absent"
+cursor = "pointer"
+touch_target_px = "absent"
+bindings = []
+transitions = []
+interaction = "absent"
+[widgets.button.label]
+padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+text = "= token.text.roles.body"
+[widgets.button.subtitle]
+text = "= token.text.roles.body"
+[widgets.button.icon]
+absent = true
+[widgets.button.menu_indicator]
+absent = true
+[widgets.button.values]
+icon_text_gap_px = 4
+icon_placement = "leading"
+label_position = "absent"
+subtitle_gap_px = "absent"
+menu_indicator_gap_px = 2
+menu_indicator_anchor = "inline"
+menu_trigger = "absent"
+shows_icon = true
+focus_visible_when = "any_focus"
+repeat_delay_ms = "absent"
+repeat_interval_ms = "absent"
+back_title_fallback = false
+back_display_mode = "absent"
+help_tooltip_on_click = false
+hit_extension = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+display_mode = "absent"
+presentations = []

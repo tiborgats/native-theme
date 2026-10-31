@@ -38,6 +38,8 @@ form (`https://developer.apple.com/tutorials/data/documentation/uikit/<page>.jso
 The 26 column also covers the iOS 27.x API additions the documentation already lists:
 `UINavigationItem.titleAlignment` (27.2), `UIVerticalBarBehavior` (27.1) and `UIBarButtonItem.axisBehavior`
 (27.1). What each of them draws is *to verify*.
+*Superseded by the 0.8.0 plan's D12 (2026-10-29):* `ios-26` describes iOS 26.x, so these three are carried to
+`docs/todo.md`'s macOS and iOS 27 entry.
 
 **Probe runtimes.** 13–18 values come from the iOS 18 simulator runtime. Drift inside 13–18 is X-VR-1: iOS 15
 bar scroll-edge transparency, the iOS 16 edit menu, the iOS 17 caret, selection UI and page-control progress,
@@ -384,7 +386,7 @@ entry and the connectors' "the model states no …" notes.
 | CB-1 | combo_box | Indicator glyph identity (`.popup` indicator: up/down chevron pair), its colour and weight | same (16+); 26 to verify | R: `uikit/uibutton/configuration-swift.struct/indicator-swift.enum`, `indicatorColorTransformer`; M-r | `arrow_icon_size_px` (size only) |
 | CB-2 | combo_box | The button style of the trigger (any of B-1's styles) | same | R | `combo_box.background_color` (one) |
 | CB-3 | combo_box | Open state of the trigger, and the opened menu (MN-*) with a checkmark on the current item | same | M-r | none. Seed: iced styles.rs:1182 ("no separate open appearance") |
-| CB-4 | combo_box | Text colour: `label` vs tint in 26 | 26 differs | Seed: docs/todo.md *ios-26* (RenderThemeCocoa.mm@de320ba3:3373-3376) | `combo_box.font.color` (values only; listed for the seed) |
+| CB-4 | combo_box | Text colour: `label` vs tint in 26 | 26 differs | Seed: docs/todo.md *ios-26* (RenderThemeCocoa.mm@26695efd:2760-2763) | `combo_box.font.color` (values only; listed for the seed) |
 
 ### segmented_control (UISegmentedControl)
 

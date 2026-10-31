@@ -1,0 +1,5615 @@
+# kde-breeze's tokens (S4.1, S4.2, S4.4, S4.5, S4.6, the focus indicator): Plasma 6.8.2's defaults (no
+# kdeglobals key set), Breeze 6.8.2's style, KDE Frameworks 6.31.0 (Kirigami, qqc2-desktop-style's Plasma
+# integration, KIconThemes) and Qt 6.12.0 where KDE sets nothing. Flavour `widgets` (Qt Widgets with Breeze) is the
+# default; facts under `flavor:kirigami` hold where Kirigami differs. Written by the KDE facts lane (tokens half).
+# 
+# S4.1 motion: kdeglobals [KDE] AnimationDurationFactor is the speed factor (1 unset, 0 off).
+
+[[fact]]
+key = "token.motion.speed_factor"
+value = 1
+rows = ["K3.30", "K3.90"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/animationspeedprovider.cpp:47"
+quote = "m_animationSpeedModifier = std::max<double>(0.0, generalCfg.readEntry(u\"AnimationDurationFactor\"_s, 1.0));"
+
+# the factor zero is the reader's AnimationsOff: Breeze then turns its animations off, Kirigami's durations
+# fall to their floor (below)
+
+[[fact]]
+key = "token.motion.speed_factor"
+when = { conditions = ["animations_off"] }
+value = 0
+rows = ["K3.30", "Q3.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2080-2086"
+quote = "const int animationsDuration = cg.readEntry(\"AnimationDurationFactor\", StyleConfigData::animationsDuration() / 100.0f) * 100; if (animationsDuration > 0) { StyleConfigData::setAnimationsDuration(animationsDuration); StyleConfigData::setAnimationsEnabled(true); } else { StyleConfigData::setAnimationsEnabled(false); }"
+
+# Breeze's state engines (buttons' hover, focus, pressed cross-fades; also Qt's SH_Widget_Animation_Duration, which
+# breezestyle.cpp:937-938 answers with it): `animations`, S4.1's key for Breeze's Animations class. While kdeglobals
+# sets the factor, the factor times the literal 100 (not breezerc's AnimationsDuration), truncated to whole ms by
+# the int conversion; a positive result turns Breeze's animations on whatever breezerc says, zero (a factor below
+# 0.01, the factor 0 of animations_off) turns them off. While the factor is unset, breezerc's AnimationsDuration
+# (100), which the factor's default 1 reproduces
+
+[[fact]]
+key = "token.motion.durations.animations"
+value = "= floor(mul(100ms, token.motion.speed_factor))"
+rows = ["K3.31", "K1.30"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2076-2086"
+quote = "if (!cg.hasKey(\"AnimationDurationFactor\")) { return; } const int animationsDuration = cg.readEntry(\"AnimationDurationFactor\", StyleConfigData::animationsDuration() / 100.0f) * 100; if (animationsDuration > 0) { StyleConfigData::setAnimationsDuration(animationsDuration); StyleConfigData::setAnimationsEnabled(true); } else { StyleConfigData::setAnimationsEnabled(false); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:937-938"
+quote = "case SH_Widget_Animation_Duration: return StyleConfigData::animationsEnabled() ? StyleConfigData::animationsDuration() : 0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:53-55"
+quote = "<entry name=\"AnimationsDuration\" type=\"Int\"> <default>100</default> </entry>"
+
+# Breeze quantises its linear progress into AnimationSteps steps, floor(value * steps) / steps: CSS steps(10,
+# jump-end)
+
+[[fact]]
+key = "token.motion.timings.animations"
+value = { steps = { count = 10, jump = "jump_end" } }
+rows = ["K3.31"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimationdata.h:72-80"
+quote = "//* apply step virtual qreal digitize(const qreal &value) const { if (_steps > 0) { return std::floor(value * _steps) / _steps; } else { return value; } }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:51-52"
+quote = "// animation steps AnimationData::setSteps(StyleConfigData::animationSteps());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezegenericdata.h:48-50"
+quote = "void setOpacity(qreal value) { value = digitize(value);"
+
+[[fact]]
+key = "token.params.motion.animation_steps"
+value = 10
+rows = ["K3.31"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
+quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
+
+# KMessageWidget's timeline (S4.1 step 2, the one class giving its animation the value). KCollapsibleGroupBox's
+# timeline is built at 500 ms too, but each expand or collapse sets it to the style hint's duration, at least 1 ms
+# (kcollapsiblegroupbox.cpp:114-116): Breeze's `animations`, above, no key of its own
+
+[[fact]]
+key = "token.motion.durations.message_widget"
+value = "500ms"
+rows = ["K3.37"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60"
+quote = "timeLine = new QTimeLine(500, q);"
+
+# the decoration's speed factor (`token.params.motion.kwin_speed_factor`, ADD-A123): the decoration runs in KWin and
+# reads [KDE] AnimationDurationFactor from KSharedConfig::openConfig(), KWin's main config: kwinrc (KWin's about data
+# names it `kwin`, and KConfig's main config is the application name plus `rc`), cascaded over kdeglobals (the
+# globals parsed first, the main config last), 1 where neither sets it. So kwinrc's factor, where set, wins over
+# kdeglobals' for the decoration; `token.motion.speed_factor` is kdeglobals' alone. The default, 1, is the
+# decoration's own readEntry default and KWin's kcfg default
+
+[[fact]]
+key = "token.params.motion.kwin_speed_factor"
+value = 1
+rows = ["K1.17"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:388-389"
+quote = "// But the shadow is fine to animate like this! m_shadowAnimation->setDuration(cg.readEntry(\"AnimationDurationFactor\", 1.0f) * 100.0f);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381"
+quote = "KSharedConfig::Ptr config = KSharedConfig::openConfig(); const KConfigGroup cg(config, QStringLiteral(\"KDE\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:139"
+quote = "KAboutData aboutData(QStringLiteral(\"kwin\"), // The program name used internally"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:648-649"
+quote = "QString appName = QCoreApplication::applicationName(); return appName + QLatin1String(\"rc\");"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:712-731"
+quote = "// Parse all desired files from the least to the most specific. bool globalConfigFileIsImmutable = false; if (d->wantGlobals()) { globalConfigFileIsImmutable = (d->parseGlobalSystemFiles() == KConfigIniBackend::ParseImmutable); }"
+
+# the decoration's shadow fade (Breeze's Decoration class, whose shadow fade and active-state fade differ:
+# `decoration_shadow`): the decoration's factor (above) times the literal 100, a float that
+# QVariantAnimation::setDuration(int) truncates to whole ms; the active-state animation is set to 0 and unused
+
+[[fact]]
+key = "token.motion.durations.decoration_shadow"
+value = "= floor(mul(100ms, token.params.motion.kwin_speed_factor))"
+rows = ["K1.17"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:388-389"
+quote = "// But the shadow is fine to animate like this! m_shadowAnimation->setDuration(cg.readEntry(\"AnimationDurationFactor\", 1.0f) * 100.0f);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51"
+quote = "void setDuration(int msecs);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381"
+quote = "KSharedConfig::Ptr config = KSharedConfig::openConfig(); const KConfigGroup cg(config, QStringLiteral(\"KDE\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:139"
+quote = "KAboutData aboutData(QStringLiteral(\"kwin\"), // The program name used internally"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/main.cpp:155"
+quote = "KAboutData::setApplicationData(aboutData);"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/ksharedconfig.cpp:136-139"
+quote = "if (fileName.isEmpty() && !flags.testFlag(KConfig::SimpleConfig)) { // Determine the config file name that KConfig will make up (see KConfigPrivate::changeFileName) fileName = KConfig::mainConfigName(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:648-649"
+quote = "QString appName = QCoreApplication::applicationName(); return appName + QLatin1String(\"rc\");"
+
+[[fact.cite]]
+kind = "published"
+source = "kconfig@6.31.0 src/core/kconfig.cpp:712-731"
+quote = "// Parse all desired files from the least to the most specific. bool globalConfigFileIsImmutable = false; if (d->wantGlobals()) { globalConfigFileIsImmutable = (d->parseGlobalSystemFiles() == KConfigIniBackend::ParseImmutable); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/kwin.kcfg:313-317"
+quote = "<group name=\"KDE\"> <entry name=\"AnimationDurationFactor\" type=\"Double\"> <default>1</default> <min>0</min> </entry>"
+
+# Qt's own unscaled timings: the line edit's side-icon fade (QLineEditIconButton), the tab move (QTabBar's
+# ANIMATION_DURATION) and QVariantAnimation's own default, which QTreeView's expand takes (`variant`)
+
+[[fact]]
+key = "token.motion.durations.line_edit_icon_button"
+value = "160ms"
+rows = ["K1.46†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlineedit_p.cpp:427-435"
+quote = "void QLineEditIconButton::startOpacityAnimation(qreal endValue) { QPropertyAnimation *animation = new QPropertyAnimation(this, QByteArrayLiteral(\"opacity\"), this); connect(animation, &QPropertyAnimation::finished, this, &QLineEditIconButton::onAnimationFinished); animation->setDuration(160);"
+
+[[fact]]
+key = "token.motion.durations.tab_bar"
+value = "250ms"
+rows = ["K1.133†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtabbar_p.h:30"
+quote = "#define ANIMATION_DURATION 250"
+
+[[fact]]
+key = "token.motion.durations.variant"
+value = "250ms"
+rows = ["K1.185†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153"
+quote = "QVariantAnimationPrivate::QVariantAnimationPrivate() : duration(250), interpolator(&defaultInterpolator)"
+
+# Plasma's longDuration: plasmarc [Units] longDuration (200) times the factor, rounded by qRound (`round`, S2.2: to
+# the nearest integer, a half away from zero), then at least 1 ms by qMax (Kirigami's own units.cpp defaults,
+# 50/100/200/400 ms, are replaced on Plasma by the qqc2-desktop-style integration)
+
+[[fact]]
+key = "token.motion.durations.long"
+value = "= max(1ms, round(mul(200ms, token.motion.speed_factor)))"
+rows = ["Q3.23", "Q3.24", "Q3.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:20"
+quote = "constexpr int defaultLongDuration = 200;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:42-49"
+quote = "int longDuration = cfg.readEntry(\"longDuration\", defaultLongDuration); const qreal animationSpeedModifier = m_animationSpeedProvider->animationSpeedModifier().value(); longDuration = qRound(longDuration * animationSpeedModifier); // Animators with a duration of 0 do not fire reliably // see Bug 357532 and QTBUG-39766 longDuration = qMax(1, longDuration);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/global/qnumeric.h:546-547"
+quote = "{ return d >= 0.0 ? d + 0.5 : d - 0.5; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/global/qnumeric.h:570-573"
+quote = "constexpr inline int qRound(double d) { return QtPrivate::qCheckedFPConversionToInteger<int>(QtPrivate::QRoundImpl::qRound(d)); }"
+
+[[fact]]
+key = "token.motion.durations.very_short"
+value = "= floor(div(token.motion.durations.long, 4))"
+rows = ["Q3.23", "Q3.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:51"
+quote = "setVeryShortDuration(longDuration / 4);"
+
+[[fact]]
+key = "token.motion.durations.short"
+value = "= floor(div(token.motion.durations.long, 2))"
+rows = ["Q3.23", "Q3.24", "Q1.102"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:52"
+quote = "setShortDuration(longDuration / 2);"
+
+[[fact]]
+key = "token.motion.durations.very_long"
+value = "= mul(token.motion.durations.long, 2)"
+rows = ["Q3.23", "Q3.24"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktopunits.cpp:54"
+quote = "setVeryLongDuration(longDuration * 2);"
+
+# Kirigami's humanMoment, not scaled by the factor (PlasmaDesktopUnits sets the four durations only)
+
+[[fact]]
+key = "token.motion.durations.human_moment"
+value = "2000ms"
+rows = ["Q3.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:44"
+quote = ", humanMoment(2000)"
+
+# Qt's easing curves the platform uses, each the curve Qt computes in code (`QEasingCurve::Type` through curveToFunc
+# to the easing.cpp function), so a platform curve by its name, `Timing::Platform(Qt(…))`, not a cubic Bézier, even
+# where one equals it (S2.7, CONTRA-7, ADD-A123): the decoration's shadow fade (`out_cubic` both ways, the
+# deactivation's in-cubic run backward being the out-cubic in S2.7's forward reading), the tree expand, the tab move
+# and the dock-widget and toolbar re-layout (`in_out_quad`), QTimeLine's default (`in_out_sine`, KMessageWidget's and
+# KCollapsibleGroupBox's timelines), and Kirigami's and qqc2-desktop-style's QML curves (QML's `Easing` is the same
+# QEasingCurve). The QML property takes the name `Easing.<type>`
+
+[[fact]]
+key = "token.motion.timings.out_cubic"
+value = { platform = { qt = "out_cubic" } }
+rows = ["K1.17", "Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:197"
+quote = "m_shadowAnimation->setEasingCurve(QEasingCurve::OutCubic);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:278-279"
+quote = "m_shadowAnimation->setDirection(window()->isActive() ? QAbstractAnimation::Forward : QAbstractAnimation::Backward); m_shadowAnimation->setEasingCurve(window()->isActive() ? QEasingCurve::OutCubic : QEasingCurve::InCubic);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/wheelhandler.cpp:102-103"
+quote = "m_xScrollAnimation.setEasingCurve(QEasingCurve::OutCubic); m_yScrollAnimation.setEasingCurve(QEasingCurve::OutCubic);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/GlobalDrawer.qml:677"
+quote = "easing.type: Easing.OutCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1015-1016"
+quote = "case QEasingCurve::OutCubic: return &easeOutCubic;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:110-114"
+quote = "static qreal easeOutCubic(qreal t) { t-=1.0; return t*t*t + 1; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_out_quad"
+value = { platform = { qt = "in_out_quad" } }
+rows = ["K1.133†", "K1.185†", "K3.38†", "Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/itemviews/qtreeview_p.h:89"
+quote = "AnimatedOperation() : item(0) { setEasingCurve(QEasingCurve::InOutQuad); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qtabbar_p.h:144"
+quote = "{ setEasingCurve(QEasingCurve::InOutQuad); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetanimator.cpp:62"
+quote = "anim->setEasingCurve(QEasingCurve::InOutQuad);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/AbstractApplicationHeader.qml:34"
+quote = "easing.type: Easing.InOutQuad"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1009-1010"
+quote = "case QEasingCurve::InOutQuad: return &easeInOutQuad;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:70-79"
+quote = "static qreal easeInOutQuad(qreal t) { t*=2.0; if (t < 1) { return t*t/qreal(2); } else { --t; return -0.5 * (t*(t-2) - 1); } }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_out_sine"
+value = { platform = { qt = "in_out_sine" } }
+rows = ["K3.37"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qtimeline.cpp:24-25"
+quote = "Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(QTimeLinePrivate, QEasingCurve, easingCurve, QEasingCurve::InOutSine)"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kmessagewidget.cpp:60"
+quote = "timeLine = new QTimeLine(500, q);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1041-1042"
+quote = "case QEasingCurve::InOutSine: return &easeInOutSine;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:275-278"
+quote = "static qreal easeInOutSine(qreal t) { return -0.5 * (::qCos(M_PI*t) - 1); }"
+
+[[fact]]
+key = "token.motion.timings.in_cubic"
+value = { platform = { qt = "in_cubic" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/private/PassiveNotificationsManager.qml:159"
+quote = "easing.type: Easing.InCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1013-1014"
+quote = "case QEasingCurve::InCubic: return &easeInCubic;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:99-102"
+quote = "static qreal easeInCubic(qreal t) { return t*t*t; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_out_cubic"
+value = { platform = { qt = "in_out_cubic" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/private/PassiveNotificationsManager.qml:142"
+quote = "easing.type: Easing.InOutCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/PageRow.qml:769"
+quote = "easing.type: Easing.InOutCubic"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1017-1018"
+quote = "case QEasingCurve::InOutCubic: return &easeInOutCubic;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:122-131"
+quote = "static qreal easeInOutCubic(qreal t) { t*=2.0; if(t < 1) { return 0.5*t*t*t; } else { t -= qreal(2.0); return 0.5*(t*t*t + 2); } }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.out_quad"
+value = { platform = { qt = "out_quad" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/wheelhandler.cpp:104-105"
+quote = "m_xInertiaScrollAnimation.setEasingCurve(QEasingCurve::OutQuad); m_yInertiaScrollAnimation.setEasingCurve(QEasingCurve::OutQuad);"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/OverlayDrawer.qml:296"
+quote = "easing.type: Easing.OutQuad"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1007-1008"
+quote = "case QEasingCurve::OutQuad: return &easeOutQuad;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:59-62"
+quote = "static qreal easeOutQuad(qreal t) { return -t*(t-2); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.in_quad"
+value = { platform = { qt = "in_quad" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/OverlayDrawer.qml:314"
+quote = "easing.type: Easing.InQuad"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1005-1006"
+quote = "case QEasingCurve::InQuad: return &easeInQuad;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:48-51"
+quote = "static qreal easeInQuad(qreal t) { return t*t; }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation_p.h:239"
+quote = "Q_PROPERTY(QEasingCurve easing READ easing WRITE setEasing NOTIFY easingChanged)"
+
+[[fact]]
+key = "token.motion.timings.out_expo"
+value = { platform = { qt = "out_expo" } }
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/layouts/columnview.cpp:462"
+quote = "m_slideAnim->setEasingCurve(QEasingCurve(QEasingCurve::OutExpo));"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/tools/qeasingcurve.cpp:1047-1048"
+quote = "case QEasingCurve::OutExpo: return &easeOutExpo;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/3rdparty/easing/easing.cpp:309-312"
+quote = "static qreal easeOutExpo(qreal t) { return (t==1.0) ? 1.0 : 1.001 * (-::qPow(2.0f, -10 * t) + 1); }"
+
+# The focus indicator (R12, S2.10): Breeze's QFocusFrame, shown after a keyboard focus change only (Tab, Backtab,
+# a shortcut), a ring of PM_FocusFrameHMargin filled with Highlight at Blend_Value. The token is Breeze's default
+# branch: the ring's inner edge on the widget's box (offset 0), its inner corners Frame_FrameRadius whatever the
+# widget's radius and its outer corners that plus the margin. Every Breeze focus target has a branch of its own
+# (push and tool buttons, fields and combo boxes 1 px inside the widget; check boxes, radio buttons, sliders, dials,
+# group boxes by their indicator), so each part restates its offset (and the round ones their corners).
+
+[[fact]]
+key = "token.focus.kind"
+value = "filled_ring"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6776-6779"
+quote = "auto outerColor = _helper->alphaColor(option->palette.highlight().color(), Metrics::Blend_Value); painter->setRenderHint(QPainter::Antialiasing); painter->fillPath(focusFramePath, outerColor);"
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:737-739"
+quote = "case PM_FocusFrameVMargin: case PM_FocusFrameHMargin: return 2;"
+
+[[fact]]
+key = "token.focus.paint"
+value = "= alpha(role.selection.background, 0.3)"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6776"
+quote = "auto outerColor = _helper->alphaColor(option->palette.highlight().color(), Metrics::Blend_Value);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:176"
+quote = "static constexpr qreal Blend_Value = 0.3;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:349-355"
+quote = "QColor Helper::alphaColor(QColor color, qreal alpha) const { if (alpha >= 0 && alpha < 1.0) { color.setAlphaF(alpha * color.alphaF()); } return color; }"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676"
+quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background());"
+
+[[fact]]
+key = "token.focus.dash"
+value = "solid"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6776-6779"
+quote = "auto outerColor = _helper->alphaColor(option->palette.highlight().color(), Metrics::Blend_Value); painter->setRenderHint(QPainter::Antialiasing); painter->fillPath(focusFramePath, outerColor);"
+
+# the frame's rect is the widget's grown by PM_FocusFrameHMargin, and the ring is that margin wide inside it: its
+# inner edge is the widget's edge, which the default branch moves by nothing (a zero by omission, S17)
+
+[[fact]]
+key = "token.focus.offset.top"
+value = "0px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:737-739"
+quote = "case PM_FocusFrameVMargin: case PM_FocusFrameHMargin: return 2;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qfocusframe.cpp:56-62"
+quote = "int vmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameVMargin, &opt, q), hmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, &opt, q); QPoint pos(widget->x(), widget->y()); if (q->parentWidget() != widget->parentWidget()) pos = widget->parentWidget()->mapTo(q->parentWidget(), pos); QRect geom(pos.x()-hmargin, pos.y()-vmargin, widget->width()+(hmargin*2), widget->height()+(vmargin*2));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
+quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
+quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
+
+[[fact]]
+key = "token.focus.offset.right"
+value = "0px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:737-739"
+quote = "case PM_FocusFrameVMargin: case PM_FocusFrameHMargin: return 2;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qfocusframe.cpp:56-62"
+quote = "int vmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameVMargin, &opt, q), hmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, &opt, q); QPoint pos(widget->x(), widget->y()); if (q->parentWidget() != widget->parentWidget()) pos = widget->parentWidget()->mapTo(q->parentWidget(), pos); QRect geom(pos.x()-hmargin, pos.y()-vmargin, widget->width()+(hmargin*2), widget->height()+(vmargin*2));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
+quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
+quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
+
+[[fact]]
+key = "token.focus.offset.bottom"
+value = "0px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:737-739"
+quote = "case PM_FocusFrameVMargin: case PM_FocusFrameHMargin: return 2;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qfocusframe.cpp:56-62"
+quote = "int vmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameVMargin, &opt, q), hmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, &opt, q); QPoint pos(widget->x(), widget->y()); if (q->parentWidget() != widget->parentWidget()) pos = widget->parentWidget()->mapTo(q->parentWidget(), pos); QRect geom(pos.x()-hmargin, pos.y()-vmargin, widget->width()+(hmargin*2), widget->height()+(vmargin*2));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
+quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
+quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
+
+[[fact]]
+key = "token.focus.offset.left"
+value = "0px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:737-739"
+quote = "case PM_FocusFrameVMargin: case PM_FocusFrameHMargin: return 2;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qfocusframe.cpp:56-62"
+quote = "int vmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameVMargin, &opt, q), hmargin = q->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, &opt, q); QPoint pos(widget->x(), widget->y()); if (q->parentWidget() != widget->parentWidget()) pos = widget->parentWidget()->mapTo(q->parentWidget(), pos); QRect geom(pos.x()-hmargin, pos.y()-vmargin, widget->width()+(hmargin*2), widget->height()+(vmargin*2));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6623-6630"
+quote = "const int hmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameHMargin, option, widget); const int vmargin = proxy()->pixelMetric(QStyle::PM_FocusFrameVMargin, option, widget); // Not using targetWidget->rect() to get this because this should still work when widget is null. const QRect targetWidgetRect = option->rect.adjusted(hmargin, vmargin, -hmargin, -vmargin); QRect innerRect = targetWidgetRect; QRect outerRect = option->rect;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
+quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+absent = ["adjust"]
+
+# the ring's inner corners (S2.10: a stated corner is the inner one, its outer corner it plus the width, here
+# innerRadius + vmargin as Breeze draws it)
+
+[[fact]]
+key = "token.focus.corners.top_left"
+value = "5px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
+
+[[fact]]
+key = "token.focus.corners.top_right"
+value = "5px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+value = "5px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+value = "5px"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6631-6632"
+quote = "qreal innerRadius = Metrics::Frame_FrameRadius; qreal outerRadius = innerRadius + vmargin;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:42"
+quote = "static constexpr int Frame_FrameRadius = 5;"
+
+[[fact]]
+key = "token.focus.corners.curve"
+value = "circular"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6771-6774"
+quote = "} else { focusFramePath.addRoundedRect(innerRect, innerRadius, innerRadius); focusFramePath.addRoundedRect(outerRect, outerRadius, outerRadius); }"
+
+[[fact]]
+key = "token.focus.shadow"
+value = "absent"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6614-6781"
+quote = "bool Style::drawFocusFrame(const QStyleOption *option, QPainter *painter, const QWidget *widget) const"
+absent = []
+
+# the frame moves to the newly focused widget at once: no animation in drawFocusFrame or the focus-in handler
+
+[[fact]]
+key = "token.focus.transition"
+value = "absent"
+rows = ["K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:6614-6781"
+quote = "bool Style::drawFocusFrame(const QStyleOption *option, QPainter *painter, const QWidget *widget) const"
+absent = []
+
+# Breeze shows the frame only after a keyboard focus change, with no timeout (FocusVisibleWhen::Keyboard)
+
+[[fact]]
+key = "token.behavior.focus_visible_when"
+value = { keyboard = {  } }
+rows = ["K1.21", "K3.20"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1649-1652"
+quote = "auto focusEvent = static_cast<QFocusEvent *>(e); auto focusReason = focusEvent->reason(); bool hasKeyboardFocusReason = focusReason == Qt::TabFocusReason || focusReason == Qt::BacktabFocusReason || focusReason == Qt::ShortcutFocusReason; if (hasKeyboardFocusReason) {"
+
+# S4.2 caret: Qt's line edit (Qt Widgets) and TextInput (Qt Quick) draw a 1 px caret in the text colour,
+# toggled every half of the cursor flash time, which the KDE platform theme reads from kdeglobals [KDE]
+# CursorBlinkRate (1000 unset).
+
+[[fact]]
+key = "token.caret.blink_on"
+value = "= div(1000ms, 2)"
+rows = ["K3.41", "K-P3-11†"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:79-80"
+quote = "const auto cursorBlinkRate = readConfigValue(cg, QStringLiteral(\"CursorBlinkRate\"), 1000).toInt(); m_hints[QPlatformTheme::CursorFlashTime] = cursorBlinkRate > 0 ? qBound(200, cursorBlinkRate, 2000) : 0; // 0 => no blinking"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:1497-1509"
+quote = "void QWidgetLineControl::updateCursorBlinking() { m_blinkTimer.stop(); if (m_blinkEnabled && !m_readOnly) { const auto flashTime = QGuiApplication::styleHints()->cursorFlashTime() * 1ms; if (flashTime >= 2ms) m_blinkTimer.start(flashTime / 2, this); } m_blinkStatus = 1; emit updateNeeded(inputMask().isEmpty() ? cursorRect() : QRect()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquicktextinput.cpp:4574-4578"
+quote = "if (m_blinkEnabled && cursorVisible && !cursorItem && !m_readOnly) { int flashTime = QGuiApplication::styleHints()->cursorFlashTime(); if (flashTime >= 2) m_blinkTimer = q->startTimer(flashTime / 2); }"
+
+[[fact]]
+key = "token.caret.blink_off"
+value = "= div(1000ms, 2)"
+rows = ["K3.41", "K-P3-11†"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:79-80"
+quote = "const auto cursorBlinkRate = readConfigValue(cg, QStringLiteral(\"CursorBlinkRate\"), 1000).toInt(); m_hints[QPlatformTheme::CursorFlashTime] = cursorBlinkRate > 0 ? qBound(200, cursorBlinkRate, 2000) : 0; // 0 => no blinking"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:1497-1509"
+quote = "void QWidgetLineControl::updateCursorBlinking() { m_blinkTimer.stop(); if (m_blinkEnabled && !m_readOnly) { const auto flashTime = QGuiApplication::styleHints()->cursorFlashTime() * 1ms; if (flashTime >= 2ms) m_blinkTimer.start(flashTime / 2, this); } m_blinkStatus = 1; emit updateNeeded(inputMask().isEmpty() ? cursorRect() : QRect()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquicktextinput.cpp:4574-4578"
+quote = "if (m_blinkEnabled && cursorVisible && !cursorItem && !m_readOnly) { int flashTime = QGuiApplication::styleHints()->cursorFlashTime(); if (flashTime >= 2) m_blinkTimer = q->startTimer(flashTime / 2); }"
+
+# the blink timer toggles for as long as the field has focus: Qt stops it nowhere
+
+[[fact]]
+key = "token.caret.blink_timeout"
+value = "none"
+rows = ["K3.41"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:1497-1531"
+quote = "void QWidgetLineControl::updateCursorBlinking()"
+absent = []
+
+[[fact]]
+key = "token.caret.blink_style"
+value = "hard"
+rows = ["K3.41"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:1526-1527"
+quote = "if (eventId == m_blinkTimer.id()) { m_blinkStatus = !m_blinkStatus;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:637-638"
+quote = "if (!m_hideCursor && m_blinkStatus) textLayout()->drawCursor(painter, offset, cursor, m_cursorWidth);"
+
+[[fact]]
+key = "token.caret.width"
+value = "1px"
+rows = ["K3.42"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.cpp:654-655"
+quote = "case TextCursorWidth: return QVariant(1);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquicktextinput.cpp:2993"
+quote = "int cursorWidth = d->cursorItem ? d->cursorItem->width() : 1;"
+
+[[fact]]
+key = "token.caret.color"
+value = "= role.view.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlineedit.cpp:1985"
+quote = "p.setPen(pal.text().color());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:673"
+quote = "palette.setBrush(state, QPalette::Text, schemeView.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/TextField.qml:19-20"
+quote = "Kirigami.Theme.colorSet: Kirigami.Theme.View Kirigami.Theme.inherit: false"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/TextField.qml:42"
+quote = "color: enabled ? Kirigami.Theme.textColor : Kirigami.Theme.disabledTextColor"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquicktextinput.cpp:1963"
+quote = "node->setCursor(cursorRectangle(), d->color, nullptr);"
+
+[[fact]]
+key = "token.caret.shown_in_read_only"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlineedit.cpp:2002-2003"
+quote = "if (d->cursorVisible && !d->control->isReadOnly() && d->control->inputMask().isEmpty()) flags |= QWidgetLineControl::DrawCursor;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquicktextinput.cpp:4574"
+quote = "if (m_blinkEnabled && cursorVisible && !cursorItem && !m_readOnly) {"
+
+# each accepted key restarts the blink with the caret shown, so the caret stays on while keys come faster than
+# half the flash time
+
+[[fact]]
+key = "token.caret.solid_while_typing"
+value = true
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qlineedit.cpp:1688-1694"
+quote = "void QLineEdit::keyPressEvent(QKeyEvent *event) { Q_D(QLineEdit); d->control->processKeyEvent(event); if (event->isAccepted()) d->control->updateCursorBlinking(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:1500-1507"
+quote = "if (m_blinkEnabled && !m_readOnly) { const auto flashTime = QGuiApplication::styleHints()->cursorFlashTime() * 1ms; if (flashTime >= 2ms) m_blinkTimer.start(flashTime / 2, this); } m_blinkStatus = 1;"
+
+# S4.2 behaviour: the KDE platform theme's hints from kdeglobals [KDE] (their defaults while unset), Qt's
+# own defaults for the hints it does not set, KWin's keyboard repeat (kcminputrc).
+
+[[fact]]
+key = "token.behavior.double_click_time"
+value = "400ms"
+rows = ["K3.70"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:81"
+quote = "m_hints[QPlatformTheme::MouseDoubleClickInterval] = readConfigValue(cg, QStringLiteral(\"DoubleClickInterval\"), 400);"
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+value = "10px"
+rows = ["K3.71"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:82"
+quote = "m_hints[QPlatformTheme::StartDragDistance] = readConfigValue(cg, QStringLiteral(\"StartDragDist\"), 10);"
+
+[[fact]]
+key = "token.behavior.drag_time"
+value = "500ms"
+rows = ["K3.71"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:83"
+quote = "m_hints[QPlatformTheme::StartDragTime] = readConfigValue(cg, QStringLiteral(\"StartDragTime\"), 500);"
+
+[[fact]]
+key = "token.behavior.scroll_lines_per_step"
+value = 3
+rows = ["K3.72"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:126"
+quote = "m_hints[QPlatformTheme::WheelScrollLines] = readConfigValue(cg, QStringLiteral(\"WheelScrollLines\"), 3);"
+
+[[fact]]
+key = "token.behavior.single_click_activates"
+value = false
+rows = ["K3.73"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:90"
+quote = "m_hints[QPlatformTheme::ItemViewActivateItemOnSingleClick] = readConfigValue(cg, QStringLiteral(\"SingleClick\"), false);"
+
+# kdeglobals [KDE] SingleClick, the one route of S4.2: the reader reports the condition, this rule states the value
+
+[[fact]]
+key = "token.behavior.single_click_activates"
+when = { conditions = ["system_setting:single_click"] }
+value = true
+rows = ["K3.73"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:90"
+quote = "m_hints[QPlatformTheme::ItemViewActivateItemOnSingleClick] = readConfigValue(cg, QStringLiteral(\"SingleClick\"), false);"
+
+[[fact]]
+key = "token.behavior.long_press"
+value = "800ms"
+rows = ["K3.76†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.cpp:673-674"
+quote = "case MousePressAndHoldInterval: return QVariant(800);"
+
+[[fact]]
+key = "token.behavior.double_click_distance"
+value = "5px"
+rows = ["K-P3-16†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.cpp:675-680"
+quote = "case MouseDoubleClickDistance: { bool ok = false; const int dist = qEnvironmentVariableIntValue(\"QT_DBL_CLICK_DIST\", &ok); return QVariant(ok ? dist : 5); }"
+
+# Qt has one double-click distance for both axes
+
+[[fact]]
+key = "token.behavior.double_click_height"
+value = "= token.behavior.double_click_distance"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.cpp:50-51"
+quote = "\\value MouseDoubleClickDistance (int) The maximum distance in logical pixels which the mouse can travel between clicks in order for the click sequence to be handled as a double click."
+
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+value = "= mul(token.behavior.double_click_distance, 2)"
+rows = ["K-P3-16†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.cpp:683-689"
+quote = "case TouchDoubleTapDistance: { bool ok = false; int dist = qEnvironmentVariableIntValue(\"QT_DBL_TAP_DIST\", &ok); if (!ok) dist = defaultThemeHint(MouseDoubleClickDistance).toInt(&ok) * 2; return QVariant(ok ? dist : 10);"
+
+[[fact]]
+key = "token.behavior.touch.slop"
+value = "15px"
+rows = ["K-P3-16†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.cpp:703-704"
+quote = "case FlickStartDistance: return QVariant(15);"
+
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+value = "600ms"
+rows = ["K-P3-16†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/keyboard_input.cpp:202-204"
+quote = "const auto config = kwinApp()->inputConfig()->group(QStringLiteral(\"Keyboard\")); const int delay = config.readEntry(\"RepeatDelay\", 600); const int rate = std::ceil(config.readEntry(\"RepeatRate\", 25.0));"
+
+# kcminputrc [Keyboard] RepeatRate, 25 per second: KWin's timer interval 1000 / rate ms
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+value = "= div(1000ms, 25)"
+rows = ["K-P3-16†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/keyboard_input.cpp:202-204"
+quote = "const auto config = kwinApp()->inputConfig()->group(QStringLiteral(\"Keyboard\")); const int delay = config.readEntry(\"RepeatDelay\", 600); const int rate = std::ceil(config.readEntry(\"RepeatRate\", 25.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "kwin@6.8.2 src/keyboard_repeat.cpp:35-37"
+quote = "if (waylandServer()->seat()->keyboard()->keyRepeatRate() != 0) { m_timer->setInterval(1000 / waylandServer()->seat()->keyboard()->keyRepeatRate()); }"
+
+# S4.4 text: Plasma's default fonts (kdeglobals [General] font, fixed, menuFont, toolBarFont,
+# smallestReadableFont unset: KFontSettingsData's table), the QFont defaults for what the strings leave, the derived
+# fonts Breeze and Kirigami build from them, and the slots (S4.4's owner rule).
+
+[[fact]]
+key = "token.text.keyed.default.font.family"
+value = "Noto Sans"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:44"
+quote = "static const char DefaultFont[] = \"Noto Sans\";"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:47"
+quote = "{GeneralId, \"font\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.default.font.size"
+value = "10pt"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:47"
+quote = "{GeneralId, \"font\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.default.font.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:47"
+quote = "{GeneralId, \"font\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.default.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:47"
+quote = "{GeneralId, \"font\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:45"
+quote = "style(QFont::StyleNormal),"
+
+[[fact]]
+key = "token.text.keyed.default.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.default.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:200"
+quote = "QFixed letterSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.default.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:201"
+quote = "QFixed wordSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.default.font.axes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:67"
+quote = "QMap<QFont::Tag, float> variableAxisValues;"
+
+[[fact]]
+key = "token.text.keyed.default.font.features"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:202"
+quote = "QMap<QFont::Tag, quint32> features;"
+
+[[fact]]
+key = "token.text.keyed.default.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:213"
+quote = "capital(0), letterSpacingIsAbsolute(false), scFont(nullptr)"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:99-100"
+quote = "enum Capitalization { MixedCase,"
+
+[[fact]]
+key = "token.text.keyed.default.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:212"
+quote = "underline(false), overline(false), strikeOut(false), kerning(true),"
+
+[[fact]]
+key = "token.text.keyed.fixed.font.family"
+value = "Hack"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:48"
+quote = "{GeneralId, \"fixed\", \"Hack\", 10, QFont::Normal, QFont::Monospace, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.fixed.font.size"
+value = "10pt"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:48"
+quote = "{GeneralId, \"fixed\", \"Hack\", 10, QFont::Normal, QFont::Monospace, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.fixed.font.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:48"
+quote = "{GeneralId, \"fixed\", \"Hack\", 10, QFont::Normal, QFont::Monospace, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.fixed.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:48"
+quote = "{GeneralId, \"fixed\", \"Hack\", 10, QFont::Normal, QFont::Monospace, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:45"
+quote = "style(QFont::StyleNormal),"
+
+[[fact]]
+key = "token.text.keyed.fixed.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.fixed.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:200"
+quote = "QFixed letterSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.fixed.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:201"
+quote = "QFixed wordSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.fixed.font.axes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:67"
+quote = "QMap<QFont::Tag, float> variableAxisValues;"
+
+[[fact]]
+key = "token.text.keyed.fixed.font.features"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:202"
+quote = "QMap<QFont::Tag, quint32> features;"
+
+[[fact]]
+key = "token.text.keyed.fixed.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:213"
+quote = "capital(0), letterSpacingIsAbsolute(false), scFont(nullptr)"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:99-100"
+quote = "enum Capitalization { MixedCase,"
+
+[[fact]]
+key = "token.text.keyed.fixed.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:212"
+quote = "underline(false), overline(false), strikeOut(false), kerning(true),"
+
+[[fact]]
+key = "token.text.keyed.toolbar.font.family"
+value = "Noto Sans"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:44"
+quote = "static const char DefaultFont[] = \"Noto Sans\";"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:49"
+quote = "{GeneralId, \"toolBarFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.toolbar.font.size"
+value = "10pt"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:49"
+quote = "{GeneralId, \"toolBarFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.toolbar.font.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:49"
+quote = "{GeneralId, \"toolBarFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.toolbar.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:49"
+quote = "{GeneralId, \"toolBarFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:45"
+quote = "style(QFont::StyleNormal),"
+
+[[fact]]
+key = "token.text.keyed.toolbar.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.toolbar.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:200"
+quote = "QFixed letterSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.toolbar.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:201"
+quote = "QFixed wordSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.toolbar.font.axes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:67"
+quote = "QMap<QFont::Tag, float> variableAxisValues;"
+
+[[fact]]
+key = "token.text.keyed.toolbar.font.features"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:202"
+quote = "QMap<QFont::Tag, quint32> features;"
+
+[[fact]]
+key = "token.text.keyed.toolbar.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:213"
+quote = "capital(0), letterSpacingIsAbsolute(false), scFont(nullptr)"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:99-100"
+quote = "enum Capitalization { MixedCase,"
+
+[[fact]]
+key = "token.text.keyed.toolbar.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:212"
+quote = "underline(false), overline(false), strikeOut(false), kerning(true),"
+
+[[fact]]
+key = "token.text.keyed.menu.font.family"
+value = "Noto Sans"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:44"
+quote = "static const char DefaultFont[] = \"Noto Sans\";"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:50"
+quote = "{GeneralId, \"menuFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.menu.font.size"
+value = "10pt"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:50"
+quote = "{GeneralId, \"menuFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.menu.font.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:50"
+quote = "{GeneralId, \"menuFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.menu.font.style"
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:50"
+quote = "{GeneralId, \"menuFont\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:45"
+quote = "style(QFont::StyleNormal),"
+
+[[fact]]
+key = "token.text.keyed.menu.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.menu.letter_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:200"
+quote = "QFixed letterSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.menu.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:201"
+quote = "QFixed wordSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.menu.font.axes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:67"
+quote = "QMap<QFont::Tag, float> variableAxisValues;"
+
+[[fact]]
+key = "token.text.keyed.menu.font.features"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:202"
+quote = "QMap<QFont::Tag, quint32> features;"
+
+[[fact]]
+key = "token.text.keyed.menu.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:213"
+quote = "capital(0), letterSpacingIsAbsolute(false), scFont(nullptr)"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:99-100"
+quote = "enum Capitalization { MixedCase,"
+
+[[fact]]
+key = "token.text.keyed.menu.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:212"
+quote = "underline(false), overline(false), strikeOut(false), kerning(true),"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.font.family"
+value = "Noto Sans"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:44"
+quote = "static const char DefaultFont[] = \"Noto Sans\";"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:53"
+quote = "{GeneralId, \"smallestReadableFont\", DefaultFont, 8, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.font.size"
+value = "8pt"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:53"
+quote = "{GeneralId, \"smallestReadableFont\", DefaultFont, 8, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.font.weight"
+value = 400
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:53"
+quote = "{GeneralId, \"smallestReadableFont\", DefaultFont, 8, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.font.style"
+value = "normal"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:53"
+quote = "{GeneralId, \"smallestReadableFont\", DefaultFont, 8, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:45"
+quote = "style(QFont::StyleNormal),"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.line_height"
+value = "auto"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.letter_spacing"
+value = "0px"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:200"
+quote = "QFixed letterSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.word_spacing"
+value = "0px"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:201"
+quote = "QFixed wordSpacing;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qfixed_p.h:31"
+quote = "constexpr QFixed() : val(0) {}"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.font.axes"
+value = {}
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:67"
+quote = "QMap<QFont::Tag, float> variableAxisValues;"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.font.features"
+value = {}
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont_p.h:202"
+quote = "QMap<QFont::Tag, quint32> features;"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.case"
+value = "mixed"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:213"
+quote = "capital(0), letterSpacingIsAbsolute(false), scFont(nullptr)"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:99-100"
+quote = "enum Capitalization { MixedCase,"
+
+[[fact]]
+key = "token.text.keyed.smallest_readable.decoration"
+value = "absent"
+rows = ["K1.271", "Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.cpp:212"
+quote = "underline(false), overline(false), strikeOut(false), kerning(true),"
+
+[[fact]]
+key = "token.text.keyed.heading_1.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.font.size"
+value = "= mul(token.text.roles.body.font.size, 1.35)"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:17-18"
+quote = "case 1: factor = 1.35;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:39"
+quote = "factor = 1.35;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.font.weight"
+value = 400
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:89"
+quote = "property int type: Heading.Type.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_1.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.line_height"
+value = "auto"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.heading_1.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.font.family"
+value = "= token.text.keyed.heading_1.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.font.size"
+value = "= token.text.keyed.heading_1.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.font.style"
+value = "= token.text.keyed.heading_1.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.line_height"
+value = "= token.text.keyed.heading_1.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.letter_spacing"
+value = "= token.text.keyed.heading_1.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.word_spacing"
+value = "= token.text.keyed.heading_1.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.font.axes"
+value = "= token.text.keyed.heading_1.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.font.features"
+value = "= token.text.keyed.heading_1.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.case"
+value = "= token.text.keyed.heading_1.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.decoration"
+value = "= token.text.keyed.heading_1.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.font.weight"
+value = 600
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
+quote = "DemiBold = 600,"
+
+# heading_1_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.font.family"
+value = "= token.text.keyed.heading_1.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.font.size"
+value = "= token.text.keyed.heading_1.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.font.style"
+value = "= token.text.keyed.heading_1.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.line_height"
+value = "= token.text.keyed.heading_1.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.letter_spacing"
+value = "= token.text.keyed.heading_1.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.word_spacing"
+value = "= token.text.keyed.heading_1.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.font.axes"
+value = "= token.text.keyed.heading_1.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.font.features"
+value = "= token.text.keyed.heading_1.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.case"
+value = "= token.text.keyed.heading_1.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.decoration"
+value = "= token.text.keyed.heading_1.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.font.weight"
+value = 400
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_1_secondary.fill"
+value = "= alpha(surface.foreground, 0.75)"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:37"
+quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.font.size"
+value = "= mul(token.text.roles.body.font.size, 1.20)"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:20-21"
+quote = "case 2: factor = 1.20;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:42"
+quote = "factor = 1.20;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.font.weight"
+value = 400
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:89"
+quote = "property int type: Heading.Type.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_2.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.line_height"
+value = "auto"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.heading_2.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.font.family"
+value = "= token.text.keyed.heading_2.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.font.size"
+value = "= token.text.keyed.heading_2.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.font.style"
+value = "= token.text.keyed.heading_2.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.line_height"
+value = "= token.text.keyed.heading_2.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.letter_spacing"
+value = "= token.text.keyed.heading_2.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.word_spacing"
+value = "= token.text.keyed.heading_2.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.font.axes"
+value = "= token.text.keyed.heading_2.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.font.features"
+value = "= token.text.keyed.heading_2.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.case"
+value = "= token.text.keyed.heading_2.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.decoration"
+value = "= token.text.keyed.heading_2.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.font.weight"
+value = 600
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
+quote = "DemiBold = 600,"
+
+# heading_2_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.font.family"
+value = "= token.text.keyed.heading_2.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.font.size"
+value = "= token.text.keyed.heading_2.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.font.style"
+value = "= token.text.keyed.heading_2.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.line_height"
+value = "= token.text.keyed.heading_2.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.letter_spacing"
+value = "= token.text.keyed.heading_2.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.word_spacing"
+value = "= token.text.keyed.heading_2.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.font.axes"
+value = "= token.text.keyed.heading_2.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.font.features"
+value = "= token.text.keyed.heading_2.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.case"
+value = "= token.text.keyed.heading_2.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.decoration"
+value = "= token.text.keyed.heading_2.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.font.weight"
+value = 400
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_2_secondary.fill"
+value = "= alpha(surface.foreground, 0.75)"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:37"
+quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.font.size"
+value = "= mul(token.text.roles.body.font.size, 1.15)"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:23-24"
+quote = "case 3: factor = 1.15;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:45"
+quote = "factor = 1.15;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.font.weight"
+value = 400
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:89"
+quote = "property int type: Heading.Type.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_3.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.line_height"
+value = "auto"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.heading_3.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.font.family"
+value = "= token.text.keyed.heading_3.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.font.size"
+value = "= token.text.keyed.heading_3.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.font.style"
+value = "= token.text.keyed.heading_3.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.line_height"
+value = "= token.text.keyed.heading_3.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.letter_spacing"
+value = "= token.text.keyed.heading_3.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.word_spacing"
+value = "= token.text.keyed.heading_3.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.font.axes"
+value = "= token.text.keyed.heading_3.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.font.features"
+value = "= token.text.keyed.heading_3.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.case"
+value = "= token.text.keyed.heading_3.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.decoration"
+value = "= token.text.keyed.heading_3.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.font.weight"
+value = 600
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
+quote = "DemiBold = 600,"
+
+# heading_3_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.font.family"
+value = "= token.text.keyed.heading_3.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.font.size"
+value = "= token.text.keyed.heading_3.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.font.style"
+value = "= token.text.keyed.heading_3.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.line_height"
+value = "= token.text.keyed.heading_3.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.letter_spacing"
+value = "= token.text.keyed.heading_3.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.word_spacing"
+value = "= token.text.keyed.heading_3.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.font.axes"
+value = "= token.text.keyed.heading_3.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.font.features"
+value = "= token.text.keyed.heading_3.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.case"
+value = "= token.text.keyed.heading_3.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.decoration"
+value = "= token.text.keyed.heading_3.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.font.weight"
+value = 400
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_3_secondary.fill"
+value = "= alpha(surface.foreground, 0.75)"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:37"
+quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.font.size"
+value = "= mul(token.text.roles.body.font.size, 1.10)"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:26-27"
+quote = "case 4: factor = 1.10;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:48"
+quote = "factor = 1.10;"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53"
+quote = "const double fontSize = QApplication::font().pointSize() * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.font.weight"
+value = 400
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:89"
+quote = "property int type: Heading.Type.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_4.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.line_height"
+value = "auto"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.heading_4.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.270", "Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.font.family"
+value = "= token.text.keyed.heading_4.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.font.size"
+value = "= token.text.keyed.heading_4.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.font.style"
+value = "= token.text.keyed.heading_4.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.line_height"
+value = "= token.text.keyed.heading_4.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.letter_spacing"
+value = "= token.text.keyed.heading_4.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.word_spacing"
+value = "= token.text.keyed.heading_4.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.font.axes"
+value = "= token.text.keyed.heading_4.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.font.features"
+value = "= token.text.keyed.heading_4.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.case"
+value = "= token.text.keyed.heading_4.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.decoration"
+value = "= token.text.keyed.heading_4.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.font.weight"
+value = 600
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
+quote = "DemiBold = 600,"
+
+# heading_4_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.font.family"
+value = "= token.text.keyed.heading_4.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.font.size"
+value = "= token.text.keyed.heading_4.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.font.style"
+value = "= token.text.keyed.heading_4.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.line_height"
+value = "= token.text.keyed.heading_4.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.letter_spacing"
+value = "= token.text.keyed.heading_4.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.word_spacing"
+value = "= token.text.keyed.heading_4.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.font.axes"
+value = "= token.text.keyed.heading_4.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.font.features"
+value = "= token.text.keyed.heading_4.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.case"
+value = "= token.text.keyed.heading_4.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.decoration"
+value = "= token.text.keyed.heading_4.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.font.weight"
+value = 400
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_4_secondary.fill"
+value = "= alpha(surface.foreground, 0.75)"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:37"
+quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.font.size"
+value = "= mul(token.text.roles.body.font.size, 1)"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:15"
+quote = "let factor = 1;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:29-30"
+quote = "default: break;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.font.weight"
+value = 400
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:89"
+quote = "property int type: Heading.Type.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_5.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.line_height"
+value = "auto"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.heading_5.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.case"
+value = "= token.text.roles.body.case"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:32"
+quote = "return Platform.Theme.defaultFont.pointSize * factor;"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.font.family"
+value = "= token.text.keyed.heading_5.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.font.size"
+value = "= token.text.keyed.heading_5.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.font.style"
+value = "= token.text.keyed.heading_5.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.line_height"
+value = "= token.text.keyed.heading_5.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.letter_spacing"
+value = "= token.text.keyed.heading_5.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.word_spacing"
+value = "= token.text.keyed.heading_5.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.font.axes"
+value = "= token.text.keyed.heading_5.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.font.features"
+value = "= token.text.keyed.heading_5.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.case"
+value = "= token.text.keyed.heading_5.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.decoration"
+value = "= token.text.keyed.heading_5.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.font.weight"
+value = 600
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
+quote = "DemiBold = 600,"
+
+# heading_5_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.font.family"
+value = "= token.text.keyed.heading_5.font.family"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.font.size"
+value = "= token.text.keyed.heading_5.font.size"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.font.style"
+value = "= token.text.keyed.heading_5.font.style"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.line_height"
+value = "= token.text.keyed.heading_5.line_height"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.letter_spacing"
+value = "= token.text.keyed.heading_5.letter_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.word_spacing"
+value = "= token.text.keyed.heading_5.word_spacing"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.font.axes"
+value = "= token.text.keyed.heading_5.font.axes"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.font.features"
+value = "= token.text.keyed.heading_5.font.features"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.case"
+value = "= token.text.keyed.heading_5.case"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.decoration"
+value = "= token.text.keyed.heading_5.decoration"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35-37"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.font.weight"
+value = 400
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:69"
+quote = "Normal = 400,"
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.fill"
+value = "= alpha(surface.foreground, 0.75)"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:37"
+quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.font.size"
+value = "= add(token.text.roles.body.font.size, 1pt)"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.font.weight"
+value = 700
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:72"
+quote = "Bold = 700,"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:376-377"
+quote = "inline void QFont::setBold(bool enable) { setWeight(enable ? Bold : Normal); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7599-7604"
+quote = "// Text for label QFont font = widget ? widget->font() : qApp->font(\"QGroupBox\"); if (groupBoxOption->features == QStyleOptionFrame::Flat && !(groupBoxOption->subControls & SC_GroupBoxCheckBox)) { font.setPointSize(font.pointSize() + 1); font.setBold(true); }"
+
+[[fact]]
+key = "token.text.keyed.flat_group_title.line_height"
+value = "auto"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.font.family"
+value = "= token.text.roles.body.font.family"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.font.size"
+value = "= token.text.roles.body.font.size"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.font.weight"
+value = 700
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:72"
+quote = "Bold = 700,"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:376-377"
+quote = "inline void QFont::setBold(bool enable) { setWeight(enable ? Bold : Normal); }"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.font.style"
+value = "= token.text.roles.body.font.style"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.font.features"
+value = "= token.text.roles.body.font.features"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.case"
+value = "= token.text.roles.body.case"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.decoration"
+value = "= token.text.roles.body.decoration"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2033-2035"
+quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.command_link_title.line_height"
+value = "auto"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.keyed.menu_section.font.family"
+value = "= token.text.keyed.menu.font.family"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.font.size"
+value = "= token.text.keyed.menu.font.size"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.font.weight"
+value = 700
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:72"
+quote = "Bold = 700,"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:376-377"
+quote = "inline void QFont::setBold(bool enable) { setWeight(enable ? Bold : Normal); }"
+
+[[fact]]
+key = "token.text.keyed.menu_section.font.style"
+value = "= token.text.keyed.menu.font.style"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.letter_spacing"
+value = "= token.text.keyed.menu.letter_spacing"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.word_spacing"
+value = "= token.text.keyed.menu.word_spacing"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.font.axes"
+value = "= token.text.keyed.menu.font.axes"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.font.features"
+value = "= token.text.keyed.menu.font.features"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.case"
+value = "= token.text.keyed.menu.case"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.decoration"
+value = "= token.text.keyed.menu.decoration"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5991-5992"
+quote = "auto font = menuItemOption->font; font.setBold(true);"
+
+[[fact]]
+key = "token.text.keyed.menu_section.line_height"
+value = "auto"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfontmetrics.cpp:328-333"
+quote = "int QFontMetrics::lineSpacing() const { QFontEngine *engine = d->engineForScript(QChar::Script_Common); Q_ASSERT(engine != nullptr); return qRound(engine->leading()) + qRound(engine->ascent()) + qRound(engine->descent()); }"
+
+[[fact]]
+key = "token.text.roles.body"
+value = "= token.text.keyed.default"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:130-131"
+quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:47"
+quote = "{GeneralId, \"font\", DefaultFont, 10, QFont::Normal, QFont::SansSerif, \"Regular\"},"
+
+[[fact]]
+key = "token.text.roles.caption"
+value = "= token.text.keyed.smallest_readable"
+rows = ["Q1.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:156-158"
+quote = "case SmallFont: case MiniFont: fdtype = KFontSettingsData::SmallestReadableFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:199"
+quote = "setSmallFont(QFontDatabase::systemFont(QFontDatabase::SmallestReadableFont));"
+
+[[fact]]
+key = "token.text.roles.title1"
+value = "= token.text.keyed.heading_1"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:59"
+quote = "property int level: 1"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:17-18"
+quote = "case 1: factor = 1.35;"
+
+[[fact]]
+key = "token.text.roles.title2"
+value = "= token.text.keyed.heading_2"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:20-21"
+quote = "case 2: factor = 1.20;"
+
+[[fact]]
+key = "token.text.roles.title3"
+value = "= token.text.keyed.heading_3"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:23-24"
+quote = "case 3: factor = 1.15;"
+
+[[fact]]
+key = "token.text.roles.headline"
+value = "= token.text.roles.title3"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:23-24"
+quote = "case 3: factor = 1.15;"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+value = "= token.text.keyed.heading_4"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:26-27"
+quote = "case 4: factor = 1.10;"
+
+# KDE has no style above Heading level 1
+
+[[fact]]
+key = "token.text.roles.large_title"
+value = "= token.text.roles.title1"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:17-18"
+quote = "case 1: factor = 1.35;"
+
+[[fact]]
+key = "token.text.roles.display_large"
+value = "= token.text.roles.title1"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:17-18"
+quote = "case 1: factor = 1.35;"
+
+[[fact]]
+key = "token.text.roles.display_medium"
+value = "= token.text.roles.title1"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:17-18"
+quote = "case 1: factor = 1.35;"
+
+[[fact]]
+key = "token.text.roles.display_small"
+value = "= token.text.roles.title1"
+rows = ["Q1.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:17-18"
+quote = "case 1: factor = 1.35;"
+
+[[fact]]
+key = "token.text.roles.body_emphasized"
+value = "= token.text.keyed.heading_5_primary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:35"
+quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/ListSectionHeader.qml:93-94"
+quote = "level: 5 type: KC.Heading.Primary"
+
+[[fact]]
+key = "token.text.roles.callout"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:137-150"
+quote = "break; case MessageBoxFont: case LabelFont: case TipLabelFont: case StatusBarFont: case PushButtonFont: case ItemViewFont: case ListViewFont: case HeaderViewFont: case ListBoxFont: case ComboMenuItemFont: case ComboLineEditFont: fdtype = KFontSettingsData::GeneralFont; break;"
+
+[[fact]]
+key = "token.text.roles.label"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:137-150"
+quote = "break; case MessageBoxFont: case LabelFont: case TipLabelFont: case StatusBarFont: case PushButtonFont: case ItemViewFont: case ListViewFont: case HeaderViewFont: case ListBoxFont: case ComboMenuItemFont: case ComboLineEditFont: fdtype = KFontSettingsData::GeneralFont; break;"
+
+[[fact]]
+key = "token.text.roles.numeric"
+value = "= token.text.roles.body"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:137-150"
+quote = "break; case MessageBoxFont: case LabelFont: case TipLabelFont: case StatusBarFont: case PushButtonFont: case ItemViewFont: case ListViewFont: case HeaderViewFont: case ListBoxFont: case ComboMenuItemFont: case ComboLineEditFont: fdtype = KFontSettingsData::GeneralFont; break;"
+
+[[fact]]
+key = "token.text.roles.footnote"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:156-158"
+quote = "case SmallFont: case MiniFont: fdtype = KFontSettingsData::SmallestReadableFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:199"
+quote = "setSmallFont(QFontDatabase::systemFont(QFontDatabase::SmallestReadableFont));"
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:156-158"
+quote = "case SmallFont: case MiniFont: fdtype = KFontSettingsData::SmallestReadableFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:199"
+quote = "setSmallFont(QFontDatabase::systemFont(QFontDatabase::SmallestReadableFont));"
+
+[[fact]]
+key = "token.text.roles.caption2"
+value = "= token.text.roles.caption"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:156-158"
+quote = "case SmallFont: case MiniFont: fdtype = KFontSettingsData::SmallestReadableFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:199"
+quote = "setSmallFont(QFontDatabase::systemFont(QFontDatabase::SmallestReadableFont));"
+
+[[fact]]
+key = "token.text.roles.monospace"
+value = "= token.text.keyed.fixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:160-161"
+quote = "case FixedFont: fdtype = KFontSettingsData::FixedFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kfontsettingsdata.cpp:48"
+quote = "{GeneralId, \"fixed\", \"Hack\", 10, QFont::Normal, QFont::Monospace, \"Regular\"},"
+
+# Plasma 6.8 has no font DPI setting; Qt's Wayland screen reports 96 logical DPI unless QT_WAYLAND_FORCE_DPI is set
+
+[[fact]]
+key = "token.text.font_dpi"
+value = 96
+rows = ["K3.46"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/plugins/platforms/wayland/qwaylandscreen.cpp:150-160"
+quote = "QDpi QWaylandScreen::logicalDpi() const { static bool physicalDpi = qEnvironmentVariable(\"QT_WAYLAND_FORCE_DPI\") == QStringLiteral(\"physical\"); if (physicalDpi) return QPlatformScreen::logicalDpi(); static int forceDpi = qgetenv(\"QT_WAYLAND_FORCE_DPI\").toInt(); if (forceDpi) return QDpi(forceDpi, forceDpi); return QDpi(96, 96);"
+
+# Qt scales text only through the logical DPI and the device pixel ratio, linearly
+
+[[fact]]
+key = "token.text.scaling"
+value = "linear"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformscreen.cpp:142-145"
+quote = "The logical dots per inch metrics are used by Qt to scale the user interface. The default implementation returns logicalBaseDpi(), which results in a UI scale factor of 1.0."
+
+[[fact]]
+key = "token.text.fallbacks.emoji_family"
+value = "emoji"
+rows = ["K-FM01†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/unix/qfontconfigdatabase.cpp:840-844"
+quote = "if (script == QFontDatabasePrivate::Script_Emoji) { FcPatternAddBool(pattern, FC_COLOR, true); value.u.s = (const FcChar8 *)\"emoji\"; FcPatternAddWeak(pattern, FC_FAMILY, value, FcTrue); }"
+
+# the fonts KCM's defaults: antialiasing on, RGB sub-pixel order, slight hinting
+
+[[fact]]
+key = "token.text.rendering.antialiasing"
+value = "subpixel"
+rows = ["K3.45"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/fonts/fontsaasettings.cpp:32-45"
+quote = "bool defaultAntiAliasing() { return true; } KXftConfig::SubPixel::Type defaultSubPixel() { return KXftConfig::SubPixel::Rgb; } KXftConfig::Hint::Style defaultHinting() { return KXftConfig::Hint::Slight; }"
+
+[[fact]]
+key = "token.text.rendering.subpixel_order"
+value = "rgb"
+rows = ["K3.45"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/fonts/fontsaasettings.cpp:32-45"
+quote = "bool defaultAntiAliasing() { return true; } KXftConfig::SubPixel::Type defaultSubPixel() { return KXftConfig::SubPixel::Rgb; } KXftConfig::Hint::Style defaultHinting() { return KXftConfig::Hint::Slight; }"
+
+[[fact]]
+key = "token.text.rendering.hinting"
+value = "slight"
+rows = ["K3.45"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/fonts/fontsaasettings.cpp:32-45"
+quote = "bool defaultAntiAliasing() { return true; } KXftConfig::SubPixel::Type defaultSubPixel() { return KXftConfig::SubPixel::Rgb; } KXftConfig::Hint::Style defaultHinting() { return KXftConfig::Hint::Slight; }"
+
+[[fact]]
+key = "token.text.rendering.engine"
+when = { conditions = ["flavor:kirigami", "unit_scale"] }
+value = "native"
+rows = ["Q3.32"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:58-62"
+quote = "if (qApp->devicePixelRatio() == 1.0) { QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering); } else { QQuickWindow::setTextRenderType(QQuickWindow::QtTextRendering); }"
+
+[[fact]]
+key = "token.text.rendering.engine"
+when = { conditions = ["flavor:kirigami"], not_conditions = ["unit_scale"] }
+value = "qt"
+rows = ["Q3.32"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:58-62"
+quote = "if (qApp->devicePixelRatio() == 1.0) { QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering); } else { QQuickWindow::setTextRenderType(QQuickWindow::QtTextRendering); }"
+
+# S4.5 icons: the KDE platform theme names Breeze and Qt's hicolor fallback; the sizes are the Breeze icon
+# theme's per KIconLoader group (KIconTheme reads `<Group>Default` from its index), and Kirigami's named sizes. A
+# symbolic icon is recoloured by KIconColors' stylesheet from the Window set's active status colours.
+
+# the icon set: the KDE platform theme names a freedesktop icon theme (Qt's QIcon::fromTheme lookup), Breeze, a
+# freedesktop.org icon theme
+
+[[fact]]
+key = "token.icons.set"
+value = "freedesktop"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:92"
+quote = "m_hints[QPlatformTheme::SystemIconThemeName] = readConfigValue(QStringLiteral(\"Icons\"), QStringLiteral(\"Theme\"), QStringLiteral(\"breeze\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 README.md:3"
+quote = "Breeze Icons is a [freedesktop.org compatible](https://specifications.freedesktop.org/icon-theme-spec/latest/) icon theme."
+
+[[fact]]
+key = "token.icons.theme"
+value = "breeze"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:92"
+quote = "m_hints[QPlatformTheme::SystemIconThemeName] = readConfigValue(QStringLiteral(\"Icons\"), QStringLiteral(\"Theme\"), QStringLiteral(\"breeze\"));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:686"
+quote = "theme = cg.readEntry(\"Theme\", QStringLiteral(\"breeze\"));"
+
+[[fact]]
+key = "token.icons.theme_fallback"
+value = "hicolor"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:94"
+quote = "m_hints[QPlatformTheme::SystemIconFallbackThemeName] = QStringLiteral(\"hicolor\");"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/breeze.theme.in:114"
+quote = "Inherits=hicolor"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.size"
+value = "22px"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:10"
+quote = "ToolbarDefault=22"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
+quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+value = {}
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+value = []
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.size"
+value = "22px"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:12"
+quote = "MainToolbarDefault=22"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
+quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.axes"
+value = {}
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.symbol_variants"
+value = []
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact]]
+key = "token.icons.sizes.small.size"
+value = "16px"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:14"
+quote = "SmallDefault=16"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
+quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact]]
+key = "token.icons.sizes.small.axes"
+value = {}
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbol_variants"
+value = []
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.small.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact]]
+key = "token.icons.sizes.large.size"
+value = "48px"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:8"
+quote = "DesktopDefault=48"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
+quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact]]
+key = "token.icons.sizes.large.axes"
+value = {}
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbol_variants"
+value = []
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.large.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact]]
+key = "token.icons.sizes.panel.size"
+value = "48px"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:16"
+quote = "PanelDefault=48"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
+quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact]]
+key = "token.icons.sizes.panel.axes"
+value = {}
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbol_variants"
+value = []
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.panel.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact]]
+key = "token.icons.sizes.dialog.size"
+value = "32px"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:18"
+quote = "DialogDefault=32"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
+quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact]]
+key = "token.icons.sizes.dialog.axes"
+value = {}
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbol_variants"
+value = []
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.size"
+value = "16px"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:328-330"
+quote = "int IconSizes::small() const { return 16;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.size"
+value = "22px"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:333-335"
+quote = "int IconSizes::smallMedium() const { return 22;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.size"
+value = "32px"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:338-340"
+quote = "int IconSizes::medium() const { return 32;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.size"
+value = "48px"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:343-345"
+quote = "int IconSizes::large() const { return 48;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.size"
+value = "64px"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:348-350"
+quote = "int IconSizes::huge() const { return 64;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.size"
+value = "128px"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:353-355"
+quote = "int IconSizes::enormous() const { return 128;"
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.status_colors"
+value = { success = "= active(role.window.positive)", warning = "= active(role.window.neutral)", error = "= active(role.window.negative)", accent = "= role.global.accent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+# S4.6 keyed scalars: Kirigami's Units (flavour `kirigami`'s sizes; Plasma's integration leaves them at
+# Kirigami's defaults), and the icon effects (K3.60: KIconLoader's for Qt Widgets; Q3.18: Kirigami's icon shader).
+
+[[fact]]
+key = "token.params.layout.grid_unit"
+value = "18px"
+rows = ["Q1.97", "Q3.29"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:36"
+quote = ", gridUnit(18)"
+
+[[fact]]
+key = "token.params.layout.small_spacing"
+value = "4px"
+rows = ["Q1.97"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:37"
+quote = ", smallSpacing(4)"
+
+[[fact]]
+key = "token.params.layout.medium_spacing"
+value = "6px"
+rows = ["Q1.97"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:38"
+quote = ", mediumSpacing(6)"
+
+[[fact]]
+key = "token.params.layout.large_spacing"
+value = "8px"
+rows = ["Q1.97"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:39"
+quote = ", largeSpacing(8)"
+
+# KIconLoader's active effect, on the Desktop and Panel groups only
+
+[[fact]]
+key = "token.params.icon_effect.active_gamma"
+value = 0.7
+rows = ["K3.60"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconeffect.cpp:714-717"
+quote = "void KIconEffect::toActive(QImage &image) { KIconEffect::toGamma(image, 0.7); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1175-1178"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey if ((group == KIconLoader::Desktop || group == KIconLoader::Panel) && state == KIconLoader::ActiveState) { KIconEffect::toActive(img); }"
+
+[[fact]]
+key = "token.params.icon_effect.disabled_gray"
+value = 1
+rows = ["K3.60"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconeffect.cpp:701-705"
+quote = "void KIconEffect::toDisabled(QImage &image) { KIconEffect::toGray(image, 1); KIconEffect::semiTransparent(image); }"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1180-1182"
+quote = "if (state == KIconLoader::DisabledState && group >= 0 && group < KIconLoader::LastGroup) { KIconEffect::toDisabled(img); }"
+
+[[fact]]
+key = "token.params.icon_effect.desaturate_opacity"
+value = 0.5
+rows = ["Q3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:32"
+quote = "const mediump float desaturate_opacity = 0.5;"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:46"
+quote = "color = mix(color, vec4(vec3(dot(color.rgb, vec3(0.2126, 0.7152, 0.0722))) * desaturate_opacity, color.a * desaturate_opacity), uniforms.desaturate_amount);"
+
+# ---- token.kde and token.params.color (S4.8, S4.6): KColorScheme's effects and contrast as Breeze's scheme files
+# state them, applyScheme() copying them into kdeglobals (colorsapplicator.cpp:311-359). Both files state the same.
+# Written by the KDE facts lane (roles half).
+
+[[fact]]
+key = "token.kde.disabled.intensity"
+value = "darken"
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:16"
+quote = "IntensityEffect=2"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:17"
+quote = "IntensityEffect=2"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorschemehelpers_p.h:57-63"
+quote = "enum IntensityEffects { IntensityNoEffect, IntensityShade, IntensityDarken, IntensityLighten, NIntensityEffects, };"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.disabled.intensity_amount"
+value = 0.1
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:15"
+quote = "IntensityAmount=0.1"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:16"
+quote = "IntensityAmount=0.1"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.disabled.color"
+value = "none"
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:12"
+quote = "ColorEffect=0"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:13"
+quote = "ColorEffect=0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorschemehelpers_p.h:65-71"
+quote = "enum ColorEffects { ColorNoEffect, ColorDesaturate, ColorFade, ColorTint, NColorEffects, };"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.disabled.color_amount"
+value = 0.0
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:11"
+quote = "ColorAmount=0"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:12"
+quote = "ColorAmount=0"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.disabled.contrast"
+value = "fade"
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:14"
+quote = "ContrastEffect=1"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:15"
+quote = "ContrastEffect=1"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorschemehelpers_p.h:73-79"
+quote = "enum ContrastEffects { ContrastNoEffect, ContrastFade, ContrastTint, NContrastEffects, };"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.disabled.contrast_amount"
+value = 0.65
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:13"
+quote = "ContrastAmount=0.65"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:14"
+quote = "ContrastAmount=0.65"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.disabled.color_color"
+value = "#383838"
+rows = ["K3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:10"
+quote = "Color=56,56,56"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:11"
+quote = "Color=56,56,56"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.intensity"
+value = "none"
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:27"
+quote = "IntensityEffect=0"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:28"
+quote = "IntensityEffect=0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorschemehelpers_p.h:57-63"
+quote = "enum IntensityEffects { IntensityNoEffect, IntensityShade, IntensityDarken, IntensityLighten, NIntensityEffects, };"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.intensity_amount"
+value = 0.0
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:26"
+quote = "IntensityAmount=0"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:27"
+quote = "IntensityAmount=0"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.color"
+value = "fade"
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:22"
+quote = "ColorEffect=2"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:23"
+quote = "ColorEffect=2"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorschemehelpers_p.h:65-71"
+quote = "enum ColorEffects { ColorNoEffect, ColorDesaturate, ColorFade, ColorTint, NColorEffects, };"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.color_amount"
+value = 0.025
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:21"
+quote = "ColorAmount=0.025"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:22"
+quote = "ColorAmount=0.025"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.contrast"
+value = "tint"
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:24"
+quote = "ContrastEffect=2"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:25"
+quote = "ContrastEffect=2"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorschemehelpers_p.h:73-79"
+quote = "enum ContrastEffects { ContrastNoEffect, ContrastFade, ContrastTint, NContrastEffects, };"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.contrast_amount"
+value = 0.1
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:23"
+quote = "ContrastAmount=0.1"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:24"
+quote = "ContrastAmount=0.1"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive.color_color"
+value = "#706f6e"
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:20"
+quote = "Color=112,111,110"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:21"
+quote = "Color=112,111,110"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
+quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact]]
+key = "token.kde.inactive_enabled"
+value = false
+rows = ["K3.40", "K3.51"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:25"
+quote = "Enable=false"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:26"
+quote = "Enable=false"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:39-40"
+quote = "const bool enabledByDefault = (state == QPalette::Disabled); if (cfg.readEntry(\"Enable\", enabledByDefault)) {"
+
+[[fact]]
+key = "token.kde.inactive_change_selection_color"
+value = true
+rows = ["K3.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:19"
+quote = "ChangeSelectionColor=true"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:20"
+quote = "ChangeSelectionColor=true"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:304-316"
+quote = "const bool inactiveSelectionEffect = inactiveEffectGroup.readEntry(\"ChangeSelectionColor\", inactiveEffectGroup.readEntry(\"Enable\", true));"
+
+[[fact]]
+key = "token.kde.tint_factor"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:141-196"
+quote = "[General]"
+absent = ["TintFactor"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:142-199"
+quote = "[General]"
+absent = ["TintFactor"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:154-155"
+quote = "const auto tintAccent = config->group(u\"General\"_s).hasKey(\"TintFactor\");"
+
+[[fact]]
+key = "token.kde.titlebar_is_accent_colored"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:141-196"
+quote = "[General]"
+absent = ["TitlebarIsAccentColored", "accentActiveTitlebar"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:142-199"
+quote = "[General]"
+absent = ["TitlebarIsAccentColored", "accentActiveTitlebar"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:152-153"
+quote = "config->group(u\"General\"_s).readEntry(\"TitlebarIsAccentColored\", config->group(u\"General\"_s).readEntry(\"accentActiveTitlebar\", false));"
+
+# kdeglobals' [KDE] contrast as the file stores it, an integer step (Breeze's 4; KColorScheme's default 7 where
+# unset); kde_shade scales it by 0.1 itself, as KColorScheme::contrastF does (kcolorscheme.cpp:519-527)
+
+[[fact]]
+key = "token.params.color.contrast"
+value = 4
+rows = ["K3.53", "K3.91"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:519-527"
+quote = "qreal KColorScheme::contrastF(const KSharedConfigPtr &config) { KSharedConfigPtr conf = config ? config : defaultConfig(); if (!conf) { return 0.7; } KConfigGroup g(conf, QStringLiteral(\"KDE\")); return 0.1 * g.readEntry(\"contrast\", 7); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:199"
+quote = "contrast=4"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:202"
+quote = "contrast=4"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:318"
+quote = "groupKDEOut.writeEntry(QStringLiteral(\"contrast\"), groupKDETheme.readEntry(QStringLiteral(\"contrast\"), 7), writeConfigFlag);"
+
+# Breeze's files state no frameContrast: applyScheme() writes KColorScheme's default
+
+[[fact]]
+key = "token.params.color.frame_contrast"
+value = 0.2
+rows = ["Q3.14", "K3.91"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeLight.colors:198-199"
+quote = "[KDE]"
+absent = ["frameContrast"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 colors/BreezeDark.colors:201-202"
+quote = "[KDE]"
+absent = ["frameContrast"]
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:314-316"
+quote = "groupKDEOut.writeEntry(QStringLiteral(\"frameContrast\"), groupKDETheme.readEntry(QStringLiteral(\"frameContrast\"), KColorScheme::frameContrast(config)),"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:529-539"
+quote = "const qreal default_value = 0.2;"

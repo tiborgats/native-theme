@@ -1,0 +1,31 @@
+# Synthetic role facts (S17).
+
+[[fact]]
+key = "role.global.accent"
+value = "#3366cd"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.global.accent_standalone"
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "input.accent"
+value = "#3366ce"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

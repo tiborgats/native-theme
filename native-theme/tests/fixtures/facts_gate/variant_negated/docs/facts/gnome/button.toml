@@ -1,0 +1,101 @@
+# Synthetic facts (S17): `@raised` named only by a fact whose negative list names a toolbar, a widget whose
+# unit is not enabled: the negation holds, so the fact applies in its key's unit alone (ADD-A128).
+
+[[fact]]
+key = "button.body.fill"
+value = "#e0e0e0"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["flat"] }
+value = "#00000000"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+value = "40px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+value = "44px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+when = { states = ["hover"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.icon"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.menu_indicator"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["@raised"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

@@ -1,0 +1,10 @@
+# A synthetic run (S17 *`evidence`*): one image serves the fixture's preset, the other another preset.
+[images.probe-image]
+preset = "probe"
+source = "probe@1"
+os = "synthetic"
+
+[images.other-image]
+preset = "other"
+source = "probe@1"
+os = "synthetic"

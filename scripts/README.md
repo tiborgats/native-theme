@@ -307,7 +307,9 @@ combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
 widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the
-data documents' five checks, docs and the archive index, then the docs.rs emulation,
+data documents' checks (the five on the registry, the inheritance rules, the
+presets and `docs/todo.md`, then the 0.8.0 plan's: the ledger's triage, the
+pinned sources and their cache, the facts and their citations), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -325,6 +327,24 @@ where no cached database loads, warns that the audit did not run.
 The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
+
+`PLAN_EXCLUDED`, an associative array near the top of the script, names the
+steps the 0.8.0 plan's transition breaks, each by its description, with the
+milestone that brings it back (the plan's *What cannot build meanwhile*; the
+ledger records the list). `--commit` skips each listed step and says so; the
+full run still runs each once, in a subshell, and reports a pass (remove it
+from the list) or a failure (its milestone) as a warning, never a failure. A
+listed description that no step of the full run used is a warning too, and
+while the list is not empty the full run's banner says
+`not ready: N plan-excluded steps` instead of `ready for release`. The
+per-crate loops name one step per crate (`check (<crate>)`, `test (<crate>)`,
+`examples (<crate>)`, …), so a crate is excluded alone; the feature
+combinations take the crate-level key `feature combinations (<crate>)`,
+which runs `check_features.sh --skip <crate>` for the others and
+`--only <crate>` as that crate's own step. `ci.yml` marks its matching
+exclusions with a YAML comment that is exactly
+`# PLAN_EXCLUDED: <description>`, and the first section fails unless the
+marks and the list name the same set.
 
 ```sh
 ./scripts/check_release.sh --commit
@@ -370,14 +390,18 @@ dependencies are not rebuilt. Colour is turned off inside the script, and so
 is cargo's future-incompatibility notice, a `warning:` line about a
 dependency rather than a workspace crate. Prints one line per combination
 with an excerpt under each failure; exits 1 when any fails, naming each
-failure at the end, and 2 when `jq` is missing. `scripts/check_release.sh` (a
-hard failure), `ci.yml` (and through it `publish.yml`'s CI run) and
-`dependency-canary.yml` run it.
+failure at the end, and 2 when `jq` is missing. `--skip CRATE` leaves a
+crate out and `--only CRATE` checks the named crates alone (both repeatable;
+a name that is not a workspace crate with a library exits 2), for a
+crate-level `PLAN_EXCLUDED` key of `check_release.sh`.
+`scripts/check_release.sh` (a hard failure), `ci.yml` (and through it
+`publish.yml`'s CI run) and `dependency-canary.yml` run it.
 
 Requires jq.
 
 ```sh
 ./scripts/check_features.sh
+./scripts/check_features.sh --skip native-theme-gpui
 ```
 
 ## check_strict_panic.sh
@@ -712,6 +736,581 @@ Requires Python 3.11+ (for `tomllib`).
 ```sh
 python3 scripts/check_preset_citations.py
 python3 scripts/check_preset_citations.py --self-test
+```
+
+## spec_catalogue.py
+
+Reads the v0.7.1 specification's widget catalogue,
+`docs/todo_v0.7.1_model-completeness-spec-widgets.md`, into its entries: the
+86 typed widgets (`### <name>` under the typed sections) and the 28 keyed
+components (`#### component.<key> (<platform>)`), each with its heading line,
+its items (the bold labels, `**Parts:**`, `**Widget values:**`, several to a
+line in many components), its parts (names, the parent a part nests in, the
+*(element)* mark and note, the field list), its widget values (name and
+the type the catalogue states) and its recency sets (each `<name> = [<flag>,
+…]` its **Exclusive groups** item names after "Recency sets", ADD-A124, and
+per platform, with the exclusive groups, `state_groups`), with
+the source line of each. Variants, sizes
+and flags are prose in the catalogue, so their items' text and backticked
+names are given as they stand; `shared_types` reads the *Shared value types*
+table. A module, imported by `check_spec_names.py`, `check_spec_entries.py`,
+`generate_widgets.py` and the facts checker; its docstring states the API and
+the reading rules. Run alone
+it prints one line per entry (line, kind, name, parts, values); `--self-test`
+runs the rules on a synthetic catalogue.
+
+Requires Python 3.
+
+```sh
+python3 scripts/spec_catalogue.py
+python3 scripts/spec_catalogue.py --self-test
+```
+
+## check_spec_names.py
+
+Checks every name the v0.7.1 specification's catalogue and traceability use:
+builds the vocabulary the core (`docs/todo_v0.7.1_model-completeness-spec.md`)
+defines (state and shared flags, conditions, colour roles, tokens, element
+data, part-style fields) and, through `spec_catalogue.py`, the parts, widget
+values, variants and flags each catalogue entry lists, then reports each name
+in a trace target or a catalogue backtick span that neither defines, notation
+the specification forbids, names the core's checks removed, and platform
+values written into the specification. An `input.<name>` path is one of S9's
+inputs (`S9_INPUTS`, the macOS accent inputs among them) or a part of the
+`input` widget. ADD-A124's names are read from the core's sketches: a
+`latest <set>:<flag>` term names a recency set a targeted widget declares and
+a member of it, the catalogue's recency sets hold two or more state flags,
+none twice, no two of an entry ordering two flags oppositely, `PartStyle.`
+paths and the `interaction` block's fields are part-style fields, and
+`Radius::`, `PropertyGroup::` (and a `transitions (…)` note's groups, so
+`StateLayer` and `StrokeWidth`), `RippleEffect::` and a corner's or effect's
+TOML spelling name variants of their enums; a transition's `from {…}` is not
+empty and names no flag twice. Prints one line per problem
+(tab-separated: file, line, kind, name, context) and exits 0 when there is
+none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
+`trace-macos`, ...), `--cat` and
+`--traces` read copies, `--index` also writes `index.json` and `vocab.json`
+beside the script; the docstring lists the options. `--self-test` runs each
+rule on a synthetic core, catalogue and trace.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_names.py
+python3 scripts/check_spec_names.py --self-test
+```
+
+## check_spec_entries.py
+
+Checks the form of the v0.7.1 catalogue's entries, read through
+`spec_catalogue.py`: every typed entry has every item of the entry format, in
+order, one part per bullet, a root that is neither an *(element)* nor a
+may-be-absent part, and a `PartStyle` field on every part bullet; every
+`may_be_absent` item (typed entries and keyed components) gives each name its
+own preset list and no "the preset states none" reason; the role-record and
+token tables grant absence per name with presets or a criterion. Prints the
+counts and one line per problem, and exits 0 when there is none, 1 when there
+are some. `--self-test` runs each rule on a synthetic entry, component and
+table.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_entries.py
+python3 scripts/check_spec_entries.py --self-test
+```
+
+## check_spec_trace.py
+
+Checks the v0.7.1 traceability: every row of the gap map's Appendix A
+(`docs/todo_v0.7.1_model-completeness-gap-map.md`) that its platform file does
+not withdraw has a line in that platform's
+`docs/todo_v0.7.1_model-completeness-spec-trace-<platform>.md`, and every line
+names a row of the map and a known kind or verdict, with a target where its
+kind needs one and none under a verdict but `readers (R18)`; the script's
+docstring states the whole rule. Prints one
+line per problem (platform, row, what is wrong) and exits 0 when there is
+none, 1 when there are some, 2 on a malformed input. `--self-test` runs the
+rule on a synthetic map and trace.
+
+The three spec checkers and `spec_catalogue.py` are run by hand while the
+specification changes; `check_release.sh` and CI do not run them.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_trace.py
+python3 scripts/check_spec_trace.py --self-test
+```
+
+## check_ledger.py
+
+Checks the 0.8.0 ledger's triage (`## Triage` in
+`docs/todo_v0.7.1_model-completeness-ledger.md`): it extracts every open item
+of the five sources the plan's M0 names (`docs/todo.md`'s `- [ ]` items, the
+catalogue's *Open items*, ROADMAP's *Later — the connectors* and *Also in the
+0.7.x releases*, and a fixed list of the two connector plans' items) and
+requires exactly one row per item, matched by source, heading and opening
+words, and exactly one item per row, so a closed or moved item's row is a
+finding; each destination must be one the plan names, and a row going
+`after 0.8.0`, `not this plan's work` or `settled by the model` needs a
+reason. On every run it also checks the *Unmeasured register*'s Ids (`U` and
+a number, none shared by two rows) and that every pending fact
+(`pending = "U<n>"` in `docs/facts/<platform>/`) names one of its rows.
+The script's docstring states the whole rule. `--final` adds the
+plan's M4 gate: `docs/facts/imported/` empty, S19.2's staged file (named by
+`--staged-file PATH`, which `--final` requires) gone, the `LEGACY_EVIDENCE`
+list of `check_fact_citations.py` empty, no unmeasured-register row
+without a decision and no S17 pending fact; the drift comparison of every measured fact has no ledger
+table to read yet, so `--final` reports it as a finding until it has one.
+Prints one line per finding (file:line: what) and a summary with the counts,
+and exits 0 when there is none, 1 when there are some, 2 on an input it
+cannot read or a wrong command line. `--ledger PATH` checks a copy of the
+ledger. `--self-test` runs each rule on synthetic sources and a ledger.
+`check_release.sh` runs it in the full run (`--commit` skips it) and its
+self-test in both modes; the plan adds `--final` from M4.
+
+Requires Python 3.11+ (for `tomllib`).
+
+```sh
+python3 scripts/check_ledger.py
+python3 scripts/check_ledger.py --self-test
+python3 scripts/check_ledger.py --final --staged-file <path>
+```
+
+## citations.py
+
+Finds every citation in the 0.8.0 planning documents (the core, the
+catalogue, the six traces, the gap maps, `docs/platform-facts.md` and
+`docs/todo.md`) and resolves each to a project and a ref where the documents
+let it: Markdown links and bare URLs to code hosts and documentation sites,
+`name@sha path:L`, the abbreviations the gap maps define (`st:5327`,
+`A/w/_buttons.scss:328`, `kwin src/x.cpp:140`, each with the ref its
+definition in the documents states now, read from the document line that
+defines it, so a re-pinned definition is read as it stands), bare `file:L`
+names, `:L` continuations, `platform-facts.md`
+line references, Apple documentation paths and pages named by title. Each
+record gives the document, line, syntax, project, ref, path as written, the
+repository path where the rules give one, the lines and a status (resolved,
+heuristic, ambiguous, unresolved); the seeds file's excerpts of other
+documents' cells are marked as quotes. A module, imported by
+`check_sources.py` and meant for the re-pin of the citations; its docstring
+states the rules in the order they apply and the API. Existence checks (a path
+carried from the citation before it, the Windows gap map's two bases, a bare
+name) use this repository's files, and with `--cache` also the source cache's
+checkouts. Run alone it prints the records as TSV, or with `--summary` the
+citations per project; `--self-test` runs one case per syntax family.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/citations.py --summary gap-map-kde
+python3 scripts/citations.py --cache spec-widgets
+python3 scripts/citations.py --self-test
+```
+
+## check_sources.py
+
+Checks `docs/facts/sources.toml`, the pinned platform sources of the 0.8.0
+model (plan D1): every `[[source]]` has the fields of its kind (a git
+repository at a commit, an SDK on a runner image, a dated distribution
+snapshot), no blank field, a unique `<name>@<version>` id (a commit pin's
+version is its commit's first eight hex digits), full SHAs, preset ids as
+generations and one pin per name and generation; a git entry's repository is
+an https URL, its tag the id's version as the project tags it (`v6.8.2` for
+`breeze@6.8.2`), its `sparse` folders relative paths without spaces, `..` or
+a leading `-`; every `[[site]]` names its pinning method (its git source
+repositories, each naming the site back as its `site`, or snapshots), and a
+source's `site` is a listed site; every `[[not_pinned]]` gives its reason.
+`update_sources.sh` refuses a file with any of these problems. Then, through `citations.py`, every project the core, the catalogue,
+the traces, the gap maps and `docs/platform-facts.md` cite must be a source, a
+site or not pinned. Offline: it reads the documents and the repository's file
+list, not the source cache. Prints the counts and one line per problem, and
+exits 0 when there is none, 1 when there are some, 2 when the file cannot be
+read. `--self-test` runs each rule on a synthetic file.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_sources.py
+python3 scripts/check_sources.py --self-test
+```
+
+## check_facts.py
+
+Checks the form of the 0.8.0 facts (specification S17): every
+`docs/facts/<platform>/*.toml` (gnome, kde, macos, ios, windows, material),
+each platform's `state-models.toml` and the palette facts in
+`docs/facts/palettes/`; `docs/facts/imported/` (lane input) and
+`docs/facts/staged/` (S19.2's staged bases) are skipped.
+A fact has a key the catalogue (through `spec_catalogue.py`) or the core (its
+Rust sketches, as `check_spec_names.py` reads them) defines, without TOML's
+unit suffix (`button.body.min_width`, not `min_width_px`), a value spelled
+as a preset spells it (of the key's dimension where the sketches type it, an
+expression in S2.2's grammar), gap-map row IDs, a `when` as S11's, citations
+with the fields of their kind and a pinned source, `scheme_file` and `accent`
+both or neither in `kde/` only, and the generation rule: without `preset:`,
+its citations together serve each preset of its directory that exists (the
+new model's, `native-theme/src/next/presets/<id>.toml`; today's presets do
+not count, and with none the rule asks nothing). A
+state-model entry's declarations are checked against the catalogue's entry,
+a palette fact's key against its file, and a bundled palette's
+`[palette.sources]` and `[palette.picks]` against the palette facts and the
+colours it states. ADD-A122's forms: a pending fact (`pending = "U<n>"` in
+place of `value`, no citation; one a later fact of its key shadows is a
+finding), a state model's `variant_products` (expanded and trimmed by the
+exclusive groups and `requires_variants`; a set also listed in
+`variant_sets` is a finding; the number of sets per entry is printed on
+stderr), S4.1's motion keys (no dropped word or toolkit prefix, and on a
+platform whose catalogue row lists every duration key, one of them), the
+accent ramp's `role.global.accent_ramp.<key>`, and no key inside an enum
+block. ADD-A123's forms: a text-keyed map's entry in a key as TOML writes it
+(`token.text.fallbacks.per_family."Segoe Fluent Icons"`, a quoted segment one
+segment; an unterminated quote is a finding), each function called with the
+arity its S2.2 signature gives (`with_alpha(c, a)` beside `alpha(c, a)`), a
+platform curve one of the core's `QtEasing` or `AdwEasing` members, a
+`token.motion.timings.<key>` a `Timing` (S4.1's sketch), and
+`requires_variants` as any one of its forms (a listed set holding none of
+them is trimmed from the count). ADD-A124's forms: a state model's `recency`
+sets (two or more flags of `axes.states`, none twice, no two sets ordering
+two flags oppositely), with the gate's runs per order of the present flags
+counted per entry on stderr and summed in the summary (at most n! per state
+combination); a fact's `when.latest` (a set every state model it can hold
+under declares, a flag that is a member of it and that `not_states` does not
+refuse), which fact applies made order-aware (two latest flags of one set, or
+latest flags no one order allows, never hold together); a transition's
+`from` (stated in a single transition, never empty, no flag twice, no keyed
+flag the widget lacks) and a `state_layer` transition only on a part with
+`interaction`; the `interaction` block's keys; `"ellipse"` on all four
+corners of one `when` or none, never with a `continuous` curve; and each
+state model's `exclusive` groups and `recency` sets equal to the catalogue's
+for its widget and preset, members and order (S10, S17). A `when` that can
+never hold is a finding (S7's `SetMatch`, S12's exclusions): a name in both a
+list and its `not_` list, two or more sizes, densities or size classes on one
+axis (an element has one, and `when` takes all of them), two values of a
+one-valued condition (two schemes, two presets, both contrast conditions),
+two flags of one `exclusive` group or two variants of one
+`exclusive_variants` group in every state model it can hold under, or
+`latest` flags no one order allows. So is a map (`Vec<(K, V)>`) written as a
+list of pairs, `[["k", v]]` or `[{ key = …, value = … }]`, or an empty one
+written `[]`, where S11 spells a TOML table (`{}` when it has no entry); a
+whole map's table is read with the map's keys and value type, so a map keyed
+by text (`per_family`, `per_language`) takes its text as keys
+(`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`). So is a compound field
+(`Sides`, `Axes`) stated whole as `"absent"`, `"auto"` or `"none"`: it is no
+`Value`, S6.1 patches it per member and S6.3 lets each member be absent, so
+its members are stated (`{ top_px = "absent", … }`). Offline. The
+docstring states every rule and list. Prints one line per finding (file:line: what) and a summary with the counts, and
+exits 0 when there is none, 1 when there are some, 2 on an input it cannot
+read or a wrong command line. `--self-test` walks the specification's
+example facts, each with a broken variant.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_facts.py
+python3 scripts/check_facts.py --self-test
+```
+
+## check_fact_citations.py
+
+Checks what the 0.8.0 facts' citations say, against the source cache
+(`update_sources.sh`; `--cache DIR` or `NATIVE_THEME_SOURCES` overrides it)
+and `docs/evidence/`: each quote occurs, whitespace-normalised, in the cited
+lines at the pin (a JSON page: in the string at the pointer, in the snapshot
+file its `sources.toml` entry names with `file`); no `absent` name occurs
+there as an identifier; per generation, every literal of the value equals a
+literal of its citations' quotes, read by the cited file's notation (on
+Apple's sources a point is a logical point, px) and converted as the
+citation says (an absence citation holds a zero stated by omission; on a
+LinearGradientBrush an angle matches only the angle its points give; C++'s
+defaulted parameter is read from the quote's declaration; `ns_font_weight`
+converts an AppKit `NSFontWeight` to S2.8's CSS weight by WebKit's
+thresholds; XAML's character reference `&#xE974;` is its code point, equal
+only to the same integer, and each entry of a XAML `<FontFamily>` list is
+a whole string; a platform curve's name is the verifier's, and so are
+ADD-A124's names, a ripple effect's, a transition's `from` flags); a
+measured value
+has the committed evidence's shape and
+equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
+the image to a preset its source serves; every evidence file is cited (an
+image by the analysis output that names it in `input_image`), except
+READMEs, `run.toml` and the legacy runs (`LEGACY_EVIDENCE`, which
+`check_ledger.py --final` reads). SDK-header citations are listed, not
+checked: `os-probe.yml`'s macOS job checks them at their Xcode. The
+docstring holds the closed lists (notations, units, conversions, evidence
+path forms, `run.toml`'s fields). Prints one line per finding and a summary,
+and exits 0, 1, or 2 when the cache is missing or an input cannot be read;
+`check_release.sh --commit` skips it only when the cache folder is absent.
+Each evidence file and cited source file is read once per run.
+`--self-test` runs every notation and the example facts on a fixture cache.
+
+Requires Python 3.11 and git.
+
+```sh
+python3 scripts/check_fact_citations.py
+python3 scripts/check_fact_citations.py --self-test
+```
+
+## import_platform_facts.py
+
+Imports today's `docs/platform-facts.md` rows (at `fc6109d1`) into
+`docs/facts/imported/<platform>.toml`, the 0.8.0 plan's lane input: one
+`[[row]]` per row and platform cell of Chapter 2, and per row of Chapter 1's
+section of that platform, with the property, the line, the cell's text as
+written (its values and their cited sources) and the evidence files it links.
+Where a gap-map row of that platform names the cell (a
+`platform-facts.md@fc6109d1:N` citation, a section and property or lines,
+or the map's table of the platform's "(none)" cells), `rows` lists the rows
+and `targets` their trace lines' targets; elsewhere `targets = []` and a
+note says why. It writes no key of its own. Not facts: the facts gate and
+`check_fact_citations.py` do not read `imported/`, and `check_facts.py`
+skips it; a lane removes each entry it converts, and the folder is empty at
+M4, when the script is deleted. Prints the counts per platform. `--check`
+exits 1 when the files differ from a fresh run (until a lane removes its
+first entry); `--self-test` runs every rule on a fixture document, gap maps
+and traces. Not in `check_release.sh` (the plan's table of scripts).
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/import_platform_facts.py
+python3 scripts/import_platform_facts.py --check
+python3 scripts/import_platform_facts.py --self-test
+```
+
+## convert_inheritance_rules.py
+
+Converts the `[uniform]` and `[per_platform]` rules of
+`docs/inheritance-rules.toml` (at `fc6109d1`) into S19.2's staged file,
+`docs/facts/staged/inheritance-bases.toml`: per preset that exists today
+(`ios-26` has none; the community presets become palettes), each field
+today's preset leaves to a rule under a scheme, with the S2.2 reference the
+rule implies over the new model's paths (`= role.window.background`,
+`= widget.view.fill`), its rule and line. The paths come only from the widget
+catalogue's *Today's fields* (a widget's item, the `defaults.` table) and are
+checked against its parts and fields; where a clause names no one path, the
+source is another widget's or the rule restates the target's own field,
+`target` or `value` is `""` with a note, and `mapping` quotes the clauses
+used. `[wrong_safety_nets]` is not converted (an entry it names says so).
+Each unit's preset step uses the file and the gate checks it; it is removed
+at M4 (`check_ledger.py --final --staged-file`), with the script. Prints the
+counts per preset. `--check` exits 1 when the file differs from a fresh run;
+`--self-test` runs every rule on fixture rules, catalogue and presets. Not
+in `check_release.sh`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/convert_inheritance_rules.py
+python3 scripts/convert_inheritance_rules.py --check
+python3 scripts/convert_inheritance_rules.py --self-test
+```
+
+## check_function_vectors.py
+
+Holds, documents and checks the vector-table format of the 0.8.0 model's
+platform functions and placement strategies (specification S2.2, S13):
+`native-theme/tests/vectors/<function>.tsv` and `place.<strategy>.tsv`,
+tab-separated, with `# <name>: <value>` header lines (the route, which is
+`public_api`, `observable_behaviour`, `compiled_source`, `measured` or
+`published`; the `sources.toml` entries, the generations, the generator,
+`# inputs:` and `# outputs:` with each column's type, a `# tolerance:`
+per measured output), a column header row, and rows whose cells are
+spelled by their column's type, with `cite` and `quote` (published) or
+`evidence` (measured) where the route needs them. Checks that every `pub`
+or `pub(crate)` function of the `platform` module
+(`native-theme/src/next/platform/`, `src/platform/` after the switch), every
+platform function of S2.2's table that is implemented and, once the
+`placement` module exists, every strategy has a table and a
+`#[test] fn vectors_<fn>` in `native-theme/tests/platform_vectors.rs`; that
+every platform function a preset calls is implemented (one only facts call
+is reported as not yet implemented); and the generations rule: the rows'
+generator pins, citations or evidence serve every generation that calls the
+function with the rows' enum operands. The model's own arithmetic has unit
+tests, not tables. Offline; the docstring states the format and every rule.
+Prints one line per finding, `# ` lines for what is informational, and a
+summary; exits 0, 1, or 2 on an input it cannot read. `--self-test` runs
+each rule on fixture tables, Rust snippets, facts and presets. Enters
+`check_release.sh` at M1a's code tasks (the plan's table of scripts).
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_function_vectors.py
+python3 scripts/check_function_vectors.py --self-test
+```
+
+## generate_widgets.py
+
+Generates the 0.8.0 model's typed widgets from the widget catalogue
+(specification S5, S6.1): for each widget of the units
+`scripts/widget_units.toml` enables, `native-theme/src/next/widgets/gen_<widget>.rs`
+(the `ThemeParts` derive's input, a `#[part(...)]` per part with its fields
+and marks; the widget's values struct; the entry's own enums), and
+`gen_index.rs` (`WidgetKind`, `Variant`, `TypedPart`, `WidgetsPatch`,
+`WidgetValuesPatch`, the shared value types the units use, the widgets' slots
+and the registry's list), each through `rustfmt`. It reads the catalogue
+through `spec_catalogue.py` only, never touches the module's hand-written
+`mod.rs` and `tests.rs`, and leaves out the values a unit defers to a later
+unit (the button's `Placement` values, until M3's placement unit). The units
+file lists the enabled units, the deferrals with their units, and the
+hand-written units, enabled or not; a deferral to an enabled unit is an
+input error. `--check` writes nothing and exits 1 when a generated file
+differs or is stale (in `check_release.sh`); a construct the generator does
+not handle exits 2 naming it. `--self-test` runs the reading rules and the
+refusals on a synthetic catalogue. Deleted once the catalogue is archived,
+after which the generated code is the source.
+
+Requires Python 3.11 and rustfmt.
+
+```sh
+python3 scripts/generate_widgets.py
+python3 scripts/generate_widgets.py --check
+python3 scripts/generate_widgets.py --self-test
+```
+
+## check_facts_trace.py
+
+Checks that every live trace line of the checked units (the specification's
+traceability, S20) is carried by a fact or a state-model entry of its
+platform's `docs/facts/` directory that lists its row in `rows` and whose key
+lies on the line's target (each line of a row separately), or carries a
+verdict, on the platforms
+whose presets exist (the new model's `native-theme/src/next/presets/`).
+`--enabled` checks the units of `scripts/widget_units.toml` (the slice:
+`button`, the colour roles and the slice's tokens, with button's `Placement`
+values deferred and `token.behavior.scroll` staged; the same slice while the
+file does not exist),
+`--unit <unit>` one unit, and no option every trace line. A target lies in
+a unit by its leading paths (braces expanded), and a rule naming a context
+widget waits until that widget is enabled. Prints one line per finding
+(platform, row, target, what), per platform how many of the checked lines
+and rows the facts already carry, and a summary; exits 0, 1, or 2 on an
+input it cannot read or an unknown unit. `--self-test` runs each rule on
+fixture gap maps, traces, facts and units files. `--enabled` enters
+`check_release.sh` at M1a; the script is deleted at M6.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/check_facts_trace.py --enabled
+python3 scripts/check_facts_trace.py --unit slice
+python3 scripts/check_facts_trace.py
+python3 scripts/check_facts_trace.py --self-test
+```
+
+## generate_platform_facts.py
+
+Generates the platform-facts document from the verified facts
+(`docs/facts/<platform>/*.toml` and `docs/facts/palettes/`; `imported/`
+and `staged/` are no facts): one section per unit (the colour roles, the
+tokens, the inputs, then the widget catalogue's sections), one table per
+widget, colour-role set or token group, a row per key and combination, and
+per preset the value of the fact that applies there (the last in file
+order) with its citations. Writes `--out PATH`, by default
+`docs/platform-facts.generated.md`, and never today's hand-written
+`docs/platform-facts.md`, which its output replaces at the switch;
+`--check` exits 1 when PATH differs from a fresh run (in `check_release.sh`
+from the switch). Offline. `--self-test` compares a fixture's document with
+the expected one and runs `--check`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/generate_platform_facts.py --out docs/platform-facts.generated.md
+python3 scripts/generate_platform_facts.py --check
+python3 scripts/generate_platform_facts.py --self-test
+```
+
+## generate_preset.py
+
+Generates a draft of a preset's TOML (specification S11) from its verified
+facts, as far as they transcribe: `[declare]` from the state models (S10),
+the facts at rest as bases, every other fact as a rule, facts with an equal
+`when` and target grouped so that the rules keep the facts' order and the
+last matching rule is the last matching fact (S17). It leaves out, and
+counts by reason, pending facts, keys the enabled units do not hold, `read`
+facts, and what S11 cannot spell from a fact alone; S19.2's staged bases
+and the keyed namespaces of `[declare]` are left for hand-writing. Prints
+on stderr the transcription share per widget and per unit (the 0.8.0
+plan's checkpoint D6), the rule count, the pending facts' register ids and
+a round trip: the draft read back gives every combination the value of
+the fact that applies there. Exits 1 on a round-trip mismatch, 2 on an
+input it cannot read. `--self-test` compares a fixture's draft with the
+expected one and runs each rule. Offline; not in `check_release.sh`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/generate_preset.py adwaita --out adwaita.toml
+python3 scripts/generate_preset.py --self-test
+```
+
+## update_sources.sh
+
+Fills the source cache, `/run/media/tibi/work/cargo-build/native-theme-sources/`
+(`NATIVE_THEME_SOURCES` overrides it): every git entry of
+`docs/facts/sources.toml` is checked out at its commit into `<cache>/<id>/`,
+by a shallow fetch of that commit (or of its tag, where a server refuses a
+fetch by SHA), as a partial clone of the entry's `sparse` folders only where
+it lists them (androidx, AOSP, WebKit, the documentation repositories). A
+checkout already at its commit is skipped, so a run after an edit of
+`sources.toml` fetches only what changed; a new checkout is built beside its
+final folder and renamed once at its commit. A checkout counts as current
+when it is at its commit with exactly the entry's `sparse` folders (a changed
+list fetches it again); a changed tracked file in it is reset to the commit.
+`--seed DIR` fetches a complete entry from the checkout `DIR/<repository
+name>` instead, when that checkout's HEAD is the commit (its tracked files
+only), `--jobs N` sets how many fetches run at once (4, at least 1).
+`--verify` runs offline and exits 1 unless every entry's checkout is at its
+commit with its sparse folders and no tracked file changed; both modes report
+cache folders no entry names. Before anything else both modes check
+`sources.toml` with `check_sources.py`'s form rules and exit 2 on a problem,
+and every path the script writes or removes must resolve to a folder directly
+inside the cache. The SDK and distribution entries are not fetched.
+
+Requires git and Python 3.11; network access unless `--verify`.
+
+```sh
+./scripts/update_sources.sh
+./scripts/update_sources.sh --verify
+```
+
+## repin_citations.py
+
+Re-pins the 0.8.0 planning documents' citations of pinned platform sources
+(the core, the catalogue, the six traces and the gap maps; plan M0, *Re-pin*)
+to the release set of `docs/facts/sources.toml`. For each citation
+`citations.py` finds there, it takes the commit the citation was read at (the
+ref the citation or its abbreviation states; for a bare file name, the one
+source its gap-map row's platform file cites it from), reads the cited file at
+that commit (a checkout under `--from`) and at the pin (the source cache), and
+maps the cited lines by a line diff of the whole file: **unchanged** (the same
+commit), **moved** (every line found with the same text), **changed**,
+**vanished**, **present** (a file mention found at the pin), **unmappable**
+(no commit, several projects, no path) or **error** (no checkout of the
+commit). `--report PATH.tsv` writes one row per citation with its old and new
+lines, and stdout has the counts per status and document. `--apply` rewrites
+the moved, unchanged and present citations in place, line numbers and ref in
+the document's own syntax (an abbreviation's definition line gets the pin's
+commit and tag), and lists the lines that still name an old commit; changed,
+vanished and unmappable citations stay as they are for a reader to correct.
+A citation already at its pin is unchanged, and the abbreviations' refs are
+read from the documents' definitions, so a second run over re-pinned
+documents changes nothing; a bare citation whose ref comes from another
+citation is rewritten only with it. `--docs DIR` works on a copy of the
+documents. Git runs offline. Exits 0 when
+no changed, vanished or error citation remains, 1 when some do, 2 on
+unreadable input. `--self-test` runs every status and rewrite on two commits
+of a fixture repository.
+
+Requires git and Python 3.11.
+
+```sh
+python3 scripts/repin_citations.py --from <checkouts> --report repin.tsv
+python3 scripts/repin_citations.py --from <checkouts> --apply
+python3 scripts/repin_citations.py --self-test
 ```
 
 ## update_icons.sh

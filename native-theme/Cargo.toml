@@ -2,7 +2,9 @@
 name = "native-theme"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+# `src/next/ripple.rs` is a port of AOSP code under its own Apache-2.0 licence (the
+# 0.8.0 plan's D10), whatever licence a user picks for the rest.
+license = "(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0"
 rust-version.workspace = true
 repository.workspace = true
 homepage.workspace = true
@@ -65,17 +67,22 @@ system-icons = [
     "material-icons",
 ]
 
+[lints.rust]
+# `nt_next_docs` documents the hidden `next` module, so `missing_docs` reaches
+# it (scripts/check_release.sh, "Docs").
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(nt_next_docs)"] }
+
 [dependencies]
 arc-swap = "1.9.2"
 async-trait = "0.1.92"
 fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
 inventory = "0.3.24"
-native-theme-derive = { version = "0.7.0", path = "../native-theme-derive" }
+native-theme-derive = { version = "0.8.0", path = "../native-theme-derive" }
 pollster = "1.0"
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
-toml.workspace = true
+toml = { workspace = true, features = ["preserve_order"] }
 unicase = "2.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]

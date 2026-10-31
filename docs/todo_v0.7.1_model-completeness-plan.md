@@ -214,8 +214,8 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     project commit) is listed in `sources.toml` as not pinned, with its reason. `scripts/check_sources.py` fails on a
     cited project in neither list. A web page is pinned as a commit of its public source repository where it has one
     (Microsoft Learn's MicrosoftDocs repositories), else as a dated snapshot with its SHA-256 (Apple's pages as their
-    DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no versions, so its snapshot serves the
-    newest generation only. Apple's SDK headers exist only on macOS runners, so their citations are checked by a macOS
+    DocC JSON; Material, Fluent, Android, KDE and GNOME pages); Apple's HIG has no versions, so a snapshot serves only presets
+    describing the release current when it was taken (D12, spec S17). Apple's SDK headers exist only on macOS runners, so their citations are checked by a macOS
     job of `os-probe.yml` at the pinned Xcode.
 - **D4 — `unsafe` and the measurement hosts** (approved by the maintainer, 2026-10-29).
   - The readers' and watchers' new reads (the traces' `reader` lines on macOS and Windows) grow under their existing
@@ -231,7 +231,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
 - **D5 — `v0.7.1-rc1` to `main` first** (approved by the maintainer, 2026-10-29): the maintainer merges the v0.7.1 documents and scripts (no code
   change) before `v0.8.0-rc1` is cut, so `main`'s ROADMAP states the next work and the 0.8.0 pull request holds only
   0.8.0's work. The alternative, cutting from `v0.7.1-rc1` and merging both at 0.8.0, also works.
-- **D7 — the budget for M0–M1b** (approved by the maintainer, 2026-10-29): a cap of +15,000k tokens, which D6 revises. An estimate, not a measurement: one
+- **D7 — the budget for M0–M1b** (approved by the maintainer, 2026-10-29; the cap lifted by the maintainer on 2026-10-30, so D6 no longer sets one): a cap of +15,000k tokens, which D6 revises. An estimate, not a measurement: one
   independent review of this plan used 180k to 270k tokens (eleven so far); M0–M1b holds six spikes, eight presets' slice facts with
   their verifiers, two implementation milestones with a reviewer per task, and the reviews.
 - **D9 — the project's own guards** (the maintainer's configuration; the recommendations approved, 2026-10-29).
@@ -390,7 +390,12 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
   those. Not re-pinned: `platform-facts.md` (its rows are lane input the lanes pin themselves, and editing it would
   break today's preset checks before the switch); the rationale (its citations record what each decision was based on,
   dated by their SHAs); `docs/todo.md` (only its `platform-facts.md:LINE` citations get the `@<sha>` rewrite; a lane
-  taking a triaged item re-reads its sources at the pin).
+  taking a triaged item re-reads its sources at the pin). A citation the script cannot map (M0's inventory, 2026-10-29:
+  about 1,100 of 7,729 in scope, mostly the catalogue's bare file names with no commit, names several projects own,
+  and branches with no SHA) takes its commit from its row's platform file where that names one source for it;
+  otherwise it is listed in the ledger with its row, and the lane that takes the row re-reads it at the pin, as for
+  `docs/todo.md`. Re-reading all of them in M0 was rejected: the lanes read every source at the pin anyway, and the
+  facts' quote check, not the catalogue's pointer, is what holds a value to its source.
 - **The `@<sha>` rewrite** of the gap maps' and `docs/todo.md`'s `platform-facts.md:LINE` citations (*What carries
   over*), as its own pass.
 - **The specification's amendments** this plan needs, through *Spec changes*:
@@ -434,7 +439,7 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
     on `windows-11-arm` and reporting a flyout's frame;
   - **A:** the Android host.
 - **Gate:** the spec checkers' self-tests and runs green; `check_sources.py` and `update_sources.sh --verify` green;
-  `repin_citations.py` reports no unresolved citation; `scripts/check_ledger.py` (every triaged item has a
+  `repin_citations.py` reports no unresolved citation among those it maps, and the ledger lists the rest; `scripts/check_ledger.py` (every triaged item has a
   destination) green.
 
 ## M1a — The slice's core: `button`, colour roles and the slice's tokens on two presets
@@ -444,9 +449,10 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
   visual states, spike W brought forward) takes `macos-tahoe`'s place; M1b then closes only after the maintainer has
   decided those entries.
 - **Code, beside today's model:** S1; S2's blocks in full with S2.2's grammar, the model's arithmetic and the platform
-  functions the two presets' facts use, with their vectors (spike G's generator); S3; S4.1, S4.2, S4.4, S4.5, and
+  functions the two presets' facts use, with their vectors (spike G's generator); S3; S4.1, S4.2 (its `scroll` field staged to the `scroll_view` unit, spec ADD-A120), S4.4, S4.5, and
   S4.6's groups the button and the roles use (`token.params.pointer_repeat`, `token.params.color`,
-  `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts`; S7; S8 without
+  `token.params.opacity`, …); S5 and S6 for `button`, through `generate_widgets.py` and `ThemeParts` (its `Placement` values deferred to M3's
+placement unit, spec ADD-A120); S7; S8 without
   S13; S9.1, S9.2, S9.4; S10; S11; S12 for what the model holds, with its refusal test (an exhaustive `match` over
   `LayerError` and `ProblemKind`, one triggering case per variant, so a new variant does not compile without one);
   S21.2's shape from the start (exhaustive enums, `#[non_exhaustive]` structs), so the connectors are written against
@@ -549,7 +555,7 @@ on to the next unit meanwhile.
   key, no state-model combination lacking a fact and every declaration agreeing with its facts; `check_facts_trace.py`
   and `check_function_vectors.py` over every fact green; `check_ledger.py --final` green (`imported/` empty, the staged
   file gone, the legacy list empty, every measured fact with a drift comparison, the unmeasured register with no open
-  entry). The full run calls `check_ledger.py --final` from then on.
+  entry, no S17 pending fact). The full run calls `check_ledger.py --final` from then on.
 
 ## M5 — Showcases (after M4)
 
@@ -594,11 +600,12 @@ dev-dependencies and modules linked again.
 - **Facts, mechanically** (`check_fact_citations.py`):
   - a `published` or `read` fact's `quote` occurs, whitespace-normalised, in the cited lines of the cited file at its
     pin, and every literal of its `value` (numbers after unit normalisation, colours in any notation, a derivation's
-    operands), after its `conversion`, occurs in the `quote`;
+    operands, a text value as a whole string, list entry or font family, spec S17), after its `conversion`, occurs in the quotes of the citations serving each generation (spec S17);
   - a `measured` fact's evidence file is committed, the value at its `evidence` path equals the fact's value after its
-    `conversion` within its tolerance, and the file records the pinned generation and toolkit versions (the exact
+    `conversion` within its tolerance (a measured derivation: the form of its passes, which the gate evaluates, spec S17), and the file records the pinned generation and toolkit versions (the exact
     builds listed);
-  - every evidence file is cited by a fact, except the legacy runs until M4. Evidence files are the files under
+  - every evidence file is cited by a fact, a state-model entry or a vector table (spec S17), except the legacy runs
+    until M4. Evidence files are the files under
     `docs/evidence/<harness>/<date>-run-<id>/<image>/`; READMEs are not evidence, and a run's README stays while any
     file of the run is cited. Spike and drift runs record their result in the ledger with the run's URL and commit
     evidence only where a fact cites it.
@@ -628,10 +635,11 @@ dev-dependencies and modules linked again.
 
   Where the reference is closed (AppKit and UIKit placement), the measured frames (anchor, size and window in, frame
   out, each with its evidence) are the strategy's vector table; where a platform publishes a table (Apple's tracking),
-  the table itself is the facts; where nothing works, the function goes to the unmeasured register.
+  the table itself is the vector table, its rows carrying their citations; where nothing works, the function goes to the unmeasured register.
   `scripts/generate_qt_color_vectors.py`'s Python transcriptions are replaced (a transcription checks a port against
   another port). The model's own arithmetic has unit tests from the specification's definition.
-  `check_function_vectors.py` checks that every public function of `platform` and `placement` has a table and a test,
+  `check_function_vectors.py` checks that every `pub` or `pub(crate)` function of `platform` and every strategy of
+  `placement` has a table and a test (spec S2.2, S13),
   and that every platform function or placement strategy any fact or preset calls is one of them (the model's own
   arithmetic is not one). Without this, a derivation fact and the preset would both be evaluated by the same function,
   and a wrong function would pass the gate.
@@ -680,9 +688,9 @@ tasks; the generator's drift check makes the code follow.
 ## Checklist
 
 - [x] D1, D4, D5, D7, D9, D10, D11, D12 decided (2026-10-29)
-- [ ] `v0.7.1-rc1` merged to `main` by the maintainer (D5)
-- [ ] M0 setup
-- [ ] Spikes M · G · K · I · W · A
+- [x] `v0.7.1-rc1` merged to `main` (D5; fast-forwarded on the maintainer's request, 2026-10-29)
+- [x] M0 setup (2026-10-30)
+- [x] Spikes M · G · K · I · W · A (2026-10-30, all yes)
 - [ ] M1a slice core
 - [ ] M1b slice complete
 - [ ] D6 checkpoint

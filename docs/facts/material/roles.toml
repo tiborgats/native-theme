@@ -1,0 +1,2484 @@
+# material-3's colour roles (S3, the catalogue's *Colour roles*): Material's md.sys.color roles as keyed roles, each
+# the dynamic scheme's role from the seed (`m3_role`, S2.2: material-color-utilities' DynamicColor of that name,
+# reading input.accent and token.material), then the typed sets and global roles as references to them, each
+# paired where Compose Material 3 or the material-web tokens pair it. Written by the Material facts lane.
+
+[[fact]]
+key = "role.@background"
+value = "= m3_role(@background)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:23"
+quote = "$background: md-ref-palette.$neutral98;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:48-49"
+quote = "val background: DynamicColor get() = colorSpec.background"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:87"
+quote = "override val background: DynamicColor"
+
+[[fact]]
+key = "role.@error"
+value = "= m3_role(@error)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:27"
+quote = "$error: md-ref-palette.$error40;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:213-214"
+quote = "val error: DynamicColor get() = colorSpec.error"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:603"
+quote = "override val error: DynamicColor"
+
+[[fact]]
+key = "role.@error_container"
+value = "= m3_role(@error_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:31"
+quote = "$error-container: md-ref-palette.$error90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:222-223"
+quote = "val errorContainer: DynamicColor get() = colorSpec.errorContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:637"
+quote = "override val errorContainer: DynamicColor"
+
+[[fact]]
+key = "role.@inverse_on_surface"
+value = "= m3_role(@inverse_on_surface)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:35"
+quote = "$inverse-on-surface: md-ref-palette.$neutral95;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:90-91"
+quote = "val inverseOnSurface: DynamicColor get() = colorSpec.inverseOnSurface"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:254"
+quote = "override val inverseOnSurface: DynamicColor"
+
+[[fact]]
+key = "role.@inverse_primary"
+value = "= m3_role(@inverse_primary)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:39"
+quote = "$inverse-primary: md-ref-palette.$primary80;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:126-127"
+quote = "val inversePrimary: DynamicColor get() = colorSpec.inversePrimary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:397"
+quote = "override val inversePrimary: DynamicColor"
+
+[[fact]]
+key = "role.@inverse_surface"
+value = "= m3_role(@inverse_surface)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:43"
+quote = "$inverse-surface: md-ref-palette.$neutral20;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:87-88"
+quote = "val inverseSurface: DynamicColor get() = colorSpec.inverseSurface"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:245"
+quote = "override val inverseSurface: DynamicColor"
+
+[[fact]]
+key = "role.@on_background"
+value = "= m3_role(@on_background)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:47"
+quote = "$on-background: md-ref-palette.$neutral10;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:51-52"
+quote = "val onBackground: DynamicColor get() = colorSpec.onBackground"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:96"
+quote = "override val onBackground: DynamicColor"
+
+[[fact]]
+key = "role.@on_error"
+value = "= m3_role(@on_error)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:51"
+quote = "$on-error: md-ref-palette.$error100;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:219-220"
+quote = "val onError: DynamicColor get() = colorSpec.onError"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:627"
+quote = "override val onError: DynamicColor"
+
+[[fact]]
+key = "role.@on_error_container"
+value = "= m3_role(@on_error_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:55"
+quote = "$on-error-container: md-ref-palette.$error30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:225-226"
+quote = "val onErrorContainer: DynamicColor get() = colorSpec.onErrorContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:658"
+quote = "override val onErrorContainer: DynamicColor"
+
+[[fact]]
+key = "role.@on_primary"
+value = "= m3_role(@on_primary)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:59"
+quote = "$on-primary: md-ref-palette.$primary100;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:117-118"
+quote = "val onPrimary: DynamicColor get() = colorSpec.onPrimary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:334"
+quote = "override val onPrimary: DynamicColor"
+
+[[fact]]
+key = "role.@on_primary_container"
+value = "= m3_role(@on_primary_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:63"
+quote = "$on-primary-container: md-ref-palette.$primary30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:123-124"
+quote = "val onPrimaryContainer: DynamicColor get() = colorSpec.onPrimaryContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:379"
+quote = "override val onPrimaryContainer: DynamicColor"
+
+[[fact]]
+key = "role.@on_primary_fixed"
+value = "= m3_role(@on_primary_fixed)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:67"
+quote = "$on-primary-fixed: md-ref-palette.$primary10;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:138-139"
+quote = "val onPrimaryFixed: DynamicColor get() = colorSpec.onPrimaryFixed"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:717"
+quote = "override val onPrimaryFixed: DynamicColor"
+
+[[fact]]
+key = "role.@on_primary_fixed_variant"
+value = "= m3_role(@on_primary_fixed_variant)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:71"
+quote = "$on-primary-fixed-variant: md-ref-palette.$primary30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:141-142"
+quote = "val onPrimaryFixedVariant: DynamicColor get() = colorSpec.onPrimaryFixedVariant"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:728"
+quote = "override val onPrimaryFixedVariant: DynamicColor"
+
+[[fact]]
+key = "role.@on_secondary"
+value = "= m3_role(@on_secondary)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:75"
+quote = "$on-secondary: md-ref-palette.$secondary100;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:153-154"
+quote = "val onSecondary: DynamicColor get() = colorSpec.onSecondary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:434"
+quote = "override val onSecondary: DynamicColor"
+
+[[fact]]
+key = "role.@on_secondary_container"
+value = "= m3_role(@on_secondary_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:79"
+quote = "$on-secondary-container: md-ref-palette.$secondary30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:159-160"
+quote = "val onSecondaryContainer: DynamicColor get() = colorSpec.onSecondaryContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:485"
+quote = "override val onSecondaryContainer: DynamicColor"
+
+[[fact]]
+key = "role.@on_secondary_fixed"
+value = "= m3_role(@on_secondary_fixed)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:83"
+quote = "$on-secondary-fixed: md-ref-palette.$secondary10;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:171-172"
+quote = "val onSecondaryFixed: DynamicColor get() = colorSpec.onSecondaryFixed"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:782"
+quote = "override val onSecondaryFixed: DynamicColor"
+
+[[fact]]
+key = "role.@on_secondary_fixed_variant"
+value = "= m3_role(@on_secondary_fixed_variant)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:87"
+quote = "$on-secondary-fixed-variant: md-ref-palette.$secondary30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:174-175"
+quote = "val onSecondaryFixedVariant: DynamicColor get() = colorSpec.onSecondaryFixedVariant"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:793"
+quote = "override val onSecondaryFixedVariant: DynamicColor"
+
+[[fact]]
+key = "role.@on_surface"
+value = "= m3_role(@on_surface)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:91"
+quote = "$on-surface: md-ref-palette.$neutral10;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:78-79"
+quote = "val onSurface: DynamicColor get() = colorSpec.onSurface"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:216"
+quote = "override val onSurface: DynamicColor"
+
+[[fact]]
+key = "role.@on_surface_variant"
+value = "= m3_role(@on_surface_variant)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:95"
+quote = "$on-surface-variant: md-ref-palette.$neutral-variant30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:84-85"
+quote = "val onSurfaceVariant: DynamicColor get() = colorSpec.onSurfaceVariant"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:235"
+quote = "override val onSurfaceVariant: DynamicColor"
+
+[[fact]]
+key = "role.@on_tertiary"
+value = "= m3_role(@on_tertiary)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:99"
+quote = "$on-tertiary: md-ref-palette.$tertiary100;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:186-187"
+quote = "val onTertiary: DynamicColor get() = colorSpec.onTertiary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:536"
+quote = "override val onTertiary: DynamicColor"
+
+[[fact]]
+key = "role.@on_tertiary_container"
+value = "= m3_role(@on_tertiary_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:103"
+quote = "$on-tertiary-container: md-ref-palette.$tertiary30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:192-193"
+quote = "val onTertiaryContainer: DynamicColor get() = colorSpec.onTertiaryContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:582"
+quote = "override val onTertiaryContainer: DynamicColor"
+
+[[fact]]
+key = "role.@on_tertiary_fixed"
+value = "= m3_role(@on_tertiary_fixed)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:107"
+quote = "$on-tertiary-fixed: md-ref-palette.$tertiary10;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:204-205"
+quote = "val onTertiaryFixed: DynamicColor get() = colorSpec.onTertiaryFixed"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:847"
+quote = "override val onTertiaryFixed: DynamicColor"
+
+[[fact]]
+key = "role.@on_tertiary_fixed_variant"
+value = "= m3_role(@on_tertiary_fixed_variant)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:111"
+quote = "$on-tertiary-fixed-variant: md-ref-palette.$tertiary30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:207-208"
+quote = "val onTertiaryFixedVariant: DynamicColor get() = colorSpec.onTertiaryFixedVariant"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:858"
+quote = "override val onTertiaryFixedVariant: DynamicColor"
+
+[[fact]]
+key = "role.@outline"
+value = "= m3_role(@outline)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:115"
+quote = "$outline: md-ref-palette.$neutral-variant50;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:93-94"
+quote = "val outline: DynamicColor get() = colorSpec.outline"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:264"
+quote = "override val outline: DynamicColor"
+
+[[fact]]
+key = "role.@outline_variant"
+value = "= m3_role(@outline_variant)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:119"
+quote = "$outline-variant: md-ref-palette.$neutral-variant80;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:96-97"
+quote = "val outlineVariant: DynamicColor get() = colorSpec.outlineVariant"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:274"
+quote = "override val outlineVariant: DynamicColor"
+
+[[fact]]
+key = "role.@primary"
+value = "= m3_role(@primary)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:123"
+quote = "$primary: md-ref-palette.$primary40;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:111-112"
+quote = "val primary: DynamicColor get() = colorSpec.primary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:304"
+quote = "override val primary: DynamicColor"
+
+[[fact]]
+key = "role.@primary_container"
+value = "= m3_role(@primary_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:127"
+quote = "$primary-container: md-ref-palette.$primary90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:120-121"
+quote = "val primaryContainer: DynamicColor get() = colorSpec.primaryContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:350"
+quote = "override val primaryContainer: DynamicColor"
+
+[[fact]]
+key = "role.@primary_fixed"
+value = "= m3_role(@primary_fixed)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:131"
+quote = "$primary-fixed: md-ref-palette.$primary90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:132-133"
+quote = "val primaryFixed: DynamicColor get() = colorSpec.primaryFixed"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:677"
+quote = "override val primaryFixed: DynamicColor"
+
+[[fact]]
+key = "role.@primary_fixed_dim"
+value = "= m3_role(@primary_fixed_dim)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:135"
+quote = "$primary-fixed-dim: md-ref-palette.$primary80;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:135-136"
+quote = "val primaryFixedDim: DynamicColor get() = colorSpec.primaryFixedDim"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:697"
+quote = "override val primaryFixedDim: DynamicColor"
+
+[[fact]]
+key = "role.@scrim"
+value = "= m3_role(@scrim)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:139"
+quote = "$scrim: md-ref-palette.$neutral0;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:102-103"
+quote = "val scrim: DynamicColor get() = colorSpec.scrim"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:288"
+quote = "override val scrim: DynamicColor"
+
+[[fact]]
+key = "role.@secondary"
+value = "= m3_role(@secondary)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:143"
+quote = "$secondary: md-ref-palette.$secondary40;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:147-148"
+quote = "val secondary: DynamicColor get() = colorSpec.secondary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:410"
+quote = "override val secondary: DynamicColor"
+
+[[fact]]
+key = "role.@secondary_container"
+value = "= m3_role(@secondary_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:147"
+quote = "$secondary-container: md-ref-palette.$secondary90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:156-157"
+quote = "val secondaryContainer: DynamicColor get() = colorSpec.secondaryContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:450"
+quote = "override val secondaryContainer: DynamicColor"
+
+[[fact]]
+key = "role.@secondary_fixed"
+value = "= m3_role(@secondary_fixed)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:151"
+quote = "$secondary-fixed: md-ref-palette.$secondary90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:165-166"
+quote = "val secondaryFixed: DynamicColor get() = colorSpec.secondaryFixed"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:742"
+quote = "override val secondaryFixed: DynamicColor"
+
+[[fact]]
+key = "role.@secondary_fixed_dim"
+value = "= m3_role(@secondary_fixed_dim)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:155"
+quote = "$secondary-fixed-dim: md-ref-palette.$secondary80;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:168-169"
+quote = "val secondaryFixedDim: DynamicColor get() = colorSpec.secondaryFixedDim"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:762"
+quote = "override val secondaryFixedDim: DynamicColor"
+
+[[fact]]
+key = "role.@shadow"
+value = "= m3_role(@shadow)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:159"
+quote = "$shadow: md-ref-palette.$neutral0;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:99-100"
+quote = "val shadow: DynamicColor get() = colorSpec.shadow"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:284"
+quote = "override val shadow: DynamicColor"
+
+[[fact]]
+key = "role.@surface"
+value = "= m3_role(@surface)"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:163"
+quote = "$surface: md-ref-palette.$neutral98;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:54-55"
+quote = "val surface: DynamicColor get() = colorSpec.surface"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:106"
+quote = "override val surface: DynamicColor"
+
+[[fact]]
+key = "role.@surface_bright"
+value = "= m3_role(@surface_bright)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:167"
+quote = "$surface-bright: md-ref-palette.$neutral98;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:60-61"
+quote = "val surfaceBright: DynamicColor get() = colorSpec.surfaceBright"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:130"
+quote = "override val surfaceBright: DynamicColor"
+
+[[fact]]
+key = "role.@surface_container"
+value = "= m3_role(@surface_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:169"
+quote = "$surface-container: md-ref-palette.$neutral94;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:69-70"
+quote = "val surfaceContainer: DynamicColor get() = colorSpec.surfaceContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:171"
+quote = "override val surfaceContainer: DynamicColor"
+
+[[fact]]
+key = "role.@surface_container_high"
+value = "= m3_role(@surface_container_high)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:171"
+quote = "$surface-container-high: md-ref-palette.$neutral92;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:72-73"
+quote = "val surfaceContainerHigh: DynamicColor get() = colorSpec.surfaceContainerHigh"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:186"
+quote = "override val surfaceContainerHigh: DynamicColor"
+
+[[fact]]
+key = "role.@surface_container_highest"
+value = "= m3_role(@surface_container_highest)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:173"
+quote = "$surface-container-highest: md-ref-palette.$neutral90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:75-76"
+quote = "val surfaceContainerHighest: DynamicColor get() = colorSpec.surfaceContainerHighest"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:201"
+quote = "override val surfaceContainerHighest: DynamicColor"
+
+[[fact]]
+key = "role.@surface_container_low"
+value = "= m3_role(@surface_container_low)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:175"
+quote = "$surface-container-low: md-ref-palette.$neutral96;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:66-67"
+quote = "val surfaceContainerLow: DynamicColor get() = colorSpec.surfaceContainerLow"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:156"
+quote = "override val surfaceContainerLow: DynamicColor"
+
+[[fact]]
+key = "role.@surface_container_lowest"
+value = "= m3_role(@surface_container_lowest)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:177"
+quote = "$surface-container-lowest: md-ref-palette.$neutral100;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:63-64"
+quote = "val surfaceContainerLowest: DynamicColor get() = colorSpec.surfaceContainerLowest"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:145"
+quote = "override val surfaceContainerLowest: DynamicColor"
+
+[[fact]]
+key = "role.@surface_dim"
+value = "= m3_role(@surface_dim)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:181"
+quote = "$surface-dim: md-ref-palette.$neutral87;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:57-58"
+quote = "val surfaceDim: DynamicColor get() = colorSpec.surfaceDim"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:115"
+quote = "override val surfaceDim: DynamicColor"
+
+[[fact]]
+key = "role.@surface_variant"
+value = "= m3_role(@surface_variant)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:185"
+quote = "$surface-variant: md-ref-palette.$neutral-variant90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:81-82"
+quote = "val surfaceVariant: DynamicColor get() = colorSpec.surfaceVariant"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:226"
+quote = "override val surfaceVariant: DynamicColor"
+
+[[fact]]
+key = "role.@tertiary"
+value = "= m3_role(@tertiary)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:189"
+quote = "$tertiary: md-ref-palette.$tertiary40;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:180-181"
+quote = "val tertiary: DynamicColor get() = colorSpec.tertiary"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:506"
+quote = "override val tertiary: DynamicColor"
+
+[[fact]]
+key = "role.@tertiary_container"
+value = "= m3_role(@tertiary_container)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:193"
+quote = "$tertiary-container: md-ref-palette.$tertiary90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:189-190"
+quote = "val tertiaryContainer: DynamicColor get() = colorSpec.tertiaryContainer"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:552"
+quote = "override val tertiaryContainer: DynamicColor"
+
+[[fact]]
+key = "role.@tertiary_fixed"
+value = "= m3_role(@tertiary_fixed)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:197"
+quote = "$tertiary-fixed: md-ref-palette.$tertiary90;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:198-199"
+quote = "val tertiaryFixed: DynamicColor get() = colorSpec.tertiaryFixed"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:807"
+quote = "override val tertiaryFixed: DynamicColor"
+
+[[fact]]
+key = "role.@tertiary_fixed_dim"
+value = "= m3_role(@tertiary_fixed_dim)"
+rows = ["MAT-X1", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:201"
+quote = "$tertiary-fixed-dim: md-ref-palette.$tertiary80;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:201-202"
+quote = "val tertiaryFixedDim: DynamicColor get() = colorSpec.tertiaryFixedDim"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:827"
+quote = "override val tertiaryFixedDim: DynamicColor"
+
+[[fact]]
+key = "role.@surface_tint"
+value = "= m3_role(@surface_tint)"
+rows = ["MAT-X1", "MAT-X6", "MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:205"
+quote = "$surface-tint: $primary;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/MaterialDynamicColors.kt:105-106"
+quote = "val surfaceTint: DynamicColor get() = colorSpec.surfaceTint"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec2021.kt:292"
+quote = "override val surfaceTint: DynamicColor"
+
+# the Window set: Compose's Scaffold, the window's container, takes the background and the content colour
+# contentColorFor gives it
+
+# the window set
+
+[[fact]]
+key = "role.window.background"
+value = "= role.@background"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Scaffold.kt:94"
+quote = "containerColor: Color = MaterialTheme.colorScheme.background,"
+
+[[fact]]
+key = "role.window.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.foreground"
+value = "= role.@on_background"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Scaffold.kt:95"
+quote = "contentColor: Color = contentColorFor(containerColor),"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ColorScheme.kt:1101"
+quote = "background -> onBackground"
+
+[[fact]]
+key = "role.window.foreground_inactive"
+value = "= role.@on_surface_variant"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:92-95"
+quote = "/// md.sys.color.on-surface-variant (Surface colors) /// /// For text and icons to indicate active or inactive component state $on-surface-variant: md-ref-palette.$neutral-variant30;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:342"
+quote = "$list-item-supporting-text-color: md-sys-color.$on-surface-variant;"
+
+[[fact]]
+key = "role.window.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.link"
+value = "= role.@primary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:688-695"
+quote = "private fun rememberTextLinkStyles(): TextLinkStyles { val primaryColor = MaterialTheme.colorScheme.primary return remember(primaryColor) { TextLinkStyles( style = SpanStyle(color = primaryColor, textDecoration = TextDecoration.Underline) ) } }"
+
+[[fact]]
+key = "role.window.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:688-695"
+quote = "private fun rememberTextLinkStyles(): TextLinkStyles"
+absent = []
+
+[[fact]]
+key = "role.window.negative"
+value = "= role.global.status.error.standalone"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:24-27"
+quote = "/// md.sys.color.error (Error colors) /// /// Indicates errors, such as invalid input in a date picker $error: md-ref-palette.$error40;"
+
+[[fact]]
+key = "role.window.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.border"
+value = "= role.@outline_variant"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:116-119"
+quote = "/// md.sys.color.outline-variant (Outline colors) /// /// Outline-variant is used to define the border of a component where 3:1 contrast ratio isn’t required, a container, or a divider. $outline-variant: md-ref-palette.$neutral-variant80;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-divider.scss:23"
+quote = "$color: md-sys-color.$outline-variant;"
+
+[[fact]]
+key = "role.window.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.foreground"
+value = "= alpha(role.@on_surface, 0.38)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:146"
+quote = "$list-item-disabled-label-text-color: md-sys-color.$on-surface;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:46"
+quote = "$list-item-disabled-label-text-opacity: 0.38;"
+
+[[fact]]
+key = "role.window.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.window.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+# the Selection set: a selected list item's container and texts
+
+# the selection set
+
+[[fact]]
+key = "role.selection.background"
+value = "= role.@secondary_container"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:258"
+quote = "$list-item-selected-container-color: md-sys-color.$secondary-container;"
+
+[[fact]]
+key = "role.selection.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.foreground"
+value = "= role.@on_secondary_container"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:318"
+quote = "$list-item-selected-label-text-color: md-sys-color.$on-secondary-container;"
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+value = "= role.@on_secondary_container"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:336"
+quote = "$list-item-selected-supporting-text-color: md-sys-color.$on-secondary-container;"
+
+[[fact]]
+key = "role.selection.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.link"
+value = "= role.window.link"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:688-695"
+quote = "private fun rememberTextLinkStyles(): TextLinkStyles { val primaryColor = MaterialTheme.colorScheme.primary return remember(primaryColor) { TextLinkStyles( style = SpanStyle(color = primaryColor, textDecoration = TextDecoration.Underline) ) } }"
+
+[[fact]]
+key = "role.selection.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:688-695"
+quote = "private fun rememberTextLinkStyles(): TextLinkStyles"
+absent = []
+
+[[fact]]
+key = "role.selection.negative"
+value = "= role.global.status.error.standalone"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:24-27"
+quote = "/// md.sys.color.error (Error colors) /// /// Indicates errors, such as invalid input in a date picker $error: md-ref-palette.$error40;"
+
+[[fact]]
+key = "role.selection.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.border"
+value = "= role.window.border"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-divider.scss:23"
+quote = "$color: md-sys-color.$outline-variant;"
+
+[[fact]]
+key = "role.selection.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background"
+value = "= alpha(role.@on_surface, 0.38)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:264"
+quote = "$list-item-selected-disabled-container-color: md-sys-color.$on-surface;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:78"
+quote = "$list-item-selected-disabled-container-opacity: 0.38;"
+
+[[fact]]
+key = "role.selection.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+value = "= alpha(role.@on_surface, 0.38)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:268"
+quote = "$list-item-selected-disabled-label-text-color: md-sys-color.$on-surface;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-list.scss:80"
+quote = "$list-item-selected-disabled-label-text-opacity: 0.38;"
+
+[[fact]]
+key = "role.selection.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+# the global roles
+
+[[fact]]
+key = "role.global.accent"
+value = "= role.@primary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:120-123"
+quote = "/// md.sys.color.primary (Primary colors) /// /// Main color used across screens and components $primary: md-ref-palette.$primary40;"
+
+[[fact]]
+key = "role.global.accent_foreground"
+value = "= role.@on_primary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:56-59"
+quote = "/// md.sys.color.on-primary (Primary colors) /// /// Text and icons shown against the primary color $on-primary: md-ref-palette.$primary100;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ColorScheme.kt:1098"
+quote = "primary -> onPrimary"
+
+[[fact]]
+key = "role.global.accent_standalone"
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-text.scss:52"
+quote = "$label-text-color: md-sys-color.$primary;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:688-695"
+quote = "private fun rememberTextLinkStyles(): TextLinkStyles { val primaryColor = MaterialTheme.colorScheme.primary return remember(primaryColor) { TextLinkStyles( style = SpanStyle(color = primaryColor, textDecoration = TextDecoration.Underline) ) } }"
+
+[[fact]]
+key = "role.global.accent_ramp"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.success.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.success.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.success.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.success.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.error.fill"
+value = "= role.@error"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:24-27"
+quote = "/// md.sys.color.error (Error colors) /// /// Indicates errors, such as invalid input in a date picker $error: md-ref-palette.$error40;"
+
+[[fact]]
+key = "role.global.status.error.foreground"
+value = "= role.@on_error"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:48-51"
+quote = "/// md.sys.color.on-error (Error colors) /// /// Used for text and icons on the error color $on-error: md-ref-palette.$error100;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ColorScheme.kt:1102"
+quote = "error -> onError"
+
+[[fact]]
+key = "role.global.status.error.standalone"
+value = "= role.@error"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-outlined-text-field.scss:82"
+quote = "$error-focus-supporting-text-color: md-sys-color.$error;"
+
+[[fact]]
+key = "role.global.status.error.background"
+value = "= role.@error_container"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:28-31"
+quote = "/// md.sys.color.error-container (Error colors) /// /// Container color for error messages and badges $error-container: md-ref-palette.$error90;"
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.info.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.info.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.info.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.info.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.info.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.neutral.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.destructive.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.destructive.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.destructive.standalone"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.destructive.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.status.destructive.background_solid"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.shadow_reference"
+value = "= role.@shadow"
+rows = ["MAT-X5"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:156-159"
+quote = "/// md.sys.color.shadow (Add-ons / Add-on surface colors) /// /// For shadows applied to elevated components $shadow: md-ref-palette.$neutral0;"
+
+[[fact]]
+key = "role.global.selection_text_background"
+value = "= alpha(role.@primary, 0.4)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:276-287"
+quote = "internal fun rememberTextSelectionColors(colorScheme: ColorScheme): TextSelectionColors { val primaryColor = colorScheme.primary return remember(primaryColor) { TextSelectionColors( handleColor = primaryColor, backgroundColor = primaryColor.copy(alpha = TextSelectionBackgroundOpacity), ) } }  /*@VisibleForTesting*/ internal const val TextSelectionBackgroundOpacity = 0.4f"
+
+[[fact]]
+key = "role.global.selection_text_foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/selection/TextSelectionColors.kt:38-59"
+quote = "public class TextSelectionColors(public val handleColor: Color, public val backgroundColor: Color) {"
+absent = []
+
+[[fact]]
+key = "role.global.selection_text_background_unfocused"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/selection/TextSelectionColors.kt:38-59"
+quote = "public class TextSelectionColors(public val handleColor: Color, public val backgroundColor: Color) {"
+absent = []
+
+[[fact]]
+key = "role.global.selection_text_foreground_unfocused"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/selection/TextSelectionColors.kt:38-59"
+quote = "public class TextSelectionColors(public val handleColor: Color, public val backgroundColor: Color) {"
+absent = []
+
+[[fact]]
+key = "role.global.find_highlight"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+[[fact]]
+key = "role.global.drop_highlight"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-sys-color.scss:18-209"
+quote = "@use 'md-ref-palette';"
+absent = []
+
+# the scrim: Compose applies ScrimTokens.ContainerOpacity to the scrim role wherever it draws one (the modal sheet,
+# the navigation drawer, the docked search bar's dropdown); only the internal, unpublished
+# StyleableExpandedDockedSearchBarWithGap takes the role unscaled (SearchBar.kt:1014-1030, ComponentStyles.kt:688), which
+# no public component draws (MAT-X1, ADD-A122)
+[[fact]]
+key = "role.global.scrim"
+value = "= alpha(role.@scrim, 0.32)"
+rows = ["MAT-X1", "MAT-X23", "MAT-SF04†"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-scrim.scss:20-23"
+quote = "/// md.comp.scrim.container.opacity $container-opacity: 0.32; /// md.comp.scrim.container.color $container-color: md-sys-color.$scrim;"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Scrim.kt:87"
+quote = "get() = ScrimTokens.ContainerColor.value.copy(alpha = ScrimTokens.ContainerOpacity)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ScrimTokens.kt:25"
+quote = "const val ContainerOpacity = 0.32f"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SheetDefaults.kt:530"
+quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(ScrimTokens.ContainerOpacity)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/NavigationDrawer.kt:1068"
+quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(ScrimTokens.ContainerOpacity)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SearchBar.kt:2054-2055"
+quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(alpha = ScrimTokens.ContainerOpacity)"
+
+# the scheme tokens m3_role reads (S4.8): material-color-utilities' default spec version and its contrast levels
+
+[[fact]]
+key = "token.material.spec_version"
+value = "spec_2021"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/DynamicScheme.kt:290"
+quote = "val DEFAULT_SPEC_VERSION: SpecVersion = SpecVersion.SPEC_2021"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ColorSpec.kt:25-29"
+quote = "enum class SpecVersion { SPEC_2021, SPEC_2025, SPEC_2026, }"
+
+[[fact]]
+key = "token.material.contrast_level"
+value = 0.0
+rows = ["MAT-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/DynamicScheme.kt:39-40"
+quote = "* Value from -1 to 1. -1 represents minimum contrast. 0 represents standard (i.e. the design as * spec'd), and 1 represents maximum contrast."
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ContrastCurve.kt:27"
+quote = "* @property normal Value for contrast level 0.0"
+
+[[fact]]
+key = "token.material.contrast_level"
+when = { conditions = ["contrast_increased"] }
+value = 0.5
+rows = ["MAT-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ContrastCurve.kt:28"
+quote = "* @property medium Value for contrast level 0.5"
+
+[[fact]]
+key = "token.material.contrast_level"
+when = { conditions = ["contrast_high"] }
+value = 1.0
+rows = ["MAT-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ContrastCurve.kt:29"
+quote = "* @property high Value for contrast level 1.0"

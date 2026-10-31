@@ -1,0 +1,13 @@
+[declare.widget.button]
+variants = ["flat"]
+
+# Wrong only inside a flat button, where the state model draws nothing.
+[[rules]]
+when = { context = [{ widget = "button" }] }
+target = "button.body"
+set = { min_width_px = 99 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

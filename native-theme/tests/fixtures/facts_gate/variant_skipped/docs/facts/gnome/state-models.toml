@@ -1,0 +1,10 @@
+# A synthetic state model (S17): `@raised` is named only by a fact whose `when` names a toolbar, a widget whose unit is not enabled.
+[[model]]
+widget = "button"
+available = true
+variants = ["flat", "@raised"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []

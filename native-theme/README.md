@@ -1,6 +1,6 @@
 # native-theme
 
-[![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
+[![License: (MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0](https://img.shields.io/badge/license-(MIT%20%7C%20Apache--2.0%20%7C%200BSD)%20AND%20Apache--2.0-blue.svg)](#license)
 
 ## What it does
 
@@ -232,7 +232,7 @@ Connector crates provide toolkit playback helpers (see the `native-theme-gpui` a
 
 ```toml
 [dependencies]
-native-theme = { version = "0.7", features = ["native"] }
+native-theme = { version = "0.8", features = ["native"] }
 ```
 
 `native` is a meta-feature enabling every OS reader for the current target
@@ -278,6 +278,15 @@ Licensed under any of
 - [0BSD License](https://opensource.org/license/0bsd)
 
 at your option.
+
+One file is not: `src/next/ripple.rs` ports the Android Open Source Project's
+`RippleShader.java`, `RippleAnimationSession.java` and Compose's ripple and
+colour code and stays under the
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with
+their copyright notices, whichever licence you pick for the rest. The crate's
+licence is therefore `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0`; the crate
+ships the licence (`LICENSE-APACHE`) and the Android Open Source Project's
+notice (`NOTICE`).
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall

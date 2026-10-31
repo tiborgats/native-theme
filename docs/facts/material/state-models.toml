@@ -1,0 +1,500 @@
+# material-3 state models
+
+# material-3's state models (S17), written by the Material facts lane: what Compose Material 3 1.5.0-beta02
+# and material-web 2.5.0's token sets draw. No exclusive group: Compose's hover, focus and press combine, and two
+# of its drawings show the latest of a set (S7.2's recency, R3, ADD-A124; the catalogue's Material recency sets).
+# `state_layer` = [focus_visible, hover]: the ripple node shows one state layer, of the most recent hover or focus
+# (material3-ripple Ripple.kt:250-280), the order a connector that reports none gets being focus before hover, as
+# Material's View library ranks them (an Android ColorStateList takes its first matching item, and the button's
+# ripple colours put focused before hovered, material-components-android m3_button_ripple_color.xml:20-21); the
+# button draws no dragged layer (MAT-X29). `elevation` = [pressed, focus_visible, hover]: the elevated, filled and
+# tonal buttons, the toggle buttons and the FABs take the elevation of the latest of hover, focus and press
+# (Button.kt:1703-1747, ToggleButton.kt:1589-1633, FloatingActionButton.kt:1300-1347), press first, as a press
+# begins on an element the pointer already hovers or the key's focus already holds, focus before hover as in
+# `state_layer`. Only the state layer (`body.interaction.state_layer`) and the shadow follow the sets; every other
+# field a state changes (a label's or icon's colour, a stroke, a shape) follows plain flags. The press ripple is
+# drawn beneath the state layer (Ripple.kt:375-376: drawRipples(), then drawStateLayers()) and is the block's
+# effect, started by the press (S2.12), so `pressed` is in no `state_layer` set. A disabled button takes
+# no hover, focus or press (Clickable.kt); FABs have no disabled state.
+# Variants (ADD-A121): one colour style per element (a style is its own composable and token set: filled, tonal,
+# elevated, outlined, text; the FAB's colour styles), one content form (an icon button or a button with a leading
+# icon), one FAB form, one Expressive icon-button width. `variant_sets` and `variant_products` (ADD-A122) give the
+# sets the facts state (each drawn by Compose or the tokens), the products the icon buttons' and the FABs' independent
+# choices, the extended FAB with a leading icon among them (its own start padding, FloatingActionButton.kt:898-899,
+# MAT-N2); the platform draws more (a style with a leading icon, the other FAB colours lowered, the Expressive shapes
+# and widths across the icon-button styles), which no fact states yet (the lane report).
+# `default_size_by_variant` (flavour expressive; S10 states it only where it differs from `default_size`): Compose's
+# FloatingActionButton and ExtendedFloatingActionButton are the unsized composables, `regular`, where Expressive's
+# buttons default to `small` (ToggleButton.kt:111, Button.kt:1064). The extended FAB's sizes (ADD-A123): `regular`
+# the unsized one in both flavours (FloatingActionButton.kt:601-629, :1472-1482), and under flavour expressive
+# `small`, `large` and `extra_large` Expressive's small, medium and large extended FABs (:400, :467, :534).
+# Flavour baseline: no Expressive sizes (the FAB's three baseline sizes only), icon toggles only (IconToggleButton);
+# flavour expressive: the five button sizes (default small: Compose's ToggleButton and Button use the small design),
+# the text toggles, `@square`, `@narrow`, `@wide`, the container and branded FAB styles; `@primary_container`
+# (Compose's default FAB container colour, FloatingActionButtonDefaults.containerColor) in both.
+
+[[model]]
+widget = "button"
+available = true
+variants = ["primary", "tinted", "flat", "toggle", "menu", "icon_only", "with_icon", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@primary_container"]
+sizes = ["small", "regular", "extra_large"]
+default_size = "regular"
+densities = []
+axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark", "contrast_increased", "contrast_high"], contexts = [{ scope = "any", widget = "toolbar", variants = ["floating"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@vibrant"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@collapsed"] }] }
+exclusive = []
+recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "focus_visible", "hover"] }
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@primary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["toggle"], not_variants = ["icon_only"] }]
+sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "extra_large"] }, { variant = "@extended_fab", sizes = ["regular"] }]
+exclusive_variants = [["primary", "tinted", "flat", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container"], ["icon_only", "with_icon"], ["@fab", "@extended_fab"]]
+variant_sets = [["menu", "primary"], ["menu", "@outlined"]]
+variant_products = [
+  [{ one = ["icon_only"] }, { any = ["primary", "tinted", "@outlined"] }, { any = ["toggle"] }],              # the icon buttons
+  [{ one = ["@fab", "@extended_fab"] }, { one = ["primary", "@secondary", "@tertiary", "@primary_container", "@surface"] }],  # the FAB colours
+  [{ one = ["@fab", "@extended_fab"] }, { any = ["@surface"] }, { one = ["@lowered"] }],                     # the lowered FABs
+  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@surface"] }],  # the extended FABs with an icon
+  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["@surface"] }, { one = ["@lowered"] }],    # lowered, with an icon
+]
+rows = ["MAT-B1", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N4", "MAT-N8", "MAT-X22"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Clickable.kt:1729-1736"
+quote = "if (this.enabled != enabled) { if (enabled) { delegate(focusableNode) } else {"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Clickable.kt:1914-1919"
+quote = "if (enabled) { initializeGestureCoordination() if (pass == PointerEventPass.Main) { when (pointerEvent.type) { PointerEventType.Enter -> coroutineScope.launch { emitHoverEnter() }"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:279-280"
+quote = "// The most recent interaction is the one we want to show val newInteraction = interactions.lastOrNull()"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-260"
+quote = "is HoverInteraction.Enter -> { interactions.add(interaction) } is HoverInteraction.Exit -> { interactions.remove(interaction.enter) } is FocusInteraction.Focus -> { interactions.add(interaction)"
+
+[[model.cite]]
+kind = "published"
+source = "material-components-android@1.14.0 lib/java/com/google/android/material/button/res/color/m3_button_ripple_color.xml:20-21"
+quote = "android:state_focused=\"true\"/> <item android:alpha=\"@dimen/m3_ripple_hovered_alpha\" android:color=\"?attr/colorOnPrimary\" android:state_hovered=\"true\"/>"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1736-1747"
+quote = "val interaction = interactions.lastOrNull() val target = if (!enabled) { disabledElevation } else { when (interaction) { is PressInteraction.Press -> pressedElevation is HoverInteraction.Enter -> hoveredElevation is FocusInteraction.Focus -> focusedElevation"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1346-1347"
+quote = "val targetInteraction = interactions.lastOrNull() launch { animatable.animateElevation(to = targetInteraction) }"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:375-376"
+quote = "drawRipples() drawStateLayers()"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-text.scss:21-60"
+quote = "/// md.comp.button.text.disabled.container.opacity (Disabled)"
+absent = ["selected-container-color", "unselected-container-color"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1-1751"
+quote = "package androidx.compose.material3"
+absent = ["TextToggleButton"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:131-139"
+quote = "public fun FloatingActionButton("
+absent = ["enabled"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1084"
+quote = "public fun loweredElevation("
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:25"
+quote = "$container-height: 40px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-filled-menu-button.scss:40"
+quote = "$container-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-outlined-menu-button.scss:85"
+quote = "$outline-color: md-sys-color.$outline;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-toolbar-floating-fab.scss:24"
+quote = "/// md.comp.toolbar.floating.fab.container.height (Expanded)"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:225"
+quote = "public fun SmallFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:877-881"
+quote = "public fun ExtendedFloatingActionButton( text: @Composable () -> Unit, icon: @Composable () -> Unit,"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:342"
+quote = "public fun LargeFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:601"
+quote = "public fun ExtendedFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-filled.scss:29"
+quote = "$container-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-tonal.scss:29"
+quote = "$container-color: md-sys-color.$secondary-container;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-elevated.scss:29"
+quote = "$container-color: md-sys-color.$surface-container-low;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-outlined.scss:58"
+quote = "$outline-color: md-sys-color.$outline-variant;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-text.scss:52"
+quote = "$label-text-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-primary.scss:37"
+quote = "$container-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-secondary.scss:37"
+quote = "$container-color: md-sys-color.$secondary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-tertiary.scss:37"
+quote = "$container-color: md-sys-color.$tertiary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-surface.scss:31"
+quote = "$container-color: md-sys-color.$surface-container-high;"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButton.kt:358"
+quote = "public fun IconToggleButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1044-1046"
+quote = "/** Default container color for a floating action button. */ public val containerColor: Color @Composable get() = FabPrimaryContainerTokens.ContainerColor.value"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/FabPrimaryContainerTokens.kt:22-23"
+quote = "inline val ContainerColor: ColorToken get() = ColorSchemeKeyTokens.PrimaryContainer"
+
+[[model]]
+widget = "button"
+when = { conditions = ["flavor:expressive"] }
+available = true
+variants = ["primary", "tinted", "flat", "toggle", "menu", "icon_only", "with_icon", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@square", "@narrow", "@wide", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"]
+sizes = ["extra_small", "small", "regular", "large", "extra_large"]
+default_size = "small"
+densities = []
+axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark", "contrast_increased", "contrast_high"], contexts = [{ scope = "any", widget = "toolbar", variants = ["floating"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@vibrant"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@collapsed"] }] }
+exclusive = []
+recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "focus_visible", "hover"] }
+not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@primary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@branded"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@narrow"], not_variants = ["icon_only"] }, { variants = ["@wide"], not_variants = ["icon_only"] }]
+sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"] }, { variant = "@extended_fab", sizes = ["small", "regular", "large", "extra_large"] }]
+exclusive_variants = [["primary", "tinted", "flat", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"], ["icon_only", "with_icon"], ["@fab", "@extended_fab"], ["@narrow", "@wide"]]
+variant_sets = [["toggle", "primary"], ["toggle", "tinted"], ["toggle", "@elevated"], ["toggle", "@outlined"], ["toggle", "@square"], ["menu", "primary"], ["menu", "@outlined"]]
+variant_products = [
+  [{ one = ["icon_only"] }, { any = ["primary", "tinted", "@outlined"] }, { any = ["toggle"] }],              # the icon buttons
+  [{ one = ["icon_only"] }, { any = ["toggle"] }, { one = ["@square"] }],                                     # the square icon buttons
+  [{ one = ["icon_only"] }, { one = ["@narrow", "@wide"] }],                                                  # the icon-button widths
+  [{ one = ["@fab", "@extended_fab"] }, { one = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }],  # the FAB colours
+  [{ one = ["@fab", "@extended_fab"] }, { any = ["@surface", "@branded"] }, { one = ["@lowered"] }],          # the lowered FABs
+  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }],  # the extended FABs with an icon
+  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["@surface", "@branded"] }, { one = ["@lowered"] }],  # lowered, with an icon
+]
+default_size_by_variant = [{ variant = "@fab", size = "regular" }, { variant = "@extended_fab", size = "regular" }]
+rows = ["MAT-B9", "MAT-B10", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N5", "MAT-X22"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Clickable.kt:1729-1736"
+quote = "if (this.enabled != enabled) { if (enabled) { delegate(focusableNode) } else {"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Clickable.kt:1914-1919"
+quote = "if (enabled) { initializeGestureCoordination() if (pass == PointerEventPass.Main) { when (pointerEvent.type) { PointerEventType.Enter -> coroutineScope.launch { emitHoverEnter() }"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:279-280"
+quote = "// The most recent interaction is the one we want to show val newInteraction = interactions.lastOrNull()"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:250-260"
+quote = "is HoverInteraction.Enter -> { interactions.add(interaction) } is HoverInteraction.Exit -> { interactions.remove(interaction.enter) } is FocusInteraction.Focus -> { interactions.add(interaction)"
+
+[[model.cite]]
+kind = "published"
+source = "material-components-android@1.14.0 lib/java/com/google/android/material/button/res/color/m3_button_ripple_color.xml:20-21"
+quote = "android:state_focused=\"true\"/> <item android:alpha=\"@dimen/m3_ripple_hovered_alpha\" android:color=\"?attr/colorOnPrimary\" android:state_hovered=\"true\"/>"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1736-1747"
+quote = "val interaction = interactions.lastOrNull() val target = if (!enabled) { disabledElevation } else { when (interaction) { is PressInteraction.Press -> pressedElevation is HoverInteraction.Enter -> hoveredElevation is FocusInteraction.Focus -> focusedElevation"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1346-1347"
+quote = "val targetInteraction = interactions.lastOrNull() launch { animatable.animateElevation(to = targetInteraction) }"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1620-1633"
+quote = "val interaction = interactions.lastOrNull()"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-ripple/src/commonMain/kotlin/androidx/compose/material3/ripple/Ripple.kt:375-376"
+quote = "drawRipples() drawStateLayers()"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-text.scss:21-60"
+quote = "/// md.comp.button.text.disabled.container.opacity (Disabled)"
+absent = ["selected-container-color", "unselected-container-color"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1-1751"
+quote = "package androidx.compose.material3"
+absent = ["TextToggleButton"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:131-139"
+quote = "public fun FloatingActionButton("
+absent = ["enabled"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:1084"
+quote = "public fun loweredElevation("
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:25"
+quote = "$container-height: 40px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-filled-menu-button.scss:40"
+quote = "$container-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-outlined-menu-button.scss:85"
+quote = "$outline-color: md-sys-color.$outline;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-toolbar-floating-fab.scss:24"
+quote = "/// md.comp.toolbar.floating.fab.container.height (Expanded)"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:225"
+quote = "public fun SmallFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:877-881"
+quote = "public fun ExtendedFloatingActionButton( text: @Composable () -> Unit, icon: @Composable () -> Unit,"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:342"
+quote = "public fun LargeFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:601"
+quote = "public fun ExtendedFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:400"
+quote = "public fun SmallExtendedFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:467"
+quote = "public fun MediumExtendedFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:534"
+quote = "public fun LargeExtendedFloatingActionButton("
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-filled.scss:29"
+quote = "$container-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-tonal.scss:29"
+quote = "$container-color: md-sys-color.$secondary-container;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-elevated.scss:29"
+quote = "$container-color: md-sys-color.$surface-container-low;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-outlined.scss:58"
+quote = "$outline-color: md-sys-color.$outline-variant;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-text.scss:52"
+quote = "$label-text-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-primary.scss:37"
+quote = "$container-color: md-sys-color.$primary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-secondary.scss:37"
+quote = "$container-color: md-sys-color.$secondary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-tertiary.scss:37"
+quote = "$container-color: md-sys-color.$tertiary;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-surface.scss:31"
+quote = "$container-color: md-sys-color.$surface-container-high;"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:157"
+quote = "public fun ToggleButton("
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:111"
+quote = "* [ToggleButton] uses the small button design as default. For a [ToggleButton] that uses the design"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1064"
+quote = "ButtonSmallTokens.ContainerHeight"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button.scss:51"
+quote = "$container-shape-square: md-sys-shape.$corner-medium;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-icon-button-small.scss:30"
+quote = "$narrow-leading-space: 4px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-icon-button-small.scss:36"
+quote = "$wide-leading-space: 14px;"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:280"
+quote = "* @material3expressive"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-xsmall.scss:23"
+quote = "$container-height: 32px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-small.scss:23"
+quote = "$container-height: 40px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-medium.scss:23"
+quote = "$container-height: 56px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-large.scss:23"
+quote = "$container-height: 96px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-xlarge.scss:23"
+quote = "$container-height: 136px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-primary-container.scss:23"
+quote = "$container-color: md-sys-color.$primary-container;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-secondary-container.scss:23"
+quote = "$container-color: md-sys-color.$secondary-container;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-tertiary-container.scss:23"
+quote = "$container-color: md-sys-color.$tertiary-container;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-fab-branded.scss:18-30"
+quote = "@use 'md-sys-color';"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:144-145"
+quote = "FabBaselineTokens.ContainerWidth, FabBaselineTokens.ContainerHeight,"
