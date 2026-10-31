@@ -38,6 +38,7 @@ mod roles;
 #[cfg(test)]
 mod roles_tokens_tests;
 mod selector;
+mod theme;
 mod tokens;
 mod toml;
 mod units;
@@ -124,11 +125,11 @@ pub use blocks::transform::{ResolvedTransform, Transform, TransformPatch};
 pub use blocks::{Block, BlockPatch, FieldsBlock};
 pub use color::Color;
 pub use declare::{DataName, FontMetric};
-pub use error::{KeyError, LayerError, Problem, ProblemKind};
+pub use error::{KeyError, LayerError, Problem, ProblemKind, ThemeError};
 pub use expr::{Expr, ParseError};
 pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 pub use key::Key;
-pub use layer::{Bases, Layer};
+pub use layer::{Bases, Layer, LayerId};
 pub use presets::PresetId;
 pub use query::{
     DataNeeds, Element, ElementData, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable,
@@ -152,6 +153,7 @@ pub use selector::{
     SizeClasses, SizeMatch, StateFlag, StateFlags, TiledEdges, ValuesPatch, VariantRef,
     WidgetOrPart, WidgetRef,
 };
+pub use theme::Theme;
 pub use tokens::{
     Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
     FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens, IconTokensPatch,

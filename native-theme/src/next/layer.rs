@@ -1,4 +1,8 @@
-//! Layers (S8): a layer's bases, its part for one preset, and its rules.
+//! Layers (S8): a layer's bases, its part for one preset, and its rules;
+//! the id a theme holds an application layer by (S16).
+
+use std::fmt;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::error::LayerError;
 use super::inputs::InputBases;
@@ -143,6 +147,26 @@ impl Layer {
     /// ```
     pub fn from_toml(text: &str) -> Result<Layer, LayerError> {
         super::toml::layer::read_layer(text)
+    }
+}
+
+/// An application layer a theme holds, as `Theme::add_layer` returned it
+/// (S1, S16): opaque, and never another layer's, of this theme or another.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct LayerId(u64);
+
+impl LayerId {
+    /// A new id, unequal to every id made before it.
+    pub(crate) fn next() -> LayerId {
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        LayerId(NEXT.fetch_add(1, Ordering::Relaxed))
+    }
+}
+
+impl fmt::Display for LayerId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "layer #{}", self.0)
     }
 }
 

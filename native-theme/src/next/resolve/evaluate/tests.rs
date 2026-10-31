@@ -91,7 +91,9 @@ fn resolved(layers: &[&str], factor: f32) -> ResolvedTheme {
             state: ReaderState::new(Scheme::Light, factor),
             layer: Arc::default(),
         }),
-        layers: layers.collect(),
+        layers: layers
+            .map(|layer| (crate::next::layer::LayerId::next(), layer))
+            .collect(),
         accent: None,
         accent_layer: Arc::default(),
         picked: None,

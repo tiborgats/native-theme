@@ -12,6 +12,11 @@ impl PresetId {
         match self {}
     }
 
+    /// The preset's file, in S11's format.
+    pub(crate) fn source(self) -> &'static str {
+        match self {}
+    }
+
     /// The preset `key` names.
     #[must_use]
     pub fn from_key(key: &str) -> Option<PresetId> {

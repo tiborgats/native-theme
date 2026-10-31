@@ -2584,7 +2584,7 @@ fn part_info(part: TypedPart) -> Option<&'static PartInfo> {
         .and_then(|info| info.part(name))
 }
 
-fn widget_name(widget: WidgetKind) -> &'static str {
+pub(super) fn widget_name(widget: WidgetKind) -> &'static str {
     registry::widgets()
         .iter()
         .find(|info| info.kind == widget)

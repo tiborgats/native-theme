@@ -11,7 +11,7 @@
     not(test),
     expect(
         dead_code,
-        reason = "S16's `Theme` owns the stack and the query reads its resolution (M1a tasks 11, 12)"
+        reason = "the system's reader is set by the readers (M1b); `Cx::unscaled` is called by the derive for a widget value of a font size, which no enabled unit has yet"
     )
 )]
 
@@ -22,10 +22,10 @@ pub(crate) mod evaluate;
 
 use super::color::Color;
 use super::declare::Declarations;
-use super::error::{LayerError, Problem};
+use super::error::{LayerError, Problem, ProblemKind};
 use super::inputs::{Accent, Contrast, InputBases, InputName, InputValue};
 use super::key::Key;
-use super::layer::{Bases, Layer};
+use super::layer::{Bases, Layer, LayerId};
 use super::presets::PresetId;
 use super::roles::{ColorRolesPatch, SurfaceSet};
 use super::selector::{
@@ -382,6 +382,7 @@ pub(crate) struct KdeLists {
 /// The reader's layer, or the stand-in an application without a reader
 /// sets (S8, R2.6).
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 enum Reader {
     /// The system's reader: its state and layer, and its own preset (S9.5).
     Read {
@@ -402,12 +403,14 @@ enum Reader {
 /// and is refused whole (S8, S12). The layers are shared: a copy of the
 /// stack, a change's or a window's record, copies no layer.
 #[derive(Clone, Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub(crate) struct Stack {
     preset: Option<PresetId>,
     declarations: Declarations,
     preset_layer: Arc<Layer>,
     reader: Option<Reader>,
-    layers: Vec<Arc<Layer>>,
+    /// The application's layers, each with the id it was added under.
+    layers: Vec<(LayerId, Arc<Layer>)>,
     accent: Option<Accent>,
     /// The accent layer, derived from `accent` (S9.2).
     accent_layer: Arc<Layer>,
@@ -467,7 +470,7 @@ impl Stack {
                 state: ReaderState::new(Scheme::Light, 1.0),
                 layer: Arc::default(),
             }),
-            layers: layers.collect(),
+            layers: layers.map(|layer| (LayerId::next(), layer)).collect(),
             accent: None,
             accent_layer: Arc::default(),
             picked: None,
@@ -513,9 +516,76 @@ impl Stack {
         self.change(|stack| stack.reader = Some(Reader::StandIn { state, layer }))
     }
 
-    /// Adds an application layer, last.
-    pub(crate) fn add_layer(&mut self, layer: Layer) -> Result<(), LayerError> {
-        self.change(|stack| stack.layers.push(Arc::new(layer)))
+    /// Removes the stand-in, back to the no-reader state (S16); a no-op
+    /// without one.
+    pub(crate) fn remove_reader_stand_in(&mut self) -> Result<(), LayerError> {
+        if !matches!(self.reader, Some(Reader::StandIn { .. })) {
+            return Ok(());
+        }
+        self.change(|stack| stack.reader = None)
+    }
+
+    /// Switches to another preset's declarations and layer (S16): refused
+    /// where the preset fails validation, or the accent set lacks one of
+    /// its accent inputs (S9.2); the accent layer is derived again (S8).
+    pub(crate) fn set_preset(
+        &mut self,
+        preset: Option<PresetId>,
+        declarations: Declarations,
+        layer: Layer,
+    ) -> Result<(), LayerError> {
+        accent_inputs_held(&declarations, self.accent.as_ref())?;
+        validate::check_preset(&declarations, &layer, preset)?;
+        self.change(|stack| stack.switch(preset, declarations, layer))
+    }
+
+    /// The switch of [`Stack::set_preset`], unvalidated: the flavour set is
+    /// kept where the new preset declares it, else the new preset's default
+    /// is in force (S16).
+    fn switch(&mut self, preset: Option<PresetId>, declarations: Declarations, layer: Layer) {
+        if self
+            .flavor
+            .as_ref()
+            .is_some_and(|flavor| !declarations.flavors.contains(flavor))
+        {
+            self.flavor = None;
+        }
+        self.preset = preset;
+        self.declarations = declarations;
+        self.preset_layer = Arc::new(layer);
+    }
+
+    /// Adds an application layer, last, and returns its id.
+    pub(crate) fn add_layer(&mut self, layer: Layer) -> Result<LayerId, LayerError> {
+        let id = LayerId::next();
+        self.change(|stack| stack.layers.push((id, Arc::new(layer))))?;
+        Ok(id)
+    }
+
+    /// Replaces the application layer `id`, in its place; refused for an
+    /// id the stack does not hold (S16).
+    pub(crate) fn replace_layer(&mut self, id: LayerId, layer: Layer) -> Result<(), LayerError> {
+        let index = self.layer_index(id)?;
+        self.change(|stack| {
+            if let Some((_, held)) = stack.layers.get_mut(index) {
+                *held = Arc::new(layer);
+            }
+        })
+    }
+
+    /// Removes the application layer `id`; refused for an id the stack
+    /// does not hold (S16).
+    pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<(), LayerError> {
+        self.layer_index(id)?;
+        self.change(|stack| stack.layers.retain(|(held, _)| *held != id))
+    }
+
+    /// Where the application layer `id` lies among the application's.
+    fn layer_index(&self, id: LayerId) -> Result<usize, LayerError> {
+        self.layers
+            .iter()
+            .position(|(held, _)| *held == id)
+            .ok_or(LayerError::UnknownLayer(id))
     }
 
     /// Sets the accent (S9.2), or clears it (`None`: the system's again).
@@ -523,20 +593,7 @@ impl Stack {
     /// [`Accent::accent`] and the others among [`Accent::derived`];
     /// refused, naming those it lacks, otherwise.
     pub(crate) fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError> {
-        if let Some(accent) = &accent {
-            let missing: Vec<InputName> = self
-                .declarations
-                .accent_inputs
-                .iter()
-                .filter(|name| {
-                    !(is_accent(name) || accent.derived.iter().any(|(held, _)| held == *name))
-                })
-                .cloned()
-                .collect();
-            if !missing.is_empty() {
-                return Err(LayerError::AccentInputsMissing(missing));
-            }
-        }
+        accent_inputs_held(&self.declarations, accent.as_ref())?;
         self.change(|stack| stack.accent = accent)
     }
 
@@ -550,8 +607,18 @@ impl Stack {
         self.change(|stack| stack.contrast = contrast)
     }
 
-    /// Sets the flavour.
+    /// Sets the flavour; refused where the preset does not declare it
+    /// (S10, S16).
     pub(crate) fn set_flavor(&mut self, flavor: Key) -> Result<(), LayerError> {
+        if !self.declarations.flavors.contains(&flavor) {
+            return Err(LayerError::Invalid(vec![Problem::new(
+                "",
+                ProblemKind::Undeclared {
+                    name: flavor.to_string(),
+                    declaration: "flavors".to_owned(),
+                },
+            )]));
+        }
         self.change(|stack| stack.flavor = Some(flavor))
     }
 
@@ -591,7 +658,7 @@ impl Stack {
                 kind: LayerKind::Reader,
             });
         }
-        out.extend(self.layers.iter().map(|layer| Stacked {
+        out.extend(self.layers.iter().map(|(_, layer)| Stacked {
             layer,
             kind: LayerKind::Application,
         }));
@@ -608,17 +675,21 @@ impl Stack {
         if let Some(Reader::Read { layer, .. } | Reader::StandIn { layer, .. }) = &self.reader {
             out.push(Arc::clone(layer));
         }
-        out.extend(self.layers.iter().cloned());
+        out.extend(self.layers.iter().map(|(_, layer)| Arc::clone(layer)));
         out.push(Arc::clone(&self.accent_layer));
         out
     }
 
     /// Every problem of the stack above its preset, each layer checked over
-    /// the layers below it (S8, S12); the preset, which no change of the
-    /// stack changes, was checked when the stack was built.
+    /// the layers below it, and the reader's or stand-in's state (S8, S12);
+    /// the preset was checked when it was set. A layer's check meets the
+    /// faults below it its combinations reach again: each is listed once.
     fn validate(&self) -> Result<(), LayerError> {
         let stacked = self.stacked();
-        let mut problems: Vec<Problem> = Vec::new();
+        let mut problems: Vec<Problem> = self
+            .reader_state()
+            .map(validate::reader_state)
+            .unwrap_or_default();
         for (index, layer) in stacked.iter().enumerate().skip(1) {
             let cx = Context {
                 declarations: &self.declarations,
@@ -628,7 +699,13 @@ impl Stack {
             };
             match validate::check(layer.layer, &cx) {
                 Ok(()) => {}
-                Err(LayerError::Invalid(found)) => problems.extend(found),
+                Err(LayerError::Invalid(found)) => {
+                    for problem in found {
+                        if !problems.contains(&problem) {
+                            problems.push(problem);
+                        }
+                    }
+                }
                 Err(other) => return Err(other),
             }
         }
@@ -639,7 +716,8 @@ impl Stack {
         }
     }
 
-    fn reader_state(&self) -> Option<&ReaderState> {
+    /// The state the reader or stand-in reports; `None` without either.
+    pub(crate) fn reader_state(&self) -> Option<&ReaderState> {
         match &self.reader {
             Some(Reader::Read { state, .. } | Reader::StandIn { state, .. }) => Some(state),
             None => None,
@@ -661,7 +739,7 @@ impl Stack {
     }
 
     /// The flavour in force: set, else the preset's default, its first.
-    fn flavor(&self) -> Option<&Key> {
+    pub(crate) fn flavor(&self) -> Option<&Key> {
         self.flavor
             .as_ref()
             .or_else(|| self.declarations.flavors.first())
@@ -779,6 +857,30 @@ impl Stack {
             }
         }
         out
+    }
+}
+
+/// Whether `accent` states every accent input `declarations` declares: the
+/// `accent` by [`Accent::accent`], the others among [`Accent::derived`];
+/// refused, naming those it lacks, otherwise (S9.2). Clearing the accent
+/// (`None`) lacks none.
+fn accent_inputs_held(
+    declarations: &Declarations,
+    accent: Option<&Accent>,
+) -> Result<(), LayerError> {
+    let Some(accent) = accent else {
+        return Ok(());
+    };
+    let missing: Vec<InputName> = declarations
+        .accent_inputs
+        .iter()
+        .filter(|name| !(is_accent(name) || accent.derived.iter().any(|(held, _)| held == *name)))
+        .cloned()
+        .collect();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(LayerError::AccentInputsMissing(missing))
     }
 }
 
@@ -1090,12 +1192,15 @@ impl Holding<'_> {
     }
 }
 
-/// The stack's refusals, each triggered (S8, S9.2): a stand-in while a
-/// reader exists, an accent lacking a declared accent input.
+/// The stack's refusals, each triggered (S8, S9.2, S16): a stand-in while a
+/// reader exists, an accent lacking a declared accent input, an id the
+/// stack does not hold.
 #[cfg(test)]
 pub(crate) fn refusals() -> Vec<LayerError> {
     tests::refusals()
 }
 
+#[cfg(test)]
+mod mutation_tests;
 #[cfg(test)]
 mod tests;

@@ -18,21 +18,16 @@ mod tests;
 pub(crate) mod walk;
 
 use super::declare::Declarations;
-use super::error::{LayerError, Problem};
+use super::error::{LayerError, Problem, ProblemKind};
 use super::layer::Layer;
 use super::presets::PresetId;
+use super::resolve::ReaderState;
+use super::selector::WidgetRef;
 pub(crate) use checks::{TypeTarget, type_env};
 pub(crate) use stack::Stacked;
 
 /// What a layer is to the stack (S8, S9, S14): which checks apply to it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "S16's `Theme` adds layers of each kind (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
-    )
-)]
 pub(crate) enum LayerKind {
     /// A preset's own layer: its bases state whole blocks.
     Preset,
@@ -64,13 +59,6 @@ pub(crate) struct Context<'a> {
 }
 
 /// Every structural problem `layer` has against `cx` (S12).
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "S16's `Theme::add_layer` validates each layer (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
-    )
-)]
 pub(crate) fn check(layer: &Layer, cx: &Context<'_>) -> Result<(), LayerError> {
     let mut problems = checks::layer(layer, cx);
     let mut layers = cx.below.to_vec();
@@ -128,13 +116,6 @@ fn add(problems: &mut Vec<Problem>, found: Vec<(bool, Problem)>) {
 /// Every structural problem a preset's declarations and layer have (S10,
 /// S12): its layer's, its declarations' own, and each declared keyed name
 /// nothing uses.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "S16's `Theme` validates each bundled preset (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
-    )
-)]
 pub(crate) fn check_preset(
     declarations: &Declarations,
     layer: &Layer,
@@ -159,4 +140,44 @@ pub(crate) fn check_preset(
     } else {
         Err(LayerError::Invalid(problems))
     }
+}
+
+/// Every problem a reader's or stand-in's state has (S9.4, S12): a text
+/// scaling factor, or a font DPI it reports, not finite and above zero; a
+/// container named twice in `container_sizes`, which reports one size at a
+/// time. Each path starts at the state.
+pub(crate) fn reader_state(state: &ReaderState) -> Vec<Problem> {
+    let mut problems = Vec::new();
+    let factors = [
+        ("text_scaling_factor", Some(state.text_scaling_factor)),
+        ("font_dpi", state.font_dpi),
+    ];
+    for (at, factor) in factors {
+        match factor {
+            Some(n) if !n.is_finite() => problems.push(Problem::new(at, ProblemKind::NotFinite)),
+            Some(n) if n <= 0.0 => problems.push(Problem::new(
+                at,
+                ProblemKind::OutOfRange {
+                    expected: "above zero",
+                },
+            )),
+            _ => {}
+        }
+    }
+    let sizes = &state.container_sizes;
+    for (index, (container, _)) in sizes.iter().enumerate() {
+        if sizes
+            .iter()
+            .take(index)
+            .any(|(earlier, _)| earlier == container)
+        {
+            let name = match container {
+                WidgetRef::Typed(widget) => checks::widget_name(*widget).to_owned(),
+                WidgetRef::Component(key) => key.to_string(),
+            };
+            let at = format!("container_sizes[{index}]");
+            problems.push(Problem::new(&at, ProblemKind::ListedTwice { name }));
+        }
+    }
+    problems
 }

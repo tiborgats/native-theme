@@ -61,13 +61,6 @@ pub(crate) fn read_layer(text: &str) -> Result<Layer, LayerError> {
 /// A preset's file (S11): its header, its declarations (S10) and its layer,
 /// whose bases state whole blocks (S2.2).
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "the bundled presets are read by S16's `Theme` (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
-    )
-)]
 pub(crate) struct PresetFile {
     /// `[preset] id`: S16's `PresetId` key.
     pub(crate) id: String,
@@ -81,13 +74,6 @@ pub(crate) struct PresetFile {
 }
 
 /// The preset `text` states (S11), or every problem it has.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the bundled presets are read by S16's `Theme` (M1a task 12)"
-    )
-)]
 pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
     let file = parse(text)?;
     let mut cx = Reader::default();

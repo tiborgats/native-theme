@@ -2846,7 +2846,7 @@ fn layer_error_every_variant_triggers() {
         .collect();
     assert_eq!(missing, Vec::<usize>::new());
     // `LayerError`'s every variant: `Invalid`, which every fixture above
-    // returns, and the stack's refusals (S8, S9.2).
+    // returns, and the stack's refusals (S8, S9.2, S16).
     every_layer_error();
 }
 
@@ -2867,7 +2867,7 @@ fn every_layer_error() {
     );
     let mut errors = crate::next::resolve::refusals();
     errors.extend(invalid.err());
-    let mut seen = [false; 3];
+    let mut seen = [false; 4];
     for error in &errors {
         let index = match error {
             LayerError::Invalid(found) => {
@@ -2879,10 +2879,11 @@ fn every_layer_error() {
                 assert!(!names.is_empty());
                 2
             }
+            LayerError::UnknownLayer(_) => 3,
         };
         seen[index] = true;
     }
-    assert_eq!(seen, [true; 3], "{errors:?}");
+    assert_eq!(seen, [true; 4], "{errors:?}");
 }
 
 /// A layer with one structural problem: an opacity outside `0..=1`.

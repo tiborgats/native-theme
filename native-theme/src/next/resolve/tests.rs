@@ -14,7 +14,7 @@ use crate::next::declare::Declarations;
 use crate::next::error::LayerError;
 use crate::next::inputs::{Accent, Contrast, InputName, InputValue};
 use crate::next::key::Key;
-use crate::next::layer::Layer;
+use crate::next::layer::{Layer, LayerId};
 use crate::next::selector::{Condition, InputKind, Rule, RuleBody, Scheme, Selector, WidgetRef};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::Fraction;
@@ -22,7 +22,11 @@ use crate::next::value::{SchemeMap, Value};
 use crate::next::widgets::{ButtonPart, ButtonPatch, PartPatch, PartSlot, TypedPart, WidgetKind};
 
 /// A stack of these layers, unvalidated: the resolution alone is tested.
-fn stack(preset: Layer, reader: Option<(ReaderState, Layer)>, layers: Vec<Layer>) -> Stack {
+pub(super) fn stack(
+    preset: Layer,
+    reader: Option<(ReaderState, Layer)>,
+    layers: Vec<Layer>,
+) -> Stack {
     Stack {
         preset: None,
         declarations: Declarations::default(),
@@ -31,7 +35,10 @@ fn stack(preset: Layer, reader: Option<(ReaderState, Layer)>, layers: Vec<Layer>
             state,
             layer: Arc::new(layer),
         }),
-        layers: layers.into_iter().map(Arc::new).collect(),
+        layers: layers
+            .into_iter()
+            .map(|layer| (LayerId::next(), Arc::new(layer)))
+            .collect(),
         accent: None,
         accent_layer: Arc::default(),
         picked: None,
@@ -41,7 +48,7 @@ fn stack(preset: Layer, reader: Option<(ReaderState, Layer)>, layers: Vec<Layer>
     }
 }
 
-fn window() -> WindowConditions {
+pub(super) fn window() -> WindowConditions {
     WindowConditions::new(InputKind::Mouse)
 }
 
@@ -53,7 +60,7 @@ fn opacity(n: f32) -> PartPatch {
 }
 
 /// A layer whose bases set the button body's opacity.
-fn body(n: f32) -> Layer {
+pub(super) fn body(n: f32) -> Layer {
     let mut layer = Layer::default();
     layer.bases.widgets.button = Some(ButtonPatch {
         body: Some(opacity(n)),
@@ -148,12 +155,13 @@ fn change_classification() {
     stack.add_layer(body(0.5)).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
     // An equal stack is no change, however it was reached.
-    stack.layers = vec![Arc::new(body(0.5))];
+    stack.layers = vec![(LayerId::next(), Arc::new(body(0.5)))];
     assert_eq!(change(&stack, &mut state, &plain), Change::Unchanged);
     stack.pick(Some(Scheme::Dark)).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
     stack.set_contrast(Some(Contrast::High)).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ThemeChange);
+    stack.declarations.flavors = vec![key!("first"), key!("other")];
     stack.set_flavor(key!("other")).unwrap();
     assert_eq!(change(&stack, &mut state, &plain), Change::ConditionChange);
     // Both at once: the theme change wins.
@@ -240,7 +248,7 @@ fn color(r: f32) -> Value<Color> {
     })
 }
 
-fn input(r: f32) -> InputValue {
+pub(super) fn input(r: f32) -> InputValue {
     InputValue::new(SchemeMap::new(color(r), color(r)))
 }
 
@@ -324,7 +332,9 @@ fn inputs_take_their_contrast_base() {
     assert_eq!(resolved(&state), [(accent, color(0.3))]);
 }
 
-/// The stack's refusals, for `layer_error_every_variant_triggers`.
+/// The stack's refusals, for `layer_error_every_variant_triggers`: a
+/// stand-in while a reader exists, an accent lacking an accent input, an
+/// id the stack does not hold.
 pub(super) fn refusals() -> Vec<LayerError> {
     let mut read = stack(Layer::default(), None, Vec::new());
     read.set_reader(ReaderState::new(Scheme::Light, 1.0), Layer::default(), None)
@@ -340,7 +350,8 @@ pub(super) fn refusals() -> Vec<LayerError> {
     let missing = accent
         .set_accent(Some(Accent::new(input(0.1))))
         .unwrap_err();
-    vec![present, missing]
+    let unknown = accent.remove_layer(LayerId::next()).unwrap_err();
+    vec![present, missing, unknown]
 }
 
 /// S9.3: a reader stating an input under one scheme only leaves the
@@ -484,7 +495,7 @@ fn window_record_shares_the_layers() {
     let _ = stack.resolve(&mut state, &window());
     let last = state.last.as_ref().unwrap();
     assert!(Arc::ptr_eq(&last.layers[0], &stack.preset_layer));
-    assert!(Arc::ptr_eq(&last.layers[1], &stack.layers[0]));
+    assert!(Arc::ptr_eq(&last.layers[1], &stack.layers[0].1));
     let mut now = last.clone();
     now.accent_left_out = !last.accent_left_out;
     assert_eq!(super::classify(last, &now), Change::ThemeChange);

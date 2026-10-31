@@ -4,6 +4,7 @@ use std::fmt;
 
 use super::expr::ParseError;
 use super::inputs::InputName;
+use super::layer::LayerId;
 
 /// [`Key::new`](crate::next::Key::new)'s error: the text, and the first
 /// character outside the key grammar `[a-z0-9][a-z0-9_]*`.
@@ -32,7 +33,7 @@ impl fmt::Display for KeyError {
 impl std::error::Error for KeyError {}
 
 /// Adding a layer, or reading one, failed (S1, S12), or a change of the
-/// stack was refused (S8, S9.2).
+/// stack was refused (S8, S9.2, S16).
 #[derive(Clone, Debug, PartialEq)]
 pub enum LayerError {
     /// Every problem found, not the first only: S12's checks', and the TOML
@@ -45,6 +46,9 @@ pub enum LayerError {
     /// An accent lacking accent inputs the preset declares, which it names
     /// (S9.2).
     AccentInputsMissing(Vec<InputName>),
+    /// `replace_layer` or `remove_layer` given an id this theme does not
+    /// hold: already removed, or another theme's (S16).
+    UnknownLayer(LayerId),
 }
 
 impl fmt::Display for LayerError {
@@ -63,11 +67,36 @@ impl fmt::Display for LayerError {
                 f.write_str("the accent lacks the preset's accent inputs")?;
                 names.iter().try_for_each(|name| write!(f, " `{name}`"))
             }
+            LayerError::UnknownLayer(id) => write!(f, "the theme holds no {id}"),
         }
     }
 }
 
 impl std::error::Error for LayerError {}
+
+/// A theme could not be built (S1, S16).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ThemeError {
+    /// A bundled preset failing validation, which a build test rules out
+    /// (S19.1).
+    Preset(LayerError),
+}
+
+impl fmt::Display for ThemeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ThemeError::Preset(error) => write!(f, "the bundled preset is invalid: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for ThemeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ThemeError::Preset(error) => Some(error),
+        }
+    }
+}
 
 /// One problem a layer has: where, and what.
 #[derive(Clone, Debug, PartialEq)]
