@@ -1,7 +1,7 @@
 // The harness for RippleShader's uniforms and its AGSL, and RippleAnimationSession's lifecycle (generate.py).
-// Only the uniform setters are RippleShader.java's code, pasted unchanged; the AGSL body, `progress`, `phase` and
-// `fastOutSlowIn` are a transcription in Java, a second reading of the same sources the Rust follows, not the
-// source run as written. Each line that adds to the source says so (`ADDED:`), so the transcription is checkable
+// Only the uniform setters are RippleShader.java's code, pasted unchanged; the AGSL body, `progress` and `phase`
+// are a transcription in Java, a second reading of the same sources the Rust follows, not the source run as
+// written, and `fastOutSlowIn`'s solving of its curve is another algorithm (marked below). Each line that adds to the source says so (`ADDED:`), so the transcription is checkable
 // line by line against RippleShader.java's shader string (`:42-122`) and RippleAnimationSession.java (`:42-48`).
 import java.util.HashMap;
 import java.util.Map;
@@ -142,6 +142,9 @@ public final class Ripple {
     static double fastOutSlowIn(double x) {
         if (x <= 0) return 0;
         if (x >= 1) return 1;
+        // ADDED: the curve solved by bisection to the double's precision, in place of `PathInterpolator`, which
+        // approximates it through the native `Path.approximate` outside the cache: another algorithm, not a
+        // transcription.
         double lo = 0, hi = 1;
         for (int i = 0; i < 200; i++) {
             double mid = (lo + hi) / 2;
@@ -156,6 +159,8 @@ public final class Ripple {
         double exitStart = Math.max(released, 450);
         if (sinceStart < exitStart) return (float) enter;
         double e = sinceStart - exitStart;
+        // ADDED: `null` from the exit's end, the model's "none" (the session's end), which RippleAnimationSession
+        // does not return: it ends the session there instead.
         if (e >= 375) return null;
         return (float) (0.5 + 0.5 * (e / 375));
     }
