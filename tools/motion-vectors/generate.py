@@ -60,7 +60,7 @@ def run_timing(cache: Path, work: Path) -> str:
     exe = work / "timing"
     pinned.sandboxed(["gcc", "-O2", "-march=x86-64", "-mtune=generic", *flags, c, "-o", exe, *libs, "-lm"],
                      writable=[work], check=True)
-    return pinned.sandboxed([exe], check=True, capture_output=True, text=True).stdout
+    return pinned.sandboxed([exe], readable=[work], check=True, capture_output=True, text=True).stdout
 
 
 def run_ripple(cache: Path, work: Path) -> str:
@@ -72,7 +72,8 @@ def run_ripple(cache: Path, work: Path) -> str:
     java = work / "Ripple.java"
     java.write_text(harness.replace("    /* RIPPLE_SHADER */", setters), encoding="utf-8")
     pinned.sandboxed(["javac", "-d", work, java], writable=[work], check=True)
-    return pinned.sandboxed(["java", "-cp", work, "Ripple"], check=True, capture_output=True, text=True).stdout
+    return pinned.sandboxed(["java", "-cp", work, "Ripple"], readable=[work], check=True, capture_output=True,
+                            text=True).stdout
 
 
 def main() -> int:

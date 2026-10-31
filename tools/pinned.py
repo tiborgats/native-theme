@@ -51,14 +51,17 @@ def materialise(cache: Path, files, dest: Path):
         target.write_bytes(pinned(cache, sid, path, pins))
 
 
-def sandboxed(command, writable=(), **run):
-    """`subprocess.run(command, **run)` under bwrap: no network, the filesystem read-only, a fresh /tmp, and the
-    `writable` folders (each re-bound after /tmp, so one inside it stays) writable."""
+def sandboxed(command, writable=(), readable=(), **run):
+    """`subprocess.run(command, **run)` under bwrap: no network, the filesystem read-only, a fresh /tmp, the
+    `readable` folders read-only and the `writable` folders writable (each re-bound after /tmp, so the build folder
+    inside it stays visible)."""
     bwrap = shutil.which("bwrap")
     if bwrap is None:
         sys.exit("bwrap (bubblewrap) not found: the pinned code runs only sandboxed")
     jail = [bwrap, "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/", "/", "--dev", "/dev",
             "--proc", "/proc", "--tmpfs", "/tmp"]
+    for folder in readable:
+        jail += ["--ro-bind", str(folder), str(folder)]
     for folder in writable:
         jail += ["--bind", str(folder), str(folder)]
     return subprocess.run([*jail, "--", *map(str, command)], **run)

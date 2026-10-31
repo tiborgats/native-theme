@@ -146,7 +146,8 @@ def kconfig_version():
 def build(cache: Path, work: Path, flags, name):
     """The harness, the pinned sources compiled with `flags`, sandboxed."""
     platform = cache / "kirigami@6.31.0" / "src" / "platform"
-    moc = pinned.sandboxed([MOC, platform / "colorutils.h"], capture_output=True, text=True, check=True).stdout
+    moc = pinned.sandboxed([MOC, platform / "colorutils.h"], readable=[cache], capture_output=True, text=True,
+                           check=True).stdout
     (work / "moc_colorutils.cpp").write_text(moc, encoding="utf-8")
     qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui", QT_INCLUDE / "QtQml", QT_INCLUDE / "QtQuick",
           QT_INCLUDE / "QtCore" / QT_VERSION, QT_INCLUDE / "QtCore" / QT_VERSION / "QtCore",
@@ -172,7 +173,8 @@ def build(cache: Path, work: Path, flags, name):
 def run(exe: Path, calls):
     """Each call's result, the QColor's channels as floats; the harness sandboxed, writing nothing."""
     text = "".join(line + "\n" for line in calls)
-    out = pinned.sandboxed([exe], input=text, capture_output=True, text=True, check=True).stdout
+    out = pinned.sandboxed([exe], readable=[exe.parent], input=text, capture_output=True, text=True,
+                           check=True).stdout
     results = [tuple(float(x) for x in line.split()) for line in out.splitlines()]
     if len(results) != len(calls):
         sys.exit(f"{exe.name}: {len(results)} results for {len(calls)} calls")
