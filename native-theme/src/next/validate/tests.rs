@@ -925,6 +925,37 @@ fn flavour_sections_inherit_the_widgets_keys() {
     );
 }
 
+/// Task 11's review: a flavour's section replacing the flags, the variants
+/// or the sizes keeps the widget's own recency sets and default sizes,
+/// which are checked against what it replaces (S10).
+#[test]
+fn flavour_sections_check_the_keys_they_keep() {
+    let entry = "[declare]\nflavors = [\"widgets\", \"kirigami\"]\n[declare.widget.button]\n\
+                 variants = [\"@fab\"]\nsizes = [\"small\", \"regular\"]\nflags = [\"@armed\"]\n\
+                 recency = { lift = [\"@armed\", \"hover\"] }\n\
+                 default_size_by_variant = [{ variant = \"@fab\", size = \"small\" }]\n\
+                 [declare.flavor.kirigami.widget.button]\n";
+    let rules = "\n[[rules]]\nwhen = { variants = [\"@fab\"], latest = { lift = \"@armed\" } }\n\
+                 target = \"button.body\"\nset = { opacity = 0.5 }";
+    let declared = |body: &str| {
+        preset(&format!("{entry}{body}{rules}"))
+            .into_iter()
+            .filter(|problem| {
+                problem.starts_with("declare.widget.") || problem.starts_with("declare.flavor.")
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(declared("available = true"), NONE);
+    assert_eq!(
+        declared("flags = []\nvariants = [\"@fab\"]\nsizes = [\"regular\"]"),
+        [
+            "declare.flavor.kirigami.widget.button.flags: `@armed` is not declared in \
+             `declare.flavor.kirigami.widget.button.flags`",
+            "declare.flavor.kirigami.widget.button.sizes: the variant does not take the size `small`",
+        ]
+    );
+}
+
 /// The structural check takes availability from the default flavour's
 /// declarations; a flavour that makes a widget unavailable is S12's
 /// combination check's.
@@ -3008,4 +3039,24 @@ fn refusal_text_scaling_not_implemented() {
         );
     }
     assert_eq!(bare(&toml("[tokens.text]\nscaling = \"linear\"")), NONE);
+}
+
+/// Task 11's review: a keyed flag in a token's transition `from` is one the
+/// element of any widget reading the token may hold, so every widget
+/// declares it (S10, S12).
+#[test]
+fn token_transition_keyed_flag_declared() {
+    let layer = |flag: &str| {
+        toml(&format!(
+            "[tokens.focus]\ntransition = {{ properties = [\"fill\"], kind = \"interpolate\", \
+             duration_ms = 100, delay_ms = 0, timing = \"linear\", \
+             suspended_by_theme_change = false, from = [\"{flag}\"] }}"
+        ))
+    };
+    let decl = declare("[declare.widget.button]\nflags = [\"@armed\"]");
+    assert_eq!(found(&layer("@armed"), &decl), NONE);
+    assert_eq!(
+        found(&layer("@nope"), &decl),
+        ["tokens.focus.transition.from[0]: `@nope` is not declared in `widget.button.flags`"]
+    );
 }

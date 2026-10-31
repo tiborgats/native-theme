@@ -1634,11 +1634,18 @@ impl Visit for Checker<'_> {
                 self.from(transition.from.as_deref(), path);
                 self.state_layer(&transition.properties, path);
             }
-            Node::StateFlag(flag) => {
-                if let Region::Part(widget, ..) | Region::Values(widget) = self.region {
-                    self.flag(widget, flag, &at);
+            Node::StateFlag(flag) => match self.region {
+                Region::Part(widget, ..) | Region::Values(widget) => self.flag(widget, flag, &at),
+                // A token's flag (a transition's `from`) is matched against
+                // the element of any widget that reads it: every widget
+                // declares a keyed one (S10, S12).
+                Region::Tokens => {
+                    for widget in registry::widgets().iter().map(|info| info.kind) {
+                        self.flag(widget, flag, &at);
+                    }
                 }
-            }
+                Region::Roles => {}
+            },
             Node::TransitionPatch(transition) => {
                 if transition.properties.as_ref().is_some_and(Vec::is_empty) {
                     self.problem(&path.join("properties"), ProblemKind::NoProperties);
@@ -2027,14 +2034,42 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
             }
         }
         problems.extend(recency(&at, section, &in_force));
-        let entries: Vec<_> = section.default_size_by_variant.iter().flatten().collect();
+        // A section replacing the flags, the variants or the sizes and not
+        // the recency sets or the default sizes keeps the widget's own,
+        // checked against what it replaces (S10).
+        if section.recency.is_none() && section.flags.is_some() {
+            for (_, flags) in in_force.recency.iter().flatten() {
+                for flag in flags {
+                    let declared = !matches!(flag, StateFlag::Widget(_))
+                        || in_force.flags.iter().flatten().any(|held| held == flag);
+                    if !declared {
+                        let declaration = format!("{at}.flags");
+                        let kind = ProblemKind::Undeclared {
+                            name: flag.name(),
+                            declaration: declaration.clone(),
+                        };
+                        problems.push(Problem::new(&declaration, kind));
+                    }
+                }
+            }
+        }
+        let inherited = section.default_size_by_variant.is_none()
+            && (section.variants.is_some()
+                || section.sizes.is_some()
+                || section.sizes_by_variant.is_some());
+        let entries: Vec<_> = if inherited {
+            in_force.default_size_by_variant.iter().flatten().collect()
+        } else {
+            section.default_size_by_variant.iter().flatten().collect()
+        };
         for (index, entry) in entries.iter().enumerate() {
             let item = format!("{at}.default_size_by_variant[{index}]");
             let name = variant_name(&entry.variant);
-            if entries
-                .iter()
-                .take(index)
-                .any(|earlier| earlier.variant == entry.variant)
+            if !inherited
+                && entries
+                    .iter()
+                    .take(index)
+                    .any(|earlier| earlier.variant == entry.variant)
             {
                 let kind = ProblemKind::ListedTwice { name: name.clone() };
                 problems.push(Problem::new(&item, kind));
@@ -2045,8 +2080,13 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
                 .is_some_and(|variants| variants.contains(&entry.variant));
             if !declared {
                 let declaration = format!("{at}.variants");
+                let place = if inherited {
+                    declaration.clone()
+                } else {
+                    join(&item, "variant")
+                };
                 let kind = ProblemKind::Undeclared { name, declaration };
-                problems.push(Problem::new(&join(&item, "variant"), kind));
+                problems.push(Problem::new(&place, kind));
             }
             let sizes = in_force
                 .sizes_by_variant
@@ -2057,10 +2097,12 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
                 .or(in_force.sizes.as_ref());
             if !sizes.is_some_and(|sizes| sizes.contains(&entry.size)) {
                 let size = entry.size.name().to_owned();
-                problems.push(Problem::new(
-                    &join(&item, "size"),
-                    ProblemKind::SizeNotTaken { size },
-                ));
+                let place = if inherited {
+                    format!("{at}.sizes")
+                } else {
+                    join(&item, "size")
+                };
+                problems.push(Problem::new(&place, ProblemKind::SizeNotTaken { size }));
             }
         }
     }
