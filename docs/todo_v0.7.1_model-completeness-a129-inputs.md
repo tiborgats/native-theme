@@ -710,3 +710,8 @@ Where:
   - The interaction with `Presence`: the content's elements report `Unmapped` (AdwExpanderRow), `Removed` (GtkExpander) or `Hidden` (kirigami-addons) while collapsed, and the engines key their runs to that (S2.7).
   - **The `list.nested` box question (check 20, finding 5).** `list.nested` is `Absent` on all but `adwaita` (W:3541). But the expander entry says Material's expandable item (MAT-L9, MAT-EX1) and iOS's outline disclosure (EX-1–EX-3) are "a `list` row with a `disclosure` and its `nested` box" (W:4253-4255). On `ios-*` and `macos-*` the children are rows the list inserts and removes (EX-2, MAC-X11:730), with no box. ADD-A129 decides it with the reveal: children as rows of their own on `ios-*`, `macos-*` and `material-3`, and the `nested` box on `adwaita` alone.
 - **Q1.111's rise also sinks** on exit (`kirigami@6.31.0 src/dialogs/Dialog.qml:303`, `:306-311`). ADD-A126 states it. A plain `QQC2.Dialog` under the `kirigami` flavour (an application's own) has no variant that tells it from Kirigami's `Dialog`. That is a limit of the variants, left open (check 20, finding 3).
+
+## Added from check 21
+
+- **K1.185† (QTreeView's expand animation)** is a `list` reveal like the eight rows above. ADD-A126 marks it as written by no preset until ADD-A129. The row states `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled; = token.motion.timings.in_out_quad)`, from `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153` and `src/widgets/itemviews/qtreeview.cpp:3148`, with `qtreeview_p.h:89` (check 21, finding 2).
+- **K1.251 and K3.37** state KCollapsibleGroupBox's reveal once now: K1.251 points at K3.37's duration and timing (check 21, finding 10).
