@@ -805,8 +805,11 @@ MAT-X13–MAT-X15, X-MO-1).
   ones running, as Kirigami's QML behaviours do on `kde-breeze`, whose Breeze fades a theme change never starts). Each preset's kind is a fact of its toolkit's own drawing, measured
   where no source states it (`kde-breeze`'s is `Instant` from Breeze's and Qt Quick's code, ADD-A125; KWin's Blend
   Changes cross-fade of every window is the compositor's, out of scope, R1.1). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their value-driven property
-  transitions run as stated (Breeze's decoration shadow, K1.17; Mica's fade, W3-10), and a state-driven one starts
-  on none of them (ADD-A125).
+  transitions run as stated (Mica's fade, W3-10, its trigger measured with W-P3-16†), and a state-driven one starts
+  only on those it names (Breeze's decoration shadow on window activation alone, `breeze@6.8.2
+  kdecoration/breezedecoration.cpp:241`, `:275-286`, K1.17; ADD-A125). A state-driven transition may reverse: undone
+  mid-run, it returns from where it is, as Breeze's engines turn a running animation's direction
+  (`kstyle/animations/breezewidgetstatedata.cpp:24-27`), where CSS and Compose start the new one from the value drawn.
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes

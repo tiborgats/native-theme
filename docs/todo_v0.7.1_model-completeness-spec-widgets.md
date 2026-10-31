@@ -9143,8 +9143,8 @@ setting; the value phase states it). Rules set it
 to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3.25, W3-37, W3-52†, MAT-X20).
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
-`ThemeChange::Suspend` (GN-3.23; it reaches the CSS transitions, `trigger = "value_change"`, and no `AdwAnimation`,
-`"state_change"`, S4.3, ADD-A125); `kde-breeze` `Instant`, as Breeze's state engines start no fade on a theme change and
+`ThemeChange::Suspend` (GN-3.23; it reaches the CSS transitions, `trigger = "value_change"`, and no `AdwAnimation`, a
+`state_change` trigger with no conditions that does not reverse, S2.7, S4.3, ADD-A125); `kde-breeze` `Instant`, as Breeze's state engines start no fade on a theme change and
 Kirigami's QML behaviours run as Qt Quick runs them (their triggers, S2.7, S4.3, ADD-A125; KWin's Blend Changes
 cross-fade is the compositor's, out of scope, K-P3-15†); `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
 (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3` (MAT-P3-18†). A stated zero duration on
@@ -9242,9 +9242,9 @@ GN-3.32–GN-3.38, GN-3.73†, K3.41–K3.43, W3-24, W-P3-9†, MAC-X12, MAC-X14
 is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 
 **token.text** (S4.4): `roles` and `keyed` as S4.4 states, per platform the styles its facts list; `font_dpi`
-(`Value<f32>`, logical pixels per inch, required on every preset and stated from its platform's facts, the DPI its
-points convert by, S9.4; on `macos-*` and `ios-*` 72, as their point is the logical pixel, the specification's own value with no fact, S9.4,
-ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
+(`Value<f32>`, logical pixels per inch, required on every preset, the DPI its points convert by, S9.4, stated from
+its platform's facts except on `macos-*` and `ios-*`, where it is 72, the specification's own value, as their point is
+the logical pixel, S9.4, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
 `forceFontDPI` or `Xft.dpi`, platform-facts' *Font DPI override*, which then wins over the token, ADD-A103). Keyed
 styles one flavour alone uses (Material's `_emphasized` styles, Expressive's) are declared preset-wide, since S10
 has flavour declarations for widgets and components only, and are referenced only under `cond flavor:<f>`, as
