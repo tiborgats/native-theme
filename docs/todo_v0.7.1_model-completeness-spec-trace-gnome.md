@@ -183,6 +183,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.57 | `radio.ring.fill @ {checked,hover} / {checked,pressed}` | rule |
 | GN-1.58 | `checkbox.box.fill @ {indeterminate}` | rule |
 | GN-1.58 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` | rule |
+| GN-1.58 | `radio.ring.{fill,stroke} @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} / {indeterminate,pressed}; radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:51-58`, `:78-80`, ADD-A125) | rule |
 | GN-1.60 | `checkbox.box.corners` | field |
 | GN-1.60 | `radio.ring.corners (Full)` | field |
 | GN-1.61 | `checkbox.body.padding, checkbox.body.corners, checkbox.body.focus` | field |
@@ -1116,6 +1117,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-6† | `menu.values.submenu_presentation (Cascade), menu.arrow (absent = true) @ context any menu_bar` (nested popover menus: the submenu opens beside its item, arrowless; GN-1.76's Slide stays the base) | rule |
 | GN-P4-7† | `checkbox.mark.glyph (GlyphSource::Path from check.svg)` | field |
 | GN-P4-7† | `radio.dot.glyph (GlyphSource::Path from bullet.svg)` | field |
+| GN-P4-7† | `checkbox.mark (absent = true) @ !{checked,indeterminate}; radio.dot (absent = true) @ !{checked,indeterminate}` (the rest look: no icon source but `:checked`'s and `:indeterminate`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:80`; each written last, after every other rule on the part, as a later `Style` patch brings it back, S6.3, S2.7; the icon swapped with no transition, ADD-A125) | rule |
 | GN-P4-8† | `menu.values.placement @ context input / context text_area` (GtkPopover, point anchor) | placement |
 | GN-P4-8† | `menu.arrow (absent = true) @ context input / context text_area` (the arrowless text context menu) | rule |
 | GN-P4-8† | `input.values.context_menu_items, text_area.values.context_menu_items` | field |

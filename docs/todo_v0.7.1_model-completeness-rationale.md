@@ -867,11 +867,14 @@ backing scale and the control's pixel size, with the window's key state, and cac
 appearance, key state and scale, as the SF Symbols loader renders symbols today. Called off the main thread, or
 off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
 a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
-together); the modelled box (its measured fill, stroke and corners, R6, R7) remains for a toolkit that cannot,
-while the mark has no model of its own. The rendering uses the system's accent: an application's accent cannot
+together), carried on the box (the radio's ring), the part drawn in every state, so the unchecked control is
+rendered too; the modelled box (its measured fill, stroke and corners, R6, R7) remains for a toolkit that cannot,
+while the mark has no model of its own: on `macos-*` the mark and the radio's dot are `Absent` in every state
+(ADD-A125; rejected: the rendering on the mark, which, `Absent` while unchecked, would leave the unchecked control
+unrendered, and a measured mark path beside the rendering, a second base glyph no source gives). The rendering uses the system's accent: an application's accent cannot
 reach it, which the connector records (R23). Measuring the mark's geometry from renders was weighed and rejected:
-its outline can only be traced from a picture, which the project's asset rule forbids; its size and colour are
-still measured. Elsewhere a glyph's size, stroke width and fill are its values.
+its outline can only be traced from a picture, which the project's asset rule forbids; its size and colour are the
+rendering's. Elsewhere a glyph's size, stroke width and fill are its values.
 
 ### R12 — Focus, caret, selection and highlights (C15, C16, C17)
 

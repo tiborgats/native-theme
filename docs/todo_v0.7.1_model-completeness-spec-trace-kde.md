@@ -141,8 +141,9 @@ rationale, each decided in the core's additions register (S22).
 | K1.54 | `checkbox.box.fill, checkbox.box.stroke @ {checked,hover} / {checked,pressed}` | rule |
 | K1.54 | `checkbox.box.stroke, checkbox.mark.glyph @ {indeterminate,hover}` | rule |
 | K1.54 | `checkbox.box.stroke @ {checked,disabled} (the Disabled set's highlight)` | rule |
-| K1.55 | `checkbox.mark.transitions` (the rest look the catalogue's, the mark `Absent` unchecked, `CheckOff` drawing nothing, `breeze@6.8.2 kstyle/breezehelper.cpp:941-942`; the check's draw-on, a dash pattern `path.length() * animation` toward checked and nothing toward unchecked, `:954-962`, pending ADD-A126, ledger queue #85, ADD-A125) | field |
-| K1.55 | `radio.dot.transitions` (the rest look the catalogue's, the dot `Absent` unchecked, `:1074-1075`; its growth, `radius * animation`, `:1070-1072`, both ways as the state engine runs back when the flag clears, `kstyle/breezestyle.cpp:4961-4966`, `kstyle/animations/breezewidgetstatedata.cpp:24`, pending ADD-A126, ledger queue #85, ADD-A125) | field |
+| K1.55 | `checkbox.mark (absent = true) @ !{checked,indeterminate}; radio.dot (absent = true) @ !{checked}` (the rest look: `CheckOff` draws nothing, `breeze@6.8.2 kstyle/breezehelper.cpp:942-943`, nor an unchecked radio, `:1075-1076`; each written last, after every other rule on the part, as a later `Style` patch brings it back, S6.3, S2.7, ADD-A125) | rule |
+| K1.55 | `checkbox.mark.transitions` (the check's draw-on, a dash pattern `path.length() * animation` toward checked and nothing toward unchecked, `breeze@6.8.2 kstyle/breezehelper.cpp:954-962`, pending ADD-A126, ledger queue #85, ADD-A125) | field |
+| K1.55 | `radio.dot.transitions` (its growth, `radius * animation`, `breeze@6.8.2 kstyle/breezehelper.cpp:1070-1072`, both ways as the state engine runs back when the flag clears, `kstyle/breezestyle.cpp:4961-4966`, `kstyle/animations/breezewidgetstatedata.cpp:24`, pending ADD-A126, ledger queue #85, ADD-A125) | field |
 | K1.55 | `checkbox.box.transitions (Fill); radio.ring.transitions` | field |
 | K1.55 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.56 | `checkbox.box.stroke, checkbox.box.fill @ {checked} variant warning / radio.ring.stroke, radio.ring.fill @ {checked} variant warning` | rule |
