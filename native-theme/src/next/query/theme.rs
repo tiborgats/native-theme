@@ -4,10 +4,11 @@
 
 use super::matching::{Matched, declarations, kept};
 use super::mirror::Mirror;
-use super::{Element, Scope, ScopeEntry};
+use super::{Container, Element, Scope, ScopeEntry};
 use crate::next::blocks::part_style::{ResolvedBinding, ResolvedPartStyle, RoleRef};
 use crate::next::blocks::text::LanguageTag;
 use crate::next::color::Color;
+use crate::next::declare::ScalarUnit;
 use crate::next::expr::Ref;
 use crate::next::key::Key;
 use crate::next::resolve::ResolvedTheme;
@@ -19,8 +20,8 @@ use crate::next::selector::{
 };
 use crate::next::tokens::{ResolvedTokens, Tokens};
 use crate::next::toml::read::Named;
-use crate::next::units::{Px, Size};
-use crate::next::widgets::{PartPatch, WidgetKind};
+use crate::next::units::{Px, Scalar, Size};
+use crate::next::widgets::{PartPatch, TypedPart, WidgetKind};
 
 /// R2.7's answer for an element: its style, or why there is none to draw;
 /// not an error (S8).
@@ -132,6 +133,13 @@ const SIZE_CLASSES: [SizeClass; 6] = [
     SizeClass::Regular,
 ];
 
+/// Whether `part`'s catalogue entry lists `corners`, so it is the container
+/// of the parts it encloses (S2.4).
+fn lists_corners(part: TypedPart) -> bool {
+    part.info()
+        .is_some_and(|info| info.fields.iter().any(|field| field.path == "corners"))
+}
+
 /// The path of a role a `RoleRef` names, as a reference spells it.
 fn keys(path: &str) -> Option<Vec<Key>> {
     path.split('.')
@@ -147,7 +155,38 @@ impl ResolvedTheme {
         scope.density = root.density.clone();
         scope.size_classes = root.size_classes;
         scope.language = root.language.clone();
+        let display = match root.display_corner_radius {
+            Some(radii) => radii.map(Some),
+            None => self.display_tokens(&scope),
+        };
+        scope.container = Container::Display(display);
         scope
+    }
+
+    /// The `display` tokens' corner radii, from the top left clockwise
+    /// (S4.6); `None` at a corner they do not state, and at every corner
+    /// where the group is not declared in px.
+    fn display_tokens(&self, scope: &Scope) -> [Option<Px>; 4] {
+        const CORNERS: [&str; 4] = [
+            "corner_radius_top_left",
+            "corner_radius_top_right",
+            "corner_radius_bottom_right",
+            "corner_radius_bottom_left",
+        ];
+        let in_px =
+            self.declarations.params.iter().any(|(group, params)| {
+                group.as_str() == "display" && params.unit == ScalarUnit::Px
+            });
+        if !in_px {
+            return [None; 4];
+        }
+        CORNERS.map(
+            |corner| match self.evaluate_param(scope, "display", corner)? {
+                Scalar::Px(px) => Some(px),
+                Scalar::Number(px) => Some(Px(px)),
+                Scalar::Ms(_) | Scalar::Deg(_) | Scalar::Fraction(_) => None,
+            },
+        )
     }
 
     /// The style of `element`'s part and the scope its children receive
@@ -214,6 +253,12 @@ impl ResolvedTheme {
         }
         if let Some(language) = &element.language {
             scope.language = Some(language.clone());
+        }
+        if lists_corners(matched.part) {
+            scope.container = Container::Part {
+                part: element.part.clone(),
+                corners: style.corners.clone(),
+            };
         }
         Styled::Style((style, scope))
     }

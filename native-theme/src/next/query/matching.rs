@@ -17,20 +17,66 @@ use crate::next::widgets::{TypedPart, WidgetKind};
 
 /// How many of `entries`, the innermost last, are the entries of the parts
 /// of `part`'s own element that enclose it (S8): none for a part that starts
-/// an element (a widget's root, an *(element)* part), else every entry
-/// inward of, and including, the nearest that starts one.
+/// an element (a widget's root, an *(element)* part), else the innermost
+/// entries whose parts enclose it within its element, through the one that
+/// starts the element. Where that element was not drawn, so its children
+/// take its parent's scope (S8), the host's entries are not its own.
 pub(crate) fn own_entries(part: &PartRef, entries: &[ScopeEntry]) -> usize {
-    if starts_element(part) {
+    let PartRef::Typed(typed) = part else {
+        return 0;
+    };
+    if typed.starts_element() {
         return 0;
     }
-    let mut own = 0_usize;
+    let own = within_element(*typed);
+    let mut count = 0_usize;
     for entry in entries.iter().rev() {
-        own = own.saturating_add(1);
-        if starts_element(&entry.part) {
+        let PartRef::Typed(held) = &entry.part else {
+            break;
+        };
+        if !own.contains(held) {
+            break;
+        }
+        count = count.saturating_add(1);
+        if held.starts_element() {
             break;
         }
     }
-    own
+    count
+}
+
+/// The parts enclosing `part` within its own element, innermost first: the
+/// part itself through the part that starts its element.
+fn within_element(part: TypedPart) -> Vec<TypedPart> {
+    let mut enclosing = part.enclosing();
+    if let Some(at) = enclosing.iter().position(|held| held.starts_element()) {
+        enclosing.truncate(at.saturating_add(1));
+    }
+    enclosing
+}
+
+/// The variants of the elements of `part`'s widget that enclose its
+/// element, read from the innermost of `outer`'s entries whose parts
+/// enclose it (S2.11: an element part's query sees its widget's variants
+/// as well as its own); none for a widget's root.
+fn widget_variants(part: TypedPart, outer: &[ScopeEntry]) -> Vec<VariantRef> {
+    let head = part.element();
+    let enclosing: Vec<TypedPart> = head.enclosing().into_iter().skip(1).collect();
+    let mut out = Vec::new();
+    for entry in outer.iter().rev() {
+        let PartRef::Typed(held) = &entry.part else {
+            break;
+        };
+        if !enclosing.contains(held) {
+            break;
+        }
+        for variant in &entry.variants {
+            if !out.contains(variant) {
+                out.push(variant.clone());
+            }
+        }
+    }
+    out
 }
 
 /// Whether `part` starts an element: a typed widget's root or *(element)*
@@ -146,6 +192,9 @@ pub(crate) struct Matched<'e> {
     /// The variants it holds that the query keeps: every one the widget
     /// declares.
     pub(crate) variants: Vec<VariantRef>,
+    /// The variants of its widget's elements that enclose it, which its
+    /// rules match as well as its own (S2.11).
+    inherited: Vec<VariantRef>,
     /// Its flags after the drops.
     pub(crate) states: StateFlags,
     /// Its control size: its own, else the declared default.
@@ -235,6 +284,7 @@ impl<'e> Matched<'e> {
             density,
             direction: element.direction.unwrap_or(scope.direction),
             size_classes: element.size_classes.unwrap_or(scope.size_classes),
+            inherited: widget_variants(part, outer),
             outer,
         })
     }
@@ -254,7 +304,7 @@ impl<'e> Matched<'e> {
                 .as_ref()
                 .is_none_or(|position| self.position(position))
             && set_holds(&selector.variants, |variant| {
-                self.variants.contains(variant)
+                self.variants.contains(variant) || self.inherited.contains(variant)
             })
             && one_holds(&size.sizes, self.size.as_ref())
             && one_holds(&size.densities, self.density.as_ref())

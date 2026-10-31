@@ -2,6 +2,7 @@
 //! in and the toolkit's font measurement; what the query answers, and the
 //! queries themselves.
 
+use super::blocks::outline::ResolvedCorners;
 use super::blocks::part_style::RoleRef;
 use super::blocks::text::{LanguageTag, ResolvedFont};
 use super::color::Color;
@@ -82,6 +83,27 @@ pub struct Scope {
     pub(crate) window: Size,
     /// The screen's work area.
     pub(crate) screen: Size,
+    /// The nearest container, whose corners a `Concentric` corner follows
+    /// (S2.4).
+    pub(crate) container: Container,
+}
+
+/// The container a `Concentric` corner follows (S2.4, S8).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Container {
+    /// The display, the root's container: its radius at each corner from
+    /// the top left clockwise, the connector's where the platform reports
+    /// them, else the `display` tokens' (S4.6); `None` at a corner neither
+    /// states.
+    Display([Option<Px>; 4]),
+    /// The nearest enclosing part whose catalogue entry lists `corners`,
+    /// and its stated corners.
+    Part {
+        /// The part.
+        part: PartRef,
+        /// Its corners as stated, which the connector computes at layout.
+        corners: Option<ResolvedCorners>,
+    },
 }
 
 impl Scope {
@@ -96,6 +118,7 @@ impl Scope {
             language: None,
             window,
             screen,
+            container: Container::Display([None; 4]),
         }
     }
 

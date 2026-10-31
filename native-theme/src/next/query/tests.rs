@@ -200,7 +200,8 @@ fn key(name: &str) -> Key {
 /// `rtl_mirrors_sides_not_corners` (S2.4): under right-to-left, the element's
 /// own direction or its scope's, every `Sides` is mirrored and the
 /// transform's `translate_x` negated; the corners, the translation's `y` and
-/// the origin stay; a widget's values mirror their `Sides` too.
+/// the origin stay; a widget's values mirror their `Sides` and alignments
+/// too.
 #[test]
 fn rtl_mirrors_sides_not_corners() {
     let theme = fixture(&["[widgets.button.body]\ncorners.top_left_px = 9"]);
@@ -249,6 +250,12 @@ fn rtl_mirrors_sides_not_corners() {
     };
     assert_eq!(values.hit_extension.left, Some(Px(2.0)));
     assert_eq!(values.hit_extension.right, Some(Px(4.0)));
+    // Task 11e's review: an alignment's start and end swap too, so a
+    // leading image lies on the physical right.
+    assert_eq!(
+        values.icon_placement,
+        Some(crate::next::widgets::IconPlacement::Trailing)
+    );
 }
 
 /// `undeclared_variant_not_available` (S8): a variant the application asks
@@ -720,5 +727,50 @@ fn returned_scope_records_the_entry() {
             b: 0x60 as f32 / 255.0,
             a: 1.0
         })
+    );
+}
+
+/// Task 11e's review: the root scope's container is the display, at the
+/// connector's radii where it reports them, else the `display` tokens'
+/// (S4.6, S8); a part whose entry lists `corners` is the container of the
+/// parts it encloses, with its stated corners.
+#[test]
+fn scope_records_the_container() {
+    use super::Container;
+    let declare = format!(
+        "{DECLARE}[declare.params.display]\nunit = \"px\"\nkeys = [\"corner_radius_top_left\", \
+         \"corner_radius_top_right\", \"corner_radius_bottom_right\", \
+         \"corner_radius_bottom_left\"]\n"
+    );
+    let tokens = "[tokens.params.display]\ncorner_radius_top_left = 9\n\
+                  corner_radius_top_right = 9\ncorner_radius_bottom_right = 9\n\
+                  corner_radius_bottom_left = 9";
+    let theme = theme_with(&declare, &[tokens]);
+    let mut inputs = RootInputs::new(size(800.0, 600.0), size(1920.0, 1080.0), Direction::Ltr);
+    assert_eq!(
+        theme.root_scope(&inputs).container,
+        Container::Display([Some(Px(9.0)); 4])
+    );
+    inputs.display_corner_radius = Some([Px(39.0); 4]);
+    let scope = theme.root_scope(&inputs);
+    assert_eq!(scope.container, Container::Display([Some(Px(39.0)); 4]));
+    assert_eq!(
+        fixture(&[])
+            .root_scope(&RootInputs::new(
+                size(800.0, 600.0),
+                size(1920.0, 1080.0),
+                Direction::Ltr
+            ))
+            .container,
+        Container::Display([None; 4])
+    );
+    let element = Element::new(BODY, &scope, &Metrics);
+    let (body, inside) = drawn(&theme, &element);
+    assert_eq!(
+        inside.container,
+        Container::Part {
+            part: BODY,
+            corners: body.corners
+        }
     );
 }

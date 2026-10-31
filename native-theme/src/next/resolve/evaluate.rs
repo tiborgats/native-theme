@@ -951,15 +951,26 @@ impl<'t> Cx<'t> {
 
     /// The bindings in scope for `part` within the element (S2.2, S3.3):
     /// those of the parts enclosing it, from its element's part inward, and
-    /// its own, each evaluated in the scope outside it.
+    /// its own, each evaluated in the scope outside it. A part outside the
+    /// element takes only those of the parts below the nearest enclosing it
+    /// whose entry the element's outer scope holds, which holds their
+    /// bindings already, so none applies twice (S2.11).
     fn chain_of(&mut self, part: TypedPart) -> Vec<Bindings> {
         let head = self.element.and_then(|element| match &element.part {
             PartRef::Typed(own) => Some(own.element()),
             PartRef::Component { .. } => None,
         });
+        let outer = self.element_outer;
+        let entered = |held: &TypedPart| {
+            outer
+                .iter()
+                .any(|entry| entry.part == PartRef::Typed(*held))
+        };
         let mut enclosing = part.enclosing();
         if let Some(at) = enclosing.iter().position(|held| Some(*held) == head) {
             enclosing.truncate(at.saturating_add(1));
+        } else if let Some(at) = enclosing.iter().position(entered) {
+            enclosing.truncate(at);
         }
         let mut chain = Vec::new();
         for held in enclosing.into_iter().rev() {
@@ -2476,6 +2487,22 @@ impl ResolvedTheme {
             cx.optional::<Px>(folds, false)
         })
         .flatten()
+    }
+
+    /// The keyed scalar `token.params.<group>.<key>` in `scope`, typed by
+    /// its group's declared unit (S4.6); `None` where it is not stated or
+    /// is `Absent`.
+    pub(crate) fn evaluate_param<'t>(
+        &'t self,
+        scope: &'t Scope,
+        group: &str,
+        key: &str,
+    ) -> Option<Scalar> {
+        let mut cx = Cx::new(self, scope, None, &|_| true, Target::Tokens);
+        let path = vec!["params".to_owned(), group.to_owned(), key.to_owned()];
+        cx.follow(Target::Tokens, path, false, |cx, folds| {
+            cx.value::<Scalar>(folds, false)
+        })
     }
 
     /// The values of `element`'s widget `widget` (S8), their kept rules
