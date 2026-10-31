@@ -2430,8 +2430,8 @@ spaces:
   `color: transparent`, which leaves the text's own colour showing, `libadwaita@1.10.0
   src/stylesheet/_common.scss:64-66`, among them), or only measures the text (`extra_caret`), and its font leaves as the text's, by reference (S2.2): a part to `widget.text`'s leaves
   (`font.family = "= widget.text.font.family"`, …; a field reference, not element data), an *(element)* part
-  (`selection`, `preedit`, `find_match`, `highlight`, `syntax_span`, `extra_caret`), which reads none of its host's
-  parts (S2.2), to the style the `text` part references, leaf by leaf (ADD-A130).
+  (`selection`, `preedit`, `find_match`, `highlight`, `syntax_span`, `extra_caret`, and `text_area`'s
+  `misspelling`), which reads none of its host's parts (S2.2), to the style the `text` part references, leaf by leaf (ADD-A130).
   - `selection_handle` *(element)* — a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
     WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42): `fill`, `glyph`, `corners` (GNOME's circle with
     one square corner, GN-2.42), `padding` (GN-2.42), `min_width`, `min_height`, `transform` (the insertion handle
@@ -2621,11 +2621,13 @@ spaces:
     point of a text view too (MAC-X14): `glyph`, `padding`.
   - `preedit` *(element)* — as on `input` (its decoration following its own font, the part declaring the same data,
     `data = { preedit = [ … ] }`): `text`, `fill`.
-  - `misspelling` — as on `input` (its decoration following the `text` part's font, the part declaring the same
-    data, `data = { misspelling = [ … ] }`): `text`, `fill` (a background behind the misspelled word: Kirigami's
-    spell checker gives the word holding the caret, its start to its end inclusive, the negative colour at 0.1 alpha,
-    `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:114-117`, `:380-381`; the model has no state for a span
-    holding the caret, so that rule waits on an unmeasured-register row, Q1.13, ADD-A130).
+  - `misspelling` *(element)* — one element per misspelled word (an element here, so it carries
+    the flag `@holds_caret`; its decoration follows its own font, `element.font_underline_offset` and
+    `element.font_underline_thickness`, which it declares, `data = { misspelling = ["font_underline_offset",
+    "font_underline_thickness"] }`, and its `text` references the style the `text` part's references, S2.2): `text`,
+    `fill` (a background behind the word: on `kde-breeze` under `cond flavor:kirigami`, Sonnet's highlighter gives
+    the word under `{@holds_caret}` the negative colour at 0.1 alpha, `= with_alpha(role.view.negative, 0.1)`,
+    `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:114-117`, `:380-381`; Q1.13, ADD-A130).
   - `grammar_mark` — as on `input` (NSTextView's grammar mark, MAC-X28; the same data, `data = { grammar_mark = [ …
     ] }`): `text`.
   - `correction` — as on `input` (the same data, `data = { correction = [ … ] }`): `text`, `fill`, `corners`.
@@ -2678,7 +2680,12 @@ spaces:
 - **Sizes and densities:** no sizes (`macos-*`: control sizes do not apply to NSTextView); `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
 - **Flags:** shared `empty` (as on input), `overwrite` (the overwrite caret: GNOME, KDE; ADD-A23), `composing` (GNOME
   GN-1.281†, KDE K3.48†), `text_selected` (as on input), `current` (on `find_match`, the current match: macOS, iOS);
-  keyed `macos-*` `@incremental_find` (an incremental find runs: `find_dimming` drawn, MAC-X15); state flags used:
+  keyed `macos-*` `@incremental_find` (an incremental find runs: `find_dimming` drawn, MAC-X15); keyed `kde-breeze`
+  `@holds_caret` (on `misspelling`, which the connector sets as Sonnet computes it: where the caret's position in the
+  whole document lies at or between the word's start and end, counted from the start of the word's paragraph,
+  `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:370-381`, the caret's position `:610-624`; so in the first
+  paragraph it marks the word holding the caret, and in a later one the word whose paragraph offsets the caret's
+  document position falls within; Q1.13, ADD-A130); state flags used:
   hover, focused, focus_within, focus_visible, disabled, read_only, drop_target.
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` (TextBox CommonStates: the multi-line box is a
   TextBox); others none (states combine); precedence: state models (S17).
@@ -2722,7 +2729,7 @@ spaces:
   `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `misspelling.text.fill` (every preset but `kde-breeze` under `cond flavor:kirigami`, whose spell checker recolours
   the word, Q1.13: a mark on the `text` part's text, as on `input`, ADD-A130), `misspelling.fill` (every preset: no
-  background at rest; Kirigami's for the word holding the caret is the register's, above, ADD-A130),
+  background at rest; `kde-breeze` under `cond flavor:kirigami` by a rule outside `{@holds_caret}`, above, ADD-A130),
   `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
   `correction.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `selection.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `preedit.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `find_match.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `highlight.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `body.shadow` (the
   value phase names the presets from the facts), `body.fill` (every preset by a rule under
