@@ -474,9 +474,16 @@ impl<'a> Stack<'a> {
                     Target::Values(widget) => widget,
                     Target::Roles(_) | Target::Tokens => return vec![Place::Stated],
                 };
+                // `.font_size` and `.line_height` are that part's text's
+                // (S2.2), its other font metrics the element's data.
+                let path = match joined(path).as_str() {
+                    "font_size" => "text.font.size".to_owned(),
+                    "line_height" => "text.line_height".to_owned(),
+                    other => other.to_owned(),
+                };
                 match TypedPart::from_names(widget, part.as_str()) {
-                    Some(other) if !is_metric(path) => {
-                        vec![field(Target::Part(other), joined(path))]
+                    Some(other) if !is_metric_name(&path) => {
+                        vec![field(Target::Part(other), path)]
                     }
                     _ => vec![Place::Stated],
                 }
@@ -958,19 +965,24 @@ fn scope_parts(cx: Cx<'_>) -> Vec<TypedPart> {
 /// field (S2.2).
 fn is_metric(path: &[Key]) -> bool {
     match path {
-        [metric] => matches!(
-            metric.as_str(),
-            "char_width"
-                | "max_char_width"
-                | "font_x_height"
-                | "font_height"
-                | "font_underline_offset"
-                | "font_underline_thickness"
-                | "font_strikeout_offset"
-                | "font_strikeout_thickness"
-        ),
+        [metric] => is_metric_name(metric.as_str()),
         _ => false,
     }
+}
+
+/// Whether a `widget.<part>.` name is a font metric of the element's data.
+fn is_metric_name(name: &str) -> bool {
+    matches!(
+        name,
+        "char_width"
+            | "max_char_width"
+            | "font_x_height"
+            | "font_height"
+            | "font_underline_offset"
+            | "font_underline_thickness"
+            | "font_strikeout_offset"
+            | "font_strikeout_thickness"
+    )
 }
 
 /// Every reference in `expr`, and whether it is a call's operand.

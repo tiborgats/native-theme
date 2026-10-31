@@ -939,3 +939,25 @@ fn combination_full_corner_needs_the_size_data() {
     let decl = declare("[declare.widget.button]\ndata = { body = [\"width\", \"height\"] }");
     assert_eq!(alone(full, &decl), NONE);
 }
+
+/// `widget.<part>.font_size` and `.line_height` are that part's text
+/// metrics (S2.2): followed, so two parts reading each other's line height
+/// form a cycle.
+#[test]
+fn combination_widget_part_text_metrics_followed() {
+    let decl = declare(
+        "[declare.widget.button]\ndata = { label = [\"widget.subtitle.line_height\"], \
+         subtitle = [\"widget.label.line_height\"] }",
+    );
+    assert_eq!(
+        alone(
+            "[widgets.button.label]\ntext.line_height = \"= widget.subtitle.line_height\"\n\
+             [widgets.button.subtitle]\ntext.line_height = \"= widget.label.line_height\"",
+            &decl
+        ),
+        [
+            "widgets.button.label.text.line_height: the expression reads itself",
+            "widgets.button.subtitle.text.line_height: the expression reads itself",
+        ]
+    );
+}
