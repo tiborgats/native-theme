@@ -487,3 +487,81 @@ pub(super) fn refusals() -> Vec<LayerError> {
         .unwrap_err();
     vec![present, missing]
 }
+
+/// S9.3: a reader stating an input under one scheme only leaves the
+/// earlier layers' value under the other.
+#[test]
+fn input_stated_for_one_scheme_keeps_the_other() {
+    let accent = InputName::new("accent").unwrap();
+    let mut preset = Layer::default();
+    preset.bases.inputs.entries.push((
+        accent.clone(),
+        InputValue::new(SchemeMap::new(color(0.1), color(0.2))),
+    ));
+    let mut reader = Layer::default();
+    reader.bases.inputs.entries.push((
+        accent.clone(),
+        InputValue::new(SchemeMap::one(Scheme::Dark, color(0.9))),
+    ));
+    let resolved = |scheme| {
+        stack(
+            preset.clone(),
+            Some((ReaderState::new(scheme, 1.0), reader.clone())),
+            Vec::new(),
+        )
+        .resolve(&mut WindowState::default(), &window())
+        .theme
+        .inputs
+    };
+    assert_eq!(resolved(Scheme::Light), [(accent.clone(), color(0.1))]);
+    assert_eq!(resolved(Scheme::Dark), [(accent, color(0.9))]);
+}
+
+/// S9.2: the accent layer states the preset's accent inputs only: an
+/// accent's derived input the preset does not declare, or declares as an
+/// input but not as an accent input, is left out (S9.5: an accent may carry
+/// more for another preset).
+#[test]
+fn accent_layer_states_only_the_accent_inputs() {
+    let declarations = |inputs: &str| {
+        read_preset(&format!(
+            "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n[declare]\n\
+             inputs = [{inputs}]\naccent_inputs = [\"accent\"]\n"
+        ))
+        .unwrap()
+        .declarations
+    };
+    let ramp = InputName::new("accent_ramp.light1").unwrap();
+    let mut accent = Accent::new(input(0.1));
+    accent.derived.push((ramp.clone(), input(0.2)));
+    // Not declared at all: the accent is still accepted.
+    let mut undeclared = stack(Layer::default(), None, Vec::new());
+    undeclared.declarations = declarations("\"accent\"");
+    undeclared.set_accent(Some(accent.clone())).unwrap();
+    let inputs = |stack: &Stack| {
+        stack
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .inputs
+    };
+    assert_eq!(
+        inputs(&undeclared),
+        [(InputName::new("accent").unwrap(), color(0.1))]
+    );
+    // Declared as an input, not an accent input: the reader's stays.
+    let mut reader = Layer::default();
+    reader.bases.inputs.entries.push((ramp.clone(), input(0.7)));
+    let mut declared = stack(Layer::default(), None, Vec::new());
+    declared.declarations = declarations("\"accent\", \"accent_ramp.light1\"");
+    declared
+        .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), reader)
+        .unwrap();
+    declared.set_accent(Some(accent)).unwrap();
+    assert_eq!(
+        inputs(&declared),
+        [
+            (ramp, color(0.7)),
+            (InputName::new("accent").unwrap(), color(0.1)),
+        ]
+    );
+}

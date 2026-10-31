@@ -515,8 +515,10 @@ impl Stack {
     }
 
     /// The accent layer the accent gives (S9.2): its bases state the
-    /// accent inputs, nothing else (`kde-breeze`'s derived roles enter with
-    /// its preset, M1b).
+    /// preset's accent inputs, nothing else: the `accent`, and of the
+    /// accent's derived inputs those the preset's `accent_inputs` names, an
+    /// accent carrying more for another preset (S9.5) (`kde-breeze`'s
+    /// derived roles enter with its preset, M1b).
     fn derived_accent(&self) -> Box<Layer> {
         let mut layer = Box::<Layer>::default();
         if let Some(accent) = &self.accent {
@@ -524,7 +526,14 @@ impl Stack {
                 let entries = &mut layer.bases.inputs.entries;
                 entries.push((name, accent.accent.clone()));
             }
-            layer.bases.inputs.entries.extend(accent.derived.clone());
+            let declared = &self.declarations.accent_inputs;
+            layer.bases.inputs.entries.extend(
+                accent
+                    .derived
+                    .iter()
+                    .filter(|(name, _)| !is_accent(name) && declared.contains(name))
+                    .cloned(),
+            );
         }
         layer
     }
@@ -792,8 +801,10 @@ impl ResolvedTheme {
             if drop_accent && is_accent(name) {
                 continue;
             }
-            self.inputs.retain(|(held, _)| held != name);
+            // A layer stating no value for the scheme in force leaves the
+            // earlier layers' (S9.3).
             if let Some(value) = input_value(value, scheme, contrast) {
+                self.inputs.retain(|(held, _)| held != name);
                 self.inputs.push((name.clone(), value));
             }
         }
