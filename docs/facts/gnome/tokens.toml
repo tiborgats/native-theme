@@ -1517,9 +1517,9 @@ source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
 quote = "outline: 0 solid transparent;"
 
 [[fact]]
-# `$offset: -$width`: the outline drawn inside the box by its own width
+# `outline-offset` is one length for the four sides: this side is the top's
 key = "token.focus.offset.right"
-value = "= sub(0px, token.focus.width)"
+value = "= token.focus.offset.top"
 rows = ["GN-3.27"]
 
 [[fact.cite]]
@@ -1538,9 +1538,9 @@ source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
 quote = "outline: 0 solid transparent;"
 
 [[fact]]
-# `$offset: -$width`: the outline drawn inside the box by its own width
+# `outline-offset` is one length for the four sides: this side is the top's
 key = "token.focus.offset.bottom"
-value = "= sub(0px, token.focus.width)"
+value = "= token.focus.offset.top"
 rows = ["GN-3.27"]
 
 [[fact.cite]]
@@ -1559,9 +1559,9 @@ source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:14"
 quote = "outline: 0 solid transparent;"
 
 [[fact]]
-# `$offset: -$width`: the outline drawn inside the box by its own width
+# `outline-offset` is one length for the four sides: this side is the top's
 key = "token.focus.offset.left"
-value = "= sub(0px, token.focus.width)"
+value = "= token.focus.offset.top"
 rows = ["GN-3.27"]
 
 [[fact.cite]]
@@ -1985,6 +1985,181 @@ kind = "published"
 source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.a11y.interface.gschema.xml.in:25-26"
 quote = "<key name=\"keyboard-focus-visible-timeout\" type=\"i\"> <default>-1</default>"
 
+# S4.2 does not say which delay it is (GTK hard-codes the tooltip's HOVER_TIMEOUT 500, gtktooltip.c:71, and the
+# submenu's OPEN_TIMEOUT 80, gtkmodelbutton.c:1423)
+[[fact]]
+key = "token.behavior.hover_open_delay"
+pending = "U149"
+rows = []
+
+# a wheel detent scrolls by the page size to the power 2/3, not by lines (its px step is not expressible: reported)
+[[fact]]
+key = "token.behavior.scroll_lines_per_step"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:1206-1229"
+quote = "get_wheel_detent_scroll_step (GtkScrolledWindow *sw, GtkOrientation orientation)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:1226"
+quote = "scroll_step = pow (page_size, 2.0 / 3.0);"
+
+# the key press hides the pointer at once, by setting the `none` cursor (S17's zero stated by omission)
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+value = "0ms"
+rows = ["GN-3.67†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:3371-3390"
+quote = "gtk_text_obscure_mouse_cursor (GtkText *self)"
+absent = ["g_timeout_add", "g_timeout_add_once"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:3421"
+quote = "gtk_text_obscure_mouse_cursor (self);"
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+value = "0ms"
+rows = ["GN-3.67†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:3371-3390"
+quote = "gtk_text_obscure_mouse_cursor (GtkText *self)"
+absent = ["g_timeout_add", "g_timeout_add_once"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktext.c:3421"
+quote = "gtk_text_obscure_mouse_cursor (self);"
+
+# the item views' activation (KDE's sense of the token, K3.73): GtkListView, GtkGridView and GtkColumnView activate an
+# item on a double click unless the application sets single-click-activate; GNOME has no setting for it (GtkListBox's
+# and GtkFlowBox's rows are no item view)
+[[fact]]
+key = "token.behavior.single_click_activates"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklistview.c:954-956"
+quote = "g_param_spec_boolean (\"single-click-activate\", NULL, NULL, FALSE,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgridview.c:1185-1187"
+quote = "g_param_spec_boolean (\"single-click-activate\", NULL, NULL, FALSE,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcolumnview.c:934-936"
+quote = "g_param_spec_boolean (\"single-click-activate\", NULL, NULL, FALSE,"
+
+# a touch drag scrolls once it passes the drag threshold
+[[fact]]
+key = "token.behavior.touch.slop"
+value = "= token.behavior.drag_threshold"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:2147-2148"
+quote = "priv->drag_gesture = gtk_gesture_drag_new (); gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (priv->drag_gesture), TRUE);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:991-993"
+quote = "if (gtk_gesture_get_sequence_state (gesture, sequence) != GTK_EVENT_SEQUENCE_CLAIMED && !gtk_drag_check_threshold_double (GTK_WIDGET (scrolled_window), 0, 0, offset_x, offset_y))"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkdragsource.c:841-844"
+quote = "drag_threshold = gtk_settings_get_dnd_drag_threshold (gtk_widget_get_settings (widget)); return (ABS (current_x - start_x) > drag_threshold || ABS (current_y - start_y) > drag_threshold);"
+
+# AdwSwipeTracker (carousels, swipes between pages) starts a swipe past 16px, the drag threshold only on a window handle
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+value = "16px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-swipe-tracker.c:29"
+quote = "#define DRAG_THRESHOLD_DISTANCE 16"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-swipe-tracker.c:696-697"
+quote = "} else { threshold = DRAG_THRESHOLD_DISTANCE;"
+
+# GtkGestureClick counts a touch's presses as a button's, by the double-click time
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+value = "= token.behavior.double_click_time"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgestureclick.c:197-198"
+quote = "else if (event_type == GDK_TOUCH_BEGIN) button = 1;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgestureclick.c:139-141"
+quote = "g_object_get (settings, \"gtk-double-click-time\", &double_click_time, NULL); priv->double_click_timeout_id = g_timeout_add_once (double_click_time, _double_click_timeout_cb, gesture);"
+
+# the double-click distance is checked for a mouse only: a second tap anywhere counts
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkgestureclick.c:216-218"
+quote = "if (gdk_device_get_source (priv->current_device) == GDK_SOURCE_MOUSE && !_gtk_gesture_click_check_within_threshold (click, \"gtk-double-click-distance\", x, y)) _gtk_gesture_click_stop (click);"
+
+# libadwaita has no elevation ramp: each widget states its own box-shadow
+[[fact]]
+key = "token.elevation"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+absent = ["elevation"]
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 doc/css-variables.md:1-1328"
+quote = "Title: CSS Variables"
+absent = ["elevation"]
+
+
+# libadwaita states no size classes: an AdwBreakpoint's condition is the application's (the widgets' own thresholds
+# are their breakpoint values, GN-1.197)
+[[fact]]
+key = "token.size_classes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-breakpoint.c:1-1835"
+quote = "Breakpoint is a size threshold, specified by its condition, as well as one or"
+absent = []
+
 [[fact]]
 key = "token.params.pointer_repeat.delay"
 value = "500ms"
@@ -2121,6 +2296,232 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
 
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.title_1.font.width"
+value = 100
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.title_1.font.axes"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.title_1.font.features"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.title_1.scaling_role"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.title_1.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.title_1.mnemonic_decoration.line"
+value = "underline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.title_1.mnemonic_decoration.style"
+value = "solid"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.title_1.mnemonic_decoration.by_word"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.title_1.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.title_1.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.title_1.elision"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.title_1.wrap"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.title_1.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.title_1.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_2.font.family"
@@ -2236,6 +2637,232 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
+
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.title_2.font.width"
+value = 100
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.title_2.font.axes"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.title_2.font.features"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.title_2.scaling_role"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.title_2.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.title_2.mnemonic_decoration.line"
+value = "underline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.title_2.mnemonic_decoration.style"
+value = "solid"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.title_2.mnemonic_decoration.by_word"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.title_2.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.title_2.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.title_2.elision"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.title_2.wrap"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.title_2.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.title_2.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -2353,6 +2980,232 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
 
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.title_3.font.width"
+value = 100
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.title_3.font.axes"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.title_3.font.features"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.title_3.scaling_role"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.title_3.word_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.title_3.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.title_3.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.title_3.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.title_3.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.title_3.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.title_3.elision"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.title_3.wrap"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.title_3.max_lines"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.title_3.fill"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_4.font.family"
@@ -2469,6 +3322,232 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
 
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.title_4.font.width"
+value = 100
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.title_4.font.axes"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.title_4.font.features"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.title_4.scaling_role"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.title_4.word_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.title_4.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.title_4.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.title_4.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.title_4.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.title_4.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.title_4.elision"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.title_4.wrap"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.title_4.max_lines"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.title_4.fill"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.heading.font.family"
@@ -2583,6 +3662,232 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
 
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.heading.font.width"
+value = 100
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.heading.font.axes"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.heading.font.features"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.heading.scaling_role"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.heading.word_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.heading.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.heading.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.heading.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.heading.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.heading.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.heading.elision"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.heading.wrap"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.heading.max_lines"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.heading.fill"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
 [[fact]]
 key = "token.text.keyed.body.font.family"
 value = "Adwaita Sans"
@@ -2689,6 +3994,232 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
+
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.body.font.width"
+value = 100
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.body.font.axes"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.body.font.features"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.body.scaling_role"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.body.word_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.body.elision"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.body.wrap"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.body.max_lines"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.body.fill"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -2806,6 +4337,232 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
 
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.caption_heading.font.width"
+value = 100
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.caption_heading.font.axes"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.caption_heading.font.features"
+value = {}
+rows = ["GN-1.189", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.caption_heading.scaling_role"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.caption_heading.word_spacing"
+value = "0px"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.caption_heading.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.caption_heading.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.caption_heading.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.caption_heading.elision"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.wrap"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.caption_heading.max_lines"
+value = "none"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.caption_heading.fill"
+value = "= surface.foreground"
+rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.caption.font.family"
@@ -2915,6 +4672,232 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
+
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.caption.font.width"
+value = 100
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.caption.font.axes"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.caption.font.features"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.caption.scaling_role"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.caption.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.caption.mnemonic_decoration.line"
+value = "underline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.caption.mnemonic_decoration.style"
+value = "solid"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.caption.mnemonic_decoration.by_word"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.caption.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.caption.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.caption.elision"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.caption.wrap"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.caption.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.caption.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "token.text.keyed.document.font.family"
@@ -3034,6 +5017,232 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
 
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.document.font.width"
+value = 100
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.document.font.axes"
+value = {}
+rows = ["GN-1.191", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.document.font.features"
+value = {}
+rows = ["GN-1.191", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.document.scaling_role"
+value = "none"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.document.word_spacing"
+value = "0px"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.document.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.document.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.document.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.document.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.document.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.document.elision"
+value = "none"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.document.wrap"
+value = "none"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.document.max_lines"
+value = "none"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.document.fill"
+value = "= surface.foreground"
+rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
 [[fact]]
 key = "token.text.keyed.monospace.font.family"
 value = "Adwaita Mono"
@@ -3151,6 +5360,232 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
+
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.monospace.font.width"
+value = 100
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.monospace.font.axes"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the class sets no features and no font-variant: GTK's initial values, which add none
+[[fact]]
+key = "token.text.keyed.monospace.font.features"
+value = {}
+rows = ["GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.monospace.scaling_role"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.monospace.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.monospace.mnemonic_decoration.line"
+value = "underline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.monospace.mnemonic_decoration.style"
+value = "solid"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.monospace.mnemonic_decoration.by_word"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.monospace.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.monospace.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.monospace.elision"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.monospace.wrap"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.monospace.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.monospace.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -3291,6 +5726,210 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
 quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
 absent = ["underline", "overline"]
+
+# the class sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.numeric.font.width"
+value = 100
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the class sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.numeric.font.axes"
+value = {}
+rows = ["GN-1.192", "GN-1.193"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.numeric.scaling_role"
+value = "none"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.numeric.word_spacing"
+value = "0px"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
+# (its offset, beneath the character's ink, is not expressible: reported)
+[[fact]]
+key = "token.text.keyed.numeric.mnemonic_decoration.line"
+value = "underline"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "token.text.keyed.numeric.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+# the line spans the underlined run's whole extents
+[[fact]]
+key = "token.text.keyed.numeric.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "token.text.keyed.numeric.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365-370"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+# the attribute names no colour: the text's own
+[[fact]]
+key = "token.text.keyed.numeric.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+[[fact]]
+key = "token.text.keyed.numeric.elision"
+value = "none"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
+quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+
+[[fact]]
+key = "token.text.keyed.numeric.wrap"
+value = "none"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "token.text.keyed.numeric.max_lines"
+value = "none"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+
+# the class sets no colour: the inherited one
+[[fact]]
+key = "token.text.keyed.numeric.fill"
+value = "= surface.foreground"
+rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "token.text.roles.body"
@@ -3542,6 +6181,58 @@ kind = "published"
 source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:305-306"
 quote = "<key name=\"font-rendering\" enum=\"org.gnome.desktop.GDesktopFontRendering\"> <default>'automatic'</default>"
 
+# GNOME states no LCD filter, gamma or contrast: its settings and the X settings it publishes have none
+[[fact]]
+key = "token.text.rendering.lcd_filter"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:3-321"
+quote = "<schema id=\"org.gnome.desktop.interface\" path=\"/org/gnome/desktop/interface/\">"
+absent = ["lcdfilter", "lcd-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:731-748"
+quote = "xft_settings_set_xsettings (GsdXSettingsManager *manager, GsdXftSettings *settings)"
+absent = ["lcdfilter", "Xft/lcdfilter"]
+
+[[fact]]
+key = "token.text.rendering.gamma"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:3-321"
+quote = "<schema id=\"org.gnome.desktop.interface\" path=\"/org/gnome/desktop/interface/\">"
+absent = ["gamma"]
+
+[[fact.cite]]
+kind = "published"
+source = "gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:731-748"
+quote = "xft_settings_set_xsettings (GsdXSettingsManager *manager, GsdXftSettings *settings)"
+absent = ["gamma"]
+
+[[fact]]
+key = "token.text.rendering.contrast"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:3-321"
+quote = "<schema id=\"org.gnome.desktop.interface\" path=\"/org/gnome/desktop/interface/\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:731-748"
+quote = "xft_settings_set_xsettings (GsdXSettingsManager *manager, GsdXftSettings *settings)"
+absent = []
+
 [[fact]]
 key = "token.text.fallbacks.emoji_family"
 value = "emoji"
@@ -3576,6 +6267,33 @@ quote = "#define FALLBACK_ICON_THEME \"hicolor\""
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkicontheme.c:1872"
 quote = "insert_theme (self, FALLBACK_ICON_THEME);"
+
+[[fact]]
+key = "token.icons.set"
+value = "freedesktop"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkicontheme.c:75"
+quote = "follows the [Icon Theme Specification](http://www.freedesktop.org/Standards/icon-theme-spec)"
+
+# GTK mirrors no icon itself: a right-to-left lookup asks the theme for the `-rtl` name (the lookup by direction,
+# ADD-B05), and no icon is flipped
+[[fact]]
+key = "token.icons.mirroring"
+value = {}
+rows = ["GN-FM03†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkicontheme.c:2187-2197"
+quote = "case GTK_TEXT_DIR_LTR: dir_suffix = \"-ltr\"; break; case GTK_TEXT_DIR_RTL: dir_suffix = \"-rtl\";"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1303-1308"
+quote = "gtk_css_style_property_register (\"-gtk-icon-transform\", GTK_CSS_PROPERTY_ICON_TRANSFORM, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, transform_value_parse, _gtk_css_transform_value_new_none ());"
 
 [[fact]]
 key = "token.icons.sizes.small.size"
@@ -3944,6 +6662,698 @@ rows = []
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
+
+# every context's further fields: GTK states no named scale, no icon state effect (`-gtk-icon-filter` stays
+# `none`), no repeating icon animation and no rendering mode (`-gtk-icon-style` stays `requested`: the icon's
+# own name decides whether it is recoloured), so a context sets none of them (S4.5)
+
+# symbolic icons are recoloured with the inherited colour
+[[fact]]
+key = "token.icons.sizes.small.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:34-36"
+quote = ".normal-icons {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact]]
+key = "token.icons.sizes.small.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:34-36"
+quote = ".normal-icons {"
+absent = ["-gtk-icon-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.small.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.small.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:34-36"
+quote = ".normal-icons {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.small.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:34-36"
+quote = ".normal-icons {"
+absent = ["animation", "animation-name"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+# the context sets no weight: GTK's initial `normal`, inherited
+[[fact]]
+key = "token.icons.sizes.small.weight"
+value = 400
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:34-36"
+quote = ".normal-icons {"
+absent = ["-gtk-icon-weight"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1315-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-weight\", GTK_CSS_PROPERTY_ICON_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_ICON_REDRAW_SYMBOLIC, icon_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+# the context sets no weight: GTK's initial `normal`, inherited
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+value = 400
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1315-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-weight\", GTK_CSS_PROPERTY_ICON_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_ICON_REDRAW_SYMBOLIC, icon_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact]]
+key = "token.icons.sizes.large.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact]]
+key = "token.icons.sizes.large.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons {"
+absent = ["-gtk-icon-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.large.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.large.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.large.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons {"
+absent = ["animation", "animation-name"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+# the status page's icon colour, the compact and spinner pages' too (their rules set none)
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.fill"
+value = "= alpha(surface.foreground, token.params.opacity.dim)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-135"
+quote = "> .icon { color: color-mix(in srgb, currentColor var(--dim-opacity), transparent);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-142"
+quote = "> .icon {"
+absent = ["-gtk-icon-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-142"
+quote = "> .icon {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-142"
+quote = "> .icon {"
+absent = ["animation", "animation-name"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.fill"
+value = "= alpha(surface.foreground, token.params.opacity.dim)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-164"
+quote = "> .icon {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-135"
+quote = "> .icon { color: color-mix(in srgb, currentColor var(--dim-opacity), transparent);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-164"
+quote = "> .icon {"
+absent = ["-gtk-icon-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-164"
+quote = "> .icon {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_compact.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-164"
+quote = "> .icon {"
+absent = ["animation", "animation-name"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.fill"
+value = "= alpha(surface.foreground, token.params.opacity.dim)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
+quote = "> .icon {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-135"
+quote = "> .icon { color: color-mix(in srgb, currentColor var(--dim-opacity), transparent);"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
+quote = "> .icon {"
+absent = ["-gtk-icon-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
+quote = "> .icon {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+# the context holds AdwSpinnerPaintable (adw-status-page.c:427-430), which turns forever (adw-spinner-paintable.c:532-539);
+# an IconStyle loop's keyframes patch a part's style, which cannot state the paintable's arc (S2.7 gives a spinner's
+# motion to the spinner widget)
+[[fact]]
+key = "token.icons.sizes.keyed.status_page_spinner.animation"
+pending = "U148"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_dialogs.scss:53-55"
+quote = "image.large-icons {"
+absent = ["color"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_dialogs.scss:53-55"
+quote = "image.large-icons {"
+absent = ["-gtk-icon-style"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_dialogs.scss:53-55"
+quote = "image.large-icons {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.about.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_dialogs.scss:53-55"
+quote = "image.large-icons {"
+absent = ["animation", "animation-name"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+# the logo is a GtkImage of icon size 2 (large), so `.large-icons` gives its weight; the dialog's rule sets only the size
+[[fact]]
+key = "token.icons.sizes.keyed.about.weight"
+value = 134
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_dialogs.scss:53-55"
+quote = "image.large-icons {"
+absent = ["-gtk-icon-weight"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/ui/gtkaboutdialog.ui:39-41"
+quote = "<object class=\"GtkImage\" id=\"logo_image\"> <property name=\"icon-name\">image-missing</property> <property name=\"icon-size\">2</property>"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkenums.h:233-238"
+quote = "typedef enum { GTK_ICON_SIZE_INHERIT, GTK_ICON_SIZE_NORMAL, GTK_ICON_SIZE_LARGE } GtkIconSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkiconhelper.c:527-528"
+quote = "{ GTK_ICON_SIZE_NORMAL, \"normal-icons\" }, { GTK_ICON_SIZE_LARGE, \"large-icons\" }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:38-41"
+quote = ".large-icons { -gtk-icon-size: 32px; -gtk-icon-weight: 134; }"
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.fill"
+value = "= role.global.accent_foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-55"
+quote = "&:checked, &:indeterminate { background-color: var(--accent-bg-color); color: var(--accent-fg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:67-81"
+quote = "check { border-radius: $check_radius; &:checked { -gtk-icon-source: -gtk-recolor(url(\"assets/check.svg\")); } }"
+
+# the check's icon is always recoloured (`-gtk-recolor`, _checks.scss:70, :76, :80), GTK's symbolic recolouring, which
+# no RenderingMode names yet (ledger queue #123)
+[[fact]]
+key = "token.icons.sizes.keyed.check.rendering_mode"
+pending = "U147"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-81"
+quote = "check, radio {"
+absent = ["-gtk-icon-filter"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
+quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.check.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-81"
+quote = "check, radio {"
+absent = ["animation", "animation-name"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
+absent = []
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
+quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
+
+
+# the context sets no weight: GTK's initial `normal`, inherited
+[[fact]]
+key = "token.icons.sizes.keyed.check.weight"
+value = 400
+rows = ["GN-3.57"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:20-81"
+quote = "check, radio {"
+absent = ["-gtk-icon-weight"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1315-1320"
+quote = "gtk_css_style_property_register (\"-gtk-icon-weight\", GTK_CSS_PROPERTY_ICON_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_ICON_REDRAW_SYMBOLIC, icon_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
 
 # GTK 4's icon sizes are inherit, normal and large: no dialog or panel size (GTK 3's dialog size is gone)
 [[fact]]
