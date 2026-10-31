@@ -85,13 +85,13 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   Action items' on `ios-26` (`forms.<scheme>.bar_system_done`, `bar_system_add`,
   `bar_system_action`, unread there, read on `ios-13`); the default `buttonSize` (U129, the entry's *Default sizes*).
 - `button` on `macos-tahoe` (ADD-A125): the circular bezel's `body.margin` at every size, and the circle's size at
-  `mini` to `regular` (MAC-B08, a register row of its own; the corners U143).
+  `mini` to `regular` (MAC-B08, U159; the corners U143).
 - `checkbox` and `radio` (ADD-A125, measurements for ADD-A126, which states the mark's and the dot's
   representation, ledger queue #85): whether AppKit animates the check mark
-  and the radio dot in and out (MAC-X11's recording), and UIKit the multiselect circle's check (CK-2†), each a
-  register row; on `windows-11`, a checked radio's dot while pressed, which two visual-state groups set (the pressed
-  dot's opacity by `Pressed` and `Checked`, `RadioButton_themeresources.xaml:298-300`, `:353`), measured as a
-  register row (W1-041).
+  and the radio dot in and out (MAC-X11's recording), and UIKit the multiselect circle's check (CK-2†), register rows
+  U160 and U161; on `windows-11`, a checked radio's dot while pressed, which two visual-state groups set (the pressed
+  dot's opacity by `Pressed` and `Checked`, `RadioButton_themeresources.xaml:298-300`, `:353`), measured as
+  register row U162 (W1-041).
 - `macos-*`'s AppKit rendering (ADD-A125): whether AppKit draws its controls differently in an emphasized selected
   table row (`NSTableCellView`'s background style) is MAC-L17†'s measurement; if it does, the rendering's cache key
   needs the background style (S15).
@@ -1845,7 +1845,7 @@ spaces:
   - `macos-tahoe`'s circular bezel draws a circle inside a frame wider than tall at every size (the probe's
     `frame_xywh`, run 41006842699 `os-probe-macos-26/button-pass/probe.toml`, with no alignment insets; the circle as
     wide as the frame is high at `large` and `extra_large`, the macOS lane's reading, `mini` to `regular` unread, U143
-    for the corners; `body.margin` at every size a register row of its own, no fact yet), while
+    for the corners; `body.margin` at every size U159, no fact yet), while
     `macos-monterey`'s frames are square, with equal alignment insets on every side
     (`os-probe-macos-15/button-pass/probe.toml`), so there the body's box, the alignment rect as for every bezel, is
     square and `Full` on it a circle. On `macos-tahoe` `body`'s box is the drawn circle, its `corners` `Full` on that box, and
@@ -2582,7 +2582,7 @@ spaces:
   `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). The decorations
   of `preedit`, `misspelling`, `grammar_mark` and `correction` follow the font (S2.8): where the platform draws the
   line from the font's own metrics (Pango's, AppKit's `NSFont`, DirectWrite's, Android's `Paint`; Qt draws its own
-  adjustment of them, the unmeasured register's, S2.8, ADD-A130), their `thickness` and `offset` are the references the
+  adjustment of them, register U180's, S2.8, ADD-A130), their `thickness` and `offset` are the references the
   parts state, and a number is stated only where the
   platform draws a fixed line (macOS's spelling and grammar dots, MAC-X28); the value phase states which per preset
   from the facts (GN-1.281†, K1.49†, W1-151†, MAT-I18†). Provenance: group
@@ -5398,7 +5398,7 @@ spaces:
     underline: Pango's error underline, GN-P3-27†, drawn from the font, so its decoration's `thickness` and `offset`
     are references to `element.font_underline_thickness` and `element.font_underline_offset`, S2.8; `data = {
     misspelling = ["font_underline_offset", "font_underline_thickness"] }`; KTextEditor's spell-check underline,
-    K-SF11†, Qt's wavy line held within the descent, the unmeasured register's, S2.8, ADD-A130).
+    K-SF11†, Qt's wavy line held within the descent, register U180's, S2.8, ADD-A130).
   - `template_field` (K-SF11†) — `fill`.
   - `template_placeholder` *(element)* (K-SF11†) — `fill`.
   - `inline_annotation` *(element)* — one annotation, its severity its own variant (GN-SF12†): `text`.
@@ -6936,7 +6936,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `emphasis`, `strong`, `underline`, `strikethrough`, `subscript`, `superscript` (Compose's HTML underline,
     MAT-P3-20†): `text`. The underline's and the strike line's `text.decoration` follow the run's font where the
     platform draws them from its metrics (AppKit, Android's `Paint`, S2.8; Qt's drawn underline and strike line,
-    `kde-breeze`'s, are the unmeasured register's, S2.8, ADD-A130): `thickness` `=
+    `kde-breeze`'s, are register U180's, S2.8, ADD-A130): `thickness` `=
     element.font_underline_thickness` and `offset` `= element.font_underline_offset` on `underline`,
     `element.font_strikeout_thickness` and `element.font_strikeout_offset` on `strikethrough`, which the parts
     declare, `data = { underline = ["font_underline_offset", "font_underline_thickness"], strikethrough =
