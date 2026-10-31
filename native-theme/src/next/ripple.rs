@@ -2,12 +2,18 @@
 //
 // This file ports the Android Open Source Project's
 // graphics/java/android/graphics/drawable/RippleAnimationSession.java and
-// RippleShader.java (frameworks/base at android-17.0.0_r1), whose notices
-// follow; it stays under that licence whatever licence the rest of the crate
-// is used under (the 0.8.0 plan's D10).
+// RippleShader.java (frameworks/base at android-17.0.0_r1), and the formulas
+// of androidx's compose/material/material-ripple Ripple.android.kt and
+// RippleHostView.android.kt and compose/ui/ui-graphics Color.kt (androidx at
+// e4d933c9), whose notices follow; it stays under that licence whatever
+// licence the rest of the crate is used under (the 0.8.0 plan's D10). The
+// crate's LICENSE-APACHE holds the licence, its NOTICE the notice of
+// frameworks/base's NOTICE file.
 //
 // Copyright (C) 2020 The Android Open Source Project
 // Copyright (C) 2021 The Android Open Source Project
+// Copyright 2019 The Android Open Source Project
+// Copyright 2021 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

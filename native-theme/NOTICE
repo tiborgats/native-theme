@@ -1,0 +1,23 @@
+native-theme's src/next/ripple.rs ports code of the Android Open Source
+Project, which the Apache License, Version 2.0 (LICENSE-APACHE) covers:
+
+- frameworks/base at android-17.0.0_r1:
+  graphics/java/android/graphics/drawable/RippleShader.java and
+  RippleAnimationSession.java;
+- androidx at e4d933c9: compose/material/material-ripple's
+  Ripple.android.kt and RippleHostView.android.kt, and compose/ui/ui-graphics'
+  Color.kt.
+
+frameworks/base's NOTICE file states, for the Android-specific code:
+
+   =========================================================================
+   ==  NOTICE file corresponding to the section 4 d of                    ==
+   ==  the Apache License, Version 2.0,                                   ==
+   ==  in this case for the Android-specific code.                        ==
+   =========================================================================
+
+Android Code
+Copyright 2005-2008 The Android Open Source Project
+
+This product includes software developed as part of
+The Android Open Source Project (http://source.android.com).
