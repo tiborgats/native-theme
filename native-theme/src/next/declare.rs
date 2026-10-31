@@ -51,7 +51,8 @@ pub(crate) struct Declarations {
     pub(crate) symbol_variants: Vec<Key>,
     /// The symbol scales (`IconStyle.scale`).
     pub(crate) symbol_scales: Vec<Key>,
-    /// The Material spec versions (`MaterialScheme.spec_version`).
+    /// The Material spec versions (`MaterialScheme.spec_version`); staged
+    /// with that field, so the reader refuses the key until its unit enters.
     pub(crate) spec_versions: Vec<Key>,
     /// The icon state effects.
     pub(crate) icon_state_effects: Vec<Key>,
@@ -67,7 +68,8 @@ pub(crate) struct Declarations {
     pub(crate) icon_contexts: Vec<Key>,
     /// The icon status colours' keys.
     pub(crate) status_colors: Vec<Key>,
-    /// The drag cursors' keys.
+    /// The drag cursors' keys; staged with the pointer tokens, so the reader
+    /// refuses the key until their unit enters.
     pub(crate) drag_cursors: Vec<Key>,
     /// The accent ramp's entries.
     pub(crate) accent_ramp: Vec<Key>,

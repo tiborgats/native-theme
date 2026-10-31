@@ -11,8 +11,3 @@ when = { variants = ["flat"] }
 target = "button.body"
 set = { fill = "#00000000" }
 
-# S12 refuses a declared keyed variant no rule selects on: a rule stating what the base states.
-[[rules]]
-when = { variants = ["@raised"] }
-target = "button.body"
-set = { opacity = 1 }

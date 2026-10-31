@@ -1032,21 +1032,25 @@ fn token_maps_of_blocks_patch_each_entry() {
         ..SizeClassThresholdPatch::default()
     };
     let compact = super::selector::SizeClass::Compact;
-    let mut earlier: Option<Vec<(super::selector::SizeClass, BlockPatch<SizeClassThreshold>)>> =
-        Some(vec![(compact, BlockPatch::Fields(threshold(1.0)))]);
-    let later = Some(vec![(
-        compact,
-        BlockPatch::Fields(SizeClassThresholdPatch {
-            vertical: Some(None),
-            ..SizeClassThresholdPatch::default()
-        }),
-    )]);
+    let _: Option<Vec<(super::selector::SizeClass, BlockPatch<SizeClassThreshold>)>> =
+        TokensPatch::default().size_classes;
+    let mut earlier = TokensPatch {
+        size_classes: Some(vec![(compact, BlockPatch::Fields(threshold(1.0)))]),
+        ..TokensPatch::default()
+    };
+    let later = TokensPatch {
+        size_classes: Some(vec![(
+            compact,
+            BlockPatch::Fields(SizeClassThresholdPatch {
+                vertical: Some(None),
+                ..SizeClassThresholdPatch::default()
+            }),
+        )]),
+        ..TokensPatch::default()
+    };
+    assert_eq!(earlier.merge(later), Ok(()));
     assert_eq!(
-        super::blocks::merge_slot_entries(&mut earlier, later),
-        Ok(())
-    );
-    assert_eq!(
-        earlier,
+        earlier.size_classes,
         Some(vec![(
             compact,
             BlockPatch::Fields(SizeClassThresholdPatch {

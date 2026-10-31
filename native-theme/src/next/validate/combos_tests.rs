@@ -1543,6 +1543,30 @@ fn combination_reference_through_an_absent_block() {
     );
 }
 
+/// A field absent by one step is refused even where another step states
+/// its block absent at that place: the block's absence excuses only the
+/// fields its own step makes absent (S6.3, S12).
+#[test]
+fn combination_field_absent_by_another_step_than_its_block() {
+    let decl = declare("text_styles = [\"a\"]\n");
+    let base = "[tokens.text]\nkeyed.a.decoration = \"absent\"\n\
+                keyed.a.mnemonic_decoration = \"absent\"\n";
+    assert_eq!(
+        over(
+            base,
+            "[tokens.text]\nroles.body = \"= token.text.keyed.a\"\n[[rules]]\n\
+             when = { conditions = [\"contrast_high\"] }\ntarget = \"tokens\"\n\
+             set = { text.roles.body.decoration.thickness_px = \"absent\" }\n",
+            &decl
+        ),
+        [
+            "rules[0].set.text.roles.body.decoration.thickness_px: may not be absent",
+            "rules[0].set.text.roles.body.decoration: patches the fields of a value that can be \
+             `absent`"
+        ]
+    );
+}
+
 /// A block stated absent whole leaves no field to check: an absent glyph
 /// is no glyph whose `fill` is absent beside an absent stroke (S2.9, S6.3,
 /// S12), while a drawn glyph's absent `fill` beside an absent stroke is

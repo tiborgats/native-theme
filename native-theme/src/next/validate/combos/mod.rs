@@ -1770,12 +1770,14 @@ impl Checks<'_, '_> {
         value_fields(fields, &op.path, &mut inner);
         // The steps stating a block field absent, by the field's path: a
         // field below it that step makes absent is no field of the block.
+        // A step without an id (a binding's) is never the same step.
         let mut absent_blocks: Vec<(String, Option<(usize, usize)>)> = Vec::new();
         for (path, field) in inner {
             for found in stack.effective(world, source.target, &path) {
                 if matches!(found.got, Got::Absent) {
                     let below_absent = absent_blocks.iter().any(|(block, id)| {
-                        *id == found.id
+                        id.is_some()
+                            && *id == found.id
                             && path
                                 .strip_prefix(block.as_str())
                                 .is_some_and(|rest| rest.starts_with('.'))
@@ -2138,7 +2140,8 @@ impl Checks<'_, '_> {
                     continue;
                 }
                 // A step stating the block itself absent leaves no field of
-                // it to check.
+                // it to check; a step without an id (a binding's) is never
+                // that step.
                 let whole: Vec<Option<(usize, usize)>> = stack
                     .effective(world, target, &place)
                     .into_iter()
@@ -2148,7 +2151,10 @@ impl Checks<'_, '_> {
                 let absents: Vec<Found<'_>> = stack
                     .effective(world, target, &below(&place, absent))
                     .into_iter()
-                    .filter(|found| matches!(found.got, Got::Absent) && !whole.contains(&found.id))
+                    .filter(|found| {
+                        matches!(found.got, Got::Absent)
+                            && !(found.id.is_some() && whole.contains(&found.id))
+                    })
                     .collect();
                 if absents.is_empty() {
                     continue;
