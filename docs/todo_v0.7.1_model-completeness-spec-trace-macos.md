@@ -962,7 +962,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-16† | - | out (R1.1) |
 | MAC-P3-17† | `scroll_view.values.wheel_step` (NSScrollView's `horizontalLineScroll`, `verticalLineScroll`: a distance per axis) | field |
 | MAC-P3-17† | `scroll_view.values.page_overlap` (`horizontalPageScroll`, `verticalPageScroll`: what a page scroll keeps visible) | field |
-| MAC-P3-17† | `token.behavior.scroll_lines_per_step` (the user's scrolling-speed setting, to verify) | token |
+| MAC-P3-17† | `token.behavior.scroll.wheel_step_lines` (the user's scrolling-speed setting, to verify; ADD-A130) | token |
 | MAC-P3-17† | `reader:macos:NSScrollView line and page scroll properties` | reader |
 | MAC-P4-1† | `menu.* @ context window.title (title pop-up menu)` | rule |
 | MAC-P4-1† | `window.values.title_menu_placement (AppKitMenu)` | placement |

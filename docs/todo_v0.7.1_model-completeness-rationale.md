@@ -525,6 +525,9 @@ so the preset must state {checked, hover}.
   measurements under each appearance; iOS's are measured under each appearance and the default tint until
   its reader exists, its tint-dependent roles being inputs (R2.6).
 
+- **Parts not drawn** (ADD-A130): where the preset does not draw a part, the gate compares none of its fields and
+  fails no field's fact that holds there; whether the part is drawn is checked once, by the part's own key (R25.17).
+
 There is no model inheritance for the gate to trust (R20).
 
 ### R5 — Colours (C04, C05, C08, C28)
@@ -541,7 +544,8 @@ fill and stroke tiers.
 - *Typed surface sets with a common role record, global accent and status roles, and a keyed set of the
   platform's own roles* (Material's ladder, WinUI's tiers).
 
-**Decision:** the third (principle 4).
+**Decision:** the third (principle 4). A role the platform does not have is absent there, as macOS's status roles
+are (AppKit declares none, R25.17).
 
 **Groups.** The window being inactive holds for a whole window, so an inactive group is a colour-role rule under the
 inactive condition; being disabled is per element, so each surface set also holds disabled roles, which parts'
@@ -850,7 +854,9 @@ gains letter spacing (tracking, which SF Pro states per size, D-1), its own line
 and paint: the spell-check and IME underlines, mnemonic underlines, a link's underline; K1.49†, W1-151†,
 GN-1.281†), and **elision and wrapping** (where a platform truncates, at the end or the middle, fades the text out under
 another part, as AdwTab fades its title under its close button with a mask whose strength follows the
-button's opacity, GN-1.129, or wraps).
+button's opacity, GN-1.129, or wraps). The colour, elision, wrapping and line limit are what a widget does with the
+text, so a named style states them only where the platform's style sets them, and the parts that draw text state
+them otherwise; a low underline is placed from the ink of the run it marks, as Pango draws a mnemonic's (R25.17).
 
 **Text roles:** today four `text_scale` entries besides the body font; macOS and iOS have eleven styles, Material
 fifteen and fifteen emphasized (MAT-TS4), WinUI eight, libadwaita about nine.
@@ -882,7 +888,8 @@ some platforms and as dropping the user's KDE setting.
 
 **Icon style:** size (the existing `defaults.icon_sizes` contexts become its tokens), fill (the recolouring of
 symbolic icons, a paint, so vibrant icons blend, MAC-X03), rendering mode (SF Symbols' monochrome, hierarchical,
-"palette" in Apple's sense, multicolour), weight and scale, and a per-state effect where the platform changes an
+"palette" in Apple's sense, multicolour; and, where the platform decides per icon, as GTK and KDE do, the icon's own
+kind, R25.17), weight and scale, and a per-state effect where the platform changes an
 icon by state (KDE's disabled and active effects, K3.60). Mirroring in right-to-left layouts is a property of
 each icon role (MAT-FM04†). Symbol effects are transitions.
 
@@ -917,7 +924,8 @@ indicator, or its own where a part differs (KDE's focus line under tab labels, K
 fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields become the token; when focus
 becomes visible is a widget behaviour (R17).
 
-**Caret:** colour, width, shape (bar, block in overwrite mode; K1.47†, KDE file), the secondary caret in
+**Caret:** colour, width (a token where the platform has one width; where it follows each line, as GTK's does, the
+caret parts', R25.17), shape (bar, block in overwrite mode; K1.47†, KDE file), the secondary caret in
 mixed-direction text (GN-SF03†), blink on and off times and timeout, read where the platform has a setting (GNOME,
 GN-3.32–GN-3.38; Windows; KDE; macOS's blink period, MAC-X14), and when it hides (while text is selected,
 GN-3.73†, GNOME file).
@@ -1005,8 +1013,10 @@ rules, while a light source does not turn with the text.
 ### R17 — Timings, behaviours and the pointer (C21, C22)
 
 Timings and behaviours that apply everywhere form a behaviour record among the tokens: double-click time and
-distance, drag threshold, hover-open delay, key repeat, scroll distance per step, and whether the pointer hides
-while typing. Those that belong to one widget are its values: when its focus becomes visible (Breeze after keyboard
+distance, drag threshold, the time a held press takes to start a drag and the earliest a drag may start, the system's
+hover time, key repeat, whether a disabled element shows its mnemonic, and whether the pointer hides while typing;
+the distance a wheel step scrolls, in lines or pixels, belongs with the rest of a wheel step's motion in the scroll
+physics (R25.17). Those that belong to one widget are its values: when its focus becomes visible (Breeze after keyboard
 focus, K3.20; macOS text fields on any focus, its buttons only with Full Keyboard Access); the tooltip's show, hide
 and reshow beside today's `tooltip.show_delay_ms`; the menu's submenu delay and sloppy-close timeout (K-RV2†); the
 scroll bar's auto-hide and what a click in its trough does (K-RV1†, MAC-P3-2†); a toast's duration. Each is read
@@ -1223,8 +1233,9 @@ expressions may name, with the functions the platforms use over them (`pick(hash
 hash and list, cited). Also element data: a colour the application chose
 for the element that derived values follow (a badge's custom colour, Q2.26), the width of a character of the part's
 font as the toolkit measures it (GTK's `max-width-chars`, KMessageBox's widths in characters, GN-1.283†, K-P3-7†),
-the font's own underline and strikeout position and thickness, from which every target toolkit draws those lines
-(Pango, Qt's `QFontMetrics`, AppKit's `NSFont`, DirectWrite, Android's `Paint`), so a decoration follows the user's
+the font's own underline and strikeout position and thickness, from which the target toolkits draw those lines
+(Pango, AppKit's `NSFont`, DirectWrite, Android's `Paint`; Qt draws its own adjustment of them, a register row,
+R25.17, the specification's S2.8), so a decoration follows the user's
 font rather than one measured number (R10),
 and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
@@ -1495,6 +1506,90 @@ once.
 *Left to measurement:* the macOS pop-up's and combo box's content row per control size and the iOS pop-up's width
 basis, spare width and cut, which no pinned source states (register rows); a measured result outside these forms
 (a packed iOS title and indicator) is a model change its row records.
+
+**R25.17 — The slice's model gaps (2026-10-31; amends R4, R5, R10, R11, R12, R17; the specification's ADD-A130).**
+Stating every field of `adwaita` and `macos-tahoe` (M1a) found fields the model could not state from the sources.
+Each is decided from the pinned sources; the specification cites them.
+
+- *The caret's width.* GTK's stem is the caret's height times the aspect-ratio setting, plus one, in whole pixels,
+  and the height is the run's extents rounded outward to pixels, unhinted under GTK's default automatic font
+  rendering, so it depends on where the baseline falls and changes from line to line. Options: a number in the token
+  (invented: GTK states none); a token expression evaluated where used, as a text style's `font_size` is (the caret
+  has no font, so it would read another part's, which a token cannot name); the token absent where the width follows
+  the line, each caret part stating the expression over a font metric (the font height is off by one where the
+  rounding crosses a step, the line height holds leading the caret leaves out); the token absent and each caret part
+  stating the expression over the height of the caret its toolkit draws, element data the connector reports (one home
+  per part, checked: a part keeping the absent token as its base is refused). **Decision:** the last.
+- *The wheel step.* GTK's step is a power of the view's page size, already a `scroll_view` value; the lines and
+  pixels per step read by KDE, Windows and Android are read only by widgets of later units (the scroll view, Qt's
+  slider). Options: keep both in the
+  behaviour record and state them now (their readers come later, and GTK's absence would be checked by nothing);
+  stage the two fields one by one (the step's distance apart from its duration and from the touchpad's factor); move
+  them into the scroll physics, which is staged with the scroll view already. **Decision:** the last.
+- *Drag start.* Qt's start-drag time starts a drag from a press held still; GTK's 100 ms is the earliest a drag that
+  movement starts may begin. Options: one field with either meaning (the other platform loses its value, and the two
+  are opposite); two fields. **Decision:** two, `drag_time` Qt's and `drag_min_delay` GTK's, each absent or zero
+  where the platform has none.
+- *The hover time.* The record's "hover-open delay" matched no platform's value: Windows has one hover time, of which
+  WinUI's tooltip delays are multiples, while GTK hard-codes each widget's delay (the tooltip's, a submenu's).
+  Options: drop the field (Windows' reader would compute WinUI's multiples in its code, out of the gate's sight); make
+  it the submenu delay (the menu's own value already); the system's hover time, the tooltip values expressions on
+  it, absent where there is none. **Decision:** the last, renamed `hover_time`.
+- *Mnemonics.* Pango draws a mnemonic's underline a line thickness below the ink of the character it marks, which no
+  font metric gives; GTK draws none on a disabled label or beside a disabled target. Options for the position: an
+  element datum for the ink's bottom (one value per query, where every decorated run has its own ink); a fixed
+  offset (wrong for a descender); an origin field on every decoration, the baseline or the run's ink (a field every
+  lane's decorations would state, and an ink origin an overline could take, which no platform draws); Pango's own
+  line kind, a low underline whose offset is measured from the run's ink, the connector taking the ink from its
+  glyphs (exact for GTK's mnemonic, the one lane that draws it; Qt's drawn underline is a register row). For the disabled case: a `{disabled}` rule on every part whose text takes a
+  mnemonic (one fact restated per widget, and a label beside a disabled target is not disabled itself); a behaviour
+  flag the connector applies with the mnemonics setting. **Decision:** the low underline, and the flag.
+- *Rendering by icon.* GTK recolours an icon whose file is symbolic, and in any SVG the paths given symbolic paints,
+  drawing the rest as they are, and KDE recolours an SVG's colour-scheme stylesheet classes; the field was required, with no value for "the icon decides".
+  Options: `Absent` (which means not drawn); `Template` always (a full-colour icon would be recoloured); a content
+  variant naming each icon's kind on every widget that draws icons (the connector already holds the icon and its
+  kind); a rendering mode for the per-icon rule. **Decision:** the last, `FromIcon`, the icon's own colouring path by path, on `adwaita` and
+  `kde-breeze`, each mark beyond the foreground an entry of the icon style's colour map under the platform's own name
+  (libadwaita's accent beside its three statuses, KDE's seven stylesheet classes), the map renamed `symbolic_colors`
+  as it holds more than statuses; a context that recolours whatever
+  the file, libadwaita's check box, states `Template`. The tab button's icon, which libadwaita names itself, is a glyph
+  by its icon name, with a content variant for the form it shows from a hundred tabs.
+- *A paintable's motion.* libadwaita's status page shows a spinner paintable, which loops for ever. Options: an icon
+  animation on an icon context (its keyframes could move only the icon, while the spinner's arc grows and shrinks);
+  a reference from the context to the spinner's loop (a token reads no widget value); the spinner element in the
+  status page's context, its loop the spinner's. **Decision:** the last, as the catalogue already places it.
+- *Styles and drawn text.* Every keyed text style, and so every slot, held a colour, elision, wrapping and a line limit, which most
+  platforms' styles do not set (libadwaita's classes and AppKit's styles are fonts; GtkLabel's defaults are a
+  widget's), while WinUI's styles set trimming and wrapping. Options: each style states its platform's label defaults
+  (another widget's values, and a part that forgot to restate them would pass with the style's); move the four leaves
+  onto the part (WinUI's styles would lose their one home, and every text path would move); keep them in the style,
+  each absent where the platform's style does not set it, every part that draws text stating all four in its base
+  table, by value or by reference to the style's leaf, which validation enforces. **Decision:** the last. The text-scaling role stays the style's, a `Value` so a part references it: on iOS each of Apple's
+  styles has its curve; where no curve is read (every scaling but Dynamic Type, `macos-tahoe`'s included, AppKit's styles taking no
+  size category) it is stated as none.
+- *A misspelled word holding the caret.* Kirigami's spell checker gives that word a faint negative background, by a
+  comparison of its own (the word's place in its paragraph against the caret's, or the selection end's, in the whole
+  document). Options: a register row until a state exists (the look stays unstated); a state flag of the text widget
+  (it is per word, and the widget holds several); a connector-set keyed flag on the misspelling, made an *(element)*
+  part per word on every text widget, as a code editor's current line carries its mark flags, the connector computing
+  it as Sonnet does, its first-paragraph quirk included. **Decision:** the last, `@holds_caret`.
+- *Font width on macOS.* AppKit's width trait runs from −1 to 1, the model's width is OpenType's percent, and no pinned
+  source maps one to the other. Options: a conversion of our own (invented); a table from the four named widths (the
+  SDK declares them without values); the font's own `wdth` axis, measured with its scale (OpenType's percent, which no source here pins), the register
+  deciding how the reading becomes the width. **Decision:**
+  the measurement.
+- *macOS's status colours.* AppKit declares no status colour, and its selection no outline colour. Options: map
+  statuses to the system palette (no Apple source maps them; it would invent the platform's meaning); leave them absent
+  there, every route that reads them checked. **Decision:** absent: the global status roles, the sets' status text
+  colours and the Selection set's outline may be absent on `macos-*`; macOS's destructive buttons keep their system red,
+  its level indicator its own fills.
+- *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
+  held there, so a field's facts had to restate where their part is drawn (eleven fields of GNOME's menu arrow, and as
+  two facts each, since the arrow is drawn under either of two variants). Options: keep the failure (no check gained:
+  the part's own key already fails a preset that drops or adds the part, being expected drawn wherever no part fact
+  applies); compare and fail nothing there.
+  **Decision:** the second; a measured derivation's pass whose part is not drawn still fails, as its evidence
+  measured the part drawn.
 
 ## 4. What the specification decides
 

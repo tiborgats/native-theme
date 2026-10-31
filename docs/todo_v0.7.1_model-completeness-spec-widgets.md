@@ -95,8 +95,6 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `macos-*`'s AppKit rendering (ADD-A125): whether AppKit draws its controls differently in an emphasized selected
   table row (`NSTableCellView`'s background style) is MAC-L17†'s measurement; if it does, the rendering's cache key
   needs the background style (S15).
-- `combo_box` on every preset (ADD-A125): its content layout, the label, the icon, the arrow area and the arrow,
-  editable and not, sized and drawn: ADD-A127, to come (ledger queue #113).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -1119,7 +1117,9 @@ spaces:
     the shape its platform draws, the glyph or the cornered fill, and the other `Absent` where `may_be_absent`
     allows).
 - **Widget values:** `show_delay_ms: Value<Ms>` (today; Kirigami's under `cond flavor:kirigami`, Q1.136, Q1.65,
-  Q1.82), `reshow_delay_ms: Value<Ms>` (browse mode), `browse_timeout_ms: Value<Ms>`, `hide_delay_ms: Value<Ms>`
+  Q1.82; on `windows-11` with `reshow_delay_ms` and `keyboard_show_delay_ms` a multiple of `token.behavior.hover_time`,
+  the hover time WinUI reads, `= mul(token.behavior.hover_time, 2)` and the rest as S4.2's *Hover time* gives them,
+  W1-059, ADD-A130), `reshow_delay_ms: Value<Ms>` (browse mode), `browse_timeout_ms: Value<Ms>`, `hide_delay_ms: Value<Ms>`
   (after the pointer leaves, MAT-X25), `keyboard_show_delay_ms: Value<Ms>`; `show_on_press: Value<bool>` (tablet mode, touch; with `show_delay_ms` `=
   token.behavior.long_press` under that condition, Q3.28); `display_time: Option<DisplayTime>`, `DisplayTime { base_ms: Value<Ms>,
   per_char_ms: Value<Ms>, free_chars: Value<u32> }` (`None`, `"none"`: the tooltip never times out while hovered);
@@ -1411,7 +1411,7 @@ spaces:
     description, K2.7): `text`.
   - `icon` — the image: `icon` (size, fill per state, rendering mode, weight and scale for SF Symbols; its fill an
     expression on `element.color` under `contentTintColor`, MAC-B07; on `kde-breeze` the clear-field, inline-action and
-    chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24), `glyph` (for system button types, B-12),
+    chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24; on `adwaita` and `kde-breeze` its `rendering_mode` `from_icon`, the icon's own colouring path by path, GTK's symbolic paths and KDE's colour-scheme stylesheet classes taking the style's colours, S2.9, ADD-A130), `glyph` (for system button types, B-12; for the icon the platform itself names, a `ThemeIcon` glyph: `adwaita`'s AdwTabButton frame, `adw-tab-counter-symbolic` under `@tab_button` and `adw-tab-overflow-symbolic` under `@tab_overflow`, `adw-tab-button.c:103-131`, an icon of libadwaita's resources, which it adds to the icon theme's search path, `src/adw-main.c:95-96`, so a connector finds it by name where those resources are loaded, as under GTK, and elsewhere draws none and records it, R23; GN-2.37, ADD-A130),
     `transitions` (state-triggered icon animations, `TransitionKind::Keyed` of group `Icon`: WinUI's AnimatedIcon
     states, W1-024, W3-28; GtkSvg's state transitions, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
     R25.12).
@@ -1570,7 +1570,11 @@ spaces:
     arrow GTK hides, `:661-665`; a content variant the connector sets on a `menu` button with no content but its
     arrow, as it sets `@custom_child`; ADD-A122, ADD-A123), `@arrow_up`,
     `@arrow_start`, `@arrow_end`, `@arrow_none` (GtkMenuButton's direction; down is the base), `@tab_button`
-    (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@custom_child` (a content variant: a button whose
+    (AdwTabButton, its counter a `badge` in its context, GN-2.37), `@tab_overflow` (a content variant the connector
+    sets with `@tab_button` where the tab view holds 100 pages or more: AdwTabButton then shows
+    `adw-tab-overflow-symbolic` and hides its count, so the connector draws no `badge`; with no tab view it shows
+    the counter frame and no count either, `libadwaita@1.10.0 src/adw-tab-button.c:103-131`, the count hidden at
+    `:128`, the view's page count read only where there is a view, `:105-111`; ADD-A130), `@custom_child` (a content variant: a button whose
     child is neither a label nor an image, so GTK sets neither `.text-button` nor `.image-button`, `gtk/gtkbutton.c:431-432`: the base
     `button` padding, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:22`, where the base, text only, is
     `.text-button`'s, `:72-75`), `@image_text_box` (with `with_icon`: an icon and a label in a box the application
@@ -2375,22 +2379,27 @@ spaces:
   - `progress` — GNOME's entry progress line, its extent the progress fraction the connector draws: `fill`,
     `corners`, `min_height`, `margin` (its bottom margin, GN-1.48).
   - `caret` — the line caret: `fill` (base `= token.caret.color`), `min_width` (the caret's width, base
-    `= token.caret.width`, with rules under KDE's tablet mode, Q1.14), `min_height` (its height against the line,
+    `= token.caret.width`, with rules under KDE's tablet mode, Q1.14; on `adwaita`, whose `token.caret.width` is
+    absent, `= add(floor(mul(element.caret_height, token.params.caret.aspect_ratio)), <length>)`, GTK's stem from the
+    caret's drawn height, S4.2, GN-3.36, ADD-A130), `min_height` (its height against the line,
     X-CA-1), `corners`; its shape is these fields' rules per state and flag (S4.2: macOS's insertion indicator,
     MAC-X14; the overwrite and tablet-mode forms), its colour and width bases and its blink the caret token's
     (`token.caret`, R12, ADD-A24). The caret has no font of its
-    own: a length that follows the text (GNOME's width from the line height, GN-3.36; iOS's height against the line,
-    X-CA-1) measures the `text` part's font, `widget.text.line_height` (S2.2), which the
-    caret declares as its data (`data = { caret = ["widget.text.line_height"] }`, S8). Absent by rule where the
+    own: a length that follows the text measures the `text` part's font (iOS's height against the line, X-CA-1,
+    `widget.text.line_height`, S2.2), and GNOME's width follows the caret the toolkit draws, `element.caret_height`
+    (S4.2, GN-3.36); the caret declares what it reads as its data (`data = { caret = ["caret_height"] }` on
+    `adwaita`, `["widget.text.line_height"]` where its height follows the line, S8). Every caret part of every text
+    widget declares `caret_height` where its width reads it, its own caret's (`secondary_caret`, `drop_caret`, and
+    the carets of `text_area`, `code_editor` and `selectable_label`, as on `input`; ADD-A130). Absent by rule where the
     platform hides it (with a selection, `{text_selected}`; in overwrite mode, `{overwrite}`, where `block_caret`
     replaces it; ADD-A23).
   - `secondary_caret` — the bidirectional secondary caret where the caret sits between runs of different direction
-    (GNOME's split cursor, Qt's bidi caret; GN-3.37): `fill` (base `= token.caret.secondary`), `min_width`,
-    `min_height`.
+    (GNOME's split cursor, Qt's bidi caret; GN-3.37): `fill` (base `= token.caret.secondary`), `min_width` (on
+    `adwaita` the caret's expression over its own `caret_height`, declared, S4.2), `min_height`.
   - `block_caret` — the block caret (overwrite mode, Qt's input mask), shown under `{overwrite}`: `fill`, `text` (the
     covered character's fill; GNOME GN-1.49, KDE K1.47†).
   - `drop_caret` — the insertion point drawn while a text drag hovers the field (P3-9†, W-P3-9†): `fill`,
-    `min_width`.
+    `min_width` (on `adwaita` the caret's expression over its own `caret_height`, declared, S4.2).
   - `floating_caret` — iOS's floating (trackpad-mode) ghost caret (X-CA-3): `fill`, `opacity`, `corners`.
   - `caret_accessory` — iOS's caret accessories, the dictation and language indicators (X-CA-3): `icon`, `padding`.
   - `dictation_effect` — macOS's dictation effect at the caret (MAC-X14): `fill`, `transitions`.
@@ -2401,16 +2410,30 @@ spaces:
     font where the platform draws the line from the font: `thickness` `= element.font_underline_thickness`, `offset`
     `= element.font_underline_offset`, S2.8, Notes; the part declaring `data = { preedit = ["font_underline_offset",
     "font_underline_thickness"] }`), `fill`.
-  - `misspelling` — the spell-check mark: `text` (its decoration, which lies under the entered text and follows the
-    `text` part's font where the platform draws the line from the font: `thickness` `=
-    widget.text.font_underline_thickness`, `offset` `= widget.text.font_underline_offset`, S2.2, S2.8, Notes; the part
-    declaring `data = { misspelling = ["widget.text.font_underline_offset", "widget.text.font_underline_thickness"]
+  - `misspelling` *(element)* — the spell-check mark, one element per misspelled word (an element on every text
+    widget, so it carries `text_area`'s `@holds_caret`, ADD-A130): `text` (its decoration, which lies under the
+    entered text and follows its own font, the `text` part's style referenced leaf by leaf, as an *(element)* part
+    reads none of its host's parts, S2.2, where the platform draws the line from the font: `thickness` `=
+    element.font_underline_thickness`, `offset` `= element.font_underline_offset`, S2.8, Notes; the part declaring
+    `data = { misspelling = ["font_underline_offset", "font_underline_thickness"] }`).
+  - `grammar_mark` — macOS's grammar mark (MAC-X28): `text` (its decoration, following the `text` part's font:
+    `thickness` `= widget.text.font_underline_thickness`, `offset` `= widget.text.font_underline_offset`, the part
+    declaring `data = { grammar_mark = ["widget.text.font_underline_offset", "widget.text.font_underline_thickness"]
     }`).
-  - `grammar_mark` — macOS's grammar mark (MAC-X28): `text` (its decoration, as `misspelling`'s, the part declaring
-    the same data, `data = { grammar_mark = [ … ] }`).
   - `correction` — iOS's autocorrection mark and bubble, Material's suggestion underline: `text` (its decoration, as
-    `misspelling`'s, the part declaring the same data, `data = { correction = [ … ] }`), `fill`, `corners`.
+    `grammar_mark`'s, the part declaring the same data, `data = { correction = [ … ] }`), `fill`, `corners`.
   - `prediction` — inline prediction ghost text (iOS, macOS): `text`.
+
+  Every part that only marks or recolours text another part lays out (here `selection`, `preedit`, `misspelling`,
+  `grammar_mark`, `correction`, `prediction` and `block_caret`; on `text_area` and `code_editor` also `find_match`,
+  `replace_match`, `bracket_match`, `bracket_mismatch`, `syntax_span`, `highlight` and `extra_caret`, where they
+  list `text`) takes that part's elision, wrapping and line limit: it states its `text`'s `elision`, `wrap` and
+  `max_lines` absent (the may_be_absent fields below, and in those entries), its `fill` where it recolours the text
+  and absent where it only adds a line or a background, the text keeping its own colour (libadwaita's `selection`,
+  `color: transparent`, which leaves the text's own colour showing, `libadwaita@1.10.0
+  src/stylesheet/_common.scss:64-66`, among them), or only measures the text (`extra_caret`), and its font leaves as the text's, by reference (S2.2): a part to `widget.text`'s leaves
+  (`font.family = "= widget.text.font.family"`, …; a field reference, not element data), an *(element)* part
+  (`selection`, `preedit`, `misspelling`, `find_match`, `highlight`, `syntax_span`, `extra_caret`), which reads none of its host's parts (S2.2), to the style the `text` part references, leaf by leaf (ADD-A130).
   - `selection_handle` *(element)* — a touch selection handle (Material MAT-I13, KDE's tablet mode Q1.14 and Q3.31,
     WinUI's grippers W1-034 and W3-25, iOS X-SE-2, GNOME GN-2.42): `fill`, `glyph`, `corners` (GNOME's circle with
     one square corner, GN-2.42), `padding` (GN-2.42), `min_width`, `min_height`, `transform` (the insertion handle
@@ -2490,10 +2513,23 @@ spaces:
     and `adwaita` draw handles for touch selections only, and `ios-*` and `material-3` state the rule where the value
     phase's facts show UIKit and Android draw none for a pointer's selection), `magnifier` (all but `adwaita`,
     `material-3`, `ios-*`), `strength_meter` (all but `kde-breeze`), `strength_meter_fill` (all but `kde-breeze`).
-  - fields: `body.fill` (`kde-breeze` and `material-3` by a rule in `context any combo_box`, the combo box's body
-    drawing the field: Qt's frameless line edit, K1.240; Compose's one text field, MAT-CB1; ADD-A127), `body.stroke`
-    (as `body.fill`),
-    `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
+  - fields: `selection.text.elision` (every preset: a mark on the `text` part's text, ADD-A130),
+    `selection.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130), `selection.text.max_lines`
+    (every preset: a mark on the `text` part's text, ADD-A130), `preedit.text.elision` (every preset: a mark on the
+    `text` part's text, ADD-A130), `preedit.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130),
+    `preedit.text.max_lines` (every preset: a mark on the `text` part's text, ADD-A130), `misspelling.text.elision`
+    (every preset: a mark on the `text` part's text, ADD-A130), `misspelling.text.wrap` (every preset: a mark on the
+    `text` part's text, ADD-A130), `misspelling.text.max_lines` (every preset: a mark on the `text` part's text,
+    ADD-A130), `grammar_mark.text.elision` (every preset: a mark on the `text` part's text, ADD-A130),
+    `grammar_mark.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130), `grammar_mark.text.max_lines`
+    (every preset: a mark on the `text` part's text, ADD-A130), `correction.text.elision` (every preset: a mark on the
+    `text` part's text, ADD-A130), `correction.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130),
+    `correction.text.max_lines` (every preset: a mark on the `text` part's text, ADD-A130), `block_caret.text.elision`
+    (every preset: a mark on the `text` part's text, ADD-A130), `block_caret.text.wrap` (every preset: a mark on the
+    `text` part's text, ADD-A130), `block_caret.text.max_lines` (every preset: a mark on the `text` part's text,
+    ADD-A130), `misspelling.text.fill` (every preset: a mark on the `text` part's text, ADD-A130),
+    `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, ADD-A130), `prediction.text.elision` (every preset: a mark on the `text` part's text, ADD-A130), `prediction.text.wrap` (every preset: a mark on the `text` part's text, ADD-A130), `prediction.text.max_lines` (every preset: a mark on the `text` part's text, ADD-A130), `selection.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `preedit.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `correction.text.fill` (every
+    preset: a mark on the `text` part's text, ADD-A130); `body.fill` (`kde-breeze` and `material-3` by a rule in `context any combo_box`, the combo box's body drawing the field: Qt's frameless line edit, K1.240; Compose's one text field, MAT-CB1; ADD-A127), `body.stroke` (as `body.fill`), `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
     `kde-breeze` under `flat`, K1.41; the value phase names the others from the facts), `body.focus` (the value
     phase names the presets from the facts where the field marks focus by its stroke alone, as `focus_border_color`
     maps below).
@@ -2545,8 +2581,9 @@ spaces:
   `button @ variant reveal context input` (GN-2.23, W2-16, K1.48; their visibility the values above, their fade the
   `button`'s presentations), the completion popup an `autocomplete` in `context input` (MAC-P3-7†). The decorations
   of `preedit`, `misspelling`, `grammar_mark` and `correction` follow the font (S2.8): where the platform draws the
-  line from the font's own metrics (Pango's, Qt's `QFontMetrics`, AppKit's `NSFont`, DirectWrite's, Android's
-  `Paint`), their `thickness` and `offset` are the references the parts state, and a number is stated only where the
+  line from the font's own metrics (Pango's, AppKit's `NSFont`, DirectWrite's, Android's `Paint`; Qt draws its own
+  adjustment of them, the unmeasured register's, S2.8, ADD-A130), their `thickness` and `offset` are the references the
+  parts state, and a number is stated only where the
   platform draws a fixed line (macOS's spelling and grammar dots, MAC-X28); the value phase states which per preset
   from the facts (GN-1.281†, K1.49†, W1-151†, MAT-I18†). Provenance: group
   6 wrote the password field as `password` and its hint timeout as a value of its own, merged into `mask_reveal_ms`;
@@ -2587,8 +2624,13 @@ spaces:
     point of a text view too (MAC-X14): `glyph`, `padding`.
   - `preedit` *(element)* — as on `input` (its decoration following its own font, the part declaring the same data,
     `data = { preedit = [ … ] }`): `text`, `fill`.
-  - `misspelling` — as on `input` (its decoration following the `text` part's font, the part declaring the same
-    data, `data = { misspelling = [ … ] }`): `text`.
+  - `misspelling` *(element)* — as on `input`, one element per misspelled word (it carries the flag
+    `@holds_caret`; its decoration follows its own font, `element.font_underline_offset` and
+    `element.font_underline_thickness`, which it declares, `data = { misspelling = ["font_underline_offset",
+    "font_underline_thickness"] }`, and its `text` references the style the `text` part's references, S2.2): `text`,
+    `fill` (a background behind the word: on `kde-breeze` under `cond flavor:kirigami`, Sonnet's highlighter gives
+    the word under `{@holds_caret}` the negative colour at 0.1 alpha, `= with_alpha(role.view.negative, 0.1)`,
+    `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:114-117`, `:380-381`; Q1.13, ADD-A130).
   - `grammar_mark` — as on `input` (NSTextView's grammar mark, MAC-X28; the same data, `data = { grammar_mark = [ …
     ] }`): `text`.
   - `correction` — as on `input` (the same data, `data = { correction = [ … ] }`): `text`, `fill`, `corners`.
@@ -2641,7 +2683,13 @@ spaces:
 - **Sizes and densities:** no sizes (`macos-*`: control sizes do not apply to NSTextView); `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
 - **Flags:** shared `empty` (as on input), `overwrite` (the overwrite caret: GNOME, KDE; ADD-A23), `composing` (GNOME
   GN-1.281†, KDE K3.48†), `text_selected` (as on input), `current` (on `find_match`, the current match: macOS, iOS);
-  keyed `macos-*` `@incremental_find` (an incremental find runs: `find_dimming` drawn, MAC-X15); state flags used:
+  keyed `macos-*` `@incremental_find` (an incremental find runs: `find_dimming` drawn, MAC-X15); keyed `kde-breeze`
+  `@holds_caret` (on `misspelling`, which the connector sets as Sonnet computes it: where the caret's position in the
+  whole document, or the selection's end while text is selected, lies at or between the word's start and end,
+  counted from the start of the word's paragraph, `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:370-381`, the
+  position taken `:610-624`, the selection's end `:617-620`; so in the first
+  paragraph it marks the word holding the caret, and in a later one the word whose paragraph offsets the caret's
+  document position falls within; Q1.13, ADD-A130); state flags used:
   hover, focused, focus_within, focus_visible, disabled, read_only, drop_target.
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` (TextBox CommonStates: the multi-line box is a
   TextBox); others none (states combine); precedence: state models (S17).
@@ -2665,7 +2713,30 @@ spaces:
   `material-3` state the rule where the value phase's facts show UIKit and Android draw none for a pointer's
   selection; one wording with `input`, one platform behaviour), `magnifier` (all but `adwaita`, `material-3`,
   `ios-*`), `find_match` (all but `macos-*`, `ios-*`: NSTextFinder's and UIFindInteraction's indicators); fields:
-  `body.shadow` (the value phase names the presets from the facts), `body.fill` (every preset by a rule under
+  `selection.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `selection.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `selection.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `preedit.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `preedit.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `preedit.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `grammar_mark.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.fill` (every preset but `kde-breeze` under `cond flavor:kirigami`, whose spell checker recolours
+  the word, Q1.13: a mark on the `text` part's text, as on `input`, ADD-A130), `misspelling.fill` (every preset: no
+  background at rest; `kde-breeze` under `cond flavor:kirigami` by a rule outside `{@holds_caret}`, above, ADD-A130),
+  `grammar_mark.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `correction.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `highlight.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `prediction.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `selection.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `preedit.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `find_match.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `highlight.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `body.shadow` (the
+  value phase names the presets from the facts), `body.fill` (every preset by a rule under
   `flat`), `body.focus` (the value phase names the presets from the facts; Breeze rings the frame, K3.20); values:
   `document_margin` (every member where the platform states no inset inside the document: the value phase names the
   presets; Qt's, AppKit's and UIKit's are K-P4-9†, MAC-I10†, P3-1†), `line_padding_px` (all but `macos-*`,
@@ -2890,8 +2961,7 @@ spaces:
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `disabled_background`,
   `disabled_text_color` → `body.fill`, `label.text.fill @ {disabled}`; `border.*` → `body.stroke`, `body.corners`,
   `body.padding`, `body.shadow`.
-- **Notes:** Open: its content layout (the label, the icon, the arrow area and the arrow, editable and not, sized and
-  drawn): ADD-A127, to come (ledger queue #113). Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
+- **Notes:** Its content layout is ADD-A127's (the content row, below; ledger queue #113). Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
   popover and GtkDropDown's list, the qqc2 combo's Menu and QComboBox's list, macOS's pop-up menu, iOS's menu,
   Material's exposed drop-down menu, WinUI's ComboBox popup: W1-133–W1-136, GN-1.234, MAC-CB04); the editable combo's
   text is an `input` in `context any combo_box`, placed by `input_placement` (the content row); GNOME's search entry in the popup is a `search_field` in `context menu`
@@ -3147,7 +3217,8 @@ spaces:
   `spinners.rs` (S2.7, S19.3): a busy indicator is this widget, its look the `icon` part's glyph (or the arc parts) and
   its motion the `loop`, whose keyframes set the `icon` part's `transform` (a spin) or the glyph itself (a sequence of
   frames, GtkSpinner's animated icon).
-- **Notes:** in context: a status page's spinner (GN-1.232) and a pull to refresh's progress and busy indicator
+- **Notes:** in context: a status page's spinner (GN-1.232; the `AdwSpinnerPaintable` libadwaita's status page shows,
+  this widget's look and loop, never an icon style's `animation`, S2.9, ADD-A130) and a pull to refresh's progress and busy indicator
   (`!{indeterminate}` while pulling, Q2.54†, Q1.121, C-10) are this widget in their host's context. GtkSvg's
   process-working icon is this spinner's `loop` (GN-P3-19†); GtkSvg's state animations on other
   icons are their part's icon transitions (`PropertyGroup::Icon`, `TransitionKind::Keyed`, R25.12). Provenance: group
@@ -3383,7 +3454,7 @@ spaces:
   distance one wheel step scrolls this view, per axis: on `adwaita` `= gtk_wheel_step(element.height)` and
   `= gtk_wheel_step(element.width)`, the view's page sizes, which the widget value declares, `data = { values =
   ["width", "height"] }`, GN-P3-15†, ADD-A90; on `macos-*` NSScrollView's `horizontalLineScroll` and
-  `verticalLineScroll`, a distance per axis, MAC-P3-17†; elsewhere `= token.behavior.scroll_px_per_step` where the
+  `verticalLineScroll`, a distance per axis, MAC-P3-17†; elsewhere `= token.behavior.scroll.wheel_step_distance` where the
   platform states pixels); `page_overlap: Axes<Value<Px>>` (the part of the view kept visible when it scrolls page
   by page, per axis: NSScrollView's `horizontalPageScroll` and `verticalPageScroll`, MAC-P3-17†);
   `edge_effect_height_px: Value<Px>` (C-18, MAC-X05; 26 only). Which edges draw an effect is per identity: an edge the
@@ -3419,7 +3490,7 @@ spaces:
   `cond contrast_high`, GN-3.06), `frame.fill` (`adwaita`: the `.frame` class draws the border alone, GN-2.32);
   values: `scrollbar_margin` (all but `windows-11`: W1-065), `edge_effect_height_px` (all but `ios-26`,
   `macos-tahoe`: 26 only, C-18, MAC-X05), `wheel_step` (`kde-breeze`, `windows-11`: their wheel steps are lines,
-  `token.behavior.scroll_lines_per_step`, not a distance; `ios-*` unless the value phase finds a wheel distance in
+  `token.behavior.scroll.wheel_step_lines`, not a distance; `ios-*` unless the value phase finds a wheel distance in
   its facts; `adwaita`, `macos-*` and `material-3`, whose step is a distance, GN-P3-15†, MAC-P3-17†, MAT-X32†, state
   it), `page_overlap` (all but `macos-*`: MAC-P3-17†, unless the value phase finds a page overlap in another
   platform's facts).
@@ -5322,11 +5393,12 @@ spaces:
   - `syntax_span` *(element)* — a run of one syntax role, selected by its own variant (the role) and its own
     `{text_selected}` (its text lies in the selection: KDE's per-style selected-text colours, K-SF10†) (GN-SF10†,
     K-SF10†): `text`, `fill` (the optional background).
-  - `misspelling` — the spell-check mark, as on `input` and `text_area` (GN-P3-27†, K-SF11†): `text` (the
-    underline: Pango's error underline, GN-P3-27†, and KTextEditor's spell-check underline, K-SF11†, drawn from the
-    font, so its decoration's `thickness` and `offset` are references to `element.font_underline_thickness` and
-    `element.font_underline_offset`, S2.8; `data = { misspelling = ["font_underline_offset",
-    "font_underline_thickness"] }`).
+  - `misspelling` *(element)* — the spell-check mark, one element per misspelled word, as on `input` and `text_area`
+    (GN-P3-27†, K-SF11†): `text` (the
+    underline: Pango's error underline, GN-P3-27†, drawn from the font, so its decoration's `thickness` and `offset`
+    are references to `element.font_underline_thickness` and `element.font_underline_offset`, S2.8; `data = {
+    misspelling = ["font_underline_offset", "font_underline_thickness"] }`; KTextEditor's spell-check underline,
+    K-SF11†, Qt's wavy line held within the descent, the unmeasured register's, S2.8, ADD-A130).
   - `template_field` (K-SF11†) — `fill`.
   - `template_placeholder` *(element)* (K-SF11†) — `fill`.
   - `inline_annotation` *(element)* — one annotation, its severity its own variant (GN-SF12†): `text`.
@@ -5381,7 +5453,17 @@ spaces:
   a rule under `{text_selected}` and by a rule under `{overwrite}`, as on `input`; `kde-breeze` by a rule under
   `{overwrite}`, its caret staying while text is selected, K3.43), `block_caret` (`adwaita` by a rule under
   `!{overwrite}`, by a rule under `!{focused}` and by a rule under `{text_selected}`, GN-P4-4†; `kde-breeze` by a
-  rule under `!{overwrite}`); values: `minimap_width_px` (`adwaita`: K-P3-12†'s minimap width is KTextEditor's),
+  rule under `!{overwrite}`); fields: `selection.text.elision` (every preset: a mark on the `text` part's text, as on
+  `input`, ADD-A130), `selection.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `selection.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `block_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130),
+  `misspelling.text.fill` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `find_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `replace_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `replace_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `replace_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_match.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_match.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_match.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_mismatch.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_mismatch.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `bracket_mismatch.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `syntax_span.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `syntax_span.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `syntax_span.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `extra_caret.text.elision` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `extra_caret.text.wrap` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `extra_caret.text.max_lines` (every preset: a mark on the `text` part's text, as on `input`, ADD-A130), `selection.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `find_match.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `replace_match.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `bracket_match.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `bracket_mismatch.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `syntax_span.text.fill` (every preset where the mark sets no text colour, the text keeping its own; the value phase names them from the facts, ADD-A130), `extra_caret.text.fill` (every preset: the caret measures its text and draws none, `ktexteditor@6.31.0 src/render/katerenderer.cpp:974-1030`, ADD-A130); values:
+  `minimap_width_px` (`adwaita`: K-P3-12†'s minimap width is KTextEditor's),
   `gutter_padding` (`kde-breeze`: GN-SF05†'s gutter padding is GtkSourceView's).
 - **State-model source:** GtkSourceView's style-scheme reference (`style-reference.md`), the Adwaita schemes,
   `GtkSourceView.css`; KTextEditor's `kateconfig.cpp` colour list, `katerenderer.cpp`, `kateviewhelpers.cpp` and
@@ -5396,7 +5478,7 @@ spaces:
   GNOME's `selection` states the text-selection roles, `= role.global.selection_text_background` and
   `= role.global.selection_text_foreground` (and their unfocused roles under the unfocused rule), as `text_area`'s
   base does (GN-SF02†). The text widgets share one name and one element status per part kind: `caret`,
-  `block_caret`, `secondary_caret`, `misspelling` (parts) and `selection` (an element) on `input`, `text_area` and
+  `block_caret`, `secondary_caret` (parts) and `selection` and `misspelling` (elements) on `input`, `text_area` and
   `code_editor`; `invisible` (typed `space`, `tab`, `line_break`, `no_break_space`) and `find_match` (on `text_area` the current match `{current}`),
   elements, on `text_area` and `code_editor`. Group 6's `bracket_match_animation` is `bracket_match.transitions`
   (K-SF07†).
@@ -6853,7 +6935,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     block's margins, as Qt's HTML and Markdown defaults state them, K-SF14†, K-SF17†, K-P4-14†)
   - `emphasis`, `strong`, `underline`, `strikethrough`, `subscript`, `superscript` (Compose's HTML underline,
     MAT-P3-20†): `text`. The underline's and the strike line's `text.decoration` follow the run's font where the
-    platform draws them from its metrics (Qt's text layout, AppKit, Android's `Paint`, S2.8): `thickness` `=
+    platform draws them from its metrics (AppKit, Android's `Paint`, S2.8; Qt's drawn underline and strike line,
+    `kde-breeze`'s, are the unmeasured register's, S2.8, ADD-A130): `thickness` `=
     element.font_underline_thickness` and `offset` `= element.font_underline_offset` on `underline`,
     `element.font_strikeout_thickness` and `element.font_strikeout_offset` on `strikethrough`, which the parts
     declare, `data = { underline = ["font_underline_offset", "font_underline_thickness"], strikethrough =
@@ -8765,9 +8848,9 @@ platform:
 | `foreground_inactive` | the platform's secondary (muted) text level | required | KDE `ForegroundInactive`; today's `muted_color` |
 | `foreground_active` | KDE `ForegroundActive`, used as the information colour | may_be_absent on every preset but `kde-breeze` (a KColorScheme role no other platform has) | K3.54, Q3.5 |
 | `link`, `link_visited` | link text, visited link text | `link` required; `link_visited` may_be_absent on `macos-*`, `windows-11`, `ios-*`, `material-3` (no visited state: macOS draws no visited link, gap-map-macos's §2.28 note; WinUI's hyperlinks have none, gap-map-windows' `:1695` note; `link`'s state-model sources for `ios-*` and `material-3` name none) | K3.54, GN-1.265 |
-| `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (`windows-11`, which has no standalone status colour, the `fill` instead) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` required; `neutral` may_be_absent on `material-3`, `positive` may_be_absent on `material-3` (the status each references is absent there: no warning or success role, below) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
+| `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (`windows-11`, which has no standalone status colour, the `fill` instead) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` may_be_absent on `macos-*`; `neutral` may_be_absent on `material-3` and `macos-*`, `positive` may_be_absent on `material-3` and `macos-*` (the status each references is absent there: Material has no warning or success role, below; AppKit declares no status colour, `NSColor.h:77-401`, the macOS status roles absent, below; ADD-A130) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
 | `decoration_focus`, `decoration_hover` | KDE's focus and hover decoration colours of the set | `decoration_focus` may_be_absent on every preset but `kde-breeze`, `decoration_hover` may_be_absent on every preset but `kde-breeze` (KColorScheme's decoration roles; the other platforms state focus by `token.focus` and hover per part) | Q3.11, Q3.12, K3.54 |
-| `border` | the set's stroke colour (translucent where the platform's is) | required | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
+| `border` | the set's stroke colour (translucent where the platform's is) | required, but may_be_absent on `macos-*` in the `Selection` set (AppKit declares no colour for a selection's outline, only the selected content's and text's backgrounds and the text on them, `NSColor.h:210-211`, `:221-222`, `:232-235`, `:240-241`: the facts state it absent, or the outline a selected row's capture shows; a part stroking inside a selected row states its own colour, a separator's; ADD-A130) | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
 | `shade` | the translucent shade line/overlay of the set (libadwaita `*_shade_color`) | may_be_absent on every preset but `adwaita` (libadwaita's shade colours, no other platform's); on `adwaita` a set GN-1.270 names no shade of states `= role.window.shade` (`--shade-color`) | GN-1.270 |
 | `disabled` | `DisabledRoles`: a record of the colour fields above (the record itself is always there) | each field may_be_absent on the presets the `DisabledRoles` paragraph below names for it | R5.1 |
 
@@ -8926,7 +9009,7 @@ six computed backgrounds (`background_active` …) are KColorScheme's tints of t
 | `accent_foreground` | text/glyph on the accent (today's `accent_text_color`) | required | GN-3.14 |
 | `accent_standalone` | accent used as text or icon colour on the surface, distinct from the fill (libadwaita `accent_color`, OKLab-derived: `adw_standalone`); on `kde-breeze` `= role.window.foreground_active`, where `applyScheme()` writes the plain accent while the Selection set's background, the fill, takes `accentBackground` (`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:178-181`, `:197-217`, `:229-236`; Kirigami's `activeTextColor`, Q3.5; ADD-A122); elsewhere `= role.global.accent` | required | GN-1.268, GN-3.13, Q3.5 |
 | `accent_ramp` | keyed: WinUI Light1-3, Dark1-3 | a list: empty where the platform has none | W3-12 (other group) |
-| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each a `StatusColors` record with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset: `error.fill`; on every preset but `windows-11`: `error.standalone`. may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`; on `macos-*` the value phase names it from the facts), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset); `error.foreground` (`ios-*`; on `macos-*` the value phase names it from the facts), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset), `neutral.standalone` (every preset), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), nor macOS beyond its system palette (no row names one; whether a text-on-status colour exists there is the value phase's); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), its solid backgrounds only the attention and neutral ones (`SystemFillColorSolidAttentionBackground`, `SystemFillColorSolidNeutralBackground`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:176-177`) and its neutral status a fill and backgrounds with no text colour (`:169-170`, `:175`, `:177`; ADD-A122), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part of a declared variant refers to an absent status role (a preset declares the typed severity variants, `success` and `warning` of `banner`, `dialog` and the rest, only where it states their role; S12's absent-operand check would refuse such a reference anyway); macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
+| `status` | `StatusRoles`: `success`, `warning`, `error`, `info`, `neutral`, `destructive`, each a `StatusColors` record with `fill`, `foreground`, `standalone`, `background`, `background_solid` (S3, ADD-A48); `destructive` and `error` are separate entries [GN-1.269] | required on every preset but `macos-*`: `error.fill`; on every preset but `windows-11` and `macos-*`: `error.standalone`. On `macos-*` every field of every record may_be_absent: AppKit declares no status colour (`NSColor.h:77-401`; its system palette is `role.@system_*`, which its destructive buttons use, and its level indicator's warning and critical fills are that widget's own, read, MAC-N06), so the facts state them absent (U101, settled; ADD-A130). Elsewhere may_be_absent, each where the platform has no counterpart, with its presets: `success.fill` (`material-3`), `success.foreground` (`material-3`, `ios-*`), `success.standalone` (`material-3`, `windows-11`), `success.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `success.background_solid` (every preset); `warning.fill` (`material-3`), `warning.foreground` (`material-3`, `ios-*`), `warning.standalone` (`material-3`, `windows-11`), `warning.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `warning.background_solid` (every preset); `error.foreground` (`ios-*`), `error.background` (`adwaita`, `macos-*`, `ios-*`), `error.standalone` (`windows-11`), `error.background_solid` (every preset); `info.fill` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.foreground` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.standalone` (`adwaita`, `macos-*`, `ios-*`, `material-3`, `windows-11`), `info.background` (`adwaita`, `macos-*`, `ios-*`, `material-3`), `info.background_solid` (every preset but `windows-11`); `neutral.fill` (every preset but `windows-11`), `neutral.foreground` (every preset), `neutral.standalone` (every preset), `neutral.background` (every preset but `windows-11`), `neutral.background_solid` (every preset but `windows-11`); `destructive.fill` (every preset but `adwaita`), `destructive.foreground` (every preset but `adwaita`), `destructive.standalone` (every preset but `adwaita`), `destructive.background` (every preset), `destructive.background_solid` (every preset). The reasons, per platform: Material states no warning, success or info role, and no component draws such a state (gap-map-material's colour-role note, `latest/_md-sys-color.scss:20-206`); libadwaita states a triple per status, `fill`, `foreground` and `standalone`, for success, warning, error and destructive, and no status background or info or neutral colour (GN-1.269); iOS has no status background, foreground or container roles beyond D-9…D-13 (gap-map-ios's C05 note), and macOS none at all (above); the solid backgrounds and the neutral status are WinUI's (W3-17, W3-18), its solid backgrounds only the attention and neutral ones (`SystemFillColorSolidAttentionBackground`, `SystemFillColorSolidNeutralBackground`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:176-177`) and its neutral status a fill and backgrounds with no text colour (`:169-170`, `:175`, `:177`; ADD-A122), whose status colours are fills alone (`SystemFillColor{Success,Caution,Critical,Attention}`, which its controls use only as backgrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/InfoBar/InfoBar_themeresources.xaml:9-12`, with `TextFillColorInverse` on them, W3-46†), so `windows-11` states no `standalone`, the information colour WinUI's attention and KDE's `ForegroundActive` (W3-17, Q3.5), the destructive triple libadwaita's alone (GN-1.269). No part refers to an absent status role: a preset whose platform draws a severity variant without a status colour declares the variant with rules that name none (macOS's critical alert, its icon badge, MAC-D02), and S12's absent-operand check refuses any reference to an absent role; macOS's and iOS's destructive buttons refer to their system red (`role.@system_red`), not to `role.global.status.destructive`, which those presets leave absent; a platform that draws a status keeps stating it | GN-1.269, W3-17/18, K3.52; the gap-map notes named |
 | `shadow_reference` | what the platform names as the shadow colour (today's `shadow_color`; macOS `shadowColor`, Material `shadow`) | may_be_absent on `adwaita`, `windows-11`, `ios-*` (no named shadow colour: their shadows state each layer's colour, GN-3.01, W3-01, X-SH-1); `kde-breeze` names one (breezerc `ShadowColor`, K3.1, K3.2) | today's `shadow_color`, MAT-X5, K3.1 |
 | `selection_text_background` | the highlight behind selected text (today's `text_selection_background`) | required on every preset (every platform highlights selected text; a platform that does not distinguish it from selected items states a reference to the `Selection` set, below) | today's fields; GN-3.40, X-SE-1, MAC-X15, W3-25 |
 | `selection_text_foreground` | the selected text's colour (today's `text_selection_color`); absent where the text keeps its own colour | may_be_absent on `adwaita` (GN-3.41), `windows-11` (W3-25), `material-3` (Compose's `TextSelectionColors` holds a handle and a background colour only, gap-map-material's note on `compose/MaterialTheme.kt:279-281`), `ios-*` (X-SE-1 names the highlight colour alone) | today's fields |
@@ -9155,7 +9238,12 @@ size reports the default category) [D-5, TS-2, X-DT-1, R10]. So every keyed styl
 `extra_large_title_2`, `monospaced`), the role UIKit scales them by is the value phase's, from
 `preferredFont(forTextStyle:)` [D-5]. Every other preset's `token.text.scaling` is `linear`, but `material-3`'s
 (`android_non_linear`, MAT-X19); under those two the curve does not depend on the role, so their keyed styles state
-`scaling_role = "none"` (an `Option` leaf is stated, S11). Bold Text is the
+`scaling_role = "none"` (a `Value<Option<TextRole>>`, stated, S11). `macos-*`'s is `linear` because AppKit's text styles take
+no content-size category, `preferredFontForTextStyle:options:` taking an options dictionary whose key type the pinned
+headers declare with no key (`NSFont.h:184-187`, `NSFontDescriptor.h:59`), so only the text-scaling factor scales them
+(ADD-A130). A keyed style of any platform states each of `fill`, `elision`, `wrap` and `max_lines` only where its style
+sets it (WinUI's trimming and wrapping, `TextBlock_themeresources.xaml:10-51`), `Absent` elsewhere, the parts drawing the text stating them
+(S2.8, ADD-A130). Bold Text is the
 `BoldText` condition (a token rule on `font.weight`) [TS-3].
 
 **Windows.** The nine Fluent styles: `caption`, `body`, `body_strong`, `body_large`, `body_large_strong`, `subtitle`,
@@ -9216,8 +9304,8 @@ platform default monospace typeface (MAT-X36†).
   `panel`, each a `Value<IconStyle>`, absent on the presets the token absence table names for it, *tokens* below) and
   `keyed: Vec<(Key, IconStyle)>`, so a context also carries
   weight, scale and rendering mode where the platform's context sets them (in a context only `size` is required, every
-  other `IconStyle` `Value` field may be absent, and its list `symbol_variants` and maps `axes`, `status_colors` are
-  stated, `[]` and `{}` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9; a `scale` names a key of
+  other `IconStyle` `Value` field may be absent, and its list `symbol_variants` and maps `axes`, `symbolic_colors` are
+  stated, `[]` and `{}` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9, `from_icon` on a part where the platform decides per icon, ADD-A130; a `scale` names a key of
   `[declare] symbol_scales`, S10) [D-19, MAC-IC02]. Kirigami: `small`, `small_medium`, `medium`, `large`, `huge`, `enormous`, `for_labels`
   [Q1.1]. Kirigami computes `for_labels` from the default font's height, ascent plus descent (`kirigami_label_icon_size`,
   ADD-A53);
@@ -9244,7 +9332,7 @@ platform default monospace typeface (MAT-X36†).
 
 | Today's field | New home |
 |---|---|
-| `defaults.font` (family, size, weight, style, color) | the `body` slot's keyed style: `font.family`, `font.size`, `font.weight`, `font.style`; `color` -> `TextStyle.fill` = `= surface.foreground` |
+| `defaults.font` (family, size, weight, style, color) | the `body` slot's keyed style: `font.family`, `font.size`, `font.weight`, `font.style`; `color` -> each part's `text.fill`, `= surface.foreground`, the style's own `fill` absent where the platform's style sets no colour (S2.8, ADD-A130) |
 | `defaults.line_height` | each style's own `line_height` (an expression on `font_size`); no global ratio (R20) |
 | `defaults.mono_font` | the `monospace` slot |
 | `defaults.background_color` | `role.window.background` |
@@ -9259,8 +9347,8 @@ platform default monospace typeface (MAT-X36†).
 | `defaults.selection_inactive_background` | `role.selection.background` under a colour rule `@ cond window_inactive` |
 | `defaults.text_selection_background`, `text_selection_color` | `role.global.selection_text_background`, `role.global.selection_text_foreground` |
 | `defaults.disabled_text_color` | `role.window.disabled.foreground` (and the other sets') |
-| `defaults.danger_color`, `danger_text_color` | `role.global.status.error.fill`, `.foreground` (and `destructive` where separate) |
-| `defaults.warning_*`, `success_*`, `info_*` | `role.global.status.<s>.fill`, `.foreground` |
+| `defaults.danger_color`, `danger_text_color` | `role.global.status.error.fill`, `.foreground` (and `destructive` where separate); on `macos-*` none, AppKit declaring no status colour (ADD-A130) |
+| `defaults.warning_*`, `success_*`, `info_*` | `role.global.status.<s>.fill`, `.foreground`; on `macos-*` none (ADD-A130) |
 | `defaults.focus_ring_color`, `focus_ring_width_px`, `focus_ring_offset_px` | `token.focus` (`paint`, `width`, `offset`) |
 | `defaults.border.color`, `border.opacity` | `<set>.border`, the opacity folded in as `alpha(...)` |
 | `defaults.border.line_width_px`, `corner_radius_px`, `corner_radius_lg_px`, `shadow_enabled`, padding fields | no global: each part states its own `stroke`, `corners`, `shadow`, `padding` (R20, no model inheritance); the preset repeats the number per part |
@@ -9288,11 +9376,13 @@ platform has no such ramp and parts state the value themselves.
 one of them allows it. The first is the core's "may be absent" list for block sub-fields (S6.3), which applies
 wherever the block appears and is cited here, not repeated: among the tokens it covers every `Value` field of
 `Behavior`, `TouchBehavior`, `ScrollPhysics` and `PointerTokens` (`hide_pointer_delay`, `hide_pointer_fade`,
-`scroll_px_per_step`, `touchpad_factor`, `wheel_step_duration_max`, `touchpad_deceleration`, `touchpad_timing`,
+`hover_time`, `drag_time`, `scroll.wheel_step_lines`, `scroll.wheel_step_distance`, `touchpad_factor`, `wheel_step_duration_max`, `touchpad_deceleration`, `touchpad_timing`,
 `spring_loading`, `touch.*` and `pointer.color` on the platforms without them; `Behavior.key_repeat` is an `Option`,
 `none` where keys never repeat, and its `KeyRepeat`'s `delay` and `interval` are stated, S4.2; every parameter
 of a `ScrollDecay` is stated), `IconTokens.theme_fallback`, the `Caret` fields it
-names, every `TextRendering` field and a `FocusIndicator`'s `shadow` and `transition` (its `dash` is stated, `solid`
+names (`width` among them where the caret's width follows each line, GTK's, S4.2, ADD-A130), every `TextRendering`
+field, each of a keyed text style's or slot's `fill`, `elision`, `wrap` and `max_lines` that the platform's style
+does not set (S2.8, ADD-A130), and a `FocusIndicator`'s `shadow` and `transition` (its `dash` is stated, `solid`
 included, S2.4). `KdeTokens` and `KdeEffects` are stated whole on `kde-breeze`, never `Absent` (`tint_factor` an
 `Option`, `none` where the scheme does not tint; a reader's and a port's unset keys as KColorScheme and `applyScheme()`
 read them, S4.8). The second is this table, for the tokens no block mark covers:
@@ -9433,16 +9523,19 @@ and how (the preset Breeze's values on Plasma's default path, the reader kdeglob
 `kde_accent`, palettes and ports), and `kde-breeze`'s `accent_inputs`, is *KDE's inputs* under *role record*, the
 catalogue's one summary of the core's S2.2, S9.1, S9.2, S12 and S14.
 
-**token.behavior** (S4.2): the existing fields (double-click time and distance, drag threshold, hover-open delay,
-`key_repeat` (a `KeyRepeat` of a delay and an interval, `none` where keys never repeat), scroll lines per step, hide pointer while typing, scroll physics) carry these rows:
+**token.behavior** (S4.2): the existing fields (double-click time and distance, drag threshold, the hover time
+(`hover_time`, once `hover_open_delay`, ADD-A130),
+`key_repeat` (a `KeyRepeat` of a delay and an interval, `none` where keys never repeat), the wheel's lines per step (now
+`scroll.wheel_step_lines`, ADD-A130), hide pointer while typing, scroll physics) carry these rows:
 GN-3.47, GN-3.48, GN-3.67†, GN-3.68†, K3.70–K3.72, K-P3-16†, W3-41, MAC-X12, MAC-P3-12†, MAT-P3-14†,
 MAT-P3-15†, MAT-X32†, P3-13†, GN-P3-15†. Scroll physics (`token.behavior.scroll`) carries kinetic friction,
 overshoot and its spring, animated-scroll duration and curve, snap settle, momentum: GN-3.24, GN-3.06, K-P3-18†,
 MAC-P4-4†, MAC-X32†, W3-52†, X-MO-8, MAT-P3-16† (its minimum and maximum fling velocities: `min_fling_velocity`,
 `max_fling_velocity`; Kirigami's wheel step whose duration grows with the distance between `wheel_step_duration`
 and `wheel_step_duration_max`, K-P3-18†). New fields: ADD-A45; `hide_pointer_delay` (KLineEdit's, K3.65†),
-`hide_pointer_fade` (Android's gradual fade, MAT-P3-15†), `scroll_px_per_step` (Android's pixels per wheel step,
-MAT-X32†): ADD-A86. GTK's step from the view's page size is `scroll_view.values.wheel_step` (GN-P3-15†), as are
+`hide_pointer_fade` (Android's gradual fade, MAT-P3-15†), `scroll.wheel_step_distance` (Android's pixels per wheel
+step, MAT-X32†; ADD-A86, moved into `scroll` by ADD-A130); `drag_min_delay` (GTK's earliest drag, GN-3.48) and
+`mnemonic_when_disabled` (GN-3.50): ADD-A130. GTK's step from the view's page size is `scroll_view.values.wheel_step` (GN-P3-15†), as are
 NSScrollView's line-scroll distances per axis; its page overlap is `scroll_view.values.page_overlap` (MAC-P3-17†).
 `focus_visible_when` (when focus becomes visible, a `FocusVisibleWhen`, the
 default of every widget's value): ADD-A16. On `windows-11` it is `Keyboard { timeout: None }`: WinUI draws the system

@@ -130,7 +130,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.48† | `input.values.mask_character, input.values.mask_reveal` | field |
 | K1.48† | `button.icon.glyph (ThemeIcon with its fallback) @ variant reveal context input` | rule |
 | K1.48† | `input.values.reveal_button_visibility (while the field has text or shows the password)` | field |
-| K1.49† | `text_area.misspelling.text.decoration (line, style, paint: a stated colour, not a role; thickness and offset = widget.text.font_underline_thickness, widget.text.font_underline_offset: Qt draws the line from the font's metrics, S2.8); input.misspelling.text.decoration` | field |
+| K1.49† | `text_area.misspelling.text.decoration (line, style, paint: a stated colour, not a role; thickness and offset: Qt's drawn line, held within the descent, not the font's position, the unmeasured register's, S2.8, ADD-A130); input.misspelling.text.decoration` | field |
 | K1.50 | `checkbox.mark.glyph @ {indeterminate} (three dots, Path)` | rule |
 | K1.51 | `checkbox.box.fill @ {pressed}; radio.ring.fill @ {pressed} (= qt_darker(..))` | rule |
 | K1.52 | `checkbox.box.shadow @ {hover} (inset ring layer); radio.ring.shadow @ {hover}` | rule |
@@ -434,6 +434,10 @@ rationale, each decided in the core's additions register (S22).
 | Q1.12 | `input.values.default_width` | field |
 | Q1.12 | `text_area.values.default_width, text_area.values.default_height` | field |
 | Q1.13 | `text_area.misspelling.text.decoration.paint @ cond flavor:kirigami (= role.view.negative)` | rule |
+| Q1.13 | `text_area.misspelling.text.fill @ cond flavor:kirigami (= role.view.negative: Sonnet's highlighter recolours the word too, `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:105`, its colour `qqc2-desktop-style@6.31.0 org.kde.desktop/TextArea.qml:94`; ADD-A130)` | rule |
+| Q1.13 | `text_area.misspelling.fill @ {@holds_caret} cond flavor:kirigami (= with_alpha(role.view.negative, 0.1): Sonnet's background on the word holding the caret, `spellcheckhighlighter.cpp:114-117`, `:380-381`; ADD-A130)` | rule |
+| Q1.13 | `text_area.misspelling {@holds_caret}` (the connector-set flag, Sonnet's word against the caret's document position, or the selection's end while text is selected, `spellcheckhighlighter.cpp:370-381`, `:610-624`; ADD-A130) | flag |
+| Q1.13 | `text_area.misspelling.text.decoration.{thickness,offset} @ cond flavor:kirigami` (Qt Quick's form: the position rounded to the nearest pixel, the thickness unrounded, a wavy line's stroke capped; the unmeasured register's row 4, S2.8, ADD-A130) | rule |
 | Q1.14 | `input.caret.min_width @ cond tablet_mode` | rule |
 | Q1.14 | `input.caret.fill @ cond tablet_mode` | rule |
 | Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode` | rule |
@@ -1070,7 +1074,8 @@ rationale, each decided in the core's additions register (S22).
 | K3.60 | `IconStyle.state_effect @ {disabled} / {hover} (keys declared in icon_state_effects, each implemented to KIconEffect's source; S2.9)` | field |
 | K3.60 | `PartStyle.icon.state_effect, PartStyle.opacity @ {disabled} (to gray and semi-transparent)` | rule |
 | K3.60 | `token.params.icon_effect.<key> (the effects' amounts: the gamma of the active effect, the gray and transparency of the disabled one)` | token |
-| K3.61 | `IconStyle.fill (= surface.foreground), IconStyle.status_colors (= the status roles) per icon mode (ADD-A37)` | field |
+| K3.61 | `IconStyle.fill (= surface.foreground, ColorScheme-Text), IconStyle.symbolic_colors (background, highlight, highlighted_text, positive_text, neutral_text, negative_text, accent: KIconLoader's stylesheet classes, `kiconcolors.cpp:16-23`) per icon mode (ADD-A37, ADD-A130)` | field |
+| K3.61 | `PartStyle.icon.rendering_mode (from_icon: KIconLoader recolours an SVG's colour-scheme stylesheet classes in a theme that follows the colour scheme, Breeze's; S2.9, ADD-A130)` | field |
 | K3.62 | `PartStyle.icon.fill @ {selected} / {pressed} (selection foreground)` | rule |
 | K3.63 | `token.icons.sizes.toolbar, token.icons.sizes.keyed.main_toolbar, token.icons.sizes.small, token.icons.sizes.large, token.icons.sizes.dialog, token.icons.sizes.panel` | token |
 | K3.63 | `reader:kde:icon theme index.theme *Default sizes` | reader |
@@ -1085,7 +1090,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.71 | `token.behavior.drag_threshold` | token |
 | K3.71 | `token.behavior.drag_time (ADD-A45)` | token |
 | K3.71 | `reader:kde:kdeglobals [KDE] StartDragDist, StartDragTime` | reader |
-| K3.72 | `token.behavior.scroll_lines_per_step` | token |
+| K3.72 | `token.behavior.scroll.wheel_step_lines` (ADD-A130) | token |
 | K3.72 | `reader:kde:kdeglobals [KDE] WheelScrollLines` | reader |
 | K3.73 | `token.behavior.single_click_activates @ cond system_setting:single_click (a `Tokens` rule; one route, S4.2; ADD-A45)` | token |
 | K3.73 | `reader:kde:kdeglobals [KDE] SingleClick -> cond system_setting:single_click` | reader |
@@ -1196,7 +1201,7 @@ rationale, each decided in the core's additions register (S22).
 | K-SF09† | `code_editor.dynamic_wrap_indicator.fill (Pattern QtBrush Dense4 in the marker's colour, ADD-B01)` | field |
 | K-SF10† | `code_editor.syntax_span.text (fill, weight, style, decoration), code_editor.syntax_span.fill @ variant comment / variant string / variant function / variant constant / variant preprocessor / variant special_char / variant error / variant warning / variant type / variant decimal / variant base_n / variant float / variant @<role> (the keyed roles and per-language overrides)` | rule |
 | K-SF10† | `code_editor.syntax_span.text.fill @ {text_selected}` (a span whose text lies in the selection: the style's selected-text colour) | rule |
-| K-SF11† | `code_editor.misspelling.text (its decoration's paint; its `thickness` and `offset` = `element.font_underline_thickness`, `element.font_underline_offset`, S2.8)` | field |
+| K-SF11† | `code_editor.misspelling.text (its decoration's paint; its `thickness` and `offset` Qt's drawn line, the unmeasured register's, S2.8, ADD-A130)` | field |
 | K-SF11† | `code_editor.template_field.fill` | field |
 | K-SF11† | `code_editor.template_placeholder.fill / @ {focused} / @ {read_only}` | rule |
 | K-SF12† | `rich_text.heading_1.text … rich_text.heading_6.text (the weight restated; text.font.size = mul(base, <factor>) each, base the document's font) @ variant markdown` | rule |
