@@ -308,8 +308,9 @@ impl ResolvedTheme {
 
     /// The tokens read in `scope` (S8), what no part carries: their
     /// expressions' roles through its bindings, mirrored for its direction.
-    /// `None` only where a token that cannot be absent has no value, which
-    /// validation rules out.
+    /// `None` where a token that cannot be absent has no value: validation
+    /// checks the tokens without a part's bindings, so a token reading
+    /// `surface.…` is not proven to have one in every scope.
     #[must_use]
     pub fn tokens(&self, scope: &Scope) -> Option<ResolvedTokens> {
         let mut tokens = self

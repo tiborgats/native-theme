@@ -19,7 +19,7 @@ mod needs;
 mod tests;
 mod theme;
 
-pub(crate) use matching::{Matched, own_entries};
+pub(crate) use matching::{Matched, instance_entries, own_entries};
 pub use needs::DataNeeds;
 pub use theme::{RootInputs, Styled, Unavailable, Widget};
 

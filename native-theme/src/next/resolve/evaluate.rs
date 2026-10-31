@@ -36,7 +36,7 @@ use crate::next::expr::{
 };
 use crate::next::inputs::InputName;
 use crate::next::key::Key;
-use crate::next::query::{Element, Scope, ScopeEntry, own_entries};
+use crate::next::query::{Element, Scope, ScopeEntry, instance_entries, own_entries};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{PartRef, Selector};
 use crate::next::tokens::TextScaling;
@@ -982,13 +982,18 @@ impl<'t> Cx<'t> {
     /// its own, each evaluated in the scope outside it. A part outside the
     /// element takes only those of the parts below the nearest enclosing it
     /// whose entry the element's outer scope holds, which holds their
-    /// bindings already, so none applies twice (S2.11).
+    /// bindings already, so none applies twice (S2.11); only the entries
+    /// of the element's own widget instance count, never an outer instance
+    /// of the same widget's ([`instance_entries`]).
     fn chain_of(&mut self, part: TypedPart) -> Vec<Bindings> {
         let head = self.element.and_then(|element| match &element.part {
             PartRef::Typed(own) => Some(own.element()),
             PartRef::Component { .. } => None,
         });
-        let outer = self.element_outer;
+        let outer = match head {
+            Some(head) => instance_entries(head, self.element_outer),
+            None => self.element_outer,
+        };
         let entered = |held: &TypedPart| {
             outer
                 .iter()

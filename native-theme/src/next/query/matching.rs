@@ -56,21 +56,55 @@ fn within_element(part: TypedPart) -> Vec<TypedPart> {
     enclosing
 }
 
-/// The variants of the elements of `part`'s widget that enclose its
-/// element, read from the innermost of `outer`'s entries whose parts
-/// enclose it (S2.11: an element part's query sees its widget's variants
-/// as well as its own); none for a widget's root.
-fn widget_variants(part: TypedPart, outer: &[ScopeEntry]) -> Vec<VariantRef> {
-    let head = part.element();
+/// The entries of `outer` (outermost first) of the instance of `head`'s
+/// widget that encloses `head`'s element: the last ones, each a part
+/// enclosing the one inside it, ending at the first that is not, so an
+/// outer instance of the same widget (a list inside a list's view) is never
+/// read as the element's own (S2.11).
+pub(crate) fn instance_entries(head: TypedPart, outer: &[ScopeEntry]) -> &[ScopeEntry] {
     let enclosing: Vec<TypedPart> = head.enclosing().into_iter().skip(1).collect();
-    let mut out = Vec::new();
-    for entry in outer.iter().rev() {
-        let PartRef::Typed(held) = &entry.part else {
+    let parts: Vec<Option<TypedPart>> = outer
+        .iter()
+        .map(|entry| match &entry.part {
+            PartRef::Typed(part) => Some(*part),
+            PartRef::Component { .. } => None,
+        })
+        .collect();
+    let run = nested_run(&enclosing, &parts);
+    outer
+        .get(outer.len().saturating_sub(run)..)
+        .unwrap_or_default()
+}
+
+/// How many of `outer`'s last items are, innermost last, items of
+/// `enclosing` (innermost first), each further out in it than the one
+/// inside it.
+fn nested_run<T: PartialEq>(enclosing: &[T], outer: &[Option<T>]) -> usize {
+    let mut inside: Option<usize> = None;
+    let mut count = 0_usize;
+    for item in outer.iter().rev() {
+        let Some(at) = item
+            .as_ref()
+            .and_then(|item| enclosing.iter().position(|held| held == item))
+        else {
             break;
         };
-        if !enclosing.contains(held) {
+        if inside.is_some_and(|inside| at <= inside) {
             break;
         }
+        inside = Some(at);
+        count = count.saturating_add(1);
+    }
+    count
+}
+
+/// The variants of the elements of `part`'s widget that enclose its
+/// element, read from the entries of its widget's instance
+/// ([`instance_entries`]) (S2.11: an element part's query sees its
+/// widget's variants as well as its own); none for a widget's root.
+fn widget_variants(part: TypedPart, outer: &[ScopeEntry]) -> Vec<VariantRef> {
+    let mut out = Vec::new();
+    for entry in instance_entries(part.element(), outer).iter().rev() {
         for variant in &entry.variants {
             if !out.contains(variant) {
                 out.push(variant.clone());
@@ -503,5 +537,26 @@ fn starts_instance(part: &PartRef) -> bool {
     match part {
         PartRef::Typed(part) => part.info().is_none_or(|info| info.root),
         PartRef::Component { .. } => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::nested_run;
+
+    /// The run of an element's own widget instance stops at an outer
+    /// instance of the same widget: a cell's row and view, then the outer
+    /// list's row and view, of which only the inner two are the cell's;
+    /// a view directly inside a view, of which only the inner one is.
+    #[test]
+    fn an_outer_instance_of_the_same_widget_is_not_the_elements() {
+        let enclosing = ["row", "view"];
+        let outer = [Some("view"), Some("row"), Some("view"), Some("row")];
+        assert_eq!(nested_run(&enclosing, &outer), 2);
+        let direct = [Some("view"), Some("view")];
+        assert_eq!(nested_run(&enclosing, &direct), 1);
+        let other = [Some("view"), None];
+        assert_eq!(nested_run(&enclosing, &other), 0);
+        assert_eq!(nested_run(&enclosing, &[Some("view"), Some("row")]), 2);
     }
 }
