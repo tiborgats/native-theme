@@ -2396,16 +2396,19 @@ impl Checks<'_, '_> {
                 }
             }
         }
+        // An `Ellipse` a place resolves to is stated somewhere: at the place,
+        // or at one a reference above it leads to (S2.2), so the places are
+        // checked wherever any source states one.
+        let states = stack.sources.iter().any(|source| {
+            source
+                .ops
+                .iter()
+                .any(|op| matches!(op.kind, OpKind::Set(Val::Stated(Fact::Variant("ellipse")))))
+        });
+        if !states {
+            return;
+        }
         for (target, place) in places {
-            let states = stack.of(target).any(|(_, source)| {
-                source.ops.iter().any(|op| {
-                    (op.path == place || is_above(place, &op.path))
-                        && matches!(op.kind, OpKind::Set(Val::Stated(Fact::Variant("ellipse"))))
-                })
-            });
-            if !states {
-                continue;
-            }
             let worlds = stack.worlds(vec![Seed::Field(target, place.to_owned(), true)]);
             for world in worlds.iter() {
                 let corners: Vec<Vec<Found<'_>>> = CORNERS

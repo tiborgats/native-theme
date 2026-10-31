@@ -1106,6 +1106,17 @@ fn combination_ellipse_corners() {
          set = {{ corners.top_left_px = 4 }}"
     );
     assert_eq!(bare(&rule).len(), 3);
+    // Through a reference: the body's corners the token's focus corners,
+    // all four ellipses, one patched to a length over the reference.
+    let referenced = "[tokens.focus.corners]\ntop_left = \"ellipse\"\ntop_right = \"ellipse\"\n\
+                      bottom_right = \"ellipse\"\nbottom_left = \"ellipse\"\ncurve = \"circular\"\n\
+                      [widgets.button.body]\ncorners = \"= token.focus.corners\"";
+    let patched = "[widgets.button.body]\ncorners.top_left_px = 4";
+    assert_eq!(over(referenced, "", &Declarations::default()), NONE);
+    assert!(
+        !over(referenced, patched, &Declarations::default()).is_empty(),
+        "an ellipse reached through a reference is checked"
+    );
     // A corner operand on an ellipse.
     assert_eq!(
         bare(&format!(
