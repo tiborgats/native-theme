@@ -202,11 +202,11 @@ pub(crate) struct Spring {
 /// The start of the animated range.
 const SPRING_FROM: f64 = 0.0;
 /// The end of the animated range.
-const SPRING_TO: f64 = 1.0;
+pub(crate) const SPRING_TO: f64 = 1.0;
 
 /// A time in seconds as whole milliseconds, truncated; None where the conversion to an unsigned 32-bit integer
 /// has no defined result (NaN, infinite, at or below −1, or too large).
-fn seconds_to_ms(seconds: f64) -> Option<u32> {
+pub(crate) fn seconds_to_ms(seconds: f64) -> Option<u32> {
     let ms = (seconds * 1000.0).trunc();
     (ms.is_finite() && ms >= 0.0 && ms <= f64::from(u32::MAX)).then_some(ms as u32)
 }
@@ -341,6 +341,13 @@ impl Spring {
 
     /// The animation's value at `tau_ms` milliseconds: exactly 1 at and after the estimated duration, the motion's
     /// position before it. None when the parameters are refused or the duration is undefined.
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "the vector table samples by it; the glue (`motion.rs`'s `spring_at`) estimates the duration once"
+        )
+    )]
     pub(crate) fn value_at_ms(&self, tau_ms: u32) -> Option<f64> {
         let duration = self.duration_ms()?;
         if tau_ms >= duration {
@@ -352,6 +359,13 @@ impl Spring {
     /// The animation's value at the fraction `t` of its estimated duration, the time truncated to whole
     /// milliseconds. None for a spring that never rests, refused parameters, or a time with no defined integer
     /// value (NaN or negative `t`).
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "the vector table samples by it; the glue (`motion.rs`'s `spring_at`) estimates the duration once"
+        )
+    )]
     pub(crate) fn value_at_fraction(&self, t: f64) -> Option<f64> {
         let duration = self.duration_ms()?;
         if duration == SPRING_DURATION_INFINITE {

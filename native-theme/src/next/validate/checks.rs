@@ -2458,17 +2458,17 @@ fn exempt_variant(decl: &Declarations, widget: WidgetKind, variant: &VariantRef)
         })
 }
 
-/// A widget's own keyed content variants, which the connector sets by one
-/// platform's rule under every preset (S8; the catalogue's content-variant
-/// pairs, *Entry format*, ADD-A123): no rule need select on them. An
-/// *(element)* part's are its own, a content variant only on the part its
-/// pair names (S8).
+/// A widget's keyed content variants, its own and its *(element)* parts',
+/// which the connector sets by one platform's rule under every preset (S8;
+/// the catalogue's content-variant pairs, *Entry format*, ADD-A123): no rule
+/// need select on them. A widget declares its parts' variants in its own
+/// section (S10), so every pair exempts; that a name is a content variant
+/// only on the part its pair names is the query's to tell (S8).
 fn content_variants(widget: WidgetKind) -> impl Iterator<Item = &'static str> {
     registry::widgets()
         .iter()
         .filter(move |info| info.kind == widget)
         .flat_map(|info| info.content_variants)
-        .filter(|(part, _)| part.is_none())
         .filter_map(|(_, name)| name.strip_prefix('@'))
 }
 

@@ -43,3 +43,19 @@ impl Named for KdeShadeRole {
             .find(|role| role.name() == name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::KdeShadeRole;
+    use crate::next::toml::read::Named;
+
+    /// `NAMES`, which types `kde_shade`'s `role`, and the names evaluation
+    /// reads agree, role by role, each read back as itself.
+    #[test]
+    fn kde_shade_role_names_agree() {
+        for (role, name) in KdeShadeRole::ALL.into_iter().zip(KdeShadeRole::NAMES) {
+            assert_eq!(role.name(), name);
+            assert_eq!(KdeShadeRole::from_name(name), Some(role));
+        }
+    }
+}

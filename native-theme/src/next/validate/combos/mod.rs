@@ -2691,11 +2691,6 @@ fn all_parts() -> Vec<TypedPart> {
         .collect()
 }
 
-/// The fields whose sides make a part's insets from its container (S2.4):
-/// its own margin, the margin and padding of every part between it and the
-/// nearest part enclosing it whose catalogue entry lists `corners`, and
-/// that container's padding; within the widget, a root's container lying
-/// outside it.
 /// A `Concentric` corner's container (S2.4): the nearest enclosing part whose
 /// catalogue entry lists `corners`; `None` for a root, whose container lies
 /// outside the widget.
@@ -2721,6 +2716,11 @@ fn container_of(part: TypedPart) -> Option<TypedPart> {
     None
 }
 
+/// The fields whose sides make a part's insets from its container (S2.4):
+/// its own margin, the margin and padding of every part between it and the
+/// nearest part enclosing it whose catalogue entry lists `corners`, and
+/// that container's padding; within the widget, a root's container lying
+/// outside it.
 fn inset_chain(part: TypedPart) -> Vec<(TypedPart, &'static str)> {
     let widget = widget_of(part);
     let Some(info) = registry::widgets().iter().find(|info| info.kind == widget) else {

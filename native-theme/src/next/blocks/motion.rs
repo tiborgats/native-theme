@@ -196,7 +196,7 @@ pub fn evaluate(timing: &Timing, t: f64) -> Option<f64> {
             t,
         )),
         Timing::Steps { count, jump } => steps(t, *count, *jump),
-        Timing::Spring { .. } => spring(timing)?.value_at_fraction(t),
+        Timing::Spring { .. } => spring_at(&spring(timing)?, t),
         Timing::Platform(PlatformCurve::Qt(easing)) => Some(timing::qt_ease(qt_easing(*easing), t)),
         Timing::Platform(PlatformCurve::Adw(easing)) => {
             Some(timing::adw_ease(adw_easing(*easing), t))
@@ -216,6 +216,22 @@ pub fn evaluate(timing: &Timing, t: f64) -> Option<f64> {
 pub fn spring_duration(timing: &Timing) -> Option<Ms> {
     let duration = spring(timing)?.duration_ms()?;
     (duration != timing::SPRING_DURATION_INFINITE).then_some(Ms(duration as f32))
+}
+
+/// A spring's value at the fraction `t` of its estimated duration, as
+/// `timing::Spring::value_at_fraction` gives it, the duration estimated
+/// once: the time truncated to whole milliseconds, exactly the end value at
+/// and after the duration, `None` for a spring that never rests.
+fn spring_at(spring: &timing::Spring, t: f64) -> Option<f64> {
+    let duration = spring.duration_ms()?;
+    if duration == timing::SPRING_DURATION_INFINITE {
+        return None;
+    }
+    let tau = timing::seconds_to_ms(t * f64::from(duration) / 1000.0)?;
+    if tau >= duration {
+        return Some(timing::SPRING_TO);
+    }
+    spring.position_at(tau)
 }
 
 /// A spring timing's motion from 0 to 1, its parameters widened to doubles.

@@ -86,6 +86,15 @@ pub(crate) trait Leaf: Any + Clone {
     /// The type a call stated on such a field takes, and how the field limits
     /// it; `None` where no call is allowed (S2.2's typing).
     fn field(signed: bool) -> Option<FieldType>;
+
+    /// Whether the value is a keyed scalar, whose call its declaration's
+    /// unit types (S4.6).
+    const KEYED_SCALAR: bool = false;
+
+    /// A keyed scalar's value as this type; none but `Scalar` is one.
+    fn from_scalar(_: Scalar) -> Option<Self> {
+        None
+    }
 }
 
 impl Leaf for Color {
@@ -308,6 +317,12 @@ impl Leaf for Scalar {
     /// here.
     fn field(_: bool) -> Option<FieldType> {
         None
+    }
+
+    const KEYED_SCALAR: bool = true;
+
+    fn from_scalar(scalar: Scalar) -> Option<Self> {
+        Some(scalar)
     }
 }
 
@@ -1576,10 +1591,7 @@ impl<'t> Cx<'t> {
                     cx.value::<X>(below, signed).map(|x| x.to_val())
                 })?;
                 match unit {
-                    Some(unit) => {
-                        let scalar: Box<dyn Any> = Box::new(scalar_of(unit, &val)?);
-                        scalar.downcast::<X>().ok().map(|x| *x)
-                    }
+                    Some(unit) => X::from_scalar(scalar_of(unit, &val)?),
                     None => X::from_val(&val),
                 }
             }
@@ -1588,10 +1600,8 @@ impl<'t> Cx<'t> {
 
     /// Where `X` is a keyed scalar stated in the tokens' `params`, its
     /// group's declared unit (S4.6), which types a call stated on it.
-    fn scalar_unit<X: Any>(&self, origin: Target) -> Option<ScalarUnit> {
-        if std::any::TypeId::of::<X>() != std::any::TypeId::of::<Scalar>()
-            || origin != Target::Tokens
-        {
+    fn scalar_unit<X: Leaf>(&self, origin: Target) -> Option<ScalarUnit> {
+        if !X::KEYED_SCALAR || origin != Target::Tokens {
             return None;
         }
         let [params, group, _] = self.path.as_slice() else {
