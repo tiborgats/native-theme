@@ -205,8 +205,9 @@ const MAX_CHAIN: usize = 32;
 /// S12 allows, so a cycle ends a lookup instead of the stack.
 const MAX_FOLLOW: usize = MAX_CHAIN.saturating_mul(2).saturating_add(4);
 
-/// Every problem the stack's combinations show (S12).
-pub(super) fn check(stack: &Stack<'_>) -> Vec<Problem> {
+/// Every problem the stack's combinations show (S12), each with the layer
+/// stating the place it names.
+pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
     let mut out = Checks {
         stack,
         problems: Vec::new(),
@@ -225,7 +226,8 @@ pub(super) fn check(stack: &Stack<'_>) -> Vec<Problem> {
 
 struct Checks<'s, 'a> {
     stack: &'s Stack<'a>,
-    problems: Vec<Problem>,
+    /// Each problem, with the layer stating the place it names.
+    problems: Vec<(usize, Problem)>,
 }
 
 impl<'a> Stack<'a> {
@@ -589,15 +591,15 @@ impl<'a> Stack<'a> {
 
     /// What a part is drawn as under `world`: its last `Absent`, `DrawnAs` or
     /// style patch's say, and where that is stated.
-    fn shown(&self, world: &World, part: TypedPart) -> (&Shown, Option<&str>) {
-        let mut out: (&Shown, Option<&str>) = (&Shown::Drawn, None);
+    fn shown(&self, world: &World, part: TypedPart) -> (&Shown, Option<(usize, &str)>) {
+        let mut out: (&Shown, Option<(usize, &str)>) = (&Shown::Drawn, None);
         for (_, source) in self.of(Target::Part(part)) {
             if !self.applies(world, source) {
                 continue;
             }
             for op in &source.ops {
                 if let OpKind::Shown(shown) = &op.kind {
-                    out = (shown, Some(&op.at));
+                    out = (shown, Some((source.layer, &op.at)));
                 }
             }
         }
@@ -1414,8 +1416,9 @@ fn same_value(a: &Found<'_>, b: &Found<'_>) -> bool {
 }
 
 impl Checks<'_, '_> {
-    fn problem(&mut self, at: &str, kind: ProblemKind) {
-        let problem = Problem::new(at, kind);
+    /// A problem at `at`, a place stated in the layer `layer`.
+    fn problem(&mut self, layer: usize, at: &str, kind: ProblemKind) {
+        let problem = (layer, Problem::new(at, kind));
         if !self.problems.contains(&problem) {
             self.problems.push(problem);
         }
@@ -1481,7 +1484,7 @@ impl Checks<'_, '_> {
                         .iter()
                         .any(|found| variant(found) == Some("dynamic_type"));
                     if dynamic {
-                        self.problem(&op.at, ProblemKind::TextScaleUnderDynamicType);
+                        self.problem(source.layer, &op.at, ProblemKind::TextScaleUnderDynamicType);
                     }
                     continue;
                 }
@@ -1492,10 +1495,10 @@ impl Checks<'_, '_> {
                         && !matches!(stack.shown(world, other).0, Shown::Drawn)
                     {
                         let part = part.to_string();
-                        self.problem(&op.at, ProblemKind::PartNotDrawn { part });
+                        self.problem(source.layer, &op.at, ProblemKind::PartNotDrawn { part });
                     }
                     if let (Some(corner), Some(other)) = (corner_of(path), other) {
-                        self.corner(world, source.target, other, corner, &operand, op);
+                        self.corner(world, source, other, corner, &operand, op);
                     }
                     if is_metric(path) {
                         continue;
@@ -1503,7 +1506,7 @@ impl Checks<'_, '_> {
                 }
                 Ref::Part(path) => {
                     if let (Some(corner), Target::Part(own)) = (corner_of(path), source.target) {
-                        self.corner(world, source.target, own, corner, &operand, op);
+                        self.corner(world, source, own, corner, &operand, op);
                     }
                 }
                 _ => {}
@@ -1529,21 +1532,33 @@ impl Checks<'_, '_> {
                     match found.got {
                         Got::Absent if in_call => {
                             let operand = operand.clone();
-                            self.problem(&op.at, ProblemKind::AbsentOperand { operand });
+                            self.problem(
+                                source.layer,
+                                &op.at,
+                                ProblemKind::AbsentOperand { operand },
+                            );
                         }
                         Got::Absent if !op.marks.may_be_absent => {
-                            self.problem(&op.at, ProblemKind::AbsentNotAllowed);
+                            self.problem(source.layer, &op.at, ProblemKind::AbsentNotAllowed);
                         }
                         Got::Auto if in_token_style && *reference == Ref::LineHeight => {
                             let operand = operand.clone();
-                            self.problem(&op.at, ProblemKind::AutoOperand { operand });
+                            self.problem(
+                                source.layer,
+                                &op.at,
+                                ProblemKind::AutoOperand { operand },
+                            );
                         }
                         Got::Auto if in_call && !exempt_auto => {
                             let operand = operand.clone();
-                            self.problem(&op.at, ProblemKind::AutoOperand { operand });
+                            self.problem(
+                                source.layer,
+                                &op.at,
+                                ProblemKind::AutoOperand { operand },
+                            );
                         }
                         Got::Auto if !in_call && !op.marks.auto => {
-                            self.problem(&op.at, ProblemKind::AutoNotAllowed);
+                            self.problem(source.layer, &op.at, ProblemKind::AutoNotAllowed);
                         }
                         Got::Absent | Got::Auto | Got::Expr(_) | Got::Stated(_) => {}
                     }
@@ -1552,7 +1567,7 @@ impl Checks<'_, '_> {
         }
         let cycle = self.cycles(world, id, cx, expr);
         if cycle {
-            self.problem(&op.at, ProblemKind::ExpressionCycle);
+            self.problem(source.layer, &op.at, ProblemKind::ExpressionCycle);
         }
         if plain {
             self.block_reference(world, source, op);
@@ -1565,7 +1580,7 @@ impl Checks<'_, '_> {
                 via: false,
             };
             if !cycle && stack.follow(world, found).1 > MAX_CHAIN {
-                self.problem(&op.at, ProblemKind::ChainTooLong);
+                self.problem(source.layer, &op.at, ProblemKind::ChainTooLong);
             }
         }
         if layout_field(source.target, &op.path) {
@@ -1597,23 +1612,25 @@ impl Checks<'_, '_> {
                 let at = format!("{}.{}", op.at, tail(&op.path, &path));
                 match found.got {
                     Got::Absent if !field.may_be_absent => {
-                        self.problem(&at, ProblemKind::AbsentNotAllowed);
+                        self.problem(source.layer, &at, ProblemKind::AbsentNotAllowed);
                     }
-                    Got::Auto if !field.auto => self.problem(&at, ProblemKind::AutoNotAllowed),
+                    Got::Auto if !field.auto => {
+                        self.problem(source.layer, &at, ProblemKind::AutoNotAllowed);
+                    }
                     Got::Absent | Got::Auto | Got::Expr(_) | Got::Stated(_) => {}
                 }
             }
         }
     }
 
-    /// A corner operand of `named`, read where `target` states `op` (S2.4,
+    /// A corner operand of `named`, read where `source` states `op` (S2.4,
     /// S8, S12): one that can resolve `Concentric` or `FollowPart` is
     /// refused anywhere, one that can resolve `Full` unless it is the corner
     /// of the element's own part.
     fn corner(
         &mut self,
         world: &World,
-        target: Target,
+        source: &Source,
         named: TypedPart,
         corner: &str,
         operand: &str,
@@ -1629,16 +1646,20 @@ impl Checks<'_, '_> {
             let refused = match variant(&found) {
                 Some("concentric" | "follow_part") => true,
                 Some("full") => {
-                    if element_of(target) == Some(named) {
-                        self.size_data(world, target, op);
+                    if element_of(source.target) == Some(named) {
+                        self.size_data(world, source, op);
                     }
-                    element_of(target) != Some(named)
+                    element_of(source.target) != Some(named)
                 }
                 _ => false,
             };
             if refused {
                 let operand = operand.to_owned();
-                self.problem(&op.at, ProblemKind::CornerAtLayout { operand });
+                self.problem(
+                    source.layer,
+                    &op.at,
+                    ProblemKind::CornerAtLayout { operand },
+                );
             }
         }
     }
@@ -1646,9 +1667,9 @@ impl Checks<'_, '_> {
     /// A `Full` corner operand reads `element.width` and `element.height`
     /// (S8): the data the reading part (or the widget's values) declares
     /// under the flavour in force, under each where the world chooses none.
-    fn size_data(&mut self, world: &World, target: Target, op: &Op) {
+    fn size_data(&mut self, world: &World, source: &Source, op: &Op) {
         let decl = self.stack.decl();
-        let (widget, owner) = match target {
+        let (widget, owner) = match source.target {
             Target::Part(part) => (widget_of(part), DataOwner::Part(part)),
             Target::Values(widget) => (widget, DataOwner::Values),
             Target::Roles(_) | Target::Tokens => return,
@@ -1667,7 +1688,7 @@ impl Checks<'_, '_> {
             });
             if !declared {
                 let datum = Ref::Element(datum).to_string();
-                self.problem(&op.at, ProblemKind::UndeclaredData { datum });
+                self.problem(source.layer, &op.at, ProblemKind::UndeclaredData { datum });
             }
         }
     }
@@ -1771,7 +1792,11 @@ impl Checks<'_, '_> {
             let fixed = own.is_some_and(|own| self.fixed_box(own, datum, drawn_to_box));
             if !fixed {
                 let datum = Ref::Element(datum).to_string();
-                self.problem(&op.at, ProblemKind::ElementSizeInLayout { datum });
+                self.problem(
+                    source.layer,
+                    &op.at,
+                    ProblemKind::ElementSizeInLayout { datum },
+                );
             }
         }
     }
@@ -1852,7 +1877,7 @@ impl Checks<'_, '_> {
                         if outer {
                             continue;
                         }
-                        self.problem(&op.at, ProblemKind::FieldsOver { below });
+                        self.problem(source.layer, &op.at, ProblemKind::FieldsOver { below });
                     }
                 }
             }
@@ -1949,7 +1974,7 @@ impl Checks<'_, '_> {
                 };
                 if refused {
                     for found in absents {
-                        self.problem(found.at, ProblemKind::AbsentNotAllowed);
+                        self.problem(found.layer, found.at, ProblemKind::AbsentNotAllowed);
                     }
                 }
             }
@@ -2010,11 +2035,11 @@ impl Checks<'_, '_> {
             .collect();
         for first in &parts {
             for world in &all {
-                let (Shown::DrawnAs { .. }, Some(at)) = stack.shown(world, *first) else {
+                let (Shown::DrawnAs { .. }, Some((layer, at))) = stack.shown(world, *first) else {
                     continue;
                 };
                 if self.reaches_again(&atoms, &all, *first, world) {
-                    self.problem(at, ProblemKind::DrawnAsCycle);
+                    self.problem(layer, at, ProblemKind::DrawnAsCycle);
                 }
             }
         }
@@ -2105,7 +2130,11 @@ impl Checks<'_, '_> {
                         ["text", "keyed", style] => {
                             if direct.iter().any(|(held, _)| held == style) {
                                 let style = (*style).to_owned();
-                                self.problem(found.at, ProblemKind::TextRoleShared { style });
+                                self.problem(
+                                    found.layer,
+                                    found.at,
+                                    ProblemKind::TextRoleShared { style },
+                                );
                             } else {
                                 direct.push(((*style).to_owned(), found.at));
                             }
@@ -2117,7 +2146,11 @@ impl Checks<'_, '_> {
                                 .is_some_and(|other| other >= order);
                             if later {
                                 let slot = (*other).to_owned();
-                                self.problem(found.at, ProblemKind::TextRoleOrder { slot });
+                                self.problem(
+                                    found.layer,
+                                    found.at,
+                                    ProblemKind::TextRoleOrder { slot },
+                                );
                             }
                         }
                         _ => {}
@@ -2155,7 +2188,7 @@ impl Checks<'_, '_> {
                 }
                 for found in stack.effective(world, target, "shape") {
                     if !matches!(found.got, Got::Absent) {
-                        self.problem(found.at, ProblemKind::ShapeOverContinuous);
+                        self.problem(found.layer, found.at, ProblemKind::ShapeOverContinuous);
                     }
                 }
             }
@@ -2204,7 +2237,11 @@ impl Checks<'_, '_> {
                     if differ {
                         for found in follows {
                             let corner = corner.to_owned();
-                            self.problem(found.at, ProblemKind::UnequalOffsets { corner });
+                            self.problem(
+                                found.layer,
+                                found.at,
+                                ProblemKind::UnequalOffsets { corner },
+                            );
                         }
                     }
                 }
@@ -2283,7 +2320,11 @@ impl Checks<'_, '_> {
                     if differ {
                         for found in concentric {
                             let corner = corner.to_owned();
-                            self.problem(found.at, ProblemKind::UnequalInsets { corner });
+                            self.problem(
+                                found.layer,
+                                found.at,
+                                ProblemKind::UnequalInsets { corner },
+                            );
                         }
                     }
                 }
@@ -2344,7 +2385,11 @@ impl Checks<'_, '_> {
                     if !held {
                         for field in &required {
                             let field = (*field).to_owned();
-                            self.problem(&op.at, ProblemKind::EntryCreatedUnset { field });
+                            self.problem(
+                                source.layer,
+                                &op.at,
+                                ProblemKind::EntryCreatedUnset { field },
+                            );
                         }
                     }
                 }

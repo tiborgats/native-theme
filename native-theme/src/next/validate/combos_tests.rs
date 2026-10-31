@@ -1025,3 +1025,26 @@ fn combination_context_states_reduced_by_their_groups() {
                     set = { stroke.top.width_px = 2 }";
     assert_eq!(alone(siblings, &decl), NONE);
 }
+
+/// A problem the combinations find at a place a layer below states is
+/// kept beside the added layer's structural problem at the same path:
+/// one names a place of the preset, the other of the added layer (S12's
+/// "listing every problem").
+#[test]
+fn combination_problem_below_kept_beside_the_added_layers() {
+    let below = "[widgets.button.icon.icon]\nsize_px = 16\nfill = \"#000000\"\n\
+                 rendering_mode = \"original\"\n\
+                 [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
+                 set = { icon.fill = \"absent\" }";
+    let top = "[[rules]]\nwhen = { states = [\"pressed\"] }\ntarget = \"button.icon\"\n\
+               set = { icon = \"= token.focus\" }\n\
+               [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
+               set = { icon.rendering_mode = \"template\" }";
+    assert_eq!(
+        over(below, top, &Declarations::default()),
+        [
+            "rules[0].set.icon: the expression does not type: a FocusIndicator where an IconStyle is expected",
+            "rules[0].set.icon.fill: may not be absent",
+        ]
+    );
+}

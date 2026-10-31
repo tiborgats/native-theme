@@ -86,31 +86,38 @@ pub(crate) fn check(layer: &Layer, cx: &Context<'_>) -> Result<(), LayerError> {
 }
 
 /// Every problem the checks over combinations find in `layers`, the last
-/// the layer `cx` adds (S12).
-fn combinations(layers: &[Stacked<'_>], cx: Context<'_>) -> Vec<Problem> {
+/// the layer `cx` adds (S12), each with whether it names a place of that
+/// layer.
+fn combinations(layers: &[Stacked<'_>], cx: Context<'_>) -> Vec<(bool, Problem)> {
     let stack = stack::Stack::new(layers, cx);
-    let mut problems = combos::check(&stack);
+    let added = layers.len().saturating_sub(1);
+    let mut problems: Vec<(bool, Problem)> = combos::check(&stack)
+        .into_iter()
+        .map(|(layer, problem)| (layer == added, problem))
+        .collect();
     if cx.kind == LayerKind::Palette && combos::on_kde_breeze(cx.preset) {
-        let palette = layers.len().saturating_sub(1);
-        problems.extend(combos::mapping_palette(&stack, palette));
+        let palette = combos::mapping_palette(&stack, added);
+        problems.extend(palette.into_iter().map(|problem| (true, problem)));
     }
     problems
 }
 
 /// Adds the problems the checks over combinations `found` at places the
-/// structural checks found none at, or below: one problem per fault, a
-/// place's own fault (an undeclared key, an ill-typed expression) the one
-/// reported there.
-fn add(problems: &mut Vec<Problem>, found: Vec<Problem>) {
+/// structural checks, which check the added layer, found none at, or below:
+/// one problem per fault, a place's own fault (an undeclared key, an
+/// ill-typed expression) the one reported there; a place a layer below
+/// states is never the added layer's.
+fn add(problems: &mut Vec<Problem>, found: Vec<(bool, Problem)>) {
     let structural = problems.len();
-    for problem in found {
+    for (own, problem) in found {
         let at = &problem.path;
-        let taken = problems.iter().take(structural).any(|held| {
-            *at == held.path
-                || at
-                    .strip_prefix(held.path.as_str())
-                    .is_some_and(|rest| rest.starts_with('.') || rest.starts_with('['))
-        });
+        let taken = own
+            && problems.iter().take(structural).any(|held| {
+                *at == held.path
+                    || at
+                        .strip_prefix(held.path.as_str())
+                        .is_some_and(|rest| rest.starts_with('.') || rest.starts_with('['))
+            });
         if !taken && !problems.contains(&problem) {
             problems.push(problem);
         }

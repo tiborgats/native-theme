@@ -2404,6 +2404,9 @@ fn layer_error_every_variant_triggers() {
             below: &[],
         };
         super::combos::check(&super::stack::Stack::new(&layers, cx))
+            .into_iter()
+            .map(|(_, problem)| problem)
+            .collect::<Vec<Problem>>()
     };
     let left = {
         let decl = declare("surface_sets = [\"window\"]");
