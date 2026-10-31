@@ -86,6 +86,11 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   `bar_system_action`, unread there, read on `ios-13`); the default `buttonSize` (U129, the entry's *Default sizes*).
 - `button` on `macos-tahoe` (ADD-A125): the circular bezel's `body.margin` at every size, and the circle's size at
   `mini` to `regular` (MAC-B08, a register row of its own; the corners U143).
+- `checkbox` and `radio` (ADD-A125, measurements, their rest looks stated): whether AppKit animates the check mark
+  and the radio dot in and out (MAC-X11's recording), and UIKit the multiselect circle's check (CK-2†), each a
+  register row; on `windows-11`, a checked radio's dot while pressed, which two visual-state groups set (the pressed
+  dot's opacity by `Pressed` and `Checked`, `RadioButton_themeresources.xaml:298-300`, `:353`), measured as a
+  register row (W1-041).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -181,13 +186,11 @@ Each `### <widget>` section states, in this order:
   one `values()` is queried with (S8): queried with an item *(element)* (a row, a tab, a thumbnail), the events and
   their element data (`move_distance`) are that item's; queried with the widget's own element, they are the widget's
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
-  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event. Where its platform draws
-  it on or grows it in place (a check mark drawn along its path, a radio's dot grown from its centre), it is drawn
-  in every state, at its hidden values where it shows nothing (`glyph.draw_extent` 0, a zero size or scale), and the
-  drawing on and the growth are its `transitions` of those fields (S2.7). Where its platform draws nothing of it in
-  a state (a picker's popup), it is `Absent` by a rule there, and how it enters and leaves is ADD-A126's (S2.7;
-  whether the parts their platforms scale in, WinUI's selection pill, Material's segmented check and value bubble,
-  are instead drawn at a zero scale is ADD-A126's too); a scale or slide while it is drawn is its `transform` per state. A motion
+  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event: where its platform
+  draws nothing of it in a state at rest (a check mark unchecked, a radio's dot, a selection pill, a slider's value
+  bubble, a picker's popup), it is `Absent` there by a rule, and how it enters and leaves, faded, drawn on along its
+  path, trimmed or grown, is ADD-A126's (S2.7); a scale or slide while it is drawn is its `transform` per state. A
+  motion
   no field's transition can state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
@@ -285,8 +288,8 @@ Each `### <widget>` section states, in this order:
   starts in. `pressed` is no member: Compose draws the press ripple apart from the state layer (`Ripple.kt:241-248`,
   `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
   focused shows both, two states drawn together (R3). Both are the part's `interaction` block (S2.12), never a paint
-  layer: the base states its alphas (the state layer's 0) and its colours `= surface.foreground`, the content colour
-  that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
+  layer: the base states its alphas (the state layer's 0) and its colours (S2.12: `= surface.foreground`, the content
+  colour that follows every rebinding, on the button, MAT-X8; else each colour's own unselected token), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
   press starts (S2.12); the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
   it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour of its first frame (S2.12),
   as Android's patterned `RippleDrawable` fixes it when the ripple first draws (`RippleDrawable.java:986-1018`). It draws over the part's content and beneath its
@@ -2157,21 +2160,15 @@ spaces:
     layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`.
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
     `QPainterPath`, Segoe Fluent code points, AppKit's whole-control rendering, iOS's named symbol), `padding` (its
-    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `transitions` (its drawing on and
-    off, and its colour). Drawn in every state where the platform draws the check on along its path, at no length
-    while neither checked nor indeterminate (`glyph.draw_extent` 0), its draw-on the transition of that field, its
-    engine ADD-A126's (S2.7): `kde-breeze` (the dash pattern `path.length() * animation` toward checked, nothing
-    drawn toward unchecked, `breeze@6.8.2 kstyle/breezehelper.cpp:953-960`, K1.55), `windows-11` (the AnimatedIcon's
-    accept visual, drawn on by `TrimEnd` and off by `TrimStart`, in the unchecked foregrounds while it trims off,
-    `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:437`,
-    `:470`, `:522-553`, W1-037, W1-039), `material-3` (Compose's drawn fraction, drawn on from unchecked, kept
-    drawn for `SnapAnimationDelay` after unchecking, `Checkbox.kt:595-612`, `:1061`, MAT-C8); `Absent` by a rule `@ !{checked,indeterminate}`
-    where the platform draws none and swaps it in: `adwaita` (the `:checked` icon source, untimed:
-    `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:80`, its transition naming background and
-    box-shadow alone, `_common.scss:6-7`), `macos-*` and `ios-*` (their measured renderings draw none unchecked;
-    whether AppKit or UIKit draws the check on is unmeasured, an open item). Rejected: the mark `Absent` while
-    unchecked on every preset, which leaves a draw-on no starting style, and a fade from transparent, which no
-    platform here draws (ADD-A125).
+    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `transitions`. At rest the mark draws
+    nothing while neither checked nor indeterminate on every preset, so it is `Absent` there by a rule `@
+    !{checked,indeterminate}` (S2.7): `adwaita` (no icon source but `:checked`'s and `:indeterminate`'s,
+    `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:80`), `kde-breeze` (`CheckOff` draws nothing,
+    `breeze@6.8.2 kstyle/breezehelper.cpp:941-942`), `windows-11` (the AnimatedIcon's accept visual at its Off
+    frames, W1-039), `material-3` (Compose's drawn fraction 0, MAT-C8), `macos-*` and `ios-*` (their measured
+    renderings); the check's path when checked, the dash or dots when indeterminate. How it is drawn on, trimmed
+    off or faded is ADD-A126's (ledger queue #85, ADD-A125), and whether AppKit or UIKit animates it at all is
+    unmeasured (Open items).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
@@ -2199,8 +2196,8 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (`adwaita`, `macos-*`, `ios-*` by a rule
-    `@ !{checked,indeterminate}`, above),
+  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`,
+    above),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
   - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
@@ -2251,16 +2248,12 @@ spaces:
     `min_height`, `focus`, `transitions` (the hover ring fading in, K1.52).
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
-    `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its growth, W1-041). Drawn in every state where the platform grows it, at a zero size or scale while
-    unchecked, its growth the transition of that field, its engine ADD-A126's (S2.7): `kde-breeze` (`radius *
-    animation` both ways, `breeze@6.8.2 kstyle/breezehelper.cpp:1069-1071`, `kstyle/breezestyle.cpp:4960-4965`, K1.55), `material-3` (Compose's dot
-    radius, 0 unchecked, `RadioButton.kt:91`, `:137-142`, `:188-190`, MAT-C1); `Absent` by a rule where the
-    platform draws none: `adwaita` (the `:checked` bullet icon source, `_checks.scss:76`), `macos-*` (as the
-    check mark), `windows-11` `@ !{checked,pressed}` (the checked glyph's opacity 0 unchecked, and a second dot
-    shown on an unchecked radio while pressed, growing from its template size to its pressed size, `microsoft-ui-xaml@2.5.1
-    src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`, `:348-353`, `:362`, `:374`, `:376`,
-    W1-041, W1-042). Rejected: the dot `Absent` while unchecked on every preset (ADD-A125).
+    `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`.
+    At rest an unchecked radio draws no dot, so it is `Absent` by a rule `@ !{checked}` (S2.7), on `windows-11`
+    `@ !{checked,pressed}`: WinUI's checked glyph is hidden unchecked, and an unchecked radio shows a second dot while
+    pressed (`microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`,
+    `:348-353`, `:362`, `:374`, `:376`, W1-041, W1-042). How it grows, shrinks or appears is ADD-A126's (ledger queue
+    #85, ADD-A125).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
     ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`; its colours
@@ -2276,8 +2269,8 @@ spaces:
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (`adwaita`, `macos-*` by a rule `@ !{checked}`,
-    `windows-11` by a rule `@ !{checked,pressed}`, above).
+  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`, `windows-11`
+    `@ !{checked,pressed}`, above).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
@@ -4119,8 +4112,9 @@ spaces:
     handle), `min_width`, `min_height` (its thickness, by orientation), `bindings` (Kirigami's Header set, Q1.93),
     `cursor`, `transitions`.
   - `grip` — the grip, dimple or drag handle on the divider (MAC-SP02, MAT-SP1, W1-157†, SP-2): `fill`, `glyph`,
-    `corners`, `min_width`, `min_height`, `padding`, `shadow`, `interaction` (Material's drag handle: its state
-    layer and press ripple, Compose's `ripple()` indication, MAT-SP2, S2.12).
+    `corners`, `min_width`, `min_height`, `padding`, `shadow`, `interaction` (Material's drag handle: its hover,
+    focus and dragged state layers, Compose's `ripple()` indication, no press ripple, MAT-SP2, MAT-X29, S2.12),
+    `transitions` (the block's fades, MAT-X9).
   - `collapser` *(element)*, in `divider` — KDE's collapser button over the divider (KSplitterCollapserButton,
     K2.17), hovered and pressed on its own, its side a keyed variant: `fill`, `padding`, `opacity` (its fade, K2.17).
     `collapser_arrow` belongs to it.
@@ -4139,8 +4133,8 @@ spaces:
 - **Flags:** none of its own; state flags used: hover, pressed, dragged (MAC-SP03), focus_visible on Material's handle
   (MAT-SP2), disabled (W1-157†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (SizerBase's states); others none (states combine);
-  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (the drag
-  handle's state layers, MAT-SP2; `pressed` its ripple and `dragged` its container colour combine).
+  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [dragged, focus_visible, hover]` (the
+  drag handle's state layers, MAT-SP2, MAT-X29; `pressed` combines).
 - **may_be_absent:** parts: `grip` (`adwaita`, `kde-breeze`: no grip on the divider, W1-157†'s cross-checks;
   `macos-*` by a rule outside `wide`, the thick divider's grip, MAC-SP02), `collapser` (`adwaita`, `macos-*`,
   `windows-11`, `ios-*`, `material-3`: KSplitterCollapserButton is KDE's, K2.17; `kde-breeze` by a rule

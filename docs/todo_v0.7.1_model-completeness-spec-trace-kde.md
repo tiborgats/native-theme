@@ -141,8 +141,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.54 | `checkbox.box.fill, checkbox.box.stroke @ {checked,hover} / {checked,pressed}` | rule |
 | K1.54 | `checkbox.box.stroke, checkbox.mark.glyph @ {indeterminate,hover}` | rule |
 | K1.54 | `checkbox.box.stroke @ {checked,disabled} (the Disabled set's highlight)` | rule |
-| K1.55 | `checkbox.mark.glyph.draw_extent @ !{checked,indeterminate} / {checked} / {indeterminate}; checkbox.mark.transitions (Glyph)` (the mark drawn in every state, at no length unchecked: Breeze draws the check on by a dash pattern, `path.length() * animation`, toward checked and nothing toward unchecked, `breeze@6.8.2 kstyle/breezehelper.cpp:953-960`; the engine ADD-A126's, ledger queue #85, ADD-A125) | rule |
-| K1.55 | `radio.dot.transform @ !{checked} / {checked}; radio.dot.transitions (Transform)` (the dot drawn in every state, at a zero scale unchecked: Breeze grows it from the centre, `radius * animation`, both ways, `breeze@6.8.2 kstyle/breezehelper.cpp:1069-1071`, `kstyle/breezestyle.cpp:4960-4965`; the engine ADD-A126's, ledger queue #85, ADD-A125) | rule |
+| K1.55 | `checkbox.mark.transitions` (the rest look the catalogue's, the mark `Absent` unchecked, `CheckOff` drawing nothing, `breeze@6.8.2 kstyle/breezehelper.cpp:941-942`; the check's draw-on, a dash pattern `path.length() * animation` toward checked and nothing toward unchecked, `:954-962`, pending ADD-A126, ledger queue #85, ADD-A125) | field |
+| K1.55 | `radio.dot.transitions` (the rest look the catalogue's, the dot `Absent` unchecked, `:1074-1075`; its growth, `radius * animation`, `:1070-1072`, both ways as the state engine runs back when the flag clears, `kstyle/breezestyle.cpp:4961-4966`, `kstyle/animations/breezewidgetstatedata.cpp:24`, pending ADD-A126, ledger queue #85, ADD-A125) | field |
 | K1.55 | `checkbox.box.transitions (Fill); radio.ring.transitions` | field |
 | K1.55 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.56 | `checkbox.box.stroke, checkbox.box.fill @ {checked} variant warning / radio.ring.stroke, radio.ring.fill @ {checked} variant warning` | rule |

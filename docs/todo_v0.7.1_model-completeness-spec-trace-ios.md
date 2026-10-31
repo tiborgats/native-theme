@@ -262,7 +262,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
 | CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
 | CK-2† | `checkbox.box.*, checkbox.mark.* @ {disabled} variant selection` | rule |
-| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected) | rule |
+| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark `Absent` unselected, the catalogue's rest look, and whether UIKit animates its check in a register row, the catalogue's Open items; the mark's entry pending ADD-A126, ledger queue #85, ADD-A125) | rule |
 | CK-2† | `checkbox.values.presentations event Appear @ variant selection` (the column sliding in with edit mode) | rule |
 | CK-2† | `checkbox.box.{min_width,min_height} @ variant selection` (`= uifm_scaled(<size>, body)`: the circle's size per Dynamic Type; ADD-A55) | rule |
 | CK-2† | `reader:ios:the Dynamic Type category the circle's size follows` | readers (R18) |

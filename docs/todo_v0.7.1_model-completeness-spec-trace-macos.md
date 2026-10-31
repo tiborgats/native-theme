@@ -722,7 +722,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
 | MAC-X11 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
-| MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` | field |
+| MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` (the rest looks the catalogue's, the mark and dot `Absent` unchecked; whether AppKit animates them in and out is this row's recording, a register row, the catalogue's Open items; pending ADD-A126, ledger queue #85, ADD-A125) | field |
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
