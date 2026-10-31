@@ -583,7 +583,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.258 | `form.row_arrow.transform @ {open} variant expander; list.disclosure.transform @ context list.row {open} variant inset` | rule |
 | GN-1.258 | `form.row_arrow.transitions (Transform) @ variant expander; list.disclosure.transitions (Transform) @ variant inset` | rule |
 | GN-1.259 | `form.values.presentations events @expand, @collapse (queried with the row) @ variant expander; list.values.presentations events @expand, @collapse (queried with the row) @ variant inset` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | rule |
-| GN-1.259 | `form.row_nested (absent = true) @ !{open} variant expander; list.nested (absent = true) @ !{open}` (written last: the revealer measures its child by its progress, zero collapsed, in any list, `gtk@4.24.1 gtk/gtkrevealer.c:612-636`, S2.7) | rule |
+| GN-1.259 | `form.row_nested (absent = true) @ !{open} variant expander; list.nested (absent = true) @ !{open}` (written last: the revealer measures its child by its progress, zero collapsed, in any list, `gtk@4.24.1 gtk/gtkrevealer.c:612-636`, S2.7; unscoped, as a `nested` box is an expander row's alone, while the arrow and fill stay under `inset`, AdwExpanderRow being modelled in a boxed list, GN-2.09, since an unscoped `list.disclosure` rule would restyle every list's disclosure, GN-1.173) | rule |
 | GN-1.260 | `form.row_nested.fill @ variant expander; list.nested.fill @ variant inset` | rule |
 | GN-1.261 | `expander.header.corners, expander.header.focus` | field |
 | GN-1.261 | `expander.arrow.{glyph,opacity}` | field |

@@ -407,7 +407,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-BX02 | `separator.line.stroke` (`NSBox`'s separator type, a line to the user, as MAC-SE01 says) | field |
 | MAC-BX02 | `separator.line.stroke @ variant vertical` (a separator box taller than wide) | rule |
 | MAC-EX01 | `expander.header, expander.arrow @ variant @push_disclosure` | rule |
-| MAC-EX01 | `expander.content (absent = true) @ !{open}` (written last: the disclosed content hidden collapsed, its motion MAC-X11's measurement, ADD-A129 (queue #118), S2.7) | rule |
+| MAC-EX01 | `expander.content (absent = true) @ !{open}; form.row_nested (absent = true) @ !{open} variant expander` (written last: the disclosed content not drawn collapsed, its presence and motion MAC-X11's measurement, the unmeasured register's row, ADD-A129 (queue #118), S2.7) | rule |
 | MAC-EX01 | `expander.arrow.glyph (GlyphSource SystemControl AppKitPushDisclosure, ADD-A58)` | system-control |
 | MAC-EX02 | `expander.arrow.glyph (GlyphSource SystemControl AppKitDisclosure; AppKitPushDisclosure, ADD-A58)` | system-control |
 | MAC-EX03 | `expander.arrow.glyph.fill @ {pressed}` | rule |

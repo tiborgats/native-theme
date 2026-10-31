@@ -185,8 +185,8 @@ Each `### <widget>` section states, in this order:
   group). A part nested in a part that answers `NotDrawn` is still queried, in the scope the `NotDrawn` part's
   parent returns (as S8 queries the children of a `NotDrawn` element), and is drawn unless it is absent itself: a list's
   rows nest in `section` and are drawn where no section is; where a nested part is not drawn with its parent (a
-  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. A box an expander reveals is the exception: while `Absent` it takes
-  everything in it with it (S6.3). The parts nested in a
+  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. A box an expander reveals is the exception: while `Absent`, nothing
+  in it is drawn or laid out, though its elements are still queried and updated with their presence (S6.3). The parts nested in a
   part a preset draws as another widget (`drawn_as`, below) are still queried, with that widget's element as their
   host: in the scope returned by the query of the substitute's part that holds content (an overlay's box, `body`; a
   control's root), the innermost enclosing part's scope (S8), so `context <substitute>` matches them. Each keeps its
@@ -4253,11 +4253,11 @@ spaces:
 
 - **Kind:** typed widget: the stand-alone expanders: GNOME (GtkExpander), KDE (KCollapsibleGroupBox), macOS (the
   disclosure and push-disclosure buttons, SwiftUI's DisclosureGroup), Windows (Expander). An expandable row is a row
-  with a disclosure in its host, one structure for one control: in a list, a `list` row with a `disclosure` and its
-  `nested` box where the platform draws one (`adwaita`, GN-1.260; elsewhere the children are rows of their own,
-  ADD-A129 deciding, queue #118) (Material's expandable list item MAT-L9, MAT-EX1; iOS's outline disclosure EX-1–EX-3, its styles
-  `list`'s keyed `@header`, `@cell` on `disclosure`; GNOME's AdwExpanderRow in a plain boxed list, GN-2.09; the
-  reveal `list`'s events `@expand`, `@collapse`); in a preferences group, a `form.row` of kind `expander` with its
+  with a disclosure in its host, one structure for one control: in a list, a `list` row with a `disclosure` and,
+  on `adwaita` alone, its `nested` box (GNOME's AdwExpanderRow in a plain boxed list, GN-2.09, GN-1.260); elsewhere
+  the child rows are rows of their own (Material's expandable list item MAT-L9, MAT-EX1; iOS's outline disclosure
+  EX-1–EX-3, its styles `list`'s keyed `@header`, `@cell` on `disclosure`), until ADD-A129 decides otherwise (queue
+  #118); the reveal is `list`'s events `@expand`, `@collapse`; in a preferences group, a `form.row` of kind `expander` with its
   `row_arrow` and `row_nested` (AdwExpanderRow in an AdwPreferencesGroup, GN-1.257–GN-1.260; Windows'
   SettingsExpander, W2-40†; kirigami-addons' expander card, K-KA-7†).
 - **Available:** every preset but `material-3`, `ios-*` (`available = false`: their expandable item is a list row;
@@ -4290,7 +4290,7 @@ spaces:
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (Expander CommonStates; its ExpandStates are
   `open`, its ExpandDirectionStates the variant `@expand_up`); others none (states combine); precedence: state models
   (S17).
-- **may_be_absent:** parts: `content` (every preset by a rule `!{open}`, written last, laid out at zero height, S2.7); fields: `header.stroke` (`adwaita`, `kde-breeze`, `macos-*`: their expanders draw
+- **may_be_absent:** parts: `content` (every preset by a rule `!{open}`, written last, given no box, S2.7); fields: `header.stroke` (`adwaita`, `kde-breeze`, `macos-*`: their expanders draw
   no frame, today's frame off; W1-140 frames Windows'), `content.stroke` (`adwaita`, `kde-breeze`, `macos-*`: the
   same; W1-141), `header.shadow` (every preset: no expander header casts a shadow in the rows GN-1.261, K1.250,
   MAC-EX01, W1-140), `content.fill` (`adwaita`, `kde-breeze`, `macos-*`: the content lies on its container; W1-141
@@ -5927,7 +5927,7 @@ spaces:
   measurement shows its sections draw none, MAC-LY02†; the rows are then queried in the page's scope, Nesting),
   `row_edit_icon` (all but `adwaita`, `kde-breeze`: AdwEntryRow's and kirigami-addons' mobile rows' edit icon,
   GN-2.03, K-KA-9†; `kde-breeze` by a rule under `cond flavor:widgets`), `row_indicator` (all but `adwaita`:
-  AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`; under `expander` by a rule `!{open}`, written last, S2.7), `row_arrow` (every
+  AdwEntryRow's indicator, GN-2.03), `row_nested` (every preset by a rule outside `expander`; under `expander` by a rule `!{open}`, written last: GN-1.259, K-KA-7†, W2-40†, MAC-EX01, S2.7), `row_arrow` (every
   preset by a rule outside the row kinds that show it, `action`, `combo`, `expander`; `kde-breeze` by a rule under
   `@ka_form_card` while the row draws no background, K-KA-7†), `row_separator` (`windows-11`: the expander items'
   top line is `row.stroke`, W2-40†; `kde-breeze` by a rule outside `@cards` and `@ka_form_card`, and by a rule
@@ -7304,7 +7304,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `popup` — Windows' compact spin popup, W2-01: `fill`, `stroke`, `shadow` (drawn while the stepper is `{focused}`,
     W2-01; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7). Under `@compact` the
     `increment` and `decrement` are drawn in it (NumberBox's only spin buttons there, `NumberBox.xaml:115-166`, the
-    inline ones shown only by `SpinButtonsVisible`, `:26-40`), absent with it.
+    inline ones shown only by `SpinButtonsVisible`, `:26-40`), absent with it. Its indicator glyph in the unfocused text box (`NumberBox.xaml:337-339`, `:365`) and the
+    popup buttons' padding, sizes and stacking (`:116-120`, `:163-164`, `:193-205`) are not modelled yet: the
+    unmeasured register's row for the compact NumberBox.
   - `header` — Windows' header label, W2-01: `text`.
 - **Widget values:** `button_layout: Value<StepperButtonLayout>`,
   `StepperButtonLayout { EndColumn, BothEnds, AboveAndBelow, SideBySide }` (a column at the end, both ends, stacked
