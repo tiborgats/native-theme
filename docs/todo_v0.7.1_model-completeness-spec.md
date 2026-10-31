@@ -323,19 +323,24 @@ example, are plain blocks, stated per leaf or as a full table and patched per fi
 by a reference; a `Value` block field's expression may only be a reference to a token or field of that type (`= token.focus`, `= token.text.keyed.body`,
 `= token.motion.timings.standard`). A `Value` struct block field's patch is `Set(Value<T>)` (a whole block, a
 reference or `Absent`) or `Fields(TPatch)`, which applies its fields over the block below (refused over an `Absent` or `Auto` value, and
-for enum blocks, S6.1 defining and listing them, such as `Timing`, which take `Set` only): the token's focus indicator with only its kind
-changed (R2.1). In TOML (S11), a table for a struct block field or map entry under a rule's `set`, or in a layer's bases above
-the preset, is a `Fields` patch (a list's items are whole, S6.1); a whole `Value` struct block is set there only by a
-reference, `"absent"` (where S6.3 allows it) or `{ replace = { … } }`, never by a bare table, and a struct
-bare-block map entry (`token.text.keyed`, `token.icons.sizes.keyed`, `ColorRoles.surfaces`) only by
-`{ replace = { … } }`; an enum block (`Timing`, a `Radius` corner), as a field or a map entry, has no `Fields` patch:
-its patch is an `Option` of the field's type, stated whole as S11 spells it, with no wrapper (`standard = {
-cubic_bezier = […] }`, `top_left_px = <n>`, `"linear"`, a reference); a plain block has no whole-block form in a
-patch, a table there patching the fields it states (S6.1's compound fields); in the preset's own bases a table is the
-whole block. Rejected: a bare table as the whole block, with patches in dotted keys, as TOML gives a dotted key
-(`focus.kind = …`) and a table (`focus = { kind = … }`) the same value, so one form cannot be both; `"absent"` then a
-second rule restating the block (two rules, and a `Fields` patch over `Absent` a conflict); a rule-level list of
-replaced paths (a second place to look; ADD-A125). A shadow names an elevation by `Shadow::Elevation(key)`, not by reference (R8). A colour
+for enum blocks, S6.1 defining and listing them, such as `Timing`, which are patched whole): the token's focus indicator with only its kind
+changed (R2.1). In TOML (S11), a table fills the type at its position. Where that type is a struct block's patch (a field or map
+entry whose type is a struct block, in a rule's `set`, in a layer's bases above the preset, or in a keyframe's
+`patch`, wherever the keyframe is stated), a table is a `Fields` patch and `{ replace = { … } }` its `Set`; a whole
+`Value` struct block is set there only by a reference, `"absent"` (where S6.3 allows it) or `{ replace = { … } }`,
+never by a bare table, and a struct bare-block map entry (`token.text.keyed`, `token.icons.sizes.keyed`,
+`ColorRoles.surfaces`) only by `{ replace = { … } }`. Where the type is the block itself (the preset's own bases
+outside a keyframe's `patch`, a list's item outside its patch fields, the inside of a `{ replace = { … } }`), a table
+is the whole block, its `Value` block fields whole tables too (`FocusIndicator.transition`, `IconStyle.animation`),
+and `replace` is an unknown key. An enum block (`Timing`, a `Radius` corner) has no `Fields` patch and is stated whole
+as S11 spells it, with no wrapper: a `Value<Timing>` field its variant, a reference or `"absent"`; a
+`token.motion.timings` entry or a `Corners` corner its variant only (`standard = { cubic_bezier = […] }`,
+`top_left_px = <n>`, `"linear"`). A plain block has no whole-block form in a patch, a table there patching the fields
+it states (S6.1's compound fields). So W1-075's keyframe, in the preset's own bases, patches only the two `transform`
+fields it states, as GN-1.113's and MAT-P6's do. Rejected: a bare table as the whole block, with patches in dotted
+keys, as TOML gives a dotted key (`focus.kind = …`) and a table (`focus = { kind = … }`) the same value, so one form
+cannot be both; `"absent"` then a second rule restating the block (two rules, and a `Fields` patch over `Absent` a
+conflict); a rule-level list of replaced paths (a second place to look; ADD-A125). A shadow names an elevation by `Shadow::Elevation(key)`, not by reference (R8). A colour
 literal or colour expression stated on a `Value<Paint>` field, or in `append`, is one `Color` layer with
 `BlendMode::Normal`.
 
@@ -801,7 +806,8 @@ pub struct Keyframe { pub at: Fraction, pub part: Option<PartRef>,    // None: t
 
 A keyframe's `patch` resolves to `ResolvedPartStylePatch`, the derive's resolved patch type (S6.1): every field an
 `Option` of that field's type in `ResolvedPartStyle`, `None` where the keyframe does not set it, so the part keeps its
-resolved style there (ADD-A122).
+resolved style there (ADD-A122); a keyframe's `Fields` patch of a block resolves over the part's resolved block, so the
+field's `Some` is that block with the keyframe's fields applied (ADD-A125).
 
 Semantics (R9): the query is stateless: the connector compares successive query results per element and part, and
 a transition starts when a property's resolved value changes; the transition stated by the style
@@ -1889,7 +1895,7 @@ patch type (every field `Option<…>`, where `None` is "this patch does not set 
 resolved type (every `Value<T>` resolved to `Option<T>`, where `None` is "not drawn", possible only where
 `may_be_absent` allows), for `PartStyle` also a resolved patch type, `ResolvedPartStylePatch`, a keyframe's resolved
 `patch` (every field an `Option` of that field's type in `ResolvedPartStyle`, `None` where the patch does not set it;
-S2.7, ADD-A122), the field-path registry used by the TOML key check of `Layer::from_toml` (S12) and the facts gate, and the
+S2.7, ADD-A122), the field-path registry used by the TOML key check of `Layer::from_toml` (S11, the TOML reader's own, `LayerError`) and the facts gate, and the
 `may_be_absent` table. A length that may be `Auto` resolves to `Option<Length>`, `Length = Px(f32) | Auto`, so "sized
 by content" reaches the toolkit; every other length resolves to `Option<Px>`. The resolved type is per type, not per
 part: a `PartStyle` length field that the catalogue marks `auto` on any part, `min_width`, `min_height`, `max_width`,
@@ -1937,7 +1943,7 @@ pub enum BlockPatch<T: FieldsBlock> { Set(Value<T>),     // a `Value` struct blo
                                                          // `Fields` as any block's, S6.1)
 pub enum PaintPatch { Set(Value<Paint>),                 // a `Value<Paint>` field's patch (S2.3, R6): the paint, a
                       Append(Vec<PaintLayer>) }          // reference or `Absent`; or layers appended over `base`
-// FieldsBlock: a struct block, its `Patch` the derive-generated `<T>Patch`. An enum block (below) takes `Set` only:
+// FieldsBlock: a struct block, its `Patch` the derive-generated `<T>Patch`. An enum block (below) is patched whole:
 // a field of one, as a field of any enum, is patched whole, its patch an `Option` of the field's type
 // (`Option<Value<Timing>>`, `Option<FocusKind>`) (ADD-A122)
 ```
@@ -2835,7 +2841,7 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | `Value::Auto` | `"auto"` |
 | `Value::Absent` | `"absent"`; a whole part: `absent = true` in its table or a rule's `set` |
 | an `Option` that is `None` | `"none"`; an `Option` field or leaf of a field (`Caret.blink_timeout`, `Behavior.key_repeat`, `TextStyle.max_lines`, `PlacementParams.max_visible_items`) is stated like any other, so left out it is missing (S2.2, S2.11), never a silent `None`; an `Option` inside a list item or an enum variant's payload left out is `None` (`focus_visible_when = { keyboard = {} }`: no timeout) |
-| a whole `Value` struct block, or a struct bare-block map entry, in a patch | `{ replace = { <the block's table> } }`, the block stated whole (S2.2), accepted only there: in the preset's own bases (a table already whole) and on a plain block (no whole-block form in a patch) it is an unknown key, refused (S12); an enum block is spelt whole by its variant with no wrapper; `replace` is reserved, no field or variant named so (ADD-A125) |
+| a whole `Value` struct block, or a struct bare-block map entry, in a patch | `{ replace = { <the block's table> } }`, the block stated whole (S2.2), accepted only where the type at its position is a struct block's patch (S2.2); where the type is the block itself (the preset's own bases outside a keyframe's `patch`, a list's item, inside a `replace`) and on a plain block it is an unknown key, which the TOML reader refuses (`LayerError`, S1); `replace` is the table's only key, another beside it refused, and its value a table only, never a reference or `"absent"`, which the bare forms cover; an enum block is spelt whole by its variant with no wrapper; `replace` is reserved, no field or variant named so (ADD-A125) |
 | an enum variant | a unit variant is its snake_case name (`"follow_part"`, `"continuous"`); a variant with data is a one-key table, `{ <variant> = <payload> }`: `top_left = { concentric = { minimum_px = <n> } }` (a `Corners` field is a table of its four corners and its curve, S2.4), `shadow = { elevation = "<step>" }`, `timing = { spring = { mass = <n>, … } }` |
 | a list | a TOML array; where the platform has none, `[]` with its citation (a list is never `"absent"`, S2.11) |
 | a map (`Vec<(K, V)>`) | a TOML table, one key per entry, never a list of pairs: a `Key` (or an enum-keyed map's variant) bare, by S1's key grammar; a key that is text (`per_family`'s font families, `per_language`'s language tags) as written, quoted where TOML does not allow it bare (`"Segoe Fluent Icons" = ["Segoe MDL2 Assets"]`); two keys are one entry exactly where they are equal as TOML keys, that is case-sensitively, so a family is written as its source writes it, and the toolkit's own family matching (fontconfig's ignores case and blanks, `fontconfig@2.18.3 src/fcmatch.c:69-82`) is the connector's (ADD-A123); an entry whose value has a unit (`Value<Ms>`, `Value<Px>`) takes the unit's suffix on its key as a field does (`[tokens.motion.durations] button_ms = <n>`), its path naming it without (`token.motion.durations.button`), while a `Scalar` entry (a keyed param, a material or transition param) takes none, its number in the unit its declaration names (S10); an empty map `{}` with its citation (in a patch on the map itself, outside a `{ replace = { … } }` and not creating an entry, `{}` is no change, S6.1); in a `Value` (`Font.axes`, `Font.features`) also `"= <reference>"` (ADD-A125) |
@@ -3339,7 +3345,7 @@ failed re-read keeps the previous reader layer and `ReaderState` (S8).
   the theme, with `Color` for `Rgba`; `icon_indicator` and `load_icon_indicator` go (S2.7).
 - *`Theme::to_toml`, `Theme::lint_toml`:* removed. There is no whole theme to write: a look is an application layer an
   author writes in TOML (S11); and `Layer::from_toml` and `Palette::from_toml` refuse every unknown key, each a
-  `Problem` with its TOML key path (S12), which is what linting reported.
+  `Problem` with its TOML key path (the TOML reader's own, `LayerError`, S1), which is what linting reported.
 - *The `detect` functions:* `system_is_dark`, `detect_is_dark`, `prefers_reduced_motion`, `detect_reduced_motion` and
   `accessibility_preferences` are replaced by `Theme::system()` (the reader's `ReaderState`); `system_icon_set`,
   `system_icon_theme` and its other forms (`detect_icon_theme`, `DetectionContext::icon_theme`) by the resolved
@@ -3430,8 +3436,8 @@ tolerance = <t>
   `PartPatch::Absent`) or the part's `drawn_as` table as S11 spells it (`PartPatch::DrawnAs`), and the gate compares
   it with the query's `Styled::NotDrawn` or `Styled::DrawnAs` (ADD-A121); a map entry whose key is text is keyed by that key as a TOML
   dotted key writes it, quoted where needed, and equal to the preset's entry as S11's TOML keys are
-  (`token.text.fallbacks.per_family."Segoe Fluent Icons"`; ADD-A123); a `Value` struct block field is stated per leaf or as a
-whole by a reference (S2.2: `….text = "= token.text.keyed.body"`), a plain one (`TextStyle.font`, S2.2) per leaf
+  (`token.text.fallbacks.per_family."Segoe Fluent Icons"`; ADD-A123); a `Value` struct block field is stated per leaf, or as a
+whole by a reference (S2.2: `….text = "= token.text.keyed.body"`) or `value = "absent"` where S6.3 allows it (S2.2), a plain one (`TextStyle.font`, S2.2) per leaf
 (`….text.font.size`), an enum block (S6.1 lists them: `Timing`) as a whole, by a reference or S11's
 spelling of its variant (`{ cubic_bezier = […] }`); which fields are struct blocks the valid keys decide (below). The
   valid keys are the catalogue's (through `scripts/spec_catalogue.py`) and the core's (S3, S4, S9; its Rust
