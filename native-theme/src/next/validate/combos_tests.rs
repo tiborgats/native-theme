@@ -895,3 +895,29 @@ fn combination_bindings_follow_s3_3() {
                     fill = \"= mix(surface.neutral, #000000, 0.5)\"";
     assert_eq!(over(below, surfaced, &decl), NONE);
 }
+
+/// `widget.<part>` read from the widget's values (S12): the part not drawn,
+/// a corner computed at layout.
+#[test]
+fn combination_widget_part_from_the_values() {
+    assert_eq!(
+        bare(
+            "[widgets.button.menu_indicator]\nabsent = true\n[widgets.button.values]\n\
+             menu_indicator_gap_px = \"= widget.menu_indicator.min_width\""
+        ),
+        [
+            "widgets.button.values.menu_indicator_gap_px: `widget.menu_indicator` can be absent or drawn as another widget"
+        ]
+    );
+    let problems = bare(
+        "[widgets.button.body]\ncorners.top_left = { concentric = { minimum_px = 2 } }\n\
+         [widgets.button.values]\nicon_text_gap_px = \"= widget.body.corners.top_left\"",
+    );
+    assert!(
+        problems.contains(
+            &"widgets.button.values.icon_text_gap_px: `widget.body.corners.top_left` is a corner computed at layout"
+                .to_owned()
+        ),
+        "{problems:?}"
+    );
+}

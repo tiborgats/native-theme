@@ -719,8 +719,8 @@ impl<'a> Stack<'a> {
         let mut out = Vec::new();
         for reference in refs(expr) {
             if let Ref::Widget { part, .. } = reference
-                && let Target::Part(own) = cx.target
-                && let Some(other) = TypedPart::from_names(widget_of(own), part.as_str())
+                && let Some(other) = target_widget(cx.target)
+                    .and_then(|widget| TypedPart::from_names(widget, part.as_str()))
             {
                 out.push(Seed::Shown(other));
             }
@@ -1251,6 +1251,30 @@ fn element_part(part: TypedPart) -> Option<TypedPart> {
     TypedPart::from_names(widget, root.name)
 }
 
+/// The widget whose part or values `target` is.
+fn target_widget(target: Target) -> Option<WidgetKind> {
+    match target {
+        Target::Part(part) => Some(widget_of(part)),
+        Target::Values(widget) => Some(widget),
+        Target::Roles(_) | Target::Tokens => None,
+    }
+}
+
+/// The element's own part a target's expressions are evaluated with
+/// (S8): a part's *(element)* part or root, the widget's root for its
+/// values.
+fn element_of(target: Target) -> Option<TypedPart> {
+    match target {
+        Target::Part(part) => element_part(part),
+        Target::Values(widget) => registry::widgets()
+            .iter()
+            .find(|info| info.kind == widget)
+            .and_then(|info| info.parts.iter().find(|p| p.root))
+            .and_then(|root| TypedPart::from_names(widget, root.name)),
+        Target::Roles(_) | Target::Tokens => None,
+    }
+}
+
 /// The corner a reference names: `corners.<corner>` or
 /// `focus.corners.<corner>` of a part.
 fn corner_of(path: &[Key]) -> Option<&str> {
@@ -1388,25 +1412,24 @@ impl Checks<'_, '_> {
                     continue;
                 }
                 Ref::Widget { part, path } => {
-                    if let Target::Part(own) = source.target
-                        && let Some(other) = TypedPart::from_names(widget_of(own), part.as_str())
+                    let other = target_widget(source.target)
+                        .and_then(|widget| TypedPart::from_names(widget, part.as_str()));
+                    if let Some(other) = other
                         && !matches!(stack.shown(world, other).0, Shown::Drawn)
                     {
                         let part = part.to_string();
                         self.problem(&op.at, ProblemKind::PartNotDrawn { part });
                     }
-                    if let (Some(corner), Target::Part(own)) = (corner_of(path), source.target) {
-                        self.corner(world, own, part.as_str(), corner, &operand, op);
+                    if let (Some(corner), Some(other)) = (corner_of(path), other) {
+                        self.corner(world, source.target, other, corner, &operand, op);
                     }
                     if is_metric(path) {
                         continue;
                     }
                 }
                 Ref::Part(path) => {
-                    if let (Some(corner), Target::Part(own)) = (corner_of(path), source.target)
-                        && let Some(info) = part_info(own)
-                    {
-                        self.corner(world, own, info.name, corner, &operand, op);
+                    if let (Some(corner), Target::Part(own)) = (corner_of(path), source.target) {
+                        self.corner(world, source.target, own, corner, &operand, op);
                     }
                 }
                 _ => {}
@@ -1509,22 +1532,20 @@ impl Checks<'_, '_> {
         }
     }
 
-    /// A corner operand (S2.4, S8, S12): one that can resolve `Concentric`
-    /// or `FollowPart` is refused anywhere, one that can resolve `Full`
-    /// unless it is the corner of the element's own part.
+    /// A corner operand of `named`, read where `target` states `op` (S2.4,
+    /// S8, S12): one that can resolve `Concentric` or `FollowPart` is
+    /// refused anywhere, one that can resolve `Full` unless it is the corner
+    /// of the element's own part.
     fn corner(
         &mut self,
         world: &World,
-        own: TypedPart,
-        part: &str,
+        target: Target,
+        named: TypedPart,
         corner: &str,
         operand: &str,
         op: &Op,
     ) {
         let stack = self.stack;
-        let Some(named) = TypedPart::from_names(widget_of(own), part) else {
-            return;
-        };
         let path = if operand.contains(".focus.corners.") {
             format!("focus.corners.{corner}")
         } else {
@@ -1533,7 +1554,7 @@ impl Checks<'_, '_> {
         for found in stack.effective(world, Target::Part(named), &path) {
             let refused = match variant(&found) {
                 Some("concentric" | "follow_part") => true,
-                Some("full") => element_part(own) != Some(named),
+                Some("full") => element_of(target) != Some(named),
                 _ => false,
             };
             if refused {
@@ -1636,15 +1657,7 @@ impl Checks<'_, '_> {
         if reads.is_empty() {
             return;
         }
-        let own = match source.target {
-            Target::Part(part) => element_part(part),
-            Target::Values(widget) => registry::widgets()
-                .iter()
-                .find(|info| info.kind == widget)
-                .and_then(|info| info.parts.iter().find(|p| p.root))
-                .and_then(|root| TypedPart::from_names(widget, root.name)),
-            Target::Roles(_) | Target::Tokens => None,
-        };
+        let own = element_of(source.target);
         let drawn_to_box = matches!(op.path.as_str(), "glyph.size" | "icon.size");
         for datum in reads {
             let fixed = own.is_some_and(|own| self.fixed_box(own, datum, drawn_to_box));
