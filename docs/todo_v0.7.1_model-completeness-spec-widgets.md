@@ -2715,7 +2715,7 @@ spaces:
     `breezestyle.cpp:7884`, K1.240), WinUI's editable combo's `DropDownOverlay` (W1-137), GTK's entry combo's arrow
     button (GN-1.238): `fill`, `stroke`, `corners`, `min_width`, `max_height`, `margin` (its place, the content row
     below; ADD-A127).
-  - `arrow`, in `arrow_area` — the indicator glyph (single or double chevron; on macOS the AppKit rendering, the
+  - `arrow`, in `arrow_area` — the indicator glyph (single or double chevron; on macOS outside `editable` the AppKit rendering, the
     system control `AppKitPopUp`: `GlyphSource::SystemControl { control: AppKitPopUp, replaces: [body, arrow_area,
     arrow] }`, as S15's image is the whole button, so the connector draws none of those parts' own fills, strokes or
     shadows under it and passes the `body`'s laid-out width as `render_system_control`'s `width`; the arrow area is
@@ -2793,7 +2793,9 @@ spaces:
     label alone (Compose measures it without the text's padding, between the icons' boxes, `TextFieldImpl.kt:612-633`,
     `:1684-1691`); with `label_padding` `Some`, that row interpolated away as the label floats and a floated label
     bounding the box by its width plus `label_padding` on each side (the outlined field, `:1694-1701`), with `None`
-    the resting row counted whatever the float (the filled field, `:1045-1051`) (MAT-CB1); `Widest` the largest of whole rows on both axes (the width and
+    the label a third shown text instead, its row with the content's space's padding and gaps as the text's, at its
+    current, interpolated size (the filled field, which pads its label as its text, `:423-432`, and measures it at its
+    interpolated style, `:1045-1051`, `:1950-1951`) (MAT-CB1); `Widest` the largest of whole rows on both axes (the width and
     the height, as Qt reserves an icon's height when any item has one, `qtbase@6.12.0
     src/widgets/widgets/qcombobox.cpp:597-600`, `:634-635`), one per item, one for the placeholder and,
     with no items, one for `empty`'s run (`count` advances of `ch` in the label's font, as the toolkit measures

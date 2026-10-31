@@ -1409,10 +1409,12 @@ connector would lose a platform rule (R25.3's argument), so `content_width` name
 (seven advances of `x`) as data. When a toolkit measures again (Qt's default takes the width at the first show) is the
 application's policy, not the theme's. Compose measures its resting floating label without the text's padding, and
 bounds the box by a floated label plus the field's content padding on both sides, interpolating between the two as
-the label floats (the outlined field), while its filled field counts the resting label whatever the float: options,
-the label as a third shown text with the text's padding (Compose's width 20 dp too wide), a separate value for the
-label's padding (a value read only by one basis), or the padding inside `ShownAndHints` as `label_padding`, `Some`
-for the outlined form and `None` for the filled; the last is the smallest exact form. So is a measure that depends on
+the label floats (the outlined field), while its filled field pads its label as its text and measures it at its
+current, interpolated size, a third shown text (`TextFieldImpl.kt:423-432`, `:1950-1951`): options, one form for
+both (the outlined field's 20 dp too wide at rest, or the filled field's label short by the padding), a separate
+value for the label's padding (a value read only by one basis), or the padding inside `ShownAndHints` as
+`label_padding`, `Some` for the outlined form and `None`, the label a third shown text, for the filled; the last is
+the smallest exact form. So is a measure that depends on
 the element's history (Kirigami keeps its
 floor of 75 for a combo emptied after holding items, while one created empty measures nothing,
 `kquickstyleitem.cpp:126`): the model measures the element's present content.
