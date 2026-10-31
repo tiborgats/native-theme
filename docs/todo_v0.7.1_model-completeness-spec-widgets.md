@@ -62,8 +62,8 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
     `WinUi` (a pending fact, the preset stating no transition, until then);
-  - `windows-11`: what WinUI's transitions do under each presence (S2.7's `Presence`) and as the element is painted again, a change
-    made meanwhile included, and as animations turn off (S2.7); and on every lane, which `Presence` a minimised
+  - `windows-11`: what WinUI's transitions but AnimatedIcon's (`WinUi`, S2.7) do under each presence (S2.7's `Presence`) and as the element is painted again, a change
+    made meanwhile included, and as animations turn off (AnimatedIcon's decided from its source, S2.7); and on every lane, which `Presence` a minimised
     window's elements have (an occluded window's are `Unpainted`, S2.7);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
     element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
@@ -5950,8 +5950,8 @@ spaces:
     surface, C-32; Breeze rings only a checkable title's checkbox, a `checkbox`, K3.20): `fill`, `stroke`, `corners`,
     `padding`
   - `title` — the title (GN-2.32, K2.8, Q2.13, MAC-BX01): `text`
-  - `focus_line` — KDE's faded line under a focused title (K2.8): `stroke` (the line, its top edge), `transitions`
-    (its fade, K2.8)
+  - `focus_line` — KDE's line under a focused title (K2.8): `stroke` (the line, its top edge); no transition, Breeze's
+    engine never running one for it (K2.8)
 - **Widget values:** `title_margin_px: Value<Px>` (GN-2.32, K1.211, MAC-BX01's title-to-border gap);
   `title_position: Value<GroupBoxTitlePosition>`, `GroupBoxTitlePosition { AboveTop, AtTop, BelowTop,
   AboveBottom, AtBottom, BelowBottom }` (MAC-BX01; KDE's title above the content, Q2.13; GtkFrame's label and
@@ -9108,7 +9108,8 @@ read them, S4.8). The second is this table, for the tokens no block mark covers:
 | `token.params.display.corner_radius_bottom_right` | every preset but `ios-*`, `material-3`; there for a device model the preset does not list | as above |
 | `token.params.display.corner_radius_bottom_left` | every preset but `ios-*`, `material-3`; there for a device model the preset does not list | as above |
 
-**token.motion.durations** (`Vec<(Key, Value<Ms>)>`, S4.1). A scaled duration is `= mul(token.motion.durations.x,
+**token.motion.durations** (`Vec<(Key, Value<Ms>)>`, S4.1). Under every engine but the Compose ones, which scale their
+own play time and so take `material-3`'s durations plain (S2.7), a scaled duration is `= mul(token.motion.durations.x,
 token.motion.speed_factor)`, an unscaled one a plain duration (R9).
 
 | Platform | Keys (one per duration the platform states) | Rows |

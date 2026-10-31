@@ -801,6 +801,17 @@ MAT-X13–MAT-X15, X-MO-1).
     combination, and a combination no toolkit has stays expressible.
   - *A per-preset engine*: `adwaita`, `kde-breeze` and `material-3` each run two engines whose rules differ.
   - *A preset default with a per-transition override*: two homes for one fact.
+  - *An engine per part* (stated once on a part, rules restating it, Breeze's test per transition): it saves the
+    `engine` repeated on each transition, and no part at the pins runs two engines on its groups; but a rule changes
+    the engine of a part's group (K1.30's Kirigami zeros Breeze's where Kirigami's Behaviors are Qt Quick's), the
+    focus indicator's runs on its own, and Breeze's test, its data, is per transition anyway, so the part's engine
+    would be a second home beside the transition it governs.
+  - *A gate check in place of Breeze's reduction* (S12 proving, for every combination of flags, the style under the
+    kept flags equal to the style under the reduced ones, so the connector draws the kept flags): a simpler runtime,
+    but each preset would restate Breeze's precedence as rules for every combination a test excludes (a hovered
+    disabled control, a focused selected tab), the run's ends need the reduction with its own test excepted, which
+    the cascade has no rule for, and the precedence is Breeze's code (`if (animated) … else if (test)`), which the
+    engine implements once, as it does Breeze's curves.
   - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
     but native fidelity and cover-everything-visible admit none where the source states the rule.
   - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
@@ -852,7 +863,8 @@ MAT-X13–MAT-X15, X-MO-1).
   convert some of them approximately.
 - **Tokens and the speed factor:** the platform's published durations and curves, referred to by parts; a global
   speed factor (KDE's `AnimationDurationFactor`, K3.30) read by the reader. Which durations the factor scales is
-  the platform's, so each scaled duration is stated as a derivation, a token times the factor (Breeze's
+  the platform's, so each scaled duration is stated as a derivation, a token times the factor, but under an engine
+  that scales its own play time, Compose's, whose durations are plain, the factor applying once (ADD-A126) (Breeze's
   animations are its factor times 100 ms while `AnimationDurationFactor` is set, and breezerc's
   `AnimationsDuration` otherwise, both of which the reader reads), and an unscaled one as a plain duration
   (Qt's own 250 ms tab move is not scaled). At a factor of zero a spring jumps to its end, as a curve does.

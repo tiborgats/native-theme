@@ -51,7 +51,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.7 | `window.caption_button_glyph.fill @ variant close cond system_setting:outline_close_button` | rule |
 | K1.7 | `input.inactive.header.foreground_negative (the Inactive group's stated value, R2.6)` | input |
 | K1.7 | `reader:kde:breezerc [Common] OutlineCloseButton -> cond system_setting:outline_close_button` | reader |
-| K1.8 | `window.caption_button_glyph.transitions (Fill: a zero duration, engine Breeze, its test empty: the decoration's animation is set to 0, `breeze@6.8.2 kdecoration/breezedecoration.cpp:383-386`, and a button animates only where it is not, `kdecoration/breezebutton.cpp:411-416`, `kdecoration/breezedecoration.h:45-48`; S2.7, ADD-A126)` | field |
+| K1.8 | `window.caption_button_glyph` with no transition (the glyph's fill changes at once, no earlier transition there for a zero to override, S12: the decoration's animation is set to 0, `breeze@6.8.2 kdecoration/breezedecoration.cpp:383-386`, and a button animates only where it is not, `kdecoration/breezebutton.cpp:411-416`, `kdecoration/breezedecoration.h:45-48`; S2.7, ADD-A126)` | field |
 | K1.9 | `window.frame.stroke (position Outside; edge snap to the device pixel; paint kcu_mix with token.params.color.frame_contrast)` | field |
 | K1.9 | `window.frame.stroke @ cond window_inactive` | rule |
 | K1.9 | `window.frame.stroke (Absent) @ cond maximized` | rule |
@@ -719,7 +719,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.8 | `group_box.body.fill, group_box.body.stroke, group_box.body.corners, group_box.title.text` | field |
 | K2.8 | `group_box.body.fill, group_box.body.stroke (Absent), group_box.title.text (= token.text.keyed.flat_group_title) @ variant flat` | rule |
 | K2.8 | `checkbox @ context any group_box (the checkable title)` | rule |
-| K2.8 | `group_box.focus_line.{stroke,transitions} @ {focus_visible}` (the line, with no fade: Breeze's engine for it is first updated while the box has focus, which sets its state without running it, `kstyle/animations/breezewidgetstatedata.cpp:14-17`, and a box losing focus returns before it is updated again, `kstyle/breezestyle.cpp:7684-7692`, so no change runs it: its transitions a zero duration, engine Breeze, its test empty, the line gone at once as focus leaves, S2.7, ADD-A126) | rule |
+| K2.8 | `group_box.focus_line.{stroke,transitions} @ {focus_visible}` (the line, with no fade: Breeze's engine for it is first updated while the box has focus, which sets its state without running it, `kstyle/animations/breezewidgetstatedata.cpp:14-17`, and a box losing focus returns before it is updated again, `kstyle/breezestyle.cpp:7684-7692`, so no change runs it: no transition, as the base states none for a zero to override (S12), the line gone at once as focus leaves, S2.7, ADD-A126) | rule |
 | K2.9 | `component.tool_box.page_button.min_width` (`ToolBox_TabMinWidth`; one home) | component |
 | K2.9 | `component.tool_box.outline.stroke, component.tool_box.outline.corners` (the tab-shaped outline round every tab, in the frame outline colour at rest) | component |
 | K2.9 | `component.tool_box.outline.stroke @ {hover} / {selected}` (the hover colour; the open page's focus colour, a later rule: Breeze takes no hover on the open page) | component |
@@ -1150,7 +1150,7 @@ rationale, each decided in the core's additions register (S22).
 | Q3.26 | `token.motion.timings.<key> (one declared timing per easing curve in use)` | token |
 | Q3.26 | `token.motion @ cond flavor:kirigami (color_space StraightSrgb8: QML's ColorAnimation through QVariantAnimation's colour interpolator, qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22, S2.7, ADD-A125)` | rule |
 | Q3.26 | `Timing::Platform(PlatformCurve::KirigamiVelocity)` (SmoothedAnimation by velocity, CONTRA-2) | token |
-| Q3.26 | `PartStyle.transitions @ cond flavor:kirigami (engine QtQuick: Kirigami's and qqc2-desktop-style's Behaviors start from the value drawn over their full duration, animate a theme switch, and retarget a SmoothedAnimation with its velocity, `qtdeclarative@6.12.0 src/quick/util/qquickbehavior.cpp:361-426`; S2.7, ADD-A126)` | rule |
+| Q3.26 | `PartStyle.transitions @ cond flavor:kirigami (engine QtQuick, for the QML `Behavior`s Kirigami and qqc2-desktop-style state, the parts qqc2 draws through Breeze's style being Breeze's, K1.30: those Behaviors start from the value drawn over their full duration, animate a theme switch, and retarget a SmoothedAnimation with its velocity, `qtdeclarative@6.12.0 src/quick/util/qquickbehavior.cpp:361-426`; S2.7, ADD-A126)` | rule |
 | Q3.27 | `token.motion.durations.human_moment (unscaled)` | token |
 | Q3.28 | `tooltip.values.show_delay` | field |
 | Q3.28 | `tooltip.values.show_delay (= token.behavior.long_press) @ cond tablet_mode` | rule |
